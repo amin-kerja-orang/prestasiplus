@@ -41760,6 +41760,1279 @@
           "meta"
         ]
       },
+      "PkskLevel": {
+        "type": "string",
+        "enum": [
+          "T1",
+          "T4"
+        ],
+        "description": "PKSK level, case-sensitive: T1 (Tingkatan 1) or T4 (Tingkatan 4)."
+      },
+      "PkskBahagian": {
+        "type": "string",
+        "enum": [
+          "A",
+          "B",
+          "C"
+        ],
+        "description": "Exam part: A (Kecerdasan Insaniah), B (Kecerdasan Intelek) or C (Artikulasi Penulisan)."
+      },
+      "PkskGrade": {
+        "type": "string",
+        "enum": [
+          "A",
+          "B",
+          "C",
+          "D",
+          "E"
+        ],
+        "description": "Grade of a percentage: A at 80 or more, B 65 to 79, C 50 to 64, D 40 to 49, E below 40."
+      },
+      "PkskDomainCode": {
+        "type": "string",
+        "enum": [
+          "PKSK_INSANIAH",
+          "PKSK_MATH",
+          "PKSK_SCI",
+          "PKSK_ENG",
+          "PKSK_SEJ",
+          "PKSK_GEO",
+          "PKSK_BUDAYA",
+          "PKSK_SUKAN",
+          "PKSK_MERCU",
+          "PKSK_ALAM",
+          "PKSK_TECH",
+          "PKSK_EKON",
+          "PKSK_INOV",
+          "PKSK_GLOBAL",
+          "PKSK_ESSAY"
+        ],
+        "description": "Code of one of the 15 fixed PKSK domains."
+      },
+      "PkskQuestionStatus": {
+        "type": "string",
+        "enum": [
+          "pending",
+          "approved",
+          "rejected"
+        ],
+        "description": "PKSK question status. Only approved questions are served to students."
+      },
+      "PkskPackageLevel": {
+        "type": "string",
+        "enum": [
+          "T1",
+          "T4",
+          "ALL"
+        ],
+        "description": "Level a package unlocks: T1, T4 or ALL (Kombo)."
+      },
+      "PkskDomainRef": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "code": {
+            "$ref": "#/components/schemas/PkskDomainCode"
+          },
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 100,
+            "description": "BM name, e.g. \"Matematik\"."
+          },
+          "icon": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 50,
+            "description": "Icon class string, e.g. \"fa-calculator\"."
+          },
+          "color": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 20,
+            "description": "Hex colour, e.g. \"#3b82f6\"."
+          }
+        },
+        "required": [
+          "id",
+          "code",
+          "name",
+          "icon",
+          "color"
+        ]
+      },
+      "PkskDomain": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "code": {
+            "$ref": "#/components/schemas/PkskDomainCode"
+          },
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 100,
+            "description": "BM name, e.g. \"Matematik\"."
+          },
+          "icon": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 50,
+            "description": "Icon class string, e.g. \"fa-calculator\"."
+          },
+          "color": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 20,
+            "description": "Hex colour, e.g. \"#3b82f6\"."
+          },
+          "bahagian": {
+            "$ref": "#/components/schemas/PkskBahagian"
+          },
+          "nameEn": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 100
+          },
+          "order": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "isActive": {
+            "type": "boolean"
+          },
+          "createdAt": {
+            "$ref": "#/components/schemas/Timestamp"
+          },
+          "updatedAt": {
+            "$ref": "#/components/schemas/Timestamp"
+          }
+        },
+        "required": [
+          "id",
+          "code",
+          "name",
+          "icon",
+          "color",
+          "bahagian",
+          "nameEn",
+          "order",
+          "isActive",
+          "createdAt",
+          "updatedAt"
+        ]
+      },
+      "PkskAccess": {
+        "type": "object",
+        "properties": {
+          "T1": {
+            "type": "boolean"
+          },
+          "T4": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "T1",
+          "T4"
+        ]
+      },
+      "PkskDashboardDomain": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "code": {
+            "$ref": "#/components/schemas/PkskDomainCode"
+          },
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 100,
+            "description": "BM name, e.g. \"Matematik\"."
+          },
+          "icon": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 50,
+            "description": "Icon class string, e.g. \"fa-calculator\"."
+          },
+          "color": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 20,
+            "description": "Hex colour, e.g. \"#3b82f6\"."
+          },
+          "masteryPct": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 100
+          }
+        },
+        "required": [
+          "id",
+          "code",
+          "name",
+          "icon",
+          "color",
+          "masteryPct"
+        ]
+      },
+      "PkskDashboard": {
+        "type": "object",
+        "properties": {
+          "level": {
+            "$ref": "#/components/schemas/PkskLevel"
+          },
+          "readiness": {
+            "type": "object",
+            "properties": {
+              "scorePct": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 100,
+                "description": "Rounded mean of the caller attempts (0 with none)."
+              },
+              "grade": {
+                "type": "string",
+                "enum": [
+                  "A",
+                  "B",
+                  "C",
+                  "D",
+                  "E"
+                ],
+                "description": "Grade of the unrounded mean."
+              }
+            },
+            "required": [
+              "scorePct",
+              "grade"
+            ]
+          },
+          "examCount": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "bahagianBAvgPct": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 100,
+            "description": "Mean of the Bahagian B percentages, one decimal."
+          },
+          "domains": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PkskDashboardDomain"
+            },
+            "maxItems": 20,
+            "description": "Bahagian B domains in order."
+          }
+        },
+        "required": [
+          "level",
+          "readiness",
+          "examCount",
+          "bahagianBAvgPct",
+          "domains"
+        ]
+      },
+      "PkskSectionDomain": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "code": {
+            "$ref": "#/components/schemas/PkskDomainCode"
+          },
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 100,
+            "description": "BM name, e.g. \"Matematik\"."
+          },
+          "icon": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 50,
+            "description": "Icon class string, e.g. \"fa-calculator\"."
+          },
+          "color": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 20,
+            "description": "Hex colour, e.g. \"#3b82f6\"."
+          },
+          "questionCount": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Approved questions of the domain at this level."
+          },
+          "masteryPct": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 100
+          }
+        },
+        "required": [
+          "id",
+          "code",
+          "name",
+          "icon",
+          "color",
+          "questionCount",
+          "masteryPct"
+        ]
+      },
+      "PkskDomainSection": {
+        "type": "object",
+        "properties": {
+          "bahagian": {
+            "$ref": "#/components/schemas/PkskBahagian"
+          },
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 100,
+            "example": "Kecerdasan Intelek"
+          },
+          "subtitle": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 100,
+            "example": "Kognitif & penaakulan"
+          },
+          "domains": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PkskSectionDomain"
+            },
+            "maxItems": 20
+          }
+        },
+        "required": [
+          "bahagian",
+          "name",
+          "subtitle",
+          "domains"
+        ]
+      },
+      "PkskDomainSections": {
+        "type": "array",
+        "items": {
+          "$ref": "#/components/schemas/PkskDomainSection"
+        },
+        "description": "Sections A, B, C in that order."
+      },
+      "PkskServedQuestion": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "questionText": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 5000
+          },
+          "options": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "text": {
+                  "type": "string",
+                  "maxLength": 1000
+                }
+              },
+              "required": [
+                "text"
+              ]
+            },
+            "maxItems": 6,
+            "description": "Empty for a Bahagian C (essay) question."
+          }
+        },
+        "required": [
+          "id",
+          "questionText",
+          "options"
+        ]
+      },
+      "PkskPractice": {
+        "type": "object",
+        "properties": {
+          "domain": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "$ref": "#/components/schemas/Id"
+              },
+              "code": {
+                "$ref": "#/components/schemas/PkskDomainCode"
+              },
+              "name": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 100
+              },
+              "bahagian": {
+                "$ref": "#/components/schemas/PkskBahagian"
+              }
+            },
+            "required": [
+              "id",
+              "code",
+              "name",
+              "bahagian"
+            ]
+          },
+          "questions": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PkskServedQuestion"
+            },
+            "maxItems": 10
+          }
+        },
+        "required": [
+          "domain",
+          "questions"
+        ]
+      },
+      "PkskExamAttempt": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "completedAt": {
+            "$ref": "#/components/schemas/Timestamp"
+          },
+          "scorePct": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 100
+          },
+          "grade": {
+            "$ref": "#/components/schemas/PkskGrade"
+          }
+        },
+        "required": [
+          "id",
+          "completedAt",
+          "scorePct",
+          "grade"
+        ]
+      },
+      "PkskPracticeResult": {
+        "type": "object",
+        "properties": {
+          "masteryPct": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 100,
+            "description": "round(correct / answered * 100)."
+          },
+          "sessionId": {
+            "$ref": "#/components/schemas/PracticeSessionId"
+          },
+          "gamification": {
+            "type": "object",
+            "properties": {
+              "coinsEarned": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "pointsEarned": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "streakCount": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "totalBalance": {
+                "type": "integer",
+                "minimum": 0
+              }
+            },
+            "required": [
+              "coinsEarned",
+              "pointsEarned",
+              "streakCount",
+              "totalBalance"
+            ]
+          }
+        },
+        "required": [
+          "masteryPct",
+          "sessionId",
+          "gamification"
+        ]
+      },
+      "PkskExamSection": {
+        "type": "object",
+        "properties": {
+          "bahagian": {
+            "$ref": "#/components/schemas/PkskBahagian"
+          },
+          "weightPct": {
+            "anyOf": [
+              {
+                "type": "number",
+                "enum": [
+                  20
+                ]
+              },
+              {
+                "type": "number",
+                "enum": [
+                  70
+                ]
+              },
+              {
+                "type": "number",
+                "enum": [
+                  10
+                ]
+              }
+            ]
+          },
+          "questions": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PkskServedQuestion"
+            },
+            "maxItems": 70
+          }
+        },
+        "required": [
+          "bahagian",
+          "weightPct",
+          "questions"
+        ]
+      },
+      "PkskExam": {
+        "type": "object",
+        "properties": {
+          "sections": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PkskExamSection"
+            },
+            "description": "A, B, C in that order."
+          }
+        },
+        "required": [
+          "sections"
+        ]
+      },
+      "PkskAnswer": {
+        "type": "object",
+        "properties": {
+          "questionId": {
+            "type": "string",
+            "pattern": "^\\d{1,19}$"
+          },
+          "optionIndex": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "minimum": 0,
+            "maximum": 5
+          },
+          "text": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "maxLength": 10000
+          }
+        },
+        "required": [
+          "questionId"
+        ],
+        "additionalProperties": false
+      },
+      "PkskAnswersRequest": {
+        "type": "object",
+        "properties": {
+          "answers": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PkskAnswer"
+            },
+            "minItems": 1,
+            "maxItems": 101
+          }
+        },
+        "required": [
+          "answers"
+        ],
+        "additionalProperties": false
+      },
+      "PkskAdminQuestionListQuery": {
+        "type": "object",
+        "properties": {
+          "bahagian": {
+            "type": "string",
+            "maxLength": 20,
+            "description": "A, B or C, case-insensitive. Unknown value: empty page."
+          },
+          "level": {
+            "type": "string",
+            "maxLength": 20,
+            "description": "T1 or T4, case-insensitive. Unknown value: empty page."
+          },
+          "status": {
+            "type": "string",
+            "maxLength": 20,
+            "description": "pending, approved or rejected, case-insensitive. Unknown value: empty page."
+          },
+          "search": {
+            "type": "string",
+            "maxLength": 100,
+            "description": "Trimmed, case-insensitive substring of the question text."
+          },
+          "page": {
+            "type": "integer",
+            "minimum": 1,
+            "description": "Page number, 1-based. The page size is fixed at 20 and `pageSize` is not read. An invalid value is read as 1."
+          }
+        },
+        "additionalProperties": false
+      },
+      "PkskAdminQuestionListItem": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "questionText": {
+            "type": "string"
+          },
+          "bahagian": {
+            "$ref": "#/components/schemas/PkskBahagian"
+          },
+          "domain": {
+            "$ref": "#/components/schemas/PkskDomainRef"
+          },
+          "targetLevel": {
+            "$ref": "#/components/schemas/PkskLevel"
+          },
+          "status": {
+            "$ref": "#/components/schemas/PkskQuestionStatus"
+          }
+        },
+        "required": [
+          "id",
+          "questionText",
+          "bahagian",
+          "domain",
+          "targetLevel",
+          "status"
+        ]
+      },
+      "PkskAdminQuestionListResponse": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PkskAdminQuestionListItem"
+            },
+            "maxItems": 20
+          },
+          "meta": {
+            "$ref": "#/components/schemas/ListMeta"
+          }
+        },
+        "required": [
+          "data",
+          "meta"
+        ]
+      },
+      "PkskAdminQuestionStats": {
+        "type": "object",
+        "properties": {
+          "total": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "approved": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "pending": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "t1": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "t4": {
+            "type": "integer",
+            "minimum": 0
+          }
+        },
+        "required": [
+          "total",
+          "approved",
+          "pending",
+          "t1",
+          "t4"
+        ]
+      },
+      "PkskAdminQuestionOption": {
+        "type": "object",
+        "properties": {
+          "text": {
+            "type": "string"
+          },
+          "isCorrect": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "text",
+          "isCorrect"
+        ]
+      },
+      "PkskAdminQuestionDetail": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "bahagian": {
+            "$ref": "#/components/schemas/PkskBahagian"
+          },
+          "pkskDomainId": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "pkskTargetLevel": {
+            "$ref": "#/components/schemas/PkskLevel"
+          },
+          "status": {
+            "$ref": "#/components/schemas/PkskQuestionStatus"
+          },
+          "questionText": {
+            "type": "string"
+          },
+          "difficultyLevel": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "minimum": 1,
+            "maximum": 5
+          },
+          "explanation": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "options": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PkskAdminQuestionOption"
+            }
+          }
+        },
+        "required": [
+          "id",
+          "bahagian",
+          "pkskDomainId",
+          "pkskTargetLevel",
+          "status",
+          "questionText",
+          "difficultyLevel",
+          "explanation",
+          "options"
+        ]
+      },
+      "PkskAdminQuestionDetailResponse": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/PkskAdminQuestionDetail"
+          }
+        },
+        "required": [
+          "data"
+        ]
+      },
+      "PkskAdminQuestionMutationResponse": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/PkskAdminQuestionDetail"
+          },
+          "status": {
+            "type": "string",
+            "minLength": 1,
+            "description": "BM flash text for the success message."
+          }
+        },
+        "required": [
+          "data",
+          "status"
+        ]
+      },
+      "PkskAdminOptionInput": {
+        "type": "object",
+        "properties": {
+          "text": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 500
+          },
+          "isCorrect": {
+            "type": "boolean",
+            "default": false
+          }
+        },
+        "required": [
+          "text"
+        ],
+        "additionalProperties": false
+      },
+      "PkskAdminQuestionCreate": {
+        "type": "object",
+        "properties": {
+          "bahagian": {
+            "type": "string",
+            "enum": [
+              "A",
+              "B",
+              "C"
+            ]
+          },
+          "pkskDomainId": {
+            "type": "string",
+            "pattern": "^\\d{1,19}$"
+          },
+          "pkskTargetLevel": {
+            "type": "string",
+            "enum": [
+              "T1",
+              "T4"
+            ]
+          },
+          "questionText": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 2000
+          },
+          "difficultyLevel": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 5,
+            "description": "Required, integer 1 to 5."
+          },
+          "explanation": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "maxLength": 2000,
+            "description": "Plain text. Blank or null stores no explanation (create), and clears it (update, when the key is sent)."
+          },
+          "options": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PkskAdminOptionInput"
+            },
+            "maxItems": 50,
+            "description": "Bahagian A and B: required, 2 to 6 options with non-empty text. Bahagian C: ignored."
+          }
+        },
+        "required": [
+          "bahagian",
+          "pkskDomainId",
+          "pkskTargetLevel",
+          "questionText",
+          "difficultyLevel"
+        ],
+        "additionalProperties": false
+      },
+      "PkskAdminQuestionUpdate": {
+        "type": "object",
+        "properties": {
+          "pkskDomainId": {
+            "type": "string",
+            "pattern": "^\\d{1,19}$"
+          },
+          "pkskTargetLevel": {
+            "type": "string",
+            "enum": [
+              "T1",
+              "T4"
+            ]
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "pending",
+              "approved",
+              "rejected"
+            ]
+          },
+          "questionText": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 2000
+          },
+          "difficultyLevel": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "minimum": 1,
+            "maximum": 5,
+            "description": "Optional, integer 1 to 5; absent or null keeps the stored value."
+          },
+          "explanation": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "maxLength": 2000,
+            "description": "Plain text. Blank or null stores no explanation (create), and clears it (update, when the key is sent)."
+          },
+          "options": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PkskAdminOptionInput"
+            },
+            "minItems": 2,
+            "maxItems": 6
+          }
+        },
+        "required": [
+          "pkskDomainId",
+          "pkskTargetLevel",
+          "status",
+          "questionText"
+        ],
+        "additionalProperties": false
+      },
+      "PkskAdminBulkAction": {
+        "type": "string",
+        "enum": [
+          "approve",
+          "reject",
+          "delete"
+        ]
+      },
+      "PkskAdminBulkRequest": {
+        "type": "object",
+        "properties": {
+          "action": {
+            "$ref": "#/components/schemas/PkskAdminBulkAction"
+          },
+          "ids": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "pattern": "^\\d{1,19}$"
+            },
+            "minItems": 1,
+            "maxItems": 100
+          }
+        },
+        "required": [
+          "action",
+          "ids"
+        ],
+        "additionalProperties": false
+      },
+      "PkskAdminBulkResult": {
+        "type": "object",
+        "properties": {
+          "affected": {
+            "type": "integer",
+            "minimum": 0
+          }
+        },
+        "required": [
+          "affected"
+        ]
+      },
+      "PkskAdminBulkResponse": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/PkskAdminBulkResult"
+          },
+          "status": {
+            "type": "string",
+            "minLength": 1,
+            "description": "BM flash text for the success message."
+          }
+        },
+        "required": [
+          "data",
+          "status"
+        ]
+      },
+      "PkskAdminAccessStatus": {
+        "type": "string",
+        "enum": [
+          "active",
+          "revoked"
+        ],
+        "description": "Stored status of a grant."
+      },
+      "PkskAdminAccessDisplayStatus": {
+        "type": "string",
+        "enum": [
+          "active",
+          "expired",
+          "revoked"
+        ],
+        "description": "Computed: revoked, else expired when expiresAt is before today (Malaysia date), else active."
+      },
+      "PkskAdminAccessListQuery": {
+        "type": "object",
+        "properties": {
+          "search": {
+            "type": "string",
+            "maxLength": 100,
+            "description": "Trimmed, case-insensitive substring of the user name or e-mail."
+          },
+          "page": {
+            "type": "integer",
+            "minimum": 1,
+            "description": "Page number, 1-based. The page size is fixed at 20 and `pageSize` is not read. An invalid value is read as 1."
+          }
+        },
+        "additionalProperties": false
+      },
+      "PkskAdminAccessItem": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "user": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "$ref": "#/components/schemas/Id"
+              },
+              "name": {
+                "type": "string"
+              },
+              "email": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "description": "Nullable in v2 (matches BE-05: accounts may have no e-mail; LEAD 2026-10-19). The mock sends a string (empty when the user is gone)."
+              }
+            },
+            "required": [
+              "id",
+              "name",
+              "email"
+            ]
+          },
+          "package": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "$ref": "#/components/schemas/Id"
+              },
+              "name": {
+                "type": "string"
+              },
+              "level": {
+                "$ref": "#/components/schemas/PkskPackageLevel"
+              }
+            },
+            "required": [
+              "id",
+              "name",
+              "level"
+            ]
+          },
+          "grantedBy": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "properties": {
+              "id": {
+                "$ref": "#/components/schemas/Id"
+              },
+              "name": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "id",
+              "name"
+            ]
+          },
+          "grantedAt": {
+            "$ref": "#/components/schemas/Timestamp"
+          },
+          "expiresAt": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date",
+            "description": "Valid through the end of that day (Malaysia).",
+            "example": "2026-10-16"
+          },
+          "status": {
+            "$ref": "#/components/schemas/PkskAdminAccessStatus"
+          },
+          "displayStatus": {
+            "$ref": "#/components/schemas/PkskAdminAccessDisplayStatus"
+          }
+        },
+        "required": [
+          "id",
+          "user",
+          "package",
+          "grantedBy",
+          "grantedAt",
+          "expiresAt",
+          "status",
+          "displayStatus"
+        ]
+      },
+      "PkskAdminAccessListResponse": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PkskAdminAccessItem"
+            },
+            "maxItems": 20
+          },
+          "meta": {
+            "$ref": "#/components/schemas/ListMeta"
+          }
+        },
+        "required": [
+          "data",
+          "meta"
+        ]
+      },
+      "PkskAdminAccessStats": {
+        "type": "object",
+        "properties": {
+          "activeTotal": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "t1": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "t4": {
+            "type": "integer",
+            "minimum": 0
+          }
+        },
+        "required": [
+          "activeTotal",
+          "t1",
+          "t4"
+        ]
+      },
+      "PkskAdminAccessGrant": {
+        "type": "object",
+        "properties": {
+          "userId": {
+            "type": "string",
+            "pattern": "^\\d{1,19}$"
+          },
+          "packageId": {
+            "type": "string",
+            "pattern": "^\\d{1,19}$"
+          },
+          "expiresAt": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date"
+          }
+        },
+        "required": [
+          "userId",
+          "packageId"
+        ],
+        "additionalProperties": false
+      },
+      "PkskAdminAccessMutationResponse": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/PkskAdminAccessItem"
+          },
+          "status": {
+            "type": "string",
+            "minLength": 1,
+            "description": "BM flash text for the success message."
+          }
+        },
+        "required": [
+          "data",
+          "status"
+        ]
+      },
+      "PkskPackage": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 100
+          },
+          "level": {
+            "$ref": "#/components/schemas/PkskPackageLevel"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "level"
+        ]
+      },
+      "PkskPackageListResponse": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PkskPackage"
+            }
+          }
+        },
+        "required": [
+          "data"
+        ]
+      },
       "QuestionBulkResult": {
         "type": "object",
         "properties": {
@@ -68628,6 +69901,1795 @@
           },
           "404": {
             "description": "NOT_FOUND \"Not Found.\": unknown id",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/pksk/me/access": {
+      "get": {
+        "tags": [
+          "pksk"
+        ],
+        "summary": "Which PKSK levels the caller can use",
+        "description": "Who: any signed-in role, own access only. T1 and T4 are true for role admin, for the PKSK subscription flag, or for an active unexpired grant of a package for that level or ALL (Kombo). An expiry date is valid through the end of that day (Asia/Kuala_Lumpur).",
+        "responses": {
+          "200": {
+            "description": "Access flags.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/PkskAccess"
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED \"Unauthenticated.\" (no valid session).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/pksk-domains": {
+      "get": {
+        "tags": [
+          "pksk"
+        ],
+        "summary": "The 15 PKSK domains",
+        "description": "Who: any signed-in role. Reference data ordered by `order`; no meta.",
+        "responses": {
+          "200": {
+            "description": "The domains.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/PkskDomain"
+                      }
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED \"Unauthenticated.\" (no valid session).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/pksk/levels/{level}/dashboard": {
+      "get": {
+        "tags": [
+          "pksk"
+        ],
+        "summary": "Readiness and Bahagian B mastery for a level",
+        "description": "Who: any signed-in role (student, parent, teacher, admin ...), then the level gate: unknown level 404 first, then 403 unless the caller has access to the level (an active unexpired grant of a package for that level or ALL, the PKSK subscription flag, or role admin). Scope: own data only. Mean of no attempts is 0. Own attempts only.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 16,
+              "description": "T1 or T4, case-sensitive. Any other value answers 404 \"Not Found.\" before the access check."
+            },
+            "required": true,
+            "description": "T1 or T4, case-sensitive. Any other value answers 404 \"Not Found.\" before the access check.",
+            "name": "level",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The dashboard.",
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string",
+                  "enum": [
+                    "no-store"
+                  ],
+                  "description": "no-store"
+                },
+                "required": true,
+                "description": "no-store"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/PkskDashboard"
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED \"Unauthenticated.\" (no valid session).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN \"This action is unauthorized.\" (the caller has no access to this level).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "NOT_FOUND \"Not Found.\" (the level is not exactly T1 or T4; checked before the access test).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/pksk/levels/{level}/domains": {
+      "get": {
+        "tags": [
+          "pksk"
+        ],
+        "summary": "The three Bahagian sections with question counts and mastery",
+        "description": "Who: any signed-in role (student, parent, teacher, admin ...), then the level gate: unknown level 404 first, then 403 unless the caller has access to the level (an active unexpired grant of a package for that level or ALL, the PKSK subscription flag, or role admin). Scope: own data only. Sections A, B, C in that order; questionCount counts approved questions of the domain at this level.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 16,
+              "description": "T1 or T4, case-sensitive. Any other value answers 404 \"Not Found.\" before the access check."
+            },
+            "required": true,
+            "description": "T1 or T4, case-sensitive. Any other value answers 404 \"Not Found.\" before the access check.",
+            "name": "level",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The sections.",
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string",
+                  "enum": [
+                    "no-store"
+                  ],
+                  "description": "no-store"
+                },
+                "required": true,
+                "description": "no-store"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/PkskDomainSections"
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED \"Unauthenticated.\" (no valid session).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN \"This action is unauthorized.\" (the caller has no access to this level).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "NOT_FOUND \"Not Found.\" (the level is not exactly T1 or T4; checked before the access test).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/pksk/levels/{level}/domains/{code}": {
+      "get": {
+        "tags": [
+          "pksk"
+        ],
+        "summary": "A practice set for one domain (up to 10 random approved questions)",
+        "description": "Who: any signed-in role (student, parent, teacher, admin ...), then the level gate: unknown level 404 first, then 403 unless the caller has access to the level (an active unexpired grant of a package for that level or ALL, the PKSK subscription flag, or role admin). Scope: own data only. Side effect on a GET: records a \"practice loaded\" time for the caller, level and domain, used as the session start on submit. Questions are shuffled; options are empty for Bahagian C; no correctness flag is ever sent.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 16,
+              "description": "T1 or T4, case-sensitive. Any other value answers 404 \"Not Found.\" before the access check."
+            },
+            "required": true,
+            "description": "T1 or T4, case-sensitive. Any other value answers 404 \"Not Found.\" before the access check.",
+            "name": "level",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 50,
+              "description": "Domain code, e.g. PKSK_MATH. An unknown code answers 404 \"Not Found.\" (level checked first)."
+            },
+            "required": true,
+            "description": "Domain code, e.g. PKSK_MATH. An unknown code answers 404 \"Not Found.\" (level checked first).",
+            "name": "code",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The practice set.",
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string",
+                  "enum": [
+                    "no-store"
+                  ],
+                  "description": "no-store"
+                },
+                "required": true,
+                "description": "no-store"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/PkskPractice"
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED \"Unauthenticated.\" (no valid session).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN \"This action is unauthorized.\" (the caller has no access to this level).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "NOT_FOUND \"Not Found.\" (bad level, checked first; or an unknown domain code).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/pksk/levels/{level}/exam-attempts": {
+      "get": {
+        "tags": [
+          "pksk"
+        ],
+        "summary": "Own exam attempts at the level, newest first",
+        "description": "Who: any signed-in role (student, parent, teacher, admin ...), then the level gate: unknown level 404 first, then 403 unless the caller has access to the level (an active unexpired grant of a package for that level or ALL, the PKSK subscription flag, or role admin). Scope: own data only. Another user attempts are never returned.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 16,
+              "description": "T1 or T4, case-sensitive. Any other value answers 404 \"Not Found.\" before the access check."
+            },
+            "required": true,
+            "description": "T1 or T4, case-sensitive. Any other value answers 404 \"Not Found.\" before the access check.",
+            "name": "level",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The attempts.",
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string",
+                  "enum": [
+                    "no-store"
+                  ],
+                  "description": "no-store"
+                },
+                "required": true,
+                "description": "no-store"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/PkskExamAttempt"
+                      }
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED \"Unauthenticated.\" (no valid session).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN \"This action is unauthorized.\" (the caller has no access to this level).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "NOT_FOUND \"Not Found.\" (the level is not exactly T1 or T4; checked before the access test).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "pksk"
+        ],
+        "summary": "Submit an exam; scored and stored",
+        "description": "Who: any signed-in role (student, parent, teacher, admin ...), then the level gate: unknown level 404 first, then 403 unless the caller has access to the level (an active unexpired grant of a package for that level or ALL, the PKSK subscription flag, or role admin). Scope: own data only. Every answered question must be an approved PKSK question of this level (any domain), at most 30 A, 70 B and 1 C answers. Bahagian % = correct / planned count (30, 70, 1) x 100 to one decimal; scorePct = round1(0.2 A + 0.7 B + 0.1 C). No M05 session, wallet or streak change. Same body rules as the practice submit.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 16,
+              "description": "T1 or T4, case-sensitive. Any other value answers 404 \"Not Found.\" before the access check."
+            },
+            "required": true,
+            "description": "T1 or T4, case-sensitive. Any other value answers 404 \"Not Found.\" before the access check.",
+            "name": "level",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Value of Session.csrf; required on mutating requests."
+            },
+            "required": true,
+            "description": "Value of Session.csrf; required on mutating requests.",
+            "name": "X-CSRF-Token",
+            "in": "header"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PkskAnswersRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "The stored attempt.",
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string",
+                  "enum": [
+                    "no-store"
+                  ],
+                  "description": "no-store"
+                },
+                "required": true,
+                "description": "no-store"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/PkskExamAttempt"
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED \"Unauthenticated.\" (no valid session).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN \"This action is unauthorized.\" (no access to the level), or CSRF_INVALID (missing or wrong X-CSRF-Token).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "NOT_FOUND \"Not Found.\" (the level is not exactly T1 or T4; checked before the access test).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "VALIDATION_ERROR \"Jawapan tidak sah.\" with fields.answers \"Jawapan tidak sah.\" (invalid list, unknown / unapproved / other-level question, or more answers in a Bahagian than 30 / 70 / 1). Nothing is written.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "RATE_LIMITED with retryAfter (seconds). The Retry-After header carries the same value. Limited per user.",
+            "headers": {
+              "Retry-After": {
+                "schema": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "description": "Seconds until a retry is allowed."
+                },
+                "required": true,
+                "description": "Seconds until a retry is allowed."
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/pksk/levels/{level}/domains/{code}/practice-sessions": {
+      "post": {
+        "tags": [
+          "pksk"
+        ],
+        "summary": "Submit a domain practice set",
+        "description": "Who: any signed-in role (student, parent, teacher, admin ...), then the level gate: unknown level 404 first, then 403 unless the caller has access to the level (an active unexpired grant of a package for that level or ALL, the PKSK subscription flag, or role admin). Scope: own data only. Scored on the server (A and B: the chosen option must be flagged correct; C: a trimmed text of at least 50 characters, simulated marker). Recorded as one completed M05 practice session with mode pksk; mastery of the domain is stored; wallet and streak are credited by M05/M14. Contract is stricter than the mock (D57): unknown keys are rejected, at most 101 answers, text at most 10000 characters, optionIndex 0 to 5. Every body problem is 422 fields.answers \"Jawapan tidak sah.\".",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 16,
+              "description": "T1 or T4, case-sensitive. Any other value answers 404 \"Not Found.\" before the access check."
+            },
+            "required": true,
+            "description": "T1 or T4, case-sensitive. Any other value answers 404 \"Not Found.\" before the access check.",
+            "name": "level",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 50,
+              "description": "Domain code, e.g. PKSK_MATH. An unknown code answers 404 \"Not Found.\" (level checked first)."
+            },
+            "required": true,
+            "description": "Domain code, e.g. PKSK_MATH. An unknown code answers 404 \"Not Found.\" (level checked first).",
+            "name": "code",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Value of Session.csrf; required on mutating requests."
+            },
+            "required": true,
+            "description": "Value of Session.csrf; required on mutating requests.",
+            "name": "X-CSRF-Token",
+            "in": "header"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PkskAnswersRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Scored and recorded.",
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string",
+                  "enum": [
+                    "no-store"
+                  ],
+                  "description": "no-store"
+                },
+                "required": true,
+                "description": "no-store"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/PkskPracticeResult"
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED \"Unauthenticated.\" (no valid session).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN \"This action is unauthorized.\" (no access to the level), or CSRF_INVALID (missing or wrong X-CSRF-Token).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "NOT_FOUND \"Not Found.\" (bad level, checked first; or an unknown domain code).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "VALIDATION_ERROR \"Jawapan tidak sah.\" with fields.answers \"Jawapan tidak sah.\" (empty list, duplicate questionId, mistyped field, unknown key, or any question that is not an approved PKSK question of this domain and level). Nothing is written.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "RATE_LIMITED with retryAfter (seconds). The Retry-After header carries the same value. Limited per user.",
+            "headers": {
+              "Retry-After": {
+                "schema": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "description": "Seconds until a retry is allowed."
+                },
+                "required": true,
+                "description": "Seconds until a retry is allowed."
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/pksk/levels/{level}/exam": {
+      "get": {
+        "tags": [
+          "pksk"
+        ],
+        "summary": "A full exam paper (30 A, 70 B, 1 C question)",
+        "description": "Who: any signed-in role (student, parent, teacher, admin ...), then the level gate: unknown level 404 first, then 403 unless the caller has access to the level (an active unexpired grant of a package for that level or ALL, the PKSK subscription flag, or role admin). Scope: own data only. Weights 20, 70, 10; fewer questions when the pool is short; shuffled; no correctness flag. Nothing is stored.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 16,
+              "description": "T1 or T4, case-sensitive. Any other value answers 404 \"Not Found.\" before the access check."
+            },
+            "required": true,
+            "description": "T1 or T4, case-sensitive. Any other value answers 404 \"Not Found.\" before the access check.",
+            "name": "level",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The exam.",
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string",
+                  "enum": [
+                    "no-store"
+                  ],
+                  "description": "no-store"
+                },
+                "required": true,
+                "description": "no-store"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/PkskExam"
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED \"Unauthenticated.\" (no valid session).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN \"This action is unauthorized.\" (the caller has no access to this level).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "NOT_FOUND \"Not Found.\" (the level is not exactly T1 or T4; checked before the access test).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/pksk-questions": {
+      "get": {
+        "tags": [
+          "pksk-admin"
+        ],
+        "summary": "PKSK question list (S5)",
+        "description": "Admin only (401 without a session, 403 for any other role). PKSK questions are tags on the question bank and never appear in the M04 lists. Filters are AND-combined and case-insensitive; an unknown filter value returns an empty page (not an error). Order: created_at descending, then id ascending. Fixed page size 20 (pageSize is not read).",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "maxLength": 20,
+              "description": "A, B or C, case-insensitive. Unknown value: empty page."
+            },
+            "required": false,
+            "description": "A, B or C, case-insensitive. Unknown value: empty page.",
+            "name": "bahagian",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "maxLength": 20,
+              "description": "T1 or T4, case-insensitive. Unknown value: empty page."
+            },
+            "required": false,
+            "description": "T1 or T4, case-insensitive. Unknown value: empty page.",
+            "name": "level",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "maxLength": 20,
+              "description": "pending, approved or rejected, case-insensitive. Unknown value: empty page."
+            },
+            "required": false,
+            "description": "pending, approved or rejected, case-insensitive. Unknown value: empty page.",
+            "name": "status",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "maxLength": 100,
+              "description": "Trimmed, case-insensitive substring of the question text."
+            },
+            "required": false,
+            "description": "Trimmed, case-insensitive substring of the question text.",
+            "name": "search",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "description": "Page number, 1-based. The page size is fixed at 20 and `pageSize` is not read. An invalid value is read as 1."
+            },
+            "required": false,
+            "description": "Page number, 1-based. The page size is fixed at 20 and `pageSize` is not read. An invalid value is read as 1.",
+            "name": "page",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "A page of PKSK questions with the list meta.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PkskAdminQuestionListResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED \"Unauthenticated.\" (no valid session).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN \"This action is unauthorized.\" (the active role is not admin).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "pksk-admin"
+        ],
+        "summary": "Create a PKSK question",
+        "description": "Admin only (401 without a session, 403 for any other role). Saved approved (BR-M07-03). Question text and explanation are plain text, stored sanitised and never rendered as HTML. Bahagian C stores no options. The domain must belong to the chosen Bahagian (service rule, fields.pkskDomainId).",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Value of Session.csrf; required on mutating requests."
+            },
+            "required": true,
+            "description": "Value of Session.csrf; required on mutating requests.",
+            "name": "X-CSRF-Token",
+            "in": "header"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PkskAdminQuestionCreate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Created; status is \"Soalan PKSK berjaya ditambah.\".",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PkskAdminQuestionMutationResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED \"Unauthenticated.\" (no valid session).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN \"This action is unauthorized.\" (the active role is not admin), or CSRF_INVALID (missing or wrong X-CSRF-Token).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "VALIDATION_ERROR with fields (name -> BM message); all failing fields are returned together, and the top-level message is the first field message plus \" (and N more error(s))\" when several fail. Keys: bahagian, pkskDomainId, pkskTargetLevel, questionText, difficultyLevel, options (one key for the count and for any option text).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "RATE_LIMITED, with retryAfter in the body and the Retry-After header (D57a). The numbers are set by the backend card.",
+            "headers": {
+              "Retry-After": {
+                "description": "Seconds until a retry is allowed.",
+                "schema": {
+                  "type": "integer",
+                  "minimum": 0
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/pksk-questions/stats": {
+      "get": {
+        "tags": [
+          "pksk-admin"
+        ],
+        "summary": "PKSK question counters (S5)",
+        "description": "Admin only (401 without a session, 403 for any other role). Global counts over all PKSK questions, never filtered; t1 and t4 count every status.",
+        "responses": {
+          "200": {
+            "description": "The counters.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/PkskAdminQuestionStats"
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED \"Unauthenticated.\" (no valid session).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN \"This action is unauthorized.\" (the active role is not admin).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/pksk-questions/bulk": {
+      "post": {
+        "tags": [
+          "pksk-admin"
+        ],
+        "summary": "Approve, reject or delete many PKSK questions",
+        "description": "Admin only (401 without a session, 403 for any other role). Every id must be a PKSK question: any non-PKSK, unknown or non-numeric id answers 422 fields.ids and changes nothing. Duplicates count once. At most 100 ids (proposed cap). A bulk delete is audited (ids only).",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Value of Session.csrf; required on mutating requests."
+            },
+            "required": true,
+            "description": "Value of Session.csrf; required on mutating requests.",
+            "name": "X-CSRF-Token",
+            "in": "header"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PkskAdminBulkRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Done; status is \"<n> soalan telah diluluskan.\" / \"<n> soalan telah ditolak.\" / \"<n> soalan telah dipadam.\".",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PkskAdminBulkResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED \"Unauthenticated.\" (no valid session).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN \"This action is unauthorized.\" (the active role is not admin), or CSRF_INVALID (missing or wrong X-CSRF-Token).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "VALIDATION_ERROR with fields (name -> BM message); all failing fields are returned together, and the top-level message is the first field message plus \" (and N more error(s))\" when several fail. fields.action \"Tindakan tidak sah.\"; fields.ids \"Sila pilih sekurang-kurangnya satu soalan PKSK.\" (empty list, or any non-PKSK / unknown id).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "RATE_LIMITED, with retryAfter in the body and the Retry-After header (D57a). The numbers are set by the backend card.",
+            "headers": {
+              "Retry-After": {
+                "description": "Seconds until a retry is allowed.",
+                "schema": {
+                  "type": "integer",
+                  "minimum": 0
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/pksk-questions/{id}": {
+      "get": {
+        "tags": [
+          "pksk-admin"
+        ],
+        "summary": "PKSK question detail (S7)",
+        "description": "Admin only (401 without a session, 403 for any other role). The id of a non-PKSK question answers 404, never its data.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 64,
+              "description": "Digits only; a non-numeric segment does not match the route (404 \"Not Found.\").",
+              "example": "1042"
+            },
+            "required": true,
+            "description": "Digits only; a non-numeric segment does not match the route (404 \"Not Found.\").",
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The question with its options.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PkskAdminQuestionDetailResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED \"Unauthenticated.\" (no valid session).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN \"This action is unauthorized.\" (the active role is not admin).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "NOT_FOUND \"Soalan PKSK tidak dijumpai.\" (unknown id or not a PKSK question).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "pksk-admin"
+        ],
+        "summary": "Update a PKSK question",
+        "description": "Admin only (401 without a session, 403 for any other role). A non-PKSK id answers 404 and is never changed. Any status may follow any other (BR-M07-02).",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 64,
+              "description": "Digits only; a non-numeric segment does not match the route (404 \"Not Found.\").",
+              "example": "1042"
+            },
+            "required": true,
+            "description": "Digits only; a non-numeric segment does not match the route (404 \"Not Found.\").",
+            "name": "id",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Value of Session.csrf; required on mutating requests."
+            },
+            "required": true,
+            "description": "Value of Session.csrf; required on mutating requests.",
+            "name": "X-CSRF-Token",
+            "in": "header"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PkskAdminQuestionUpdate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Updated; status is \"Soalan PKSK berjaya dikemaskini.\".",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PkskAdminQuestionMutationResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED \"Unauthenticated.\" (no valid session).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN \"This action is unauthorized.\" (the active role is not admin), or CSRF_INVALID (missing or wrong X-CSRF-Token).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "NOT_FOUND \"Soalan PKSK tidak dijumpai.\".",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "VALIDATION_ERROR with fields (name -> BM message); all failing fields are returned together, and the top-level message is the first field message plus \" (and N more error(s))\" when several fail. As create, plus fields.status \"Sila pilih status.\".",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "RATE_LIMITED, with retryAfter in the body and the Retry-After header (D57a). The numbers are set by the backend card.",
+            "headers": {
+              "Retry-After": {
+                "description": "Seconds until a retry is allowed.",
+                "schema": {
+                  "type": "integer",
+                  "minimum": 0
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "pksk-admin"
+        ],
+        "summary": "Delete a PKSK question (hard delete)",
+        "description": "Admin only (401 without a session, 403 for any other role). Hard delete (BR-M07-02); historical practice answers survive. A non-PKSK id answers 404 and is never deleted.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 64,
+              "description": "Digits only; a non-numeric segment does not match the route (404 \"Not Found.\").",
+              "example": "1042"
+            },
+            "required": true,
+            "description": "Digits only; a non-numeric segment does not match the route (404 \"Not Found.\").",
+            "name": "id",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Value of Session.csrf; required on mutating requests."
+            },
+            "required": true,
+            "description": "Value of Session.csrf; required on mutating requests.",
+            "name": "X-CSRF-Token",
+            "in": "header"
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Deleted. No body."
+          },
+          "401": {
+            "description": "UNAUTHORIZED \"Unauthenticated.\" (no valid session).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN \"This action is unauthorized.\" (the active role is not admin), or CSRF_INVALID (missing or wrong X-CSRF-Token).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "NOT_FOUND \"Soalan PKSK tidak dijumpai.\".",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "RATE_LIMITED, with retryAfter in the body and the Retry-After header (D57a). The numbers are set by the backend card.",
+            "headers": {
+              "Retry-After": {
+                "description": "Seconds until a retry is allowed.",
+                "schema": {
+                  "type": "integer",
+                  "minimum": 0
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/pksk-access": {
+      "get": {
+        "tags": [
+          "pksk-admin"
+        ],
+        "summary": "PKSK access grants (S8)",
+        "description": "Admin only (401 without a session, 403 for any other role). Lists names and e-mails of paying users, so the response carries Cache-Control: no-store. Order: granted_at descending, then id descending; fixed page size 20.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "maxLength": 100,
+              "description": "Trimmed, case-insensitive substring of the user name or e-mail."
+            },
+            "required": false,
+            "description": "Trimmed, case-insensitive substring of the user name or e-mail.",
+            "name": "search",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "description": "Page number, 1-based. The page size is fixed at 20 and `pageSize` is not read. An invalid value is read as 1."
+            },
+            "required": false,
+            "description": "Page number, 1-based. The page size is fixed at 20 and `pageSize` is not read. An invalid value is read as 1.",
+            "name": "page",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "A page of grants with the list meta.",
+            "headers": {
+              "Cache-Control": {
+                "description": "no-store: personal data of paying users and minors.",
+                "schema": {
+                  "type": "string",
+                  "example": "no-store"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PkskAdminAccessListResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED \"Unauthenticated.\" (no valid session).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN \"This action is unauthorized.\" (the active role is not admin).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "pksk-admin"
+        ],
+        "summary": "Grant PKSK access to a user",
+        "description": "Admin only (401 without a session, 403 for any other role). grantedBy is the acting admin and grantedAt is now. A past expiry date is accepted and gives an already-expired row. Duplicate grants are allowed (BR-M07-14). The grant is audited (actor, user id, package id). Student routes see the change on the next request.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Value of Session.csrf; required on mutating requests."
+            },
+            "required": true,
+            "description": "Value of Session.csrf; required on mutating requests.",
+            "name": "X-CSRF-Token",
+            "in": "header"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PkskAdminAccessGrant"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Granted; status is \"Akses PKSK berjaya diberi.\".",
+            "headers": {
+              "Cache-Control": {
+                "description": "no-store: personal data of paying users and minors.",
+                "schema": {
+                  "type": "string",
+                  "example": "no-store"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PkskAdminAccessMutationResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED \"Unauthenticated.\" (no valid session).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN \"This action is unauthorized.\" (the active role is not admin), or CSRF_INVALID (missing or wrong X-CSRF-Token).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "VALIDATION_ERROR with fields (name -> BM message); all failing fields are returned together, and the top-level message is the first field message plus \" (and N more error(s))\" when several fail. fields.userId \"Pengguna tidak dijumpai.\" (missing, not an id or no such user); fields.packageId \"Sila pilih pakej.\"; fields.expiresAt \"Tarikh tamat tidak sah.\".",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "RATE_LIMITED, with retryAfter in the body and the Retry-After header (D57a). The numbers are set by the backend card.",
+            "headers": {
+              "Retry-After": {
+                "description": "Seconds until a retry is allowed.",
+                "schema": {
+                  "type": "integer",
+                  "minimum": 0
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/pksk-access/stats": {
+      "get": {
+        "tags": [
+          "pksk-admin"
+        ],
+        "summary": "PKSK access counters (S8)",
+        "description": "Admin only (401 without a session, 403 for any other role). Active rows only (not revoked, not expired); a Kombo package counts in both t1 and t4; the subscription flag and the admin role are not counted.",
+        "responses": {
+          "200": {
+            "description": "The counters.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/PkskAdminAccessStats"
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED \"Unauthenticated.\" (no valid session).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN \"This action is unauthorized.\" (the active role is not admin).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/pksk-access/{id}/revoke": {
+      "post": {
+        "tags": [
+          "pksk-admin"
+        ],
+        "summary": "Revoke an active PKSK grant",
+        "description": "Admin only (401 without a session, 403 for any other role). The row stays listed with status revoked and revokedAt set. The revoke is audited (actor, access id, package id).",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 64,
+              "description": "Digits only; a non-numeric segment does not match the route (404 \"Not Found.\").",
+              "example": "1042"
+            },
+            "required": true,
+            "description": "Digits only; a non-numeric segment does not match the route (404 \"Not Found.\").",
+            "name": "id",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Value of Session.csrf; required on mutating requests."
+            },
+            "required": true,
+            "description": "Value of Session.csrf; required on mutating requests.",
+            "name": "X-CSRF-Token",
+            "in": "header"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Revoked; status is \"Akses PKSK telah ditarik balik.\".",
+            "headers": {
+              "Cache-Control": {
+                "description": "no-store: personal data of paying users and minors.",
+                "schema": {
+                  "type": "string",
+                  "example": "no-store"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PkskAdminAccessMutationResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED \"Unauthenticated.\" (no valid session).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN \"This action is unauthorized.\" (the active role is not admin), or CSRF_INVALID (missing or wrong X-CSRF-Token).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "NOT_FOUND \"Rekod akses tidak dijumpai.\".",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "CONFLICT \"Akses ini tidak aktif dan tidak boleh ditarik balik.\" (already revoked or expired).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "RATE_LIMITED, with retryAfter in the body and the Retry-After header (D57a). The numbers are set by the backend card.",
+            "headers": {
+              "Retry-After": {
+                "description": "Seconds until a retry is allowed.",
+                "schema": {
+                  "type": "integer",
+                  "minimum": 0
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/pksk-packages": {
+      "get": {
+        "tags": [
+          "pksk-admin"
+        ],
+        "summary": "The 3 PKSK packages",
+        "description": "Admin only (401 without a session, 403 for any other role). The mock guards this route with admin only. data is a bare array of the 3 reference packages ordered by id.",
+        "responses": {
+          "200": {
+            "description": "The packages.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PkskPackageListResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED \"Unauthenticated.\" (no valid session).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN \"This action is unauthorized.\" (the active role is not admin).",
             "content": {
               "application/json": {
                 "schema": {
