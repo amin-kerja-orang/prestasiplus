@@ -2,6 +2,7 @@ import type { OpenAPIRegistry } from '@asteasolutions/zod-to-openapi'
 
 import { z } from '../zod'
 import { envelopeOf } from '../common/envelope'
+import { IdSchema } from '../common/ids'
 import { ErrorBodySchema } from '../common/error'
 import { accessLine, statusEnvelopeOf } from '../schools/schema'
 import { csrfHeaders, jsonNoStore, rateLimitedResponse } from '../schools/http'
@@ -75,7 +76,7 @@ const json = (schema: z.ZodType, description: string) => ({
 })
 const err = (description: string) => json(ErrorBodySchema, description)
 const access = (key: keyof typeof USER_ACCESS) => accessLine(USER_ACCESS, key)
-const idParam = z.object({ id: z.string().min(1).meta({ description: 'Opaque user id.' }) })
+const idParam = z.object({ id: IdSchema })
 
 /**
  * Registers the BE-05 user endpoints. `POST /admin/users/{id}/impersonate` is intentionally absent
@@ -147,7 +148,7 @@ export function registerUsersPaths(registry: OpenAPIRegistry): void {
     path: '/admin/users/{id}',
     tags,
     summary: 'Update a user',
-    description: `${access('PUT /admin/users/{id}')} status: "Pengguna berjaya dikemaskini.". Absent keys keep the stored value. D59: there is no admin-chosen password. \`resetPassword: true\` makes the server generate a random one-time password, returned once as \`generatedPassword\` (no-store, never logged, never retrievable again); the target is flagged \`mustChangePassword\` and all its sessions are revoked. A role or status change also revokes the target sessions. Unknown keys are rejected with 422 (BE-NFR-05, strict request bodies). A role the caller may not assign is 403; the server refuses to demote, deactivate or remove the last active admin or the caller's own admin role (409 CONFLICT). Uniqueness copy and generic behaviour as on create; a target of a higher or equal role (or another school) is 404 for a school_admin.`,
+    description: `${access('PUT /admin/users/{id}')} status: "Pengguna berjaya dikemaskini.". Absent keys keep the stored value, except \`roles\`, which is required and replaces the whole list. A school_admin may edit the non-role fields of an in-scope parent but may not change the roles of a parent target (403 FORBIDDEN, same pattern as a role the caller may not assign); assigning the parent role is admin-only. D59: there is no admin-chosen password. \`resetPassword: true\` makes the server generate a random one-time password, returned once as \`generatedPassword\` (no-store, never logged, never retrievable again); the target is flagged \`mustChangePassword\` and all its sessions are revoked. A role or status change also revokes the target sessions. Unknown keys are rejected with 422 (BE-NFR-05, strict request bodies). A role the caller may not assign is 403; the server refuses to demote, deactivate or remove the last active admin or the caller's own admin role (409 CONFLICT). Uniqueness copy and generic behaviour as on create; a target of a higher or equal role (or another school) is 404 for a school_admin.`,
     request: { headers: csrf, params: idParam, body: body(UpdateUserRequestSchema) },
     responses: {
       200: jsonNoStore(statusEnvelopeOf(UpdatedUserSchema), 'Updated; with generatedPassword only after resetPassword.'),

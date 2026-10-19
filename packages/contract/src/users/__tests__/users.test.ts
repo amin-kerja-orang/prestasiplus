@@ -451,6 +451,27 @@ describe('role hierarchy, scope and read limits (security re-review)', () => {
     expect(USER_ACCESS['GET /admin/users/{id}'].scope).toMatch(/404, never 403/)
   })
 
+  it('parent scope: all children in the school; parent role is admin-only; roles of a parent target cannot be changed', () => {
+    expect(ASSIGNABLE_ROLES.school_admin).not.toContain('parent')
+    expect(ASSIGNABLE_ROLES.admin).toContain('parent')
+    expect(BULK_IMPORT_ROLES_BY_CALLER.school_admin).not.toContain('parent')
+    for (const k of [
+      'GET /admin/users/{id}',
+      'PUT /admin/users/{id}',
+      'DELETE /admin/users/{id}',
+      'POST /admin/users/{id}/toggle-active',
+      'POST /admin/users/bulk-delete',
+    ] as const)
+      expect(USER_ACCESS[k].scope, k).toMatch(/parent whose linked children are ALL in the school|parent with a child outside the school/)
+    expect(USER_ACCESS['PUT /admin/users/{id}'].scope).toMatch(/roles may not be changed \(403\)/)
+    const put = op('/admin/users/{id}', 'put').description!
+    expect(put).toMatch(/non-role fields of an in-scope parent/)
+    expect(put).toMatch(/may not change the roles of a parent target \(403 FORBIDDEN/)
+    expect(put).toMatch(/assigning the parent role is admin-only/)
+    expect(put).toContain('which is required')
+    expect(op('/admin/users/{id}', 'put').responses['403']).toBeDefined()
+  })
+
   it('the list hides higher-role rows and scopes roleCounts', () => {
     expect(USER_ACCESS['GET /admin/users'].scope).toMatch(/hidden/)
     expect(USER_ACCESS['GET /admin/users'].scope).toMatch(/roleCounts/)
@@ -463,6 +484,15 @@ describe('role hierarchy, scope and read limits (security re-review)', () => {
     expect(d).toMatch(/identical whether the existing account is in scope or in another school/)
     expect(d).toMatch(/Trade-off/)
     expect(op('/admin/users/bulk-import', 'post').description).toMatch(/counted identically/)
+  })
+
+  it('429 with Retry-After is documented on the school reads', () => {
+    const docAll = buildOpenApiDocument() as { paths: Record<string, Record<string, { responses: Record<string, { headers?: Record<string, unknown> }> }>> }
+    for (const p of ['/admin/schools', '/admin/schools/options', '/admin/schools/{id}', '/admin/schools/{id}/students', '/schools']) {
+      const r = docAll.paths[p]!.get!.responses['429']
+      expect(r, p).toBeDefined()
+      expect(r?.headers?.['Retry-After'], p).toBeDefined()
+    }
   })
 
   it('429 with Retry-After is documented on the read operations', () => {

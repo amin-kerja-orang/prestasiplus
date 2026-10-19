@@ -2,6 +2,7 @@ import type { OpenAPIRegistry } from '@asteasolutions/zod-to-openapi'
 
 import { z } from '../zod'
 import { envelopeOf } from '../common/envelope'
+import { IdSchema } from '../common/ids'
 import { ErrorBodySchema } from '../common/error'
 import { csrfHeaders, jsonNoStore, rateLimitedResponse } from './http'
 import {
@@ -50,7 +51,7 @@ const json = (schema: z.ZodType, description: string) => ({
 })
 const err = (description: string) => json(ErrorBodySchema, description)
 const access = (key: keyof typeof SCHOOL_ACCESS) => accessLine(SCHOOL_ACCESS, key)
-const idParam = z.object({ id: z.string().min(1).meta({ description: 'Opaque entity id.' }) })
+const idParam = z.object({ id: IdSchema })
 
 /** Registers the BE-05 school, JPN/PPD and school-lookup endpoints. */
 export function registerSchoolsPaths(registry: OpenAPIRegistry): void {
@@ -74,6 +75,7 @@ export function registerSchoolsPaths(registry: OpenAPIRegistry): void {
       200: jsonNoStore(z.object({ data: z.array(AdminSchoolSchema), meta: SchoolListMetaSchema }), 'A page of schools.'),
       401: unauthorized,
       403: forbidden,
+      429: limited,
     },
   })
 
@@ -83,7 +85,7 @@ export function registerSchoolsPaths(registry: OpenAPIRegistry): void {
     tags,
     summary: 'Every school as {id, name}, active and inactive, name A to Z, no paging',
     description: access('GET /admin/schools/options'),
-    responses: { 200: json(envelopeOf(z.array(SchoolOptionSchema)), 'School options.'), 401: unauthorized, 403: forbidden },
+    responses: { 200: json(envelopeOf(z.array(SchoolOptionSchema)), 'School options.'), 401: unauthorized, 403: forbidden, 429: limited },
   })
 
   registry.registerPath({
@@ -93,7 +95,7 @@ export function registerSchoolsPaths(registry: OpenAPIRegistry): void {
     summary: 'One school',
     description: `${access('GET /admin/schools/{id}')} Includes the join code: no-store.`,
     request: { params: idParam },
-    responses: { 200: jsonNoStore(envelopeOf(AdminSchoolSchema), 'The school.'), 401: unauthorized, 403: forbidden, 404: notFound },
+    responses: { 200: jsonNoStore(envelopeOf(AdminSchoolSchema), 'The school.'), 401: unauthorized, 403: forbidden, 404: notFound, 429: limited },
   })
 
   registry.registerPath({
@@ -157,6 +159,7 @@ export function registerSchoolsPaths(registry: OpenAPIRegistry): void {
       401: unauthorized,
       403: forbidden,
       404: notFound,
+      429: limited,
     },
   })
 
@@ -167,7 +170,7 @@ export function registerSchoolsPaths(registry: OpenAPIRegistry): void {
     summary: 'Every school as {id, name} (admin; `all=1` required)',
     description: `${access('GET /schools')} Same data as GET /admin/schools/options. Without \`all=1\`: 422 \`fields.all\`.`,
     request: { query: SchoolOptionsQuerySchema },
-    responses: { 200: json(envelopeOf(z.array(SchoolOptionSchema)), 'School options.'), 401: unauthorized, 403: forbidden, 422: invalid },
+    responses: { 200: json(envelopeOf(z.array(SchoolOptionSchema)), 'School options.'), 401: unauthorized, 403: forbidden, 422: invalid, 429: limited },
   })
 
   registry.registerPath({

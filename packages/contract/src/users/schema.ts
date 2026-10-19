@@ -34,8 +34,11 @@ export const ASSIGNABLE_ROLES = {
 
 /**
  * Roles a school_admin may read, update, delete or toggle (security review BE-05, role hierarchy):
- * students and teachers of its own school, and parents linked to a child of its school. A target with any
+ * students and teachers of its own school, and parents whose linked children are all in its school. A target with any
  * other role (another school_admin, ppd_officer, admin, sponsor) is 404, the same as out of scope.
+ * A parent is in scope only when ALL of its linked children are in the caller's school (otherwise 404).
+ * A school_admin may read an in-scope parent and edit its non-role fields, but may not change its roles
+ * (403) and may not assign the parent role (ASSIGNABLE_ROLES.school_admin has no parent; admin only).
  */
 export const MANAGEABLE_TARGET_ROLES = {
   admin: ['admin', 'school_admin', 'ppd_officer', 'teacher', 'student', 'parent', 'sponsor'],
@@ -43,13 +46,13 @@ export const MANAGEABLE_TARGET_ROLES = {
 } as const
 
 const OWN =
-  'admin: all users; school_admin: own school only and only targets whose roles are all in MANAGEABLE_TARGET_ROLES.school_admin (student, teacher, parent linked to a child of the school). Any other target (another school_admin, ppd_officer, admin, another school) is 404, never 403, so nothing is given away'
+  'admin: all users; school_admin: own school only and only targets whose roles are all in MANAGEABLE_TARGET_ROLES.school_admin (student, teacher, or a parent whose linked children are ALL in the school). Any other target (another school_admin, ppd_officer, admin, another school) is 404, never 403, so nothing is given away'
 export const USER_ACCESS = {
   'GET /admin/users': { roles: ['admin', 'school_admin'], scope: OWN + '; rows of other roles and schools are hidden and meta.roleCounts is counted over the visible rows only' },
   'GET /admin/users/filters': { roles: ['admin', 'school_admin'], scope: 'admin: all schools with users; school_admin: own school only' },
   'GET /admin/users/{id}': { roles: ['admin', 'school_admin'], scope: OWN },
   'POST /admin/users': { roles: ['admin', 'school_admin'], scope: 'admin: any role; school_admin: student or teacher in own school (ASSIGNABLE_ROLES)' },
-  'PUT /admin/users/{id}': { roles: ['admin', 'school_admin'], scope: 'admin: any role; school_admin: student or teacher in own school (ASSIGNABLE_ROLES); the target must be in the own school with roles in MANAGEABLE_TARGET_ROLES.school_admin (another school_admin, higher role or other school is 404, never 403)' },
+  'PUT /admin/users/{id}': { roles: ['admin', 'school_admin'], scope: 'admin: any role; school_admin: student or teacher in own school (ASSIGNABLE_ROLES); the target must be in the own school with roles in MANAGEABLE_TARGET_ROLES.school_admin (another school_admin, higher role, other school or a parent with a child outside the school is 404, never 403); for a parent target the roles may not be changed (403) and only non-role fields are editable' },
   'DELETE /admin/users/{id}': { roles: ['admin', 'school_admin'], scope: OWN },
   'POST /admin/users/bulk-delete': { roles: ['admin', 'school_admin'], scope: OWN + '; ids outside scope are skipped as unknown' },
   'POST /admin/users/{id}/toggle-active': { roles: ['admin', 'school_admin'], scope: OWN },

@@ -76754,6 +76754,27 @@
                 }
               }
             }
+          },
+          "429": {
+            "description": "RATE_LIMITED with `retryAfter` (seconds) and a `Retry-After` header. The limit values are set by the server (THROTTLE_*).",
+            "headers": {
+              "Retry-After": {
+                "schema": {
+                  "type": "string",
+                  "description": "Seconds until a retry is allowed.",
+                  "example": "30"
+                },
+                "required": true,
+                "description": "Seconds until a retry is allowed."
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
           }
         }
       },
@@ -76924,6 +76945,27 @@
                 }
               }
             }
+          },
+          "429": {
+            "description": "RATE_LIMITED with `retryAfter` (seconds) and a `Retry-After` header. The limit values are set by the server (THROTTLE_*).",
+            "headers": {
+              "Retry-After": {
+                "schema": {
+                  "type": "string",
+                  "description": "Seconds until a retry is allowed.",
+                  "example": "30"
+                },
+                "required": true,
+                "description": "Seconds until a retry is allowed."
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
           }
         }
       }
@@ -76938,12 +76980,10 @@
         "parameters": [
           {
             "schema": {
-              "type": "string",
-              "minLength": 1,
-              "description": "Opaque entity id."
+              "$ref": "#/components/schemas/Id"
             },
             "required": true,
-            "description": "Opaque entity id.",
+            "description": "Opaque entity id (string). Never parse or construct on the client.",
             "name": "id",
             "in": "path"
           }
@@ -77007,6 +77047,27 @@
                 }
               }
             }
+          },
+          "429": {
+            "description": "RATE_LIMITED with `retryAfter` (seconds) and a `Retry-After` header. The limit values are set by the server (THROTTLE_*).",
+            "headers": {
+              "Retry-After": {
+                "schema": {
+                  "type": "string",
+                  "description": "Seconds until a retry is allowed.",
+                  "example": "30"
+                },
+                "required": true,
+                "description": "Seconds until a retry is allowed."
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
           }
         }
       },
@@ -77019,12 +77080,10 @@
         "parameters": [
           {
             "schema": {
-              "type": "string",
-              "minLength": 1,
-              "description": "Opaque entity id."
+              "$ref": "#/components/schemas/Id"
             },
             "required": true,
-            "description": "Opaque entity id.",
+            "description": "Opaque entity id (string). Never parse or construct on the client.",
             "name": "id",
             "in": "path"
           },
@@ -77160,12 +77219,10 @@
         "parameters": [
           {
             "schema": {
-              "type": "string",
-              "minLength": 1,
-              "description": "Opaque entity id."
+              "$ref": "#/components/schemas/Id"
             },
             "required": true,
-            "description": "Opaque entity id.",
+            "description": "Opaque entity id (string). Never parse or construct on the client.",
             "name": "id",
             "in": "path"
           },
@@ -77270,12 +77327,10 @@
         "parameters": [
           {
             "schema": {
-              "type": "string",
-              "minLength": 1,
-              "description": "Opaque entity id."
+              "$ref": "#/components/schemas/Id"
             },
             "required": true,
-            "description": "Opaque entity id.",
+            "description": "Opaque entity id (string). Never parse or construct on the client.",
             "name": "id",
             "in": "path"
           },
@@ -77362,6 +77417,27 @@
                 }
               }
             }
+          },
+          "429": {
+            "description": "RATE_LIMITED with `retryAfter` (seconds) and a `Retry-After` header. The limit values are set by the server (THROTTLE_*).",
+            "headers": {
+              "Retry-After": {
+                "schema": {
+                  "type": "string",
+                  "description": "Seconds until a retry is allowed.",
+                  "example": "30"
+                },
+                "required": true,
+                "description": "Seconds until a retry is allowed."
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
           }
         }
       }
@@ -77430,6 +77506,27 @@
           },
           "422": {
             "description": "VALIDATION_ERROR with `fields`.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "RATE_LIMITED with `retryAfter` (seconds) and a `Retry-After` header. The limit values are set by the server (THROTTLE_*).",
+            "headers": {
+              "Retry-After": {
+                "schema": {
+                  "type": "string",
+                  "description": "Seconds until a retry is allowed.",
+                  "example": "30"
+                },
+                "required": true,
+                "description": "Seconds until a retry is allowed."
+              }
+            },
             "content": {
               "application/json": {
                 "schema": {
@@ -77599,12 +77696,10 @@
         "parameters": [
           {
             "schema": {
-              "type": "string",
-              "minLength": 1,
-              "description": "Opaque entity id."
+              "$ref": "#/components/schemas/Id"
             },
             "required": true,
-            "description": "Opaque entity id.",
+            "description": "Opaque entity id (string). Never parse or construct on the client.",
             "name": "id",
             "in": "path"
           }
@@ -77671,7 +77766,7 @@
           "users"
         ],
         "summary": "List users (25 per page, newest first)",
-        "description": "Access: admin, school_admin. Scope: admin: all users; school_admin: own school only and only targets whose roles are all in MANAGEABLE_TARGET_ROLES.school_admin (student, teacher, parent linked to a child of the school). Any other target (another school_admin, ppd_officer, admin, another school) is 404, never 403, so nothing is given away; rows of other roles and schools are hidden and meta.roleCounts is counted over the visible rows only. Filters combine with AND. For a school_admin the list hides every row outside its school and every row whose roles are not all student, teacher or parent (other school_admins and higher roles never appear). `meta.roleCounts` counts users per role and ignores the filters (but not the caller scope). Responses carry the masked IC only and are no-store.",
+        "description": "Access: admin, school_admin. Scope: admin: all users; school_admin: own school only and only targets whose roles are all in MANAGEABLE_TARGET_ROLES.school_admin (student, teacher, or a parent whose linked children are ALL in the school). Any other target (another school_admin, ppd_officer, admin, another school) is 404, never 403, so nothing is given away; rows of other roles and schools are hidden and meta.roleCounts is counted over the visible rows only. Filters combine with AND. For a school_admin the list hides every row outside its school and every row whose roles are not all student, teacher or parent (other school_admins and higher roles never appear). `meta.roleCounts` counts users per role and ignores the filters (but not the caller scope). Responses carry the masked IC only and are no-store.",
         "parameters": [
           {
             "schema": {
@@ -77999,16 +78094,14 @@
           "users"
         ],
         "summary": "User detail",
-        "description": "Access: admin, school_admin. Scope: admin: all users; school_admin: own school only and only targets whose roles are all in MANAGEABLE_TARGET_ROLES.school_admin (student, teacher, parent linked to a child of the school). Any other target (another school_admin, ppd_officer, admin, another school) is 404, never 403, so nothing is given away. Personal data: no-store. The server audits reads (ids only). For a school_admin, `linkedStudents` lists only children in its own school and `school` is its own school; a target of a higher or equal role is 404.",
+        "description": "Access: admin, school_admin. Scope: admin: all users; school_admin: own school only and only targets whose roles are all in MANAGEABLE_TARGET_ROLES.school_admin (student, teacher, or a parent whose linked children are ALL in the school). Any other target (another school_admin, ppd_officer, admin, another school) is 404, never 403, so nothing is given away. Personal data: no-store. The server audits reads (ids only). For a school_admin, `linkedStudents` lists only children in its own school and `school` is its own school; a target of a higher or equal role is 404.",
         "parameters": [
           {
             "schema": {
-              "type": "string",
-              "minLength": 1,
-              "description": "Opaque user id."
+              "$ref": "#/components/schemas/Id"
             },
             "required": true,
-            "description": "Opaque user id.",
+            "description": "Opaque entity id (string). Never parse or construct on the client.",
             "name": "id",
             "in": "path"
           }
@@ -78101,16 +78194,14 @@
           "users"
         ],
         "summary": "Update a user",
-        "description": "Access: admin, school_admin. Scope: admin: any role; school_admin: student or teacher in own school (ASSIGNABLE_ROLES); the target must be in the own school with roles in MANAGEABLE_TARGET_ROLES.school_admin (another school_admin, higher role or other school is 404, never 403). status: \"Pengguna berjaya dikemaskini.\". Absent keys keep the stored value. D59: there is no admin-chosen password. `resetPassword: true` makes the server generate a random one-time password, returned once as `generatedPassword` (no-store, never logged, never retrievable again); the target is flagged `mustChangePassword` and all its sessions are revoked. A role or status change also revokes the target sessions. Unknown keys are rejected with 422 (BE-NFR-05, strict request bodies). A role the caller may not assign is 403; the server refuses to demote, deactivate or remove the last active admin or the caller's own admin role (409 CONFLICT). Uniqueness copy and generic behaviour as on create; a target of a higher or equal role (or another school) is 404 for a school_admin.",
+        "description": "Access: admin, school_admin. Scope: admin: any role; school_admin: student or teacher in own school (ASSIGNABLE_ROLES); the target must be in the own school with roles in MANAGEABLE_TARGET_ROLES.school_admin (another school_admin, higher role, other school or a parent with a child outside the school is 404, never 403); for a parent target the roles may not be changed (403) and only non-role fields are editable. status: \"Pengguna berjaya dikemaskini.\". Absent keys keep the stored value, except `roles`, which is required and replaces the whole list. A school_admin may edit the non-role fields of an in-scope parent but may not change the roles of a parent target (403 FORBIDDEN, same pattern as a role the caller may not assign); assigning the parent role is admin-only. D59: there is no admin-chosen password. `resetPassword: true` makes the server generate a random one-time password, returned once as `generatedPassword` (no-store, never logged, never retrievable again); the target is flagged `mustChangePassword` and all its sessions are revoked. A role or status change also revokes the target sessions. Unknown keys are rejected with 422 (BE-NFR-05, strict request bodies). A role the caller may not assign is 403; the server refuses to demote, deactivate or remove the last active admin or the caller's own admin role (409 CONFLICT). Uniqueness copy and generic behaviour as on create; a target of a higher or equal role (or another school) is 404 for a school_admin.",
         "parameters": [
           {
             "schema": {
-              "type": "string",
-              "minLength": 1,
-              "description": "Opaque user id."
+              "$ref": "#/components/schemas/Id"
             },
             "required": true,
-            "description": "Opaque user id.",
+            "description": "Opaque entity id (string). Never parse or construct on the client.",
             "name": "id",
             "in": "path"
           },
@@ -78250,16 +78341,14 @@
           "users"
         ],
         "summary": "Delete a user",
-        "description": "Access: admin, school_admin. Scope: admin: all users; school_admin: own school only and only targets whose roles are all in MANAGEABLE_TARGET_ROLES.school_admin (student, teacher, parent linked to a child of the school). Any other target (another school_admin, ppd_officer, admin, another school) is 404, never 403, so nothing is given away. status: \"Pengguna berjaya dipadam.\". Returns 200 with a body (not 204). The mock cascades (parent links, invites, packages, complimentary profile, sessions); the server does it in one transaction, revokes sessions and audits (ids only). The own account is 422 `fields.id` \"Anda tidak boleh memadam akaun sendiri.\"; the last active admin is 409.",
+        "description": "Access: admin, school_admin. Scope: admin: all users; school_admin: own school only and only targets whose roles are all in MANAGEABLE_TARGET_ROLES.school_admin (student, teacher, or a parent whose linked children are ALL in the school). Any other target (another school_admin, ppd_officer, admin, another school) is 404, never 403, so nothing is given away. status: \"Pengguna berjaya dipadam.\". Returns 200 with a body (not 204). The mock cascades (parent links, invites, packages, complimentary profile, sessions); the server does it in one transaction, revokes sessions and audits (ids only). The own account is 422 `fields.id` \"Anda tidak boleh memadam akaun sendiri.\"; the last active admin is 409.",
         "parameters": [
           {
             "schema": {
-              "type": "string",
-              "minLength": 1,
-              "description": "Opaque user id."
+              "$ref": "#/components/schemas/Id"
             },
             "required": true,
-            "description": "Opaque user id.",
+            "description": "Opaque entity id (string). Never parse or construct on the client.",
             "name": "id",
             "in": "path"
           },
@@ -78380,7 +78469,7 @@
           "users"
         ],
         "summary": "Delete several users",
-        "description": "Access: admin, school_admin. Scope: admin: all users; school_admin: own school only and only targets whose roles are all in MANAGEABLE_TARGET_ROLES.school_admin (student, teacher, parent linked to a child of the school). Any other target (another school_admin, ppd_officer, admin, another school) is 404, never 403, so nothing is given away; ids outside scope are skipped as unknown. status: \"{n} pengguna berjaya dipadam.\". Unknown ids are skipped. A list containing the own account is 422 `fields.ids` \"Anda tidak boleh memadam akaun sendiri.\". Unknown keys are rejected with 422 (BE-NFR-05, strict request bodies).",
+        "description": "Access: admin, school_admin. Scope: admin: all users; school_admin: own school only and only targets whose roles are all in MANAGEABLE_TARGET_ROLES.school_admin (student, teacher, or a parent whose linked children are ALL in the school). Any other target (another school_admin, ppd_officer, admin, another school) is 404, never 403, so nothing is given away; ids outside scope are skipped as unknown. status: \"{n} pengguna berjaya dipadam.\". Unknown ids are skipped. A list containing the own account is 422 `fields.ids` \"Anda tidak boleh memadam akaun sendiri.\". Unknown keys are rejected with 422 (BE-NFR-05, strict request bodies).",
         "parameters": [
           {
             "schema": {
@@ -78499,16 +78588,14 @@
           "users"
         ],
         "summary": "Flip the active flag of a user",
-        "description": "Access: admin, school_admin. Scope: admin: all users; school_admin: own school only and only targets whose roles are all in MANAGEABLE_TARGET_ROLES.school_admin (student, teacher, parent linked to a child of the school). Any other target (another school_admin, ppd_officer, admin, another school) is 404, never 403, so nothing is given away. status: \"Status pengguna berjaya dikemaskini.\". Deactivating revokes the target sessions; the last active admin cannot be deactivated (409).",
+        "description": "Access: admin, school_admin. Scope: admin: all users; school_admin: own school only and only targets whose roles are all in MANAGEABLE_TARGET_ROLES.school_admin (student, teacher, or a parent whose linked children are ALL in the school). Any other target (another school_admin, ppd_officer, admin, another school) is 404, never 403, so nothing is given away. status: \"Status pengguna berjaya dikemaskini.\". Deactivating revokes the target sessions; the last active admin cannot be deactivated (409).",
         "parameters": [
           {
             "schema": {
-              "type": "string",
-              "minLength": 1,
-              "description": "Opaque user id."
+              "$ref": "#/components/schemas/Id"
             },
             "required": true,
-            "description": "Opaque user id.",
+            "description": "Opaque entity id (string). Never parse or construct on the client.",
             "name": "id",
             "in": "path"
           },
@@ -78945,12 +79032,10 @@
         "parameters": [
           {
             "schema": {
-              "type": "string",
-              "minLength": 1,
-              "description": "Opaque user id."
+              "$ref": "#/components/schemas/Id"
             },
             "required": true,
-            "description": "Opaque user id.",
+            "description": "Opaque entity id (string). Never parse or construct on the client.",
             "name": "id",
             "in": "path"
           }
