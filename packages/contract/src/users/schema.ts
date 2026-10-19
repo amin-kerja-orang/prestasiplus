@@ -3,7 +3,7 @@ import { ListMetaSchema } from '../common/envelope'
 import { ROLE_CODES } from '../common/enums'
 import { IdSchema } from '../common/ids'
 import { TimestampSchema } from '../common/time'
-import { ClassLevelSchema, SchoolSummarySchema, V, enumField, mockOptionalText, mockRequiredText } from '../schools/schema'
+import { ClassLevelSchema, SchoolSummarySchema, V, enumField, mockOptionalText, mockRequiredText, type AccessRule } from '../schools/schema'
 
 /**
  * M02 users wire contract (BE-05, contract-only). Source: the M02 mock handlers (`users-admin.ts`,
@@ -15,8 +15,41 @@ import { ClassLevelSchema, SchoolSummarySchema, V, enumField, mockOptionalText, 
 
 export const USERS_PAGE_SIZE = 25
 export const STUDENT_SEARCH_LIMIT = 15
-export const STUDENT_SEARCH_MIN_CHARS = 2
+/** Raised from the mock value 2 (security review BE-05): a 2-letter query enumerates minors. */
+export const STUDENT_SEARCH_MIN_CHARS = 3
 export const PASSWORD_MIN = 6
+/** Upper bound for every password field (slow hash, DoS). Passwords are never echoed in `fields` or logged. */
+export const PASSWORD_MAX = 128
+/** Bulk-import caps (new in v2; the mock has none). */
+export const IMPORT_MAX_CHARS = 1_048_576
+export const IMPORT_MAX_ROWS = 1000
+
+/**
+ * Roles a caller may assign on POST/PUT /admin/users (D57e): only roles at or below its own.
+ * The server enforces it (403 FORBIDDEN) and also keeps school_admin inside its own school
+ * (a body `schoolId` of another school is 422 `fields.schoolId` "The selected school id is invalid.").
+ */
+export const ASSIGNABLE_ROLES = {
+  admin: ['admin', 'school_admin', 'ppd_officer', 'teacher', 'student', 'parent', 'sponsor'],
+  school_admin: ['student', 'teacher'],
+} as const
+
+const OWN = 'admin: all users; school_admin: own school only (an out-of-scope id is 404, never 403)'
+export const USER_ACCESS = {
+  'GET /admin/users': { roles: ['admin', 'school_admin'], scope: OWN + '; meta.roleCounts is scoped the same way' },
+  'GET /admin/users/filters': { roles: ['admin', 'school_admin'], scope: 'admin: all schools with users; school_admin: own school only' },
+  'GET /admin/users/{id}': { roles: ['admin', 'school_admin'], scope: OWN },
+  'POST /admin/users': { roles: ['admin', 'school_admin'], scope: 'admin: any role; school_admin: student or teacher in own school (ASSIGNABLE_ROLES)' },
+  'PUT /admin/users/{id}': { roles: ['admin', 'school_admin'], scope: 'admin: any role; school_admin: student or teacher in own school, target in own school (ASSIGNABLE_ROLES)' },
+  'DELETE /admin/users/{id}': { roles: ['admin', 'school_admin'], scope: OWN },
+  'POST /admin/users/bulk-delete': { roles: ['admin', 'school_admin'], scope: OWN + '; ids outside scope are skipped as unknown' },
+  'POST /admin/users/{id}/toggle-active': { roles: ['admin', 'school_admin'], scope: OWN },
+  'POST /admin/users/bulk-import': { roles: ['admin', 'school_admin'], scope: 'admin: any import role; school_admin: teacher only, into own school' },
+  'GET /students/search': { roles: ['admin', 'school_admin', 'teacher'], scope: 'admin: all students; school_admin and teacher: own school only. student, parent, sponsor, ppd_officer: 403' },
+  'GET /admin/teachers': { roles: ['admin', 'school_admin'], scope: 'admin: all teachers; school_admin: own school only' },
+  'GET /admin/teachers/{id}/classrooms': { roles: ['admin', 'school_admin'], scope: 'admin: any teacher; school_admin: own school teachers only' },
+  'GET /admin/config/defaults': { roles: ['admin'], scope: 'Admin Pusat only (D57c)' },
+} as const satisfies Record<string, AccessRule>
 
 /** Exact flash texts of the mock. */
 export const USER_MESSAGES = {
@@ -26,6 +59,9 @@ export const USER_MESSAGES = {
   toggled: 'Status pengguna berjaya dikemaskini.',
   ownDelete: 'Anda tidak boleh memadam akaun sendiri.',
   noData: 'Tiada data untuk diimport.',
+  /** New in v2 (security review): the mock has no import caps. */
+  importTooLarge: 'Data import melebihi had 1 MB.',
+  importTooManyRows: 'Data import melebihi had 1000 baris.',
 } as const
 export const usersDeletedText = (n: number): string => `${String(n)} pengguna berjaya dipadam.`
 export const usersImportedText = (r: { created: number; skipped: number; failed: number }): string =>
@@ -37,6 +73,7 @@ export const IMPORT_ROW_MESSAGES = {
   nameLong: 'Nama tidak boleh melebihi 255 aksara.',
   badEmail: 'Emel tidak sah.',
   phoneLong: 'Nombor telefon tidak boleh melebihi 14 aksara.',
+  passwordLong: 'Kata laluan tidak boleh melebihi 128 aksara.',
   passwordShort: 'Kata laluan mesti sekurang-kurangnya 6 aksara.',
 } as const
 
@@ -116,6 +153,7 @@ export const AdminUserDetailSchema = z
     isSuspended: z.boolean(),
     subscriptionPackage: z.enum(SUBSCRIPTION_PACKAGES),
     hasPkskSubscription: z.boolean(),
+    mustChangePassword: z.boolean().meta({ description: 'True for an account created with a default password, or whose password an admin set (D55c, D57c). Cleared when the user changes it.' }),
     ppdState: z.string().nullable(),
     ppdDistrict: z.string().nullable(),
     linkedStudents: z.array(StudentSearchItemSchema).meta({ description: 'Children of a parent; [] for every other account.' }),
@@ -188,13 +226,14 @@ const fields = {
 
 /** POST /admin/users. Field rules that depend only on the body; existence/uniqueness checks are the server's. */
 export const CreateUserRequestSchema = z
-  .object({
+  .strictObject({
     roles: UserRolesSchema,
     ...fields,
     password: z
       .string({ error: V.required('password') })
       .min(1, { error: V.required('password') })
-      .min(PASSWORD_MIN, { error: V.min('password', PASSWORD_MIN) }),
+      .min(PASSWORD_MIN, { error: V.min('password', PASSWORD_MIN) })
+      .max(PASSWORD_MAX, { error: V.max('password', PASSWORD_MAX) }),
     passwordConfirmation: z.string().nullish(),
   })
   .superRefine((v, ctx) => {
@@ -215,10 +254,14 @@ export type CreateUserRequest = z.infer<typeof CreateUserRequestSchema>
  * (BE-25) and is not accepted here.
  */
 export const UpdateUserRequestSchema = z
-  .object({
+  .strictObject({
     roles: UserRolesSchema,
     ...fields,
-    newPassword: z.string().min(PASSWORD_MIN, { error: V.min('new password', PASSWORD_MIN) }).nullish(),
+    newPassword: z
+      .string()
+      .min(PASSWORD_MIN, { error: V.min('new password', PASSWORD_MIN) })
+      .max(PASSWORD_MAX, { error: V.max('new password', PASSWORD_MAX) })
+      .nullish(),
     newPasswordConfirmation: z.string().nullish(),
   })
   .superRefine((v, ctx) => {
@@ -233,7 +276,7 @@ export const UserToggleResultSchema = z.object({ isActive: z.boolean() }).meta({
 
 /** POST /admin/users/bulk-delete. Unknown ids are skipped; the acting account in the list is 422 `fields.ids`. */
 export const BulkDeleteRequestSchema = z
-  .object({
+  .strictObject({
     ids: z
       .array(z.string().max(64), {
         error: (i) => (i.input === undefined || i.input === null ? V.required('ids') : 'The ids field must be an array of integers.'),
@@ -258,10 +301,11 @@ const importBase = {
   defaultPassword: z
     .string()
     .refine((v) => v.trim() === '' || [...v.trim()].length >= PASSWORD_MIN, { error: V.min('default password', PASSWORD_MIN) })
+    .refine((v) => [...v].length <= PASSWORD_MAX, { error: V.max('default password', PASSWORD_MAX) })
     .nullish()
     .meta({ description: 'Blank or absent uses the configured bulk default.' }),
   importMode: enumField(IMPORT_MODES, 'import mode'),
-  pasteContent: z.string().nullish().meta({ description: 'Used when importMode is paste.' }),
+  pasteContent: z.string().max(IMPORT_MAX_CHARS, { error: USER_MESSAGES.importTooLarge }).nullish().meta({ description: 'Used when importMode is paste. At most 1,048,576 characters and 1000 rows.' }),
 }
 const importRules = (
   v: { role: string; schoolId?: string | null; importMode: string; csvFile?: string | null; pasteContent?: string | null },
@@ -271,23 +315,25 @@ const importRules = (
     ctx.addIssue({ code: 'custom', path: ['schoolId'], message: V.required('school id') })
   // No data rows is a 422 on the field of the chosen mode; blank text certainly has none.
   const text = v.importMode === 'csv' ? v.csvFile : v.pasteContent
-  if (typeof text !== 'string' || text.trim() === '')
-    ctx.addIssue({ code: 'custom', path: [v.importMode === 'csv' ? 'csvFile' : 'pasteContent'], message: USER_MESSAGES.noData })
+  const at = [v.importMode === 'csv' ? 'csvFile' : 'pasteContent']
+  if (typeof text !== 'string' || text.trim() === '') ctx.addIssue({ code: 'custom', path: at, message: USER_MESSAGES.noData })
+  else if (text.split(/\r\n|\r|\n/).filter((l) => l.trim() !== '').length > IMPORT_MAX_ROWS)
+    ctx.addIssue({ code: 'custom', path: at, message: USER_MESSAGES.importTooManyRows })
 }
 
 /**
  * POST /admin/users/bulk-import as JSON. `csvFile` is the file text; rows are
  * `name, email, phone?, password?`. No data rows is 422 "Tiada data untuk diimport." on
- * `fields.csvFile` or `fields.pasteContent`. The mock sets no file-size or row limit.
+ * `fields.csvFile` or `fields.pasteContent`. The mock sets no limit; v2 caps the text at 1,048,576 characters and 1000 non-blank rows (a multipart file over 1 MB is 413).
  */
 export const BulkImportRequestSchema = z
-  .object({ ...importBase, schoolId: bodyId, csvFile: z.string().nullish().meta({ description: 'CSV text, used when importMode is csv.' }) })
+  .strictObject({ ...importBase, schoolId: bodyId, csvFile: z.string().max(IMPORT_MAX_CHARS, { error: USER_MESSAGES.importTooLarge }).nullish().meta({ description: 'CSV text, used when importMode is csv. At most 1,048,576 characters and 1000 rows.' }) })
   .superRefine(importRules)
   .meta({ id: 'BulkImportRequest' })
 
 /** The same request as multipart/form-data: every value is text and `csvFile` is the uploaded file. */
 export const BulkImportMultipartSchema = z
-  .object({ ...importBase, schoolId: bodyId, csvFile: z.string().meta({ format: 'binary' }).nullish() })
+  .strictObject({ ...importBase, schoolId: bodyId, csvFile: z.string().meta({ format: 'binary' }).nullish() })
   .superRefine(importRules)
   .meta({ id: 'BulkImportMultipartRequest' })
 
@@ -302,6 +348,7 @@ export const ImportResultSchema = z
     skipped: z.number().int().min(0),
     failed: z.number().int().min(0),
     errors: z.array(ImportRowErrorSchema),
+    mustChangePasswordCount: z.number().int().min(0).meta({ description: 'Created accounts that got a default password and are flagged must-change-password (D55c).' }),
   })
   .meta({ id: 'ImportResult' })
 export type ImportResult = z.infer<typeof ImportResultSchema>

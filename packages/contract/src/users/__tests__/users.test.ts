@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 
 import { buildOpenApiDocument } from '../../openapi'
-import { statusEnvelopeOf } from '../../schools/schema'
+import { SchoolInputSchema, statusEnvelopeOf } from '../../schools/schema'
 import {
   AdminDefaultsSchema,
   AdminUserDetailSchema,
@@ -16,6 +16,12 @@ import {
   UpdateUserRequestSchema,
   UserListMetaSchema,
   UserListQuerySchema,
+  ASSIGNABLE_ROLES,
+  USER_ACCESS,
+  IMPORT_MAX_CHARS,
+  IMPORT_MAX_ROWS,
+  PASSWORD_MAX,
+  STUDENT_SEARCH_MIN_CHARS,
   UserRolesSchema,
   USER_MESSAGES,
   usersDeletedText,
@@ -43,6 +49,7 @@ const detail = {
   isSuspended: false,
   subscriptionPackage: 'none',
   hasPkskSubscription: false,
+  mustChangePassword: false,
   ppdState: null,
   ppdDistrict: null,
   linkedStudents: [],
@@ -192,7 +199,7 @@ describe('bulk import', () => {
     expect(BulkImportMultipartSchema.safeParse({ role: 'teacher', schoolId: '10', importMode: 'csv', csvFile: 'a,b' }).success).toBe(true)
   })
   it('result and messages match the mock', () => {
-    const result = { created: 2, skipped: 1, failed: 1, errors: [{ line: 4, message: 'Emel tidak sah.' }] }
+    const result = { created: 2, skipped: 1, failed: 1, mustChangePasswordCount: 2, errors: [{ line: 4, message: 'Emel tidak sah.' }] }
     expect(ImportResultSchema.safeParse(result).success).toBe(true)
     expect(ImportResultSchema.safeParse({ ...result, errors: [{ line: 0, message: 'x' }] }).success).toBe(false)
     expect(usersImportedText(result)).toBe('Import selesai: 2 pengguna didaftarkan, 1 dilangkau, 1 gagal.')
@@ -261,6 +268,75 @@ describe('user validation copy (mock messages)', () => {
   })
   it('list query never rejects a page value', () => {
     expect(UserListQuerySchema.safeParse({ page: 'abc', role: 'hantu', isActive: 'x' }).success).toBe(true)
+  })
+})
+
+describe('security review fixes (D55, D57)', () => {
+  type Op = { responses: Record<string, { headers?: Record<string, unknown> }>; description?: string }
+  const doc = buildOpenApiDocument() as { paths: Record<string, Record<string, Op>> }
+  const ops = Object.entries(doc.paths)
+    .filter(([p]) => /^\/(admin\/(users|teachers|schools|config)|students|schools|jpn)/.test(p))
+    .flatMap(([p, m]) => Object.entries(m).map(([method, op]) => ({ key: method.toUpperCase() + ' ' + p, method, path: p, op })))
+
+  it('every write route and every public lookup documents 429 with Retry-After', () => {
+    const write = ops.filter((o) => o.method !== 'get')
+    const publicGets = ops.filter((o) => ['/schools/search', '/jpn', '/jpn/{id}/ppd', '/students/search'].includes(o.path))
+    expect(write.length).toBeGreaterThan(8)
+    for (const o of [...write, ...publicGets]) {
+      expect(o.op.responses['429'], o.key).toBeDefined()
+      expect(o.op.responses['429']?.headers?.['Retry-After'], o.key).toBeDefined()
+    }
+  })
+  it('personal-data and credential responses are no-store', () => {
+    const noStore = [
+      'GET /admin/users', 'GET /admin/users/{id}', 'POST /admin/users', 'PUT /admin/users/{id}', 'POST /admin/users/bulk-import',
+      'GET /students/search', 'GET /admin/teachers', 'GET /admin/config/defaults', 'GET /admin/schools', 'GET /admin/schools/{id}/students',
+    ]
+    for (const key of noStore) {
+      const o = ops.find((x) => x.key === key)
+      expect(o, key).toBeDefined()
+      const ok = Object.entries(o!.op.responses).find(([c]) => c.startsWith('2'))?.[1]
+      expect(ok?.headers?.['Cache-Control'], key).toBeDefined()
+    }
+  })
+  it('defaults are Admin Pusat only; student search is staff only and needs 3 characters', () => {
+    expect(USER_ACCESS['GET /admin/config/defaults'].roles).toEqual(['admin'])
+    expect([...USER_ACCESS['GET /students/search'].roles].sort()).toEqual(['admin', 'school_admin', 'teacher'])
+    expect(STUDENT_SEARCH_MIN_CHARS).toBe(3)
+  })
+  it('school_admin can assign only student or teacher; only admin assigns admin, ppd_officer, school_admin', () => {
+    expect([...ASSIGNABLE_ROLES.school_admin]).toEqual(['student', 'teacher'])
+    for (const r of ['admin', 'ppd_officer', 'school_admin']) {
+      expect(ASSIGNABLE_ROLES.admin).toContain(r)
+      expect(ASSIGNABLE_ROLES.school_admin).not.toContain(r)
+    }
+  })
+  it('every operation states its access in the description', () => {
+    for (const o of ops) expect(o.op.description ?? '', o.key).toMatch(/Access: /)
+  })
+  it('password fields are capped at 128', () => {
+    expect(PASSWORD_MAX).toBe(128)
+    const long = 'x'.repeat(129)
+    expect(msg(CreateUserRequestSchema.safeParse({ ...create, password: long, passwordConfirmation: long }), 'password')).toBe('The password field must not be greater than 128 characters.')
+    expect(msg(UpdateUserRequestSchema.safeParse({ roles: ['teacher'], name: 'a', newPassword: long, newPasswordConfirmation: long }), 'newPassword')).toBe('The new password field must not be greater than 128 characters.')
+    expect(msg(BulkImportRequestSchema.safeParse({ role: 'parent', importMode: 'paste', pasteContent: 'a, a@example.test', defaultPassword: long }), 'defaultPassword')).toBe('The default password field must not be greater than 128 characters.')
+  })
+  it('bulk import is capped in size and rows', () => {
+    const base = { role: 'parent', importMode: 'paste' }
+    const rows = Array.from({ length: IMPORT_MAX_ROWS + 1 }, (_, i) => 'Nama ' + String(i) + ', n' + String(i) + '@example.test').join('\n')
+    expect(msg(BulkImportRequestSchema.safeParse({ ...base, pasteContent: rows }), 'pasteContent')).toBe('Data import melebihi had 1000 baris.')
+    expect(BulkImportRequestSchema.safeParse({ ...base, pasteContent: rows.split('\n').slice(0, IMPORT_MAX_ROWS).join('\n') }).success).toBe(true)
+    expect(msg(BulkImportRequestSchema.safeParse({ ...base, pasteContent: 'x'.repeat(IMPORT_MAX_CHARS + 1) }), 'pasteContent')).toBe('Data import melebihi had 1 MB.')
+  })
+  it('request bodies reject unknown keys (no mass assignment of roles, hashes or join codes)', () => {
+    expect(CreateUserRequestSchema.safeParse({ ...create, icHash: 'x' }).success).toBe(false)
+    expect(UpdateUserRequestSchema.safeParse({ roles: ['teacher'], name: 'a', email: 'a@example.test', scope: { level: 'national' } }).success).toBe(false)
+    expect(BulkDeleteRequestSchema.safeParse({ ids: ['1'], force: true }).success).toBe(false)
+    expect(SchoolInputSchema.safeParse({ name: 'a', code: 'b', type: 'SK', state: 'Johor', joinCode: 'X' }).success).toBe(false)
+  })
+  it('mustChangePassword is on the detail and the import report', () => {
+    expect(AdminUserDetailSchema.safeParse({ ...detail, mustChangePassword: undefined }).success).toBe(false)
+    expect(ImportResultSchema.safeParse({ created: 1, skipped: 0, failed: 0, errors: [] }).success).toBe(false)
   })
 })
 

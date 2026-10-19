@@ -49,10 +49,38 @@ export const mockOptionalText = (attr: string, max: number) =>
 export const enumField = <T extends readonly [string, ...string[]]>(values: T, attr: string) =>
   z.enum(values, { error: (i) => (blank(i.input) ? V.required(attr) : V.invalid(attr)) })
 
+/** Who may call an operation and which rows they see (D57). `public` needs no session. */
+export interface AccessRule {
+  roles: readonly string[]
+  scope: string
+}
+const ALL = 'all schools'
+export const SCHOOL_ACCESS = {
+  'GET /admin/schools': { roles: ['admin'], scope: ALL },
+  'GET /admin/schools/options': { roles: ['admin'], scope: ALL },
+  'GET /admin/schools/{id}': { roles: ['admin'], scope: ALL },
+  'POST /admin/schools': { roles: ['admin'], scope: ALL },
+  'PUT /admin/schools/{id}': { roles: ['admin'], scope: ALL },
+  'POST /admin/schools/{id}/toggle': { roles: ['admin'], scope: ALL },
+  'GET /admin/schools/{id}/students': { roles: ['admin', 'school_admin'], scope: 'admin: any school; school_admin: own school only (another school is 404)' },
+  'GET /schools': { roles: ['admin'], scope: ALL },
+  'GET /schools/search': { roles: ['public'], scope: 'active schools, no session' },
+  'GET /jpn': { roles: ['public'], scope: 'no session' },
+  'GET /jpn/{id}/ppd': { roles: ['public'], scope: 'no session' },
+} as const satisfies Record<string, AccessRule>
+
+/** Description line for an operation: roles and scope, from the table above. */
+export const accessLine = (table: Record<string, AccessRule>, key: string): string => {
+  const rule = table[key]
+  if (!rule) throw new Error('no access rule for ' + key)
+  return `Access: ${rule.roles.join(', ')}. Scope: ${rule.scope}.`
+}
+
 /** Fixed page sizes of the mock lists (the client sends `page` only). */
 export const SCHOOLS_PAGE_SIZE = 30
 export const EXISTING_STUDENTS_LIMIT = 200
 export const SCHOOL_SEARCH_DEFAULT_LIMIT = 20
+export const SCHOOL_SEARCH_MAX_LIMIT = 100
 
 /** Exact flash texts of the mock (UNVERIFIED COPY in the SRS, kept as the contract). */
 export const SCHOOL_MESSAGES = {
@@ -113,7 +141,7 @@ export const SchoolListQuerySchema = z
 
 /** Body of POST/PUT /admin/schools. Strings are trimmed by the server; `district`/`city` may be empty. `joinCode` is never accepted. */
 export const SchoolInputSchema = z
-  .object({
+  .strictObject({
     name: mockRequiredText('name', 255),
     code: mockRequiredText('code', 20).meta({ description: 'Unique, case-insensitive (server: 422 "The code has already been taken.").' }),
     type: enumField(SCHOOL_TYPES, 'type'),
@@ -138,7 +166,7 @@ export const SchoolSearchQuerySchema = z
   .object({
     q: z.string().optional().meta({ description: 'Substring of name or code.' }),
     state: z.string().optional().meta({ description: 'Exact full state name; blank ignored.' }),
-    limit: z.string().optional().meta({ description: 'Positive integer, default 20, no maximum; an invalid value is ignored (default used).' }),
+    limit: z.string().optional().meta({ description: 'Positive integer, default 20; an invalid value is ignored (default used) and a value above 100 is clamped to 100 (BE-NFR-16).' }),
     id: z.string().optional().meta({ description: 'One school by id; other filters ignored.' }),
   })
   .meta({ id: 'SchoolSearchQuery' })
