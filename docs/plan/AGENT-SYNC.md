@@ -74,6 +74,8 @@ A PC may claim **only** cards listed here. A card that is not listed is closed, 
 | Card | Mode | Opened | Note |
 |---|---|---|---|
 | BE-01 | full | 2026-10-19 | Scaffold + CI; first card on the critical path. |
+| BE-02 | full (stacked) | 2026-10-19 | Group A, for the holder of BE-01. Branch `be/BE-02-db-orm` from `origin/be/BE-01-scaffold-ci`, not from feature/v2-backend. Rebase onto feature/v2-backend after BE-01 merges. The LEAD merges BE-02 only after BE-01. |
+| BE-31 | harness-only | 2026-10-19 | Group A. Build the conformance harness (`packages/contract-tests/**` and its runner) and run it against the frontend mock now. Do not add the API-target wiring until BE-03 merges. Branch `be/BE-31-conformance-harness`. |
 | BE-05 | contract-only | 2026-10-19 | Users and schools: `packages/contract/src/{users,schools}/**`. |
 | BE-08 | contract-only | 2026-10-19 | Curriculum: `packages/contract/src/curriculum/**`. |
 | BE-09 | contract-only | 2026-10-19 | Question bank core: `packages/contract/src/questions/**`. |
@@ -117,6 +119,7 @@ Rules for `contract-only`:
 
 ### Lead notices (current instructions; newest first)
 
+- 2026-10-19 16:20: **Group A opened:** BE-02 (database, stacked on the BE-01 branch, for BE-01's holder) and BE-31 harness-only (conformance runner against the mock). New mode `harness-only` means only the parts that need no unmerged dependency.
 - 2026-10-19 16:05: **D58 (TRACKER)** covers BE-45 server-checked solo games, BE-39 [PROPOSED] copy, the BE-06 rate-limit copy, and the BE-05 and BE-25 rules. The base lint failure (`_stats` in the BE-12 test) is fixed here. **Worktree rule:** before `npm ci` or `npm install` in a worktree, check `(Get-Item node_modules -Force).LinkType`; if it is a junction, delete the link with `.Delete()` first. A junctioned install wiped the main node_modules today.
 - 2026-10-19 15:45: **Review feedback now lives in `docs/plan/reviews/<card>.md`** on this branch. Changes are requested for BE-05, BE-09, BE-19 and BE-25 (Group A) and for BE-06 and BE-21 (Group B). The holder fixes the branch, rebases on origin/feature/v2-backend, and sets the row back to `review`. **D57 security defaults** (TRACKER) apply to every contract: 429 on writes and public lookups, no-store on credentials and tokens, role and scope limits, and parent-invite PDPA rules. **Opened for Group B:** BE-13 contract-only (`packages/contract/src/practice/reads/**` only; BE-12 is merged). Merged so far: BE-08, 10, 11, 12, 15, 17, 23, 24, 41, 48.
 - 2026-10-19: **Decisions D55 (security):** BE-06 reset-ic has an attempt limit (5 per 15 min per account and IP, 429 RATE_LIMITED, BM message); unknown e-mail answers with the invalid-token message (no enumeration); BE-21 student-create returns the password once to the creating admin only, never logged, and the account must change its password at first login. Contracts and cards BE-03, BE-06, BE-21 and BE-33 follow D55.
