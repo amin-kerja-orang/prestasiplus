@@ -76,6 +76,7 @@ A PC may claim **only** cards listed here. A card that is not listed is closed, 
 | BE-01 | full | 2026-10-19 | Scaffold + CI; first card on the critical path. |
 | BE-03 | full | 2026-10-19 | Group A (PC-1). Authentication, session, roles, scope and Mod Pelajar. Follow D55, D57, D59, UD-1 and UD-2 and the session contract in packages/contract/src/{session,auth,access}. **Security review required.** Unblocks most full cards. |
 | BE-34 | full | 2026-10-19 | Group A. Migration kit (branch `be/BE-34-migration-kit`). BE-02 is merged: merge origin/feature/v2-backend into the branch. |
+| BE-27 | full (stacked) | 2026-10-19 | Group A (PC-4). .cloud staging schema, loader and profiling report, stacked on `origin/be/BE-34-migration-kit`. Never connect to the .cloud DB: build against a staging schema and synthetic fixtures; the LEAD runs the real read-only profile. No real data, dumps or credentials in the repo. Adds the migration CLI npm script. |
 | BE-31 | harness-only | 2026-10-19 | Group A. Build the conformance harness (`packages/contract-tests/**` and its runner) and run it against the frontend mock now. Do not add the API-target wiring until BE-03 merges. Branch `be/BE-31-conformance-harness`. |
 | BE-05 | contract-only | 2026-10-19 | Users and schools: `packages/contract/src/{users,schools}/**`. |
 | BE-08 | contract-only | 2026-10-19 | Curriculum: `packages/contract/src/curriculum/**`. |
