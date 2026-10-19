@@ -10,6 +10,7 @@ import { formatNumber } from '@/lib/number'
 
 import type { Leaderboard } from '../api/types'
 import { initialOf, percentText } from '../lib/leaderboard'
+import { DsText } from '@/ds'
 
 type Row = Leaderboard['rows'][number]
 
@@ -52,9 +53,9 @@ const BASE: Record<number, string> = {
       >
         {{ row.name }}
       </p>
-      <p class="text-caption text-muted" data-testid="podium-accuracy">
+      <DsText variant="caption" data-testid="podium-accuracy">
         {{ percentText(row.accuracy) }} ketepatan
-      </p>
+      </DsText>
       <p class="tabular mt-0.5 flex items-center gap-1 text-label text-highlighted">
         <UIcon name="i-ph-coins" class="size-4 shrink-0" aria-hidden="true" />
         <span data-testid="podium-coins">{{ formatNumber(row.coins) }}</span>

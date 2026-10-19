@@ -7,7 +7,7 @@ import type { TableColumn } from '@nuxt/ui'
 import { computed } from 'vue'
 
 import { useApi } from '@/composables'
-import { DsDrillTable, DsStatRow, DsStatusBadge } from '@/ds'
+import { DsDrillTable, DsStatRow, DsStatusBadge, DsText } from '@/ds'
 
 import { fetchCommandCenterEvaluation } from '../../api/command-center'
 import type { CcEvaluation } from '../../api/command-center-types'
@@ -47,19 +47,25 @@ const columns: TableColumn<Row>[] = [
     wide
     @close="$emit('close')"
   >
-    <p v-if="error" class="text-body text-error">Ralat: {{ error.message }}</p>
-    <p v-else-if="!data" class="text-body text-muted" data-testid="cc-modal-loading">
+    <DsText v-if="error" variant="body" tone="error">Ralat: {{ error.message }}</DsText>
+    <DsText v-else-if="!data" variant="body" tone="muted" data-testid="cc-modal-loading">
       Menilai semua pelajar...
-    </p>
+    </DsText>
     <template v-else>
-      <DsStatRow :items="statItems(cards)" prefix="cc-modal-card" :cols="5" data-testid="cc-modal-cards" />
-      <p
+      <DsStatRow
+        :items="statItems(cards)"
+        prefix="cc-modal-card"
+        :cols="5"
+        data-testid="cc-modal-cards"
+      />
+      <DsText
         v-if="data.alerts.length === 0"
-        class="text-body text-highlighted"
+        variant="body"
+        tone="highlighted"
         data-testid="cc-evaluate-empty"
       >
         Semua pelajar dalam keadaan baik! Tiada risiko dikesan.
-      </p>
+      </DsText>
       <div v-else data-testid="cc-evaluate-table">
         <DsDrillTable
           :data="data.alerts"

@@ -6,7 +6,7 @@
  */
 import { computed, ref, watch } from 'vue'
 
-import { DsDialog } from '@/ds'
+import { DsDialog, DsStack, DsText } from '@/ds'
 
 import { fetchRajahGallery } from '../../api/guru'
 
@@ -47,7 +47,7 @@ watch(
     description="Tiada galeri tersedia"
     data-testid="galeri-modal"
   >
-    <div class="flex min-w-0 flex-col gap-4">
+    <DsStack>
       <p class="flex items-center gap-2 text-body text-muted" data-testid="galeri-crumb">
         <UIcon name="i-ph-arrow-left" class="size-4" />
         Semua Set
@@ -56,12 +56,12 @@ watch(
         Memuatkan...
       </p>
       <div v-else-if="folders.length === 0" class="py-6 text-center" data-testid="galeri-empty">
-        <p class="text-label text-highlighted">Tiada galeri rajah tersedia</p>
+        <DsText variant="label" as="p" tone="highlighted">Tiada galeri rajah tersedia</DsText>
         <p class="mt-1 text-body text-muted">
           Sila muat naik imej secara manual menggunakan butang "Muat Naik"
         </p>
       </div>
-    </div>
+    </DsStack>
     <template #footer>
       <UButton
         type="button"

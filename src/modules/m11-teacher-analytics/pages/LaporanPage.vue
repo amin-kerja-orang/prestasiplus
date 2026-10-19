@@ -10,7 +10,18 @@ import { computed, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 
 import { useApi } from '@/composables'
-import { DsIcon, DsLoadError, DsNativeSelect, DsPage, DsPanel, DsPillNav } from '@/ds'
+import {
+  DsIcon,
+  DsLoadError,
+  DsNativeSelect,
+  DsPage,
+  DsPanel,
+  DsPillNav,
+  DsCluster,
+  DsGrid,
+  DsStack,
+  DsText,
+} from '@/ds'
 
 import { fetchTeacherReport } from '../api'
 import ActivityPanel from '../components/laporan/ActivityPanel.vue'
@@ -85,7 +96,7 @@ const n = computed(() => d.value?.population.total ?? 0)
     <template v-else>
       <!-- FN-M11-2.1.1: the class select submits on change and keeps `range`. -->
       <DsPanel data-testid="filter-card">
-        <div class="flex flex-col gap-3 sm:flex-row sm:items-center">
+        <DsCluster stack-below="sm">
           <p class="flex items-center gap-2 text-label text-highlighted">
             <DsIcon name="funnel" class="size-4" />{{ LAPORAN_COPY.filterLabel }}
           </p>
@@ -109,10 +120,10 @@ const n = computed(() => d.value?.population.total ?? 0)
             testid-prefix="range"
             data-testid="range-pills"
           />
-        </div>
+        </DsCluster>
       </DsPanel>
 
-      <div class="grid grid-cols-2 gap-4 lg:grid-cols-4" data-testid="summary-cards">
+      <DsGrid :cols="{ base: 2, lg: 4 }" data-testid="summary-cards">
         <SummaryCard
           icon="i-ph-sign-in"
           accent="action"
@@ -123,9 +134,9 @@ const n = computed(() => d.value?.population.total ?? 0)
           test-id="card-login"
           @toggle="toggle('login')"
         >
-          <p class="text-body text-default">
+          <DsText variant="body">
             <span class="tabular text-label">{{ d.population.loggedIn }}</span> / {{ n }} pelajar
-          </p>
+          </DsText>
           <p
             v-if="n - d.population.loggedIn > 0"
             class="flex items-start gap-1 text-caption text-error"
@@ -147,9 +158,9 @@ const n = computed(() => d.value?.population.total ?? 0)
           test-id="card-latihan"
           @toggle="toggle('latihan')"
         >
-          <p class="text-body text-default">
+          <DsText variant="body">
             <span class="tabular text-label">{{ d.population.practised }}</span> / {{ n }} pelajar
-          </p>
+          </DsText>
         </SummaryCard>
 
         <SummaryCard
@@ -162,9 +173,9 @@ const n = computed(() => d.value?.population.total ?? 0)
           test-id="card-aktiviti"
           @toggle="toggle('aktiviti')"
         >
-          <p class="text-body text-default" data-testid="card-range">
+          <DsText variant="body" data-testid="card-range">
             {{ rangeAgo(d.range) }}
-          </p>
+          </DsText>
         </SummaryCard>
 
         <SummaryCard
@@ -177,10 +188,10 @@ const n = computed(() => d.value?.population.total ?? 0)
           test-id="card-skor"
           @toggle="toggle('skor')"
         />
-      </div>
+      </DsGrid>
 
       <UCard v-if="expanded === 'login'" data-testid="panel-login">
-        <div class="flex flex-col gap-3">
+        <DsStack gap="sm">
           <h2 class="flex items-center gap-2 text-label text-highlighted">
             <UIcon name="i-ph-user-minus" class="size-4 text-primary-t" />{{
               loginPanelTitle(d.notLoggedIn.length)
@@ -193,11 +204,11 @@ const n = computed(() => d.value?.population.total ?? 0)
             <UIcon name="i-ph-check-circle" class="size-4" />{{ LAPORAN_COPY.allLoggedIn }}
           </p>
           <StudentRows v-else :rows="d.notLoggedIn" test-id="panel-login-list" />
-        </div>
+        </DsStack>
       </UCard>
 
       <UCard v-if="expanded === 'latihan'" data-testid="panel-latihan">
-        <div class="flex flex-col gap-3">
+        <DsStack gap="sm">
           <h2 class="flex items-center gap-2 text-label text-highlighted">
             <UIcon name="i-ph-moon" class="size-4 text-primary-t" />{{
               practisePanelTitle(d.notPractisedAll.length)
@@ -210,7 +221,7 @@ const n = computed(() => d.value?.population.total ?? 0)
             <UIcon name="i-ph-check-circle" class="size-4" />{{ LAPORAN_COPY.allPractised }}
           </p>
           <StudentRows v-else :rows="d.notPractisedAll" test-id="panel-latihan-list" />
-        </div>
+        </DsStack>
       </UCard>
 
       <ActivityPanel v-if="expanded === 'aktiviti'" :activity="d.activity" :range="d.range" />
@@ -218,9 +229,9 @@ const n = computed(() => d.value?.population.total ?? 0)
 
       <TrendCard :trend="d.trend" :range="d.range" />
 
-      <div class="grid gap-4 md:grid-cols-2">
+      <DsGrid :cols="{ md: 2 }">
         <UCard class="min-w-0" data-testid="list-active">
-          <div class="flex flex-col gap-3">
+          <DsStack gap="sm">
             <h2 class="flex items-center gap-2 text-label text-highlighted">
               <UIcon name="i-ph-trophy" class="size-4 text-primary-t" />{{
                 LAPORAN_COPY.mostActiveTitle
@@ -234,11 +245,11 @@ const n = computed(() => d.value?.population.total ?? 0)
               {{ LAPORAN_COPY.noActivity }}
             </p>
             <StudentRows v-else :rows="d.mostActive" test-id="list-active-rows" />
-          </div>
+          </DsStack>
         </UCard>
 
         <UCard class="min-w-0" data-testid="list-idle">
-          <div class="flex flex-col gap-3">
+          <DsStack gap="sm">
             <h2 class="flex items-center gap-2 text-label text-highlighted">
               <UIcon name="i-ph-moon" class="size-4 text-muted" />{{
                 LAPORAN_COPY.notPractisedTitle
@@ -252,9 +263,9 @@ const n = computed(() => d.value?.population.total ?? 0)
               {{ LAPORAN_COPY.allPractised }}
             </p>
             <StudentRows v-else :rows="d.notPractised" test-id="list-idle-rows" />
-          </div>
+          </DsStack>
         </UCard>
-      </div>
+      </DsGrid>
     </template>
   </DsPage>
 </template>

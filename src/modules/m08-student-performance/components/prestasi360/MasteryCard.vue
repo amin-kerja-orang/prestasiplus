@@ -4,7 +4,7 @@
  * code), the name, a bar (≥ 80 success, 60–79.9 warning, < 60 error; INFERRED bands), "{round(x)}%" and
  * "{n} sesi · {m} soalan"; or the empty state with "Mula Berlatih" → `/practice`.
  */
-import { DsEmptyState, DsPanel } from '@/ds'
+import { DsEmptyState, DsPanel, DsStack, DsGrid, DsCluster, DsText } from '@/ds'
 
 import type { StudentPerformance } from '../../api/types'
 import { usePhIcon } from '../../lib/icons'
@@ -17,7 +17,7 @@ const icon = usePhIcon()
 
 <template>
   <DsPanel class="lg:col-span-2" data-testid="mastery-card">
-    <div class="flex flex-col gap-4">
+    <DsStack>
       <h2 class="flex items-center gap-2 text-subheading text-highlighted">
         <UIcon :name="icon('books')" class="size-5 text-primary-t" />Penguasaan Subjek
       </h2>
@@ -34,7 +34,7 @@ const icon = usePhIcon()
           </template>
         </DsEmptyState>
       </div>
-      <ul v-else class="grid grid-cols-1 gap-3 sm:grid-cols-2" data-testid="mastery-list">
+      <DsGrid v-else :cols="{ base: 1, sm: 2 }" gap="sm" as="ul" data-testid="mastery-list">
         <li
           v-for="m in mastery"
           :key="m.subjectCode"
@@ -42,9 +42,9 @@ const icon = usePhIcon()
           :data-testid="`mastery-${m.subjectCode}`"
         >
           <UAvatar :text="m.subjectCode.slice(0, 2).toUpperCase()" size="lg" aria-hidden="true" />
-          <div class="flex min-w-0 grow flex-col gap-1">
-            <p class="truncate text-label text-highlighted">{{ m.subjectName }}</p>
-            <div class="flex items-center gap-2">
+          <DsStack gap="2xs" class="grow">
+            <DsText variant="label" as="p" tone="highlighted" truncate>{{ m.subjectName }}</DsText>
+            <DsCluster gap="xs" :wrap="false">
               <UProgress
                 class="min-w-0 grow"
                 :model-value="Math.min(m.accuracy, 100)"
@@ -53,15 +53,14 @@ const icon = usePhIcon()
                 size="sm"
                 :aria-label="`Penguasaan ${m.subjectName}`"
               />
-              <span
-:class="[masteryTone(m.accuracy).text, 'tabular text-label']"
-                data-testid="pct"
-                >{{ Math.round(m.accuracy) }}%</span>
-            </div>
-            <p class="text-caption text-muted">{{ m.sessions }} sesi · {{ m.answered }} soalan</p>
-          </div>
+              <span :class="[masteryTone(m.accuracy).text, 'tabular text-label']" data-testid="pct"
+                >{{ Math.round(m.accuracy) }}%</span
+              >
+            </DsCluster>
+            <DsText variant="caption">{{ m.sessions }} sesi · {{ m.answered }} soalan</DsText>
+          </DsStack>
         </li>
-      </ul>
-    </div>
+      </DsGrid>
+    </DsStack>
   </DsPanel>
 </template>

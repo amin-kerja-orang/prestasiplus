@@ -8,7 +8,7 @@
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 
-import { DsFeedbackSheet, DsQuizHeader, DsLoadError } from '@/ds'
+import { DsFeedbackSheet, DsQuizHeader, DsLoadError, DsCluster, DsStack, DsText } from '@/ds'
 
 import AttemptShell from '../components/AttemptShell.vue'
 import NavigatorPanel, { type NavState } from '../components/NavigatorPanel.vue'
@@ -355,16 +355,16 @@ const feedback = computed(() => {
         @close="confirmExit = true"
       />
       <div class="mt-2 flex flex-wrap items-center justify-between gap-2">
-        <p class="min-w-0 truncate text-caption text-muted" data-testid="attempt-title">
+        <DsText variant="caption" truncate data-testid="attempt-title">
           {{ view?.attempt.title }}
           <UBadge color="neutral" variant="subtle" size="sm" class="ms-1">{{
             isExam ? 'Mod Peperiksaan' : 'Mod Latihan'
           }}</UBadge>
-        </p>
-        <div class="flex items-center gap-3">
-          <span class="text-caption text-muted" role="status" data-testid="save-status">{{
+        </DsText>
+        <DsCluster :wrap="false">
+          <DsText variant="caption" as="span" role="status" data-testid="save-status">{{
             saveText
-          }}</span>
+          }}</DsText>
           <UBadge
             v-if="view"
             :color="lowTime ? 'error' : 'neutral'"
@@ -376,7 +376,7 @@ const feedback = computed(() => {
             data-testid="clock"
             >{{ clockText }}</UBadge
           >
-        </div>
+        </DsCluster>
       </div>
     </template>
 
@@ -421,22 +421,22 @@ const feedback = computed(() => {
         <USkeleton class="h-16 w-full" />
       </div>
       <div v-else class="flex flex-col gap-4 pt-2">
-        <div v-if="section" class="flex flex-col gap-1" data-testid="section-header">
-          <p class="text-overline text-muted">
+        <DsStack v-if="section" gap="2xs" data-testid="section-header">
+          <DsText variant="overline" as="p">
             {{ section.label }} · [{{ section.effectiveMarks }} markah]
-          </p>
-          <p class="text-caption text-toned" data-testid="section-rule">
+          </DsText>
+          <DsText variant="caption" tone="toned" data-testid="section-rule">
             {{ sectionRuleLine(section) }}
-          </p>
-          <p
+          </DsText>
+          <DsText
             v-if="counters[section.id]"
-            class="text-caption text-muted"
+            variant="caption"
             role="status"
             data-testid="choose-counter"
           >
             {{ counters[section.id] }}
-          </p>
-        </div>
+          </DsText>
+        </DsStack>
 
         <QuestionBlock
           ref="questionRef"
@@ -488,7 +488,7 @@ const feedback = computed(() => {
     </template>
 
     <template #footer>
-      <div class="mx-auto flex w-full max-w-7xl items-center gap-2">
+      <DsCluster gap="xs" :wrap="false" class="mx-auto w-full max-w-7xl">
         <UButton
           type="button"
           color="neutral"
@@ -556,7 +556,7 @@ const feedback = computed(() => {
           @click="confirmSubmit = true"
           >Hantar</UButton
         >
-      </div>
+      </DsCluster>
     </template>
   </AttemptShell>
 

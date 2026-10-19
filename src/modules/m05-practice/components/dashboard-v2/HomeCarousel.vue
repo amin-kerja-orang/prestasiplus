@@ -5,7 +5,7 @@
  */
 import { computed, reactive } from 'vue'
 
-import { DsCarousel, DsIconChip } from '@/ds'
+import { DsCarousel, DsIconChip, DsHeading } from '@/ds'
 
 import type { DashboardBanner } from '../../api/types'
 import { bannerKind } from '../dashboard/dashboard-lib'
@@ -37,9 +37,9 @@ const items = computed(() =>
             <UBadge color="neutral" variant="subtle" data-testid="dash-slide-badge">{{
               item.type
             }}</UBadge>
-            <h3 class="text-subheading text-highlighted" data-testid="dash-slide-title">
+            <DsHeading :level="3" data-testid="dash-slide-title">
               {{ item.title }}
-            </h3>
+            </DsHeading>
             <template v-if="item.body">
               <p
                 class="text-label break-words text-muted"

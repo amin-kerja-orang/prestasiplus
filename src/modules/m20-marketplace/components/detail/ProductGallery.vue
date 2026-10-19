@@ -2,7 +2,7 @@
 /** Product gallery: main image plus a thumbnail strip (product images stay images, D-RS-5). */
 import { computed, ref, watch } from 'vue'
 
-import { DsArt3D } from '@/ds'
+import { DsArt3D, DsStack, DsGrid } from '@/ds'
 
 import type { ProductImage } from '../../api'
 
@@ -20,7 +20,7 @@ const main = computed(() => props.images[active.value] ?? null)
 
 <template>
   <UCard class="min-w-0" data-testid="product-gallery">
-    <div class="flex flex-col gap-3">
+    <DsStack gap="sm">
       <DsArt3D
         v-if="main"
         variant="plain"
@@ -37,9 +37,10 @@ const main = computed(() => props.images[active.value] ?? null)
           data-testid="gallery-placeholder"
         />
       </div>
-      <div
+      <DsGrid
         v-if="images.length > 0"
-        class="grid grid-cols-4 gap-2 sm:grid-cols-5"
+        :cols="{ base: 4, sm: 5 }"
+        gap="xs"
         data-testid="gallery-thumbs"
       >
         <UButton
@@ -57,7 +58,7 @@ const main = computed(() => props.images[active.value] ?? null)
         >
           <DsArt3D variant="plain" :src="image.url" alt="" ratio="square" />
         </UButton>
-      </div>
-    </div>
+      </DsGrid>
+    </DsStack>
   </UCard>
 </template>

@@ -6,7 +6,7 @@
  * uploads at runtime is ever shown (D22). The buttons wrap below 640px so the page never scrolls
  * sideways at 375px.
  */
-import { DsFileField } from '@/ds'
+import { DsFileField, DsCluster } from '@/ds'
 
 defineProps<{
   variant: 'question' | 'option'
@@ -25,7 +25,7 @@ function onPick(value: File | File[] | null): void {
 
 <template>
   <div class="min-w-0" :data-testid="testid">
-    <div class="flex min-w-0 flex-wrap items-start gap-2">
+    <DsCluster gap="xs" align="start">
       <DsFileField
         :model-value="file"
         variant="button"
@@ -52,6 +52,6 @@ function onPick(value: File | File[] | null): void {
       <span v-if="variant === 'question'" class="self-center text-caption text-muted">
         Muat naik imej soalan (pilihan)
       </span>
-    </div>
+    </DsCluster>
   </div>
 </template>

@@ -8,7 +8,7 @@ import type { TableColumn } from '@nuxt/ui'
 import { computed } from 'vue'
 import { useRouter } from 'vue-router'
 
-import { DsDrillTable, DsLoadError, DsPanel } from '@/ds'
+import { DsDrillTable, DsLoadError, DsPanel, DsText } from '@/ds'
 
 import { fetchCcTeacher } from '../api/command-center'
 import type { CcTeacherClass } from '../api/command-center-types'
@@ -74,14 +74,19 @@ function open(classId: number) {
       <UProgress class="w-16" aria-hidden="true" />Memuatkan...
     </p>
     <template v-else>
-      <p class="text-body text-muted" data-testid="cc-info">
+      <DsText variant="body" tone="muted" data-testid="cc-info">
         Sekolah: <strong class="text-highlighted">{{ data.school.name }}</strong>
-      </p>
+      </DsText>
 
       <DsPanel icon="i-ph-chalkboard" :title="`Senarai Kelas (${data.classes.length})`">
-        <p v-if="data.classes.length === 0" class="text-body text-muted" data-testid="cc-empty-row">
+        <DsText
+          v-if="data.classes.length === 0"
+          variant="body"
+          tone="muted"
+          data-testid="cc-empty-row"
+        >
           Tiada kelas aktif
-        </p>
+        </DsText>
         <div v-else data-testid="cc-table-scroller">
           <DsDrillTable
             :data="data.classes"
@@ -91,7 +96,7 @@ function open(classId: number) {
             @drill="(c: Row) => open(c.id)"
           >
             <template #no-cell="{ row }"
-              ><span class="tabular text-caption text-muted">{{ row.index + 1 }}</span></template
+              ><DsText variant="caption" as="span" tabular>{{ row.index + 1 }}</DsText></template
             >
             <template #name-cell="{ row }">
               <UButton

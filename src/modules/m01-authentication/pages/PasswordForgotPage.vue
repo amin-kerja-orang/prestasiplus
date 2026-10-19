@@ -9,7 +9,7 @@ import { onMounted, ref } from 'vue'
 
 import AuthAlert from '../components/auth/AuthAlert.vue'
 
-import { DsFormField } from '@/ds'
+import { DsFormField, DsStack } from '@/ds'
 
 import { sendPasswordResetLink } from '../api'
 import PasswordCard from '../components/auth/PasswordCard.vue'
@@ -45,7 +45,7 @@ async function submit(): Promise<void> {
   >
     <template #icon>🔑</template>
 
-    <form data-testid="forgot-form" class="flex flex-col gap-4" @submit.prevent="submit">
+    <DsStack data-testid="forgot-form" as="form" @submit.prevent="submit">
       <AuthAlert variant="success" :messages="status" data-testid="forgot-status" />
       <AuthAlert :messages="errors" data-testid="forgot-alert" />
 
@@ -94,6 +94,6 @@ async function submit(): Promise<void> {
         class="min-h-11 justify-center"
         >Kembali ke Log Masuk</UButton
       >
-    </form>
+    </DsStack>
   </PasswordCard>
 </template>

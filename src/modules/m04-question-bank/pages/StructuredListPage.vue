@@ -28,6 +28,9 @@ import {
   type CardField,
   type RowAction,
   type StatItem,
+  DsCluster,
+  DsStack,
+  DsText,
 } from '@/ds'
 import { formatNumber } from '@/lib/number'
 
@@ -191,9 +194,14 @@ const cardFields: CardField[] = [
 ]
 
 /** The Malay counter shows when there is no pager (an empty list included, DV-M04-12). */
-const showCounter = computed(() => !!data.value && data.value.meta.totalItems <= data.value.meta.pageSize)
+const showCounter = computed(
+  () => !!data.value && data.value.meta.totalItems <= data.value.meta.pageSize,
+)
 const activeCount = computed(
-  () => [applied.value.subject_id, applied.value.education_level_id, applied.value.kbat_level].filter((v) => v !== '').length,
+  () =>
+    [applied.value.subject_id, applied.value.education_level_id, applied.value.kbat_level].filter(
+      (v) => v !== '',
+    ).length,
 )
 
 async function resetFilter(): Promise<void> {
@@ -218,19 +226,26 @@ async function resetFilter(): Promise<void> {
     </template>
 
     <!-- Stat cards + subject distribution (whole store). -->
-    <DsStatRow :items="statItems" :cols="2" :loading="!stats" density="roomy" prefix="structured-stat" />
+    <DsStatRow
+      :items="statItems"
+      :cols="2"
+      :loading="!stats"
+      density="roomy"
+      prefix="structured-stat"
+    />
     <DsPanel title="Agihan Mengikut Subjek" data-testid="structured-by-subject">
-        <div v-if="stats" class="flex flex-wrap gap-2">
-          <UBadge
-            v-for="s in stats.bySubject"
-            :key="s.name"
-            color="neutral"
-            variant="soft"
-            data-testid="structured-subject-pill"
-            >{{ s.name }}: <strong class="tabular text-highlighted">{{ formatNumber(s.count) }}</strong></UBadge
-          >
-        </div>
-        <USkeleton v-else class="h-16 w-full" />
+      <DsCluster v-if="stats" gap="xs" align="stretch">
+        <UBadge
+          v-for="s in stats.bySubject"
+          :key="s.name"
+          color="neutral"
+          variant="soft"
+          data-testid="structured-subject-pill"
+          >{{ s.name }}:
+          <strong class="tabular text-highlighted">{{ formatNumber(s.count) }}</strong></UBadge
+        >
+      </DsCluster>
+      <USkeleton v-else class="h-16 w-full" />
     </DsPanel>
 
     <!-- Filter (the URL is the state). -->
@@ -291,7 +306,7 @@ async function resetFilter(): Promise<void> {
       @retry="reload()"
     />
 
-    <div v-else class="flex flex-col gap-3" data-testid="structured-footer-wrap">
+    <DsStack v-else gap="sm" data-testid="structured-footer-wrap">
       <DsDataTable
         variant="flush"
         :data="tableRows"
@@ -320,7 +335,12 @@ async function resetFilter(): Promise<void> {
           />
         </template>
         <template #kbat-cell="{ row }">
-          <UBadge color="info" variant="subtle" :label="row.original.kbat" data-testid="structured-kbat-pill" />
+          <UBadge
+            color="info"
+            variant="subtle"
+            :label="row.original.kbat"
+            data-testid="structured-kbat-pill"
+          />
         </template>
         <template #actions-cell="{ row }">
           <DsRowActions :actions="viewAction(row.original.id)" :inline="1" />
@@ -329,9 +349,9 @@ async function resetFilter(): Promise<void> {
           <DsRowActions :actions="viewAction(row.id as number)" :inline="1" />
         </template>
       </DsDataTable>
-      <p v-if="data && showCounter" class="text-caption text-muted" data-testid="structured-counter">
+      <DsText v-if="data && showCounter" variant="caption" data-testid="structured-counter">
         {{ counter }}
-      </p>
-    </div>
+      </DsText>
+    </DsStack>
   </DsPage>
 </template>

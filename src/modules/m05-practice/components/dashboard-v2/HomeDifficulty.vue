@@ -3,6 +3,7 @@
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 
 import { barWidths, DIFFICULTY_BAR_DELAY_MS, DIFFICULTY_ROWS } from '../dashboard/dashboard-lib'
+import { DsCluster, DsStack, DsHeading, DsText } from '@/ds'
 
 const props = defineProps<{ chart: { level: number; count: number }[] }>()
 
@@ -43,30 +44,26 @@ onBeforeUnmount(() => timers.forEach(clearTimeout))
 </script>
 
 <template>
-  <section
-    class="flex min-w-0 flex-col gap-3"
-    aria-labelledby="dash-difficulty-h"
-    data-testid="dash-difficulty"
-  >
-    <h2 id="dash-difficulty-h" class="text-heading text-highlighted">📈 Tahap Kesukaran</h2>
+  <DsStack as="section" gap="sm" aria-labelledby="dash-difficulty-h" data-testid="dash-difficulty">
+    <DsHeading id="dash-difficulty-h" :level="2">📈 Tahap Kesukaran</DsHeading>
     <UCard :ui="{ body: 'flex flex-col gap-4 p-4' }">
-      <div
+      <DsStack
         v-for="(row, i) in rows"
         :key="row.level"
-        class="flex flex-col gap-1"
+        gap="2xs"
         data-testid="dash-difficulty-row"
       >
-        <div class="flex items-center justify-between gap-2">
+        <DsCluster gap="xs" justify="between" :wrap="false">
           <span class="flex items-center gap-2 text-label text-highlighted">
             <span class="flex text-warning" aria-hidden="true">
               <span v-for="n in row.level" :key="n" data-testid="dash-difficulty-star">★</span>
             </span>
             <span>{{ row.label }}</span>
           </span>
-          <span class="tabular text-label text-muted" data-testid="dash-difficulty-count">{{
+          <DsText variant="label" tone="muted" tabular data-testid="dash-difficulty-count">{{
             row.count
-          }}</span>
-        </div>
+          }}</DsText>
+        </DsCluster>
         <UProgress
           :model-value="widths[i] ?? 0"
           :max="100"
@@ -76,13 +73,13 @@ onBeforeUnmount(() => timers.forEach(clearTimeout))
           :data-target="targets[i]"
           data-testid="dash-difficulty-bar"
         />
-      </div>
-      <div class="flex flex-col items-center">
-        <span class="tabular text-title text-highlighted" data-testid="dash-difficulty-total">{{
+      </DsStack>
+      <DsStack gap="none" align="center">
+        <DsText variant="title" as="span" tabular data-testid="dash-difficulty-total">{{
           total
-        }}</span>
-        <span class="text-label text-muted">Jumlah Keseluruhan</span>
-      </div>
+        }}</DsText>
+        <DsText variant="label" tone="muted">Jumlah Keseluruhan</DsText>
+      </DsStack>
     </UCard>
-  </section>
+  </DsStack>
 </template>

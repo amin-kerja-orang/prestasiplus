@@ -8,7 +8,7 @@
 import type { TableColumn } from '@nuxt/ui'
 import { computed, ref } from 'vue'
 
-import { DsDataTable } from '@/ds'
+import { DsDataTable, DsStack, DsCluster, DsText } from '@/ds'
 
 import type { SchoolEngagementRow, TahapKey, TeacherEngagementRow } from '../../api/types'
 import { count, pct, TAHAP, type UiColor } from './monitoring-format'
@@ -57,19 +57,19 @@ const LEGEND: readonly [UiColor, string][] = [
 </script>
 
 <template>
-  <section :id="sectionId" class="flex flex-col gap-6" :data-testid="`mon-table-${kind}`">
-    <div class="flex flex-wrap items-end justify-between gap-3">
-      <div class="flex min-w-0 flex-col gap-1">
+  <DsStack :id="sectionId" as="section" gap="lg" :data-testid="`mon-table-${kind}`">
+    <DsCluster align="end" justify="between">
+      <DsStack gap="2xs">
         <h2 class="flex items-center gap-2 text-heading text-highlighted">
           <UIcon
             :name="isStudent ? 'i-ph-chart-bar' : 'i-ph-chalkboard-teacher'"
             class="size-6 text-primary-t"
           />{{ title }}
         </h2>
-        <p class="text-body text-muted">
+        <DsText variant="body" tone="muted">
           Mengikut sekolah — disusun mengikut % penglibatan tertinggi
-        </p>
-      </div>
+        </DsText>
+      </DsStack>
       <UBadge
         color="neutral"
         variant="subtle"
@@ -78,7 +78,7 @@ const LEGEND: readonly [UiColor, string][] = [
         data-testid="mon-table-count"
         :label="`${count(rows.length)} sekolah`"
       />
-    </div>
+    </DsCluster>
 
     <DsDataTable
       v-model:page-size="pageSize"
@@ -90,11 +90,12 @@ const LEGEND: readonly [UiColor, string][] = [
       empty-title="Tiada data"
     >
       <template #no-cell="{ row }">
-        <span class="tabular text-body text-muted">{{ row.original.rank }}</span>
+        <DsText variant="body" as="span" tone="muted" tabular>{{ row.original.rank }}</DsText>
       </template>
       <template #name-cell="{ row }">
-        <div
-          class="flex min-w-48 flex-col gap-1"
+        <DsStack
+          gap="2xs"
+          class="min-w-48"
           data-testid="mon-table-row"
           :data-school-id="row.original.schoolId"
         >
@@ -104,10 +105,10 @@ const LEGEND: readonly [UiColor, string][] = [
             data-testid="mon-school-link"
             >{{ row.original.name }}</RouterLink
           >
-          <span class="text-body text-muted"
-            >{{ row.original.code ?? '-' }} · {{ row.original.state }}</span
+          <DsText variant="body" as="span" tone="muted"
+            >{{ row.original.code ?? '-' }} · {{ row.original.state }}</DsText
           >
-        </div>
+        </DsStack>
       </template>
       <template #registered-cell="{ row }">
         <span class="tabular">{{ count(row.original.registered) }}</span>
@@ -130,8 +131,12 @@ const LEGEND: readonly [UiColor, string][] = [
         />
       </template>
       <template #bar-cell="{ row }">
-        <span v-if="tahapStyle(row.original.tahap).bar === 'empty'" class="text-body text-muted"
-          >0%</span
+        <DsText
+          v-if="tahapStyle(row.original.tahap).bar === 'empty'"
+          variant="body"
+          as="span"
+          tone="muted"
+          >0%</DsText
         >
         <UProgress
           v-else
@@ -142,19 +147,19 @@ const LEGEND: readonly [UiColor, string][] = [
         />
       </template>
       <template #card="{ row }">
-        <div class="flex flex-col gap-3">
-          <div class="flex items-start justify-between gap-3">
-            <div class="flex min-w-0 flex-col gap-1">
+        <DsStack gap="sm">
+          <DsCluster align="start" justify="between" :wrap="false">
+            <DsStack gap="2xs">
               <RouterLink
                 :to="paths.school((row as Row).schoolId)"
                 class="line-clamp-2 text-label text-primary-t"
                 data-testid="mon-school-link"
                 >{{ (row as Row).name }}</RouterLink
               >
-              <span class="text-body text-muted"
-                >{{ (row as Row).code ?? '-' }} · {{ (row as Row).state }}</span
+              <DsText variant="body" as="span" tone="muted"
+                >{{ (row as Row).code ?? '-' }} · {{ (row as Row).state }}</DsText
               >
-            </div>
+            </DsStack>
             <UBadge
               :color="tahapStyle((row as Row).tahap).color"
               variant="subtle"
@@ -162,7 +167,7 @@ const LEGEND: readonly [UiColor, string][] = [
               class="whitespace-nowrap"
               :label="(row as Row).tahap"
             />
-          </div>
+          </DsCluster>
           <dl class="grid grid-cols-3 gap-3 text-body">
             <div>
               <dt class="text-muted">Daftar</dt>
@@ -185,7 +190,7 @@ const LEGEND: readonly [UiColor, string][] = [
             :color="tahapStyle((row as Row).tahap).color"
             size="md"
           />
-        </div>
+        </DsStack>
       </template>
     </DsDataTable>
 
@@ -212,5 +217,5 @@ const LEGEND: readonly [UiColor, string][] = [
           />
         </p></details
     ></UCard>
-  </section>
+  </DsStack>
 </template>

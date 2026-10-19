@@ -6,7 +6,7 @@
  */
 import { computed } from 'vue'
 
-import { DsDialog } from '@/ds'
+import { DsDialog, DsStack, DsCluster, DsHeading, DsText } from '@/ds'
 
 import type { StudentAnswerRow } from '../../api/types'
 import { rawTime, type UiColor } from './monitoring-format'
@@ -31,7 +31,7 @@ function optionColor(row: StudentAnswerRow, label: string): UiColor {
 
 <template>
   <DsDialog v-model:open="open" title="Soalan">
-    <div v-if="row" class="flex flex-col gap-4" data-testid="mon-modal">
+    <DsStack v-if="row" data-testid="mon-modal">
       <div class="flex flex-wrap items-center gap-2 text-caption text-muted">
         <UBadge
           :color="row.isCorrect ? 'success' : 'error'"
@@ -45,11 +45,11 @@ function optionColor(row: StudentAnswerRow, label: string): UiColor {
         >
       </div>
       <div class="flex flex-wrap items-center gap-x-4 gap-y-1 text-caption text-muted">
-        <span v-if="row.source" class="flex items-center gap-1"
-          ><UIcon name="i-ph-bookmark-simple" class="size-4" />{{ row.source }}</span
+        <DsCluster v-if="row.source" as="span" gap="2xs" :wrap="false"
+          ><UIcon name="i-ph-bookmark-simple" class="size-4" />{{ row.source }}</DsCluster
         >
-        <span class="flex items-center gap-1"
-          ><UIcon name="i-ph-cell-signal-full" class="size-4" />Aras {{ row.difficulty }}</span
+        <DsCluster as="span" gap="2xs" :wrap="false"
+          ><UIcon name="i-ph-cell-signal-full" class="size-4" />Aras {{ row.difficulty }}</DsCluster
         >
         <span class="tabular flex items-center gap-1" data-testid="mon-modal-time"
           ><UIcon name="i-ph-clock" class="size-4" />{{ rawTime(row.answeredAt) }}</span
@@ -63,16 +63,17 @@ function optionColor(row: StudentAnswerRow, label: string): UiColor {
       />
       <!-- eslint-enable vue/no-v-html -->
 
-      <div class="flex flex-col gap-2">
-        <h3 class="text-overline text-muted">Pilihan Jawapan</h3>
-        <p
+      <DsStack gap="xs">
+        <DsHeading :level="3" variant="overline" tone="muted">Pilihan Jawapan</DsHeading>
+        <DsText
           v-if="row.options.length === 0"
-          class="text-body text-muted"
+          variant="body"
+          tone="muted"
           data-testid="mon-modal-no-options"
         >
           Pilihan jawapan telah dipadam dari sistem.
-        </p>
-        <div v-else class="flex flex-col gap-2">
+        </DsText>
+        <DsStack v-else gap="xs">
           <div
             v-for="o in row.options"
             :key="o.label"
@@ -84,8 +85,8 @@ function optionColor(row: StudentAnswerRow, label: string): UiColor {
               :variant="optionColor(row, o.label) === 'neutral' ? 'subtle' : 'solid'"
               :label="o.label"
             />
-            <div class="flex min-w-0 flex-col gap-1">
-              <p class="text-body break-words text-default">{{ o.text }}</p>
+            <DsStack gap="2xs">
+              <DsText variant="body" wrap="anywhere">{{ o.text }}</DsText>
               <p
                 v-if="o.label === row.correctLabel"
                 class="flex items-center gap-1 text-caption text-success"
@@ -98,18 +99,18 @@ function optionColor(row: StudentAnswerRow, label: string): UiColor {
               >
                 <UIcon name="i-ph-x-circle" class="size-3" />Jawapan Pelajar
               </p>
-            </div>
+            </DsStack>
           </div>
-        </div>
-      </div>
+        </DsStack>
+      </DsStack>
 
-      <div v-if="row.explanation" class="flex flex-col gap-1" data-testid="mon-modal-explanation">
+      <DsStack v-if="row.explanation" gap="2xs" data-testid="mon-modal-explanation">
         <h3 class="flex items-center gap-1 text-label text-highlighted">
           <UIcon name="i-ph-lightbulb" class="size-4 text-info" />Penjelasan
         </h3>
-        <p class="text-body break-words text-default">{{ row.explanation }}</p>
-      </div>
-    </div>
+        <DsText variant="body" wrap="anywhere">{{ row.explanation }}</DsText>
+      </DsStack>
+    </DsStack>
     <template #footer>
       <UButton
         type="button"

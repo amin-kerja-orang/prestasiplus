@@ -9,7 +9,18 @@
 import type { TableColumn } from '@nuxt/ui'
 import { computed, ref } from 'vue'
 
-import { DsChart, DsDrillTable, DsLoadError, DsPanel, DsStatRow, type StatItem } from '@/ds'
+import {
+  DsChart,
+  DsDrillTable,
+  DsLoadError,
+  DsPanel,
+  DsStatRow,
+  type StatItem,
+  DsGrid,
+  DsStack,
+  DsCluster,
+  DsText,
+} from '@/ds'
 
 import { fetchCcStudent } from '../api/command-center'
 import type { CcHeadcountRow, CcMoodDot, CcWeek } from '../api/command-center-types'
@@ -93,25 +104,34 @@ const cards = computed<StatItem[]>(() => {
       key: 'answers',
       label: 'Jumlah Jawapan',
       value: count(c.answers),
-      icon: 'i-ph-clipboard-text', accent: 'action',
+      icon: 'i-ph-clipboard-text',
+      accent: 'action',
       clickTitle: 'Klik untuk lihat semua sesi',
       onClick: () => {
         sessionsSource.value = { kind: 'all' }
       },
     },
-    { key: 'accuracy', label: 'Ketepatan', value: pct1(c.accuracy), icon: 'i-ph-target', accent: 'win' },
+    {
+      key: 'accuracy',
+      label: 'Ketepatan',
+      value: pct1(c.accuracy),
+      icon: 'i-ph-target',
+      accent: 'win',
+    },
     {
       key: 'activeDays',
       label: 'Hari Aktif',
       value: String(c.activeDays),
-      icon: 'i-ph-calendar-check', accent: 'friend',
+      icon: 'i-ph-calendar-check',
+      accent: 'friend',
     },
     { key: 'streak', label: 'Streak', value: String(c.streak), icon: 'i-ph-fire', accent: 'heat' },
     {
       key: 'consistency',
       label: 'Konsistensi',
       value: `${String(c.consistency)}%`,
-      icon: 'i-ph-chart-line-up', accent: 'trial',
+      icon: 'i-ph-chart-line-up',
+      accent: 'trial',
     },
   ]
 })
@@ -146,11 +166,17 @@ const HEADCOUNT_COLUMNS: TableColumn<Row>[] = [
       <UProgress class="w-16" aria-hidden="true" />Memuatkan...
     </p>
     <template v-else>
-      <DsStatRow :items="cards" prefix="cc-stat" :cols="5" density="roomy" data-testid="cc-student-cards" />
+      <DsStatRow
+        :items="cards"
+        prefix="cc-stat"
+        :cols="5"
+        density="roomy"
+        data-testid="cc-student-cards"
+      />
 
-      <div class="grid gap-4 md:grid-cols-2">
+      <DsGrid :cols="{ md: 2 }">
         <DsPanel icon="i-ph-chart-bar" title="Pecahan Subjek">
-          <ul class="flex flex-col gap-1" data-testid="cc-subjects">
+          <DsStack as="ul" gap="2xs" data-testid="cc-subjects">
             <li v-for="s in data.subjects" :key="s.code" class="min-w-0">
               <UButton
                 color="neutral"
@@ -162,9 +188,12 @@ const HEADCOUNT_COLUMNS: TableColumn<Row>[] = [
                 :data-code="s.code"
                 @click="sessionsSource = { kind: 'subject', code: s.code, name: s.label }"
               >
-                <span
-                  class="w-28 min-w-0 shrink-0 text-label break-words text-highlighted sm:w-36"
-                  >{{ s.label }}</span
+                <DsText
+                  variant="label"
+                  tone="highlighted"
+                  wrap="anywhere"
+                  class="w-28 min-w-0 shrink-0 sm:w-36"
+                  >{{ s.label }}</DsText
                 >
                 <UProgress
                   class="min-w-6 flex-1"
@@ -172,15 +201,20 @@ const HEADCOUNT_COLUMNS: TableColumn<Row>[] = [
                   :max="100"
                   aria-hidden="true"
                 />
-                <span class="tabular shrink-0 text-caption text-muted">{{ pct1(s.pct) }}</span>
-                <span
-                  class="tabular shrink-0 text-caption text-muted"
+                <DsText variant="caption" as="span" tabular class="shrink-0">{{
+                  pct1(s.pct)
+                }}</DsText>
+                <DsText
+                  variant="caption"
+                  as="span"
+                  tabular
+                  class="shrink-0"
                   data-testid="cc-subject-ratio"
-                  >{{ s.correct }}/{{ s.total }}</span
+                  >{{ s.correct }}/{{ s.total }}</DsText
                 >
               </UButton>
             </li>
-          </ul>
+          </DsStack>
         </DsPanel>
 
         <DsPanel icon="i-ph-chart-line-up" title="Aktiviti Mingguan (8 Minggu)">
@@ -203,24 +237,25 @@ const HEADCOUNT_COLUMNS: TableColumn<Row>[] = [
                 :data-count="w.count"
                 @click="openWeek(w)"
               >
-                <span class="tabular text-label text-highlighted">{{ w.count }}</span>
-                <span class="tabular text-caption text-muted" data-testid="cc-week-label">{{
+                <DsText variant="label" tone="highlighted" tabular>{{ w.count }}</DsText>
+                <DsText variant="caption" as="span" tabular data-testid="cc-week-label">{{
                   w.label
-                }}</span>
+                }}</DsText>
               </UButton>
             </li>
           </ul>
         </DsPanel>
 
         <DsPanel icon="i-ph-smiley" title="Trend Mood (30 Hari)">
-          <p
+          <DsText
             v-if="data.moodTrend.length === 0"
-            class="text-body text-muted"
+            variant="body"
+            tone="muted"
             data-testid="cc-mood-empty"
           >
             Tiada data mood
-          </p>
-          <ul v-else class="flex flex-wrap gap-1" data-testid="cc-mood-dots">
+          </DsText>
+          <DsCluster v-else as="ul" gap="2xs" align="stretch" data-testid="cc-mood-dots">
             <li v-for="d in data.moodTrend" :key="d.date">
               <UButton
                 color="neutral"
@@ -233,7 +268,7 @@ const HEADCOUNT_COLUMNS: TableColumn<Row>[] = [
                 @click="openMood(d)"
               />
             </li>
-          </ul>
+          </DsCluster>
         </DsPanel>
 
         <DsPanel icon="i-ph-clipboard-text" title="HeadCount">
@@ -274,15 +309,15 @@ const HEADCOUNT_COLUMNS: TableColumn<Row>[] = [
             </DsDrillTable>
           </div>
         </DsPanel>
-      </div>
+      </DsGrid>
 
       <DsPanel icon="i-ph-sparkle" title="ALESA AI Insight">
         <div class="flex flex-col gap-2 bg-soft p-4" data-testid="cc-insight">
-          <div class="text-overline text-primary-t">Analisis ALESA</div>
-          <p class="text-body text-highlighted" data-testid="cc-insight-text">
+          <DsText variant="overline" as="div" tone="primary">Analisis ALESA</DsText>
+          <DsText variant="body" tone="highlighted" data-testid="cc-insight-text">
             {{ data.insight.texts.join(' ') }}
-          </p>
-          <p class="text-end text-caption text-muted">Sumber: {{ data.insight.source }}</p>
+          </DsText>
+          <DsText variant="caption" align="end">Sumber: {{ data.insight.source }}</DsText>
         </div>
       </DsPanel>
 

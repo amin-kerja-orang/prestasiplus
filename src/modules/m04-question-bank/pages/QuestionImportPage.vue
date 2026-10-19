@@ -13,7 +13,20 @@
 import { computed, nextTick, ref } from 'vue'
 
 import { useApi, useFlash } from '@/composables'
-import { DsBackLink, DsFileField, DsFormBar, DsFormField, DsFormSection, DsNativeSelect, DsPage, DsPanel } from '@/ds'
+import {
+  DsBackLink,
+  DsFileField,
+  DsFormBar,
+  DsFormField,
+  DsFormSection,
+  DsNativeSelect,
+  DsPage,
+  DsPanel,
+  DsStack,
+  DsGrid,
+  DsHeading,
+  DsText,
+} from '@/ds'
 import { saveBlob } from '@/lib/save-blob'
 
 import { downloadImportTemplate, importQuestions } from '../api/imports'
@@ -84,7 +97,6 @@ async function downloadTemplate(): Promise<void> {
     downloading.value = false
   }
 }
-
 </script>
 
 <template>
@@ -148,20 +160,15 @@ async function downloadTemplate(): Promise<void> {
             />
           </DsFormField>
 
-          <div class="flex min-w-0 flex-col gap-4">
+          <DsStack>
             <div>
-              <h4 class="text-label text-highlighted">Tetapan Lalai (Opsional)</h4>
-              <p class="text-body text-muted">
+              <DsHeading :level="4">Tetapan Lalai (Opsional)</DsHeading>
+              <DsText variant="body" tone="muted">
                 Nilai ini digunakan jika kolum berkaitan tiada dalam CSV.
-              </p>
+              </DsText>
             </div>
-            <div class="grid grid-cols-1 gap-4 sm:grid-cols-3">
-              <DsFormField
-                v-slot="{ id }"
-                native
-                for="import-default-subject"
-                label="Subjek Lalai"
-              >
+            <DsGrid :cols="{ base: 1, sm: 3 }">
+              <DsFormField v-slot="{ id }" native for="import-default-subject" label="Subjek Lalai">
                 <DsNativeSelect
                   :id="id"
                   v-model="subjectId"
@@ -192,12 +199,7 @@ async function downloadTemplate(): Promise<void> {
                   </option>
                 </DsNativeSelect>
               </DsFormField>
-              <DsFormField
-                v-slot="{ id }"
-                native
-                for="import-default-difficulty"
-                label="Kesukaran"
-              >
+              <DsFormField v-slot="{ id }" native for="import-default-difficulty" label="Kesukaran">
                 <DsNativeSelect
                   :id="id"
                   v-model="difficulty"
@@ -210,8 +212,8 @@ async function downloadTemplate(): Promise<void> {
                   </option>
                 </DsNativeSelect>
               </DsFormField>
-            </div>
-          </div>
+            </DsGrid>
+          </DsStack>
         </DsFormSection>
 
         <DsFormBar :show-cancel="false" :sticky="false">
@@ -238,10 +240,10 @@ async function downloadTemplate(): Promise<void> {
 
       <div class="flex min-w-0 flex-col gap-4 md:gap-6">
         <DsPanel data-testid="import-template-card">
-          <div class="flex flex-col items-center gap-2 text-center">
+          <DsStack gap="xs" align="center" class="text-center">
             <UIcon name="i-ph-download-simple" class="size-8 text-primary-t" />
-            <h3 class="text-subheading text-highlighted">Muat Turun Template</h3>
-            <p class="text-body text-muted">Template CSV dengan contoh soalan</p>
+            <DsHeading :level="3">Muat Turun Template</DsHeading>
+            <DsText variant="body" tone="muted">Template CSV dengan contoh soalan</DsText>
             <UButton
               type="button"
               color="neutral"
@@ -254,7 +256,7 @@ async function downloadTemplate(): Promise<void> {
             >
               Download Template
             </UButton>
-          </div>
+          </DsStack>
         </DsPanel>
 
         <DsPanel title="Format CSV" icon="i-ph-info" data-testid="import-format-card">

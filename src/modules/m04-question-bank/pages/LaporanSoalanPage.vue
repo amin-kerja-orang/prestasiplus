@@ -12,7 +12,20 @@
 import { computed } from 'vue'
 
 import { useApi } from '@/composables'
-import { DsEmptyState, DsLoadError, DsPage, DsPanel, DsStatRow, DsStatusBadge, type StatItem } from '@/ds'
+import {
+  DsEmptyState,
+  DsLoadError,
+  DsPage,
+  DsPanel,
+  DsStatRow,
+  DsStatusBadge,
+  type StatItem,
+  DsGrid,
+  DsStack,
+  DsCluster,
+  DsHeading,
+  DsText,
+} from '@/ds'
 import { diffForHumans } from '@/lib/time'
 
 import { fetchMyReports } from '../api/reports'
@@ -42,7 +55,6 @@ const counters = computed<StatItem[]>(() =>
     accent: c.accent,
   })),
 )
-
 </script>
 
 <template>
@@ -72,31 +84,26 @@ const counters = computed<StatItem[]>(() =>
       />
     </DsPanel>
 
-    <ul v-else class="grid grid-cols-1 gap-3 xl:grid-cols-2" data-testid="my-reports-list">
-      <li
-        v-for="r in rows"
-        :key="r.id"
-        class="min-w-0"
-        :data-testid="`my-report-${String(r.id)}`"
-      >
+    <DsGrid v-else :cols="{ base: 1, xl: 2 }" gap="sm" as="ul" data-testid="my-reports-list">
+      <li v-for="r in rows" :key="r.id" class="min-w-0" :data-testid="`my-report-${String(r.id)}`">
         <DsPanel>
-          <div class="flex flex-col gap-3">
-            <div class="flex flex-wrap items-center gap-2">
-              <h3 class="text-label text-highlighted" data-testid="my-report-title">
+          <DsStack gap="sm">
+            <DsCluster gap="xs">
+              <DsHeading :level="3" variant="label" data-testid="my-report-title">
                 {{ r.questionType === 'structured' ? 'Soalan Struktur' : 'Soalan' }} #{{
                   r.questionId
                 }}
-              </h3>
+              </DsHeading>
               <DsStatusBadge
                 :status="DISPLAY_STATUS_DS[r.displayStatus]"
                 :label="DISPLAY_STATUS_LABEL[r.displayStatus]"
                 data-testid="my-report-status"
               />
-              <span class="text-caption text-muted" data-testid="my-report-time">{{
+              <DsText variant="caption" as="span" data-testid="my-report-time">{{
                 diffForHumans(r.createdAt)
-              }}</span>
-            </div>
-            <div class="flex flex-wrap gap-2">
+              }}</DsText>
+            </DsCluster>
+            <DsCluster gap="xs" align="stretch">
               <UBadge
                 v-for="(label, i) in r.reasonLabels"
                 :key="`${String(i)}-${label}`"
@@ -105,7 +112,7 @@ const counters = computed<StatItem[]>(() =>
                 :label="label"
                 data-testid="my-report-reason"
               />
-            </div>
+            </DsCluster>
             <UAlert
               v-if="r.adminNotes"
               color="neutral"
@@ -115,9 +122,9 @@ const counters = computed<StatItem[]>(() =>
               :description="r.adminNotes"
               data-testid="my-report-notes"
             />
-          </div>
+          </DsStack>
         </DsPanel>
       </li>
-    </ul>
+    </DsGrid>
   </DsPage>
 </template>

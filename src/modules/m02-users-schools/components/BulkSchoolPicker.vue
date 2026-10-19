@@ -11,7 +11,7 @@ import { computed, ref } from 'vue'
 
 import { useSearchPicker } from '@/composables'
 
-import { DsFormField, DsPanel } from '@/ds'
+import { DsFormField, DsPanel, DsText } from '@/ds'
 
 import { searchSchools, type SchoolSummary } from '../api/schools'
 import { SEARCH_MIN_CHARS } from '../lib/user-form-options'
@@ -87,7 +87,12 @@ function clear(): void {
           @update:model-value="onInput"
           @focus="picker.onFocus()"
         />
-        <DsPanel v-if="showDropdown" behavior="float" padding="none" data-testid="bulk-school-dropdown">
+        <DsPanel
+          v-if="showDropdown"
+          behavior="float"
+          padding="none"
+          data-testid="bulk-school-dropdown"
+        >
           <p v-if="searching" class="p-3" data-testid="bulk-school-loading">
             <USkeleton class="h-4 w-full" />
           </p>
@@ -104,8 +109,8 @@ function clear(): void {
               @click="picker.select(item)"
             >
               <span class="flex min-w-0 flex-col">
-                <span class="text-label text-highlighted">{{ label(item) }}</span>
-                <span class="text-caption text-muted">{{ item.state }}</span>
+                <DsText variant="label" tone="highlighted">{{ label(item) }}</DsText>
+                <DsText variant="caption" as="span">{{ item.state }}</DsText>
               </span>
             </UButton>
             <p

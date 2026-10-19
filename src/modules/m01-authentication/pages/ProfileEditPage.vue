@@ -19,6 +19,7 @@ import ProfileGradePicker from '../components/profile/ProfileGradePicker.vue'
 import ProfilePasswordCard from '../components/profile/ProfilePasswordCard.vue'
 import ProfileSchoolPicker from '../components/profile/ProfileSchoolPicker.vue'
 import { errorLines } from '../lib/error-lines'
+import { DsCluster, DsStack, DsText } from '@/ds'
 
 const session = useSessionStore()
 const flash = useFlash()
@@ -114,7 +115,7 @@ async function submit(): Promise<void> {
       @input="touched = true"
     >
       <UCard>
-        <div class="flex flex-col gap-4">
+        <DsStack>
           <h2 class="flex items-center gap-2 text-subheading text-highlighted">
             <UIcon name="i-ph-user-circle" class="size-5" aria-hidden="true" />
             Maklumat Peribadi
@@ -180,21 +181,23 @@ async function submit(): Promise<void> {
             :secondary="secondary"
             @update:model-value="touched = true"
           />
-        </div>
+        </DsStack>
       </UCard>
 
       <UCard>
-        <div class="flex flex-col gap-4">
+        <DsStack>
           <h2 class="flex items-center gap-2 text-subheading text-highlighted">
             <UIcon name="i-ph-buildings" class="size-5" aria-hidden="true" />
             Maklumat Sekolah
           </h2>
-          <p class="text-body text-muted">Pilih sekolah anda untuk sambung dengan rakan sekelas</p>
+          <DsText variant="body" tone="muted"
+            >Pilih sekolah anda untuk sambung dengan rakan sekelas</DsText
+          >
           <ProfileSchoolPicker v-model="school" @update:model-value="touched = true" />
-        </div>
+        </DsStack>
       </UCard>
 
-      <div class="flex items-center justify-between gap-3" data-testid="profile-actions">
+      <DsCluster justify="between" :wrap="false" data-testid="profile-actions">
         <UButton
           to="/profile"
           color="neutral"
@@ -214,7 +217,7 @@ async function submit(): Promise<void> {
           data-testid="profile-save"
           >Simpan Profil</UButton
         >
-      </div>
+      </DsCluster>
     </form>
 
     <ProfilePasswordCard @saved="showSuccess" @failed="showErrors" />

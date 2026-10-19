@@ -8,7 +8,21 @@ import { computed, watch } from 'vue'
 import { useRoute } from 'vue-router'
 
 import { usePageMeta } from '@/composables/usePageMeta'
-import { DsIconChip, DsLoadError, DsPanel, DsScoreRing, DsStatRow, type DsAccent, type StatItem } from '@/ds'
+import {
+  DsIconChip,
+  DsLoadError,
+  DsPanel,
+  DsScoreRing,
+  DsStatRow,
+  type DsAccent,
+  type StatItem,
+  DsSurface,
+  DsCluster,
+  DsStack,
+  DsGrid,
+  DsHeading,
+  DsText,
+} from '@/ds'
 import { formatDateLong } from '@/lib/time'
 
 import { fetchPublicProfile } from '../api/performance'
@@ -49,9 +63,27 @@ const stats = computed<StatItem[]>(() => {
   if (!d) return []
   return [
     { key: 'syiling', icon: 'coins', accent: 'win', value: count(d.syiling), label: 'Syiling' },
-    { key: 'kombo', icon: 'fire', accent: 'heat', value: count(d.streak.current), label: 'Kombo Hari' },
-    { key: 'sesi', icon: 'books', accent: 'action', value: count(d.activity.sessions), label: 'Sesi Latihan' },
-    { key: 'tepat', icon: 'target', accent: 'friend', value: percent(d.accuracy), label: 'Ketepatan' },
+    {
+      key: 'kombo',
+      icon: 'fire',
+      accent: 'heat',
+      value: count(d.streak.current),
+      label: 'Kombo Hari',
+    },
+    {
+      key: 'sesi',
+      icon: 'books',
+      accent: 'action',
+      value: count(d.activity.sessions),
+      label: 'Sesi Latihan',
+    },
+    {
+      key: 'tepat',
+      icon: 'target',
+      accent: 'friend',
+      value: percent(d.accuracy),
+      label: 'Ketepatan',
+    },
   ]
 })
 
@@ -59,10 +91,30 @@ const summary = computed<{ id: string; accent: DsAccent; icon: string; text: str
   const a = data.value?.activity
   if (!a) return []
   return [
-    { id: 'sesi', accent: 'action', icon: 'i-ph-book-open', text: `${count(a.sessions)} sesi latihan` },
-    { id: 'hari', accent: 'heat', icon: 'i-ph-calendar-check', text: `${count(a.practiceDays)} hari berlatih` },
-    { id: 'betul', accent: 'win', icon: 'i-ph-check-circle', text: `${count(a.correct)} jawapan betul` },
-    { id: 'kombo', accent: 'friend', icon: 'i-ph-fire', text: `${count(a.bestStreak)} kombo terpanjang` },
+    {
+      id: 'sesi',
+      accent: 'action',
+      icon: 'i-ph-book-open',
+      text: `${count(a.sessions)} sesi latihan`,
+    },
+    {
+      id: 'hari',
+      accent: 'heat',
+      icon: 'i-ph-calendar-check',
+      text: `${count(a.practiceDays)} hari berlatih`,
+    },
+    {
+      id: 'betul',
+      accent: 'win',
+      icon: 'i-ph-check-circle',
+      text: `${count(a.correct)} jawapan betul`,
+    },
+    {
+      id: 'kombo',
+      accent: 'friend',
+      icon: 'i-ph-fire',
+      text: `${count(a.bestStreak)} kombo terpanjang`,
+    },
   ]
 })
 
@@ -70,17 +122,27 @@ const publicUrl = (): string => absoluteUrl(`/pelajar/${String(userId.value)}`)
 const share = (): void => {
   if (data.value) void shareProfile(data.value.name, publicUrl())
 }
-
 </script>
 
 <template>
-  <div class="min-h-screen overflow-x-hidden bg-default" data-testid="public-profile-page">
+  <DsSurface
+    radius="none"
+    shadow="none"
+    padding="none"
+    :clip="false"
+    class="min-h-screen overflow-x-hidden"
+    data-testid="public-profile-page"
+  >
     <header class="sticky top-0 bg-default">
       <div class="mx-auto flex max-w-7xl items-center justify-between gap-2 px-4 py-3 sm:px-6">
-        <ULink to="/" class="flex min-h-11 min-w-0 items-center gap-2 text-heading text-highlighted" data-testid="logo">
+        <ULink
+          to="/"
+          class="flex min-h-11 min-w-0 items-center gap-2 text-heading text-highlighted"
+          data-testid="logo"
+        >
           <UIcon name="i-ph-graduation-cap" class="size-6 shrink-0 text-primary-t" /> PRESTASIPLUS
         </ULink>
-        <div class="flex shrink-0 items-center gap-2">
+        <DsCluster gap="xs" :wrap="false" class="shrink-0">
           <UButton
             type="button"
             color="neutral"
@@ -94,7 +156,7 @@ const share = (): void => {
           <UButton to="/" size="lg" icon="i-ph-house" aria-label="Utama" data-testid="home">
             <span class="hidden sm:inline">Utama</span>
           </UButton>
-        </div>
+        </DsCluster>
       </div>
     </header>
 
@@ -145,9 +207,9 @@ const share = (): void => {
 
             <div class="min-w-0 flex-1">
               <div class="flex flex-wrap items-center justify-center gap-2 md:justify-start">
-                <h1 class="text-title break-words text-highlighted" data-testid="name">
+                <DsHeading :level="1" wrap="anywhere" data-testid="name">
                   {{ data.name }}
-                </h1>
+                </DsHeading>
                 <UBadge color="neutral" variant="subtle" data-testid="tier-pill"
                   >{{ data.tier.emoji }} {{ tierName(data.tier.key) }}</UBadge
                 >
@@ -183,39 +245,39 @@ const share = (): void => {
               </div>
             </div>
 
-            <div class="flex shrink-0 flex-col items-center gap-2">
-              <div class="flex w-36 flex-col items-center" data-testid="coin-card">
-                <p class="text-caption text-muted">🪙 Syiling</p>
-                <p class="tabular text-title text-highlighted" data-testid="coin-value">
+            <DsStack gap="xs" align="center" class="shrink-0">
+              <DsStack gap="none" align="center" class="w-36" data-testid="coin-card">
+                <DsText variant="caption">🪙 Syiling</DsText>
+                <DsText variant="title" tabular data-testid="coin-value">
                   {{ count(data.syiling) }}
-                </p>
-              </div>
-              <div class="flex gap-2">
+                </DsText>
+              </DsStack>
+              <DsCluster gap="xs" align="stretch" :wrap="false">
                 <div class="w-20 bg-elevated px-2 py-2 text-center" data-testid="mini-kombo">
-                  <p class="tabular text-heading text-highlighted">
+                  <DsText variant="heading" tabular>
                     {{ count(data.streak.current) }}
-                  </p>
-                  <p class="text-caption text-muted">🔥 Kombo</p>
+                  </DsText>
+                  <DsText variant="caption">🔥 Kombo</DsText>
                 </div>
                 <div class="w-20 bg-elevated px-2 py-2 text-center" data-testid="mini-tepat">
-                  <p class="tabular text-heading text-highlighted">{{ percent(data.accuracy) }}</p>
-                  <p class="text-caption text-muted">🎯 Tepat</p>
+                  <DsText variant="heading" tabular>{{ percent(data.accuracy) }}</DsText>
+                  <DsText variant="caption">🎯 Tepat</DsText>
                 </div>
-              </div>
-            </div>
+              </DsCluster>
+            </DsStack>
           </div>
         </DsPanel>
 
-        <div class="grid grid-cols-1 gap-6 lg:grid-cols-3">
-          <div class="flex min-w-0 flex-col gap-6">
+        <DsGrid :cols="{ base: 1, lg: 3 }" gap="lg">
+          <DsStack gap="lg">
             <DsPanel data-testid="tier-card">
-              <div class="flex items-center justify-between gap-2">
+              <DsCluster gap="xs" justify="between" :wrap="false">
                 <p class="flex items-center gap-2 text-heading text-highlighted">
                   <span>{{ data.tier.emoji }}</span>
                   {{ tierName(data.tier.key) }}
                 </p>
-                <span class="text-label text-muted">Tahap {{ data.tier.ordinal }}</span>
-              </div>
+                <DsText variant="label" tone="muted">Tahap {{ data.tier.ordinal }}</DsText>
+              </DsCluster>
               <UProgress
                 :model-value="data.tier.progressPct"
                 :max="100"
@@ -242,23 +304,23 @@ const share = (): void => {
                 </li>
               </ul>
             </DsPanel>
-          </div>
+          </DsStack>
 
           <div class="flex min-w-0 flex-col gap-6 lg:col-span-2">
             <DsStatRow :items="stats" prefix="stat" :cols="4" data-testid="stat-cards" />
 
-            <section v-if="posts.length" class="flex flex-col gap-3" data-testid="profile-posts">
-              <h2 class="text-heading text-highlighted">Timeline</h2>
+            <DsStack v-if="posts.length" as="section" gap="sm" data-testid="profile-posts">
+              <DsHeading :level="2">Timeline</DsHeading>
               <PostCard v-for="p in posts" :key="p.id" :post="p" />
-            </section>
+            </DsStack>
 
             <DsPanel data-testid="sponsor-cta">
-              <div class="flex flex-col items-center gap-3 text-center">
+              <DsStack gap="sm" align="center" class="text-center">
                 <DsIconChip icon="hand-heart" accent="friend" size="lg" />
-                <h3 class="text-heading text-highlighted">Ingin menyokong pelajar ini?</h3>
-                <p class="text-body text-muted">
+                <DsHeading :level="3" variant="heading">Ingin menyokong pelajar ini?</DsHeading>
+                <DsText variant="body" tone="muted">
                   Jadilah penaja "Anak Angkat" dan bantu pelajar cemerlang!
-                </p>
+                </DsText>
                 <UButton
                   to="/sponsor/register"
                   size="lg"
@@ -266,32 +328,44 @@ const share = (): void => {
                   label="Jadi Penaja"
                   data-testid="sponsor-link"
                 />
-              </div>
+              </DsStack>
             </DsPanel>
           </div>
-        </div>
+        </DsGrid>
 
-        <footer class="flex flex-col items-center gap-6 text-center" data-testid="profile-footer">
+        <DsStack
+          as="footer"
+          gap="lg"
+          align="center"
+          class="text-center"
+          data-testid="profile-footer"
+        >
           <DsPanel class="w-full max-w-sm">
-            <div class="flex items-center gap-3 text-start">
+            <DsCluster :wrap="false" class="text-start">
               <DsIconChip icon="star" accent="win" size="lg" />
               <div class="min-w-0">
-                <p class="text-label break-words text-highlighted" data-testid="footer-line">
+                <DsText
+                  variant="label"
+                  as="p"
+                  tone="highlighted"
+                  wrap="anywhere"
+                  data-testid="footer-line"
+                >
                   Teruskan usaha {{ data.firstName }}!
-                </p>
-                <p class="text-caption text-muted">Setiap latihan membawa kejayaan ⭐</p>
+                </DsText>
+                <DsText variant="caption">Setiap latihan membawa kejayaan ⭐</DsText>
               </div>
-            </div>
+            </DsCluster>
           </DsPanel>
-          <p class="text-body text-muted">
+          <DsText variant="body" tone="muted">
             <UIcon name="i-ph-graduation-cap" class="me-1 size-4" />
             <ULink to="/" class="inline-flex min-h-11 items-center" data-testid="footer-logo"
               >PRESTASIPLUS</ULink
             >
             — Platform Latih Tubi Interaktif Malaysia
-          </p>
-        </footer>
+          </DsText>
+        </DsStack>
       </main>
     </template>
-  </div>
+  </DsSurface>
 </template>

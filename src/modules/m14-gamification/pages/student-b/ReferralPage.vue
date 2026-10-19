@@ -8,7 +8,16 @@
 import { ref } from 'vue'
 
 import { useApi } from '@/composables'
-import { DsCharacterCard, DsPage, DsStatTile, DsLoadError } from '@/ds'
+import {
+  DsCharacterCard,
+  DsPage,
+  DsStatTile,
+  DsLoadError,
+  DsStack,
+  DsGrid,
+  DsHeading,
+  DsText,
+} from '@/ds'
 import { formatNumber } from '@/lib/number'
 
 import { fetchReferral } from '../../api'
@@ -39,36 +48,32 @@ async function copyLink(): Promise<void> {
   <DsPage data-testid="referral-page">
     <template v-if="data">
       <UCard data-testid="referral-hero">
-        <div class="flex flex-col gap-1">
-          <h1 class="text-title text-highlighted">
+        <DsStack gap="2xs">
+          <DsHeading :level="1">
             {{ REFERRAL_COPY.title }}
-          </h1>
-          <p class="text-body text-muted">{{ REFERRAL_COPY.subtitle }}</p>
-        </div>
+          </DsHeading>
+          <DsText variant="body" tone="muted">{{ REFERRAL_COPY.subtitle }}</DsText>
+        </DsStack>
       </UCard>
 
       <div class="grid grid-cols-2 gap-3 sm:gap-4" data-testid="referral-tiles">
         <UCard>
-          <div class="flex flex-col items-center gap-1 text-center">
+          <DsStack gap="2xs" align="center" class="text-center">
             <span class="text-title" aria-hidden="true">🎁</span>
-            <span
-              class="tabular text-display text-highlighted"
-              data-testid="reward-you"
-              >{{ data.rewardReferrer }}</span
-            >
-            <span class="text-label text-muted">{{ REFERRAL_COPY.forYou }}</span>
-          </div>
+            <DsText variant="display" as="span" tabular data-testid="reward-you">{{
+              data.rewardReferrer
+            }}</DsText>
+            <DsText variant="label" tone="muted">{{ REFERRAL_COPY.forYou }}</DsText>
+          </DsStack>
         </UCard>
         <UCard>
-          <div class="flex flex-col items-center gap-1 text-center">
+          <DsStack gap="2xs" align="center" class="text-center">
             <span class="text-title" aria-hidden="true">👋</span>
-            <span
-              class="tabular text-display text-highlighted"
-              data-testid="reward-friend"
-              >{{ data.rewardReferee }}</span
-            >
-            <span class="text-label text-muted">{{ REFERRAL_COPY.forFriend }}</span>
-          </div>
+            <DsText variant="display" as="span" tabular data-testid="reward-friend">{{
+              data.rewardReferee
+            }}</DsText>
+            <DsText variant="label" tone="muted">{{ REFERRAL_COPY.forFriend }}</DsText>
+          </DsStack>
         </UCard>
       </div>
 
@@ -78,14 +83,11 @@ async function copyLink(): Promise<void> {
         :title="REFERRAL_COPY.codeLabel"
         data-testid="referral-code-box"
       >
-        <div class="flex flex-col gap-3">
-          <div
-            class="tabular text-display break-words text-highlighted"
-            data-testid="referral-code"
-          >
+        <DsStack gap="sm">
+          <DsText variant="display" as="div" wrap="anywhere" tabular data-testid="referral-code">
             {{ data.code }}
-          </div>
-          <div class="grid grid-cols-1 gap-2 sm:grid-cols-2">
+          </DsText>
+          <DsGrid :cols="{ base: 1, sm: 2 }" gap="xs">
             <UButton
               type="button"
               size="xl"
@@ -134,15 +136,15 @@ async function copyLink(): Promise<void> {
               <BrandTelegramIcon class="size-4" />
               {{ REFERRAL_COPY.telegram }}
             </UButton>
-          </div>
-        </div>
+          </DsGrid>
+        </DsStack>
       </DsCharacterCard>
 
-      <section class="flex flex-col gap-3" data-testid="referral-stats">
-        <h2 class="text-subheading text-highlighted">
+      <DsStack as="section" gap="sm" data-testid="referral-stats">
+        <DsHeading :level="2" variant="subheading">
           {{ REFERRAL_COPY.statsTitle }}
-        </h2>
-        <div class="grid grid-cols-3 gap-3">
+        </DsHeading>
+        <DsGrid :cols="3" gap="sm">
           <div data-testid="stat-referrals">
             <DsStatTile
               icon="users"
@@ -165,8 +167,8 @@ async function copyLink(): Promise<void> {
               :unit="REFERRAL_COPY.earned"
             />
           </div>
-        </div>
-      </section>
+        </DsGrid>
+      </DsStack>
     </template>
     <DsLoadError
       v-else-if="error !== null"
@@ -176,9 +178,9 @@ async function copyLink(): Promise<void> {
       retry-testid="referral-retry"
       @retry="reload()"
     />
-    <div v-else class="flex flex-col gap-3" aria-busy="true" data-testid="referral-loading">
+    <DsStack v-else gap="sm" aria-busy="true" data-testid="referral-loading">
       <USkeleton class="h-28 w-full" />
       <USkeleton class="h-64 w-full" />
-    </div>
+    </DsStack>
   </DsPage>
 </template>

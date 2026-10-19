@@ -9,7 +9,7 @@ import { useRouter } from 'vue-router'
 
 import { ApiError } from '@/api'
 import { useApi, useFlash } from '@/composables'
-import { DsBackLink, DsFormField, DsNativeSelect, DsPage, DsPanel } from '@/ds'
+import { DsBackLink, DsFormField, DsNativeSelect, DsPage, DsPanel, DsStack, DsText } from '@/ds'
 import type { SchoolSummary } from '@/modules/m02-users-schools'
 
 import { createGuruClass } from '../api/guru'
@@ -72,7 +72,7 @@ async function submit(): Promise<void> {
   <DsPage class="max-w-4xl" data-testid="kelas-create-page">
     <DsBackLink to="/guru/kelas" :label="KELAS_COPY.back" data-testid="kelas-back" />
 
-    <form class="flex flex-col gap-4" data-testid="kelas-form" @submit.prevent="submit">
+    <DsStack as="form" data-testid="kelas-form" @submit.prevent="submit">
       <UAlert
         v-if="failure.length"
         color="error"
@@ -89,7 +89,7 @@ async function submit(): Promise<void> {
           <UIcon name="i-ph-laptop-duotone" class="size-5 text-primary-t" />{{ KELAS_COPY.info }}
         </h2>
 
-        <div class="flex flex-col gap-4">
+        <DsStack>
           <DsFormField
             :label="`${KELAS_COPY.name} *`"
             name="kelas-name"
@@ -137,9 +137,9 @@ async function submit(): Promise<void> {
             data-testid="kelas-levels"
             @update:model-value="level = $event as EducationLevelSlug"
           />
-          <p v-if="fields.educationLevel" class="text-caption text-error">
+          <DsText v-if="fields.educationLevel" variant="caption" tone="error">
             {{ fields.educationLevel }}
-          </p>
+          </DsText>
 
           <DsFormField :label="KELAS_COPY.description" name="kelas-description">
             <UTextarea
@@ -152,7 +152,7 @@ async function submit(): Promise<void> {
               data-testid="kelas-description"
             />
           </DsFormField>
-        </div>
+        </DsStack>
       </DsPanel>
 
       <UButton
@@ -166,6 +166,6 @@ async function submit(): Promise<void> {
       >
         {{ submitting ? KELAS_COPY.submitting : KELAS_COPY.submit }}
       </UButton>
-    </form>
+    </DsStack>
   </DsPage>
 </template>

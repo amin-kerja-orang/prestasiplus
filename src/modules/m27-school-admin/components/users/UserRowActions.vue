@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { DsCluster } from '@/ds'
+
 /**
  * "Tindakan" cell of an S6 / S7 row (FR-M27-92, 101). "Edit" (`title="Edit"`) shows for an active
  * account only. The default slot is where the "Menyamar" button (FR-M27-121) mounts.
@@ -8,7 +10,7 @@ defineSlots<{ default?: () => unknown }>()
 </script>
 
 <template>
-  <div class="flex flex-wrap items-center gap-2" data-testid="user-actions">
+  <DsCluster gap="xs" data-testid="user-actions">
     <UButton
       v-if="canEdit"
       :to="editTo"
@@ -22,5 +24,5 @@ defineSlots<{ default?: () => unknown }>()
       >Edit</UButton
     >
     <slot />
-  </div>
+  </DsCluster>
 </template>

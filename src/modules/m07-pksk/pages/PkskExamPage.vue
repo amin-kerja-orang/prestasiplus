@@ -9,7 +9,7 @@ import { computed, reactive, ref } from 'vue'
 import { useRouter } from 'vue-router'
 
 import { isApiError } from '@/api'
-import { DsLoadError, DsPage, DsQuizHeader } from '@/ds'
+import { DsLoadError, DsPage, DsQuizHeader, DsStack, DsHeading } from '@/ds'
 
 import { fetchPkskExam, submitPkskExam } from '../api/pksk'
 import type { PkskAnswer, PkskLevel } from '../api/types'
@@ -66,14 +66,14 @@ async function submit(): Promise<void> {
   >
     <DsLoadError v-if="loadFailed" :message="LOAD_ERROR" testid="page-error" @retry="reload()" />
 
-    <form v-else-if="data" class="flex flex-col gap-6" novalidate @submit.prevent="submit">
+    <DsStack v-else-if="data" as="form" gap="lg" novalidate @submit.prevent="submit">
       <DsQuizHeader
         close-label="Kembali ke Dashboard"
         :progress="progress"
         progress-label="Kemajuan peperiksaan"
         @close="router.push(`/pksk/level/${level}`)"
       />
-      <h2 class="text-heading text-highlighted" data-testid="exam-title">Peperiksaan Penuh</h2>
+      <DsHeading :level="2" data-testid="exam-title">Peperiksaan Penuh</DsHeading>
       <UAlert
         v-if="submitError"
         color="error"
@@ -81,13 +81,14 @@ async function submit(): Promise<void> {
         icon="i-ph-warning-circle-duotone"
         :title="submitError"
       />
-      <section
+      <DsStack
         v-for="s in data.sections"
         :key="s.bahagian"
-        class="flex flex-col gap-3"
+        as="section"
+        gap="sm"
         :data-testid="`exam-section-${s.bahagian}`"
       >
-        <h3 class="text-subheading text-highlighted">{{ SECTION_TITLE[s.bahagian] }}</h3>
+        <DsHeading :level="3">{{ SECTION_TITLE[s.bahagian] }}</DsHeading>
         <QuestionItem
           v-for="(q, i) in s.questions"
           :key="q.id"
@@ -96,7 +97,7 @@ async function submit(): Promise<void> {
           :model-value="answerOf(q.id)"
           @update:model-value="answers[q.id] = $event"
         />
-      </section>
+      </DsStack>
       <UButton
         type="submit"
         size="xl"
@@ -108,6 +109,6 @@ async function submit(): Promise<void> {
         data-testid="exam-submit"
         >Hantar</UButton
       >
-    </form>
+    </DsStack>
   </DsPage>
 </template>

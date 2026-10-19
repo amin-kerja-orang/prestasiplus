@@ -22,6 +22,9 @@ import {
   DsStatRow,
   DsStatusBadge,
   type StatItem,
+  DsCluster,
+  DsStack,
+  DsText,
 } from '@/ds'
 import { formatNumber } from '@/lib/number'
 
@@ -149,10 +152,10 @@ const COLUMNS: TableColumn<CompRow>[] = [
 <template>
   <DsPage title="Pelajar Komplimen" data-testid="comp-list-page">
     <template #subtitle>
-      <p v-if="counts" class="text-body text-muted" data-testid="comp-summary">
+      <DsText v-if="counts" variant="body" tone="muted" data-testid="comp-summary">
         Syiling OFF: <strong class="text-highlighted">{{ counts.coinsOff }}</strong> /
         {{ counts.total }} pelajar komplimen
-      </p>
+      </DsText>
     </template>
     <template #actions>
       <UButton
@@ -173,7 +176,7 @@ const COLUMNS: TableColumn<CompRow>[] = [
 
     <!-- Sticky bulk bar (FR-M02-67): only while at least one row is ticked. -->
     <DsPanel v-if="selected.length > 0" behavior="bulk" data-testid="comp-bulk-bar">
-      <div class="flex flex-wrap items-center gap-3">
+      <DsCluster>
         <span class="mr-2 text-body text-highlighted">
           <span data-testid="comp-selected-count">{{ selected.length }}</span> dipilih
         </span>
@@ -198,7 +201,7 @@ const COLUMNS: TableColumn<CompRow>[] = [
           data-testid="comp-bulk-clear"
           @click="selected = []"
         />
-      </div>
+      </DsCluster>
     </DsPanel>
 
     <DsLoadError
@@ -263,14 +266,17 @@ const COLUMNS: TableColumn<CompRow>[] = [
         }}</span>
       </template>
       <template #class-cell="{ row }">
-        <div class="flex min-w-0 flex-col">
+        <DsStack gap="none">
           <span class="text-nowrap text-highlighted">{{ row.original.classLabel }}</span>
-          <span
-            class="block max-w-36 truncate text-label text-muted"
+          <DsText
+            variant="label"
+            tone="muted"
+            truncate
+            class="block max-w-36"
             :title="row.original.teacherName"
-            >{{ row.original.teacherName }}</span
+            >{{ row.original.teacherName }}</DsText
           >
-        </div>
+        </DsStack>
       </template>
       <template #account-cell="{ row }">
         <DsStatusBadge
@@ -299,31 +305,33 @@ const COLUMNS: TableColumn<CompRow>[] = [
         </p>
       </template>
       <template #card="{ row }">
-        <div class="flex min-w-0 items-start gap-3">
+        <DsCluster align="start" :wrap="false">
           <UCheckbox
             :model-value="selected.includes(row.id as number)"
             :aria-label="`Pilih ${row.name as string}`"
             data-testid="comp-select"
             @update:model-value="(v: boolean | 'indeterminate') => toggleOne(row.id as number, v)"
           />
-          <div class="flex min-w-0 flex-col gap-1">
+          <DsStack gap="2xs">
             <RouterLink
               :to="compDetailPath(row.id as number)"
               class="text-primary-t"
               data-testid="comp-name"
               >{{ row.name }}</RouterLink
             >
-            <span class="text-label text-muted">{{ row.classLabel }} · {{ row.teacherName }}</span>
-            <div class="flex flex-wrap items-center gap-2">
+            <DsText variant="label" tone="muted"
+              >{{ row.classLabel }} · {{ row.teacherName }}</DsText
+            >
+            <DsCluster gap="xs">
               <DsStatusBadge :status="row.isActive ? 'active' : 'inactive'" />
               <UBadge
                 :color="coinsColor(row.coinsEnabled as boolean)"
                 variant="subtle"
                 :label="row.coinsEnabled ? 'ON' : 'OFF'"
               />
-            </div>
-          </div>
-        </div>
+            </DsCluster>
+          </DsStack>
+        </DsCluster>
       </template>
     </DsDataTable>
   </DsPage>

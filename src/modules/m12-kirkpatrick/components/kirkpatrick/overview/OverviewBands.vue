@@ -4,7 +4,7 @@
  * the alias), `grid-cols-5` at every width, each an icon chip, count (no separator), label and "%" of
  * T4/T5.
  */
-import { DsIconChip, DsPanel } from '@/ds'
+import { DsIconChip, DsPanel, DsText } from '@/ds'
 
 import type { BandCount, BandKey } from '../../../api/types'
 import { BAND, BAND_ORDER, KirkpatrickLink, pct, plain } from '../common'
@@ -39,7 +39,9 @@ const ordered = () =>
           data-testid="kirk-band-count"
           >{{ plain(b.count) }}</span
         >
-        <span class="text-body break-words text-muted">{{ BAND[b.key].label }}</span>
+        <DsText variant="body" as="span" tone="muted" wrap="anywhere">{{
+          BAND[b.key].label
+        }}</DsText>
         <span :class="['tabular text-body', BAND[b.key].text]" data-testid="kirk-band-pct">{{
           pct(b.pct)
         }}</span>

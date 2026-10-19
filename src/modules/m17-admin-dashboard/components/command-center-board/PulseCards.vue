@@ -5,7 +5,7 @@
  */
 import { computed } from 'vue'
 
-import { DsIconChip } from '@/ds'
+import { DsIconChip, DsGrid, DsStack, DsCluster, DsText } from '@/ds'
 import { formatCount } from '@/lib/number'
 
 import {
@@ -114,31 +114,25 @@ const cards = computed<Card[]>(() => {
 </script>
 
 <template>
-  <div
-    class="grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-6"
-    data-testid="cc-pulse"
-    aria-live="off"
-  >
+  <DsGrid :cols="{ base: 2, md: 3, xl: 6 }" gap="sm" data-testid="cc-pulse" aria-live="off">
     <UCard v-for="(c, ci) in cards" :key="c.id" class="min-w-0" :data-testid="`cc-pulse-${c.id}`">
-      <div class="flex min-w-0 flex-col items-start gap-1">
-        <span class="flex w-full min-w-0 items-center gap-2">
+      <DsStack gap="2xs" align="start">
+        <DsCluster as="span" gap="xs" :wrap="false" class="w-full">
           <DsIconChip :icon="c.icon" :accent="accentAt(ci)" size="sm" />
-          <span class="min-w-0 text-overline text-muted" data-testid="cc-pulse-label">{{
+          <DsText variant="overline" class="min-w-0" data-testid="cc-pulse-label">{{
             c.label
-          }}</span>
-        </span>
-        <span
-          class="tabular text-title break-words text-highlighted"
-          data-testid="cc-pulse-value"
-          >{{ c.value }}</span
-        >
-        <span class="text-caption text-muted" data-testid="cc-pulse-sub">
+          }}</DsText>
+        </DsCluster>
+        <DsText variant="title" as="span" wrap="anywhere" tabular data-testid="cc-pulse-value">{{
+          c.value
+        }}</DsText>
+        <DsText variant="caption" as="span" data-testid="cc-pulse-sub">
           <template v-for="(s, i) in c.sub" :key="i"
             ><b v-if="s.bold" class="text-highlighted">{{ s.text }}</b
             ><template v-else>{{ s.text }}</template></template
           >
-        </span>
-      </div>
+        </DsText>
+      </DsStack>
     </UCard>
-  </div>
+  </DsGrid>
 </template>

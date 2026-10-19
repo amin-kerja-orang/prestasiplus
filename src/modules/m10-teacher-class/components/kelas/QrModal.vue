@@ -6,7 +6,7 @@
  */
 import { computed, ref, watch } from 'vue'
 
-import { DsDialog, DsFormField } from '@/ds'
+import { DsDialog, DsFormField, DsStack, DsCluster, DsText } from '@/ds'
 
 import { fetchClassQrData } from '../../api/guru'
 import type { ClassQrData } from '../../api/types'
@@ -60,10 +60,10 @@ const print = (): void => window.print()
 
 <template>
   <DsDialog v-model:open="open" :title="data?.name ?? '-'" data-testid="quick-qr-modal">
-    <div class="flex flex-col gap-4">
-      <p class="text-center text-body break-words text-muted" data-testid="qr-school">
+    <DsStack>
+      <DsText variant="body" tone="muted" align="center" wrap="anywhere" data-testid="qr-school">
         {{ data ? (data.school ?? '') : '-' }}
-      </p>
+      </DsText>
       <UAlert
         v-if="failed"
         color="error"
@@ -72,12 +72,12 @@ const print = (): void => window.print()
         :title="KELAS_COPY.qrFailed"
         role="alert"
       />
-      <div class="flex justify-center">
+      <DsCluster gap="none" align="stretch" justify="center" :wrap="false">
         <QrCanvas v-if="data" :text="data.joinUrl" />
         <USkeleton v-else class="size-48" data-testid="qr-spinner" />
-      </div>
+      </DsCluster>
       <DsFormField :label="KELAS_COPY.joinLink" name="qr-join-url">
-        <div class="flex gap-2">
+        <DsCluster gap="xs" align="stretch" :wrap="false">
           <UInput
             id="qr-join-url"
             type="text"
@@ -96,9 +96,9 @@ const print = (): void => window.print()
             data-testid="qr-copy"
             @click="copy"
           />
-        </div>
+        </DsCluster>
       </DsFormField>
-    </div>
+    </DsStack>
     <template #footer>
       <UButton
         type="button"

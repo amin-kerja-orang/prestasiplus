@@ -14,7 +14,7 @@ import { useRoute, useRouter } from 'vue-router'
 import { isApiError } from '@/api'
 import { setRouteOutcome } from '@/app/router'
 import { useApi } from '@/composables'
-import { DsPage, DsLoadError } from '@/ds'
+import { DsPage, DsLoadError, DsStack, DsCluster, DsHeading, DsText } from '@/ds'
 import { clock } from '@/lib/time'
 
 import { fetchMock, submitMock } from '../api'
@@ -86,9 +86,9 @@ async function submit(): Promise<void> {
 
 <template>
   <DsPage :show-title="false" data-testid="run-page" data-provisional="true">
-    <div v-if="loading && !data" class="flex flex-col gap-2" data-testid="run-skeleton">
+    <DsStack v-if="loading && !data" gap="xs" data-testid="run-skeleton">
       <USkeleton v-for="n in 3" :key="n" class="h-20" />
-    </div>
+    </DsStack>
     <DsLoadError
       v-else-if="error && !notFound"
       :message="LOAD_ERROR"
@@ -97,17 +97,17 @@ async function submit(): Promise<void> {
       @retry="reload()"
     />
 
-    <form
+    <DsStack
       v-else-if="data && data.status === 'in_progress'"
-      class="flex min-w-0 flex-col gap-4"
+      as="form"
       data-testid="run-form"
       @submit.prevent="submit"
     >
       <UCard>
-        <div class="flex flex-wrap items-center justify-between gap-3">
-          <h1 class="text-heading break-words text-highlighted" data-testid="run-title">
+        <DsCluster justify="between">
+          <DsHeading :level="1" variant="heading" wrap="anywhere" data-testid="run-title">
             {{ data.subject }} · Paper {{ data.paperNumber }}
-          </h1>
+          </DsHeading>
           <UBadge
             color="neutral"
             variant="soft"
@@ -117,7 +117,7 @@ async function submit(): Promise<void> {
             data-testid="mock-timer"
             >{{ elapsed }}</UBadge
           >
-        </div>
+        </DsCluster>
       </UCard>
 
       <UAlert
@@ -129,18 +129,27 @@ async function submit(): Promise<void> {
         data-testid="run-submit-error"
       />
 
-      <ol class="flex flex-col gap-3" data-testid="run-items">
+      <DsStack as="ol" gap="sm" data-testid="run-items">
         <li v-for="it in data.items" :key="it.no" :data-testid="`run-item-${String(it.no)}`">
           <UCard>
-            <div class="flex flex-col gap-2">
-              <p class="text-label break-words text-highlighted">
+            <DsStack gap="xs">
+              <DsText variant="label" as="p" tone="highlighted" wrap="anywhere">
                 Soalan {{ it.no }}
-                <span class="text-caption text-muted">({{ it.maxMarks }} markah)</span>
-              </p>
-              <p class="text-body break-words whitespace-pre-line text-default">{{ it.text }}</p>
-              <fieldset v-if="it.options" class="flex flex-col gap-2">
-                <UCard v-for="(opt, i) in it.options" :key="i" variant="subtle" :ui="{ body: 'p-3' }">
-                  <label class="flex min-h-11 cursor-pointer items-start gap-3 text-body text-default">
+                <DsText variant="caption" as="span">({{ it.maxMarks }} markah)</DsText>
+              </DsText>
+              <DsText variant="body" wrap="anywhere" class="whitespace-pre-line">{{
+                it.text
+              }}</DsText>
+              <DsStack v-if="it.options" as="fieldset" gap="xs">
+                <UCard
+                  v-for="(opt, i) in it.options"
+                  :key="i"
+                  variant="subtle"
+                  :ui="{ body: 'p-3' }"
+                >
+                  <label
+                    class="flex min-h-11 cursor-pointer items-start gap-3 text-body text-default"
+                  >
                     <!-- Native radio: the browser keeps arrow-key grouping and the `name`. -->
                     <!-- eslint-disable-next-line vue/no-restricted-html-elements -->
                     <input
@@ -156,7 +165,7 @@ async function submit(): Promise<void> {
                     >
                   </label>
                 </UCard>
-              </fieldset>
+              </DsStack>
               <UTextarea
                 v-else
                 v-model="answers[it.no]"
@@ -164,10 +173,10 @@ async function submit(): Promise<void> {
                 class="w-full"
                 data-testid="run-answer"
               />
-            </div>
+            </DsStack>
           </UCard>
         </li>
-      </ol>
+      </DsStack>
 
       <UButton
         type="submit"
@@ -178,6 +187,6 @@ async function submit(): Promise<void> {
         data-testid="run-submit"
         >Hantar</UButton
       >
-    </form>
+    </DsStack>
   </DsPage>
 </template>

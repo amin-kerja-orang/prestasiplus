@@ -3,7 +3,16 @@
 import { computed } from 'vue'
 import { RouterLink } from 'vue-router'
 
-import { DsIconChip, DsLoadError, DsPage, DsPageHeader, DsPanel } from '@/ds'
+import {
+  DsIconChip,
+  DsLoadError,
+  DsPage,
+  DsPageHeader,
+  DsPanel,
+  DsCluster,
+  DsStack,
+  DsText,
+} from '@/ds'
 
 import { fetchLevels } from '../api/performance'
 import { usePhIcon } from '../lib/icons'
@@ -30,23 +39,26 @@ const icon = usePhIcon()
           :data-testid="`level-link-${l.code}`"
         >
           <DsPanel>
-            <div class="flex items-center gap-4">
+            <DsCluster gap="md" :wrap="false">
               <DsIconChip :icon="icon('graduation-cap')" size="lg" />
-              <div class="flex min-w-0 grow flex-col gap-1">
-                <span class="text-subheading text-highlighted"
-                  >Tingkatan {{ levelNumber(l.code) }}</span
+              <DsStack gap="2xs" class="grow">
+                <DsText variant="subheading" as="span">Tingkatan {{ levelNumber(l.code) }}</DsText>
+                <DsText variant="caption" as="span"
+                  >{{ plain(l.classes) }} kelas | {{ plain(l.students) }} murid</DsText
                 >
-                <span class="text-caption text-muted"
-                  >{{ plain(l.classes) }} kelas | {{ plain(l.students) }} murid</span
-                >
-              </div>
+              </DsStack>
               <UIcon :name="icon('caret-right')" class="size-5 shrink-0 text-dimmed" />
-            </div>
+            </DsCluster>
           </DsPanel>
         </RouterLink>
       </li>
     </ul>
-    <div v-else-if="!error" class="flex flex-col gap-4 md:gap-6" aria-busy="true" data-testid="page-loading">
+    <div
+      v-else-if="!error"
+      class="flex flex-col gap-4 md:gap-6"
+      aria-busy="true"
+      data-testid="page-loading"
+    >
       <USkeleton class="h-24 w-full" />
       <USkeleton class="h-64 w-full" />
     </div>

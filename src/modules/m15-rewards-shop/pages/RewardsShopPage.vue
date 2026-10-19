@@ -8,7 +8,17 @@
 import { computed } from 'vue'
 
 import { useApi } from '@/composables'
-import { DsArt3D, DsEmptyState, DsPage, DsRewardChip, DsLoadError } from '@/ds'
+import {
+  DsArt3D,
+  DsEmptyState,
+  DsPage,
+  DsRewardChip,
+  DsLoadError,
+  DsCluster,
+  DsStack,
+  DsHeading,
+  DsText,
+} from '@/ds'
 import { fetchGamificationWallet } from '@/modules/m14-gamification'
 
 import { SHOP_COPY } from '../components/copy'
@@ -23,30 +33,32 @@ const balance = computed(() => wallet.data.value?.tokenBalance ?? null)
   <DsPage data-testid="m15-shop-page">
     <UCard data-testid="shop-hero">
       <div class="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-        <div class="flex min-w-0 items-center gap-3">
+        <DsCluster :wrap="false">
           <DsArt3D name="party" size="xl" float />
-          <div class="flex min-w-0 flex-col gap-1">
-            <h1 class="text-title text-highlighted" data-testid="shop-title">
+          <DsStack gap="2xs">
+            <DsHeading :level="1" data-testid="shop-title">
               {{ SHOP_COPY.heading }}
-            </h1>
-            <p class="text-body text-muted">{{ SHOP_COPY.sub }}</p>
-          </div>
-        </div>
-        <div class="flex shrink-0 flex-col items-start gap-1" data-testid="shop-balance">
-          <span class="text-caption text-muted">{{ SHOP_COPY.tileLabel }}</span>
+            </DsHeading>
+            <DsText variant="body" tone="muted">{{ SHOP_COPY.sub }}</DsText>
+          </DsStack>
+        </DsCluster>
+        <DsStack gap="2xs" align="start" class="shrink-0" data-testid="shop-balance">
+          <DsText variant="caption" as="span">{{ SHOP_COPY.tileLabel }}</DsText>
           <DsRewardChip :value="balance ?? '…'" art="bolt" data-testid="shop-balance-value" />
-        </div>
+        </DsStack>
       </div>
     </UCard>
 
-    <DsLoadError v-if="wallet.error.value" :message="COMMON_COPY.loadFailed" testid="m15-load-error" retry-testid="m15-retry" @retry="wallet.reload()" />
+    <DsLoadError
+      v-if="wallet.error.value"
+      :message="COMMON_COPY.loadFailed"
+      testid="m15-load-error"
+      retry-testid="m15-retry"
+      @retry="wallet.reload()"
+    />
     <LoadSkeleton v-else-if="!wallet.data.value" testid="shop-loading" />
     <section v-else data-testid="shop-empty">
-      <DsEmptyState
-        :title="SHOP_COPY.emptyTitle"
-        :description="SHOP_COPY.emptyBody"
-        icon="gift"
-      />
+      <DsEmptyState :title="SHOP_COPY.emptyTitle" :description="SHOP_COPY.emptyBody" icon="gift" />
     </section>
   </DsPage>
 </template>

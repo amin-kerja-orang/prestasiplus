@@ -3,7 +3,7 @@
  * S11 `/gamification` "Gamifikasi Dashboard" (M14-T2a; FR-M14-14…22, BR-M14-05…09). Reads #3 once;
  * shell header and tab title come from the route meta (DV-M14-01). v2 look: DS composites only.
  */
-import { DsCharacterCard, DsPage } from '@/ds'
+import { DsCharacterCard, DsPage, DsStack, DsGrid, DsCluster, DsText } from '@/ds'
 import { useApi } from '@/composables'
 import { formatCount } from '@/lib/number'
 
@@ -27,25 +27,20 @@ const dashboard = useApi((signal) => fetchGamificationDashboard({ signal }))
       title="Ralat berlaku. Sila cuba lagi."
     />
 
-    <div
-      v-else-if="!dashboard.data.value"
-      class="flex flex-col gap-4"
-      aria-busy="true"
-      data-testid="s11-loading"
-    >
+    <DsStack v-else-if="!dashboard.data.value" aria-busy="true" data-testid="s11-loading">
       <USkeleton class="h-40 w-full" />
       <USkeleton class="h-24 w-full" />
       <USkeleton class="h-40 w-full" />
-    </div>
+    </DsStack>
 
     <template v-else>
       <S11Hero :wallet="dashboard.data.value.wallet" />
       <WalletTiles :wallet="dashboard.data.value.wallet" />
 
-      <div class="grid grid-cols-1 items-start gap-4 lg:grid-cols-3">
+      <DsGrid :cols="{ base: 1, lg: 3 }" align="start">
         <S11ChallengesCard :challenges="dashboard.data.value.challenges.slice(0, 4)" />
         <S11RecentCard :rows="dashboard.data.value.recent.slice(0, 6)" />
-      </div>
+      </DsGrid>
 
       <S11MasteryCard
         v-if="dashboard.data.value.mastery.length"
@@ -63,20 +58,20 @@ const dashboard = useApi((signal) => fetchGamificationDashboard({ signal }))
         title="Gelaran Seterusnya"
         data-testid="s11-next-title"
       >
-        <div class="flex items-center gap-3">
+        <DsCluster :wrap="false">
           <span class="text-title" aria-hidden="true">{{
             dashboard.data.value.wallet.nextTitle.emoji
           }}</span>
-          <div class="flex min-w-0 flex-col">
-            <p class="text-label text-highlighted">
+          <DsStack gap="none">
+            <DsText variant="label" as="p" tone="highlighted">
               {{ dashboard.data.value.wallet.nextTitle.name }}
-            </p>
-            <p class="text-caption text-muted" data-testid="s11-next-title-need">
+            </DsText>
+            <DsText variant="caption" data-testid="s11-next-title-need">
               Perlu {{ formatCount(dashboard.data.value.wallet.nextTitle.need) }} syiling lagi untuk
               gelaran ini
-            </p>
-          </div>
-        </div>
+            </DsText>
+          </DsStack>
+        </DsCluster>
       </DsCharacterCard>
 
       <RouterLink to="/gamification/kad-kongsi" class="block min-h-11" data-testid="s11-share-link">

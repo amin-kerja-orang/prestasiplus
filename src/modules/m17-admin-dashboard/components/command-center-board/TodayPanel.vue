@@ -9,6 +9,7 @@ import { formatCount } from '@/lib/number'
 
 import { ccChangeLine, ccTodayBarPercent, type CcLiveData } from '../../api/command-center-board'
 import BoardPanel from './BoardPanel.vue'
+import { DsStack, DsText } from '@/ds'
 
 const props = defineProps<{ data: CcLiveData | null }>()
 
@@ -20,12 +21,10 @@ const TONE = { down: 'text-error', up: 'text-success', same: 'text-muted' } as c
 
 <template>
   <BoardPanel icon="i-ph-chart-line-up" title="Aktiviti Hari Ini" testid="cc-panel-today">
-    <div class="flex flex-col gap-2">
-      <span class="tabular text-heading text-highlighted" data-testid="cc-today-bar">{{
-        today
-      }}</span>
+    <DsStack gap="xs">
+      <DsText variant="heading" as="span" tabular data-testid="cc-today-bar">{{ today }}</DsText>
       <UProgress :model-value="percent" :max="100" aria-hidden="true" />
-    </div>
+    </DsStack>
     <div class="mt-2 flex flex-wrap items-center justify-between gap-x-3 gap-y-1 text-body">
       <span class="text-muted" data-testid="cc-week"
         >Minggu ini:

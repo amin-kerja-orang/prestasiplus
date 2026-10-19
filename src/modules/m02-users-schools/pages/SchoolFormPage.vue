@@ -24,6 +24,7 @@ import {
   DsNativeSelect,
   DsPage,
   DsPanel,
+  DsStack,
 } from '@/ds'
 
 import {
@@ -162,10 +163,12 @@ async function submit(): Promise<void> {
       </div>
     </DsPanel>
 
-    <form
+    <DsStack
       v-else-if="!notFound"
       method="post"
-      class="flex w-full min-w-0 flex-col gap-6"
+      as="form"
+      gap="lg"
+      class="w-full"
       data-testid="school-form"
       @submit.prevent="submit"
     >
@@ -178,9 +181,9 @@ async function submit(): Promise<void> {
         data-testid="school-form-alert"
       >
         <template #description>
-          <div class="flex flex-col gap-1">
+          <DsStack gap="2xs">
             <p v-for="m in errors" :key="m">{{ m }}</p>
-          </div>
+          </DsStack>
         </template>
       </UAlert>
 
@@ -312,6 +315,6 @@ async function submit(): Promise<void> {
         :submit-label="editing ? 'Kemaskini' : 'Simpan'"
         :saving="saving"
       />
-    </form>
+    </DsStack>
   </DsPage>
 </template>

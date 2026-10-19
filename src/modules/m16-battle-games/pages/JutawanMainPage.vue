@@ -8,7 +8,16 @@
 import { computed, onMounted, ref } from 'vue'
 import { useRoute } from 'vue-router'
 
-import { DsArt3D, DsQuizOption, DsSticker } from '@/ds'
+import {
+  DsArt3D,
+  DsQuizOption,
+  DsSticker,
+  DsStack,
+  DsGrid,
+  DsCluster,
+  DsText,
+  DsHeading,
+} from '@/ds'
 import type { QuizOptionState } from '@/ds'
 
 import { answerJutawan, lifelineJutawan, startJutawan } from '../api'
@@ -124,29 +133,24 @@ onMounted(() => void start())
 <template>
   <div data-testid="jutawan-game">
     <GamePanel>
-      <div
-        v-if="phase === 'loading'"
-        class="flex flex-col gap-3"
-        aria-busy="true"
-        data-testid="solo-loading"
-      >
+      <DsStack v-if="phase === 'loading'" gap="sm" aria-busy="true" data-testid="solo-loading">
         <USkeleton class="h-16 w-full" />
         <USkeleton class="h-16 w-full" />
-      </div>
-      <div v-if="phase === 'error'" class="flex flex-col items-start gap-3">
+      </DsStack>
+      <DsStack v-if="phase === 'error'" gap="sm" align="start">
         <UAlert color="error" variant="subtle" :title="error" class="w-full" />
         <UButton to="/permainan/jutawan" color="neutral" variant="soft" class="min-h-11">
           ← Pilih subjek
         </UButton>
-      </div>
+      </DsStack>
 
-      <div v-else-if="phase === 'playing' && question" class="grid gap-4 md:grid-cols-4">
+      <DsGrid v-else-if="phase === 'playing' && question" :cols="{ md: 4 }">
         <div class="md:col-span-1"><JutawanLadder :level="level" /></div>
         <div class="flex min-w-0 flex-col gap-4 md:col-span-3">
-          <div class="flex items-center justify-between gap-2">
-            <p class="text-label text-toned" data-testid="jutawan-progress">
+          <DsCluster gap="xs" justify="between" :wrap="false">
+            <DsText variant="label" as="p" tone="toned" data-testid="jutawan-progress">
               Soalan {{ level + 1 }} / {{ JUTAWAN_LEVELS }}
-            </p>
+            </DsText>
             <UButton
               type="button"
               color="warning"
@@ -159,11 +163,11 @@ onMounted(() => void start())
             >
               50:50 ({{ lifelines }})
             </UButton>
-          </div>
+          </DsCluster>
           <UCard data-testid="jutawan-question">
-            <p class="text-subheading break-words text-highlighted">
+            <DsText variant="subheading" wrap="anywhere">
               {{ question.text }}
-            </p>
+            </DsText>
             <div class="mt-4 grid gap-3">
               <template v-for="option in question.options" :key="option.id">
                 <DsQuizOption
@@ -179,12 +183,16 @@ onMounted(() => void start())
             </div>
           </UCard>
         </div>
-      </div>
+      </DsGrid>
 
-      <UCard v-else-if="phase === 'done'" class="mx-auto w-full max-w-md text-center" data-testid="jutawan-result">
-        <div class="flex flex-col items-center gap-3">
+      <UCard
+        v-else-if="phase === 'done'"
+        class="mx-auto w-full max-w-md text-center"
+        data-testid="jutawan-result"
+      >
+        <DsStack gap="sm" align="center">
           <DsArt3D name="coin" size="hero" float />
-          <h1 class="text-title text-highlighted">Tahniah! Anda sampai L{{ result.level }}.</h1>
+          <DsHeading :level="1">Tahniah! Anda sampai L{{ result.level }}.</DsHeading>
           <DsSticker v-if="result.credited > 0" art="coin">+{{ result.credited }} 🪙</DsSticker>
           <div class="mt-3 grid w-full grid-cols-2 gap-3">
             <UButton
@@ -198,11 +206,17 @@ onMounted(() => void start())
             >
               🔄 Main Lagi
             </UButton>
-            <UButton to="/permainan" size="xl" color="neutral" variant="soft" class="min-h-12 justify-center">
+            <UButton
+              to="/permainan"
+              size="xl"
+              color="neutral"
+              variant="soft"
+              class="min-h-12 justify-center"
+            >
               🎮 Hub
             </UButton>
           </div>
-        </div>
+        </DsStack>
       </UCard>
     </GamePanel>
   </div>

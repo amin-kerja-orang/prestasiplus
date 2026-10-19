@@ -6,7 +6,7 @@
 import { computed } from 'vue'
 
 import { useApi } from '@/composables'
-import { DsStatRow } from '@/ds'
+import { DsStatRow, DsCluster, DsText } from '@/ds'
 
 import { fetchCommandCenterPredictive } from '../../api/command-center'
 import CcDialog from './CcDialog.vue'
@@ -77,26 +77,32 @@ const rows = computed<DrillRow[]>(() =>
     wide
     @close="$emit('close')"
   >
-    <p v-if="error" class="text-body text-error">Ralat: {{ error.message }}</p>
-    <p v-else-if="!data" class="text-body text-muted" data-testid="cc-modal-loading">
+    <DsText v-if="error" variant="body" tone="error">Ralat: {{ error.message }}</DsText>
+    <DsText v-else-if="!data" variant="body" tone="muted" data-testid="cc-modal-loading">
       Menganalisis data prestasi semua pelajar...
-    </p>
+    </DsText>
     <template v-else>
-      <DsStatRow :items="statItems(cards)" prefix="cc-modal-card" :cols="4" data-testid="cc-modal-cards" />
-      <ul class="flex flex-wrap gap-2" data-testid="cc-grade-chips">
+      <DsStatRow
+        :items="statItems(cards)"
+        prefix="cc-modal-card"
+        :cols="4"
+        data-testid="cc-modal-cards"
+      />
+      <DsCluster as="ul" gap="xs" align="stretch" data-testid="cc-grade-chips">
         <li v-for="c in chips" :key="c">
           <UBadge color="neutral" variant="soft" size="lg" data-testid="cc-grade-chip">{{
             c
           }}</UBadge>
         </li>
-      </ul>
-      <p
+      </DsCluster>
+      <DsText
         v-if="data.predictions.length === 0"
-        class="text-body text-highlighted"
+        variant="body"
+        tone="highlighted"
         data-testid="cc-predictive-empty"
       >
         Tiada data mencukupi untuk ramalan
-      </p>
+      </DsText>
       <CcTable
         v-else
         :headers="HEADERS"

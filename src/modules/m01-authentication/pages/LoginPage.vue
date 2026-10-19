@@ -12,7 +12,7 @@ import { useRoute, useRouter } from 'vue-router'
 import AuthAlert from '../components/auth/AuthAlert.vue'
 import { resolvePostLoginTarget } from '@/app/router/guards'
 import { useApi } from '@/composables'
-import { DsFormField, DsSticker } from '@/ds'
+import { DsFormField, DsSticker, DsStack, DsCluster } from '@/ds'
 import { formatNumber } from '@/lib/number'
 import { useSessionStore } from '@/stores/session'
 
@@ -77,7 +77,7 @@ async function submit(): Promise<void> {
       </AuthWelcomePanel>
     </template>
 
-    <form data-testid="login-form" class="flex flex-col gap-4" @submit.prevent="submit">
+    <DsStack data-testid="login-form" as="form" @submit.prevent="submit">
       <AuthAlert :messages="errors" data-testid="login-alert" />
 
       <DsFormField native for="email" label="Alamat Email">
@@ -107,7 +107,7 @@ async function submit(): Promise<void> {
         />
       </DsFormField>
 
-      <div class="flex flex-wrap items-center justify-between gap-x-4 gap-y-2">
+      <DsCluster gap="md" row-gap="xs" justify="between">
         <UCheckbox
           v-model="remember"
           name="remember"
@@ -127,7 +127,7 @@ async function submit(): Promise<void> {
             >Reset melalui No IC</UButton
           >
         </div>
-      </div>
+      </DsCluster>
 
       <UButton
         type="submit"
@@ -154,7 +154,7 @@ async function submit(): Promise<void> {
         class="min-h-11 justify-center"
         >Kembali ke Laman Utama</UButton
       >
-    </form>
+    </DsStack>
 
     <template #below>
       <ul

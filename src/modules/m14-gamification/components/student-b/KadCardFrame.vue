@@ -8,6 +8,7 @@ import { ref } from 'vue'
 
 import { KAD_COPY } from '../../lib/student/kadkongsi-lib'
 import BrandWhatsAppIcon from './BrandWhatsAppIcon.vue'
+import { DsCluster, DsStack } from '@/ds'
 
 type FrameColor = 'primary' | 'secondary' | 'warning' | 'success' | 'info'
 
@@ -29,7 +30,7 @@ const cardEl = ref<HTMLElement | null>(null)
 </script>
 
 <template>
-  <div class="flex min-w-0 flex-col items-center gap-4" :data-testid="`kad-${testKey}`">
+  <DsStack align="center" :data-testid="`kad-${testKey}`">
     <h3
       v-if="title"
       class="w-full font-display text-subheading font-bold text-highlighted"
@@ -40,7 +41,7 @@ const cardEl = ref<HTMLElement | null>(null)
     <div ref="cardEl" class="w-full max-w-85" :data-testid="`kad-${testKey}-card`">
       <slot />
     </div>
-    <div class="flex flex-wrap justify-center gap-3">
+    <DsCluster align="stretch" justify="center">
       <UButton
         type="button"
         :size="compact ? 'lg' : 'xl'"
@@ -61,6 +62,6 @@ const cardEl = ref<HTMLElement | null>(null)
         <BrandWhatsAppIcon class="size-4" />
         {{ shareLabel }}
       </UButton>
-    </div>
-  </div>
+    </DsCluster>
+  </DsStack>
 </template>

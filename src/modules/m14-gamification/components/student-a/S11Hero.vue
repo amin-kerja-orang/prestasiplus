@@ -2,7 +2,7 @@
 /** S11 hero (FN-M14-2.1.1–2.1.4; FR-M14-14, 15, 16): tier badge, title chip, figures, next-tier bar, buttons. */
 import { computed } from 'vue'
 
-import { DsRewardChip } from '@/ds'
+import { DsRewardChip, DsStack, DsCluster, DsGrid, DsText } from '@/ds'
 import { formatCount, formatPercent } from '@/lib/number'
 
 import type { GamificationWallet } from '../../api'
@@ -24,8 +24,8 @@ const titleChip = computed(() =>
 
 <template>
   <UCard data-testid="s11-hero">
-    <div class="flex flex-col gap-4">
-      <div class="flex flex-wrap items-center justify-between gap-4">
+    <DsStack>
+      <DsCluster gap="md" justify="between">
         <div class="flex min-w-0 items-center gap-3 sm:gap-4">
           <UAvatar
             :text="wallet.tier.icon"
@@ -33,7 +33,7 @@ const titleChip = computed(() =>
             class="bg-elevated"
             data-testid="s11-tier-icon"
           />
-          <div class="flex min-w-0 flex-col items-start gap-1">
+          <DsStack gap="2xs" align="start">
             <UBadge variant="soft" color="primary" data-testid="s11-title-chip">{{
               titleChip
             }}</UBadge>
@@ -43,30 +43,32 @@ const titleChip = computed(() =>
             >
               {{ wallet.tier.labelMs }} Tier
             </h1>
-            <p class="text-label text-muted" data-testid="s11-level">Level {{ wallet.level }}</p>
-          </div>
+            <DsText variant="label" as="p" tone="muted" data-testid="s11-level"
+              >Level {{ wallet.level }}</DsText
+            >
+          </DsStack>
         </div>
-        <div class="flex shrink-0 gap-4 text-center">
-          <div class="flex flex-col items-center gap-1">
+        <DsCluster gap="md" align="stretch" :wrap="false" class="shrink-0 text-center">
+          <DsStack gap="2xs" align="center">
             <DsRewardChip
               art="coin"
               :value="formatCount(wallet.currentSyiling)"
               data-testid="s11-hero-syiling"
             />
-            <span class="text-caption text-muted">Syiling 💰</span>
-          </div>
-          <div class="flex flex-col items-center gap-1">
+            <DsText variant="caption" as="span">Syiling 💰</DsText>
+          </DsStack>
+          <DsStack gap="2xs" align="center">
             <DsRewardChip
               art="bolt"
               :value="formatCount(wallet.tokenBalance)"
               data-testid="s11-hero-token"
             />
-            <span class="text-caption text-muted">Token 🎫</span>
-          </div>
-        </div>
-      </div>
+            <DsText variant="caption" as="span">Token 🎫</DsText>
+          </DsStack>
+        </DsCluster>
+      </DsCluster>
 
-      <div v-if="next" class="flex flex-col gap-2" data-testid="s11-next-tier">
+      <DsStack v-if="next" gap="xs" data-testid="s11-next-tier">
         <div class="flex items-center justify-between gap-3 text-label text-highlighted">
           <span
             >⬆️ Naik ke <strong>{{ next.labelMs }}</strong></span
@@ -83,12 +85,12 @@ const titleChip = computed(() =>
           :data-value="pct"
           data-testid="s11-next-bar"
         />
-        <p class="text-caption text-muted" data-testid="s11-next-need">
+        <DsText variant="caption" data-testid="s11-next-need">
           Perlu {{ formatCount(need) }} syiling lagi
-        </p>
-      </div>
+        </DsText>
+      </DsStack>
 
-      <div class="grid grid-cols-1 gap-2 sm:grid-cols-3">
+      <DsGrid :cols="{ base: 1, sm: 3 }" gap="xs">
         <UButton
           to="/gamification/convert"
           size="xl"
@@ -118,7 +120,7 @@ const titleChip = computed(() =>
           data-testid="s11-btn-rewards"
           >Kedai Hadiah</UButton
         >
-      </div>
-    </div>
+      </DsGrid>
+    </DsStack>
   </UCard>
 </template>

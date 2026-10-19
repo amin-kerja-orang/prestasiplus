@@ -5,7 +5,7 @@
  * inventory): "500", "⚙️", "Ralat Pelayan", the message, "Halaman Utama" and "Cuba Semula" (reloads).
  * No game is built (content not observable, Q-M16-8).
  */
-import { DsErrorPage } from '@/ds'
+import { DsErrorPage, DsText } from '@/ds'
 import { SERVER_ERROR_COPY as COPY } from '../components/competition/copy'
 
 function reload(): void {
@@ -44,6 +44,6 @@ function reload(): void {
         </UButton>
       </template>
     </DsErrorPage>
-    <p class="text-center text-overline text-muted">{{ COPY.emoji }} {{ COPY.caption }}</p>
+    <DsText variant="overline" as="p" align="center">{{ COPY.emoji }} {{ COPY.caption }}</DsText>
   </main>
 </template>

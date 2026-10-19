@@ -9,6 +9,7 @@ import { computed } from 'vue'
 
 import type { Chain } from '../../../api/types'
 import { count, gps, mean, pct, plain, type KirkColor } from '../common/kirkpatrick-format'
+import { DsCluster, DsStack, DsHeading, DsText } from '@/ds'
 
 const props = defineProps<{ chain: Chain }>()
 
@@ -91,13 +92,13 @@ const steps = computed<Step[]>(() => {
     <template v-for="(s, i) in steps" :key="s.key">
       <UCard class="min-w-0 flex-1" :data-testid="`chain-${s.key}`" :data-tone="s.color">
         <template #header>
-          <div class="flex items-start gap-3">
+          <DsCluster align="start" :wrap="false">
             <UBadge :color="s.color" variant="soft" :label="s.tag" />
-            <div class="flex min-w-0 flex-col gap-1">
-              <h2 class="text-label text-highlighted">{{ s.title }}</h2>
-              <p class="text-body text-muted">{{ s.sub }}</p>
-            </div>
-          </div>
+            <DsStack gap="2xs">
+              <DsHeading :level="2" variant="label">{{ s.title }}</DsHeading>
+              <DsText variant="body" tone="muted">{{ s.sub }}</DsText>
+            </DsStack>
+          </DsCluster>
         </template>
         <dl class="flex flex-col gap-2">
           <div

@@ -7,7 +7,17 @@
  * "Jenis Tulisan" Arab / Jawi makes the textarea RTL; the keyboard button opens the Arabic / Jawi keys.
  * Server messages show in a box above the form and under their field; the typed values are kept.
  */
-import { DsFormField, DsFormSection, DsNativeSelect, DsPanel, DsRtlScope } from '@/ds'
+import {
+  DsFormField,
+  DsFormSection,
+  DsNativeSelect,
+  DsPanel,
+  DsRtlScope,
+  DsStack,
+  DsGrid,
+  DsCluster,
+  DsText,
+} from '@/ds'
 import { computed, nextTick, onMounted, reactive, ref, watch } from 'vue'
 
 import {
@@ -331,10 +341,10 @@ function submit(): void {
 </script>
 
 <template>
-  <form
+  <DsStack
     method="post"
     enctype="multipart/form-data"
-    class="flex min-w-0 flex-col gap-4"
+    as="form"
     data-testid="question-form"
     @submit.prevent="submit"
   >
@@ -353,7 +363,7 @@ function submit(): void {
 
     <!-- Maklumat Soalan -->
     <DsFormSection title="Maklumat Soalan" icon="tag" accent="action" data-testid="info-card">
-      <div class="grid min-w-0 grid-cols-1 gap-4 md:grid-cols-2">
+      <DsGrid :cols="{ base: 1, md: 2 }">
         <div class="min-w-0">
           <label for="q-level" class="mb-2 block text-label text-highlighted"
             >Tahap Pendidikan *</label
@@ -474,7 +484,7 @@ function submit(): void {
             <option v-for="s in SCRIPTS" :key="s.value" :value="s.value">{{ s.label }}</option>
           </DsNativeSelect>
         </div>
-      </div>
+      </DsGrid>
     </DsFormSection>
 
     <!-- Pemetaan DSKP -->
@@ -483,7 +493,7 @@ function submit(): void {
         Dokumen Standard Kurikulum dan Pentaksiran — Bidang → Standard Kandungan → Standard
         Pembelajaran
       </p>
-      <div class="flex min-w-0 flex-col gap-4">
+      <DsStack>
         <AddRow
           id="q-bidang"
           ref="bidangRow"
@@ -528,12 +538,12 @@ function submit(): void {
           testid="q-sp"
           @add="addSp"
         />
-        <p v-if="fields.dskpSpId" class="text-caption text-error">{{ fields.dskpSpId }}</p>
+        <DsText v-if="fields.dskpSpId" variant="caption" tone="error">{{ fields.dskpSpId }}</DsText>
         <p class="flex items-center gap-2 text-caption text-muted">
           <UIcon name="i-ph-info-duotone" class="size-4 shrink-0" />
           Pemetaan DSKP memastikan soalan selaras dengan kurikulum KSSM/KSSR.
         </p>
-      </div>
+      </DsStack>
     </DsFormSection>
 
     <!-- Soalan -->
@@ -583,13 +593,15 @@ function submit(): void {
           Pratonton paparan soalan:
         </p>
         <DsRtlScope :rtl="rtl">
-          <p
-            class="min-w-0 text-body break-words whitespace-pre-wrap text-default"
+          <DsText
+            variant="body"
+            wrap="anywhere"
+            class="min-w-0 whitespace-pre-wrap"
             :dir="rtl ? 'rtl' : undefined"
             data-testid="q-preview-text"
           >
             {{ v.questionText || '(Tiada teks lagi)' }}
-          </p>
+          </DsText>
         </DsRtlScope>
       </DsPanel>
 
@@ -612,7 +624,13 @@ function submit(): void {
     </DsFormSection>
 
     <!-- Answer blocks -->
-    <DsFormSection v-if="v.questionType === 'mcq'" title="Pilihan Jawapan" icon="list-checks" accent="trial" data-testid="mcq-card">
+    <DsFormSection
+      v-if="v.questionType === 'mcq'"
+      title="Pilihan Jawapan"
+      icon="list-checks"
+      accent="trial"
+      data-testid="mcq-card"
+    >
       <p class="mb-4 text-body text-muted">Masukkan 4 pilihan dan pilih jawapan yang betul.</p>
       <URadioGroup
         id="q-correct"
@@ -623,14 +641,14 @@ function submit(): void {
         class="mb-4"
         data-testid="q-correct"
       />
-      <div class="flex min-w-0 flex-col gap-3">
+      <DsStack gap="sm">
         <DsPanel
           v-for="(letter, i) in OPTION_LETTERS"
           :key="letter"
           tone="inset"
           :data-testid="`q-option-row-${String(i)}`"
         >
-          <div class="flex min-w-0 items-center gap-3">
+          <DsCluster :wrap="false">
             <UBadge color="primary" variant="subtle" size="lg">{{ letter }}</UBadge>
             <UInput
               v-model="v.options[i]"
@@ -643,7 +661,7 @@ function submit(): void {
               class="min-w-0 flex-1"
               :data-testid="`q-option-${String(i)}`"
             />
-          </div>
+          </DsCluster>
           <div class="mt-2 sm:pl-16">
             <ImageField
               :file="optionImages[i] ?? null"
@@ -654,7 +672,7 @@ function submit(): void {
             />
           </div>
         </DsPanel>
-      </div>
+      </DsStack>
       <p v-if="fields.options" class="mt-2 text-caption text-error">{{ fields.options }}</p>
       <p v-if="fields.correctAnswer" class="mt-2 text-caption text-error">
         {{ fields.correctAnswer }}
@@ -665,7 +683,13 @@ function submit(): void {
       </p>
     </DsFormSection>
 
-    <DsFormSection v-else-if="v.questionType === 'true_false'" title="Jawapan Betul / Salah" icon="check-square" accent="trial" data-testid="tf-card">
+    <DsFormSection
+      v-else-if="v.questionType === 'true_false'"
+      title="Jawapan Betul / Salah"
+      icon="check-square"
+      accent="trial"
+      data-testid="tf-card"
+    >
       <p class="mb-4 text-body text-muted">Pilih jawapan yang betul untuk pernyataan ini.</p>
       <URadioGroup
         id="q-tf"
@@ -678,7 +702,13 @@ function submit(): void {
       <p v-if="fields.tfAnswer" class="mt-1 text-caption text-error">{{ fields.tfAnswer }}</p>
     </DsFormSection>
 
-    <DsFormSection v-else-if="v.questionType === 'short_answer' || v.questionType === 'fill_blank'" title="Jawapan Betul" icon="pencil-simple-line" accent="trial" data-testid="short-card">
+    <DsFormSection
+      v-else-if="v.questionType === 'short_answer' || v.questionType === 'fill_blank'"
+      title="Jawapan Betul"
+      icon="pencil-simple-line"
+      accent="trial"
+      data-testid="short-card"
+    >
       <p class="mb-4 text-body text-muted">
         <template v-if="v.questionType === 'short_answer'">
           Masukkan jawapan yang betul. Pelajar akan dipadankan secara automatik.
@@ -688,7 +718,7 @@ function submit(): void {
           bawah.
         </template>
       </p>
-      <div class="flex min-w-0 flex-col gap-4">
+      <DsStack>
         <DsFormField label="Jawapan Utama *" name="q-answer" :error="fields.correctAnswer">
           <UInput
             id="q-answer"
@@ -718,10 +748,16 @@ function submit(): void {
             data-testid="q-alt"
           />
         </DsFormField>
-      </div>
+      </DsStack>
     </DsFormSection>
 
-    <DsFormSection v-else title="Jawapan Contoh (Model Answer)" icon="article" accent="trial" data-testid="essay-card">
+    <DsFormSection
+      v-else
+      title="Jawapan Contoh (Model Answer)"
+      icon="article"
+      accent="trial"
+      data-testid="essay-card"
+    >
       <p class="mb-4 text-body text-muted">
         Masukkan jawapan contoh sebagai rujukan pelajar selepas menjawab.
       </p>
@@ -738,7 +774,12 @@ function submit(): void {
     </DsFormSection>
 
     <!-- Penerangan -->
-    <DsFormSection title="Penerangan (Pilihan)" icon="lightbulb" accent="friend" data-testid="explanation-card">
+    <DsFormSection
+      title="Penerangan (Pilihan)"
+      icon="lightbulb"
+      accent="friend"
+      data-testid="explanation-card"
+    >
       <UTextarea
         id="q-explanation"
         v-model="v.explanation"
@@ -752,7 +793,7 @@ function submit(): void {
       />
     </DsFormSection>
 
-    <div class="flex items-center justify-between gap-3">
+    <DsCluster justify="between" :wrap="false">
       <UButton
         to="/guru/soalan"
         color="neutral"
@@ -771,8 +812,8 @@ function submit(): void {
         data-testid="form-submit"
         >Hantar untuk Semakan</UButton
       >
-    </div>
+    </DsCluster>
 
     <GaleriRajahModal :open="galleryOpen" @close="galleryOpen = false" />
-  </form>
+  </DsStack>
 </template>

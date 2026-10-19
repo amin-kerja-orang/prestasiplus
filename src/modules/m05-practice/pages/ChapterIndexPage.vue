@@ -9,7 +9,7 @@ import { computed } from 'vue'
 import { RouterLink } from 'vue-router'
 
 import { useApi } from '@/composables'
-import { DsIconChip, DsLoadError, DsPage } from '@/ds'
+import { DsIconChip, DsLoadError, DsPage, DsCluster, DsText, DsHeading } from '@/ds'
 import { formatCount } from '@/lib/number'
 
 import { fetchChapterSubjects } from '../api/practice'
@@ -28,7 +28,7 @@ const subjects = computed(() => data.value?.data ?? [])
     data-testid="chapter-index-page"
   >
     <template #breadcrumb>
-      <p class="text-overline text-primary-t">Mode Sistematik</p>
+      <DsText variant="overline" as="p" tone="primary">Mode Sistematik</DsText>
     </template>
     <template #actions>
       <UButton
@@ -54,7 +54,7 @@ const subjects = computed(() => data.value?.data ?? [])
           :data-testid="`chapter-subject-${s.code}`"
         >
           <UCard class="h-full">
-            <div class="flex items-center gap-4">
+            <DsCluster gap="md" :wrap="false">
               <DsIconChip
                 :icon="subjectGlyph(s.icon)"
                 :accent="subjectAccent(i)"
@@ -62,21 +62,32 @@ const subjects = computed(() => data.value?.data ?? [])
                 data-testid="chapter-subject-icon"
               />
               <div class="flex min-w-0 flex-1 flex-col gap-1">
-                <h2
-                  class="truncate text-subheading text-highlighted"
+                <DsHeading
+                  :level="2"
+                  variant="subheading"
+                  truncate
                   data-testid="chapter-subject-name"
                 >
                   {{ s.name }}
-                </h2>
-                <p class="text-caption text-muted" data-testid="chapter-subject-chapters">
+                </DsHeading>
+                <DsText variant="caption" data-testid="chapter-subject-chapters">
                   {{ s.chapterCount }} bab tersedia
-                </p>
-                <p class="text-label text-primary-t" data-testid="chapter-subject-questions">
+                </DsText>
+                <DsText
+                  variant="label"
+                  as="p"
+                  tone="primary"
+                  data-testid="chapter-subject-questions"
+                >
                   {{ formatCount(s.questionCount) }} soalan chapter
-                </p>
+                </DsText>
               </div>
-              <UIcon name="i-ph-caret-right-bold" class="size-5 shrink-0 text-muted" aria-hidden="true" />
-            </div>
+              <UIcon
+                name="i-ph-caret-right-bold"
+                class="size-5 shrink-0 text-muted"
+                aria-hidden="true"
+              />
+            </DsCluster>
           </UCard>
         </RouterLink>
       </li>

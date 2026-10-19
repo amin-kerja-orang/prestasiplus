@@ -7,7 +7,7 @@
 import { computed, ref } from 'vue'
 import type { TableColumn } from '@nuxt/ui'
 
-import { DsDataTable, DsPanel } from '@/ds'
+import { DsDataTable, DsPanel, DsText } from '@/ds'
 
 import type { Results, SpmGrade } from '../../../api/types'
 import { pct, plain } from '../common/kirkpatrick-format'
@@ -75,22 +75,22 @@ const pageSize = ref(20)
   >
     <div class="grid grid-cols-3 gap-2 sm:gap-3">
       <UCard variant="soft" class="min-w-0 text-center" data-testid="alesa-lulus">
-        <p class="tabular text-heading text-success" data-testid="tile-value">
+        <DsText variant="heading" tone="success" tabular data-testid="tile-value">
           {{ plain(alesa.lulus) }}
-        </p>
-        <p class="text-body text-muted">Dijangka Lulus</p>
+        </DsText>
+        <DsText variant="body" tone="muted">Dijangka Lulus</DsText>
       </UCard>
       <UCard variant="soft" class="min-w-0 text-center" data-testid="alesa-gagal">
-        <p class="tabular text-heading text-error" data-testid="tile-value">
+        <DsText variant="heading" tone="error" tabular data-testid="tile-value">
           {{ plain(alesa.gagal) }}
-        </p>
-        <p class="text-body text-muted">Dijangka Gagal</p>
+        </DsText>
+        <DsText variant="body" tone="muted">Dijangka Gagal</DsText>
       </UCard>
       <UCard variant="soft" class="min-w-0 text-center" data-testid="alesa-intervensi">
-        <p class="tabular text-heading text-warning" data-testid="tile-value">
+        <DsText variant="heading" tone="warning" tabular data-testid="tile-value">
           {{ plain(alesa.intervensi) }}
-        </p>
-        <p class="text-body text-muted">Perlu Intervensi</p>
+        </DsText>
+        <DsText variant="body" tone="muted">Perlu Intervensi</DsText>
       </UCard>
     </div>
     <DsDataTable
@@ -105,10 +105,10 @@ const pageSize = ref(20)
     >
       <template #name-cell="{ row }">
         <span class="flex flex-col" data-testid="alesa-row">
-          <span class="text-label text-highlighted" data-testid="alesa-name">{{
+          <DsText variant="label" tone="highlighted" data-testid="alesa-name">{{
             row.original.name
-          }}</span>
-          <span class="text-body text-muted">{{ row.original.schoolName }}</span>
+          }}</DsText>
+          <DsText variant="body" as="span" tone="muted">{{ row.original.schoolName }}</DsText>
         </span>
       </template>
       <template #grade-cell="{ row }">

@@ -8,6 +8,7 @@ import { computed } from 'vue'
 import type { StudentKirkpatrick } from '../../../api/types'
 import { count, mean, pct, pct1 } from '../common/kirkpatrick-format'
 import { alesaParagraph } from './pelajar-format'
+import { DsCluster, DsHeading, DsText } from '@/ds'
 
 const props = defineProps<{ data: StudentKirkpatrick }>()
 
@@ -17,28 +18,30 @@ const paragraph = computed(() => alesaParagraph(props.data))
 <template>
   <UCard as="section" class="min-w-0" data-testid="pel-alesa">
     <template #header>
-      <div class="flex items-center gap-3">
+      <DsCluster :wrap="false">
         <UBadge color="primary" variant="soft" label="AI" />
-        <h2 class="text-subheading text-highlighted">ALESA — Analisis Tingkah Laku Kirkpatrick</h2>
-      </div>
+        <DsHeading :level="2" variant="subheading"
+          >ALESA — Analisis Tingkah Laku Kirkpatrick</DsHeading
+        >
+      </DsCluster>
     </template>
-    <p class="text-body text-default" data-testid="pel-paragraph">{{ paragraph }}</p>
+    <DsText variant="body" data-testid="pel-paragraph">{{ paragraph }}</DsText>
     <div class="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-4">
       <UCard variant="soft" class="min-w-0 text-center" data-testid="pel-tile-answers">
-        <p class="tabular text-heading text-highlighted">{{ count(data.answers) }}</p>
-        <p class="text-caption text-muted">Soalan</p>
+        <DsText variant="heading" tabular>{{ count(data.answers) }}</DsText>
+        <DsText variant="caption">Soalan</DsText>
       </UCard>
       <UCard variant="soft" class="min-w-0 text-center" data-testid="pel-tile-accuracy">
-        <p class="tabular text-heading text-highlighted">{{ pct(data.accuracy) }}</p>
-        <p class="text-caption text-muted">Ketepatan</p>
+        <DsText variant="heading" tabular>{{ pct(data.accuracy) }}</DsText>
+        <DsText variant="caption">Ketepatan</DsText>
       </UCard>
       <UCard variant="soft" class="min-w-0 text-center" data-testid="pel-tile-konsistensi">
-        <p class="tabular text-heading text-highlighted">{{ mean(data.konsistensi) }}</p>
-        <p class="text-caption text-muted">Konsistensi</p>
+        <DsText variant="heading" tabular>{{ mean(data.konsistensi) }}</DsText>
+        <DsText variant="caption">Konsistensi</DsText>
       </UCard>
       <UCard variant="soft" class="min-w-0 text-center" data-testid="pel-tile-streak">
-        <p class="tabular text-heading text-highlighted">{{ data.streak }}d</p>
-        <p class="text-caption text-muted">Streak</p>
+        <DsText variant="heading" tabular>{{ data.streak }}d</DsText>
+        <DsText variant="caption">Streak</DsText>
       </UCard>
     </div>
     <p

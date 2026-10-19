@@ -14,7 +14,7 @@ import GameHud from '../components/solo/GameHud.vue'
 import { betulSalahGain, betulSalahTitle, ratio } from '../components/solo/solo-lib'
 import { useGameTimers } from '../components/solo/useGameTimers'
 import { submitResult, useSoloGame } from '../components/solo/useSoloGame'
-import { DsLoadError } from '@/ds'
+import { DsLoadError, DsStack, DsCluster, DsText } from '@/ds'
 
 const GAME_SECONDS = 45
 const FEEDBACK_MS = 700
@@ -130,16 +130,16 @@ watch(darjah, () => void start(), { immediate: true })
   <div data-testid="solo-betul-salah">
     <DarjahPicker v-if="darjah === null" title="Betul atau Salah" art="trophy" />
     <GamePanel>
-      <div v-if="loading" class="flex flex-col gap-3" aria-busy="true" data-testid="solo-loading">
+      <DsStack v-if="loading" gap="sm" aria-busy="true" data-testid="solo-loading">
         <USkeleton class="h-16 w-full" />
         <USkeleton class="h-16 w-full" />
-      </div>
+      </DsStack>
       <DsLoadError v-else-if="error" :message="error" @retry="load()" />
 
       <CountdownView v-if="phase === 'countdown'" title="✅❌ BETUL ATAU SALAH" :count="count" />
 
-      <div v-if="phase === 'playing' && current" class="flex flex-col gap-4">
-        <div v-if="streak >= 2" class="flex justify-center">
+      <DsStack v-if="phase === 'playing' && current">
+        <DsCluster v-if="streak >= 2" gap="none" align="stretch" justify="center" :wrap="false">
           <UBadge
             color="warning"
             variant="solid"
@@ -148,13 +148,13 @@ watch(darjah, () => void start(), { immediate: true })
             data-testid="solo-combo"
             >🔥 {{ streak }} KOMBO</UBadge
           >
-        </div>
+        </DsCluster>
         <GameHud :score="score" :time-left="timeLeft" :max="GAME_SECONDS" :correct="correct" />
-        <p class="text-center text-caption text-muted">Kenyataan {{ index + 1 }}</p>
+        <DsText variant="caption" align="center">Kenyataan {{ index + 1 }}</DsText>
         <UCard class="relative text-center" :data-feedback="feedback" data-testid="solo-card">
-          <p class="text-subheading break-words text-highlighted">
+          <DsText variant="subheading" wrap="anywhere">
             {{ current.statement }}
-          </p>
+          </DsText>
           <div
             v-if="feedback"
             class="absolute inset-0 grid place-items-center bg-default/80 text-display"
@@ -164,7 +164,7 @@ watch(darjah, () => void start(), { immediate: true })
           </div>
         </UCard>
         <div class="flex justify-center gap-8 pt-2">
-          <div class="flex flex-col items-center gap-2">
+          <DsStack gap="xs" align="center">
             <UButton
               type="button"
               color="error"
@@ -177,9 +177,9 @@ watch(darjah, () => void start(), { immediate: true })
             >
               <UIcon name="i-ph-x-bold" class="size-10" aria-hidden="true" />
             </UButton>
-            <p class="text-caption text-muted">❌ SALAH</p>
-          </div>
-          <div class="flex flex-col items-center gap-2">
+            <DsText variant="caption">❌ SALAH</DsText>
+          </DsStack>
+          <DsStack gap="xs" align="center">
             <UButton
               type="button"
               color="success"
@@ -192,10 +192,10 @@ watch(darjah, () => void start(), { immediate: true })
             >
               <UIcon name="i-ph-check-bold" class="size-10" aria-hidden="true" />
             </UButton>
-            <p class="text-caption text-muted">✅ BETUL</p>
-          </div>
+            <DsText variant="caption">✅ BETUL</DsText>
+          </DsStack>
         </div>
-      </div>
+      </DsStack>
 
       <ResultCard
         v-if="phase === 'done'"

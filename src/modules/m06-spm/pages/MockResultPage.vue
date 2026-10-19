@@ -13,7 +13,7 @@ import { useRoute, useRouter } from 'vue-router'
 import { isApiError } from '@/api'
 import { setRouteOutcome } from '@/app/router'
 import { useApi, usePageMeta } from '@/composables'
-import { DsArt3D, DsPage, DsPanel, DsLoadError } from '@/ds'
+import { DsArt3D, DsPage, DsPanel, DsLoadError, DsStack, DsCluster, DsHeading, DsText } from '@/ds'
 
 import { fetchMockResult } from '../api'
 import DutaBlock from '../components/DutaBlock.vue'
@@ -60,10 +60,10 @@ watch(
 
 <template>
   <DsPage :show-title="false" data-testid="result-page">
-    <div v-if="loading && !data" class="flex flex-col gap-2" data-testid="result-skeleton">
+    <DsStack v-if="loading && !data" gap="xs" data-testid="result-skeleton">
       <USkeleton class="h-40" />
       <USkeleton v-for="n in 3" :key="n" class="h-20" />
-    </div>
+    </DsStack>
     <DsLoadError
       v-else-if="error && !notFound && !notSubmitted"
       :message="LOAD_ERROR"
@@ -74,28 +74,31 @@ watch(
 
     <template v-else-if="data">
       <UCard :data-hero="data.heroClass" data-testid="result-hero">
-        <div class="flex flex-col items-center gap-2 text-center">
+        <DsStack gap="xs" align="center" class="text-center">
           <DsArt3D :name="data.heroClass === 'good' ? 'trophy' : 'books'" size="xl" float />
-          <h1 class="text-subheading break-words text-highlighted" data-testid="result-title">
+          <DsHeading :level="1" variant="subheading" wrap="anywhere" data-testid="result-title">
             {{ data.subject }} · Paper {{ data.paperNumber }}
-          </h1>
+          </DsHeading>
           <p
-class="text-display" :class="
+            class="text-display"
+            :class="
               data.heroClass === 'good'
                 ? 'text-success'
                 : data.heroClass === 'mid'
                   ? 'text-warning'
                   : 'text-error'
-            " data-testid="result-grade">
+            "
+            data-testid="result-grade"
+          >
             {{ data.grade }}
           </p>
-          <p class="tabular text-heading text-highlighted" data-testid="result-percent">
+          <DsText variant="heading" tabular data-testid="result-percent">
             {{ percentLabel(data.percent) }}
-          </p>
-          <p class="tabular text-label text-muted" data-testid="result-score">
+          </DsText>
+          <DsText variant="label" as="p" tone="muted" tabular data-testid="result-score">
             {{ data.score }} / {{ data.maxScore }} markah
-          </p>
-        </div>
+          </DsText>
+        </DsStack>
       </UCard>
 
       <DutaBlock
@@ -111,31 +114,40 @@ class="text-display" :class="
         accent="heat"
         data-testid="result-weak"
       >
-        <div class="flex flex-col gap-3">
-          <ul class="flex flex-col gap-2">
+        <DsStack gap="sm">
+          <DsStack as="ul" gap="xs">
             <li v-for="w in data.weakTopics" :key="w.topic" data-testid="weak-item">
               <UCard variant="subtle" :ui="{ body: 'p-3' }">
-                <div class="flex flex-wrap items-center justify-between gap-2">
-                  <span class="min-w-0 text-label break-words text-highlighted" data-testid="weak-topic">{{
-                    w.topic
-                  }}</span>
-                  <span class="text-caption text-error" data-testid="weak-count">{{
+                <DsCluster gap="xs" justify="between">
+                  <DsText
+                    variant="label"
+                    tone="highlighted"
+                    wrap="anywhere"
+                    class="min-w-0"
+                    data-testid="weak-topic"
+                    >{{ w.topic }}</DsText
+                  >
+                  <DsText variant="caption" as="span" tone="error" data-testid="weak-count">{{
                     wrongLabel(w.wrongCount)
-                  }}</span>
-                </div>
+                  }}</DsText>
+                </DsCluster>
               </UCard>
             </li>
-          </ul>
-          <p class="text-body text-muted" data-testid="result-tip">
+          </DsStack>
+          <DsText variant="body" tone="muted" data-testid="result-tip">
             💡 Cikgu Alesa cadang anda fokus belajar topik atas dulu. Boleh start dengan
             <ULink to="/pusat-nota-ringkas" class="text-primary-t">jana nota ringkas</ULink>
             untuk topik tersebut.
-          </p>
-        </div>
+          </DsText>
+        </DsStack>
       </DsPanel>
 
-      <DsPanel title="📋 Review Setiap Soalan" icon="i-ph-list-checks-duotone" data-testid="result-review">
-        <ul class="flex flex-col gap-2">
+      <DsPanel
+        title="📋 Review Setiap Soalan"
+        icon="i-ph-list-checks-duotone"
+        data-testid="result-review"
+      >
+        <DsStack as="ul" gap="xs">
           <li
             v-for="it in data.items"
             :key="it.no"
@@ -150,24 +162,41 @@ class="text-display" :class="
               >
                 {{ isCorrect(it) ? '✓' : '✗' }} {{ itemHeader(it) }}
               </p>
-              <p class="text-body break-words whitespace-pre-line text-highlighted" data-testid="review-text">
+              <DsText
+                variant="body"
+                tone="highlighted"
+                wrap="anywhere"
+                class="whitespace-pre-line"
+                data-testid="review-text"
+              >
                 {{ it.text }}
-              </p>
-              <p class="text-body break-words text-default" data-testid="review-answer">
+              </DsText>
+              <DsText variant="body" wrap="anywhere" data-testid="review-answer">
                 <b>Anda:</b> {{ it.studentAnswer ?? '(tiada jawapan)' }}
-              </p>
-              <p class="text-body break-words whitespace-pre-line text-default" data-testid="review-key">
+              </DsText>
+              <DsText
+                variant="body"
+                wrap="anywhere"
+                class="whitespace-pre-line"
+                data-testid="review-key"
+              >
                 <b>Jawapan:</b> {{ it.modelAnswer }}
-              </p>
-              <p v-if="it.feedback" class="text-body break-words text-muted" data-testid="review-feedback">
+              </DsText>
+              <DsText
+                v-if="it.feedback"
+                variant="body"
+                tone="muted"
+                wrap="anywhere"
+                data-testid="review-feedback"
+              >
                 {{ it.feedback }}
-              </p>
+              </DsText>
             </UCard>
           </li>
-        </ul>
+        </DsStack>
       </DsPanel>
 
-      <div class="flex flex-wrap gap-3" data-testid="result-actions">
+      <DsCluster align="stretch" data-testid="result-actions">
         <UButton to="/spm-mock" size="lg" class="min-h-11 max-sm:flex-1 max-sm:justify-center"
           >📝 Mock Lain</UButton
         >
@@ -179,7 +208,7 @@ class="text-display" :class="
           class="min-h-11 max-sm:flex-1 max-sm:justify-center"
           >📚 Belajar Topik Lemah</UButton
         >
-      </div>
+      </DsCluster>
     </template>
   </DsPage>
 </template>

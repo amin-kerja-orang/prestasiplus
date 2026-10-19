@@ -7,7 +7,7 @@
 import { computed, ref } from 'vue'
 
 import { useApi } from '@/composables'
-import { DsEmptyState, DsPage, DsLoadError } from '@/ds'
+import { DsEmptyState, DsPage, DsLoadError, DsStack, DsText } from '@/ds'
 
 import { fetchStudentStandings } from '../api'
 import { mskText } from '../components/battle/battle-lib'
@@ -50,16 +50,16 @@ const PILLS = [
       testid="battle-load-error"
       @retry="reload()"
     />
-    <div v-else-if="loading && !data" class="flex flex-col gap-2" aria-busy="true">
+    <DsStack v-else-if="loading && !data" gap="xs" aria-busy="true">
       <USkeleton v-for="n in 4" :key="n" class="h-16 w-full" />
-    </div>
+    </DsStack>
     <DsEmptyState
       v-else-if="rows.length === 0"
       title="Belum ada data ranking. Mula battle untuk muncul di sini!"
       icon="medal"
       data-testid="battle-leaderboard-empty"
     />
-    <ul v-else class="flex flex-col gap-2" data-testid="battle-leaderboard-scroll">
+    <DsStack v-else as="ul" gap="xs" data-testid="battle-leaderboard-scroll">
       <RankedRow
         v-for="r in rows"
         :key="r.userId"
@@ -69,25 +69,25 @@ const PILLS = [
         :initials="r.name.slice(0, 2).toUpperCase()"
         data-testid="battle-leaderboard-row"
       >
-        <div class="flex flex-col">
-          <dt class="text-caption text-muted">M/S/K</dt>
-          <dd class="tabular text-label text-highlighted" data-testid="battle-msk">
+        <DsStack gap="none">
+          <DsText variant="caption" as="dt">M/S/K</DsText>
+          <DsText variant="label" as="dd" tone="highlighted" tabular data-testid="battle-msk">
             {{ mskText(r.menang, r.seri, r.kalah) }}
-          </dd>
-        </div>
-        <div class="flex flex-col">
-          <dt class="text-caption text-muted">Ketepatan</dt>
-          <dd class="tabular text-label text-highlighted">{{ r.ketepatan }}%</dd>
-        </div>
-        <div class="flex flex-col">
-          <dt class="text-caption text-muted">Streak</dt>
-          <dd class="tabular text-label text-highlighted">{{ r.streak }}</dd>
-        </div>
-        <div class="flex flex-col">
-          <dt class="text-caption text-muted">Skor</dt>
-          <dd class="tabular text-label text-primary-t">{{ r.skor }}</dd>
-        </div>
+          </DsText>
+        </DsStack>
+        <DsStack gap="none">
+          <DsText variant="caption" as="dt">Ketepatan</DsText>
+          <DsText variant="label" as="dd" tone="highlighted" tabular>{{ r.ketepatan }}%</DsText>
+        </DsStack>
+        <DsStack gap="none">
+          <DsText variant="caption" as="dt">Streak</DsText>
+          <DsText variant="label" as="dd" tone="highlighted" tabular>{{ r.streak }}</DsText>
+        </DsStack>
+        <DsStack gap="none">
+          <DsText variant="caption" as="dt">Skor</DsText>
+          <DsText variant="label" as="dd" tone="primary" tabular>{{ r.skor }}</DsText>
+        </DsStack>
       </RankedRow>
-    </ul>
+    </DsStack>
   </DsPage>
 </template>

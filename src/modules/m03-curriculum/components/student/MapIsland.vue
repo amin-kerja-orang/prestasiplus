@@ -10,6 +10,7 @@ import { RouterLink } from 'vue-router'
 
 import type { LearningMapTopic } from '../../api/student-curriculum'
 import { ISLAND_LABEL, practiceHref, sessionsLine } from '../../lib/student-catalogue'
+import { DsCluster, DsHeading } from '@/ds'
 
 defineProps<{ topic: LearningMapTopic; index: number }>()
 
@@ -68,7 +69,7 @@ const TILE: Record<string, string> = {
       :class="CARD[topic.state]"
       data-testid="island"
     >
-      <div class="flex items-center gap-3">
+      <DsCluster :wrap="false">
         <span
           class="flex size-12 shrink-0 items-center justify-center rounded-2xl text-heading"
           :class="TILE[topic.state]"
@@ -81,11 +82,11 @@ const TILE: Record<string, string> = {
           <div class="text-overline" :class="LABEL[topic.state]" data-testid="island-label">
             {{ ISLAND_LABEL[topic.state] }}
           </div>
-          <h3 class="text-subheading break-words text-highlighted" data-testid="island-name">
+          <DsHeading :level="3" wrap="anywhere" data-testid="island-name">
             {{ topic.name }}
-          </h3>
+          </DsHeading>
         </div>
-      </div>
+      </DsCluster>
       <p v-if="topic.state === 'locked'" class="mt-3 text-body text-muted">
         Selesaikan topik sebelumnya dulu
       </p>

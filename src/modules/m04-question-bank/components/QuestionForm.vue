@@ -15,7 +15,17 @@
  */
 import { computed, nextTick, reactive, ref, watch } from 'vue'
 
-import { DsFormBar, DsFormField, DsFormSection, DsNativeSelect, DsRtlScope } from '@/ds'
+import {
+  DsFormBar,
+  DsFormField,
+  DsFormSection,
+  DsNativeSelect,
+  DsRtlScope,
+  DsGrid,
+  DsCluster,
+  DsStack,
+  DsText,
+} from '@/ds'
 
 import type { EducationLevelLookup, SubjectLookup } from '../api/lookups'
 import type { QuestionDetail, QuestionInputBody } from '../api/questions'
@@ -163,7 +173,7 @@ const correctItems = (i: number, letter: string) => [
       <div class="flex min-w-0 flex-col gap-4 md:gap-6">
         <!-- Section "Maklumat Soalan" -->
         <DsFormSection title="Maklumat Soalan" icon="question" data-testid="info-card">
-          <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+          <DsGrid :cols="{ base: 1, sm: 2 }">
             <DsFormField
               v-slot="{ id, describedby, invalid }"
               native
@@ -182,7 +192,9 @@ const correctItems = (i: number, letter: string) => [
                 data-testid="q-subject"
               >
                 <option value="">Pilih Subjek</option>
-                <option v-for="s in subjects" :key="s.id" :value="String(s.id)">{{ s.name }}</option>
+                <option v-for="s in subjects" :key="s.id" :value="String(s.id)">
+                  {{ s.name }}
+                </option>
               </DsNativeSelect>
             </DsFormField>
 
@@ -207,7 +219,7 @@ const correctItems = (i: number, letter: string) => [
                 <option v-for="l in levels" :key="l.id" :value="String(l.id)">{{ l.name }}</option>
               </DsNativeSelect>
             </DsFormField>
-          </div>
+          </DsGrid>
 
           <div class="min-w-0">
             <DskpTagging
@@ -217,7 +229,11 @@ const correctItems = (i: number, letter: string) => [
               :initial="initial?.dskp ?? null"
               :edit="edit"
             />
-            <p v-if="err('dskpSpId')" class="mt-1 text-caption text-error" data-testid="field-error">
+            <p
+              v-if="err('dskpSpId')"
+              class="mt-1 text-caption text-error"
+              data-testid="field-error"
+            >
               {{ err('dskpSpId') }}
             </p>
           </div>
@@ -238,14 +254,20 @@ const correctItems = (i: number, letter: string) => [
             >
               <template #label="{ item }">
                 <span class="flex w-full flex-col items-center gap-1 text-center">
-                  <span class="flex flex-wrap justify-center gap-1" aria-hidden="true">
+                  <DsCluster
+                    as="span"
+                    gap="2xs"
+                    align="stretch"
+                    justify="center"
+                    aria-hidden="true"
+                  >
                     <UIcon
                       v-for="s in Number(item.value)"
                       :key="s"
                       name="i-ph-star-fill"
                       class="size-4"
                     />
-                  </span>
+                  </DsCluster>
                   <span class="text-caption">{{ item.label }}</span>
                 </span>
               </template>
@@ -348,13 +370,13 @@ const correctItems = (i: number, letter: string) => [
           icon="list-checks"
           data-testid="mcq-card"
         >
-          <div class="flex min-w-0 flex-col gap-3">
+          <DsStack gap="sm">
             <div
               v-for="(letter, i) in OPTION_LETTERS"
               :key="letter"
               class="flex flex-col gap-2 bg-soft p-3 sm:p-4"
             >
-              <div class="flex items-end gap-3">
+              <DsCluster align="end" :wrap="false">
                 <URadioGroup
                   :id="`q-correct-${String(i)}`"
                   :model-value="values.correctAnswer"
@@ -382,8 +404,8 @@ const correctItems = (i: number, letter: string) => [
                     :data-testid="`q-option-${String(i)}`"
                   />
                 </DsFormField>
-              </div>
-              <div class="flex min-w-0 flex-col gap-2">
+              </DsCluster>
+              <DsStack gap="xs">
                 <QuestionImagePicker
                   :file="values.optionImages[i] ?? null"
                   :removed="values.removeOptionImage[i] ?? false"
@@ -394,22 +416,28 @@ const correctItems = (i: number, letter: string) => [
                   @update:file="values.optionImages[i] = $event"
                   @update:removed="values.removeOptionImage[i] = $event"
                 />
-                <p
+                <DsText
                   v-if="err(`optionImages.${String(i)}`)"
-                  class="text-caption text-error"
+                  variant="caption"
+                  tone="error"
                   data-testid="field-error"
                 >
                   {{ err(`optionImages.${String(i)}`) }}
-                </p>
-              </div>
+                </DsText>
+              </DsStack>
             </div>
-          </div>
-          <p v-if="err('options')" class="text-caption text-error" data-testid="field-error">
+          </DsStack>
+          <DsText v-if="err('options')" variant="caption" tone="error" data-testid="field-error">
             {{ err('options') }}
-          </p>
-          <p v-if="err('correctAnswer')" class="text-caption text-error" data-testid="field-error">
+          </DsText>
+          <DsText
+            v-if="err('correctAnswer')"
+            variant="caption"
+            tone="error"
+            data-testid="field-error"
+          >
             {{ err('correctAnswer') }}
-          </p>
+          </DsText>
           <p class="flex items-start gap-2 text-caption text-muted">
             <UIcon name="i-ph-info" class="mt-1 size-4 shrink-0" />
             <span>
@@ -438,21 +466,23 @@ const correctItems = (i: number, letter: string) => [
             class="w-full"
           >
             <template #label="{ item }">
-              <span class="flex w-full items-center justify-center gap-2">
+              <DsCluster as="span" gap="xs" justify="center" :wrap="false" class="w-full">
                 <UIcon :name="(item as (typeof TF_ITEMS)[number]).icon" class="size-5" />
                 {{ item.label }}
-              </span>
+              </DsCluster>
             </template>
           </URadioGroup>
-          <p v-if="err('tfAnswer')" class="text-caption text-error" data-testid="field-error">
+          <DsText v-if="err('tfAnswer')" variant="caption" tone="error" data-testid="field-error">
             {{ err('tfAnswer') }}
-          </p>
+          </DsText>
         </DsFormSection>
 
         <!-- Section short answer / fill blank -->
         <DsFormSection
           v-show="isShortOrFill"
-          :title="values.questionType === 'fill_blank' ? 'Jawapan Isi Tempat Kosong' : 'Jawapan Pendek'"
+          :title="
+            values.questionType === 'fill_blank' ? 'Jawapan Isi Tempat Kosong' : 'Jawapan Pendek'
+          "
           icon="pen-nib"
           data-testid="short-card"
         >
@@ -538,7 +568,7 @@ const correctItems = (i: number, letter: string) => [
               data-testid="q-explanation"
             />
           </DsFormField>
-          <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
+          <DsGrid :cols="{ base: 1, md: 2 }">
             <DsFormField
               v-slot="{ id, describedby, invalid }"
               native
@@ -577,7 +607,7 @@ const correctItems = (i: number, letter: string) => [
                 data-testid="q-points"
               />
             </DsFormField>
-          </div>
+          </DsGrid>
         </DsFormSection>
       </div>
     </div>

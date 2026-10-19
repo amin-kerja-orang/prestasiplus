@@ -10,6 +10,7 @@ import { RouterLink } from 'vue-router'
 import { useApi } from '@/composables'
 
 import { fetchDutaRecommendation } from '../api'
+import { DsStack, DsHeading, DsText } from '@/ds'
 
 const props = defineProps<{
   title: string
@@ -26,34 +27,34 @@ const card = computed(() => data.value)
 
 <template>
   <UCard v-if="card" data-testid="duta-block">
-    <div class="flex flex-col gap-3">
-      <div class="flex flex-col gap-1">
-        <h2 class="text-subheading text-highlighted" data-testid="duta-title">{{ title }}</h2>
-        <p class="text-body text-muted" data-testid="duta-text">{{ text }}</p>
-      </div>
+    <DsStack gap="sm">
+      <DsStack gap="2xs">
+        <DsHeading :level="2" variant="subheading" data-testid="duta-title">{{ title }}</DsHeading>
+        <DsText variant="body" tone="muted" data-testid="duta-text">{{ text }}</DsText>
+      </DsStack>
       <UCard variant="subtle" :ui="{ body: 'p-3' }">
-      <RouterLink
-        :to="`/bilik-duta/${card.slug}`"
-        class="flex min-h-11 items-start gap-3"
-        data-testid="duta-card"
-      >
-        <UAvatar :text="card.initials" size="xl" data-testid="duta-initials" />
-        <span class="flex min-w-0 flex-1 flex-col gap-1">
-          <span class="text-label break-words text-highlighted" data-testid="duta-name">{{
-            card.name
-          }}</span>
-          <span class="text-caption break-words text-muted" data-testid="duta-tagline">{{
-            card.tagline
-          }}</span>
-          <span class="mt-1 flex flex-wrap gap-2" data-testid="duta-pills">
-            <UBadge color="warning" variant="soft">🥇 Duta Bintang</UBadge>
-            <UBadge color="info" variant="soft">📚 {{ card.subject }}</UBadge>
-            <UBadge color="neutral" variant="soft">📍 {{ card.state }}</UBadge>
-            <UBadge color="warning" variant="soft">⭐ {{ card.rating.toFixed(2) }}</UBadge>
+        <RouterLink
+          :to="`/bilik-duta/${card.slug}`"
+          class="flex min-h-11 items-start gap-3"
+          data-testid="duta-card"
+        >
+          <UAvatar :text="card.initials" size="xl" data-testid="duta-initials" />
+          <span class="flex min-w-0 flex-1 flex-col gap-1">
+            <DsText variant="label" tone="highlighted" wrap="anywhere" data-testid="duta-name">{{
+              card.name
+            }}</DsText>
+            <DsText variant="caption" as="span" wrap="anywhere" data-testid="duta-tagline">{{
+              card.tagline
+            }}</DsText>
+            <span class="mt-1 flex flex-wrap gap-2" data-testid="duta-pills">
+              <UBadge color="warning" variant="soft">🥇 Duta Bintang</UBadge>
+              <UBadge color="info" variant="soft">📚 {{ card.subject }}</UBadge>
+              <UBadge color="neutral" variant="soft">📍 {{ card.state }}</UBadge>
+              <UBadge color="warning" variant="soft">⭐ {{ card.rating.toFixed(2) }}</UBadge>
+            </span>
           </span>
-        </span>
-      </RouterLink>
+        </RouterLink>
       </UCard>
-    </div>
+    </DsStack>
   </UCard>
 </template>

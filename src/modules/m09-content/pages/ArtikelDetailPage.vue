@@ -17,7 +17,16 @@ import { computed, watch } from 'vue'
 import { isApiError } from '@/api'
 import { setRouteOutcome, useRouteOutcome } from '@/app/router/outcome'
 import { useApi, usePageMeta, useSession } from '@/composables'
-import { DsLoadError, DsMediaCard, DsPage, DsProse } from '@/ds'
+import {
+  DsLoadError,
+  DsMediaCard,
+  DsPage,
+  DsProse,
+  DsCluster,
+  DsStack,
+  DsHeading,
+  DsText,
+} from '@/ds'
 import { diffForHumans, formatDateEn } from '@/lib/time'
 
 import { fetchArticle, fetchLatestArticles, type ArticleCard } from '../api'
@@ -110,7 +119,7 @@ const age = computed(() =>
           >
         </nav>
 
-        <div class="flex flex-wrap items-center gap-2">
+        <DsCluster gap="xs">
           <UBadge
             color="primary"
             variant="solid"
@@ -131,11 +140,11 @@ const age = computed(() =>
             :label="ARTIKEL_COPY.featuredChip"
             data-testid="artikel-chip-featured"
           />
-        </div>
+        </DsCluster>
 
-        <h1 class="text-title break-words text-highlighted" data-testid="artikel-title">
+        <DsHeading :level="1" wrap="anywhere" data-testid="artikel-title">
           {{ article.title }}
-        </h1>
+        </DsHeading>
 
         <UCard
           v-if="article.excerpt"
@@ -143,24 +152,27 @@ const age = computed(() =>
           class="max-w-prose"
           data-testid="artikel-excerpt"
         >
-          <p class="text-body break-words text-default">{{ article.excerpt }}</p>
+          <DsText variant="body" wrap="anywhere">{{ article.excerpt }}</DsText>
         </UCard>
 
         <UCard data-testid="artikel-author-card">
-          <div class="flex flex-wrap items-center justify-between gap-4">
-            <div class="flex min-w-0 items-center gap-3">
+          <DsCluster gap="md" justify="between">
+            <DsCluster :wrap="false">
               <UAvatar
                 :text="article.author.initial"
                 size="xl"
                 data-testid="artikel-author-initial"
               />
               <div class="min-w-0">
-                <p
-                  class="text-label break-words text-highlighted"
+                <DsText
+                  variant="label"
+                  as="p"
+                  tone="highlighted"
+                  wrap="anywhere"
                   data-testid="artikel-author-name"
                 >
                   {{ article.author.name }}
-                </p>
+                </DsText>
                 <p class="flex flex-wrap items-center gap-x-2 gap-y-1 text-caption text-muted">
                   <span
                     class="inline-flex items-center gap-1 whitespace-nowrap"
@@ -179,22 +191,22 @@ const age = computed(() =>
                   </span>
                 </p>
               </div>
-            </div>
-            <div class="flex items-center gap-4 text-center">
+            </DsCluster>
+            <DsCluster gap="md" :wrap="false" class="text-center">
               <p>
-                <span class="tabular text-subheading text-highlighted"
+                <DsText variant="subheading" as="span" tabular
                   ><UIcon name="i-ph-eye-duotone" class="size-5" aria-hidden="true" />
-                  <span data-testid="artikel-views">{{ article.views }}</span></span
-                ><br /><span class="text-caption text-muted">{{ ARTIKEL_COPY.readers }}</span>
+                  <span data-testid="artikel-views">{{ article.views }}</span></DsText
+                ><br /><DsText variant="caption" as="span">{{ ARTIKEL_COPY.readers }}</DsText>
               </p>
               <p>
-                <span class="tabular text-subheading text-highlighted"
+                <DsText variant="subheading" as="span" tabular
                   ><UIcon name="i-ph-heart-duotone" class="size-5" aria-hidden="true" />
-                  <span data-testid="artikel-likes">{{ article.likes }}</span></span
-                ><br /><span class="text-caption text-muted">{{ ARTIKEL_COPY.likes }}</span>
+                  <span data-testid="artikel-likes">{{ article.likes }}</span></DsText
+                ><br /><DsText variant="caption" as="span">{{ ARTIKEL_COPY.likes }}</DsText>
               </p>
-            </div>
-          </div>
+            </DsCluster>
+          </DsCluster>
         </UCard>
 
         <!-- Sanitised by `sanitizeHtml` (allow-list; SEC-M09-01). -->
@@ -204,12 +216,8 @@ const age = computed(() =>
 
         <ArtikelShareCard :title="article.title" />
 
-        <section
-          v-if="article.related.length > 0"
-          class="flex flex-col gap-4"
-          data-testid="artikel-related"
-        >
-          <h2 class="text-heading text-highlighted">{{ ARTIKEL_COPY.related }}</h2>
+        <DsStack v-if="article.related.length > 0" as="section" data-testid="artikel-related">
+          <DsHeading :level="2">{{ ARTIKEL_COPY.related }}</DsHeading>
           <div class="grid grid-cols-1 gap-4 sm:grid-cols-3 md:gap-6">
             <DsMediaCard
               v-for="item in article.related"
@@ -221,17 +229,17 @@ const age = computed(() =>
               data-testid="artikel-related-card"
             />
           </div>
-        </section>
+        </DsStack>
       </article>
 
       <aside v-if="isLoggedIn" class="hidden lg:col-span-3 lg:block" data-testid="artikel-aside">
         <UCard class="lg:sticky lg:top-4">
-          <div class="flex flex-col gap-3">
+          <DsStack gap="sm">
             <h2 class="flex items-center gap-2 text-subheading text-highlighted">
               <UIcon name="i-ph-newspaper-duotone" class="size-6" aria-hidden="true" />
               {{ ARTIKEL_COPY.latest }}
             </h2>
-            <ul class="flex flex-col gap-1">
+            <DsStack as="ul" gap="2xs">
               <li v-for="item in latest" :key="item.id">
                 <UButton
                   :to="`/artikel/${item.slug}`"
@@ -242,16 +250,16 @@ const age = computed(() =>
                   data-testid="artikel-aside-item"
                 >
                   <span class="min-w-0">
-                    <span class="block text-label break-words text-highlighted">{{
+                    <DsText variant="label" tone="highlighted" wrap="anywhere" class="block">{{
                       item.title
-                    }}</span>
-                    <span class="block text-caption text-muted">{{
+                    }}</DsText>
+                    <DsText variant="caption" as="span" class="block">{{
                       item.publishedAt ? diffForHumans(item.publishedAt) : ''
-                    }}</span>
+                    }}</DsText>
                   </span>
                 </UButton>
               </li>
-            </ul>
+            </DsStack>
             <UButton
               :to="ARTIKEL_PATH"
               variant="link"
@@ -260,7 +268,7 @@ const age = computed(() =>
               data-testid="artikel-aside-all"
               >{{ ARTIKEL_COPY.seeAll }}</UButton
             >
-          </div>
+          </DsStack>
         </UCard>
       </aside>
     </div>

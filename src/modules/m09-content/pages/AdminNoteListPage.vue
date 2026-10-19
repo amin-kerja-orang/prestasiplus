@@ -25,6 +25,8 @@ import {
   DsStatRow,
   DsStatusBadge,
   useConfirm,
+  DsStack,
+  DsText,
 } from '@/ds'
 import type { CardField, RowAction, StatItem } from '@/ds'
 
@@ -256,7 +258,7 @@ const cardFields: CardField[] = [
 
     <DsStatRow :items="statItems" prefix="stat" :cols="3" />
 
-    <div class="flex flex-col gap-3">
+    <DsStack gap="sm">
       <DsFilterBar
         :chips="chips"
         data-testid="admin-notes-filter"
@@ -301,7 +303,7 @@ const cardFields: CardField[] = [
           </option>
         </DsNativeSelect>
       </DsFilterBar>
-    </div>
+    </DsStack>
 
     <DsLoadError
       v-if="error"
@@ -332,22 +334,19 @@ const cardFields: CardField[] = [
       @update:page="goToPage"
     >
       <template #title-cell="{ row }">
-        <div
-          class="flex min-w-40 flex-col gap-1"
+        <DsStack
+          gap="2xs"
+          class="min-w-40"
           data-testid="admin-note-row"
           :data-note-id="row.original.id"
         >
-          <p class="line-clamp-2 text-label text-highlighted" data-testid="note-title">
+          <DsText variant="label" as="p" tone="highlighted" :clamp="2" data-testid="note-title">
             {{ row.original.title }}
-          </p>
-          <p
-            v-if="row.original.raw.author"
-            class="text-caption text-muted"
-            data-testid="note-author"
-          >
+          </DsText>
+          <DsText v-if="row.original.raw.author" variant="caption" data-testid="note-author">
             Oleh: {{ row.original.raw.author.name }}
-          </p>
-        </div>
+          </DsText>
+        </DsStack>
       </template>
       <template #subjectText-cell="{ row }">
         <UBadge

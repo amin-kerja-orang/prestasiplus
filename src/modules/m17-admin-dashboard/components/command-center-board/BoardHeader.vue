@@ -3,7 +3,7 @@
  * Header of S2 (FN-M17-3.1.1): "← Dashboard", "Aktiviti Harian", the title, the LANGSUNG badge, the MYT
  * clock. The school view adds "Pemantauan langsung sekolah anda" under the title (FR-M17-106 a).
  */
-import { DsLiveBadge, DsPageHeader } from '@/ds'
+import { DsLiveBadge, DsPageHeader, DsStack, DsCluster, DsText } from '@/ds'
 
 import { S2_COPY, type BoardPaths } from './board-copy'
 import { useBoardClock } from './composables'
@@ -14,7 +14,7 @@ const clock = useBoardClock()
 </script>
 
 <template>
-  <header class="flex min-w-0 flex-col gap-3" data-testid="cc-s2-header">
+  <DsStack as="header" gap="sm" data-testid="cc-s2-header">
     <DsPageHeader
       :title="S2_COPY.title"
       :subtitle="school ? S2_COPY.schoolSub : undefined"
@@ -24,14 +24,16 @@ const clock = useBoardClock()
       data-testid="cc-s2-heading"
     >
       <template #actions>
-        <div class="flex flex-wrap items-center gap-2" data-testid="cc-s2-live">
+        <DsCluster gap="xs" data-testid="cc-s2-live">
           <DsLiveBadge :label="S2_COPY.live" data-testid="cc-live-badge" />
-          <span class="tabular text-label text-highlighted" data-testid="cc-clock">{{ clock }}</span>
-          <span class="text-caption text-muted">{{ S2_COPY.tz }}</span>
-        </div>
+          <DsText variant="label" tone="highlighted" tabular data-testid="cc-clock">{{
+            clock
+          }}</DsText>
+          <DsText variant="caption" as="span">{{ S2_COPY.tz }}</DsText>
+        </DsCluster>
       </template>
     </DsPageHeader>
-    <div class="flex flex-wrap items-center gap-2">
+    <DsCluster gap="xs">
       <UButton
         :to="paths.dashboard"
         color="neutral"
@@ -49,6 +51,6 @@ const clock = useBoardClock()
         :label="S2_COPY.daily"
         data-testid="cc-s2-daily"
       />
-    </div>
-  </header>
+    </DsCluster>
+  </DsStack>
 </template>

@@ -7,7 +7,7 @@
 import { computed, ref, watch } from 'vue'
 
 import { isApiError } from '@/api'
-import { DsDialog } from '@/ds'
+import { DsDialog, DsStack, DsGrid } from '@/ds'
 
 import { autoSetupHeadcounts } from '../../api/headcount'
 import { DARJAH_LEVELS, TINGKATAN_LEVELS } from '../../lib/headcount/format'
@@ -61,7 +61,7 @@ const groups = [
     title="Auto-Setup Headcount"
     description="Pilih tingkatan untuk auto-cipta headcount"
   >
-    <form class="flex flex-col gap-4" data-testid="auto-setup-modal" @submit.prevent="submit">
+    <DsStack as="form" data-testid="auto-setup-modal" @submit.prevent="submit">
       <UAlert
         v-if="error"
         color="error"
@@ -69,9 +69,9 @@ const groups = [
         icon="i-ph-warning-circle"
         :title="error"
       />
-      <fieldset v-for="g in groups" :key="g.title" class="flex min-w-0 flex-col gap-2">
+      <DsStack v-for="g in groups" :key="g.title" as="fieldset" gap="xs">
         <legend class="mb-2 text-label text-highlighted">{{ g.title }}</legend>
-        <div class="grid grid-cols-3 gap-2">
+        <DsGrid :cols="3" gap="xs">
           <UCheckbox
             v-for="l in g.levels"
             :key="l.label"
@@ -81,9 +81,9 @@ const groups = [
             :data-testid="`level-${l.label}`"
             @update:model-value="toggle(l.value, $event)"
           />
-        </div>
-      </fieldset>
-    </form>
+        </DsGrid>
+      </DsStack>
+    </DsStack>
     <template #footer>
       <UButton
         type="button"

@@ -10,7 +10,18 @@ import { computed, ref } from 'vue'
 import { RouterLink } from 'vue-router'
 
 import { useApi } from '@/composables'
-import { DsBackLink, DsIconChip, DsPage, DsStatTile, type DsAccent, DsLoadError } from '@/ds'
+import {
+  DsBackLink,
+  DsIconChip,
+  DsPage,
+  DsStatTile,
+  type DsAccent,
+  DsLoadError,
+  DsStack,
+  DsCluster,
+  DsHeading,
+  DsText,
+} from '@/ds'
 import { formatCount } from '@/lib/number'
 import { subjectGlyph } from '@/modules/m05-practice'
 
@@ -104,18 +115,13 @@ const stats = computed<
 
     <template v-if="data">
       <div class="grid grid-cols-2 gap-3 md:grid-cols-4 md:gap-4" data-testid="subjektif-stats">
-        <div
-          v-for="s in stats"
-          :key="s.id"
-          class="flex min-w-0 flex-col gap-1"
-          :data-testid="`subjektif-stat-${s.id}`"
-        >
+        <DsStack v-for="s in stats" :key="s.id" gap="2xs" :data-testid="`subjektif-stat-${s.id}`">
           <DsStatTile :value="s.value" :unit="s.label" :icon="s.icon" :accent="s.accent" />
           <p class="px-1 text-caption text-muted" data-testid="stat-caption">{{ s.cap }}</p>
-        </div>
+        </DsStack>
       </div>
 
-      <div class="flex flex-wrap gap-2" data-testid="subjektif-tabs">
+      <DsCluster gap="xs" align="stretch" data-testid="subjektif-tabs">
         <UButton
           v-for="t in TABS"
           :key="t.id"
@@ -136,9 +142,12 @@ const stats = computed<
             >{{ counts[t.id] }}</UBadge
           >
         </UButton>
-      </div>
+      </DsCluster>
 
-      <ul class="grid grid-cols-1 gap-3 md:grid-cols-2 md:gap-4 lg:grid-cols-3" data-testid="subjektif-grid">
+      <ul
+        class="grid grid-cols-1 gap-3 md:grid-cols-2 md:gap-4 lg:grid-cols-3"
+        data-testid="subjektif-grid"
+      >
         <li v-for="s in visible" :key="s.subjectId" class="min-w-0">
           <RouterLink
             :to="subjektifHref(s.subjectId)"
@@ -154,23 +163,20 @@ const stats = computed<
               />
               <div class="flex min-w-0 flex-1 flex-col gap-2">
                 <div class="min-w-0">
-                  <div class="flex flex-wrap items-center gap-2">
-                    <h3
-                      class="text-subheading break-words text-highlighted"
-                      data-testid="subjektif-name"
-                    >
+                  <DsCluster gap="xs">
+                    <DsHeading :level="3" wrap="anywhere" data-testid="subjektif-name">
                       {{ s.name }}
-                    </h3>
+                    </DsHeading>
                     <UBadge
                       :color="s.group === 'teras' ? 'primary' : 'warning'"
                       variant="soft"
                       data-testid="subjektif-badge"
                       >{{ s.group === 'teras' ? 'Teras' : 'Elektif' }}</UBadge
                     >
-                  </div>
-                  <p class="text-caption text-muted" data-testid="subjektif-name-en">
+                  </DsCluster>
+                  <DsText variant="caption" data-testid="subjektif-name-en">
                     {{ s.nameEn }}
-                  </p>
+                  </DsText>
                 </div>
                 <div>
                   <UBadge
@@ -192,7 +198,13 @@ const stats = computed<
         </li>
       </ul>
     </template>
-    <DsLoadError v-else-if="error" :message="LOAD_ERROR" testid="spm-error" retry-testid="spm-retry" @retry="reload()" />
+    <DsLoadError
+      v-else-if="error"
+      :message="LOAD_ERROR"
+      testid="spm-error"
+      retry-testid="spm-retry"
+      @retry="reload()"
+    />
     <SkeletonCards v-else />
   </DsPage>
 </template>

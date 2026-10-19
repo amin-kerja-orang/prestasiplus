@@ -9,7 +9,7 @@ import type { TableColumn } from '@nuxt/ui'
 import { computed } from 'vue'
 import { useRouter } from 'vue-router'
 
-import { DsDrillTable, DsLoadError, DsPanel } from '@/ds'
+import { DsDrillTable, DsLoadError, DsPanel, DsText } from '@/ds'
 
 import { fetchCcClass } from '../api/command-center'
 import type { CcClassStudent, Mood } from '../api/command-center-types'
@@ -109,7 +109,7 @@ function open(userId: number) {
             @drill="(s: Row) => open(s.userId)"
           >
             <template #no-cell="{ row }"
-              ><span class="tabular text-caption text-muted">{{ row.index + 1 }}</span></template
+              ><DsText variant="caption" as="span" tabular>{{ row.index + 1 }}</DsText></template
             >
             <template #name-cell="{ row }">
               <UButton

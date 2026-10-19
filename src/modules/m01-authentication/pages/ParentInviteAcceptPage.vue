@@ -14,7 +14,7 @@ import { useRouter } from 'vue-router'
 
 import { isApiError } from '@/api'
 import { usePageMeta } from '@/composables'
-import { DsLoadError } from '@/ds'
+import { DsLoadError, DsText } from '@/ds'
 import {
   acceptParentInvite,
   fetchInvitePreview,
@@ -95,7 +95,6 @@ async function switchAccount(): Promise<void> {
 onMounted(load)
 // The router reuses this component when only `:token` changes: load the new link from scratch.
 watch(() => props.token, load)
-
 </script>
 
 <template>
@@ -161,11 +160,11 @@ watch(() => props.token, load)
 
     <!-- Logged-in non-parent -->
     <template v-else-if="preview.viewer === 'other'">
-      <p class="text-body text-toned" data-testid="invite-other-text">
+      <DsText variant="body" tone="toned" data-testid="invite-other-text">
         Anda kini log masuk sebagai akaun yang
         <strong class="text-highlighted">bukan Ibu Bapa</strong>. Untuk berhubung dengan pelajar
         ini, sila log keluar dan log masuk semula menggunakan akaun Ibu Bapa anda.
-      </p>
+      </DsText>
       <UButton
         type="button"
         block
@@ -181,11 +180,11 @@ watch(() => props.token, load)
 
     <!-- Guest -->
     <template v-else>
-      <p class="text-body text-toned" data-testid="invite-guest-text">
+      <DsText variant="body" tone="toned" data-testid="invite-guest-text">
         Untuk memantau kemajuan pembelajaran anak anda di PRESTASIPLUS, sila log masuk menggunakan
         akaun Ibu Bapa anda. Selepas log masuk, buka semula pautan jemputan ini untuk mengesahkan
         hubungan.
-      </p>
+      </DsText>
       <UButton
         to="/login"
         block

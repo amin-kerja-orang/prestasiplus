@@ -8,7 +8,7 @@ import { computed, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 
 import { useApi } from '@/composables'
-import { DsFormBar, DsFormField, DsFormSection, DsNativeSelect, DsPage } from '@/ds'
+import { DsFormBar, DsFormField, DsFormSection, DsNativeSelect, DsPage, DsStack } from '@/ds'
 import { clock, formatDateKey } from '@/lib/time'
 
 import { createRph, fetchCikguClasses, fetchCikguSubjects, LEVELS } from '../api'
@@ -103,7 +103,7 @@ async function onSubmit(): Promise<void> {
       </div>
     </template>
 
-    <form id="rph-create-form" class="flex flex-col gap-6" @submit.prevent="onSubmit">
+    <DsStack id="rph-create-form" as="form" gap="lg" @submit.prevent="onSubmit">
       <UAlert
         v-if="errors.length > 0"
         color="error"
@@ -286,6 +286,6 @@ async function onSubmit(): Promise<void> {
       >
         <template #status>{{ C.note }}</template>
       </DsFormBar>
-    </form>
+    </DsStack>
   </DsPage>
 </template>

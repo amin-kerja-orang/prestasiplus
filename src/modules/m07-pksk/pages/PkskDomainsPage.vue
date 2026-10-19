@@ -6,7 +6,16 @@
 import { computed, watch } from 'vue'
 
 import { usePageMeta } from '@/composables'
-import { DsIconChip, DsLoadError, DsPage } from '@/ds'
+import {
+  DsIconChip,
+  DsLoadError,
+  DsPage,
+  DsStack,
+  DsCluster,
+  DsGrid,
+  DsHeading,
+  DsText,
+} from '@/ds'
 
 import { fetchPkskDomainSections } from '../api/pksk'
 import type { PkskLevel } from '../api/types'
@@ -45,22 +54,23 @@ const loadFailed = computed(() => isLoadError(error.value))
     <DsLoadError v-if="loadFailed" :message="LOAD_ERROR" testid="page-error" @retry="reload()" />
 
     <template v-else-if="data">
-      <section
+      <DsStack
         v-for="s in data"
         :key="s.bahagian"
         :data-testid="`section-${s.bahagian}`"
-        class="flex min-w-0 flex-col gap-3"
+        as="section"
+        gap="sm"
       >
-        <div class="flex items-center gap-3">
+        <DsCluster :wrap="false">
           <AccentBadge :accent="SECTION_STYLE[s.bahagian].accent" data-testid="section-badge">{{
             s.bahagian
           }}</AccentBadge>
           <div class="min-w-0">
-            <h2 class="text-heading text-highlighted">{{ s.name }}</h2>
-            <p class="text-label text-muted">{{ s.subtitle }}</p>
+            <DsHeading :level="2">{{ s.name }}</DsHeading>
+            <DsText variant="label" as="p" tone="muted">{{ s.subtitle }}</DsText>
           </div>
-        </div>
-        <div class="grid grid-cols-1 gap-3 md:grid-cols-2 lg:grid-cols-3">
+        </DsCluster>
+        <DsGrid :cols="{ base: 1, md: 2, lg: 3 }" gap="sm">
           <ULink
             v-for="d in s.domains"
             :key="d.code"
@@ -71,8 +81,8 @@ const loadFailed = computed(() => isLoadError(error.value))
             :data-code="d.code"
           >
             <UCard>
-              <div class="flex min-w-0 flex-col gap-3">
-                <div class="flex min-w-0 items-center gap-3">
+              <DsStack gap="sm">
+                <DsCluster :wrap="false">
                   <DsIconChip
                     icon="target"
                     :accent="SECTION_STYLE[s.bahagian].accent"
@@ -80,17 +90,17 @@ const loadFailed = computed(() => isLoadError(error.value))
                     data-testid="domain-icon"
                   />
                   <div class="min-w-0 flex-1">
-                    <h3 class="text-subheading break-words text-highlighted">
+                    <DsHeading :level="3" wrap="anywhere">
                       {{ d.name }}
-                    </h3>
-                    <p class="text-caption text-muted">{{ d.code }}</p>
+                    </DsHeading>
+                    <DsText variant="caption">{{ d.code }}</DsText>
                   </div>
                   <UIcon
                     name="i-ph-caret-right-bold"
                     class="size-5 shrink-0 text-muted"
                     aria-hidden="true"
                   />
-                </div>
+                </DsCluster>
                 <div class="flex items-center justify-between text-label">
                   <span class="inline-flex items-center gap-2 text-muted">
                     <UIcon name="i-ph-question-duotone" class="size-4" aria-hidden="true" /> Soalan
@@ -106,11 +116,11 @@ const loadFailed = computed(() => isLoadError(error.value))
                   >
                 </div>
                 <MasteryBar :pct="d.masteryPct" :accent="SECTION_STYLE[s.bahagian].accent" />
-              </div>
+              </DsStack>
             </UCard>
           </ULink>
-        </div>
-      </section>
+        </DsGrid>
+      </DsStack>
     </template>
   </DsPage>
 </template>

@@ -8,6 +8,7 @@ import { shortSchool } from '../command-center/cc-format'
 import { rankColor, S3_COPY } from './board-copy'
 import type { LoadStatus } from './composables'
 import DailyPanel from './DailyPanel.vue'
+import { DsStack, DsText } from '@/ds'
 
 const props = defineProps<{ data: CcDailyActivity | null; status: LoadStatus; basePath: string }>()
 const paths = ccPaths(props.basePath)
@@ -22,7 +23,7 @@ const paths = ccPaths(props.basePath)
     >
       {{ S3_COPY.noData }}
     </p>
-    <ul v-else class="flex flex-col gap-1">
+    <DsStack v-else as="ul" gap="2xs">
       <li
         v-for="(s, i) in data.topStudents"
         :key="s.userId"
@@ -41,21 +42,24 @@ const paths = ccPaths(props.basePath)
             :label="s.name"
             data-testid="cc-daily-top-name"
           />
-          <span
+          <DsText
             v-if="s.schoolName"
-            class="text-caption break-words text-muted"
+            variant="caption"
+            as="span"
+            wrap="anywhere"
             :title="s.schoolName"
-            >{{ shortSchool(s.schoolName) }}</span>
+            >{{ shortSchool(s.schoolName) }}</DsText
+          >
         </span>
         <span class="tabular flex shrink-0 flex-col text-end">
           <b class="text-label text-highlighted" data-testid="cc-daily-top-answers"
             >{{ formatCount(s.answers) }} jwb</b
           >
-          <span class="text-caption text-success">{{
+          <DsText variant="caption" as="span" tone="success">{{
             `${formatNumber(s.accuracy, { decimals: 1 })}%`
-          }}</span>
+          }}</DsText>
         </span>
       </li>
-    </ul>
+    </DsStack>
   </DailyPanel>
 </template>

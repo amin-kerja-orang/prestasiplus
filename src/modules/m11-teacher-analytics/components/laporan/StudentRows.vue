@@ -6,6 +6,7 @@
  */
 import type { StudentLite } from '../../api/types'
 import { activityCount, LAPORAN_COPY } from './copy'
+import { DsStack, DsText } from '@/ds'
 
 defineProps<{
   rows: (StudentLite & { activities?: number })[]
@@ -14,7 +15,7 @@ defineProps<{
 </script>
 
 <template>
-  <ul class="flex flex-col" :data-testid="testId">
+  <DsStack as="ul" gap="none" :data-testid="testId">
     <li
       v-for="s in rows"
       :key="s.id"
@@ -24,10 +25,10 @@ defineProps<{
     >
       <UAvatar :src="s.avatarUrl || undefined" :alt="s.name" size="md" />
       <div class="min-w-0 flex-1">
-        <p class="truncate text-label text-highlighted" data-testid="student-name">
+        <DsText variant="label" as="p" tone="highlighted" truncate data-testid="student-name">
           {{ s.name }}
-        </p>
-        <p class="truncate text-caption text-muted" data-testid="student-email">{{ s.email }}</p>
+        </DsText>
+        <DsText variant="caption" truncate data-testid="student-email">{{ s.email }}</DsText>
       </div>
       <UBadge
         v-if="s.activities !== undefined"
@@ -37,12 +38,15 @@ defineProps<{
         data-testid="student-activities"
         :label="activityCount(s.activities)"
       />
-      <span
+      <DsText
         v-else-if="s.neverLoggedIn"
-        class="shrink-0 text-caption text-error"
+        variant="caption"
+        as="span"
+        tone="error"
+        class="shrink-0"
         data-testid="student-never"
-        >{{ LAPORAN_COPY.neverLoggedIn }}</span
+        >{{ LAPORAN_COPY.neverLoggedIn }}</DsText
       >
     </li>
-  </ul>
+  </DsStack>
 </template>

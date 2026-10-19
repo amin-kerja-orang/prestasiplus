@@ -12,7 +12,18 @@ import { useRoute } from 'vue-router'
 import { isApiError } from '@/api'
 import { setRouteOutcome } from '@/app/router'
 import { useApi, usePageMeta } from '@/composables'
-import { DsArt3D, DsLeaderRow, DsPage, DsStatTile, DsLoadError } from '@/ds'
+import {
+  DsArt3D,
+  DsLeaderRow,
+  DsPage,
+  DsStatTile,
+  DsLoadError,
+  DsStack,
+  DsCluster,
+  DsGrid,
+  DsHeading,
+  DsText,
+} from '@/ds'
 
 import { fetchSchoolDetail } from '../api'
 import BattleRecentList from '../components/battle/BattleRecentList.vue'
@@ -108,10 +119,10 @@ const boxes = computed(() => {
 
 <template>
   <DsPage data-testid="battle-school-detail">
-    <div v-if="!data && !error" class="flex flex-col gap-4" aria-busy="true">
+    <DsStack v-if="!data && !error" aria-busy="true">
       <USkeleton class="h-24 w-full" />
       <USkeleton class="h-32 w-full" />
-    </div>
+    </DsStack>
     <DsLoadError
       v-else-if="error && !notFound"
       message="Maaf, berlaku ralat. Sila cuba semula."
@@ -121,18 +132,20 @@ const boxes = computed(() => {
 
     <template v-else-if="data">
       <UCard>
-        <div class="flex items-center justify-between gap-4">
+        <DsCluster gap="md" justify="between" :wrap="false">
           <div class="min-w-0">
-            <h2 class="text-title break-words text-highlighted" data-testid="battle-school-name">
+            <DsHeading :level="2" variant="title" wrap="anywhere" data-testid="battle-school-name">
               {{ data.school.name }}
-            </h2>
-            <p class="text-body text-muted" data-testid="battle-school-line">{{ heroLine }}</p>
+            </DsHeading>
+            <DsText variant="body" tone="muted" data-testid="battle-school-line">{{
+              heroLine
+            }}</DsText>
           </div>
           <DsArt3D name="cap" size="hero" float class="hidden sm:block" />
-        </div>
+        </DsCluster>
       </UCard>
 
-      <div class="grid grid-cols-2 gap-3 md:grid-cols-4">
+      <DsGrid :cols="{ base: 2, md: 4 }" gap="sm">
         <DsStatTile
           v-for="c in cards"
           :key="c.id"
@@ -142,51 +155,67 @@ const boxes = computed(() => {
           :accent="c.accent"
           :data-testid="`battle-card-${c.id}`"
         />
-      </div>
+      </DsGrid>
 
-      <div class="grid grid-cols-1 gap-3 md:grid-cols-2">
+      <DsGrid :cols="{ base: 1, md: 2 }" gap="sm">
         <UCard v-for="b in boxes" :key="b.id" :data-testid="`battle-period-box-${b.id}`">
           <h3 class="flex items-center gap-2 text-subheading text-highlighted">
             <UIcon :name="b.icon" class="size-5 text-primary-t" aria-hidden="true" /> {{ b.title }}
           </h3>
           <dl v-if="b.box" class="mt-3 flex flex-col gap-2">
-            <div class="flex items-center justify-between gap-3">
-              <dt class="text-body text-muted">Ranking Nasional</dt>
-              <dd class="tabular text-label text-primary-t" data-testid="battle-box-rank">
+            <DsCluster justify="between" :wrap="false">
+              <DsText variant="body" as="dt" tone="muted">Ranking Nasional</DsText>
+              <DsText variant="label" as="dd" tone="primary" tabular data-testid="battle-box-rank">
                 #{{ b.box.rank }}
-              </dd>
-            </div>
-            <div class="flex items-center justify-between gap-3">
-              <dt class="text-body text-muted">Battle</dt>
-              <dd class="tabular text-label text-highlighted" data-testid="battle-box-battles">
+              </DsText>
+            </DsCluster>
+            <DsCluster justify="between" :wrap="false">
+              <DsText variant="body" as="dt" tone="muted">Battle</DsText>
+              <DsText
+                variant="label"
+                as="dd"
+                tone="highlighted"
+                tabular
+                data-testid="battle-box-battles"
+              >
                 {{ b.box.battles }}
-              </dd>
-            </div>
-            <div class="flex items-center justify-between gap-3">
-              <dt class="text-body text-muted">Menang/Seri/Kalah</dt>
-              <dd class="tabular text-label text-highlighted" data-testid="battle-box-msk">
+              </DsText>
+            </DsCluster>
+            <DsCluster justify="between" :wrap="false">
+              <DsText variant="body" as="dt" tone="muted">Menang/Seri/Kalah</DsText>
+              <DsText
+                variant="label"
+                as="dd"
+                tone="highlighted"
+                tabular
+                data-testid="battle-box-msk"
+              >
                 {{ mskText(b.box.menang, b.box.seri, b.box.kalah) }}
-              </dd>
-            </div>
-            <div class="flex items-center justify-between gap-3">
-              <dt class="text-body text-muted">Skor</dt>
-              <dd class="tabular text-label text-primary-t" data-testid="battle-box-skor">
+              </DsText>
+            </DsCluster>
+            <DsCluster justify="between" :wrap="false">
+              <DsText variant="body" as="dt" tone="muted">Skor</DsText>
+              <DsText variant="label" as="dd" tone="primary" tabular data-testid="battle-box-skor">
                 {{ b.box.skor }}
-              </dd>
-            </div>
+              </DsText>
+            </DsCluster>
           </dl>
           <p v-else class="mt-3 text-body text-muted" data-testid="battle-box-empty">
             {{ b.empty }}
           </p>
         </UCard>
-      </div>
+      </DsGrid>
 
       <UCard>
         <h3 class="flex items-center gap-2 text-subheading text-highlighted">
           <UIcon name="i-ph-medal-duotone" class="size-5 text-primary-t" aria-hidden="true" />
           Pejuang Terbaik Minggu Ini
         </h3>
-        <ul v-if="data.fighters.length > 0" class="mt-3 flex flex-col gap-2" data-testid="battle-fighters">
+        <ul
+          v-if="data.fighters.length > 0"
+          class="mt-3 flex flex-col gap-2"
+          data-testid="battle-fighters"
+        >
           <DsLeaderRow
             v-for="(f, i) in data.fighters"
             :key="f.userId"
@@ -203,14 +232,18 @@ const boxes = computed(() => {
 
       <UCard>
         <h3 class="flex items-center gap-2 text-subheading text-highlighted">
-          <UIcon name="i-ph-clock-counter-clockwise-duotone" class="size-5 text-primary-t" aria-hidden="true" />
+          <UIcon
+            name="i-ph-clock-counter-clockwise-duotone"
+            class="size-5 text-primary-t"
+            aria-hidden="true"
+          />
           Battle Terkini
         </h3>
         <div class="mt-3">
           <BattleRecentList v-if="data.recent.length > 0" :rows="data.recent" home-colour />
-          <p v-else class="text-body text-muted" data-testid="battle-recent-empty">
+          <DsText v-else variant="body" tone="muted" data-testid="battle-recent-empty">
             Tiada battle terkini
-          </p>
+          </DsText>
         </div>
       </UCard>
     </template>

@@ -14,7 +14,7 @@ import { computed, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 
 import { useApi, usePageMeta } from '@/composables'
-import { DsEmptyState, DsLoadError } from '@/ds'
+import { DsEmptyState, DsLoadError, DsStack, DsCluster, DsHeading, DsText } from '@/ds'
 
 import { fetchStructured } from '../api/practice'
 import {
@@ -121,7 +121,7 @@ function goPage(page: number): void {
 <template>
   <div class="flex min-w-0 flex-col gap-4 md:gap-6" data-testid="structured-page">
     <!-- Heading: plain, Subjektif SPM, Tracking A Bahasa -->
-    <div class="flex flex-col gap-2" data-testid="structured-heading">
+    <DsStack gap="xs" data-testid="structured-heading">
       <UButton
         v-if="variant.scope"
         :to="variant.track ? '/spm/ramalan' : '/spm/subjektif'"
@@ -144,12 +144,16 @@ function goPage(page: number): void {
         >Tracking A Bahasa</UBadge
       >
 
-      <h1 class="text-title text-highlighted" data-testid="structured-h1">
+      <DsHeading :level="1" data-testid="structured-h1">
         {{
-          variant.track ? 'Tracking A Bahasa' : variant.scope ? 'Subjektif SPM' : 'Soalan Berstruktur'
+          variant.track
+            ? 'Tracking A Bahasa'
+            : variant.scope
+              ? 'Subjektif SPM'
+              : 'Soalan Berstruktur'
         }}
-      </h1>
-      <p class="max-w-prose text-body text-muted" data-testid="structured-sub">
+      </DsHeading>
+      <DsText variant="body" tone="muted" class="max-w-prose" data-testid="structured-sub">
         <template v-if="variant.track">
           Set bahasa dibuka ikut format kertas sebenar. BM dan BI tidak dipaksa menjadi 40 MCQ, dan
           dipaparkan mengikut susunan BM kemudian BI.
@@ -158,15 +162,15 @@ function goPage(page: number): void {
           Pilih set struktur dan esei Tingkatan 4 atau 5 mengikut subjek semasa
         </template>
         <template v-else>Latih tubi format Kertas 2 — jawab &amp; semak secara automatik</template>
-      </p>
+      </DsText>
 
       <UCard v-if="variant.track" data-testid="structured-info">
-        <div class="flex flex-col gap-3">
-          <p class="text-body text-default">
+        <DsStack gap="sm">
+          <DsText variant="body">
             Subjek bahasa tidak dipaksa menjadi 40 MCQ. Laluan ini menggunakan paper-based tracking
             dengan pendekatan berstruktur / respons sebenar.
-          </p>
-          <div class="flex flex-wrap gap-2">
+          </DsText>
+          <DsCluster gap="xs" align="stretch">
             <UBadge v-for="chip in BAHASA_CHIPS" :key="chip" color="neutral" variant="soft">{{
               chip
             }}</UBadge>
@@ -178,15 +182,17 @@ function goPage(page: number): void {
               data-testid="structured-found"
               >{{ meta.totalItems }} set ditemui</UBadge
             >
-          </div>
-        </div>
+          </DsCluster>
+        </DsStack>
       </UCard>
-    </div>
+    </DsStack>
 
     <!-- Filter -->
     <UCard>
-      <form
-        class="flex flex-col gap-3 sm:flex-row sm:items-end"
+      <DsCluster
+        as="form"
+        stack-below="sm"
+        align="end"
         data-testid="structured-filter"
         @submit.prevent="search"
       >
@@ -216,7 +222,7 @@ function goPage(page: number): void {
           data-testid="filter-submit"
           >Cari</UButton
         >
-      </form>
+      </DsCluster>
     </UCard>
 
     <template v-if="data">
@@ -235,8 +241,8 @@ function goPage(page: number): void {
       >
         <li v-for="c in items" :key="c.id" class="min-w-0">
           <UCard class="h-full" :data-testid="`structured-card-${String(c.id)}`">
-            <div class="flex h-full flex-col gap-3">
-              <div class="flex flex-wrap items-center gap-2">
+            <DsStack gap="sm" class="h-full">
+              <DsCluster gap="xs">
                 <UBadge color="neutral" variant="soft" data-testid="card-subject">{{
                   c.subjectName
                 }}</UBadge>
@@ -259,19 +265,27 @@ function goPage(page: number): void {
                 <UBadge v-if="c.isTrial" color="success" variant="soft" data-testid="card-trial"
                   >Trial</UBadge
                 >
-              </div>
-              <p
-                class="line-clamp-3 text-body break-words whitespace-pre-line text-highlighted"
+              </DsCluster>
+              <DsText
+                variant="body"
+                tone="highlighted"
+                :clamp="3"
+                wrap="anywhere"
+                class="whitespace-pre-line"
                 data-testid="card-preview"
               >
                 {{ c.preview }}
-              </p>
+              </DsText>
               <p
                 v-if="c.topic"
                 class="flex items-start gap-2 text-caption text-muted"
                 data-testid="card-topic"
               >
-                <UIcon name="i-ph-book-open-duotone" class="mt-1 size-4 shrink-0" aria-hidden="true" />
+                <UIcon
+                  name="i-ph-book-open-duotone"
+                  class="mt-1 size-4 shrink-0"
+                  aria-hidden="true"
+                />
                 <span class="min-w-0 break-words">{{ c.topic }}</span>
               </p>
               <p
@@ -289,7 +303,10 @@ function goPage(page: number): void {
                 >
               </p>
               <div class="mt-auto flex items-center justify-between gap-3">
-                <span class="flex items-center gap-2 text-caption text-muted" data-testid="card-footer">
+                <span
+                  class="flex items-center gap-2 text-caption text-muted"
+                  data-testid="card-footer"
+                >
                   <UIcon name="i-ph-list-numbers-duotone" class="size-4" aria-hidden="true" />
                   {{ c.subQuestionCount }} soalan · {{ c.levelName }}
                 </span>
@@ -301,14 +318,17 @@ function goPage(page: number): void {
                   >Mula</UButton
                 >
               </div>
-            </div>
+            </DsStack>
           </UCard>
         </li>
       </ul>
 
-      <div
+      <DsCluster
         v-if="meta && items.length > 0"
-        class="flex justify-center"
+        gap="none"
+        align="stretch"
+        justify="center"
+        :wrap="false"
         data-testid="structured-pager"
       >
         <UPagination
@@ -317,7 +337,7 @@ function goPage(page: number): void {
           :items-per-page="PAGE_SIZE"
           @update:page="goPage"
         />
-      </div>
+      </DsCluster>
     </template>
 
     <DsLoadError

@@ -8,7 +8,7 @@
  * - the card column holds the logo + tagline + default slot, an optional `below` slot (the S1
  *   stats stickers) and the footer line.
  */
-import { DsArt3D, DsBrandLogo, DsFriendAvatar } from '@/ds'
+import { DsArt3D, DsBrandLogo, DsFriendAvatar, DsCluster } from '@/ds'
 import { useThemeMode } from '@/theme/color-mode'
 
 import AuthBrandStrip from './AuthBrandStrip.vue'
@@ -43,42 +43,27 @@ useThemeMode('learner')
       />
       <div class="pointer-events-none absolute inset-0" aria-hidden="true">
         <DsArt3D name="rocket" size="hero" float class="absolute top-8 right-10" />
-        <DsArt3D
-          name="trophy"
-          size="xl"
-          float
-          class="absolute top-44 right-8"
-        />
-        <DsArt3D
-          name="coin"
-          size="lg"
-          float
-          class="absolute right-10 bottom-14"
-        />
-        <DsArt3D
-          name="fire"
-          size="md"
-          float
-          class="absolute right-36 bottom-4"
-        />
-        <DsArt3D
-          name="books"
-          size="lg"
-          float
-          class="absolute bottom-3 left-12"
-        />
-        <DsArt3D
-          name="party"
-          size="sm"
-          float
-          class="absolute top-6 left-1/2"
-        />
+        <DsArt3D name="trophy" size="xl" float class="absolute top-44 right-8" />
+        <DsArt3D name="coin" size="lg" float class="absolute right-10 bottom-14" />
+        <DsArt3D name="fire" size="md" float class="absolute right-36 bottom-4" />
+        <DsArt3D name="books" size="lg" float class="absolute bottom-3 left-12" />
+        <DsArt3D name="party" size="sm" float class="absolute top-6 left-1/2" />
       </div>
-      <div class="relative flex items-end gap-3" aria-hidden="true" data-testid="auth-friends">
+      <DsCluster
+        align="end"
+        :wrap="false"
+        class="relative"
+        aria-hidden="true"
+        data-testid="auth-friends"
+      >
         <DsFriendAvatar friend="aiman" mood="happy" size="lg" />
         <DsFriendAvatar friend="aisyah" mood="happy" size="lg" />
-        <p class="mb-3 rounded-card bg-primary-on px-4 py-2.5 text-label text-primary-t shadow-lift">Jom sambung belajar!</p>
-      </div>
+        <p
+          class="mb-3 rounded-card bg-primary-on px-4 py-2.5 text-label text-primary-t shadow-lift"
+        >
+          Jom sambung belajar!
+        </p>
+      </DsCluster>
       <slot name="welcome" />
     </aside>
 

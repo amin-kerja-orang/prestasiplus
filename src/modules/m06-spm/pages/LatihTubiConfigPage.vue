@@ -12,7 +12,7 @@ import { useRoute } from 'vue-router'
 import { isApiError } from '@/api'
 import { setRouteOutcome } from '@/app/router/outcome'
 import { useApi, usePageMeta } from '@/composables'
-import { DsBackLink, DsIconChip, DsLoadError } from '@/ds'
+import { DsBackLink, DsIconChip, DsLoadError, DsCluster, DsStack, DsHeading, DsText } from '@/ds'
 import { formatCount } from '@/lib/number'
 import { subjectGlyph } from '@/modules/m05-practice'
 
@@ -99,8 +99,10 @@ const typeName = computed(() =>
 )
 
 /** A choice is a solid button when picked, a tonal one otherwise. */
-const pick = (on: boolean, color: 'primary' | 'success' | 'info' | 'warning' | 'error' = 'primary') =>
-  ({ color: on ? color : 'neutral', variant: on ? 'solid' : 'soft' }) as const
+const pick = (
+  on: boolean,
+  color: 'primary' | 'success' | 'info' | 'warning' | 'error' = 'primary',
+) => ({ color: on ? color : 'neutral', variant: on ? 'solid' : 'soft' }) as const
 </script>
 
 <template>
@@ -109,31 +111,31 @@ const pick = (on: boolean, color: 'primary' | 'success' | 'info' | 'warning' | '
       <DsBackLink to="/spm/latih-tubi" label="Kembali" data-testid="spm-back" />
 
       <UCard data-testid="config-hero">
-        <div class="flex items-center gap-4">
+        <DsCluster gap="md" :wrap="false">
           <DsIconChip :icon="subjectGlyph(config.icon)" size="lg" data-testid="config-icon" />
-          <div class="flex min-w-0 flex-col gap-1">
-            <h1 class="text-title break-words text-highlighted" data-testid="config-title">
+          <DsStack gap="2xs">
+            <DsHeading :level="1" wrap="anywhere" data-testid="config-title">
               {{ config.name }}
-            </h1>
-            <p class="text-body text-muted" data-testid="config-sub">
+            </DsHeading>
+            <DsText variant="body" tone="muted" data-testid="config-sub">
               {{ formatCount(config.total) }} soalan tersedia<template v-if="hasTarget">
                 · Target {{ typeName }} set: {{ config.targetSize }} soalan</template
               >
-            </p>
-          </div>
-        </div>
+            </DsText>
+          </DsStack>
+        </DsCluster>
       </UCard>
 
       <UCard data-testid="config-card">
-        <div class="flex flex-col gap-6">
+        <DsStack gap="lg">
           <h2 class="flex items-center gap-2 text-heading text-highlighted">
             <UIcon name="i-ph-gear-six-duotone" class="size-6 text-primary-t" aria-hidden="true" />
             Tetapan Kuiz
           </h2>
 
           <!-- Tingkatan -->
-          <div class="flex flex-col gap-3">
-            <h3 class="text-subheading text-highlighted">Tingkatan</h3>
+          <DsStack gap="sm">
+            <DsHeading :level="3">Tingkatan</DsHeading>
             <div class="grid grid-cols-2 gap-2 md:gap-3" data-testid="config-levels">
               <UButton
                 v-for="l in LEVEL_OPTIONS"
@@ -150,12 +152,15 @@ const pick = (on: boolean, color: 'primary' | 'success' | 'info' | 'warning' | '
                 </span>
               </UButton>
             </div>
-          </div>
+          </DsStack>
 
           <!-- Tahap Kesukaran -->
-          <div class="flex flex-col gap-3">
-            <h3 class="text-subheading text-highlighted">Tahap Kesukaran</h3>
-            <div class="grid grid-cols-2 gap-2 sm:grid-cols-4 md:gap-3" data-testid="config-difficulties">
+          <DsStack gap="sm">
+            <DsHeading :level="3">Tahap Kesukaran</DsHeading>
+            <div
+              class="grid grid-cols-2 gap-2 sm:grid-cols-4 md:gap-3"
+              data-testid="config-difficulties"
+            >
               <UButton
                 v-for="d in DIFFICULTY_OPTIONS"
                 :key="d.key"
@@ -171,13 +176,13 @@ const pick = (on: boolean, color: 'primary' | 'success' | 'info' | 'warning' | '
                 </span>
               </UButton>
             </div>
-            <p class="text-caption text-muted">Biarkan kosong untuk campuran semua tahap</p>
-          </div>
+            <DsText variant="caption">Biarkan kosong untuk campuran semua tahap</DsText>
+          </DsStack>
 
           <!-- Bilangan Soalan -->
-          <div class="flex flex-col gap-3">
-            <h3 class="text-subheading text-highlighted">Bilangan Soalan</h3>
-            <div class="flex flex-wrap gap-2" data-testid="config-counts">
+          <DsStack gap="sm">
+            <DsHeading :level="3">Bilangan Soalan</DsHeading>
+            <DsCluster gap="xs" align="stretch" data-testid="config-counts">
               <UButton
                 v-for="o in config.countOptions"
                 :key="o.value"
@@ -189,15 +194,15 @@ const pick = (on: boolean, color: 'primary' | 'success' | 'info' | 'warning' | '
                 @click="questionCount = o.value"
                 >{{ o.label }}</UButton
               >
-            </div>
-            <p v-if="hasTarget" class="text-caption text-muted" data-testid="config-helper">
+            </DsCluster>
+            <DsText v-if="hasTarget" variant="caption" data-testid="config-helper">
               Set penuh target {{ config.targetType }} untuk {{ config.name }} disasar pada
               {{ config.targetSize }} soalan.
-            </p>
-            <p v-else class="text-caption text-muted" data-testid="config-helper">
+            </DsText>
+            <DsText v-else variant="caption" data-testid="config-helper">
               Pilih bilangan soalan ikut keperluan latihan anda.
-            </p>
-          </div>
+            </DsText>
+          </DsStack>
 
           <UButton
             :to="href"
@@ -208,13 +213,19 @@ const pick = (on: boolean, color: 'primary' | 'success' | 'info' | 'warning' | '
             data-testid="config-start"
             >Mula Kuiz</UButton
           >
-        </div>
+        </DsStack>
       </UCard>
     </template>
-    <DsLoadError v-else-if="error && !notFound" :message="LOAD_ERROR" testid="spm-error" retry-testid="spm-retry" @retry="reload()" />
-    <div v-else-if="!error" class="flex flex-col gap-3" aria-busy="true" data-testid="spm-skeleton">
+    <DsLoadError
+      v-else-if="error && !notFound"
+      :message="LOAD_ERROR"
+      testid="spm-error"
+      retry-testid="spm-retry"
+      @retry="reload()"
+    />
+    <DsStack v-else-if="!error" gap="sm" aria-busy="true" data-testid="spm-skeleton">
       <USkeleton class="h-20" />
       <USkeleton class="h-96" />
-    </div>
+    </DsStack>
   </div>
 </template>

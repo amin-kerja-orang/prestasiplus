@@ -16,6 +16,10 @@ import {
   DsStatRow,
   type DsAccent,
   type StatItem,
+  DsGrid,
+  DsStack,
+  DsText,
+  DsHeading,
 } from '@/ds'
 import { useSessionStore } from '@/stores/session'
 
@@ -92,24 +96,31 @@ const QUICK_ACCENTS: DsAccent[] = ['action', 'win', 'heat', 'friend']
       @retry="reload"
     />
 
-    <div
+    <DsGrid
       v-else-if="!data"
-      class="grid grid-cols-2 gap-3 lg:grid-cols-4"
+      :cols="{ base: 2, lg: 4 }"
+      gap="sm"
       aria-busy="true"
       data-testid="dashboard-loading"
     >
       <USkeleton v-for="n in 4" :key="n" class="h-28 w-full" />
-    </div>
+    </DsGrid>
 
     <template v-else>
-      <DsStatRow :items="stats" prefix="stat" part-prefix="stat" data-testid="stat-cards" :cols="4" />
+      <DsStatRow
+        :items="stats"
+        prefix="stat"
+        part-prefix="stat"
+        data-testid="stat-cards"
+        :cols="4"
+      />
       <div class="grid min-w-0 grid-cols-1 gap-4 xl:grid-cols-12 xl:items-start">
         <div class="flex min-w-0 flex-col gap-4 xl:col-span-8">
           <TodayPanel :today="data.today" />
 
           <DsPanel data-testid="peer-card">
-            <p class="text-overline text-muted">{{ DASH_COPY.peerLabel }}</p>
-            <h2 class="text-subheading text-highlighted">{{ DASH_COPY.peerTitle }}</h2>
+            <DsText variant="overline" as="p">{{ DASH_COPY.peerLabel }}</DsText>
+            <DsHeading :level="2" variant="subheading">{{ DASH_COPY.peerTitle }}</DsHeading>
             <p class="mt-1 text-body text-muted">{{ DASH_COPY.peerText }}</p>
             <p class="mt-4 text-body text-muted" data-testid="peer-empty">
               {{ DASH_COPY.peerEmpty }}
@@ -140,7 +151,7 @@ const QUICK_ACCENTS: DsAccent[] = ['action', 'win', 'heat', 'friend']
             accent="win"
             data-testid="quick-card"
           >
-            <div class="flex flex-col gap-2">
+            <DsStack gap="xs">
               <template v-for="(q, i) in DASH_COPY.quick" :key="q.to">
                 <!-- Prototype scope (D43): tiles that lead outside the matrix are not shown. -->
                 <UButton
@@ -154,12 +165,12 @@ const QUICK_ACCENTS: DsAccent[] = ['action', 'win', 'heat', 'friend']
                 >
                   <DsIconChip :icon="QUICK_ICONS[i]!" :accent="QUICK_ACCENTS[i]" />
                   <span class="min-w-0">
-                    <span class="block text-label text-highlighted">{{ q.title }}</span>
-                    <span class="block text-caption text-muted">{{ q.text }}</span>
+                    <DsText variant="label" tone="highlighted" class="block">{{ q.title }}</DsText>
+                    <DsText variant="caption" as="span" class="block">{{ q.text }}</DsText>
                   </span>
                 </UButton>
               </template>
-            </div>
+            </DsStack>
           </DsPanel>
 
           <DsPanel

@@ -8,7 +8,16 @@
  */
 import { computed } from 'vue'
 
-import { DsChart, DsIconChip, DsPanel, type DsAccent } from '@/ds'
+import {
+  DsChart,
+  DsIconChip,
+  DsPanel,
+  type DsAccent,
+  DsGrid,
+  DsStack,
+  DsText,
+  DsHeading,
+} from '@/ds'
 
 import type { SchoolActivityReport } from '../../api/school-admin'
 import { count, wholePercent } from './activity-format'
@@ -89,45 +98,49 @@ const cards = computed<Card[]>(() => [
 
 <template>
   <div class="flex min-w-0 flex-col gap-4 md:gap-6" data-testid="la-overview">
-    <ul class="grid min-w-0 grid-cols-2 gap-3 lg:grid-cols-4" data-testid="la-cards">
+    <DsGrid :cols="{ base: 2, lg: 4 }" gap="sm" as="ul" data-testid="la-cards">
       <li v-for="c in cards" :key="c.key" class="min-w-0">
-        <DsPanel
-          class="h-full"
-          :data-testid="`la-card-${c.key}`"
-        >
-          <div class="flex min-w-0 flex-col items-start gap-2">
-          <DsIconChip :icon="c.icon" :accent="c.accent" />
-          <p class="text-caption break-words text-muted" data-testid="la-card-label">
-            {{ c.label }}
-          </p>
-          <p v-if="c.pct" class="tabular text-heading text-highlighted" data-testid="la-card-pct">
-            {{ c.pct }}
-          </p>
-          <p
-            :class="
-              c.pct ? 'text-label break-words text-muted' : 'tabular text-heading break-words text-highlighted'
-            "
-          >
-            <span data-testid="la-card-value">{{ c.value }}</span>
-            <span v-if="c.of" class="ms-1 text-muted" data-testid="la-card-of">{{ c.of }}</span>
-          </p>
-          <p
-            v-if="c.note"
-            class="flex items-center gap-1 text-caption text-muted"
-            data-testid="la-card-note"
-          >
-            <UIcon v-if="c.warn" name="i-ph-warning-circle" class="size-4 shrink-0" aria-hidden="true" />{{
-              c.note
-            }}
-          </p>
-          </div>
+        <DsPanel class="h-full" :data-testid="`la-card-${c.key}`">
+          <DsStack gap="xs" align="start">
+            <DsIconChip :icon="c.icon" :accent="c.accent" />
+            <DsText variant="caption" wrap="anywhere" data-testid="la-card-label">
+              {{ c.label }}
+            </DsText>
+            <DsText v-if="c.pct" variant="heading" tabular data-testid="la-card-pct">
+              {{ c.pct }}
+            </DsText>
+            <p
+              :class="
+                c.pct
+                  ? 'text-label break-words text-muted'
+                  : 'tabular text-heading break-words text-highlighted'
+              "
+            >
+              <span data-testid="la-card-value">{{ c.value }}</span>
+              <span v-if="c.of" class="ms-1 text-muted" data-testid="la-card-of">{{ c.of }}</span>
+            </p>
+            <p
+              v-if="c.note"
+              class="flex items-center gap-1 text-caption text-muted"
+              data-testid="la-card-note"
+            >
+              <UIcon
+                v-if="c.warn"
+                name="i-ph-warning-circle"
+                class="size-4 shrink-0"
+                aria-hidden="true"
+              />{{ c.note }}
+            </p>
+          </DsStack>
         </DsPanel>
       </li>
-    </ul>
+    </DsGrid>
 
     <DsPanel data-testid="la-trend">
-      <div class="flex min-w-0 flex-col gap-3">
-        <h2 class="text-subheading text-highlighted" data-testid="la-trend-title">Trend Aktiviti</h2>
+      <DsStack gap="sm">
+        <DsHeading :level="2" variant="subheading" data-testid="la-trend-title"
+          >Trend Aktiviti</DsHeading
+        >
         <DsChart
           type="line"
           title="Trend aktiviti"
@@ -136,12 +149,12 @@ const cards = computed<Card[]>(() => [
           :series="trendSeries"
           data-testid="la-trend-chart"
         />
-      </div>
+      </DsStack>
     </DsPanel>
 
-    <div class="grid min-w-0 grid-cols-1 gap-4 md:grid-cols-3">
+    <DsGrid :cols="{ base: 1, md: 3 }">
       <DsPanel data-testid="la-breakdown">
-        <h2 class="text-subheading text-highlighted">Pecahan Aktiviti</h2>
+        <DsHeading :level="2" variant="subheading">Pecahan Aktiviti</DsHeading>
         <DsChart
           class="mt-3"
           type="bar"
@@ -159,17 +172,17 @@ const cards = computed<Card[]>(() => [
             data-testid="la-breakdown-row"
           >
             <span class="text-muted" data-testid="la-breakdown-label">{{ b.label }}</span>
-            <span class="tabular text-label text-highlighted" data-testid="la-breakdown-value">{{
+            <DsText variant="label" tone="highlighted" tabular data-testid="la-breakdown-value">{{
               count(b.value)
-            }}</span>
+            }}</DsText>
           </li>
         </ul>
       </DsPanel>
 
       <DsPanel data-testid="la-top">
         <h2 class="flex items-center gap-2 text-subheading text-highlighted">
-          <UIcon name="i-ph-trophy" class="size-5 text-primary-t" aria-hidden="true" />Pelajar Paling
-          Aktif
+          <UIcon name="i-ph-trophy" class="size-5 text-primary-t" aria-hidden="true" />Pelajar
+          Paling Aktif
         </h2>
         <ol class="mt-3 flex flex-col text-body">
           <li
@@ -187,15 +200,15 @@ const cards = computed<Card[]>(() => [
             <span class="min-w-0 flex-1 truncate text-highlighted" data-testid="la-top-name">{{
               p.name
             }}</span>
-            <span class="tabular text-label text-highlighted" data-testid="la-top-count">{{
+            <DsText variant="label" tone="highlighted" tabular data-testid="la-top-count">{{
               count(p.activities)
-            }}</span>
+            }}</DsText>
           </li>
         </ol>
       </DsPanel>
 
       <DsPanel data-testid="la-never">
-        <h2 class="text-subheading text-highlighted">Cikgu Belum Login</h2>
+        <DsHeading :level="2" variant="subheading">Cikgu Belum Login</DsHeading>
         <ul class="mt-3 flex flex-col text-body">
           <li
             v-for="t in report.teachersNeverLogged"
@@ -203,15 +216,15 @@ const cards = computed<Card[]>(() => [
             class="min-w-0 py-2 even:bg-soft"
             data-testid="la-never-row"
           >
-            <p class="truncate text-label text-highlighted" data-testid="la-never-name">
+            <DsText variant="label" as="p" tone="highlighted" truncate data-testid="la-never-name">
               {{ t.name }}
-            </p>
-            <p class="truncate text-caption text-muted" data-testid="la-never-email">
+            </DsText>
+            <DsText variant="caption" truncate data-testid="la-never-email">
               {{ t.email }}
-            </p>
+            </DsText>
           </li>
         </ul>
       </DsPanel>
-    </div>
+    </DsGrid>
   </div>
 </template>

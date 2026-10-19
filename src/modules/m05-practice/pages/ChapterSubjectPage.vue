@@ -17,7 +17,7 @@ import { useRoute, useRouter } from 'vue-router'
 import { isApiError } from '@/api'
 import { setRouteOutcome } from '@/app/router/outcome'
 import { useApi, usePageMeta } from '@/composables'
-import { DsEmptyState, DsLoadError } from '@/ds'
+import { DsEmptyState, DsLoadError, DsStack, DsText, DsHeading } from '@/ds'
 import { formatCount } from '@/lib/number'
 
 import { fetchChapterSubject } from '../api/practice'
@@ -74,7 +74,7 @@ function onLevelChange(id: unknown): void {
 <template>
   <div class="flex min-w-0 flex-col gap-4 md:gap-6" data-testid="chapter-subject-page">
     <template v-if="data">
-      <div class="flex flex-col gap-3" data-testid="chapter-subject-hero">
+      <DsStack gap="sm" data-testid="chapter-subject-hero">
         <UButton
           to="/practice/chapter"
           color="neutral"
@@ -85,15 +85,15 @@ function onLevelChange(id: unknown): void {
           >Semua Subjek</UButton
         >
         <div class="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
-          <div class="flex min-w-0 flex-col gap-1">
-            <p class="text-overline text-primary-t">Progressive Unlock</p>
-            <h1 class="text-title text-highlighted" data-testid="chapter-subject-name">
+          <DsStack gap="2xs">
+            <DsText variant="overline" as="p" tone="primary">Progressive Unlock</DsText>
+            <DsHeading :level="1" data-testid="chapter-subject-name">
               {{ data.subject.name }}
-            </h1>
-            <p class="max-w-prose text-body text-muted">
+            </DsHeading>
+            <DsText variant="body" tone="muted" class="max-w-prose">
               Lengkapkan semua soalan bab semasa dan capai 70% untuk buka bab seterusnya.
-            </p>
-          </div>
+            </DsText>
+          </DsStack>
           <USelect
             v-if="data.levels.length > 0"
             :model-value="data.levelId ?? undefined"
@@ -105,7 +105,7 @@ function onLevelChange(id: unknown): void {
             @update:model-value="onLevelChange"
           />
         </div>
-      </div>
+      </DsStack>
 
       <div class="flex flex-col gap-3 md:gap-4" data-testid="chapter-list">
         <ChapterCardItem v-for="c in data.chapters" :key="c.id" :code="code" :chapter="c" />

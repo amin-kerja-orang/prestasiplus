@@ -8,6 +8,7 @@ import { ccPaths } from '../command-center/cc-paths'
 import { shortSchool } from '../command-center/cc-format'
 import { S2_COPY } from './board-copy'
 import BoardPanel from './BoardPanel.vue'
+import { DsStack, DsText } from '@/ds'
 
 const props = defineProps<{ rows: CcFeedRow[] | null; basePath: string }>()
 const paths = ccPaths(props.basePath)
@@ -15,26 +16,36 @@ const paths = ccPaths(props.basePath)
 
 <template>
   <BoardPanel icon="i-ph-lightning" title="Live Feed" testid="cc-panel-feed">
-    <p v-if="rows === null" class="text-body text-muted">{{ S2_COPY.loading }}</p>
-    <p v-else-if="rows.length === 0" class="text-body text-muted" data-testid="cc-empty">
+    <DsText v-if="rows === null" variant="body" tone="muted">{{ S2_COPY.loading }}</DsText>
+    <DsText v-else-if="rows.length === 0" variant="body" tone="muted" data-testid="cc-empty">
       {{ S2_COPY.noFeed }}
-    </p>
-    <ul v-else class="flex flex-col gap-1" aria-live="off">
+    </DsText>
+    <DsStack v-else as="ul" gap="2xs" aria-live="off">
       <li
         v-for="(r, i) in rows"
         :key="i"
         class="flex min-h-11 flex-wrap items-center gap-x-3 gap-y-1 bg-soft px-3 py-2 text-body"
         data-testid="cc-feed-row"
       >
-        <span class="tabular shrink-0 text-caption text-muted" data-testid="cc-feed-time">{{
+        <DsText variant="caption" as="span" tabular class="shrink-0" data-testid="cc-feed-time">{{
           r.time
-        }}</span>
-        <span class="min-w-0 text-label break-words text-highlighted" data-testid="cc-feed-name">{{
-          r.student
-        }}</span>
-        <span class="shrink-0 text-caption text-toned" data-testid="cc-feed-subject">{{
-          r.subject
-        }}</span>
+        }}</DsText>
+        <DsText
+          variant="label"
+          tone="highlighted"
+          wrap="anywhere"
+          class="min-w-0"
+          data-testid="cc-feed-name"
+          >{{ r.student }}</DsText
+        >
+        <DsText
+          variant="caption"
+          as="span"
+          tone="toned"
+          class="shrink-0"
+          data-testid="cc-feed-subject"
+          >{{ r.subject }}</DsText
+        >
         <UButton
           v-if="r.schoolId !== null && r.schoolName"
           :to="paths.school(r.schoolId)"
@@ -52,6 +63,6 @@ const paths = ccPaths(props.basePath)
           >{{ r.correct ? '✓' : '✗' }}</span
         >
       </li>
-    </ul>
+    </DsStack>
   </BoardPanel>
 </template>

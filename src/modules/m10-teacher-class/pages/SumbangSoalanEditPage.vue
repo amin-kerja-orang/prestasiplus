@@ -21,6 +21,9 @@ import {
   DsNativeSelect,
   DsPage,
   DsPanel,
+  DsStack,
+  DsCluster,
+  DsText,
 } from '@/ds'
 
 import { fetchContributedQuestion, updateContributedQuestion } from '../api/guru'
@@ -112,18 +115,18 @@ async function save(): Promise<void> {
       testid="edit-error"
       @retry="reload"
     />
-    <div v-else-if="!data && !notFound" class="flex flex-col gap-3" aria-busy="true">
+    <DsStack v-else-if="!data && !notFound" gap="sm" aria-busy="true">
       <USkeleton class="h-10 w-full" />
       <USkeleton class="h-48 w-full" />
-    </div>
+    </DsStack>
 
     <template v-else-if="data">
       <DsBackLink :to="back" data-testid="edit-back" />
 
-      <form
+      <DsStack
         method="post"
         enctype="multipart/form-data"
-        class="flex min-w-0 flex-col gap-4"
+        as="form"
         data-testid="edit-form"
         @submit.prevent="save"
       >
@@ -141,7 +144,7 @@ async function save(): Promise<void> {
         </UAlert>
 
         <DsPanel data-testid="edit-source">
-          <p class="text-overline text-muted">Sumber Asal</p>
+          <DsText variant="overline" as="p">Sumber Asal</DsText>
           <p class="mt-1 text-body break-all text-default">{{ data.source ?? '' }}</p>
         </DsPanel>
 
@@ -204,30 +207,30 @@ async function save(): Promise<void> {
             class="mb-3"
             data-testid="e-correct"
           />
-          <div class="flex min-w-0 flex-col gap-3">
+          <DsStack gap="sm">
             <DsPanel v-for="(letter, i) in OPTION_LETTERS" :key="letter" tone="inset">
-<div class="flex min-w-0 items-start gap-3">
-              <span class="mt-3 w-6 shrink-0 text-label text-highlighted">{{ letter }})</span>
-              <UTextarea
-                v-model="form.options[i]"
-                :name="`options[${String(i)}][option_text]`"
-                :rows="2"
-                required
-                class="min-w-0 flex-1"
-                :aria-label="`Pilihan ${letter}`"
-                :data-testid="`e-option-${String(i)}`"
-              />
-              <UBadge
-                v-if="form.correct === i"
-                color="success"
-                variant="subtle"
-                icon="i-ph-check-circle-duotone"
-                class="mt-2 shrink-0"
-                >Betul</UBadge
-              >
-            </div>
-</DsPanel>
-          </div>
+              <DsCluster align="start" :wrap="false">
+                <span class="mt-3 w-6 shrink-0 text-label text-highlighted">{{ letter }})</span>
+                <UTextarea
+                  v-model="form.options[i]"
+                  :name="`options[${String(i)}][option_text]`"
+                  :rows="2"
+                  required
+                  class="min-w-0 flex-1"
+                  :aria-label="`Pilihan ${letter}`"
+                  :data-testid="`e-option-${String(i)}`"
+                />
+                <UBadge
+                  v-if="form.correct === i"
+                  color="success"
+                  variant="subtle"
+                  icon="i-ph-check-circle-duotone"
+                  class="mt-2 shrink-0"
+                  >Betul</UBadge
+                >
+              </DsCluster>
+            </DsPanel>
+          </DsStack>
           <p v-if="fields.options" class="mt-2 text-caption text-error">{{ fields.options }}</p>
           <p v-if="fields.correctOptionId" class="mt-2 text-caption text-error">
             {{ fields.correctOptionId }}
@@ -250,7 +253,7 @@ async function save(): Promise<void> {
           </DsFormField>
         </DsPanel>
 
-        <div class="flex flex-wrap items-center gap-3">
+        <DsCluster>
           <UButton
             type="submit"
             :loading="saving"
@@ -268,8 +271,8 @@ async function save(): Promise<void> {
             data-testid="form-cancel"
             >Batal</UButton
           >
-        </div>
-      </form>
+        </DsCluster>
+      </DsStack>
     </template>
   </DsPage>
 </template>

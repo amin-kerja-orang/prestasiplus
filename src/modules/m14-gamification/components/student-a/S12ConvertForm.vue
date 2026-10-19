@@ -6,7 +6,7 @@
  */
 import { computed, ref, watch } from 'vue'
 
-import { DsIconChip } from '@/ds'
+import { DsIconChip, DsStack, DsCluster, DsText } from '@/ds'
 import { formatCount } from '@/lib/number'
 
 import { s12CanConvert, s12ParseAmount, s12Tokens } from '../../lib/student/s12-convert'
@@ -56,11 +56,11 @@ function onSubmit(): void {
 
 <template>
   <UCard class="min-w-0" data-testid="s12-form-card">
-    <div class="flex flex-col gap-4">
+    <DsStack>
       <h2 class="flex items-center gap-2 font-display text-subheading font-bold text-highlighted">
         <DsIconChip icon="arrows-clockwise" size="sm" />Penukaran
       </h2>
-      <form id="convertForm" class="flex flex-col gap-4" data-testid="s12-form" @submit.prevent="onSubmit">
+      <DsStack id="convertForm" as="form" data-testid="s12-form" @submit.prevent="onSubmit">
         <UFormField label="Syiling untuk ditukar" for="syilingInput">
           <UInput
             id="syilingInput"
@@ -77,7 +77,7 @@ function onSubmit(): void {
             @input="onInput"
           />
         </UFormField>
-        <div class="flex flex-wrap gap-2">
+        <DsCluster gap="xs" align="stretch">
           <UButton
             type="button"
             size="lg"
@@ -108,7 +108,7 @@ function onSubmit(): void {
             @click="setAmount(2)"
             >Semua ({{ formatCount(balance) }})</UButton
           >
-        </div>
+        </DsCluster>
 
         <div class="flex justify-center text-primary-t" aria-hidden="true">
           <UIcon name="i-ph-arrow-down-bold" class="size-6" />
@@ -118,7 +118,7 @@ function onSubmit(): void {
           class="flex flex-col items-center gap-1 rounded-card bg-primary-soft p-4 text-center"
           data-testid="s12-preview"
         >
-          <p class="text-label text-muted">Anda akan terima</p>
+          <DsText variant="label" as="p" tone="muted">Anda akan terima</DsText>
           <p
             id="tokenPreview"
             class="tabular font-display text-display font-extrabold text-highlighted"
@@ -126,10 +126,10 @@ function onSubmit(): void {
           >
             {{ formatCount(tokens) }}
           </p>
-          <p class="text-label text-muted">Token 🎫</p>
-          <p class="text-caption text-muted" data-testid="s12-rate-line">
+          <DsText variant="label" as="p" tone="muted">Token 🎫</DsText>
+          <DsText variant="caption" data-testid="s12-rate-line">
             Kadar: {{ rate }} syiling = 1 token ({{ tierLabel }})
-          </p>
+          </DsText>
         </div>
 
         <UButton
@@ -142,7 +142,7 @@ function onSubmit(): void {
           data-testid="s12-submit"
           >Tukar Sekarang</UButton
         >
-      </form>
-    </div>
+      </DsStack>
+    </DsStack>
   </UCard>
 </template>

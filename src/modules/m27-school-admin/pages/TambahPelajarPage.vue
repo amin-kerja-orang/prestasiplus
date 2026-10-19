@@ -23,6 +23,8 @@ import {
   DsNativeSelect,
   DsPage,
   DsPanel,
+  DsStack,
+  DsText,
 } from '@/ds'
 
 import {
@@ -96,16 +98,17 @@ async function submit(): Promise<void> {
     />
 
     <DsPanel v-else-if="!options" data-testid="user-form-skeleton">
-      <div class="flex flex-col gap-6">
+      <DsStack gap="lg">
         <USkeleton v-for="n in 4" :key="n" class="h-11 w-full" />
-      </div>
+      </DsStack>
     </DsPanel>
 
-    <form
+    <DsStack
       v-else
       method="post"
       novalidate
-      class="flex min-w-0 flex-col gap-6"
+      as="form"
+      gap="lg"
       data-testid="user-form"
       @submit.prevent="submit"
     >
@@ -119,9 +122,9 @@ async function submit(): Promise<void> {
           data-testid="user-form-alert"
         >
           <template #description>
-            <ul class="flex flex-col gap-1">
+            <DsStack as="ul" gap="2xs">
               <li v-for="line in errors" :key="line">{{ line }}</li>
-            </ul>
+            </DsStack>
           </template>
         </UAlert>
       </div>
@@ -179,9 +182,9 @@ async function submit(): Promise<void> {
             class="w-full"
             data-testid="pupil-password"
           />
-          <p class="text-caption text-muted" data-testid="pupil-password-hint">
+          <DsText variant="caption" data-testid="pupil-password-hint">
             {{ options.passwordHint }}
-          </p>
+          </DsText>
         </DsFormField>
       </DsFormSection>
 
@@ -191,6 +194,6 @@ async function submit(): Promise<void> {
         submit-icon="i-ph-user-plus"
         :saving="saving"
       />
-    </form>
+    </DsStack>
   </DsPage>
 </template>

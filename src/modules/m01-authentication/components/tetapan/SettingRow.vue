@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { DsCluster, DsText } from '@/ds'
+
 /**
  * One toggle row of S9 "Mod Rohani" (FR-M01-46): label + description on the left, a `USwitch` on
  * the right and, for the Subuh and Ramadan rows, a `type=time` input. Below `sm` the control and
@@ -20,10 +22,12 @@ const time = defineModel<string>('time', { default: '' })
 <template>
   <div class="flex min-h-14 flex-col gap-3 sm:flex-row sm:items-start sm:justify-between sm:gap-4">
     <div class="min-w-0 flex-1">
-      <label :for="id" class="block text-label text-highlighted">{{ label }}</label>
-      <p class="text-caption text-muted">{{ description }}</p>
+      <DsText :for="id" variant="label" as="label" tone="highlighted" class="block">{{
+        label
+      }}</DsText>
+      <DsText variant="caption">{{ description }}</DsText>
     </div>
-    <div class="flex flex-wrap items-center gap-3 sm:shrink-0">
+    <DsCluster class="sm:shrink-0">
       <UInput
         v-if="hasTime"
         v-model="time"
@@ -42,6 +46,6 @@ const time = defineModel<string>('time', { default: '' })
         size="lg"
         :data-testid="`tetapan-${id}`"
       />
-    </div>
+    </DsCluster>
   </div>
 </template>

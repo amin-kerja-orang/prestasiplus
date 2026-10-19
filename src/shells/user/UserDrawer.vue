@@ -22,6 +22,7 @@ import NavIcon from '@/shells/shared/NavIcon.vue'
 import ShellLink from '@/shells/shared/ShellLink.vue'
 
 import UserNavList from './UserNavList.vue'
+import { DsCluster } from '@/ds'
 
 const props = defineProps<{
   open: boolean
@@ -53,7 +54,7 @@ const accountLinks = computed(() =>
     <div class="mobile-drawer" :class="{ open }" data-testid="shell-user-drawer">
       <!-- Drawer Header -->
       <div class="border-b border-indigo-100 p-5">
-        <div class="flex items-center justify-between">
+        <DsCluster gap="none" justify="between" :wrap="false">
           <div>
             <img :src="LOGO_URL" alt="PRESTASIPLUS" class="h-7 w-auto sm:h-8" />
             <p class="mt-0.5 text-[10px] font-medium text-slate-400">
@@ -68,7 +69,7 @@ const accountLinks = computed(() =>
           >
             <NavIcon fa="fa-times" class="text-slate-400" />
           </button>
-        </div>
+        </DsCluster>
         <div
           class="mt-3 flex items-center space-x-3 rounded-xl bg-gradient-to-r from-amber-50 to-orange-50 p-2.5"
           data-testid="shell-user-drawer-card"

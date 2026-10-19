@@ -4,7 +4,7 @@
  * characters, "{Subjek} · {n} soalan dijawab" and the full-width "Latihan Fokus ({k} soalan)" link
  * (k = min(available, 25) in label and link, DV-M08-14). The top block also shows the trend icon.
  */
-import { DsPanel } from '@/ds'
+import { DsPanel, DsStack, DsCluster, DsText } from '@/ds'
 import type { Trend, WeakSp } from '../../api/types'
 import { TREND_ICON, TREND_TEXT, focusHref, weakTitle } from '../../lib/analitik'
 import { usePhIcon } from '../../lib/icons'
@@ -34,8 +34,8 @@ const TREND_LABEL: Record<Trend, string> = {
 
 <template>
   <DsPanel class="h-full min-w-0" :data-testid="`weak-card-${sp.spId}`">
-    <div class="flex h-full flex-col gap-3">
-      <div class="flex items-center justify-between gap-2">
+    <DsStack gap="sm" class="h-full">
+      <DsCluster gap="xs" justify="between" :wrap="false">
         <UBadge color="warning" variant="subtle" size="lg" :label="`${sp.accuracy}%`" />
         <template v-if="trend">
           <span :class="TREND_TEXT[trend]" :data-testid="`trend-${trend}`">
@@ -47,9 +47,11 @@ const TREND_LABEL: Record<Trend, string> = {
             />
           </span>
         </template>
-      </div>
-      <p class="text-label break-words text-highlighted">{{ weakTitle(sp, max) }}</p>
-      <p class="text-caption text-muted">{{ sp.subjectName }} · {{ sp.answered }} soalan dijawab</p>
+      </DsCluster>
+      <DsText variant="label" as="p" tone="highlighted" wrap="anywhere">{{
+        weakTitle(sp, max)
+      }}</DsText>
+      <DsText variant="caption">{{ sp.subjectName }} · {{ sp.answered }} soalan dijawab</DsText>
       <UButton
         :to="href()"
         block
@@ -59,6 +61,6 @@ const TREND_LABEL: Record<Trend, string> = {
         :label="`Latihan Fokus (${Math.min(sp.available, 25)} soalan)`"
         data-testid="focus-link"
       />
-    </div>
+    </DsStack>
   </DsPanel>
 </template>

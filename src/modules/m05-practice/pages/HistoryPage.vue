@@ -18,6 +18,9 @@ import {
   DsStatRow,
   type PillItem,
   type StatItem,
+  DsStack,
+  DsCluster,
+  DsText,
 } from '@/ds'
 
 import { fetchHistory } from '../api/practice'
@@ -70,15 +73,45 @@ function clock(seconds: number): string {
 }
 /** "Cuba Lagi" is observed for 0-35%; the higher bands are INFERRED. */
 function grade(pct: number): string {
-  return pct >= 80 ? '🏆 Cemerlang' : pct >= 60 ? '👍 Baik' : pct >= 36 ? '📈 Teruskan' : '💪 Cuba Lagi'
+  return pct >= 80
+    ? '🏆 Cemerlang'
+    : pct >= 60
+      ? '👍 Baik'
+      : pct >= 36
+        ? '📈 Teruskan'
+        : '💪 Cuba Lagi'
 }
 const totals = computed<StatItem[]>(() => {
   const t = meta.value?.totals
   return [
-    { key: 'sessions', label: 'Jumlah Sesi', value: t?.sessions ?? 0, icon: 'sparkle', accent: 'action' },
-    { key: 'answered', label: 'Soalan Dijawab', value: t?.answered ?? 0, icon: 'i-ph-target', accent: 'win' },
-    { key: 'accuracy', label: 'Purata Ketepatan', value: `${t?.avgAccuracyPct ?? 0}%`, icon: 'i-ph-chart-bar', accent: 'heat' },
-    { key: 'coins', label: 'Syiling Dikumpul', value: t?.coins ?? 0, icon: 'coins', accent: 'friend' },
+    {
+      key: 'sessions',
+      label: 'Jumlah Sesi',
+      value: t?.sessions ?? 0,
+      icon: 'sparkle',
+      accent: 'action',
+    },
+    {
+      key: 'answered',
+      label: 'Soalan Dijawab',
+      value: t?.answered ?? 0,
+      icon: 'i-ph-target',
+      accent: 'win',
+    },
+    {
+      key: 'accuracy',
+      label: 'Purata Ketepatan',
+      value: `${t?.avgAccuracyPct ?? 0}%`,
+      icon: 'i-ph-chart-bar',
+      accent: 'heat',
+    },
+    {
+      key: 'coins',
+      label: 'Syiling Dikumpul',
+      value: t?.coins ?? 0,
+      icon: 'coins',
+      accent: 'friend',
+    },
   ]
 })
 const itemKey = (i: HistoryItem): string => i.id
@@ -113,21 +146,23 @@ const itemKey = (i: HistoryItem): string => i.id
         </DsEmptyState>
       </DsPanel>
 
-      <ul v-else class="flex flex-col gap-3" data-testid="history-list">
+      <DsStack v-else as="ul" gap="sm" data-testid="history-list">
         <li v-for="s in items" :key="itemKey(s)" class="min-w-0">
           <DsPanel data-testid="history-session">
-            <div class="flex flex-wrap items-center gap-x-4 gap-y-2">
+            <DsCluster gap="md" row-gap="xs">
               <UBadge color="neutral" variant="subtle">{{ s.badge.label }}</UBadge>
-              <span class="text-caption text-muted">{{ when(s.completedAt) }}</span>
-              <span class="tabular ms-auto text-heading text-highlighted"
-                >{{ s.correctCount }} / {{ s.questionCount }}</span
+              <DsText variant="caption" as="span">{{ when(s.completedAt) }}</DsText>
+              <DsText variant="heading" as="span" tabular class="ms-auto"
+                >{{ s.correctCount }} / {{ s.questionCount }}</DsText
               >
-            </div>
+            </DsCluster>
             <div class="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-caption text-muted">
               <span>{{ clock(s.timeSpent) }}</span>
               <span>{{ s.correctCount }} betul</span>
               <span>{{ s.wrongCount }} salah</span>
-              <span class="ms-auto text-label text-highlighted">{{ grade(s.accuracyPct) }}</span>
+              <DsText variant="label" tone="highlighted" class="ms-auto">{{
+                grade(s.accuracyPct)
+              }}</DsText>
             </div>
             <UProgress class="mt-2" :model-value="s.accuracyPct" :max="100" />
             <div class="mt-2 flex flex-wrap items-center gap-2">
@@ -136,11 +171,14 @@ const itemKey = (i: HistoryItem): string => i.id
             </div>
           </DsPanel>
         </li>
-      </ul>
+      </DsStack>
 
-      <div
+      <DsCluster
         v-if="meta.totalItems > meta.pageSize"
-        class="flex justify-center"
+        gap="none"
+        align="stretch"
+        justify="center"
+        :wrap="false"
         data-testid="history-pager"
       >
         <UPagination
@@ -149,7 +187,7 @@ const itemKey = (i: HistoryItem): string => i.id
           :items-per-page="meta.pageSize"
           @update:page="goPage"
         />
-      </div>
+      </DsCluster>
     </template>
 
     <DsLoadError

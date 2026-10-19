@@ -5,6 +5,7 @@ import { computed } from 'vue'
 import type { CcLiveData } from '../../api/command-center-types'
 import BoardPanel from './BoardPanel.vue'
 import { activityWidth, type DrillRequest, weekChangeText } from './copy'
+import { DsText } from '@/ds'
 
 const props = defineProps<{ d: CcLiveData }>()
 const emit = defineEmits<{ drill: [req: DrillRequest] }>()
@@ -14,7 +15,12 @@ const change = computed(() => weekChangeText(props.d.weekChange))
 </script>
 
 <template>
-  <BoardPanel icon="chart-line-up" accent="win" title="Aktiviti Hari Ini" testid="cc-panel-activity">
+  <BoardPanel
+    icon="chart-line-up"
+    accent="win"
+    title="Aktiviti Hari Ini"
+    testid="cc-panel-activity"
+  >
     <UButton
       color="neutral"
       variant="ghost"
@@ -23,8 +29,8 @@ const change = computed(() => weekChangeText(props.d.weekChange))
       data-testid="cc-activity-bar"
       @click="emit('drill', { type: 'today', filter: 'aktiviti', label: 'Aktiviti Hari Ini' })"
     >
-      <span class="tabular text-heading text-highlighted" data-testid="cc-activity-today"
-        >{{ d.answeredToday }} soalan</span
+      <DsText variant="heading" as="span" tabular data-testid="cc-activity-today"
+        >{{ d.answeredToday }} soalan</DsText
       >
       <UProgress :model-value="width" :max="100" aria-hidden="true" />
     </UButton>

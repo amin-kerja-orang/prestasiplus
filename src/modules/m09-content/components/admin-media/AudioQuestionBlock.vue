@@ -6,7 +6,7 @@
  * validation: question text, the four options and the answer are required. The four options sit in
  * one column below `md` and two from `md`. The state object belongs to the parent form.
  */
-import { DsFormField, DsFormSection, DsNativeSelect } from '@/ds'
+import { DsFormField, DsFormSection, DsNativeSelect, DsGrid } from '@/ds'
 
 import { ANSWER_OPTIONS, type QuestionState } from '../../lib/admin-media/audio'
 
@@ -42,7 +42,7 @@ const OPTIONS = [
         />
       </DsFormField>
 
-      <div class="grid grid-cols-1 gap-6 md:grid-cols-2">
+      <DsGrid :cols="{ base: 1, md: 2 }" gap="lg">
         <DsFormField
           v-for="option in OPTIONS"
           :key="option.key"
@@ -61,9 +61,9 @@ const OPTIONS = [
             :data-testid="`q-${option.key}`"
           />
         </DsFormField>
-      </div>
+      </DsGrid>
 
-      <div class="grid grid-cols-2 gap-6 md:grid-cols-4">
+      <DsGrid :cols="{ base: 2, md: 4 }" gap="lg">
         <DsFormField native :for="`q${String(no)}-answer`" label="Jawapan">
           <DsNativeSelect
             :id="`q${String(no)}-answer`"
@@ -115,7 +115,7 @@ const OPTIONS = [
             data-testid="q-dskp"
           />
         </DsFormField>
-      </div>
+      </DsGrid>
 
       <DsFormField native :for="`q${String(no)}-explanation`" label="Skema / Penjelasan">
         <UTextarea

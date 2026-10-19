@@ -1,6 +1,6 @@
 <script setup lang="ts">
 /** One class card (PROPOSED, FR-M10-29): name, subject, level, "{n} pelajar", join code, QR button. */
-import { DsIconChip, DsPanel } from '@/ds'
+import { DsIconChip, DsPanel, DsCluster, DsStack, DsHeading, DsText } from '@/ds'
 
 import type { GuruClass } from '../../api/types'
 import { KELAS_COPY } from './copy'
@@ -12,30 +12,33 @@ defineEmits<{ qr: [id: number] }>()
 <template>
   <li class="min-w-0" data-testid="class-card" :data-class-id="item.id">
     <DsPanel class="h-full">
-      <div class="flex items-start gap-3">
+      <DsCluster align="start" :wrap="false">
         <DsIconChip icon="chalkboard-teacher" />
-        <div class="flex min-w-0 grow flex-col gap-1">
-          <div class="flex items-start justify-between gap-3">
-            <h2
-              class="min-w-0 text-subheading break-words text-highlighted"
+        <DsStack gap="2xs" class="grow">
+          <DsCluster align="start" justify="between" :wrap="false">
+            <DsHeading
+              :level="2"
+              variant="subheading"
+              wrap="anywhere"
+              class="min-w-0"
               data-testid="class-name"
             >
               {{ item.name }}
-            </h2>
+            </DsHeading>
             <UBadge color="neutral" variant="subtle" class="shrink-0" data-testid="class-code">{{
               item.joinCode
             }}</UBadge>
-          </div>
-          <p class="text-body text-default" data-testid="class-subject">
+          </DsCluster>
+          <DsText variant="body" data-testid="class-subject">
             {{ item.subjectName ?? KELAS_COPY.noSubject }}
-          </p>
-          <p class="text-caption text-muted">
+          </DsText>
+          <DsText variant="caption">
             <span data-testid="class-level">{{ item.levelLabel }}</span>
             ·
             <span class="tabular" data-testid="class-count">{{ item.studentCount }} pelajar</span>
-          </p>
-        </div>
-      </div>
+          </DsText>
+        </DsStack>
+      </DsCluster>
       <UButton
         type="button"
         color="neutral"

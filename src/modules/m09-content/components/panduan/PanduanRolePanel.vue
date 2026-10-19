@@ -5,7 +5,7 @@
  */
 import { reactive } from 'vue'
 
-import { DsIconChip } from '@/ds'
+import { DsIconChip, DsSurface, DsStack, DsGrid, DsHeading, DsText } from '@/ds'
 
 import type { GuideRole, Segment } from '../../lib/panduan-content'
 
@@ -26,8 +26,8 @@ function isBold(seg: Segment): seg is { b: string } {
   <div class="flex flex-col gap-4 md:gap-6" :data-testid="`panduan-panel-${props.role.id}`">
     <UCard>
       <div class="flex flex-col gap-5">
-        <h2 class="text-heading text-highlighted">{{ props.role.stepsTitle }}</h2>
-        <ol class="flex flex-col gap-4">
+        <DsHeading :level="2">{{ props.role.stepsTitle }}</DsHeading>
+        <DsStack as="ol">
           <li v-for="(step, i) in props.role.steps" :key="step.title" class="flex gap-3">
             <UBadge
               color="primary"
@@ -36,35 +36,32 @@ function isBold(seg: Segment): seg is { b: string } {
               class="size-9 shrink-0 justify-center rounded-full"
             />
             <div class="min-w-0">
-              <h3 class="text-subheading text-highlighted">{{ step.title }}</h3>
-              <p class="text-label text-muted">
+              <DsHeading :level="3">{{ step.title }}</DsHeading>
+              <DsText variant="label" as="p" tone="muted">
                 <template v-for="(seg, j) in step.text" :key="j"
                   ><strong v-if="isBold(seg)" class="text-default">{{ seg.b }}</strong
                   ><template v-else>{{ seg }}</template></template
                 >
-              </p>
+              </DsText>
             </div>
           </li>
           <li class="flex gap-3" data-testid="panduan-done-step">
             <DsIconChip icon="i-ph-check-bold" accent="win" size="sm" />
             <div class="min-w-0">
-              <h3 class="text-subheading text-highlighted">{{ props.role.done.title }}</h3>
-              <p class="text-label text-muted">
+              <DsHeading :level="3">{{ props.role.done.title }}</DsHeading>
+              <DsText variant="label" as="p" tone="muted">
                 <template v-for="(seg, j) in props.role.done.text" :key="j">{{ seg }}</template>
-              </p>
+              </DsText>
             </div>
           </li>
-        </ol>
+        </DsStack>
       </div>
     </UCard>
 
     <UCard>
       <div class="flex flex-col gap-5">
-        <h2 class="text-heading text-highlighted">{{ props.role.featuresTitle }}</h2>
-        <div
-          class="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3"
-          data-testid="panduan-features"
-        >
+        <DsHeading :level="2">{{ props.role.featuresTitle }}</DsHeading>
+        <DsGrid :cols="{ base: 1, sm: 2, lg: 3 }" gap="sm" data-testid="panduan-features">
           <div
             v-for="(feature, i) in props.role.features"
             :key="`${feature.title}-${String(i)}`"
@@ -73,20 +70,23 @@ function isBold(seg: Segment): seg is { b: string } {
           >
             <DsIconChip icon="i-ph-star-four-duotone" size="sm" />
             <h3 class="mt-2 text-label text-highlighted">{{ feature.title }}</h3>
-            <p class="text-caption text-muted">{{ feature.text }}</p>
+            <DsText variant="caption">{{ feature.text }}</DsText>
           </div>
-        </div>
+        </DsGrid>
       </div>
     </UCard>
 
     <UCard>
-      <div class="flex flex-col gap-4">
-        <h2 class="text-heading text-highlighted">{{ props.role.faqTitle }}</h2>
-        <div class="flex flex-col gap-2">
-          <div
+      <DsStack>
+        <DsHeading :level="2">{{ props.role.faqTitle }}</DsHeading>
+        <DsStack gap="xs">
+          <DsSurface
             v-for="(faq, i) in props.role.faqs"
             :key="faq.q"
-            class="rounded-card bg-elevated"
+            level="elevated"
+            radius="card"
+            padding="none"
+            :clip="false"
             data-testid="panduan-faq"
           >
             <UButton
@@ -106,9 +106,9 @@ function isBold(seg: Segment): seg is { b: string } {
             >
               {{ faq.a }}
             </p>
-          </div>
-        </div>
-      </div>
+          </DsSurface>
+        </DsStack>
+      </DsStack>
     </UCard>
   </div>
 </template>

@@ -10,7 +10,7 @@ import { computed, ref } from 'vue'
 import { useRouter } from 'vue-router'
 
 import { useApi, useFlash } from '@/composables'
-import { DsArt3D, DsPage } from '@/ds'
+import { DsArt3D, DsPage, DsStack, DsCluster, DsHeading, DsText } from '@/ds'
 
 import { fetchGameLobby, joinRoom, type RoomGame } from '../api'
 import JoinCodeForm from '../components/lobby/JoinCodeForm.vue'
@@ -60,10 +60,10 @@ async function join(code: string): Promise<void> {
 
 <template>
   <DsPage data-testid="lobby-page">
-    <div v-if="loading" class="flex flex-col gap-4" aria-busy="true" data-testid="lobby-loading">
+    <DsStack v-if="loading" aria-busy="true" data-testid="lobby-loading">
       <USkeleton class="h-28 w-full" />
       <USkeleton class="h-40 w-full" />
-    </div>
+    </DsStack>
     <UAlert
       v-else-if="error"
       color="error"
@@ -73,18 +73,18 @@ async function join(code: string): Promise<void> {
     />
     <template v-else-if="lobby">
       <UCard>
-        <div class="flex items-center justify-between gap-4">
-          <div class="flex min-w-0 flex-col gap-1">
-            <h1 class="text-title text-highlighted" data-testid="lobby-h1">
+        <DsCluster gap="md" justify="between" :wrap="false">
+          <DsStack gap="2xs">
+            <DsHeading :level="1" data-testid="lobby-h1">
               {{ meta.emoji }} {{ meta.title }}
-            </h1>
-            <p class="max-w-prose text-body text-muted" data-testid="lobby-subtitle">
+            </DsHeading>
+            <DsText variant="body" tone="muted" class="max-w-prose" data-testid="lobby-subtitle">
               {{ meta.subtitle }}
-            </p>
-            <p class="text-caption text-muted" data-testid="lobby-rule">{{ meta.rule }}</p>
-          </div>
+            </DsText>
+            <DsText variant="caption" data-testid="lobby-rule">{{ meta.rule }}</DsText>
+          </DsStack>
           <DsArt3D :name="theme.art" size="hero" float class="hidden sm:block" />
-        </div>
+        </DsCluster>
       </UCard>
 
       <div class="grid gap-4 md:grid-cols-2 md:gap-6">

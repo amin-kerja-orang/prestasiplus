@@ -8,7 +8,7 @@
 import { ref } from 'vue'
 
 import { isApiError } from '@/api'
-import { DsFileField, DsFormField, DsIconChip, DsPanel } from '@/ds'
+import { DsFileField, DsFormField, DsIconChip, DsPanel, DsCluster, DsHeading, DsText } from '@/ds'
 import { saveBlob } from '@/lib/save-blob'
 
 import { downloadQuestionTemplate, importQuestions } from '../../api/guru'
@@ -53,15 +53,15 @@ async function submit(): Promise<void> {
 
 <template>
   <DsPanel data-testid="import-card">
-    <div class="flex flex-wrap items-center justify-between gap-3">
-      <div class="flex min-w-0 items-center gap-3">
+    <DsCluster justify="between">
+      <DsCluster :wrap="false">
         <DsIconChip icon="i-ph-file-csv-duotone" size="lg" />
         <div class="min-w-0">
-          <h2 class="text-subheading text-highlighted">Import Soalan (CSV/Excel)</h2>
-          <p class="text-body text-muted">Muat naik banyak soalan sekaligus</p>
+          <DsHeading :level="2" variant="subheading">Import Soalan (CSV/Excel)</DsHeading>
+          <DsText variant="body" tone="muted">Muat naik banyak soalan sekaligus</DsText>
         </div>
-      </div>
-      <div class="flex flex-wrap gap-2">
+      </DsCluster>
+      <DsCluster gap="xs" align="stretch">
         <UButton
           type="button"
           color="neutral"
@@ -80,8 +80,8 @@ async function submit(): Promise<void> {
           @click="open = !open"
           >Import CSV</UButton
         >
-      </div>
-    </div>
+      </DsCluster>
+    </DsCluster>
 
     <UAlert
       v-if="errors.length"

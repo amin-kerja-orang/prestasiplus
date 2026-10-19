@@ -4,7 +4,7 @@
  * S2/S3 level aggregate (DV-M08-05); "On Track" / "Below" per teacher are null until the headcount
  * figures exist (M08-T1b), which shows "Tiada data headcount".
  */
-import { DsPanel } from '@/ds'
+import { DsPanel, DsStack, DsCluster, DsHeading, DsText } from '@/ds'
 import { RouterLink } from 'vue-router'
 
 import type { SchoolPerformance } from '../../api/types'
@@ -29,8 +29,8 @@ const teacherBar = (on: number, below: number): number =>
 <template>
   <div class="grid grid-cols-1 gap-4 md:gap-6 lg:grid-cols-2">
     <DsPanel class="min-w-0" data-testid="levels-card">
-      <div class="flex flex-col gap-4">
-        <h2 class="text-subheading text-highlighted">🎓 Perbandingan Tingkatan</h2>
+      <DsStack>
+        <DsHeading :level="2" variant="subheading">🎓 Perbandingan Tingkatan</DsHeading>
         <RouterLink
           v-for="l in levels"
           :key="l.code"
@@ -38,12 +38,12 @@ const teacherBar = (on: number, below: number): number =>
           class="flex flex-col gap-2 bg-soft p-4"
           :data-testid="`level-card-${l.code}`"
         >
-          <span class="flex items-baseline justify-between gap-3">
-            <span class="text-label text-highlighted">Tingkatan {{ levelNumber(l.code) }}</span>
+          <DsCluster as="span" align="baseline" justify="between" :wrap="false">
+            <DsText variant="label" tone="highlighted">Tingkatan {{ levelNumber(l.code) }}</DsText>
             <span :class="[TONE_TEXT[accuracyTone(l.accuracy)], 'tabular text-heading']">{{
               pct1(l.accuracy)
             }}</span>
-          </span>
+          </DsCluster>
           <UProgress
             :model-value="Math.floor(l.accuracy)"
             :max="100"
@@ -56,30 +56,33 @@ const teacherBar = (on: number, below: number): number =>
             <span>{{ plain(l.sessions) }} sesi latihan</span>
           </span>
         </RouterLink>
-      </div>
+      </DsStack>
     </DsPanel>
 
     <DsPanel class="min-w-0" data-testid="teachers-card">
-      <div class="flex flex-col gap-4">
-        <h2 class="text-subheading text-highlighted">👩‍🏫 Prestasi Guru</h2>
-        <ul class="flex max-h-96 flex-col gap-3 overflow-y-auto" data-testid="teachers-list">
+      <DsStack>
+        <DsHeading :level="2" variant="subheading">👩‍🏫 Prestasi Guru</DsHeading>
+        <DsStack as="ul" gap="sm" class="max-h-96 overflow-y-auto" data-testid="teachers-list">
           <li
             v-for="t in teachers"
             :key="t.userId"
             class="flex flex-col gap-2 bg-soft p-3"
             :data-testid="`teacher-${t.userId}`"
           >
-            <div class="flex flex-wrap items-baseline justify-between gap-x-3">
-              <span class="min-w-0 text-label break-words text-highlighted">{{ t.name }}</span>
-              <span class="text-caption text-muted"
-                >{{ t.classCount }} kelas · {{ t.studentCount }} murid</span
+            <DsCluster row-gap="none" align="baseline" justify="between">
+              <DsText variant="label" tone="highlighted" wrap="anywhere" class="min-w-0">{{
+                t.name
+              }}</DsText>
+              <DsText variant="caption" as="span"
+                >{{ t.classCount }} kelas · {{ t.studentCount }} murid</DsText
               >
-            </div>
+            </DsCluster>
             <div class="flex flex-wrap items-center gap-x-4 gap-y-1 text-caption">
               <span class="text-muted"
                 >Ketepatan:
                 <span :class="TONE_TEXT[accuracyTone(t.accuracy)]"
-                  ><strong>{{ pct1(t.accuracy) }}</strong></span></span
+                  ><strong>{{ pct1(t.accuracy) }}</strong></span
+                ></span
               >
               <span v-if="t.onTrack === null || t.below === null" class="text-dimmed"
                 >Tiada data headcount</span
@@ -102,8 +105,8 @@ const teacherBar = (on: number, below: number): number =>
               :aria-label="`On Track ${t.name}`"
             />
           </li>
-        </ul>
-      </div>
+        </DsStack>
+      </DsStack>
     </DsPanel>
   </div>
 </template>

@@ -4,7 +4,7 @@
  * name, the text "{weak}/{total} pelajar lemah ({pct}%)" and a `UProgress` of the weak share.
  */
 
-import { DsPanel } from '@/ds'
+import { DsPanel, DsHeading, DsText } from '@/ds'
 import { formatCount } from '@/lib/number'
 
 import type { SubjectRiskRow } from '../../api/amaran'
@@ -14,7 +14,7 @@ defineProps<{ rows: SubjectRiskRow[] }>()
 
 <template>
   <DsPanel data-testid="am-subjects">
-    <h2 class="text-subheading text-highlighted">Analisis Risiko Mengikut Subjek</h2>
+    <DsHeading :level="2" variant="subheading">Analisis Risiko Mengikut Subjek</DsHeading>
     <ul class="mt-3 flex flex-col gap-3">
       <li
         v-for="r in rows"
@@ -23,11 +23,18 @@ defineProps<{ rows: SubjectRiskRow[] }>()
         data-testid="am-subject-row"
       >
         <div class="flex min-w-0 flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
-          <span class="min-w-0 text-label break-words text-highlighted" data-testid="am-subject-name">{{
-            r.subjectName
-          }}</span>
-          <span class="tabular text-body text-muted" data-testid="am-subject-weak"
-            >{{ formatCount(r.weak) }}/{{ formatCount(r.total) }} pelajar lemah ({{ r.pct }}%)</span
+          <DsText
+            variant="label"
+            tone="highlighted"
+            wrap="anywhere"
+            class="min-w-0"
+            data-testid="am-subject-name"
+            >{{ r.subjectName }}</DsText
+          >
+          <DsText variant="body" as="span" tone="muted" tabular data-testid="am-subject-weak"
+            >{{ formatCount(r.weak) }}/{{ formatCount(r.total) }} pelajar lemah ({{
+              r.pct
+            }}%)</DsText
           >
         </div>
         <UProgress

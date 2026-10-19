@@ -1,6 +1,6 @@
 <script setup lang="ts">
 /** S11 "Sistem Tier" (FN-M14-2.1.9; FR-M14-21): active tiers in sort order, the viewer's tier marked. */
-import { DsIconChip } from '@/ds'
+import { DsIconChip, DsStack, DsGrid, DsText } from '@/ds'
 import { formatCount } from '@/lib/number'
 
 import type { TierGridItem } from '../../api'
@@ -10,11 +10,11 @@ defineProps<{ tiers: readonly TierGridItem[]; currentKey: string }>()
 
 <template>
   <UCard class="min-w-0" data-testid="s11-tiers">
-    <div class="flex flex-col gap-3">
+    <DsStack gap="sm">
       <h2 class="flex items-center gap-2 font-display text-subheading font-bold text-highlighted">
         <DsIconChip icon="crown" accent="trial" size="sm" />Sistem Tier
       </h2>
-      <div class="grid grid-cols-2 gap-3 lg:grid-cols-4">
+      <DsGrid :cols="{ base: 2, lg: 4 }" gap="sm">
         <div
           v-for="t in tiers"
           :key="t.key"
@@ -24,9 +24,9 @@ defineProps<{ tiers: readonly TierGridItem[]; currentKey: string }>()
           data-testid="s11-tier"
         >
           <span class="text-title" aria-hidden="true">{{ t.icon }}</span>
-          <p class="text-label text-highlighted">{{ t.labelMs }}</p>
-          <p class="text-caption text-muted">{{ formatCount(t.minSyiling) }}+ syiling</p>
-          <p class="text-caption text-muted">{{ t.conversionRate }} syiling = 1 token</p>
+          <DsText variant="label" as="p" tone="highlighted">{{ t.labelMs }}</DsText>
+          <DsText variant="caption">{{ formatCount(t.minSyiling) }}+ syiling</DsText>
+          <DsText variant="caption">{{ t.conversionRate }} syiling = 1 token</DsText>
           <UBadge
             v-if="t.key === currentKey"
             color="secondary"
@@ -36,7 +36,7 @@ defineProps<{ tiers: readonly TierGridItem[]; currentKey: string }>()
             >✨ ANDA DI SINI</UBadge
           >
         </div>
-      </div>
-    </div>
+      </DsGrid>
+    </DsStack>
   </UCard>
 </template>

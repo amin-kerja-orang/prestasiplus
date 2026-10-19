@@ -16,6 +16,7 @@ import {
 import { isBadgeHidden, useNavBadgeText } from '@/shells/user/nav-badges'
 import NavIcon from '@/shells/shared/NavIcon.vue'
 import ShellLink from '@/shells/shared/ShellLink.vue'
+import { DsCluster } from '@/ds'
 
 const props = defineProps<{
   entries: readonly NavEntry[]
@@ -71,10 +72,10 @@ const PUSAT_AI_TITLE_STYLE =
       class="drawer-section-label"
       :data-nav-id="entry.id"
     >
-      <div class="flex items-center gap-2">
+      <DsCluster gap="xs" :wrap="false">
         <span :class="entry.text">{{ entry.label }}</span>
         <div :class="`h-[2px] flex-1 bg-gradient-to-r ${entry.rule} rounded-full to-transparent`" />
-      </div>
+      </DsCluster>
     </div>
     <div
       v-else-if="entry.kind === 'section'"
@@ -101,10 +102,10 @@ const PUSAT_AI_TITLE_STYLE =
         class="drawer-nav-item flex w-full items-center justify-between"
         @click="openGroups[entry.id] = !openGroups[entry.id]"
       >
-        <span class="flex items-center">
+        <DsCluster as="span" gap="none" :wrap="false">
           <NavIcon :fa="entry.fa" :class="`w-5 text-center ${entry.color}`" />
           <span class="ml-3">{{ entry.label }}</span>
-        </span>
+        </DsCluster>
         <NavIcon
           fa="fa-chevron-down"
           class="text-xs transition-transform"

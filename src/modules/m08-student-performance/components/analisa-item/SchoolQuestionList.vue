@@ -4,7 +4,7 @@
  * questions in rank order; the subject pills filter client-side (no request); a click on a card toggles
  * its detail ("Jawapan Betul", "Jawapan Salah Paling Popular", "Pelajar Yang Salah").
  */
-import { DsPanel } from '@/ds'
+import { DsPanel, DsStack, DsCluster, DsHeading, DsText } from '@/ds'
 import { computed, ref } from 'vue'
 
 import { formatNumber } from '@/lib/number'
@@ -43,15 +43,15 @@ function toggle(id: number): void {
 </script>
 
 <template>
-  <section class="flex min-w-0 flex-col gap-4" data-testid="questions-card">
-    <div class="flex flex-col gap-1">
-      <h2 class="text-subheading text-highlighted">
+  <DsStack as="section" data-testid="questions-card">
+    <DsStack gap="2xs">
+      <DsHeading :level="2" variant="subheading">
         Soalan Paling Banyak Salah — Perlu Perhatian Khas
-      </h2>
-      <p class="text-body text-muted">
+      </DsHeading>
+      <DsText variant="body" tone="muted">
         Soalan yang majoriti pelajar jawab salah. Fokuskan pengajaran khas di sini.
-      </p>
-    </div>
+      </DsText>
+    </DsStack>
 
     <div
       class="flex max-w-full items-center gap-2 overflow-x-auto pb-1"
@@ -86,10 +86,10 @@ function toggle(id: number): void {
       />
     </div>
 
-    <ul class="flex flex-col gap-3" data-testid="question-list">
+    <DsStack as="ul" gap="sm" data-testid="question-list">
       <li v-for="q in shown" :key="q.questionId" :data-testid="`question-${q.questionId}`">
         <DsPanel>
-          <div class="flex min-w-0 flex-col gap-3">
+          <DsStack gap="sm">
             <UButton
               type="button"
               color="neutral"
@@ -101,17 +101,17 @@ function toggle(id: number): void {
               @click="toggle(q.questionId)"
             >
               <span class="flex min-w-0 flex-col gap-2">
-                <span class="flex flex-wrap items-center gap-2">
-                  <span class="tabular text-label text-muted">#{{ q.rank }}</span>
+                <DsCluster as="span" gap="xs">
+                  <DsText variant="label" tone="muted" tabular>#{{ q.rank }}</DsText>
                   <UBadge
                     :color="LEVEL_BADGE[q.level]"
                     variant="subtle"
                     :icon="icon(LEVEL_ICON[q.level])"
                     :label="q.level"
                   />
-                </span>
-                <span class="text-label break-words text-highlighted">{{ q.stem }}</span>
-                <span v-if="q.chips.length" class="flex flex-wrap gap-1">
+                </DsCluster>
+                <DsText variant="label" tone="highlighted" wrap="anywhere">{{ q.stem }}</DsText>
+                <DsCluster v-if="q.chips.length" as="span" gap="2xs" align="stretch">
                   <UBadge
                     v-for="(chip, i) in q.chips"
                     :key="i"
@@ -120,7 +120,7 @@ function toggle(id: number): void {
                     size="sm"
                     :label="chip"
                   />
-                </span>
+                </DsCluster>
                 <span class="flex flex-wrap gap-x-4 gap-y-1 text-caption text-muted">
                   <span class="text-error"
                     >{{ formatNumber(q.wrongPct, { decimals: 1 }) }}% salah</span
@@ -128,15 +128,15 @@ function toggle(id: number): void {
                   <span>{{ q.attempts }} pelajar cuba</span>
                   <span>{{ formatNumber(q.pupilsPct, { decimals: 1 }) }}% pelajar terlibat</span>
                 </span>
-                <span v-if="q.wrongPupils.length > 0" class="text-caption text-primary-t">
+                <DsText v-if="q.wrongPupils.length > 0" variant="caption" as="span" tone="primary">
                   {{ q.wrongPupils.length }} pelajar salah — klik untuk lihat
-                </span>
+                </DsText>
               </span>
             </UButton>
 
-            <div
+            <DsStack
               v-if="open.has(q.questionId)"
-              class="flex min-w-0 flex-col gap-3"
+              gap="sm"
               :data-testid="`question-detail-${q.questionId}`"
             >
               <OptionCallout
@@ -152,9 +152,9 @@ function toggle(id: number): void {
                 :letter="q.popularWrongOption.letter"
                 :text="q.popularWrongOption.text"
               />
-              <div v-if="q.wrongPupils.length > 0" class="flex flex-col gap-2">
-                <p class="text-label text-highlighted">Pelajar Yang Salah</p>
-                <div class="flex flex-wrap gap-2">
+              <DsStack v-if="q.wrongPupils.length > 0" gap="xs">
+                <DsText variant="label" as="p" tone="highlighted">Pelajar Yang Salah</DsText>
+                <DsCluster gap="xs" align="stretch">
                   <UButton
                     v-for="p in q.wrongPupils"
                     :key="p.userId"
@@ -165,12 +165,12 @@ function toggle(id: number): void {
                     :icon="icon('user')"
                     :label="`${p.name} · ${p.classLabel} · ${p.wrongOption}`"
                   />
-                </div>
-              </div>
-            </div>
-          </div>
+                </DsCluster>
+              </DsStack>
+            </DsStack>
+          </DsStack>
         </DsPanel>
       </li>
-    </ul>
-  </section>
+    </DsStack>
+  </DsStack>
 </template>

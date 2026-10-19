@@ -9,7 +9,7 @@
 import { usePrototypeScope } from '@/composables'
 import { computed } from 'vue'
 
-import { DsBreadcrumb, DsIconChip, DsPanel } from '@/ds'
+import { DsBreadcrumb, DsIconChip, DsPanel, DsCluster, DsStack, DsHeading, DsText } from '@/ds'
 
 import type { SchoolDashboard } from '../../api/dashboard'
 import { PATHS } from './dashboard-format'
@@ -28,13 +28,15 @@ const crumbs = computed(() => [
   <DsBreadcrumb v-if="crumbs.length > 1" :items="crumbs" data-testid="sd-breadcrumb" />
 
   <DsPanel data-testid="sd-banner">
-    <div class="flex min-w-0 flex-col gap-4 sm:flex-row sm:items-center">
+    <DsCluster gap="md" stack-below="sm">
       <DsIconChip icon="buildings" size="lg" data-testid="sd-banner-icon" />
-      <div class="flex min-w-0 flex-col gap-1">
-        <h2 class="text-title break-words text-highlighted" data-testid="sd-banner-name">
+      <DsStack gap="2xs">
+        <DsHeading :level="2" variant="title" wrap="anywhere" data-testid="sd-banner-name">
           {{ school.name }}
-        </h2>
-        <p class="text-label text-muted" data-testid="sd-banner-role">{{ roleLabel }}</p>
+        </DsHeading>
+        <DsText variant="label" as="p" tone="muted" data-testid="sd-banner-role">{{
+          roleLabel
+        }}</DsText>
         <ul class="mt-2 flex flex-wrap gap-2" data-testid="sd-chips">
           <li data-testid="sd-chip-state">
             <UBadge color="neutral" variant="soft" icon="i-ph-map-pin" :label="school.state" />
@@ -46,7 +48,7 @@ const crumbs = computed(() => [
             <UBadge color="neutral" variant="soft" :label="`# Kod: ${school.code}`" />
           </li>
         </ul>
-      </div>
-    </div>
+      </DsStack>
+    </DsCluster>
   </DsPanel>
 </template>

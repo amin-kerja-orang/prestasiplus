@@ -8,7 +8,22 @@ import { computed, watchEffect } from 'vue'
 import { RouterLink, useRoute } from 'vue-router'
 import type { TableColumn } from '@nuxt/ui'
 
-import { DsBackLink, DsDataTable, DsLeaderRow, DsLoadError, DsPage, DsPageHeader, DsPanel, DsPillNav, DsStatRow, type PillItem } from '@/ds'
+import {
+  DsBackLink,
+  DsDataTable,
+  DsLeaderRow,
+  DsLoadError,
+  DsPage,
+  DsPageHeader,
+  DsPanel,
+  DsPillNav,
+  DsStatRow,
+  type PillItem,
+  DsStack,
+  DsCluster,
+  DsHeading,
+  DsText,
+} from '@/ds'
 import { usePageMeta } from '@/composables/usePageMeta'
 
 import { fetchLevelDetail } from '../api/performance'
@@ -131,12 +146,17 @@ const levelPills: PillItem<string>[] = ['t4', 't5'].map((c) => ({
 
     <template v-else-if="data">
       <DsPageHeader
-        :show-title="true" :title="`Tingkatan ${levelNumber(data.code)}`"
+        :show-title="true"
+        :title="`Tingkatan ${levelNumber(data.code)}`"
         :subtitle="`Dashboard Prestasi Tingkatan · ${plain(data.classes)} kelas · ${plain(data.subjects)} subjek`"
         subtitle-testid="level-summary"
       >
         <template #breadcrumb>
-          <DsBackLink to="/prestasi/tingkatan" label="Kembali ke senarai tingkatan" data-testid="back-link" />
+          <DsBackLink
+            to="/prestasi/tingkatan"
+            label="Kembali ke senarai tingkatan"
+            data-testid="back-link"
+          />
         </template>
         <template #actions>
           <DsPillNav
@@ -151,13 +171,13 @@ const levelPills: PillItem<string>[] = ['t4', 't5'].map((c) => ({
       <DsStatRow :items="statItems(stats)" data-testid="stat-cards" :cols="5" prefix="stat" />
 
       <DsPanel data-testid="headcount-card">
-        <div class="flex flex-col gap-3">
-          <div class="flex items-center justify-between gap-3">
-            <h2 class="text-subheading text-highlighted">Headcount Keseluruhan</h2>
-            <span class="tabular text-label text-highlighted" data-testid="headcount-pct"
-              >{{ data.onTrackPct }}% On Track</span
+        <DsStack gap="sm">
+          <DsCluster justify="between" :wrap="false">
+            <DsHeading :level="2" variant="subheading">Headcount Keseluruhan</DsHeading>
+            <DsText variant="label" tone="highlighted" tabular data-testid="headcount-pct"
+              >{{ data.onTrackPct }}% On Track</DsText
             >
-          </div>
+          </DsCluster>
           <UProgress
             :model-value="data.onTrack + data.below > 0 ? data.onTrackPct : 0"
             :max="100"
@@ -165,20 +185,20 @@ const levelPills: PillItem<string>[] = ['t4', 't5'].map((c) => ({
             aria-label="Headcount Keseluruhan"
           />
           <div class="flex flex-wrap gap-x-4 gap-y-1 text-caption text-muted">
-            <span class="flex items-center gap-2">
+            <DsCluster as="span" gap="xs" :wrap="false">
               <UIcon :name="icon('check-circle')" class="size-4 text-success" />On Track:
               {{ data.onTrack }}
-            </span>
-            <span class="flex items-center gap-2">
+            </DsCluster>
+            <DsCluster as="span" gap="xs" :wrap="false">
               <UIcon :name="icon('warning')" class="size-4 text-error" />Below Target:
               {{ data.below }}
-            </span>
+            </DsCluster>
           </div>
-        </div>
+        </DsStack>
       </DsPanel>
 
-      <section class="flex min-w-0 flex-col gap-3" data-testid="class-card">
-        <h2 class="text-subheading text-highlighted">Perbandingan Kelas</h2>
+      <DsStack as="section" gap="sm" data-testid="class-card">
+        <DsHeading :level="2" variant="subheading">Perbandingan Kelas</DsHeading>
         <DsDataTable
           :data="rows"
           :columns="columns"
@@ -189,10 +209,12 @@ const levelPills: PillItem<string>[] = ['t4', 't5'].map((c) => ({
           data-testid="class-table"
         >
           <template #name-cell="{ row }">
-            <span
-              class="text-label whitespace-nowrap text-highlighted"
+            <DsText
+              variant="label"
+              tone="highlighted"
+              class="whitespace-nowrap"
               :data-testid="`class-row-${row.original.classId}`"
-              >{{ row.original.name }}</span
+              >{{ row.original.name }}</DsText
             >
           </template>
           <template #accuracyText-cell="{ row }">
@@ -231,13 +253,13 @@ const levelPills: PillItem<string>[] = ['t4', 't5'].map((c) => ({
             />
           </template>
         </DsDataTable>
-      </section>
+      </DsStack>
 
       <div class="grid grid-cols-1 gap-4 md:gap-6 lg:grid-cols-2">
         <DsPanel class="min-w-0" data-testid="top-students">
-          <div class="flex flex-col gap-3">
-            <h2 class="text-subheading text-highlighted">Murid Terbaik</h2>
-            <ol class="flex max-h-96 flex-col gap-2 overflow-y-auto">
+          <DsStack gap="sm">
+            <DsHeading :level="2" variant="subheading">Murid Terbaik</DsHeading>
+            <DsStack as="ol" gap="xs" class="max-h-96 overflow-y-auto">
               <DsLeaderRow
                 v-for="(s, i) in data.topStudents"
                 :key="s.userId"
@@ -247,14 +269,14 @@ const levelPills: PillItem<string>[] = ['t4', 't5'].map((c) => ({
                 :points="pctTrim(capPct(s.accuracy))"
                 :data-testid="`top-${s.userId}`"
               />
-            </ol>
-          </div>
+            </DsStack>
+          </DsStack>
         </DsPanel>
 
         <DsPanel class="min-w-0" data-testid="at-risk">
-          <div class="flex flex-col gap-3">
-            <h2 class="text-subheading text-highlighted">Murid Berisiko</h2>
-            <div class="flex max-h-96 flex-col gap-2 overflow-y-auto">
+          <DsStack gap="sm">
+            <DsHeading :level="2" variant="subheading">Murid Berisiko</DsHeading>
+            <DsStack gap="xs" class="max-h-96 overflow-y-auto">
               <RouterLink
                 v-for="r in data.atRisk"
                 :key="`${r.userId}-${r.className}-${r.checkpoint}`"
@@ -264,20 +286,27 @@ const levelPills: PillItem<string>[] = ['t4', 't5'].map((c) => ({
               >
                 <UIcon :name="icon('warning')" class="size-5 shrink-0 text-error" />
                 <span class="flex min-w-0 grow flex-col">
-                  <span class="text-label break-words text-highlighted">{{ r.name }}</span>
-                  <span class="text-caption text-muted"
+                  <DsText variant="label" tone="highlighted" wrap="anywhere">{{ r.name }}</DsText>
+                  <DsText variant="caption" as="span"
                     >{{ r.className }} · OTR{{ r.checkpoint }}: {{ dec2(r.ar) }}% (sasaran
-                    {{ dec2(r.target) }}%)</span
+                    {{ dec2(r.target) }}%)</DsText
                   >
                 </span>
-                <span class="tabular shrink-0 text-label text-error">{{ gapText(r.gap) }}</span>
+                <DsText variant="label" tone="error" tabular class="shrink-0">{{
+                  gapText(r.gap)
+                }}</DsText>
               </RouterLink>
-            </div>
-          </div>
+            </DsStack>
+          </DsStack>
         </DsPanel>
       </div>
     </template>
-    <div v-else-if="!error" class="flex flex-col gap-4 md:gap-6" aria-busy="true" data-testid="page-loading">
+    <div
+      v-else-if="!error"
+      class="flex flex-col gap-4 md:gap-6"
+      aria-busy="true"
+      data-testid="page-loading"
+    >
       <USkeleton class="h-24 w-full" />
       <USkeleton class="h-64 w-full" />
     </div>

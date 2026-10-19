@@ -5,7 +5,7 @@
  * `/practice/{CODE}/quiz?level=…&dskp_sp_id=…&count={k}` (`level` omitted when unknown). Empty: green
  * check "Tiada topik lemah! Teruskan usaha.".
  */
-import { DsEmptyState, DsPanel } from '@/ds'
+import { DsEmptyState, DsPanel, DsStack, DsText } from '@/ds'
 
 import type { WeakTopic } from '../../api/types'
 import { usePhIcon } from '../../lib/icons'
@@ -26,7 +26,7 @@ const href = (t: WeakTopic): string =>
 
 <template>
   <DsPanel data-testid="weak-block">
-    <div class="flex flex-col gap-4">
+    <DsStack>
       <h2 class="flex items-center gap-2 text-subheading text-highlighted">
         <UIcon :name="icon('warning')" class="size-5 text-warning" />Topik Perlu Perhatian
       </h2>
@@ -34,7 +34,7 @@ const href = (t: WeakTopic): string =>
         <DsEmptyState title="Tiada topik lemah! Teruskan usaha." icon="check-circle" />
       </div>
       <template v-else>
-        <ul class="flex flex-col gap-2" data-testid="weak-list">
+        <DsStack as="ul" gap="xs" data-testid="weak-list">
           <li
             v-for="t in topics"
             :key="t.spId"
@@ -42,10 +42,10 @@ const href = (t: WeakTopic): string =>
             :data-testid="`weak-${t.spId}`"
           >
             <UBadge color="warning" variant="subtle" size="lg" :label="`${t.accuracy}%`" />
-            <div class="flex min-w-0 grow flex-col gap-1">
-              <p class="text-label break-words text-highlighted">
+            <DsStack gap="2xs" class="grow">
+              <DsText variant="label" as="p" tone="highlighted" wrap="anywhere">
                 {{ t.code === null ? t.label : cut(t.label, 70) }}
-              </p>
+              </DsText>
               <p class="flex flex-wrap items-center gap-x-2 gap-y-1 text-caption text-muted">
                 <span>{{ t.subjectCode }} · {{ t.attempts }} percubaan</span>
                 <UBadge
@@ -56,7 +56,7 @@ const href = (t: WeakTopic): string =>
                   :label="`Fokus ${t.focusCount}`"
                 />
               </p>
-            </div>
+            </DsStack>
             <UButton
               :to="href(t)"
               :title="`Klik untuk ${String(t.focusCount)} soalan fokus`"
@@ -68,7 +68,7 @@ const href = (t: WeakTopic): string =>
               data-testid="focus-link"
             />
           </li>
-        </ul>
+        </DsStack>
         <p class="flex flex-wrap items-center gap-2 text-caption text-muted">
           <UBadge
             color="primary"
@@ -80,6 +80,6 @@ const href = (t: WeakTopic): string =>
           Klik untuk buka set latihan tertumpu pada topik lemah itu sahaja.
         </p>
       </template>
-    </div>
+    </DsStack>
   </DsPanel>
 </template>

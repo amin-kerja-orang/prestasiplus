@@ -8,7 +8,7 @@ import { computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 
 import { useApi } from '@/composables'
-import { DsDataTable, DsPage, type CardField, DsLoadError } from '@/ds'
+import { DsDataTable, DsPage, type CardField, DsLoadError, DsStack } from '@/ds'
 
 import { fetchEssayList } from '../api'
 import { ESSAY_COPY as C } from '../components/teacher/copy'
@@ -76,14 +76,9 @@ function goToPage(next: number): void {
       retry-testid="page-retry"
       @retry="reload"
     />
-    <div
-      v-else-if="!(data !== null)"
-      class="flex flex-col gap-3"
-      aria-busy="true"
-      data-testid="page-loading"
-    >
+    <DsStack v-else-if="!(data !== null)" gap="sm" aria-busy="true" data-testid="page-loading">
       <USkeleton v-for="n in 3" :key="n" class="h-16 w-full" />
-    </div>
+    </DsStack>
     <template v-else>
       <DsDataTable
         v-if="data"

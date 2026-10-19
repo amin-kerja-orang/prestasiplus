@@ -25,6 +25,9 @@ import {
   DsTag,
   DsThumb,
   useConfirm,
+  DsCluster,
+  DsStack,
+  DsText,
 } from '@/ds'
 import type { CardField, RowAction, StatItem } from '@/ds'
 
@@ -168,33 +171,41 @@ const cardFields: CardField[] = [
       data-testid="banners-table"
     >
       <template #title-cell="{ row }">
-        <div
-          class="flex min-w-40 items-center gap-4"
+        <DsCluster
+          gap="md"
+          :wrap="false"
+          class="min-w-40"
           data-testid="banner-row"
           :data-banner-id="row.original.id"
         >
           <DsThumb :src="row.original.raw.imageUrl || undefined" :alt="row.original.title" />
-          <div class="flex min-w-0 flex-col gap-1">
-            <p class="line-clamp-1 text-label text-highlighted" :title="row.original.title" data-testid="banner-title">
+          <DsStack gap="2xs">
+            <DsText
+              variant="label"
+              as="p"
+              tone="highlighted"
+              :clamp="1"
+              :title="row.original.title"
+              data-testid="banner-title"
+            >
               {{ row.original.title }}
-            </p>
-            <p
+            </DsText>
+            <DsText
               v-if="row.original.raw.description"
-              class="line-clamp-1 text-caption text-muted"
+              variant="caption"
+              :clamp="1"
               data-testid="banner-description"
             >
               {{ limit50(row.original.raw.description) }}
-            </p>
-          </div>
-        </div>
+            </DsText>
+          </DsStack>
+        </DsCluster>
       </template>
       <template #bannerType-cell="{ row }">
         <DsTag :label="row.original.bannerType" data-testid="banner-type" />
       </template>
       <template #targetAudience-cell="{ row }">
-        <span data-testid="banner-audience">{{
-          row.original.targetAudience
-        }}</span>
+        <span data-testid="banner-audience">{{ row.original.targetAudience }}</span>
       </template>
       <template #displayOrder-cell="{ row }">
         <span data-testid="banner-order">{{ row.original.displayOrder }}</span>

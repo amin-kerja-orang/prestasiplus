@@ -24,6 +24,9 @@ import {
   DsStatRow,
   type PillItem,
   type StatItem,
+  DsStack,
+  DsCluster,
+  DsText,
 } from '@/ds'
 import { formatNumber } from '@/lib/number'
 
@@ -55,14 +58,38 @@ const meTiles = computed<StatItem[]>(() => {
   const m = me.value
   if (!m) return []
   return [
-    { key: 'rank', label: 'Ranking', icon: 'i-ph-ranking', accent: 'action', value: m.rank === null ? '#-' : `#${String(m.rank)}` },
-    { key: 'coins', label: 'Koin', icon: 'i-ph-coins', accent: 'win', value: formatNumber(m.coins) },
-    { key: 'sessions', label: 'Sesi', icon: 'i-ph-books', accent: 'heat', value: formatNumber(m.sessions) },
-    { key: 'accuracy', label: 'Ketepatan', icon: 'i-ph-target', accent: 'friend', value: percentText(m.accuracy) },
+    {
+      key: 'rank',
+      label: 'Ranking',
+      icon: 'i-ph-ranking',
+      accent: 'action',
+      value: m.rank === null ? '#-' : `#${String(m.rank)}`,
+    },
+    {
+      key: 'coins',
+      label: 'Koin',
+      icon: 'i-ph-coins',
+      accent: 'win',
+      value: formatNumber(m.coins),
+    },
+    {
+      key: 'sessions',
+      label: 'Sesi',
+      icon: 'i-ph-books',
+      accent: 'heat',
+      value: formatNumber(m.sessions),
+    },
+    {
+      key: 'accuracy',
+      label: 'Ketepatan',
+      icon: 'i-ph-target',
+      accent: 'friend',
+      value: percentText(m.accuracy),
+    },
   ]
 })
 
-const TAB_ICONS:Record<string, string> = {
+const TAB_ICONS: Record<string, string> = {
   all: 'i-ph-infinity',
   week: 'i-ph-calendar-dots',
   month: 'i-ph-calendar-blank',
@@ -100,28 +127,23 @@ const columns: TableColumn<Row>[] = [
     <DsLoadError v-if="error" :message="LOAD_ERROR" testid="leaderboard-error" @retry="reload()" />
 
     <!-- Loading -->
-    <div
-      v-else-if="firstLoad"
-      class="flex flex-col gap-3"
-      aria-busy="true"
-      data-testid="leaderboard-loading"
-    >
+    <DsStack v-else-if="firstLoad" gap="sm" aria-busy="true" data-testid="leaderboard-loading">
       <USkeleton class="h-32 w-full" />
       <USkeleton class="h-64 w-full" />
-    </div>
+    </DsStack>
 
     <template v-else-if="me">
       <!-- Kedudukan Anda -->
-      <section class="flex flex-col gap-3" data-testid="leaderboard-me">
+      <DsStack as="section" gap="sm" data-testid="leaderboard-me">
         <h2 class="flex items-center gap-2 text-heading text-highlighted">
           <UIcon name="i-ph-user-circle" class="size-5 text-primary-t" aria-hidden="true" />
           Kedudukan Anda
         </h2>
         <DsStatRow :items="meTiles" prefix="me" :cols="4" />
-      </section>
+      </DsStack>
 
       <!-- Podium + table -->
-      <div class="flex min-w-0 flex-col gap-4" data-testid="leaderboard-board">
+      <DsStack data-testid="leaderboard-board">
         <DsPanel v-if="rows.length > 0">
           <LeaderboardPodium :rows="rows" />
         </DsPanel>
@@ -154,7 +176,9 @@ const columns: TableColumn<Row>[] = [
             </DsIdentity>
           </template>
           <template #coins-cell="{ row }">
-            <span class="inline-flex items-center gap-1 text-label whitespace-nowrap text-highlighted">
+            <span
+              class="inline-flex items-center gap-1 text-label whitespace-nowrap text-highlighted"
+            >
               <UIcon name="i-ph-coins" class="size-4" aria-hidden="true" />
               <span data-testid="row-coins">{{ formatNumber(row.original.coins) }}</span>
             </span>
@@ -173,25 +197,27 @@ const columns: TableColumn<Row>[] = [
             />
           </template>
           <template #card="{ row }">
-            <div class="flex min-w-0 items-center gap-3">
+            <DsCluster :wrap="false">
               <UBadge
                 :color="row.rank <= 3 ? 'primary' : 'neutral'"
                 :variant="row.rank <= 3 ? 'solid' : 'subtle'"
                 :label="String(row.rank)"
               />
               <DsIdentity :name="row.name" :src="row.avatarUrl" :initials="initialOf(row.name)" />
-            </div>
+            </DsCluster>
             <dl class="grid grid-cols-3 gap-x-3">
               <div>
-                <dt class="text-caption text-muted">Koin</dt>
-                <dd class="tabular text-label text-highlighted">{{ formatNumber(row.coins) }}</dd>
+                <DsText variant="caption" as="dt">Koin</DsText>
+                <DsText variant="label" as="dd" tone="highlighted" tabular>{{
+                  formatNumber(row.coins)
+                }}</DsText>
               </div>
               <div>
-                <dt class="text-caption text-muted">Sesi</dt>
+                <DsText variant="caption" as="dt">Sesi</DsText>
                 <dd class="tabular text-label">{{ formatNumber(row.sessions) }}</dd>
               </div>
               <div>
-                <dt class="text-caption text-muted">Ketepatan</dt>
+                <DsText variant="caption" as="dt">Ketepatan</DsText>
                 <dd>
                   <UBadge
                     :color="accuracyColor(row.accuracy)"
@@ -219,7 +245,7 @@ const columns: TableColumn<Row>[] = [
             Dikemaskini real-time
           </span>
         </div>
-      </div>
+      </DsStack>
     </template>
   </DsPage>
 </template>

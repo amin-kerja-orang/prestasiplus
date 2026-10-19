@@ -8,7 +8,17 @@
 import { ref } from 'vue'
 
 import { isApiError } from '@/api'
-import { DsFileField, DsFormField, DsIconChip, DsNativeSelect, DsPanel } from '@/ds'
+import {
+  DsFileField,
+  DsFormField,
+  DsIconChip,
+  DsNativeSelect,
+  DsPanel,
+  DsCluster,
+  DsStack,
+  DsHeading,
+  DsText,
+} from '@/ds'
 
 import { submitQuestionPaper } from '../../api/guru'
 import type { PaperType, QuestionPaperRequest } from '../../api/types'
@@ -74,13 +84,13 @@ async function submit(): Promise<void> {
 
 <template>
   <DsPanel data-testid="paper-card">
-    <div class="flex items-center gap-3">
+    <DsCluster :wrap="false">
       <DsIconChip icon="i-ph-paper-plane-tilt-duotone" size="lg" />
       <div class="min-w-0">
-        <h2 class="text-subheading text-highlighted">Hantar Kertas Soalan kepada Admin</h2>
-        <p class="text-body text-muted">Admin akan proses dan upload ke databank soalan</p>
+        <DsHeading :level="2" variant="subheading">Hantar Kertas Soalan kepada Admin</DsHeading>
+        <DsText variant="body" tone="muted">Admin akan proses dan upload ke databank soalan</DsText>
       </div>
-    </div>
+    </DsCluster>
 
     <div class="mt-4 grid min-w-0 grid-cols-1 gap-3 md:grid-cols-2">
       <DsPanel tone="inset" data-testid="paper-types">
@@ -88,12 +98,12 @@ async function submit(): Promise<void> {
           <UIcon name="i-ph-info-duotone" class="size-4 text-primary-t" />
           Jenis Soalan Yang Diterima
         </p>
-        <ul class="flex flex-col gap-1">
+        <DsStack as="ul" gap="2xs">
           <li v-for="t in TYPES" :key="t" class="flex items-center gap-2">
             <UIcon name="i-ph-check-circle-duotone" class="size-4 shrink-0 text-success" />
             {{ t }}
           </li>
-        </ul>
+        </DsStack>
       </DsPanel>
       <DsPanel tone="inset" data-testid="paper-conditions">
         <p class="mb-1 flex items-center gap-2 text-label text-highlighted">
@@ -113,8 +123,8 @@ async function submit(): Promise<void> {
       <li v-for="s in STEPS" :key="s.n" class="min-w-0">
         <DsPanel tone="inset">
           <div class="text-center">
-            <p class="text-label text-highlighted">{{ s.n }}</p>
-            <p class="text-body text-muted">{{ s.text }}</p>
+            <DsText variant="label" as="p" tone="highlighted">{{ s.n }}</DsText>
+            <DsText variant="body" tone="muted">{{ s.text }}</DsText>
           </div>
         </DsPanel>
       </li>

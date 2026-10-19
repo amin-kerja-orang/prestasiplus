@@ -7,7 +7,17 @@
 import { computed, ref } from 'vue'
 
 import { useApi, useFlash } from '@/composables'
-import { DsArt3D, DsEmptyState, DsPage, DsRewardChip, DsLoadError } from '@/ds'
+import {
+  DsArt3D,
+  DsEmptyState,
+  DsPage,
+  DsRewardChip,
+  DsLoadError,
+  DsCluster,
+  DsStack,
+  DsHeading,
+  DsText,
+} from '@/ds'
 
 import { buyCabutanTicket, fetchCabutan } from '../api'
 import { DRAW_COPY } from '../components/copy'
@@ -41,27 +51,33 @@ async function buy(drawId: number): Promise<void> {
 <template>
   <DsPage data-testid="m15-cabutan-page">
     <UCard data-testid="cabutan-hero">
-      <div class="flex flex-wrap items-center justify-between gap-4">
-        <div class="flex min-w-0 items-center gap-3">
+      <DsCluster gap="md" justify="between">
+        <DsCluster :wrap="false">
           <DsArt3D name="party" size="xl" float />
-          <div class="flex min-w-0 flex-col gap-1">
-            <h1 class="text-title text-highlighted" data-testid="cabutan-title">
+          <DsStack gap="2xs">
+            <DsHeading :level="1" data-testid="cabutan-title">
               {{ DRAW_COPY.heading }}
-            </h1>
-            <p class="text-body text-muted">{{ DRAW_COPY.sub }}</p>
-          </div>
-        </div>
-        <div class="flex shrink-0 flex-col items-start gap-1" data-testid="cabutan-tile">
-          <p class="text-caption text-muted">{{ DRAW_COPY.tileLabel }}</p>
+            </DsHeading>
+            <DsText variant="body" tone="muted">{{ DRAW_COPY.sub }}</DsText>
+          </DsStack>
+        </DsCluster>
+        <DsStack gap="2xs" align="start" class="shrink-0" data-testid="cabutan-tile">
+          <DsText variant="caption">{{ DRAW_COPY.tileLabel }}</DsText>
           <DsRewardChip :value="balance ?? '…'" art="coin" data-testid="cabutan-balance" />
-        </div>
-      </div>
+        </DsStack>
+      </DsCluster>
     </UCard>
 
-    <section class="flex flex-col gap-3">
-      <h2 class="text-heading text-highlighted">{{ DRAW_COPY.openHeading }}</h2>
+    <DsStack as="section" gap="sm">
+      <DsHeading :level="2">{{ DRAW_COPY.openHeading }}</DsHeading>
 
-      <DsLoadError v-if="view.error.value" :message="COMMON_COPY.loadFailed" testid="m15-load-error" retry-testid="m15-retry" @retry="view.reload()" />
+      <DsLoadError
+        v-if="view.error.value"
+        :message="COMMON_COPY.loadFailed"
+        testid="m15-load-error"
+        retry-testid="m15-retry"
+        @retry="view.reload()"
+      />
       <LoadSkeleton v-else-if="!view.data.value" testid="cabutan-loading" />
       <div v-else-if="draws.length === 0" data-testid="cabutan-empty">
         <DsEmptyState :title="DRAW_COPY.empty" icon="ticket" />
@@ -76,6 +92,6 @@ async function buy(drawId: number): Promise<void> {
           @buy="buy"
         />
       </div>
-    </section>
+    </DsStack>
   </DsPage>
 </template>

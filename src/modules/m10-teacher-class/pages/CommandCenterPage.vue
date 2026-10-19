@@ -8,7 +8,7 @@
 import { computed, onBeforeUnmount, ref, watch } from 'vue'
 
 import { usePageMeta } from '@/composables'
-import { DsPage } from '@/ds'
+import { DsPage, DsStack, DsGrid, DsText } from '@/ds'
 
 import AchievementsModal from '../components/command-center/AchievementsModal.vue'
 import ActivityPanel from '../components/command-center/ActivityPanel.vue'
@@ -90,8 +90,8 @@ onBeforeUnmount(() => {
       @fullscreen="toggleFullscreen"
     />
 
-    <div class="flex min-w-0 flex-col gap-4" data-testid="cc-body">
-      <div class="grid grid-cols-2 gap-3 lg:grid-cols-4" data-testid="cc-kpis" aria-live="off">
+    <DsStack data-testid="cc-body">
+      <DsGrid :cols="{ base: 2, lg: 4 }" gap="sm" data-testid="cc-kpis" aria-live="off">
         <KpiTile
           label="Pelajar Berdaftar"
           :value="students"
@@ -128,9 +128,9 @@ onBeforeUnmount(() => {
           testid="cc-kpi-gps"
           @click="openDrill({ type: 'gps', label: 'GPS Sekolah' })"
         />
-      </div>
+      </DsGrid>
 
-      <div class="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4" data-testid="cc-panels">
+      <DsGrid :cols="{ base: 1, md: 2, xl: 4 }" data-testid="cc-panels">
         <div class="flex min-w-0 flex-col gap-4 xl:col-span-1">
           <ClassPanel :classes="d.classes" />
           <KirkPanel :d="d" @drill="openDrill" />
@@ -145,12 +145,12 @@ onBeforeUnmount(() => {
         <div class="flex min-w-0 flex-col gap-4 md:col-span-2 xl:col-span-1">
           <EngagementPanel :engagement="d.engagement" @drill="openDrill" />
         </div>
-      </div>
-    </div>
+      </DsGrid>
+    </DsStack>
 
-    <p class="text-center text-caption text-muted" data-testid="cc-footer">
+    <DsText variant="caption" align="center" data-testid="cc-footer">
       {{ S2_COPY.footer }}
-    </p>
+    </DsText>
 
     <DrillModal
       v-if="drill"

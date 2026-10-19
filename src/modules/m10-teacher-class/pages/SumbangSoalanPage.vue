@@ -10,7 +10,17 @@ import { useRoute, useRouter } from 'vue-router'
 
 import { isApiError } from '@/api'
 import { useApi, useFlash, usePrototypeScope } from '@/composables'
-import { DsPage, useConfirm, DsPanel, DsLoadError } from '@/ds'
+import {
+  DsPage,
+  useConfirm,
+  DsPanel,
+  DsLoadError,
+  DsGrid,
+  DsStack,
+  DsCluster,
+  DsHeading,
+  DsText,
+} from '@/ds'
 
 import {
   deleteContributedQuestion,
@@ -43,8 +53,7 @@ const deleting = ref(false)
 const deleteError = ref<string[]>([])
 
 async function remove(id: number): Promise<void> {
-  if (deleting.value || !(await confirm({ message: COPY.confirmDelete(id), tone: 'error' })))
-    return
+  if (deleting.value || !(await confirm({ message: COPY.confirmDelete(id), tone: 'error' }))) return
   deleting.value = true
   deleteError.value = []
   try {
@@ -91,22 +100,23 @@ const retry = (): void => {
       testid="soalan-error"
       @retry="retry"
     />
-    <div
+    <DsGrid
       v-else-if="!summary.data.value"
-      class="grid grid-cols-2 gap-3 md:grid-cols-4"
+      :cols="{ base: 2, md: 4 }"
+      gap="sm"
       aria-busy="true"
       data-testid="soalan-loading"
     >
       <USkeleton v-for="n in 4" :key="n" class="h-28 w-full" />
-    </div>
+    </DsGrid>
     <ContributionSummary v-else :summary="summary.data.value" />
 
     <ImportCard @imported="onImported" />
     <AudioKbatCard v-if="allows('/guru/audio-kbat')" />
 
-    <section class="flex min-w-0 flex-col gap-3" data-testid="soalan-saya">
-      <div class="flex flex-wrap items-center justify-between gap-3">
-        <h2 class="text-heading text-highlighted">Soalan Saya</h2>
+    <DsStack as="section" gap="sm" data-testid="soalan-saya">
+      <DsCluster justify="between">
+        <DsHeading :level="2">Soalan Saya</DsHeading>
         <UButton
           to="/guru/soalan/cipta"
           icon="i-ph-plus-circle-duotone"
@@ -114,7 +124,7 @@ const retry = (): void => {
           data-testid="soalan-add"
           >Tambah Soalan</UButton
         >
-      </div>
+      </DsCluster>
 
       <UAlert
         v-if="deleteError.length"
@@ -136,17 +146,17 @@ const retry = (): void => {
         testid="soalan-list-error"
         @retry="list.reload"
       />
-      <div v-else-if="!list.data.value" class="flex flex-col gap-3" aria-busy="true">
+      <DsStack v-else-if="!list.data.value" gap="sm" aria-busy="true">
         <USkeleton v-for="n in 3" :key="n" class="h-20 w-full" />
-      </div>
+      </DsStack>
       <template v-else>
         <DsPanel v-if="list.data.value.data.length === 0 && page === 1" data-testid="soalan-empty">
           <div class="flex flex-col items-center gap-2 py-6 text-center">
             <UIcon name="i-ph-note-pencil-duotone" class="size-12 text-dimmed" />
-            <p class="text-body text-muted">{{ COPY.listEmpty }}</p>
+            <DsText variant="body" tone="muted">{{ COPY.listEmpty }}</DsText>
           </div>
         </DsPanel>
-        <ul v-else class="grid min-w-0 grid-cols-1 gap-3" data-testid="soalan-list">
+        <DsGrid v-else :cols="1" gap="sm" as="ul" data-testid="soalan-list">
           <QuestionCard
             v-for="q in list.data.value.data"
             :key="q.id"
@@ -154,15 +164,15 @@ const retry = (): void => {
             :deleting="deleting"
             @remove="remove"
           />
-        </ul>
-        <div
+        </DsGrid>
+        <DsCluster
           v-if="list.data.value.meta.totalItems > list.data.value.meta.pageSize"
-          class="flex flex-wrap items-center justify-between gap-3"
+          justify="between"
           data-testid="soalan-pager"
         >
-          <p class="text-caption text-muted" role="status" data-testid="soalan-pager-text">
+          <DsText variant="caption" role="status" data-testid="soalan-pager-text">
             {{ pagerText }}
-          </p>
+          </DsText>
           <UPagination
             :page="page"
             :total="list.data.value.meta.totalItems"
@@ -171,9 +181,9 @@ const retry = (): void => {
             :next="{ 'aria-label': 'Seterusnya' }"
             @update:page="go"
           />
-        </div>
+        </DsCluster>
       </template>
-    </section>
+    </DsStack>
 
     <HantarKertasCard />
   </DsPage>

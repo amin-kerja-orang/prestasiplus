@@ -13,7 +13,16 @@ import { RouterLink, useRoute, useRouter } from 'vue-router'
 
 import { FlashOutlet } from '@/components/feedback'
 import { useFlash } from '@/composables/useFlash'
-import { DsBrandLogo, DsConfirmHost, DsIcon, DsPillNav, provideShellTitle } from '@/ds'
+import {
+  DsBrandLogo,
+  DsConfirmHost,
+  DsIcon,
+  DsPillNav,
+  provideShellTitle,
+  DsCluster,
+  DsText,
+  DsHeading,
+} from '@/ds'
 import { useShellUser } from '@/shells/pembelajaran/useShellUser'
 import { useThemeMode } from '@/theme/color-mode'
 import { uiLocale } from '@/theme/locale-ms'
@@ -212,14 +221,17 @@ const accountItems = computed(() => [
                   >{{ initials }}</span
                 >
                 <span v-if="!collapsed" class="min-w-0 flex-1 leading-tight">
-                  <span
-                    class="block truncate text-label text-highlighted"
+                  <DsText
+                    variant="label"
+                    tone="highlighted"
+                    truncate
+                    class="block"
                     :title="name || 'Akaun'"
-                    >{{ name || 'Akaun' }}</span
+                    >{{ name || 'Akaun' }}</DsText
                   >
-                  <span class="block truncate text-caption text-muted" :title="SCOPE_CHIP">{{
+                  <DsText variant="caption" as="span" truncate class="block" :title="SCOPE_CHIP">{{
                     SCOPE_CHIP
-                  }}</span>
+                  }}</DsText>
                 </span>
                 <DsIcon v-if="!collapsed" name="caret-up-down" class="size-4 shrink-0 text-muted" />
               </button>
@@ -253,12 +265,18 @@ const accountItems = computed(() => [
                 </div>
               </template>
               <template #title>
-                <div class="flex min-w-0 items-baseline gap-2">
-                  <span v-if="crumb" class="hidden truncate text-body text-muted xl:block"
-                    >{{ crumb }} <span aria-hidden="true">/</span></span
+                <DsCluster gap="xs" align="baseline" :wrap="false">
+                  <DsText
+                    v-if="crumb"
+                    variant="body"
+                    as="span"
+                    tone="muted"
+                    truncate
+                    class="hidden xl:block"
+                    >{{ crumb }} <span aria-hidden="true">/</span></DsText
                   >
-                  <h1 class="truncate text-subheading text-highlighted">{{ title }}</h1>
-                </div>
+                  <DsHeading :level="1" variant="subheading" truncate>{{ title }}</DsHeading>
+                </DsCluster>
               </template>
               <template #right>
                 <UDashboardSearchButton

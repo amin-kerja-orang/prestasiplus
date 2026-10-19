@@ -7,7 +7,7 @@
  */
 import { computed } from 'vue'
 
-import { DsIconChip } from '@/ds'
+import { DsIconChip, DsCluster, DsStack, DsHeading, DsText } from '@/ds'
 
 import type { ChapterCard } from '../../api/types'
 import { CHAPTER_COUNTS, chapterQuizHref, chapterStats, progressWidth } from './chapter-lib'
@@ -24,13 +24,10 @@ const progress = computed(() => progressWidth(props.chapter))
 </script>
 
 <template>
-  <UCard
-    :data-testid="`chapter-card-${String(chapter.id)}`"
-    :data-state="chapter.state"
-  >
+  <UCard :data-testid="`chapter-card-${String(chapter.id)}`" :data-state="chapter.state">
     <div class="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
       <div class="flex min-w-0 flex-1 flex-col gap-3">
-        <div class="flex items-center gap-3">
+        <DsCluster :wrap="false">
           <DsIconChip
             v-if="locked"
             icon="i-ph-lock-duotone"
@@ -45,18 +42,19 @@ const progress = computed(() => progressWidth(props.chapter))
             :data-testid="`chapter-tile-${String(chapter.id)}`"
             >{{ chapter.number }}</UBadge
           >
-          <div class="flex min-w-0 flex-col gap-1">
-            <h3
-              class="text-subheading break-words text-highlighted"
+          <DsStack gap="2xs">
+            <DsHeading
+              :level="3"
+              wrap="anywhere"
               :data-testid="`chapter-title-${String(chapter.id)}`"
             >
               {{ title }}
-            </h3>
-            <p class="text-caption text-muted" :data-testid="`chapter-stats-${String(chapter.id)}`">
+            </DsHeading>
+            <DsText variant="caption" :data-testid="`chapter-stats-${String(chapter.id)}`">
               {{ chapterStats(chapter) }}
-            </p>
-          </div>
-        </div>
+            </DsText>
+          </DsStack>
+        </DsCluster>
         <UProgress
           :model-value="progress"
           :max="100"

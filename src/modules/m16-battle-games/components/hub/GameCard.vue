@@ -8,7 +8,7 @@
 import { computed } from 'vue'
 import { useRouter } from 'vue-router'
 
-import { DsArt3D } from '@/ds'
+import { DsArt3D, DsCluster, DsHeading, DsText } from '@/ds'
 
 import type { GamesHub } from '../../api'
 import type { HubCard } from './hub-cards'
@@ -43,7 +43,7 @@ function go(e: MouseEvent): void {
     :data-testid="`hub-card-${card.id}`"
     @click="go"
   >
-    <div class="flex items-start justify-between gap-3" data-testid="hub-card-banner">
+    <DsCluster align="start" justify="between" :wrap="false" data-testid="hub-card-banner">
       <DsArt3D :name="art" size="xl" float data-testid="hub-card-emoji" />
       <UBadge
         v-if="card.badge"
@@ -53,10 +53,10 @@ function go(e: MouseEvent): void {
         data-testid="hub-card-badge"
         >{{ card.badge }}</UBadge
       >
-    </div>
-    <h3 class="text-subheading text-highlighted">{{ card.title }}</h3>
-    <p class="text-body text-muted">{{ card.text }}</p>
-    <div v-if="visibleChips.length > 0" class="flex flex-wrap gap-2">
+    </DsCluster>
+    <DsHeading :level="3">{{ card.title }}</DsHeading>
+    <DsText variant="body" tone="muted">{{ card.text }}</DsText>
+    <DsCluster v-if="visibleChips.length > 0" gap="xs" align="stretch">
       <UBadge
         v-for="chip in visibleChips"
         :key="chip.text"
@@ -66,7 +66,7 @@ function go(e: MouseEvent): void {
         data-testid="hub-card-chip"
         >{{ chip.text }}</UBadge
       >
-    </div>
+    </DsCluster>
     <div class="mt-auto pt-2">
       <UButton
         :to="card.to"

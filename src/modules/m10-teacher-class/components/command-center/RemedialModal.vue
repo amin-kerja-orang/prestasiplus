@@ -9,7 +9,7 @@ import { computed, reactive, watch } from 'vue'
 
 import { isApiError } from '@/api'
 import { confirmNative, useApi } from '@/composables'
-import { DsDrillTable } from '@/ds'
+import { DsDrillTable, DsStack, DsCluster, DsText } from '@/ds'
 
 import {
   cancelRemedialTest,
@@ -123,23 +123,24 @@ async function cancel(s: CcWeakStudent, quizId: number) {
     wide
     @close="$emit('close')"
   >
-    <p v-if="error" class="text-body text-error" data-testid="cc-remedial-error">
+    <DsText v-if="error" variant="body" tone="error" data-testid="cc-remedial-error">
       Ralat: {{ error.message }}
-    </p>
-    <p v-else-if="!data" class="text-body text-muted" data-testid="cc-modal-loading">
+    </DsText>
+    <DsText v-else-if="!data" variant="body" tone="muted" data-testid="cc-modal-loading">
       Mengimbas topik lemah pelajar...
-    </p>
-    <p
+    </DsText>
+    <DsText
       v-else-if="weak.length === 0"
-      class="text-body text-highlighted"
+      variant="body"
+      tone="highlighted"
       data-testid="cc-remedial-empty"
     >
       Tiada pelajar dengan topik lemah (&lt;50% accuracy). Tahniah!
-    </p>
+    </DsText>
     <template v-else>
-      <p class="text-body text-toned" data-testid="cc-remedial-count">
+      <DsText variant="body" tone="toned" data-testid="cc-remedial-count">
         {{ weak.length }} pelajar dikesan lemah dalam topik tertentu (accuracy &lt;50%)
-      </p>
+      </DsText>
       <div data-testid="cc-remedial-table">
         <DsDrillTable :data="weak" :columns="columns" caption="Smart Remedial — Scan Pelajar Lemah">
           <template #name-cell="{ row }">
@@ -162,9 +163,9 @@ async function cancel(s: CcWeakStudent, quizId: number) {
             <span class="tabular text-error">{{ plain(row.original.weakestAccuracy) }}%</span>
           </template>
           <template #act-cell="{ row }">
-            <div data-testid="cc-remedial-actions" class="flex min-w-0 flex-col gap-2">
+            <DsStack data-testid="cc-remedial-actions" gap="xs">
               <template v-if="activeTestOf(row.original.studentId)">
-                <div class="flex flex-wrap items-center gap-2">
+                <DsCluster gap="xs">
                   <UButton
                     :to="remedialPath(activeTestOf(row.original.studentId)!.id)"
                     target="_blank"
@@ -186,14 +187,15 @@ async function cancel(s: CcWeakStudent, quizId: number) {
                     data-testid="cc-remedial-cancel"
                     @click="cancel(row.original, activeTestOf(row.original.studentId)!.id)"
                   />
-                </div>
-                <p
+                </DsCluster>
+                <DsText
                   v-if="state(row.original.studentId).cancelText"
-                  class="text-body text-warning"
+                  variant="body"
+                  tone="warning"
                   data-testid="cc-remedial-cancel-text"
                 >
                   {{ state(row.original.studentId).cancelText }}
-                </p>
+                </DsText>
               </template>
               <template v-else>
                 <UButton
@@ -207,14 +209,15 @@ async function cancel(s: CcWeakStudent, quizId: number) {
                   :label="`Selesai (${plain(doneTestOf(row.original.studentId)!.afterAccuracy ?? 0)}%)`"
                   data-testid="cc-remedial-done"
                 />
-                <p
+                <DsText
                   v-if="state(row.original.studentId).cancelText"
-                  class="text-body text-success"
+                  variant="body"
+                  tone="success"
                   data-testid="cc-remedial-cancel-text"
                 >
                   {{ state(row.original.studentId).cancelText }}
-                </p>
-                <div class="flex flex-wrap items-start gap-2">
+                </DsText>
+                <DsCluster gap="xs" align="start">
                   <div v-for="subject in subjectsOf(row.original)" :key="subject">
                     <UButton
                       v-if="state(row.original.studentId).made[subject]"
@@ -239,17 +242,18 @@ async function cancel(s: CcWeakStudent, quizId: number) {
                       data-testid="cc-remedial-generate"
                       @click="generate(row.original, subject)"
                     />
-                    <p
+                    <DsText
                       v-if="state(row.original.studentId).failed[subject]"
-                      class="text-body text-warning"
+                      variant="body"
+                      tone="warning"
                       data-testid="cc-remedial-gen-error"
                     >
                       {{ state(row.original.studentId).failed[subject] }}
-                    </p>
+                    </DsText>
                   </div>
-                </div>
+                </DsCluster>
               </template>
-            </div>
+            </DsStack>
           </template>
         </DsDrillTable>
       </div>

@@ -6,7 +6,7 @@
  */
 import { computed } from 'vue'
 
-import { DsIconChip, DsPanel } from '@/ds'
+import { DsIconChip, DsPanel, DsGrid, DsStack, DsText } from '@/ds'
 
 import type { Overview } from '../../../api/types'
 import { gps, KirkpatrickLink, mean, pct, plain, type KirkpatrickPaths } from '../common'
@@ -68,7 +68,7 @@ const steps = computed<Step[]>(() => [
     data-testid="kirk-flow"
   >
     <div class="hidden sm:block" data-testid="kirk-flow-circles">
-      <div class="grid grid-cols-4 gap-2">
+      <DsGrid :cols="4" gap="xs">
         <KirkpatrickLink
           v-for="s in steps"
           :key="s.key"
@@ -77,14 +77,14 @@ const steps = computed<Step[]>(() => [
           :data-testid="`kirk-flow-${s.key}`"
         >
           <DsIconChip :icon="s.icon" size="lg" />
-          <span class="text-label text-highlighted">{{ s.label }}</span>
-          <span class="text-body text-muted">{{ s.sub }}</span>
+          <DsText variant="label" tone="highlighted">{{ s.label }}</DsText>
+          <DsText variant="body" as="span" tone="muted">{{ s.sub }}</DsText>
           <UBadge color="primary" variant="soft" :label="s.pill" data-testid="kirk-flow-pill" />
         </KirkpatrickLink>
-      </div>
+      </DsGrid>
     </div>
 
-    <ul class="flex flex-col gap-2 sm:hidden" data-testid="kirk-flow-list">
+    <DsStack as="ul" gap="xs" class="sm:hidden" data-testid="kirk-flow-list">
       <li v-for="s in steps" :key="s.key">
         <KirkpatrickLink
           :to="s.to"
@@ -93,15 +93,20 @@ const steps = computed<Step[]>(() => [
         >
           <DsIconChip :icon="s.icon" size="sm" />
           <span class="min-w-0 flex-1">
-            <span class="block text-label text-highlighted">{{ s.label }}</span>
-            <span class="block text-body text-muted">{{ s.sub }}</span>
+            <DsText variant="label" tone="highlighted" class="block">{{ s.label }}</DsText>
+            <DsText variant="body" as="span" tone="muted" class="block">{{ s.sub }}</DsText>
           </span>
-          <span class="shrink-0 text-body text-primary-t" data-testid="kirk-flow-pill">{{
-            s.pill
-          }}</span>
+          <DsText
+            variant="body"
+            as="span"
+            tone="primary"
+            class="shrink-0"
+            data-testid="kirk-flow-pill"
+            >{{ s.pill }}</DsText
+          >
           <UIcon v-if="s.to !== null" name="i-ph-caret-right" class="size-4 shrink-0 text-dimmed" />
         </KirkpatrickLink>
       </li>
-    </ul>
+    </DsStack>
   </DsPanel>
 </template>

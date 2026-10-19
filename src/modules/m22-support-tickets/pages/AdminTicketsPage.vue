@@ -18,6 +18,8 @@ import {
   DsPanel,
   DsPillNav,
   type PillItem,
+  DsStack,
+  DsText,
 } from '@/ds'
 import { formatNumber } from '@/lib/number'
 import { formatDateTimeRaw } from '@/lib/time'
@@ -112,17 +114,17 @@ const chipItems = computed<PillItem<string>[]>(() => [
         </template>
         <template #replied-cell="{ row }">{{ row.original.replied ? 'Ya' : '—' }}</template>
         <template #card="{ row }">
-          <p class="text-body text-highlighted" data-testid="tq-row">{{ row.subject }}</p>
-          <p class="text-label text-muted">
+          <DsText variant="body" tone="highlighted" data-testid="tq-row">{{ row.subject }}</DsText>
+          <DsText variant="label" as="p" tone="muted">
             {{ row.userName ?? '—' }} · {{ formatDateTimeRaw(row.createdAt as string) }}
-          </p>
+          </DsText>
           <UBadge class="w-fit" color="neutral" variant="subtle" :label="row.status as string" />
         </template>
       </DsDataTable>
     </template>
     <DsLoadError v-else-if="error" :message="error.message" testid="tq-error" @retry="reload" />
-    <div v-else-if="loading" class="flex flex-col gap-3" data-testid="tq-loading">
+    <DsStack v-else-if="loading" gap="sm" data-testid="tq-loading">
       <USkeleton v-for="n in 5" :key="n" class="h-14 w-full" />
-    </div>
+    </DsStack>
   </DsPage>
 </template>

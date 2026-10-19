@@ -8,7 +8,7 @@
  */
 import { computed } from 'vue'
 
-import { DsPage } from '@/ds'
+import { DsPage, DsStack, DsCluster, DsGrid } from '@/ds'
 
 import type { CcPeriod } from '../api/command-center-board'
 import { boardPaths, S3_TABS } from '../components/command-center-board/board-copy'
@@ -41,9 +41,11 @@ function pick(next: CcPeriod): void {
     <DsPage :data-testid="alias ? 'cc-s3-alias' : 'cc-s3'">
       <DailyHeader :paths="paths" :school="alias" />
 
-      <div class="flex min-w-0 flex-col gap-4" data-testid="cc-s3-body">
-        <div
-          class="flex max-w-full flex-wrap gap-2"
+      <DsStack data-testid="cc-s3-body">
+        <DsCluster
+          gap="xs"
+          align="stretch"
+          class="max-w-full"
           role="group"
           aria-label="Tempoh"
           data-testid="cc-tabs"
@@ -61,7 +63,7 @@ function pick(next: CcPeriod): void {
             data-testid="cc-tab"
             @click="pick(t.period)"
           />
-        </div>
+        </DsCluster>
 
         <PulseCards :data="data" :period="period" />
 
@@ -78,19 +80,19 @@ function pick(next: CcPeriod): void {
             :base-path="paths.basePath"
             @toggle="drill.toggle"
           />
-          <div class="flex min-w-0 flex-col gap-4">
+          <DsStack>
             <DailySubjectsPanel :data="data" :status="status" />
             <DailyHeatmapPanel v-if="period === 'today'" :data="data" :status="status" />
-          </div>
+          </DsStack>
           <DailyFeedPanel :data="data" :status="status" :base-path="paths.basePath" />
         </div>
 
-        <div class="grid min-w-0 gap-4 md:grid-cols-2 xl:grid-cols-3" data-testid="cc-row-2">
+        <DsGrid :cols="{ md: 2, xl: 3 }" data-testid="cc-row-2">
           <DailyLoginsPanel :data="data" :status="status" :base-path="paths.basePath" />
           <DailyTopPanel :data="data" :status="status" :base-path="paths.basePath" />
           <DailyMoodBadgePanels :data="data" :status="status" />
-        </div>
-      </div>
+        </DsGrid>
+      </DsStack>
     </DsPage>
   </CcBoardFrame>
 </template>

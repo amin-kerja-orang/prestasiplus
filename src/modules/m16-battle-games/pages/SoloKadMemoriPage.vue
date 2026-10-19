@@ -7,7 +7,7 @@
  */
 import { computed, onMounted, ref } from 'vue'
 
-import { DsPage, DsLoadError } from '@/ds'
+import { DsPage, DsLoadError, DsStack, DsCluster, DsGrid, DsHeading, DsText } from '@/ds'
 
 import ResultCard from '../components/solo/ResultCard.vue'
 import { formatClock } from '../components/solo/solo-lib'
@@ -123,15 +123,21 @@ onMounted(() => void start())
 
 <template>
   <DsPage data-testid="solo-kad-memori">
-    <div class="flex flex-col items-start gap-1">
-      <UButton to="/permainan" color="neutral" variant="ghost" icon="i-ph-arrow-left" class="min-h-11">
+    <DsStack gap="2xs" align="start">
+      <UButton
+        to="/permainan"
+        color="neutral"
+        variant="ghost"
+        icon="i-ph-arrow-left"
+        class="min-h-11"
+      >
         Permainan
       </UButton>
-      <h1 class="text-title text-highlighted">🃏 Kad Memori</h1>
-      <p class="text-body text-muted">Padankan soalan dengan jawapan yang betul!</p>
-    </div>
+      <DsHeading :level="1">🃏 Kad Memori</DsHeading>
+      <DsText variant="body" tone="muted">Padankan soalan dengan jawapan yang betul!</DsText>
+    </DsStack>
 
-    <div class="flex flex-wrap gap-3" data-testid="solo-stats">
+    <DsCluster align="stretch" data-testid="solo-stats">
       <UBadge color="neutral" variant="soft" size="xl" data-testid="solo-time"
         >⏱️ {{ formatClock(seconds) }}</UBadge
       >
@@ -141,17 +147,19 @@ onMounted(() => void start())
       <UBadge color="success" variant="soft" size="xl" data-testid="solo-matched"
         >✅ {{ matchedPairs }} / {{ PAIRS }} padan</UBadge
       >
-    </div>
+    </DsCluster>
 
-    <div v-if="loading" class="flex flex-col gap-3" aria-busy="true" data-testid="solo-loading">
+    <DsStack v-if="loading" gap="sm" aria-busy="true" data-testid="solo-loading">
       <USkeleton class="h-16 w-full" />
       <USkeleton class="h-16 w-full" />
-    </div>
+    </DsStack>
     <DsLoadError v-else-if="error" :message="error" @retry="load()" />
 
-    <div
+    <DsGrid
       v-if="cards.length > 0"
-      class="mx-auto grid w-full max-w-2xl grid-cols-3 gap-3 sm:grid-cols-4"
+      :cols="{ base: 3, sm: 4 }"
+      gap="sm"
+      class="mx-auto w-full max-w-2xl"
       data-testid="solo-cards"
     >
       <UButton
@@ -170,7 +178,7 @@ onMounted(() => void start())
         <span v-if="cardState(card.id) === ''" class="text-title">❓</span>
         <span v-else class="text-caption">{{ card.content }}</span>
       </UButton>
-    </div>
+    </DsGrid>
 
     <ResultCard
       v-if="phase === 'done'"

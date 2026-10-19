@@ -4,6 +4,7 @@
  * FR-M11-32..34). "Refresh" is a submit button of the filter form (`form` attribute), as on live.
  */
 import type { MonitoringFilterQuery, MonitoringPaths } from './monitoring-paths'
+import { DsCluster } from '@/ds'
 
 defineProps<{
   query: MonitoringFilterQuery
@@ -17,7 +18,7 @@ const emit = defineEmits<{ export: [format: 'pdf' | 'csv']; toggle: [] }>()
 </script>
 
 <template>
-  <div class="flex flex-wrap items-center gap-3" data-testid="mon-tools">
+  <DsCluster data-testid="mon-tools">
     <p class="flex items-center gap-2 text-body text-muted" data-testid="mon-auto-refresh">
       <UIcon name="i-ph-clock" class="size-5" />
       <span
@@ -68,5 +69,5 @@ const emit = defineEmits<{ export: [format: 'pdf' | 'csv']; toggle: [] }>()
       data-testid="mon-export-csv"
       @click.prevent="emit('export', 'csv')"
     />
-  </div>
+  </DsCluster>
 </template>

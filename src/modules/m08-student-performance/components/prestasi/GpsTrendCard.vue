@@ -3,7 +3,7 @@
 import { computed } from 'vue'
 import type { TableColumn } from '@nuxt/ui'
 
-import { DsChart, DsDataTable, DsPanel } from '@/ds'
+import { DsChart, DsDataTable, DsPanel, DsStack, DsHeading, DsText } from '@/ds'
 
 import type { SchoolPerformance } from '../../api/types'
 import { BAND_STYLE, dec2, grouped } from '../../lib/prestasi/format'
@@ -71,13 +71,13 @@ const cardFields = [
 
 <template>
   <DsPanel data-testid="trend-card">
-    <div class="flex flex-col gap-4">
-      <div class="flex flex-col gap-1">
-        <h2 class="text-subheading text-highlighted">📉 Trend GPS (5 Tahun)</h2>
-        <p class="text-caption text-muted">
+    <DsStack>
+      <DsStack gap="2xs">
+        <DsHeading :level="2" variant="subheading">📉 Trend GPS (5 Tahun)</DsHeading>
+        <DsText variant="caption">
           2022–2026 · lebih rendah = lebih baik · Nilai GPS: 0 (A+) paling baik, 9 (G) paling lemah.
-        </p>
-      </div>
+        </DsText>
+      </DsStack>
       <DsChart
         title="Trend GPS"
         type="line"
@@ -96,8 +96,10 @@ const cardFields = [
         data-testid="trend-table"
       >
         <template #yearLabel-cell="{ row }">
-          <span
-            class="text-label whitespace-nowrap text-highlighted"
+          <DsText
+            variant="label"
+            tone="highlighted"
+            class="whitespace-nowrap"
             :data-testid="`trend-row-${row.original.year}`"
           >
             {{ row.original.year }}
@@ -108,11 +110,16 @@ const cardFields = [
               size="sm"
               label="Semasa"
             />
-          </span>
+          </DsText>
         </template>
         <template #gpsText-cell="{ row }">
-          <span :class="[row.original.band ? bandStyle(row.original.band).text : 'text-muted', 'text-label']"
-            >{{ row.original.gpsText }}</span>
+          <span
+            :class="[
+              row.original.band ? bandStyle(row.original.band).text : 'text-muted',
+              'text-label',
+            ]"
+            >{{ row.original.gpsText }}</span
+          >
         </template>
         <template #band-cell="{ row }">
           <UBadge
@@ -125,16 +132,17 @@ const cardFields = [
         </template>
         <template #changeText-cell="{ row }">
           <span
-:class="
+            :class="
               row.original.change === null || row.original.change === 0
                 ? 'text-dimmed'
                 : row.original.change < 0
                   ? 'text-success'
                   : 'text-error'
             "
-            >{{ row.original.changeText }}</span>
+            >{{ row.original.changeText }}</span
+          >
         </template>
       </DsDataTable>
-    </div>
+    </DsStack>
   </DsPanel>
 </template>

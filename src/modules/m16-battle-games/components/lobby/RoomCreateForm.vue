@@ -19,6 +19,7 @@ import {
   sameLevelLabel,
 } from './lobby-config'
 import { buildCreateBody, errorLines, type CreateFormValues } from './lobby-lib'
+import { DsGrid, DsStack, DsHeading } from '@/ds'
 
 const props = defineProps<{
   game: RoomGame
@@ -77,7 +78,7 @@ async function submit(): Promise<void> {
 
 <template>
   <UCard data-testid="create-card">
-    <h2 class="text-subheading text-highlighted">{{ isPb ? '🆕' : '🏠' }} Cipta Bilik Baru</h2>
+    <DsHeading :level="2" variant="subheading">{{ isPb ? '🆕' : '🏠' }} Cipta Bilik Baru</DsHeading>
     <form class="mt-4 flex flex-col gap-4" data-testid="create-form" @submit.prevent="submit">
       <UAlert
         v-if="errors.length > 0"
@@ -87,9 +88,9 @@ async function submit(): Promise<void> {
         data-testid="create-errors"
       >
         <template #description>
-          <ul class="flex flex-col gap-1">
+          <DsStack as="ul" gap="2xs">
             <li v-for="line in errors" :key="line">{{ line }}</li>
-          </ul>
+          </DsStack>
         </template>
       </UAlert>
 
@@ -124,9 +125,10 @@ async function submit(): Promise<void> {
         />
       </UFormField>
 
-      <div
+      <DsGrid
         v-if="isPb && form.matchMode === 'custom'"
-        class="grid grid-cols-2 gap-3"
+        :cols="2"
+        gap="sm"
         data-testid="create-range"
       >
         <UFormField label="Dari">
@@ -147,7 +149,7 @@ async function submit(): Promise<void> {
             data-testid="create-grade-max"
           />
         </UFormField>
-      </div>
+      </DsGrid>
 
       <UFormField v-if="isPb" label="Maks Pemain">
         <USelect

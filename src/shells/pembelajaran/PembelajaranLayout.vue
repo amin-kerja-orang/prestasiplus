@@ -27,6 +27,9 @@ import {
   DsPillNav,
   DsRewardChip,
   provideShellTitle,
+  DsCluster,
+  DsText,
+  DsHeading,
 } from '@/ds'
 import { useGamificationSummary } from '@/shells/user/useGamificationSummary'
 import { useToast } from '@nuxt/ui/composables'
@@ -104,7 +107,12 @@ const searchGroups = computed(() => {
         icon: phClass(l.icon, learner.value),
         to: l.to,
       })),
-      { id: 'logout', label: 'Log Keluar', icon: phClass('sign-out', learner.value), to: '/logout' },
+      {
+        id: 'logout',
+        label: 'Log Keluar',
+        icon: phClass('sign-out', learner.value),
+        to: '/logout',
+      },
     ],
   })
   return groups
@@ -166,7 +174,13 @@ const accountMenu = computed(() => [
   links.value.map((l) => ({ label: l.label, icon: phClass(l.icon, learner.value), to: l.to })),
   [
     ...(learner.value
-      ? [{ label: 'Tukar Rakan Belajar', icon: phClass('smiley', true), onSelect: () => openPicker() }]
+      ? [
+          {
+            label: 'Tukar Rakan Belajar',
+            icon: phClass('smiley', true),
+            onSelect: () => openPicker(),
+          },
+        ]
       : []),
     {
       label: themeLabel.value,
@@ -217,8 +231,10 @@ const navUi = computed(() => ({
 
 const slotById = computed(() => {
   const m = new Map<string, number>()
-  for (const i of [...flatItems(sidebar.value), ...flatItems(drawer.value)]) m.set(i.id, chipSlot(i))
-  for (const e of [...sidebar.value, ...drawer.value]) if (e.kind === 'group') m.set(e.id, chipSlot(e))
+  for (const i of [...flatItems(sidebar.value), ...flatItems(drawer.value)])
+    m.set(i.id, chipSlot(i))
+  for (const e of [...sidebar.value, ...drawer.value])
+    if (e.kind === 'group') m.set(e.id, chipSlot(e))
   return m
 })
 const slotOf = (id: unknown): number => slotById.value.get(String(id)) ?? 1
@@ -328,16 +344,22 @@ const chipClass = (chip: unknown, active: boolean): string =>
                   >{{ initials }}</span
                 >
                 <span v-if="!collapsed" class="min-w-0 flex-1 leading-tight">
-                  <span
-                    class="block truncate text-label text-highlighted"
+                  <DsText
+                    variant="label"
+                    tone="highlighted"
+                    truncate
+                    class="block"
                     :title="name || 'Akaun'"
-                    >{{ name || 'Akaun' }}</span
+                    >{{ name || 'Akaun' }}</DsText
                   >
-                  <span
+                  <DsText
                     v-if="schoolName"
-                    class="block truncate text-caption text-muted"
+                    variant="caption"
+                    as="span"
+                    truncate
+                    class="block"
                     :title="schoolName"
-                    >{{ schoolName }}</span
+                    >{{ schoolName }}</DsText
                   >
                 </span>
                 <DsIcon v-if="!collapsed" name="caret-up-down" class="size-4 shrink-0 text-muted" />
@@ -377,12 +399,20 @@ const chipClass = (chip: unknown, active: boolean): string =>
                 /></RouterLink>
               </template>
               <template #title>
-                <div class="flex min-w-0 items-baseline gap-2">
-                  <span v-if="crumb" class="hidden truncate text-body text-muted xl:block"
-                    >{{ crumb }} <span aria-hidden="true">/</span></span
+                <DsCluster gap="xs" align="baseline" :wrap="false">
+                  <DsText
+                    v-if="crumb"
+                    variant="body"
+                    as="span"
+                    tone="muted"
+                    truncate
+                    class="hidden xl:block"
+                    >{{ crumb }} <span aria-hidden="true">/</span></DsText
                   >
-                  <h1 v-if="title" class="truncate text-subheading text-highlighted">{{ title }}</h1>
-                </div>
+                  <DsHeading v-if="title" :level="1" variant="subheading" truncate>{{
+                    title
+                  }}</DsHeading>
+                </DsCluster>
               </template>
               <template #right>
                 <UDashboardSearchButton
@@ -503,7 +533,9 @@ const chipClass = (chip: unknown, active: boolean): string =>
         aria-label="Navigasi bawah"
         data-testid="pembelajaran-bottom-nav"
       >
-        <ul class="mx-auto flex max-w-xl items-stretch justify-around gap-0.5 p-1.5 sm:gap-1 sm:p-2">
+        <ul
+          class="mx-auto flex max-w-xl items-stretch justify-around gap-0.5 p-1.5 sm:gap-1 sm:p-2"
+        >
           <li v-for="tab in tabs" :key="tab.id" class="min-w-0 flex-1">
             <RouterLink
               :to="tab.to"
@@ -561,10 +593,12 @@ const chipClass = (chip: unknown, active: boolean): string =>
               >{{ initials }}</span
             >
             <span class="min-w-0">
-              <span class="block break-words text-label text-highlighted">{{ name }}</span>
-              <span v-if="schoolName" class="block break-words text-caption text-muted">{{
+              <DsText variant="label" tone="highlighted" wrap="anywhere" class="block">{{
+                name
+              }}</DsText>
+              <DsText v-if="schoolName" variant="caption" as="span" wrap="anywhere" class="block">{{
                 schoolName
-              }}</span>
+              }}</DsText>
             </span>
           </div>
           <UNavigationMenu
@@ -608,10 +642,10 @@ const chipClass = (chip: unknown, active: boolean): string =>
         aria-label="Pilih rakan belajar"
         data-testid="friend-prompt"
       >
-        <div class="flex items-start gap-2">
+        <DsCluster gap="xs" align="start" :wrap="false">
           <div class="min-w-0 flex-1">
-            <p class="text-label text-highlighted">Pilih rakan belajar awak</p>
-            <p class="text-caption text-muted">Dia akan temankan awak sepanjang latihan.</p>
+            <DsText variant="label" as="p" tone="highlighted">Pilih rakan belajar awak</DsText>
+            <DsText variant="caption">Dia akan temankan awak sepanjang latihan.</DsText>
           </div>
           <UButton
             color="neutral"
@@ -621,8 +655,8 @@ const chipClass = (chip: unknown, active: boolean): string =>
             data-testid="friend-prompt-close"
             @click="dismissPrompt"
           />
-        </div>
-        <div class="flex gap-2">
+        </DsCluster>
+        <DsCluster gap="xs" align="stretch" :wrap="false">
           <UButton
             v-for="f in FRIEND_OPTIONS"
             :key="f.value"
@@ -633,7 +667,7 @@ const chipClass = (chip: unknown, active: boolean): string =>
             :data-testid="`friend-prompt-${f.value}`"
             @click="onPicked(f.value)"
           />
-        </div>
+        </DsCluster>
       </aside>
       <DsConfirmHost />
     </div>

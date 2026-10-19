@@ -12,7 +12,7 @@ import { computed, ref, watch } from 'vue'
 
 import { useDebounce } from '@/composables'
 
-import { DsDataTable, DsNativeSelect } from '@/ds'
+import { DsDataTable, DsNativeSelect, DsStack, DsCluster, DsText } from '@/ds'
 
 import { fetchSchoolStudents, type ExistingStudent } from '../api/imports'
 import { EXISTING_STUDENTS_CAP, existingClassFilter } from '../lib/import-options'
@@ -83,7 +83,7 @@ watch(classLevel, () => {
 </script>
 
 <template>
-  <div class="flex flex-col gap-3" data-testid="existing-students">
+  <DsStack gap="sm" data-testid="existing-students">
     <UButton
       type="button"
       block
@@ -98,8 +98,8 @@ watch(classLevel, () => {
     />
 
     <UCard v-if="opened" data-testid="existing-panel">
-      <div class="flex flex-col gap-4">
-        <div class="flex flex-col gap-2 sm:flex-row">
+      <DsStack>
+        <DsCluster gap="xs" stack-below="sm" align="stretch">
           <UInput
             v-model="search"
             type="text"
@@ -121,7 +121,7 @@ watch(classLevel, () => {
               {{ o.label }}
             </option>
           </DsNativeSelect>
-        </div>
+        </DsCluster>
 
         <p
           v-if="loading"
@@ -168,11 +168,11 @@ watch(classLevel, () => {
               />
             </template>
             <template #card="{ row }">
-              <p class="text-label text-highlighted">{{ row.name }}</p>
-              <p class="text-caption break-all text-muted">
+              <DsText variant="label" as="p" tone="highlighted">{{ row.name }}</DsText>
+              <DsText variant="caption" class="break-all">
                 {{ row.email }}
                 <span v-if="row.idDelima" class="text-primary-t">{{ row.idDelima }}</span>
-              </p>
+              </DsText>
               <UBadge
                 v-if="row.classLevel"
                 class="w-fit"
@@ -191,7 +191,7 @@ watch(classLevel, () => {
           <UIcon name="i-ph-info" class="size-4 shrink-0" aria-hidden="true" />
           Menunjukkan 200 pertama sahaja. Gunakan carian untuk cari pelajar tertentu.
         </p>
-      </div>
+      </DsStack>
     </UCard>
-  </div>
+  </DsStack>
 </template>

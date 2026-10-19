@@ -29,6 +29,10 @@ import {
   DsStatRow,
   DsStatusBadge,
   useConfirm,
+  DsGrid,
+  DsCluster,
+  DsStack,
+  DsText,
 } from '@/ds'
 import type { CardField, RowAction, StatItem } from '@/ds'
 
@@ -287,7 +291,7 @@ const cardFields: CardField[] = [
               <p v-for="m in grantTop" :key="m">{{ m }}</p>
             </template>
           </UAlert>
-          <div class="grid grid-cols-1 gap-6 md:grid-cols-3">
+          <DsGrid :cols="{ base: 1, md: 3 }" gap="lg">
             <DsFormField native for="grant-user" label="ID Pengguna" :error="grantErrors.userId">
               <template #default="{ id, describedby, invalid }">
                 <UInput
@@ -331,9 +335,9 @@ const cardFields: CardField[] = [
                 />
               </template>
             </DsFormField>
-          </div>
+          </DsGrid>
           <template #footer>
-            <div class="flex justify-end">
+            <DsCluster gap="none" align="stretch" justify="end" :wrap="false">
               <UButton
                 type="submit"
                 icon="i-ph-check"
@@ -343,7 +347,7 @@ const cardFields: CardField[] = [
                 :disabled="granting"
                 data-testid="grant-submit"
               />
-            </div>
+            </DsCluster>
           </template>
         </DsFormSection>
       </form>
@@ -400,18 +404,19 @@ const cardFields: CardField[] = [
       @update:page="goToPage"
     >
       <template #userName-cell="{ row }">
-        <div
-          class="flex min-w-40 flex-col gap-1"
+        <DsStack
+          gap="2xs"
+          class="min-w-40"
           data-testid="access-row"
           :data-access-id="row.original.id"
         >
-          <p class="line-clamp-2 text-label text-highlighted" data-testid="a-name">
+          <DsText variant="label" as="p" tone="highlighted" :clamp="2" data-testid="a-name">
             {{ row.original.raw.user.name }}
-          </p>
-          <p class="text-caption break-all text-muted" data-testid="a-email">
+          </DsText>
+          <DsText variant="caption" class="break-all" data-testid="a-email">
             {{ row.original.raw.user.email }}
-          </p>
-        </div>
+          </DsText>
+        </DsStack>
       </template>
       <template #packageName-cell="{ row }">
         <UBadge

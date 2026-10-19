@@ -9,7 +9,7 @@ import { computed, watch } from 'vue'
 import { isApiError } from '@/api'
 import { setRouteOutcome, useRouteOutcome } from '@/app/router/outcome'
 import { useApi, usePageMeta } from '@/composables'
-import { DsIconChip, DsPage } from '@/ds'
+import { DsIconChip, DsPage, DsCluster, DsStack, DsGrid, DsText, DsHeading } from '@/ds'
 
 import { fetchTopic } from '../api/student-curriculum'
 import { LOAD_ERROR, TOPICS_PATH } from '../lib/student-catalogue'
@@ -77,7 +77,7 @@ const BADGES = [
         class="rounded-3xl bg-gradient-primary p-5 text-primary-on shadow-hero sm:p-8"
         data-testid="topic-hero"
       >
-        <div class="flex items-start gap-4">
+        <DsCluster gap="md" align="start" :wrap="false">
           <div class="min-w-0 flex-1">
             <h1 class="font-display text-title font-extrabold break-words">{{ topic.name }}</h1>
             <p class="mt-1 text-label" data-testid="topic-hero-subject">
@@ -92,7 +92,7 @@ const BADGES = [
             </p>
           </div>
           <DsIconChip icon="books" accent="win" size="lg" />
-        </div>
+        </DsCluster>
       </section>
 
       <div class="grid grid-cols-3 gap-3 sm:gap-4" data-testid="topic-stats">
@@ -106,7 +106,7 @@ const BADGES = [
           <div class="mt-1 text-title font-extrabold text-highlighted" data-testid="stat-subtopik">
             {{ topic.subtopics.length }}
           </div>
-          <div class="text-caption text-muted">Subtopik</div>
+          <DsText variant="caption" as="div">Subtopik</DsText>
         </div>
         <div class="rounded-card bg-default p-3 text-center shadow-lift sm:p-4">
           <UIcon
@@ -118,7 +118,7 @@ const BADGES = [
           <div class="mt-1 text-title font-extrabold text-highlighted" data-testid="stat-dijawab">
             {{ topic.progress.questionsAnswered }}
           </div>
-          <div class="text-caption text-muted">Dijawab</div>
+          <DsText variant="caption" as="div">Dijawab</DsText>
         </div>
         <div class="rounded-card bg-default p-3 text-center shadow-lift sm:p-4">
           <UIcon
@@ -130,20 +130,20 @@ const BADGES = [
           <div class="mt-1 text-title font-extrabold text-highlighted" data-testid="stat-kemajuan">
             {{ topic.progress.progress }}%
           </div>
-          <div class="text-caption text-muted">Kemajuan</div>
+          <DsText variant="caption" as="div">Kemajuan</DsText>
         </div>
       </div>
 
-      <section class="flex flex-col gap-3">
-        <h2 class="text-heading text-highlighted">Subtopik</h2>
-        <div class="grid grid-cols-1 gap-4 sm:grid-cols-2" data-testid="subtopic-grid">
+      <DsStack as="section" gap="sm">
+        <DsHeading :level="2">Subtopik</DsHeading>
+        <DsGrid :cols="{ base: 1, sm: 2 }" data-testid="subtopic-grid">
           <article
             v-for="(s, i) in topic.subtopics"
             :key="s.id"
             class="flex min-w-0 flex-col rounded-card bg-default p-4 shadow-lift"
             data-testid="subtopic-card"
           >
-            <div class="flex items-start gap-3">
+            <DsCluster align="start" :wrap="false">
               <span
                 class="flex size-10 shrink-0 items-center justify-center rounded-full bg-primary font-bold text-primary-on"
                 data-testid="subtopic-number"
@@ -151,12 +151,9 @@ const BADGES = [
                 {{ i + 1 }}
               </span>
               <div class="min-w-0">
-                <h3
-                  class="text-subheading break-words text-highlighted"
-                  data-testid="subtopic-name"
-                >
+                <DsHeading :level="3" wrap="anywhere" data-testid="subtopic-name">
                   {{ s.name }}
-                </h3>
+                </DsHeading>
                 <p
                   v-if="s.description"
                   class="mt-1 text-body text-muted"
@@ -165,7 +162,7 @@ const BADGES = [
                   {{ s.description }}
                 </p>
               </div>
-            </div>
+            </DsCluster>
             <div class="mt-3 flex flex-wrap gap-2">
               <UBadge
                 v-for="b in BADGES"
@@ -202,8 +199,8 @@ const BADGES = [
               Mula Berlatih
             </UButton>
           </article>
-        </div>
-      </section>
+        </DsGrid>
+      </DsStack>
     </template>
   </DsPage>
 </template>

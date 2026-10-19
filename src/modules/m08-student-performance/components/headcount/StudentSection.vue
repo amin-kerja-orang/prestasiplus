@@ -7,7 +7,17 @@
 import type { TableColumn } from '@nuxt/ui'
 import { computed } from 'vue'
 
-import { type CardField, type ChartSeries, DsChart, DsDataTable, DsPanel } from '@/ds'
+import {
+  type CardField,
+  type ChartSeries,
+  DsChart,
+  DsDataTable,
+  DsPanel,
+  DsStack,
+  DsCluster,
+  DsHeading,
+  DsText,
+} from '@/ds'
 import { formatMyt } from '@/lib/time'
 
 import type {
@@ -166,16 +176,16 @@ const cardFields: CardField[] = [
   { key: 'note', label: 'Catatan' },
 ]
 const rowTone = (r: Row): string => ROW_AR[r.tone]
-const rowTestId =(r: Row, i: number): string =>
+const rowTestId = (r: Row, i: number): string =>
   r.kind === 'otr' ? `row-otr-${String(i + 1)}` : `row-${r.kind}`
 </script>
 
 <template>
-  <section class="flex min-w-0 flex-col gap-4" :data-testid="`section-${section.configId}`">
+  <DsStack as="section" :data-testid="`section-${section.configId}`">
     <DsPanel>
-      <div class="flex flex-col gap-4">
-        <div class="flex flex-wrap items-center gap-x-3 gap-y-2">
-          <h2 class="min-w-0 text-heading break-words text-highlighted">{{ section.subject }}</h2>
+      <DsStack>
+        <DsCluster row-gap="xs">
+          <DsHeading :level="2" wrap="anywhere" class="min-w-0">{{ section.subject }}</DsHeading>
           <UBadge
             :color="STATUS[section.status].color"
             variant="subtle"
@@ -190,9 +200,9 @@ const rowTestId =(r: Row, i: number): string =>
             :label="`RS: ${fixed1(section.rs.value)}% (${gradeOfPercent(section.rs.value)})`"
             data-testid="rs-badge"
           />
-        </div>
+        </DsCluster>
 
-        <div class="flex flex-wrap gap-2">
+        <DsCluster gap="xs" align="stretch">
           <UBadge
             v-if="section.school"
             color="neutral"
@@ -203,9 +213,9 @@ const rowTestId =(r: Row, i: number): string =>
           <UBadge color="neutral" variant="soft" icon="i-ph-stack" :label="section.levelName" />
           <UBadge color="neutral" variant="soft" icon="i-ph-users" :label="section.className" />
           <UBadge color="neutral" variant="soft" :label="String(section.year)" />
-        </div>
+        </DsCluster>
 
-        <div class="flex flex-wrap items-center gap-2" data-testid="summary-chips">
+        <DsCluster gap="xs" data-testid="summary-chips">
           <UBadge
             color="neutral"
             variant="soft"
@@ -241,14 +251,14 @@ const rowTestId =(r: Row, i: number): string =>
               data-testid="chip-trend"
               :label="section.projection.trend"
             />
-            <span class="text-caption text-muted" data-testid="chip-confidence"
+            <DsText variant="caption" as="span" data-testid="chip-confidence"
               >Keyakinan:
               <span :class="[CONFIDENCE[section.projection.confidence], 'text-label']">{{
                 section.projection.confidence
-              }}</span></span
+              }}</span></DsText
             >
           </template>
-        </div>
+        </DsCluster>
 
         <DsChart
           type="line"
@@ -259,7 +269,7 @@ const rowTestId =(r: Row, i: number): string =>
           :heading-level="3"
           :data-testid="`student-chart-${section.configId}`"
         />
-      </div>
+      </DsStack>
     </DsPanel>
 
     <DsDataTable
@@ -272,18 +282,20 @@ const rowTestId =(r: Row, i: number): string =>
       :data-testid="`table-${section.configId}`"
     >
       <template #checkpoint-cell="{ row }">
-        <span
-          class="text-label whitespace-nowrap text-highlighted"
+        <DsText
+          variant="label"
+          tone="highlighted"
+          class="whitespace-nowrap"
           :data-testid="rowTestId(row.original, row.index)"
           :data-tone="row.original.tone"
-          >{{ row.original.checkpoint }}</span
+          >{{ row.original.checkpoint }}</DsText
         >
       </template>
       <template #ar-cell="{ row }">
         <span v-if="row.original.kind === 'otr'" :class="rowTone(row.original)">{{
           row.original.ar
         }}</span>
-        <span v-else class="text-caption text-muted">{{ row.original.note }}</span>
+        <DsText v-else variant="caption" as="span">{{ row.original.note }}</DsText>
       </template>
       <template #status-cell="{ row }">
         <UIcon
@@ -301,32 +313,33 @@ const rowTestId =(r: Row, i: number): string =>
     </DsDataTable>
 
     <DsPanel v-if="section.prediction && verdict" data-testid="prediction-box">
-      <div class="flex flex-col gap-2">
-        <div class="flex items-center gap-2">
+      <DsStack gap="xs">
+        <DsCluster gap="xs" :wrap="false">
           <span :class="[verdict.iconTone, 'flex shrink-0']"
             ><UIcon :name="verdict.icon" class="size-6"
           /></span>
-          <h3 class="text-subheading text-highlighted">Ketepatan Ramalan ETR vs RS</h3>
-        </div>
-        <p class="text-body text-default">
+          <DsHeading :level="3">Ketepatan Ramalan ETR vs RS</DsHeading>
+        </DsCluster>
+        <DsText variant="body">
           ETR (Ramalan): {{ fixed1(section.prediction.etr) }}% ({{
             gradeOfPercent(section.prediction.etr)
           }})
-        </p>
-        <p class="text-body text-default">
+        </DsText>
+        <DsText variant="body">
           RS (Sebenar): {{ fixed1(section.prediction.rs) }}% ({{
             gradeOfPercent(section.prediction.rs)
           }})
-        </p>
+        </DsText>
         <p class="text-label" data-testid="selisih">
           <span :class="verdict.text"
-            >Selisih: {{ selisihText(section.prediction.diff) }} markah</span>
+            >Selisih: {{ selisihText(section.prediction.diff) }} markah</span
+          >
         </p>
         <p class="text-label" data-testid="verdict">
           <span :class="verdict.text">{{ section.prediction.verdict }}</span>
         </p>
-        <p class="text-caption text-muted">{{ verdict.note }}</p>
-      </div>
+        <DsText variant="caption">{{ verdict.note }}</DsText>
+      </DsStack>
     </DsPanel>
-  </section>
+  </DsStack>
 </template>

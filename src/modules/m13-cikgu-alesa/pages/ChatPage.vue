@@ -8,7 +8,7 @@
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
 
-import { DsIconChip, DsPage } from '@/ds'
+import { DsIconChip, DsPage, DsText } from '@/ds'
 
 import {
   buildHandoffMessage,
@@ -281,7 +281,7 @@ onBeforeUnmount(() => {
           id="cikgu-voice-toolbar"
           class="flex flex-wrap items-center gap-3 rounded-chip bg-friend/16 px-3 py-2"
         >
-          <span class="text-label text-highlighted">🎙️ Voice Mode:</span>
+          <DsText variant="label" tone="highlighted">🎙️ Voice Mode:</DsText>
           <UCheckbox
             id="cikgu-voice-mode"
             v-model="voiceOn"
@@ -332,7 +332,7 @@ onBeforeUnmount(() => {
           >
         </form>
 
-        <div id="cikgu-meta" class="min-h-5 text-caption text-muted">{{ meta }}</div>
+        <DsText id="cikgu-meta" variant="caption" as="div" class="min-h-5">{{ meta }}</DsText>
       </div>
     </div>
   </DsPage>
