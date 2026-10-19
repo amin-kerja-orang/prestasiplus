@@ -1,0 +1,4 @@
+{"id":1,"question_id":1,"label":"A","body":"Pilihan 1","is_correct":"1"}
+{"id":2,"question_id":1,"label":"B","body":"Pilihan 2","is_correct":"0"}
+{"id":3,"question_id":1,"label":"C","body":"Pilihan 3","is_correct":"0"}
+{"id":4,"question_id":555,"label":"D","body":"Pilihan 4","is_correct":"0"}

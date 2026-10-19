@@ -1,0 +1,334 @@
+import { readFileSync } from 'node:fs'
+import net from 'node:net'
+import { join } from 'node:path'
+
+import { afterAll, beforeAll, describe, expect, it } from 'vitest'
+
+import { findTable, TABLES, type TableSpec } from '../../../src/migration/ddl/spec'
+import { runStagingCli, STAGING_EXIT } from '../../../src/migration/staging/cli'
+import { StagingResetRefusedError, stagingResetRefusals } from '../../../src/migration/staging/guard'
+import { LoaderError, loadStaging, SourceNotImplementedError, type LoadOptions } from '../../../src/migration/staging/load'
+import { DirReader, DumpFormatError } from '../../../src/migration/staging/readers'
+import { capture, countAll, createStagingDb, FIXTURE_DIR, stagingEnv, tempDir, writeDump, type StagingDb } from './helpers'
+
+/** Two tables are enough for failure paths: each full load re-creates all 118 tables (seconds). */
+const SUBSET = ['users', 'schools'].map((n) => findTable(n) as TableSpec)
+
+// A full load creates 118 tables; under a loaded test host (other files, other containers) it can pass 30 s.
+const FULL_LOAD_TIMEOUT = 90_000
+
+let env: StagingDb
+let okEnv: Record<string, string>
+const load = (reader: DirReader, options: LoadOptions = {}) => loadStaging(env.pool, reader, { env: okEnv, ...options })
+
+beforeAll(async () => {
+  env = await createStagingDb()
+  okEnv = stagingEnv(env.db)
+})
+afterAll(async () => {
+  await env.close()
+})
+
+const manifest = JSON.parse(readFileSync(join(FIXTURE_DIR, 'manifest.json'), 'utf8')) as {
+  tables: Record<string, { rows: number }>
+}
+
+// ORDER DEPENDENCE: the first describe shares ONE full load (made by its first test) across the next
+// tests, and the rollback test reuses the state of the second full load. The later describes replace
+// the schemas with a subset, so they must stay below it. Do not reorder or use `.only` on single tests.
+describe('staging:load on the synthetic fixture (AC1, AC7)', () => {
+  it('loads every table and each row count equals the fixture manifest', async () => {
+    const result = await load(new DirReader(FIXTURE_DIR))
+    const counts = await countAll(env.pool)
+    for (const t of TABLES) expect(counts[t.name], t.name).toBe(manifest.tables[t.name]?.rows)
+    expect(result.tables).toHaveLength(TABLES.length)
+    expect(result.tables.every((t) => !t.absent)).toBe(true)
+    expect(result.totalRows).toBe(Object.values(manifest.tables).reduce((s, t) => s + t.rows, 0))
+    expect(result.inputKind).toBe('dir')
+    expect(result.inputHash).toMatch(/^[0-9a-f]{64}$/)
+  }, FULL_LOAD_TIMEOUT)
+
+  it('stamps _row_hash and _loaded_at on every row and keeps the source values', async () => {
+    const res = await env.pool.query(
+      `select count(*)::int as n, count("_row_hash")::int as hashed, count("_loaded_at")::int as stamped from staging_cloud.users`,
+    )
+    expect(res.rows[0]).toEqual({ n: 13, hashed: 13, stamped: 13 })
+    const jsonb = await env.pool.query(`select config from staging_cloud.games where id = 1`)
+    expect(jsonb.rows[0].config).toEqual({ level: 1 })
+  })
+
+  it('writes NULL for remember_token and parent_invite_token (M4, PDPA minimisation)', async () => {
+    const fixture = readFileSync(join(FIXTURE_DIR, 'users.ndjson'), 'utf8')
+    expect(fixture).toContain('fixture-remember-token-001') // the dump really carries them
+    expect(fixture).toContain('fixture-invite-token-009')
+    const res = await env.pool.query(
+      `select count(remember_token)::int as rt, count(parent_invite_token)::int as pit, count(*)::int as n from staging_cloud.users`,
+    )
+    expect(res.rows[0]).toEqual({ rt: 0, pit: 0, n: 13 })
+    // non-secret columns survive
+    const kept = await env.pool.query(`select count(referred_by)::int as r, count(created_at)::int as c from staging_cloud.users`)
+    expect(kept.rows[0].r).toBeGreaterThan(0)
+    expect(kept.rows[0].c).toBe(13)
+    // the redaction is declared in the spec, for every table that has such a column
+    const redacted = TABLES.flatMap((t) => t.columns.filter((c) => c.redact).map((c) => `${t.name}.${c.name}`))
+    expect(redacted).toEqual(['users.remember_token', 'users.parent_invite_token'])
+  })
+
+  it('keeps no constraint except the primary key (dirty data loads)', async () => {
+    const res = await env.pool.query<{ contype: string; n: number }>(
+      `select c.contype, count(*)::int as n from pg_constraint c join pg_namespace n on n.oid = c.connamespace
+        where n.nspname in ('staging_cloud', 'archive_cloud') group by 1`,
+    )
+    expect(res.rows).toEqual([{ contype: 'p', n: TABLES.filter((t) => t.pk).length }])
+    // the fixture really contains a duplicate pivot row and orphans, so the loader did not filter anything
+    const dup = await env.pool.query(`select count(*)::int as n from staging_cloud.classroom_student where classroom_id = 1 and student_id = 1`)
+    expect(dup.rows[0].n).toBe(2)
+  })
+
+  it('is repeatable: a second full run leaves the same row counts and drops leftovers (AC7)', async () => {
+    const before = await countAll(env.pool)
+    await env.pool.query(`insert into staging_cloud.schools (id, name) values (424242, 'leftover')`)
+    await load(new DirReader(FIXTURE_DIR))
+    expect(await countAll(env.pool)).toEqual(before)
+  }, FULL_LOAD_TIMEOUT)
+
+  it('rolls back as a whole: a failed load keeps the previous staging data', async () => {
+    const before = await countAll(env.pool)
+    const dir = tempDir()
+    try {
+      writeDump(dir.path, { schools: [{ id: 1, name: 'x' }], users: [{ id: 1, surprise_col: 'v' }] })
+      await expect(load(new DirReader(dir.path), { tables: SUBSET })).rejects.toBeInstanceOf(LoaderError)
+    } finally {
+      dir.cleanup()
+    }
+    expect(await countAll(env.pool)).toEqual(before)
+  })
+})
+
+describe('loader strictness', () => {
+  const run = async (tables: Parameters<typeof writeDump>[1], opts: LoadOptions = {}, rows?: Record<string, number>) => {
+    const dir = tempDir()
+    try {
+      writeDump(dir.path, tables, rows)
+      return await load(new DirReader(dir.path), { tables: SUBSET, ...opts })
+    } finally {
+      dir.cleanup()
+    }
+  }
+
+  it('refuses a column that staging_cloud.sql does not define, naming it but never a value', async () => {
+    const err = await run({ users: [{ id: 1, hidden_notes: 'PERSONAL-VALUE-XYZ' }] }).catch((e: unknown) => e as Error)
+    expect(err).toBeInstanceOf(LoaderError)
+    expect((err as Error).message).toContain('hidden_notes')
+    expect((err as Error).message).not.toContain('PERSONAL-VALUE-XYZ')
+  })
+
+  it('prints only identifier-like unknown column names and counts the rest (L4)', async () => {
+    const odd = 'Murid Contoh 001; drop table'
+    const err = await run({ users: [{ id: 1, good_col: 'v', [odd]: 'v', ['x'.repeat(70)]: 'v' }] }).catch((e: unknown) => e as Error)
+    expect(err).toBeInstanceOf(LoaderError)
+    const message = (err as Error).message
+    expect(message).toContain('good_col')
+    expect(message).toContain('2 with unprintable names')
+    expect(message).not.toContain('Murid')
+    expect(message).not.toContain('xxxxxxxx')
+  })
+
+  it('drops unknown columns only with allowExtraColumns, and reports them', async () => {
+    const result = await run({ users: [{ id: 1, hidden_notes: 'v', name: 'n' }] }, { allowExtraColumns: true })
+    const users = result.tables.find((t) => t.table === 'users')
+    expect(users?.extraColumns).toEqual(['hidden_notes'])
+    expect(users?.rowsLoaded).toBe(1)
+  })
+
+  it('does not forward a driver message that could echo a value', async () => {
+    const err = await run({ users: [{ id: 'SECRET-VALUE-123' }] }).catch((e: unknown) => e as Error)
+    expect(err).toBeInstanceOf(LoaderError)
+    expect((err as Error).message).toMatch(/SQLSTATE 22P02/)
+    expect((err as Error).message).not.toContain('SECRET-VALUE-123')
+  })
+
+  it('fails when the manifest row count differs from the rows read', async () => {
+    await expect(run({ schools: [{ id: 1 }] }, {}, { schools: 2 })).rejects.toThrow(/promises 2 rows but 1 were read/)
+  })
+
+  it('creates an input-absent table empty and flags it', async () => {
+    const result = await run({ schools: [{ id: 1, name: 'x' }] })
+    expect(result.tables.find((t) => t.table === 'users')?.absent).toBe(true)
+    expect(result.tables.find((t) => t.table === 'schools')?.absent).toBe(false)
+  })
+
+  it('rejects a bad manifest: unknown table, non-object entry, path-like file name, wrong format', async () => {
+    const dir = tempDir()
+    try {
+      const fs = await import('node:fs')
+      const write = (tables: unknown, format = 'pp-staging-dump/1') =>
+        fs.writeFileSync(join(dir.path, 'manifest.json'), JSON.stringify({ format, source: 'cloud', tables }))
+      write({ not_a_table: { rows: 0 } })
+      expect(() => new DirReader(dir.path)).toThrow(DumpFormatError)
+      write({ users: 5 })
+      expect(() => new DirReader(dir.path)).toThrow(/must be an object/)
+      write({ users: [] })
+      expect(() => new DirReader(dir.path)).toThrow(/must be an object/)
+      write({ users: null })
+      expect(() => new DirReader(dir.path)).toThrow(/must be an object/)
+      write({ users: { rows: 1, file: '../users.ndjson' } })
+      expect(() => new DirReader(dir.path)).toThrow(/plain file name/)
+      write({}, 'other/9')
+      expect(() => new DirReader(dir.path)).toThrow(/format/)
+    } finally {
+      dir.cleanup()
+    }
+  })
+
+  it('knows the staging_my source name but does not implement it (OD-13)', async () => {
+    await expect(load(new DirReader(FIXTURE_DIR), { source: 'my' })).rejects.toBeInstanceOf(SourceNotImplementedError)
+  })
+})
+
+describe('destructive reset guard (M1)', () => {
+  const sentinel = async () => {
+    await env.pool.query('create schema if not exists staging_cloud')
+    await env.pool.query('create table if not exists staging_cloud.sentinel (id int)')
+  }
+  const sentinelSurvived = async () =>
+    (await env.pool.query<{ ok: boolean }>(`select to_regclass('staging_cloud.sentinel') is not null as ok`)).rows[0]?.ok === true
+  const attempt = (e: Record<string, string | undefined>) => loadStaging(env.pool, new DirReader(FIXTURE_DIR), { env: e, tables: SUBSET })
+
+  it('refuses when PP_ALLOW_STAGING_RESET is not set, before any DDL', async () => {
+    await sentinel()
+    const e: Record<string, string | undefined> = stagingEnv(env.db)
+    delete e.PP_ALLOW_STAGING_RESET
+    const err = await attempt(e).catch((x: unknown) => x as Error)
+    expect(err).toBeInstanceOf(StagingResetRefusedError)
+    expect((err as Error).message).toMatch(/PP_ALLOW_STAGING_RESET=1 is not set/)
+    expect(await sentinelSurvived()).toBe(true)
+  })
+
+  it('refuses a database whose name is not a staging name', async () => {
+    await sentinel()
+    const err = await attempt({ NODE_ENV: 'test', PP_ALLOW_STAGING_RESET: '1' }).catch((x: unknown) => x as Error)
+    expect(err).toBeInstanceOf(StagingResetRefusedError)
+    expect((err as Error).message).toMatch(/is not a staging database/)
+    expect(await sentinelSurvived()).toBe(true)
+  })
+
+  it('refuses when NODE_ENV is production, even with the opt-in and an allow-listed database', async () => {
+    await sentinel()
+    const err = await attempt(stagingEnv(env.db, { NODE_ENV: 'production' })).catch((x: unknown) => x as Error)
+    expect(err).toBeInstanceOf(StagingResetRefusedError)
+    expect((err as Error).message).toMatch(/NODE_ENV is production/)
+    expect(await sentinelSurvived()).toBe(true)
+  })
+
+  it('passes when all three conditions hold (and then replaces the schemas)', async () => {
+    await sentinel()
+    await expect(attempt(stagingEnv(env.db))).resolves.toBeTruthy()
+    expect(await sentinelSurvived()).toBe(false)
+  })
+
+  it('accepts the _staging suffix without an allow-list, and nothing else', () => {
+    expect(stagingResetRefusals('pp_migration_staging', { PP_ALLOW_STAGING_RESET: '1' })).toEqual([])
+    expect(stagingResetRefusals('prestasiplus', { PP_ALLOW_STAGING_RESET: '1' })).toHaveLength(1)
+    expect(stagingResetRefusals('staging_prestasiplus', { PP_ALLOW_STAGING_RESET: '1' })).toHaveLength(1)
+    expect(stagingResetRefusals('prestasiplus', { PP_ALLOW_STAGING_RESET: '1', PP_STAGING_DB_ALLOWLIST: 'a, prestasiplus' })).toEqual([])
+    expect(stagingResetRefusals('x_staging', { PP_ALLOW_STAGING_RESET: 'true' })).toHaveLength(1)
+    for (const value of ['production', 'Production', 'PRODUCTION', ' prod ', 'PROD']) {
+      expect(stagingResetRefusals('x_staging', { PP_ALLOW_STAGING_RESET: '1', NODE_ENV: value }), value).toEqual(['NODE_ENV is production'])
+    }
+    expect(stagingResetRefusals('x_staging', { PP_ALLOW_STAGING_RESET: '1', NODE_ENV: 'development' })).toEqual([])
+  })
+
+  it('a refused reset (exit 4) never opens a connection to the source', async () => {
+    let connections = 0
+    const server = net.createServer((socket) => {
+      connections++
+      socket.destroy()
+    })
+    await new Promise<void>((resolve) => server.listen(0, '127.0.0.1', resolve))
+    const port = (server.address() as net.AddressInfo).port
+    try {
+      const io = capture()
+      const code = await runStagingCli(['staging:load'], {
+        env: { NODE_ENV: 'test', CLOUD_SOURCE_URL: `postgresql://reader:pw@127.0.0.1:${port}/src` },
+        pool: env.pool,
+        out: io.out,
+        err: io.err,
+      })
+      expect(code).toBe(STAGING_EXIT.resetRefused)
+      await new Promise((resolve) => setTimeout(resolve, 200))
+      expect(connections).toBe(0)
+      // control: when the reset is allowed the same URL is contacted (and fails to authenticate)
+      const io2 = capture()
+      const code2 = await runStagingCli(['staging:load'], {
+        env: { ...stagingEnv(env.db), CLOUD_SOURCE_URL: `postgresql://reader:pw@127.0.0.1:${port}/src` },
+        pool: env.pool,
+        out: io2.out,
+        err: io2.err,
+      })
+      expect(code2).toBe(STAGING_EXIT.failed)
+      expect(connections).toBeGreaterThan(0)
+    } finally {
+      await new Promise((resolve) => server.close(resolve))
+    }
+  })
+
+  it('the CLI exits with the distinct reset-refused code and changes nothing', async () => {
+    await sentinel()
+    const io = capture()
+    const code = await runStagingCli(['staging:load', '--from', FIXTURE_DIR], {
+      env: { NODE_ENV: 'test' },
+      pool: env.pool,
+      out: io.out,
+      err: io.err,
+    })
+    expect(code).toBe(STAGING_EXIT.resetRefused)
+    expect(STAGING_EXIT.resetRefused).not.toBe(STAGING_EXIT.failed)
+    expect(io.text()).toMatch(/Refusing to drop and recreate/)
+    expect(await sentinelSurvived()).toBe(true)
+  })
+})
+
+describe('staging:load command', () => {
+  it('loads from --from and returns 0', async () => {
+    const io = capture()
+    const code = await runStagingCli(['staging:load', '--from', FIXTURE_DIR], {
+      env: stagingEnv(env.db),
+      pool: env.pool,
+      out: io.out,
+      err: io.err,
+    })
+    expect(code).toBe(STAGING_EXIT.ok)
+    expect(io.text()).toMatch(/Staging load finished: 118 tables/)
+  }, FULL_LOAD_TIMEOUT)
+
+  it('rejects --tables on staging:load as a usage error, so a partial load can never wipe the other tables', async () => {
+    await env.pool.query('create schema if not exists staging_cloud')
+    await env.pool.query('create table if not exists staging_cloud.sentinel (id int)')
+    for (const argv of [['staging:load', '--from', FIXTURE_DIR, '--tables', 'users'], ['staging:load', '--tables=users,schools', '--from', FIXTURE_DIR]]) {
+      const io = capture()
+      expect(await runStagingCli(argv, { env: stagingEnv(env.db), pool: env.pool, out: io.out, err: io.err })).toBe(STAGING_EXIT.usage)
+      expect(io.text()).toMatch(/--tables is only for staging:profile/)
+    }
+    const left = await env.pool.query<{ ok: boolean }>(`select to_regclass('staging_cloud.sentinel') is not null as ok`)
+    expect(left.rows[0]?.ok).toBe(true)
+  })
+
+  it('returns 2 without an input, with both inputs, for an unknown source and for an unknown table', async () => {
+    const run = async (argv: string[], e: Record<string, string>) => {
+      const io = capture()
+      return runStagingCli(argv, { env: { ...stagingEnv(env.db), ...e }, pool: env.pool, out: io.out, err: io.err })
+    }
+    expect(await run(['staging:load'], {})).toBe(STAGING_EXIT.usage)
+    expect(await run(['staging:load', '--from', FIXTURE_DIR], { CLOUD_SOURCE_URL: 'postgresql://u:p@127.0.0.1:1/x' })).toBe(STAGING_EXIT.usage)
+    expect(await run(['staging:load', '--source', 'mysql', '--from', FIXTURE_DIR], {})).toBe(STAGING_EXIT.usage)
+    expect(await run(['staging:load', '--from', FIXTURE_DIR, '--tables', 'nope'], {})).toBe(STAGING_EXIT.usage)
+  })
+
+  it('returns 1 for the not-implemented staging_my source and for a bad dump', async () => {
+    const io = capture()
+    const e = stagingEnv(env.db)
+    expect(await runStagingCli(['staging:load', '--source', 'my', '--from', FIXTURE_DIR], { env: e, pool: env.pool, out: io.out, err: io.err })).toBe(STAGING_EXIT.failed)
+    expect(await runStagingCli(['staging:load', '--from', join(FIXTURE_DIR, 'nope')], { env: e, pool: env.pool, out: io.out, err: io.err })).toBe(STAGING_EXIT.failed)
+  })
+})

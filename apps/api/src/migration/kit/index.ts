@@ -10,6 +10,7 @@
  *   Runner           dry-run (default) and apply with the dry-run gate
  *   registerMigrateCommand  how a `migrate:*` CLI command self-registers
  */
+export { ApplyGuardError, assertApplyAllowed } from './apply-guard'
 export { batches } from './batches'
 export { isPgError, MigrationDbError, sanitizeDbError } from './errors'
 export { loadCheckpoint, saveCheckpoint, type Checkpoint } from './checkpoint'
