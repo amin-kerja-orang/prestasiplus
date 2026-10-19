@@ -102,11 +102,21 @@ export async function runSeeds(
     },
   }
   const done: string[] = []
+  const skipped: string[] = []
   for (const m of modules) {
     if (m.profiles && !m.profiles.includes(profile)) continue
-    if ((m.kind ?? 'demo') === 'demo' && !demoAllowed) continue
+    if ((m.kind ?? 'demo') === 'demo' && !demoAllowed) {
+      skipped.push(m.name)
+      continue
+    }
     await m.run(ctx)
     done.push(m.name)
+  }
+  // Say so loudly: an operator must see that demo data was refused, not silently absent (BE-03 H2).
+  if (skipped.length > 0) {
+    console.warn(
+      `seed: demo modules skipped in production (set ALLOW_DEMO_SEED=1 to load them): ${skipped.join(', ')}`,
+    )
   }
   return done
 }
