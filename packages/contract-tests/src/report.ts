@@ -4,10 +4,13 @@ import type { RunReport } from './runner'
 export function formatRun(run: RunReport): string {
   const failing = run.results.filter((r) => r.failures.length)
   const known = run.results.filter((r) => r.known.length)
-  const clean = run.results.filter((r) => r.violations.length === 0).length
+  const applicable = run.results.filter((r) => !r.notForTarget)
+  const pending = applicable.filter((r) => r.notImplemented.length)
+  const clean = applicable.filter((r) => r.violations.length === 0 && r.notImplemented.length === 0).length
   const lines = [
     `Conformance run against ${run.target}: ${String(run.results.length)} scenarios, ${String(clean)} clean, ` +
-      `${String(failing.length)} failing, ${String(known.length)} with known mismatches`,
+      `${String(failing.length)} failing, ${String(known.length)} with known mismatches, ` +
+      `${String(pending.length)} not yet implemented, ${String(run.results.length - applicable.length)} not for this target`,
   ]
   for (const r of failing) {
     for (const v of r.failures) lines.push(`  FAIL  ${r.id}  [${v.kind}] ${v.message}`)
