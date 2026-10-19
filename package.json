@@ -4,7 +4,8 @@
   "version": "0.0.0",
   "type": "module",
   "workspaces": [
-    "packages/*"
+    "packages/*",
+    "apps/*"
   ],
   "engines": {
     "node": "^22.22.2 || ^24.15.0 || >=26.0.0"
@@ -33,6 +34,15 @@
     "check:trace": "node scripts/check-e2e-trace.mjs",
     "contract:emit": "npm run emit -w @pp/contract",
     "contract:check": "npm run check -w @pp/contract",
+    "be:dev": "npm run dev -w @pp/api",
+    "be:build": "npm run build -w @pp/api",
+    "be:lint": "npm run lint -w @pp/api",
+    "be:typecheck": "npm run typecheck -w @pp/api",
+    "be:test": "npm run test -w @pp/api --",
+    "be:db:migrate": "node -e \"console.log('be:db:migrate: not configured until BE-02')\"",
+    "be:db:reset": "node -e \"console.log('be:db:reset: not configured until BE-02')\"",
+    "be:db:seed": "node -e \"console.log('be:db:seed: not configured until BE-02')\"",
+    "be:verify": "npm run contract:check && npm run be:lint && npm run be:typecheck && npm run be:test && npm run be:build",
     "ds:debt": "node scripts/ds-debt.mjs",
     "ds:census": "node scripts/codemods/census.mjs",
     "page-shots": "node scripts/page-shots.mjs",
@@ -83,5 +93,8 @@
     "vite": "^8.3.1",
     "vitest": "^5.0.2",
     "vue-tsc": "^3.3.11"
+  },
+  "overrides": {
+    "@swc/core": "1.15.47"
   }
 }

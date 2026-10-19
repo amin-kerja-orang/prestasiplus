@@ -4,6 +4,7 @@ import { z } from '../../zod'
 import { envelopeOf } from '../../common/envelope'
 import { ErrorBodySchema } from '../../common/error'
 import { IdSchema } from '../../common/ids'
+import { registerRoute } from './rate-limit'
 import {
   BIJAK_ATTEMPTS_MESSAGES,
   BijakAttemptCarriedAnswerSchema,
@@ -141,9 +142,14 @@ const REVEAL_NOTE =
  * mock `BijakServer` has no HTTP routes; they map to `findInProgress`, `startAttempt`,
  * `getAttemptView`, `saveAnswers`, `submit`, `abandon`, `checkQuestion`, `getResult`, `history`
  * and a card-only photo upload. Every response body is `{ data }` or `{ error }`.
+ *
+ * D57: every write route (POST and PUT) also answers 429 RATE_LIMITED with retryAfter and a
+ * Retry-After header (added by `registerRoute`; the Semak check route is the one NFR-05 names).
+ * D57(b): no response of this card carries a credential or token, so none sends Cache-Control:
+ * no-store. D54(b): every `{id}` route answers 403 for another user's attempt (an unknown id is 404).
  */
 export function registerBijakAttemptsPaths(registry: OpenAPIRegistry): void {
-  registry.registerPath({
+  registerRoute(registry, {
     method: 'get',
     path: '/bijak/papers/{paperId}/in-progress',
     tags: [TAG],
@@ -160,7 +166,7 @@ export function registerBijakAttemptsPaths(registry: OpenAPIRegistry): void {
     },
   })
 
-  registry.registerPath({
+  registerRoute(registry, {
     method: 'post',
     path: '/bijak/attempts',
     tags: [TAG],
@@ -179,7 +185,7 @@ export function registerBijakAttemptsPaths(registry: OpenAPIRegistry): void {
     },
   })
 
-  registry.registerPath({
+  registerRoute(registry, {
     method: 'get',
     path: '/bijak/attempts/{id}',
     tags: [TAG],
@@ -194,7 +200,7 @@ export function registerBijakAttemptsPaths(registry: OpenAPIRegistry): void {
     },
   })
 
-  registry.registerPath({
+  registerRoute(registry, {
     method: 'put',
     path: '/bijak/attempts/{id}/answers',
     tags: [TAG],
@@ -210,7 +216,7 @@ export function registerBijakAttemptsPaths(registry: OpenAPIRegistry): void {
     },
   })
 
-  registry.registerPath({
+  registerRoute(registry, {
     method: 'post',
     path: '/bijak/attempts/{id}/submit',
     tags: [TAG],
@@ -226,7 +232,7 @@ export function registerBijakAttemptsPaths(registry: OpenAPIRegistry): void {
     },
   })
 
-  registry.registerPath({
+  registerRoute(registry, {
     method: 'post',
     path: '/bijak/attempts/{id}/abandon',
     tags: [TAG],
@@ -242,7 +248,7 @@ export function registerBijakAttemptsPaths(registry: OpenAPIRegistry): void {
     },
   })
 
-  registry.registerPath({
+  registerRoute(registry, {
     method: 'post',
     path: '/bijak/attempts/{id}/questions/{questionId}/check',
     tags: [TAG],
@@ -267,13 +273,10 @@ export function registerBijakAttemptsPaths(registry: OpenAPIRegistry): void {
       ),
       409: err(`CONFLICT "${BIJAK_ATTEMPTS_MESSAGES.attemptClosed}" (the attempt is no longer in progress).`),
       422: VALIDATION,
-      429: err(
-        'RATE_LIMITED: check requests are rate-limited (NFR-05); the threshold is an open question of BE-16. Not in the mock.',
-      ),
     },
   })
 
-  registry.registerPath({
+  registerRoute(registry, {
     method: 'get',
     path: '/bijak/attempts/{id}/result',
     tags: [TAG],
@@ -289,7 +292,7 @@ export function registerBijakAttemptsPaths(registry: OpenAPIRegistry): void {
     },
   })
 
-  registry.registerPath({
+  registerRoute(registry, {
     method: 'get',
     path: '/bijak/history',
     tags: [TAG],
@@ -303,7 +306,7 @@ export function registerBijakAttemptsPaths(registry: OpenAPIRegistry): void {
     },
   })
 
-  registry.registerPath({
+  registerRoute(registry, {
     method: 'post',
     path: '/bijak/attempts/{id}/photos',
     tags: [TAG],

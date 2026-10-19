@@ -22,6 +22,9 @@ import { SUPPORT_COMPONENT_SCHEMAS, registerSupportPaths } from './support/paths
 import { GAMIFICATION_COMPONENT_SCHEMAS, registerGamificationPaths } from './gamification/paths'
 import { QUESTION_WORKFLOW_COMPONENT_SCHEMAS, registerQuestionWorkflowPaths } from './question-workflow/paths'
 import { CLASSES_COMPONENT_SCHEMAS, registerClassesPaths } from './classes/paths'
+import { SCHOOL_ADMIN_COMPONENT_SCHEMAS, registerSchoolAdminPaths } from './school-admin/paths'
+import { QUESTIONS_COMPONENT_SCHEMAS, registerQuestionsPaths } from './questions/paths'
+import { PERFORMANCE_COMPONENT_SCHEMAS, registerPerformancePaths } from './reports/performance/paths'
 import { DateOnlySchema, TimestampInputSchema, TimestampSchema } from './common/time'
 import { WALLET_COMPONENT_SCHEMAS, registerWalletPaths } from './wallet/paths'
 import { BIJAK_PAPERS_COMPONENT_SCHEMAS, registerBijakPapersPaths } from './bijak/papers/paths'
@@ -36,6 +39,13 @@ import { MARKETPLACE_COMPONENT_SCHEMAS, registerMarketplacePaths } from './marke
 import { SPONSORSHIP_COMPONENT_SCHEMAS, registerSponsorshipPaths } from './sponsorship/paths'
 import { SCHOOLS_COMPONENT_SCHEMAS, registerSchoolsPaths } from './schools/paths' // BE-05
 import { USERS_COMPONENT_SCHEMAS, registerUsersPaths } from './users/paths' // BE-05
+import { ACCOUNT_COMPONENT_SCHEMAS, registerAccountPaths } from './account/paths'
+import { NOTIFICATIONS_COMPONENT_SCHEMAS, registerNotificationsPaths } from './notifications/paths'
+import { MISSIONS_COMPONENT_SCHEMAS, registerMissionsPaths } from './classes/missions/paths'
+import { QUESTION_SETS_COMPONENT_SCHEMAS, registerQuestionSetsPaths } from './classes/question-sets/paths'
+import { PKSK_COMPONENT_SCHEMAS, registerPkskPaths } from './pksk/paths'
+import { PARENT_INVITE_COMPONENT_SCHEMAS, registerParentInvitePaths } from './schools/parents/paths'
+import { SUBSCRIPTION_COMPONENT_SCHEMAS, registerSubscriptionPaths } from './schools/subscriptions/paths'
 
 /** Every shared schema that becomes a component. Domain tasks (T07, T08, T24...) append here. */
 export const COMPONENT_SCHEMAS = {
@@ -74,6 +84,15 @@ export const COMPONENT_SCHEMAS = {
   ...SPONSORSHIP_COMPONENT_SCHEMAS, // BE-47 (M21 student side)
   ...SCHOOLS_COMPONENT_SCHEMAS, // BE-05
   ...USERS_COMPONENT_SCHEMAS, // BE-05
+  ...ACCOUNT_COMPONENT_SCHEMAS, // BE-06 (M01 account)
+  ...NOTIFICATIONS_COMPONENT_SCHEMAS, // BE-06 (M01 notifications)
+  ...SCHOOL_ADMIN_COMPONENT_SCHEMAS, // BE-21 (M27 + M18 Amaran)
+  ...QUESTIONS_COMPONENT_SCHEMAS, // BE-09
+  ...MISSIONS_COMPONENT_SCHEMAS, // BE-18 (M10 missions, remedial)
+  ...QUESTION_SETS_COMPONENT_SCHEMAS, // BE-18 (M10 question sets, DSKP)
+  ...PERFORMANCE_COMPONENT_SCHEMAS, // BE-19
+  ...PARENT_INVITE_COMPONENT_SCHEMAS, // BE-25
+  ...SUBSCRIPTION_COMPONENT_SCHEMAS, // BE-25
   // V2-T08 access matrix
   AccessGroupId: AccessGroupIdSchema,
   AccessGroup: AccessGroupSchema,
@@ -86,6 +105,7 @@ export const COMPONENT_SCHEMAS = {
   PrototypeItem: PrototypeItemSchema,
   ...CURRICULUM_COMPONENT_SCHEMAS, // BE-08
   ...PRACTICE_COMPONENT_SCHEMAS, // BE-12
+  ...PKSK_COMPONENT_SCHEMAS, // BE-42
 } as const
 
 export const CONTRACT_VERSION = '0.1.0'
@@ -114,6 +134,16 @@ export function buildOpenApiDocument(): Record<string, unknown> {
   registerSponsorshipPaths(registry) // BE-47 (M21 student side)
   registerSchoolsPaths(registry) // BE-05
   registerUsersPaths(registry) // BE-05
+  registerAccountPaths(registry) // BE-06 (M01 account)
+  registerNotificationsPaths(registry) // BE-06 (M01 notifications)
+  registerSchoolAdminPaths(registry) // BE-21 (M27 + M18 Amaran)
+  registerQuestionsPaths(registry) // BE-09
+  registerMissionsPaths(registry) // BE-18 (M10 missions, remedial)
+  registerQuestionSetsPaths(registry) // BE-18 (M10 question sets, DSKP)
+  registerPerformancePaths(registry) // BE-19
+  registerPkskPaths(registry) // BE-42
+  registerParentInvitePaths(registry) // BE-25
+  registerSubscriptionPaths(registry) // BE-25
   const generator = new OpenApiGeneratorV31(registry.definitions)
   return generator.generateDocument({
     openapi: '3.1.0',

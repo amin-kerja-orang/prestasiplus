@@ -227,6 +227,8 @@ export default defineConfigWithVueTs(
   {
     name: 'app/ignores',
     ignores: [
+      // Build output of backend workspaces (BE-01).
+      'apps/*/dist/**',
       'dist/**',
       'dist-*/**',
       'coverage/**',

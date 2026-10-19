@@ -1,0 +1,232 @@
+{
+  "config": {
+    "id": 504,
+    "subject": "Sejarah",
+    "className": "5 MARIKH - Kimia",
+    "levelName": "Tingkatan 5",
+    "year": 2026,
+    "teacherName": "Guru Demo",
+    "status": "active",
+    "activeOtrs": 2
+  },
+  "chips": {
+    "onTrack": 0,
+    "below": 1,
+    "empty": 7,
+    "total": 8
+  },
+  "rows": [
+    {
+      "userId": 3001,
+      "name": "Murid Demo 01",
+      "tov": 50,
+      "tovGrade": "C",
+      "cells": [
+        {
+          "target": 55,
+          "targetGrade": "C+",
+          "ar": 40,
+          "arGrade": "E",
+          "tone": "below"
+        },
+        {
+          "target": 60,
+          "targetGrade": "B",
+          "ar": 45,
+          "arGrade": "D",
+          "tone": "below"
+        }
+      ],
+      "etr": 65,
+      "etrGrade": "B+",
+      "dropped": false
+    },
+    {
+      "userId": 3002,
+      "name": "Murid Demo 02",
+      "tov": null,
+      "tovGrade": null,
+      "cells": [
+        {
+          "target": null,
+          "targetGrade": null,
+          "ar": null,
+          "arGrade": null,
+          "tone": "na"
+        },
+        {
+          "target": null,
+          "targetGrade": null,
+          "ar": null,
+          "arGrade": null,
+          "tone": "na"
+        }
+      ],
+      "etr": null,
+      "etrGrade": null,
+      "dropped": false
+    },
+    {
+      "userId": 3003,
+      "name": "Murid Demo 03",
+      "tov": null,
+      "tovGrade": null,
+      "cells": [
+        {
+          "target": null,
+          "targetGrade": null,
+          "ar": null,
+          "arGrade": null,
+          "tone": "na"
+        },
+        {
+          "target": null,
+          "targetGrade": null,
+          "ar": null,
+          "arGrade": null,
+          "tone": "na"
+        }
+      ],
+      "etr": null,
+      "etrGrade": null,
+      "dropped": false
+    },
+    {
+      "userId": 3004,
+      "name": "Murid Demo 04",
+      "tov": null,
+      "tovGrade": null,
+      "cells": [
+        {
+          "target": null,
+          "targetGrade": null,
+          "ar": null,
+          "arGrade": null,
+          "tone": "na"
+        },
+        {
+          "target": null,
+          "targetGrade": null,
+          "ar": null,
+          "arGrade": null,
+          "tone": "na"
+        }
+      ],
+      "etr": null,
+      "etrGrade": null,
+      "dropped": false
+    },
+    {
+      "userId": 3005,
+      "name": "Murid Demo 05",
+      "tov": null,
+      "tovGrade": null,
+      "cells": [
+        {
+          "target": null,
+          "targetGrade": null,
+          "ar": null,
+          "arGrade": null,
+          "tone": "na"
+        },
+        {
+          "target": null,
+          "targetGrade": null,
+          "ar": null,
+          "arGrade": null,
+          "tone": "na"
+        }
+      ],
+      "etr": null,
+      "etrGrade": null,
+      "dropped": false
+    },
+    {
+      "userId": 3006,
+      "name": "Murid Demo 06",
+      "tov": null,
+      "tovGrade": null,
+      "cells": [
+        {
+          "target": null,
+          "targetGrade": null,
+          "ar": null,
+          "arGrade": null,
+          "tone": "na"
+        },
+        {
+          "target": null,
+          "targetGrade": null,
+          "ar": null,
+          "arGrade": null,
+          "tone": "na"
+        }
+      ],
+      "etr": null,
+      "etrGrade": null,
+      "dropped": false
+    },
+    {
+      "userId": 3007,
+      "name": "Murid Demo 07",
+      "tov": null,
+      "tovGrade": null,
+      "cells": [
+        {
+          "target": null,
+          "targetGrade": null,
+          "ar": null,
+          "arGrade": null,
+          "tone": "na"
+        },
+        {
+          "target": null,
+          "targetGrade": null,
+          "ar": null,
+          "arGrade": null,
+          "tone": "na"
+        }
+      ],
+      "etr": null,
+      "etrGrade": null,
+      "dropped": false
+    },
+    {
+      "userId": 3008,
+      "name": "Murid Demo 08",
+      "tov": null,
+      "tovGrade": null,
+      "cells": [
+        {
+          "target": null,
+          "targetGrade": null,
+          "ar": null,
+          "arGrade": null,
+          "tone": "na"
+        },
+        {
+          "target": null,
+          "targetGrade": null,
+          "ar": null,
+          "arGrade": null,
+          "tone": "na"
+        }
+      ],
+      "etr": null,
+      "etrGrade": null,
+      "dropped": false
+    }
+  ],
+  "averages": {
+    "tov": 50,
+    "otrs": [
+      55,
+      60
+    ],
+    "ars": [
+      40,
+      45
+    ],
+    "etr": 65
+  }
+}
