@@ -165,7 +165,8 @@ describe('history list', () => {
   it('rejects a UTC timestamp, a bad mode and missing stats', () => {
     expect(SessionListResponseSchema.safeParse({ data: [{ ...item, completedAt: '2026-10-16T01:30:00Z' }], meta }).success).toBe(false)
     expect(SessionListResponseSchema.safeParse({ data: [{ ...item, mode: 'battle' }], meta }).success).toBe(false)
-    const { stats: _stats, ...noStats } = meta
+    const noStats: Partial<typeof meta> = { ...meta }
+    delete noStats.stats
     expect(SessionListResponseSchema.safeParse({ data: [item], meta: noStats }).success).toBe(false)
   })
 })
