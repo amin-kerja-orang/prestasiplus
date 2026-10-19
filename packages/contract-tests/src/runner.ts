@@ -197,7 +197,7 @@ function checkResponse(
       })
     }
   } else if (
-    op.responses[String(res.status)] === false &&
+    (op.responses[String(res.status)] ?? op.responses.default) === false &&
     res.body !== null &&
     res.body !== undefined &&
     res.body !== ''

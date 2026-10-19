@@ -116,6 +116,25 @@ describe('runner: schema conformance (AC3 negative test)', () => {
   })
 })
 
+describe('body-less responses', () => {
+  it('flags a body on a status that only the default response covers', async () => {
+    const spec = {
+      paths: {
+        '/x': {
+          get: { responses: { '200': { description: 'ok' }, default: { description: 'none' } } },
+        },
+      },
+    }
+    const small = new ContractIndex(spec)
+    const client: HttpClient = {
+      request: () => Promise.resolve({ status: 500, headers: {}, body: { oops: true } }),
+    }
+    const target: Target = { ...fakeTarget(() => ({})), anonymous: client }
+    const report = await runScenarios([call('GET', '/x')], { target, contract: small })
+    expect(report.results[0]?.failures.map((f) => f.kind)).toEqual(['schema'])
+  })
+})
+
 describe('legacy_ key guard (AC5)', () => {
   it('finds legacy_ keys at any depth, inside arrays too', () => {
     expect(findLegacyKeys({ data: [{ id: '1', nested: { legacy_id: 4 } }], legacy_x: 1 })).toEqual([

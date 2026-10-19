@@ -11,6 +11,7 @@
   },
   "scripts": {
     "test": "vitest run --root ../.. --project unit packages/contract-tests",
+    "test:mock": "vitest run --config packages/contract-tests/vitest.conformance.config.ts --root ../.. --disableConsoleIntercept",
     "typecheck": "tsc -p tsconfig.check.json",
     "contract:diff": "node scripts/contract-diff.mjs",
     "contract:diff:samples": "node scripts/contract-diff.mjs --samples"

@@ -14,6 +14,9 @@ const NO_SESSION_ROUTE =
 const NO_BIJAK =
   'Mock side: no Bijak SPM (M28) routes under /api/bijak/*; the module has no mock. Contract routes come from BE-15 / BE-16.'
 
+const NO_PARENT_LINKS =
+  'Mock side: no GET /api/me/parent-links route (404); the contract defines it.'
+
 export const KNOWN_MISMATCHES: KnownMismatch[] = [
   {
     scenario: 'auth/POST /auth/login -> 200',
@@ -39,5 +42,23 @@ export const KNOWN_MISMATCHES: KnownMismatch[] = [
     scenario: 'command-center-guru/GET /guru/command-center/live-data -> 200',
     reason:
       'Documented in the contract (guru.ts educationLevel): the mock emits slugs "tahun-1".."tingkatan-5", the contract wants DARJAH_1..TINGKATAN_5. A mapping belongs to the mock adapter or the mock handler (BE-22).',
+  },
+  {
+    scenario: 'account/GET /me -> 200',
+    reason:
+      'Mock side: GET /api/me answers the prototype user shape; the contract (BE-04) requires data.username and data.roles (array), both missing in the mock.',
+  },
+  {
+    scenario: 'parent-invites/GET /me/parent-invite -> 200',
+    reason:
+      'Mock side: the mock invite payload lacks hasToken, expiresAt and parents[].linkId / emailMasked / relationship as the contract defines them.',
+  },
+  { scenario: 'parent-links/GET /me/parent-links -> 200', reason: NO_PARENT_LINKS },
+  { scenario: 'parent-links/GET /me/parent-links anonymous -> 401', reason: NO_PARENT_LINKS },
+  { scenario: 'parent-links/GET /me/parent-links as student -> 403', reason: NO_PARENT_LINKS },
+  {
+    scenario: 'comp-students/GET /admin/comp-students -> 200',
+    reason:
+      'Mock side: data[].icMasked does not match the contract schema (the mock value format differs from the masked-IC rule of the contract).',
   },
 ]

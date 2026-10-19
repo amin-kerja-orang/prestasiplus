@@ -12,6 +12,7 @@ on:
       - 'package-lock.json'
       - '.github/workflows/api.yml'
   pull_request:
+    types: [opened, synchronize, reopened, labeled, unlabeled]
     paths:
       - 'apps/api/**'
       - 'packages/**'

@@ -16,7 +16,8 @@ For every response of every scenario call:
 2. The status is declared for that operation (else `undocumented_status`).
 3. The body parses with the response schema of that path + method + status (else `schema`). The
    schema is built from `openapi.json` with `z.fromJSONSchema`; a nullable `$ref`
-   (`allOf: [$ref, {type: [T, "null"]}]`, 61 places) is read as `anyOf: [$ref, null]`.
+   (`allOf: [$ref, {type: [T, "null"]}]`, 61 places) is read as `anyOf: [$ref, null]`
+   (`fixNullableRefs`). This workaround can be removed once the emitter writes `anyOf`.
 4. No key at any depth starts with `legacy_` (else `legacy_key`; plan 14.2, AC5).
 5. A 204 or other body-less response has no body.
 
@@ -87,13 +88,15 @@ it off. The mock logs in with `{ email, password }` and a Bearer token (no cooki
 
 ## Commands
 
-Against the frontend mock now (boots the whole mock registry, about 1 minute):
+Against the frontend mock now (boots the whole mock registry, about 1 minute). The mock run is
+`mock/mock-conformance.conformance.ts`, outside the root `npm test` glob on purpose:
 
 ```
-npm test -w @pp/contract-tests                       # harness unit tests + the mock run
-npx vitest run --project unit --disableConsoleIntercept packages/contract-tests/mock   # also prints the run summary and coverage
-CONFORMANCE_MIN_COVERAGE=50 npx vitest run --project unit packages/contract-tests/mock # enforce a threshold
-CONFORMANCE_DUMP=out.json npx vitest run --project unit packages/contract-tests/mock   # full result as JSON
+npm run conformance                                  # run summary + coverage report
+CONFORMANCE_MIN_COVERAGE=50 npm run conformance      # enforce a threshold
+CONFORMANCE_DUMP=out.json npm run conformance        # full result as JSON
+MOCK_RAW=1 npm run conformance                       # without the id/time mapping
+npm test -w @pp/contract-tests                       # fast harness unit tests only
 npm run typecheck -w @pp/contract-tests
 ```
 
@@ -134,7 +137,7 @@ logout, missing CSRF 403 `CSRF_INVALID`) as `src/scenarios/auth-*.ts`.
 ```
 src/            runner, contract index, coverage, legacy_ guard, session helpers, scenarios
 src/scenarios/  auth.ts (smoke), smoke.ts (one per route group, derived from openapi.json), index.ts
-mock/           mock adapter, known-mismatches.ts, the mock run (vitest)
+mock/           mock adapter, known-mismatches.ts, mock-conformance.conformance.ts (the mock run)
 scripts/        contract-diff.mjs
 diff-samples/   base + 3 breaking + 1 additive sample documents for the gate
 ```

@@ -1,6 +1,6 @@
 {
   "extends": "@tsconfig/node22/tsconfig.json",
-  "include": ["src/**/*.ts", "mock/**/*.ts"],
+  "include": ["src/**/*.ts", "mock/**/*.ts", "vitest.conformance.config.ts"],
   "compilerOptions": {
     "noEmit": true,
     "strict": true,

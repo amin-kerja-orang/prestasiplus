@@ -27,7 +27,7 @@ const escapeRe = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
 /**
  * zod-to-openapi writes a nullable reference as `allOf: [{ $ref }, { type: [T, "null"] }]`. As JSON
  * Schema that rejects null (the referenced schema does not allow it), although zod accepts it.
- * 61 places in openapi.json have this shape (reported to the lead). The runner reads it the way the
+ * 61 places in openapi.json have this shape. Remove this workaround once the emitter writes anyOf. The runner reads it the way the
  * zod schema means it: `anyOf: [{ $ref }, { type: "null" }]`.
  */
 export function fixNullableRefs(value: unknown): unknown {

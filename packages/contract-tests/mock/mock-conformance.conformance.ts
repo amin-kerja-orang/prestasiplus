@@ -25,9 +25,9 @@ import {
   formatRun,
   runScenarios,
   type RunReport,
-} from '../../src'
-import { KNOWN_MISMATCHES } from '../known-mismatches'
-import { mockTarget } from '../mock-client'
+} from '../src'
+import { KNOWN_MISMATCHES } from './known-mismatches'
+import { mockTarget } from './mock-client'
 
 const contract = ContractIndex.load()
 let runtime: MockRuntime

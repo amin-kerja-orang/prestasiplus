@@ -15,6 +15,13 @@ import type { Scenario } from '../runner'
 /** Operations whose allowed role is not the one the path prefix suggests (from the 403 text of the contract). */
 const ALLOWED_ROLE: Record<string, ActorRole> = {
   'GET /question-reports': 'admin', // "Admin only"
+  'GET /admin-sekolah/dashboard': 'school_admin',
+  'GET /amaran/effectiveness': 'teacher', // admin, school_admin, teacher
+  'GET /headcounts': 'teacher', // admin, teacher, school_admin
+  'GET /monitoring/overview': 'teacher',
+  'GET /kirkpatrick/reaction': 'teacher',
+  'GET /cikgu/rph': 'teacher', // teacher or admin
+  'GET /questions/summary': 'admin', // role list not stated in the contract: best guess
 }
 
 /** A role that must get 403 where a student is allowed (default: student). */
@@ -22,6 +29,7 @@ const FORBIDDEN_ROLE: Record<string, ActorRole> = {
   'GET /buku-nota/heatmap': 'teacher', // student and admin only
   'GET /bijak/papers': 'teacher', // student (and admin / school_admin in Mod Pelajar) only
   'GET /bijak/history': 'teacher',
+  'GET /me/parent-invite': 'teacher', // student only
 }
 
 /** Required query parameters (the contract marks them 422 when missing). */
