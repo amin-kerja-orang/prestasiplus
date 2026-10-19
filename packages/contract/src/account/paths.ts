@@ -97,6 +97,9 @@ export function registerAccountPaths(registry: OpenAPIRegistry): void {
   const body = (schema: z.ZodType) => ({ required: true, content: { 'application/json': { schema } } })
   const unauthorized = err('UNAUTHORIZED "Unauthenticated." (no valid session).')
   const csrfInvalid = err('CSRF_INVALID (missing or wrong X-CSRF-Token).')
+  const PCR = 'PASSWORD_CHANGE_REQUIRED (shared common code, 403): while the account must change its password (session.mustChangePassword) every authenticated route except GET /session, PUT /me/password and POST /auth/logout answers this.'
+  const csrfOrPcr = err('CSRF_INVALID (missing or wrong X-CSRF-Token), or ' + PCR)
+  const pcr = err(PCR)
   const validation = (detail: string) =>
     err(
       `VALIDATION_ERROR with fields (one message per field, the first failing rule). ${detail} Top-level message is the first field message (+ " (and N more error(s))" when several).`,
@@ -108,7 +111,7 @@ export function registerAccountPaths(registry: OpenAPIRegistry): void {
     tags: ['account'],
     summary: 'Self-registration (Murid, Guru, Ibu Bapa)',
     description:
-      'Public. Roles are limited to student, teacher and parent (default student); any other role in the body is a 422. Student and parent: creates an active account and logs it in (the response is the contract Session and the session cookie is set, not remembered). Teacher (privacy: a teacher gets school scope, which reaches the data of children): created inactive, with no school and the requested school kept as pending, and NO session; the answer is {status: pending_verification, message}. Until a school_admin verifies the account (BE-21), login is 403 ACCOUNT_INACTIVE. A teacher must give a schoolId (422 otherwise). A duplicate e-mail (case-insensitive) is a 422 on `fields.email`. Rate limit (BE-06 AC6, D57a): per client IP, ' + THROTTLE_TEXT + '; only refused attempts (422) count, so legitimate registrations are not slowed. The response is Cache-Control: no-store (it sets a session). Accepted residual risk (security review, by design as the mock and the UX): the 422 emailTaken lets a client learn whether an e-mail is registered; it is bounded only by the per-IP limit above. ' + REDACTION_TEXT,
+      'Public. Roles are limited to student, teacher and parent (default student); any other role in the body is a 422. Student and parent: creates an active account and logs it in (the response is the contract Session and the session cookie is set, not remembered). Teacher (privacy: a teacher gets school scope, which reaches the data of children): created inactive, with no school and the requested school kept as pending, and NO session; the answer is {status: pending_verification, message}. Until a school_admin verifies the account (BE-21), login is 403 ACCOUNT_INACTIVE. A teacher must give a schoolId (422 otherwise). A duplicate e-mail (case-insensitive) is a 422 on `fields.email`. Rate limit (BE-06 AC6, D57a): per client IP, ' + THROTTLE_TEXT + '; only refused attempts (422) count, so legitimate registrations are not slowed. Status is 201 for both variants; narrow with the check status-in-data (present = pending, absent = Session). The response is Cache-Control: no-store. Accepted residual risk (security review, by design as the mock and the UX): the 422 emailTaken lets a client learn whether an e-mail is registered; it is bounded only by the per-IP limit above. ' + REDACTION_TEXT,
     request: { body: body(AccountRegisterRequestSchema) },
     responses: {
       201: jsonNoStore(AccountRegisterResponseSchema, 'Student or parent: registered and logged in (data is the Session, cookie set). Teacher: created INACTIVE with no school scope and no session until a school_admin verifies the account; data is {status: pending_verification, message} and no cookie is set.'),
@@ -171,7 +174,7 @@ export function registerAccountPaths(registry: OpenAPIRegistry): void {
     summary: 'The signed-in user',
     description:
       'Any signed-in role. Projection still used by pages not yet on /session. id, name, e-mail, username, avatarUrl, school, roles, active role and landingPath always equal the same fields of GET /session. No password, IC number or isActive.',
-    responses: { 200: json(envelopeOf(AccountUserMeSchema), 'The user.'), 401: unauthorized },
+    responses: { 200: json(envelopeOf(AccountUserMeSchema), 'The user.'), 401: unauthorized, 403: pcr },
   })
 
   registry.registerPath({
@@ -185,7 +188,7 @@ export function registerAccountPaths(registry: OpenAPIRegistry): void {
     responses: {
       200: json(accountStatusEnvelopeOf(AccountUserMeSchema), `Saved. status = "${ACCOUNT_MESSAGES.profileSaved}".`),
       401: unauthorized,
-      403: csrfInvalid,
+      403: csrfOrPcr,
       422: validation(
         `name required, max 255; phone max 14; bio max 500; grade "${ACCOUNT_AUTH_MESSAGES.gradeInvalid}"; school "${ACCOUNT_AUTH_MESSAGES.schoolInvalid}".`,
       ),
@@ -199,7 +202,7 @@ export function registerAccountPaths(registry: OpenAPIRegistry): void {
     tags: ['account'],
     summary: 'Change own password',
     description:
-      `Any signed-in role. The current password is required and re-hashed with argon2id on change. The session is kept (BR-16). A wrong current password counts as a failure: ${THROTTLE_TEXT}, per user. ${WRITE_THROTTLE_TEXT} ${REDACTION_TEXT}`,
+      `Any signed-in role. The current password is required and re-hashed with argon2id on change. The caller's session is ALWAYS rotated (new cookie, old one dead), the CSRF token changes, the user's other sessions end, and the client re-reads GET /session for the new CSRF token and the cleared mustChangePassword flag. A wrong current password counts as a failure: ${THROTTLE_TEXT}, per user. ${WRITE_THROTTLE_TEXT} ${REDACTION_TEXT}`,
     request: { headers: [csrf], body: body(AccountPasswordChangeRequestSchema) },
     responses: {
       200: json(envelopeOf(AccountStatusSchema), `Changed. data.status = "${ACCOUNT_MESSAGES.passwordChanged}".`),
@@ -226,7 +229,7 @@ export function registerAccountPaths(registry: OpenAPIRegistry): void {
     responses: {
       200: json(accountStatusEnvelopeOf(AccountPictureSchema), `Saved. status = "${ACCOUNT_MESSAGES.pictureSaved}".`),
       401: unauthorized,
-      403: csrfInvalid,
+      403: csrfOrPcr,
       422: validation(
         'profilePicture: "The profile picture field is required." / "The profile picture field must be a file of type: jpeg, png, webp." / "The profile picture field must not be greater than 2048 kilobytes.".',
       ),
@@ -240,7 +243,7 @@ export function registerAccountPaths(registry: OpenAPIRegistry): void {
     tags: ['account'],
     summary: 'Own personal settings',
     description: 'Any signed-in role. A user who never saved reads the BR-17 defaults (booleans false, subuh 05:30, sahur 04:30, faith null).',
-    responses: { 200: json(envelopeOf(AccountSettingsSchema), 'The settings.'), 401: unauthorized },
+    responses: { 200: json(envelopeOf(AccountSettingsSchema), 'The settings.'), 401: unauthorized, 403: pcr },
   })
 
   registry.registerPath({
@@ -253,7 +256,7 @@ export function registerAccountPaths(registry: OpenAPIRegistry): void {
     responses: {
       200: json(accountStatusEnvelopeOf(AccountSettingsSchema), `Saved. status = "${ACCOUNT_MESSAGES.settingsSaved}".`),
       401: unauthorized,
-      403: csrfInvalid,
+      403: csrfOrPcr,
       422: validation(
         'subuh push time / sahur push time: "The <field> field must match the format H:i."; faith: "The selected faith is invalid.".',
       ),

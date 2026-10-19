@@ -361,7 +361,11 @@ export const AccountRegisterPendingSchema = z
   .meta({ id: 'AccountRegisterPending' })
 export type AccountRegisterPending = z.infer<typeof AccountRegisterPendingSchema>
 
-/** 201 body of `POST /auth/register`: the Session (student, parent) or the pending-verification notice (teacher). */
+/**
+ * 201 body of `POST /auth/register`: the Session (student, parent) or the pending-verification notice (teacher).
+ * The status is 201 in BOTH cases. Narrow with `'status' in data`: present means the pending variant, absent means a Session
+ * (a Session has no `status` key).
+ */
 export const AccountRegisterResponseSchema = z
   .object({ data: z.union([SessionSchema, AccountRegisterPendingSchema]) })
   .meta({ id: 'AccountRegisterResponse' })
@@ -445,7 +449,7 @@ export const AccountProfileUpdateRequestSchema = z
   .meta({ id: 'AccountProfileUpdateRequest' })
 export type AccountProfileUpdateRequest = z.infer<typeof AccountProfileUpdateRequestSchema>
 
-/** Body of `PUT /me/password`. The session is kept (BR-16). */
+/** Body of `PUT /me/password`. The caller's session is ALWAYS rotated, the CSRF token changes, other sessions end; the client re-reads `GET /session`. */
 export const AccountPasswordChangeRequestSchema = z
   .object({
     currentPassword: z.string({ error: msg.required('current password') }).min(1, { error: msg.required('current password') }),
