@@ -1,0 +1,171 @@
+{
+  "class": {
+    "id": 2001,
+    "name": "5 MARIKH - Kimia",
+    "school": "SMK DEMO",
+    "subject": "Kimia",
+    "year": 2026,
+    "joinCode": "DMO101"
+  },
+  "stats": {
+    "students": 8,
+    "accuracy": 42.6,
+    "sessions": 11,
+    "answered": 68,
+    "avgMinutes": 6.1,
+    "active7d": 6
+  },
+  "headcount": {
+    "configId": 504,
+    "onTrack": 0,
+    "below": 1,
+    "noData": 7,
+    "pct": {
+      "on": 0,
+      "below": 12.5,
+      "none": 87.5
+    },
+    "avgTov": 50,
+    "avgEtr": 65
+  },
+  "attention": [
+    {
+      "userId": 3003,
+      "name": "Murid Demo 03",
+      "sessions": 1,
+      "accuracy": 37.5
+    },
+    {
+      "userId": 3004,
+      "name": "Murid Demo 04",
+      "sessions": 1,
+      "accuracy": 37.5
+    },
+    {
+      "userId": 3005,
+      "name": "Murid Demo 05",
+      "sessions": 1,
+      "accuracy": 37.5
+    },
+    {
+      "userId": 3006,
+      "name": "Murid Demo 06",
+      "sessions": 1,
+      "accuracy": 37.5
+    },
+    {
+      "userId": 3007,
+      "name": "Murid Demo 07",
+      "sessions": 2,
+      "accuracy": 33.3
+    },
+    {
+      "userId": 3008,
+      "name": "Murid Demo 08",
+      "sessions": 1,
+      "accuracy": 12.5
+    }
+  ],
+  "trend": [
+    {
+      "date": "2026-09-15",
+      "sessions": 4,
+      "avgAccuracy": 56.3,
+      "activeStudents": 4
+    },
+    {
+      "date": "2026-09-22",
+      "sessions": 4,
+      "avgAccuracy": 28.1,
+      "activeStudents": 4
+    },
+    {
+      "date": "2026-09-24",
+      "sessions": 3,
+      "avgAccuracy": 50,
+      "activeStudents": 3
+    }
+  ],
+  "ranking": [
+    {
+      "rank": 1,
+      "userId": 3001,
+      "name": "Murid Demo 01",
+      "sessions": 2,
+      "answered": 9,
+      "accuracy": 88.9,
+      "headcount": "below",
+      "lastActiveAt": "2026-09-24T16:00:00+08:00"
+    },
+    {
+      "rank": 2,
+      "userId": 3002,
+      "name": "Murid Demo 02",
+      "sessions": 2,
+      "answered": 10,
+      "accuracy": 50,
+      "headcount": "na",
+      "lastActiveAt": "2026-09-24T16:00:00+08:00"
+    },
+    {
+      "rank": 3,
+      "userId": 3003,
+      "name": "Murid Demo 03",
+      "sessions": 1,
+      "answered": 8,
+      "accuracy": 37.5,
+      "headcount": "na",
+      "lastActiveAt": "2026-09-15T16:00:00+08:00"
+    },
+    {
+      "rank": 4,
+      "userId": 3004,
+      "name": "Murid Demo 04",
+      "sessions": 1,
+      "answered": 8,
+      "accuracy": 37.5,
+      "headcount": "na",
+      "lastActiveAt": "2026-09-15T16:00:00+08:00"
+    },
+    {
+      "rank": 5,
+      "userId": 3005,
+      "name": "Murid Demo 05",
+      "sessions": 1,
+      "answered": 8,
+      "accuracy": 37.5,
+      "headcount": "na",
+      "lastActiveAt": "2026-09-22T16:00:00+08:00"
+    },
+    {
+      "rank": 6,
+      "userId": 3006,
+      "name": "Murid Demo 06",
+      "sessions": 1,
+      "answered": 8,
+      "accuracy": 37.5,
+      "headcount": "na",
+      "lastActiveAt": "2026-09-22T16:00:00+08:00"
+    },
+    {
+      "rank": 7,
+      "userId": 3007,
+      "name": "Murid Demo 07",
+      "sessions": 2,
+      "answered": 9,
+      "accuracy": 33.3,
+      "headcount": "na",
+      "lastActiveAt": "2026-09-24T16:00:00+08:00"
+    },
+    {
+      "rank": 8,
+      "userId": 3008,
+      "name": "Murid Demo 08",
+      "sessions": 1,
+      "answered": 8,
+      "accuracy": 12.5,
+      "headcount": "na",
+      "lastActiveAt": "2026-09-22T16:00:00+08:00"
+    }
+  ]
+}

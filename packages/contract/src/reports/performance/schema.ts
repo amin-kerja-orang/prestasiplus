@@ -56,12 +56,22 @@ export const PERFORMANCE_ERROR_MESSAGES = {
 export const PERFORMANCE_GRADES = ['A+', 'A', 'A-', 'B+', 'B', 'C+', 'C', 'D', 'E', 'G'] as const
 export const PerformanceGradeSchema = z.enum(PERFORMANCE_GRADES).meta({ id: 'PerformanceGrade' })
 export const PERFORMANCE_GPS_BANDS = ['Cemerlang', 'Baik', 'Sederhana', 'Perlu Perhatian'] as const
-export const PerformanceGpsBandSchema = z.enum(PERFORMANCE_GPS_BANDS).meta({ id: 'PerformanceGpsBand' })
+export const PerformanceGpsBandSchema = z
+  .enum(PERFORMANCE_GPS_BANDS)
+  .meta({ id: 'PerformanceGpsBand' })
 export const PerformanceLevelCodeSchema = z.enum(['t4', 't5']).meta({ id: 'PerformanceLevelCode' })
-export const PerformanceLetterSchema = z.enum(['A', 'B', 'C', 'D']).meta({ id: 'PerformanceLetter' })
-export const PerformanceDifficultySchema = z.enum(['Mudah', 'Sederhana', 'Sukar']).meta({ id: 'PerformanceDifficulty' })
-export const PerformanceRiskLevelSchema = z.enum(['critical', 'high', 'medium', 'low']).meta({ id: 'PerformanceRiskLevel' })
-export const PerformanceTrendSchema = z.enum(['up', 'down', 'stable']).meta({ id: 'PerformanceTrend' })
+export const PerformanceLetterSchema = z
+  .enum(['A', 'B', 'C', 'D'])
+  .meta({ id: 'PerformanceLetter' })
+export const PerformanceDifficultySchema = z
+  .enum(['Mudah', 'Sederhana', 'Sukar'])
+  .meta({ id: 'PerformanceDifficulty' })
+export const PerformanceRiskLevelSchema = z
+  .enum(['critical', 'high', 'medium', 'low'])
+  .meta({ id: 'PerformanceRiskLevel' })
+export const PerformanceTrendSchema = z
+  .enum(['up', 'down', 'stable'])
+  .meta({ id: 'PerformanceTrend' })
 export const PerformanceSpStatusSchema = z.enum(['mahir', 'sederhana', 'lemah', 'belum'])
 export const PerformancePairStatusSchema = z.enum(['on', 'below', 'none'])
 
@@ -101,7 +111,11 @@ export const PerformanceSchoolSchema = z
       answered: count,
       accuracy: pct,
     }),
-    gps: z.object({ value: num.nullable(), band: PerformanceGpsBandSchema.nullable(), entries: count }),
+    gps: z.object({
+      value: num.nullable(),
+      band: PerformanceGpsBandSchema.nullable(),
+      entries: count,
+    }),
     distribution: z.array(z.object({ grade: PerformanceGradeSchema, count, pct })),
     trend: z.object({
       years: z.array(
@@ -118,7 +132,9 @@ export const PerformanceSchoolSchema = z
       chart: z.object({
         labels: z.array(z.number().int()),
         overall: z.array(num.nullable()),
-        subjects: z.array(z.object({ name: z.string(), color: z.string(), data: z.array(num.nullable()) })),
+        subjects: z.array(
+          z.object({ name: z.string(), color: z.string(), data: z.array(num.nullable()) }),
+        ),
       }),
     }),
     subjects: z.array(
@@ -135,7 +151,13 @@ export const PerformanceSchoolSchema = z
       }),
     ),
     levels: z.array(
-      z.object({ code: PerformanceLevelCodeSchema, accuracy: pct, classes: count, students: count, sessions: count }),
+      z.object({
+        code: PerformanceLevelCodeSchema,
+        accuracy: pct,
+        classes: count,
+        students: count,
+        sessions: count,
+      }),
     ),
     teachers: z.array(
       z.object({
@@ -172,18 +194,29 @@ export const PerformanceLevelDetailSchema = z
         classId: IdSchema,
         kind: z.enum(['classroom', 'school_class']),
         name: z.string(),
-        subject: z.string().meta({ description: '"Tiada Subjek" without a subject; "Kelas Sekolah" for school classes.' }),
+        subject: z.string().meta({
+          description: '"Tiada Subjek" without a subject; "Kelas Sekolah" for school classes.',
+        }),
         teacher: z.string().nullable(),
         students: count,
         sessions: count,
         accuracy: pct,
         onTrack: count,
         below: count,
-        href: z.string().nullable().meta({ description: '/prestasi/kelas/{id} for classrooms, null for school classes.' }),
+        href: z
+          .string()
+          .nullable()
+          .meta({ description: '/prestasi/kelas/{id} for classrooms, null for school classes.' }),
       }),
     ),
     topStudents: z.array(
-      z.object({ userId: IdSchema, name: z.string(), sessions: count, answered: count, accuracy: pct }),
+      z.object({
+        userId: IdSchema,
+        name: z.string(),
+        sessions: count,
+        answered: count,
+        accuracy: pct,
+      }),
     ),
     atRisk: z.array(
       z.object({
@@ -211,7 +244,14 @@ export const PerformanceClassDashboardSchema = z
       year: z.number().int(),
       joinCode: z.string(),
     }),
-    stats: z.object({ students: count, accuracy: pct, sessions: count, answered: count, avgMinutes: num, active7d: count }),
+    stats: z.object({
+      students: count,
+      accuracy: pct,
+      sessions: count,
+      answered: count,
+      avgMinutes: num,
+      active7d: count,
+    }),
     headcount: z
       .object({
         configId: IdSchema,
@@ -223,8 +263,12 @@ export const PerformanceClassDashboardSchema = z
         avgEtr: num.nullable(),
       })
       .nullable(),
-    attention: z.array(z.object({ userId: IdSchema, name: z.string(), sessions: count, accuracy: pct.nullable() })),
-    trend: z.array(z.object({ date: DateOnlySchema, sessions: count, avgAccuracy: pct, activeStudents: count })),
+    attention: z.array(
+      z.object({ userId: IdSchema, name: z.string(), sessions: count, accuracy: pct.nullable() }),
+    ),
+    trend: z.array(
+      z.object({ date: DateOnlySchema, sessions: count, avgAccuracy: pct, activeStudents: count }),
+    ),
     ranking: z.array(
       z.object({
         rank: z.number().int(),
@@ -266,14 +310,28 @@ export const PerformanceStudentSchema = z
         year: z.number().int(),
         status: PerformancePairStatusSchema,
         tov: num.nullable(),
-        chips: z.array(z.object({ label: z.string(), value: num.nullable(), tone: PerformancePairStatusSchema })),
+        chips: z.array(
+          z.object({ label: z.string(), value: num.nullable(), tone: PerformancePairStatusSchema }),
+        ),
         etr: num.nullable(),
       }),
     ),
     mastery: z.array(
-      z.object({ subjectCode: z.string(), subjectName: z.string(), color: z.string(), accuracy: pct, sessions: count, answered: count }),
+      z.object({
+        subjectCode: z.string(),
+        subjectName: z.string(),
+        color: z.string(),
+        accuracy: pct,
+        sessions: count,
+        answered: count,
+      }),
     ),
-    activity: z.object({ streakCurrent: count, streakBest: count, koinTotal: count, practiceDays: count }),
+    activity: z.object({
+      streakCurrent: count,
+      streakBest: count,
+      koinTotal: count,
+      practiceDays: count,
+    }),
     badges: z.array(z.object({ icon: z.string(), name: z.string() })),
     heatmap: z.array(z.object({ date: DateOnlySchema, sessions: count })),
     weakTopics: z.array(
@@ -310,7 +368,14 @@ export const PerformanceAnalyticsSchema = z
         weak: z.array(weakSp),
         map: z.object({
           caption: z.string(),
-          tiles: z.array(z.object({ spId: IdSchema, code: z.string(), title: z.string(), status: PerformanceSpStatusSchema })),
+          tiles: z.array(
+            z.object({
+              spId: IdSchema,
+              code: z.string(),
+              title: z.string(),
+              status: PerformanceSpStatusSchema,
+            }),
+          ),
         }),
       }),
     ),
@@ -322,7 +387,10 @@ export const PerformanceClassAnalyticsQuerySchema = z
   .object({
     classroomId: IdSchema.optional(),
     subjectId: IdSchema.optional(),
-    riskLevel: z.string().optional().meta({ description: 'critical | high | medium | low; anything else = all.' }),
+    riskLevel: z
+      .string()
+      .optional()
+      .meta({ description: 'critical | high | medium | low; anything else = all.' }),
   })
   .meta({ id: 'PerformanceClassAnalyticsQuery' })
 
@@ -355,7 +423,12 @@ export const PerformanceClassAnalyticsSchema = z
 // --- S9 school item analysis, S11 class item analysis -----------------------------------------
 
 export const PerformanceItemAnalysisQuerySchema = z
-  .object({ tingkatan: z.string().optional().meta({ description: 'T4 or T5; any other value is ignored (null).' }) })
+  .object({
+    tingkatan: z
+      .string()
+      .optional()
+      .meta({ description: 'T4 or T5; any other value is ignored (null).' }),
+  })
   .meta({ id: 'PerformanceItemAnalysisQuery' })
 
 export const PerformanceSchoolItemAnalysisSchema = z
@@ -382,7 +455,14 @@ export const PerformanceSchoolItemAnalysisSchema = z
       years: z.array(z.object({ year: z.number().int(), gps: num })),
     }),
     subjects: z.array(
-      z.object({ subjectId: IdSchema, name: z.string(), pupils: count, questions: count, accuracy: pct, wrong: count }),
+      z.object({
+        subjectId: IdSchema,
+        name: z.string(),
+        pupils: count,
+        questions: count,
+        accuracy: pct,
+        wrong: count,
+      }),
     ),
     questions: z.array(
       z.object({
@@ -397,7 +477,12 @@ export const PerformanceSchoolItemAnalysisSchema = z
         pupils: count,
         pupilsPct: pct,
         wrongPupils: z.array(
-          z.object({ userId: IdSchema, name: z.string(), classLabel: z.string(), wrongOption: PerformanceLetterSchema }),
+          z.object({
+            userId: IdSchema,
+            name: z.string(),
+            classLabel: z.string(),
+            wrongOption: PerformanceLetterSchema,
+          }),
         ),
         correctOption: optionRef,
         popularWrongOption: optionRef.nullable(),
@@ -456,7 +541,13 @@ export const PerformanceClassItemAnalysisSchema = z
 
 // --- Timeline, public profile, rankings, leaderboard ------------------------------------------
 
-export const PERFORMANCE_TIMELINE_CATEGORIES = ['sijil', 'pencapaian', 'aktiviti', 'cerita', 'lain'] as const
+export const PERFORMANCE_TIMELINE_CATEGORIES = [
+  'sijil',
+  'pencapaian',
+  'aktiviti',
+  'cerita',
+  'lain',
+] as const
 export const PerformanceTimelineCategorySchema = z
   .enum(PERFORMANCE_TIMELINE_CATEGORIES)
   .meta({ id: 'PerformanceTimelineCategory' })
@@ -498,21 +589,44 @@ export const PerformanceTimelineCreateRequestSchema = z
       .string({ error: PERFORMANCE_TIMELINE_MESSAGES.titleRequired })
       .trim()
       .min(1, { error: PERFORMANCE_TIMELINE_MESSAGES.titleRequired })
-      .max(PERFORMANCE_TIMELINE_LIMITS.titleMax, { error: PERFORMANCE_TIMELINE_MESSAGES.titleTooLong }),
-    category: z.enum(PERFORMANCE_TIMELINE_CATEGORIES, { error: PERFORMANCE_TIMELINE_MESSAGES.categoryInvalid }),
+      .max(PERFORMANCE_TIMELINE_LIMITS.titleMax, {
+        error: PERFORMANCE_TIMELINE_MESSAGES.titleTooLong,
+      }),
+    category: z.enum(PERFORMANCE_TIMELINE_CATEGORIES, {
+      error: PERFORMANCE_TIMELINE_MESSAGES.categoryInvalid,
+    }),
     eventDate: z
-      .union([z.literal(""), z.string().regex(/^\d{4}-\d{2}-\d{2}$/, { error: PERFORMANCE_TIMELINE_MESSAGES.dateInvalid })], { error: PERFORMANCE_TIMELINE_MESSAGES.dateInvalid })
+      .union(
+        [
+          z.literal(''),
+          z
+            .string()
+            .regex(/^\d{4}-\d{2}-\d{2}$/, { error: PERFORMANCE_TIMELINE_MESSAGES.dateInvalid }),
+        ],
+        { error: PERFORMANCE_TIMELINE_MESSAGES.dateInvalid },
+      )
       .optional()
-      .meta({ description: "YYYY-MM-DD; empty string = no date (the mock does not check the calendar)." }),
+      .meta({
+        description: 'YYYY-MM-DD; empty string = no date (the mock does not check the calendar).',
+      }),
     story: z
       .string()
-      .max(PERFORMANCE_TIMELINE_LIMITS.storyMax, { error: PERFORMANCE_TIMELINE_MESSAGES.storyTooLong })
+      .max(PERFORMANCE_TIMELINE_LIMITS.storyMax, {
+        error: PERFORMANCE_TIMELINE_MESSAGES.storyTooLong,
+      })
       .optional(),
     photos: z
-      .array(z.string().meta({ format: "binary" }), { error: PERFORMANCE_TIMELINE_MESSAGES.photosRequired })
+      .array(z.string().meta({ format: 'binary' }), {
+        error: PERFORMANCE_TIMELINE_MESSAGES.photosRequired,
+      })
       .min(1, { error: PERFORMANCE_TIMELINE_MESSAGES.photosRequired })
       .max(5, { error: PERFORMANCE_TIMELINE_MESSAGES.photosRequired })
-      .meta({ description: "JPEG/PNG/WebP, max 2 MB each; a bad file gives photos: " + PERFORMANCE_TIMELINE_MESSAGES.photoInvalid + " (not expressible in zod)." }),
+      .meta({
+        description:
+          'JPEG/PNG/WebP, max 2 MB each; a bad file gives photos: ' +
+          PERFORMANCE_TIMELINE_MESSAGES.photoInvalid +
+          ' (not expressible in zod).',
+      }),
     captions: z.array(z.string()).optional(),
   })
   .meta({ id: 'PerformanceTimelineCreateRequest' })
@@ -547,7 +661,10 @@ export const PerformancePublicProfileSchema = z
 
 export const PerformanceRankingQuerySchema = z
   .object({
-    scope: z.string().optional().meta({ description: 'nasional (default) | negeri | daerah | sekolah; unknown gives scope null, rows unfiltered.' }),
+    scope: z.string().optional().meta({
+      description:
+        'nasional (default) | negeri | daerah | sekolah; unknown gives scope null, rows unfiltered.',
+    }),
     subjectId: IdSchema.optional(),
     tingkatan: z.string().optional().meta({ description: 'T4 or T5.' }),
     negeri: z.string().optional().meta({ description: 'State name; used when scope = negeri.' }),
@@ -576,13 +693,20 @@ export const PerformanceRankingSchema = z
   .meta({ id: 'PerformanceRanking' })
 
 export const PerformanceLeaderboardQuerySchema = z
-  .object({ period: z.string().optional().meta({ description: 'all | week | month; unknown = week.' }) })
+  .object({
+    period: z.string().optional().meta({ description: 'all | week | month; unknown = week.' }),
+  })
   .meta({ id: 'PerformanceLeaderboardQuery' })
 
 export const PerformanceLeaderboardSchema = z
   .object({
     period: z.enum(['all', 'week', 'month']),
-    me: z.object({ rank: z.number().int().nullable(), coins: count, sessions: count, accuracy: pct }),
+    me: z.object({
+      rank: z.number().int().nullable(),
+      coins: count,
+      sessions: count,
+      accuracy: pct,
+    }),
     rows: z.array(
       z.object({
         rank: z.number().int(),
@@ -600,7 +724,9 @@ export const PerformanceLeaderboardSchema = z
 
 // --- Headcount (TOV / RS) ---------------------------------------------------------------------
 
-export const PerformanceHeadcountModeSchema = z.enum(['auto', 'manual']).meta({ id: 'PerformanceHeadcountMode' })
+export const PerformanceHeadcountModeSchema = z
+  .enum(['auto', 'manual'])
+  .meta({ id: 'PerformanceHeadcountMode' })
 const toneCell = z.enum(['above', 'on', 'below', 'na'])
 
 export const PerformanceHeadcountListItemSchema = z
@@ -630,7 +756,11 @@ export const PerformanceHeadcountDashboardSchema = z
         offTrack: count,
         noData: count,
         totalStudents: count,
-        chart: z.object({ labels: z.array(z.string()), target: z.array(num.nullable()), actual: z.array(num.nullable()) }),
+        chart: z.object({
+          labels: z.array(z.string()),
+          target: z.array(num.nullable()),
+          actual: z.array(num.nullable()),
+        }),
       }),
     ),
   })
@@ -651,39 +781,70 @@ const intLike = (message: string) =>
 const inRange = (lo: number, hi: number, message: string) =>
   intLike(message).refine((v) => Number(v) >= lo && Number(v) <= hi, { error: message })
 const idField = (required: string | null, invalid: string) =>
-  z.string({ error: (iss) => (iss.input === undefined && required ? required : invalid) }).min(1, { error: invalid })
+  z
+    .string({ error: (iss) => (iss.input === undefined && required ? required : invalid) })
+    .min(1, { error: invalid })
 
 export const PerformanceHeadcountCreateRequestSchema = z
   .object({
-    classroomId: idField(PERFORMANCE_HEADCOUNT_MESSAGES.classRequired, PERFORMANCE_HEADCOUNT_MESSAGES.classInvalid),
+    classroomId: idField(
+      PERFORMANCE_HEADCOUNT_MESSAGES.classRequired,
+      PERFORMANCE_HEADCOUNT_MESSAGES.classInvalid,
+    ),
     subjectId: idField(null, PERFORMANCE_HEADCOUNT_MESSAGES.subjectInvalid),
     educationLevelId: idField(null, PERFORMANCE_HEADCOUNT_MESSAGES.levelInvalid),
     academicYear: inRange(2020, 2100, PERFORMANCE_HEADCOUNT_MESSAGES.yearInvalid),
     activeOtrs: inRange(2, 5, PERFORMANCE_HEADCOUNT_MESSAGES.otrInvalid),
-    mode: z.enum(["auto", "manual"], { error: PERFORMANCE_HEADCOUNT_MESSAGES.modeInvalid }),
+    mode: z.enum(['auto', 'manual'], { error: PERFORMANCE_HEADCOUNT_MESSAGES.modeInvalid }),
   })
-  .meta({ id: "PerformanceHeadcountCreateRequest" })
+  .meta({ id: 'PerformanceHeadcountCreateRequest' })
 
 export const PerformanceHeadcountAutoSetupRequestSchema = z
   .object({
     levels: z
-      .array(z.union([z.string().min(1), z.number().int()], { error: PERFORMANCE_HEADCOUNT_MESSAGES.levelInvalid }), { error: PERFORMANCE_HEADCOUNT_MESSAGES.levelsRequired })
+      .array(
+        z.union(
+          [
+            z
+              .string()
+              .regex(/^(\d+|[DdTt][1-6])$/, { error: PERFORMANCE_HEADCOUNT_MESSAGES.levelInvalid }),
+            z.number().int(),
+          ],
+          {
+            error: PERFORMANCE_HEADCOUNT_MESSAGES.levelInvalid,
+          },
+        ),
+        { error: PERFORMANCE_HEADCOUNT_MESSAGES.levelsRequired },
+      )
       .min(1, { error: PERFORMANCE_HEADCOUNT_MESSAGES.levelsRequired })
-      .meta({ description: "Level ids, or the codes D1..D6 / T1..T5 (T1..T5 = Tingkatan 1..5); the mock also takes numbers." }),
+      .meta({
+        description:
+          'Level ids, or the codes D1..D6 / T1..T5 (T1..T5 = Tingkatan 1..5); the mock also takes numbers.',
+      }),
   })
-  .meta({ id: "PerformanceHeadcountAutoSetupRequest" })
+  .meta({ id: 'PerformanceHeadcountAutoSetupRequest' })
 
 export const PerformanceHeadcountDropRequestSchema = z
   .object({
-    action: z.enum(["drop", "restore"], { error: PERFORMANCE_HEADCOUNT_MESSAGES.actionInvalid }),
+    action: z.enum(['drop', 'restore'], { error: PERFORMANCE_HEADCOUNT_MESSAGES.actionInvalid }),
     studentIds: z
-      .array(z.string({ error: PERFORMANCE_HEADCOUNT_MESSAGES.studentsInvalid }).min(1, { error: PERFORMANCE_HEADCOUNT_MESSAGES.studentsInvalid }), { error: PERFORMANCE_HEADCOUNT_MESSAGES.studentsRequired })
+      .array(
+        z
+          .string({ error: PERFORMANCE_HEADCOUNT_MESSAGES.studentsInvalid })
+          .min(1, { error: PERFORMANCE_HEADCOUNT_MESSAGES.studentsInvalid }),
+        { error: PERFORMANCE_HEADCOUNT_MESSAGES.studentsRequired },
+      )
       .min(1, { error: PERFORMANCE_HEADCOUNT_MESSAGES.studentsRequired }),
   })
-  .meta({ id: "PerformanceHeadcountDropRequest" })
+  .meta({ id: 'PerformanceHeadcountDropRequest' })
 
 export const PerformanceHeadcountSortQuerySchema = z
-  .object({ sort: z.string().optional().meta({ description: 'ranking (default) | name; unknown = ranking.' }) })
+  .object({
+    sort: z
+      .string()
+      .optional()
+      .meta({ description: 'ranking (default) | name; unknown = ranking.' }),
+  })
   .meta({ id: 'PerformanceHeadcountSortQuery' })
 
 const cell = z.object({
@@ -716,9 +877,19 @@ export const PerformanceHeadcountStudentSchema = z
             confidence: z.enum(['Tinggi', 'Sederhana', 'Rendah']),
           })
           .nullable(),
-        rows: z.array(cell.extend({ checkpoint: z.number().int(), tone: z.enum(['on', 'below', 'noAr', 'noTarget']) })),
+        rows: z.array(
+          cell.extend({
+            checkpoint: z.number().int(),
+            tone: z.enum(['on', 'below', 'noAr', 'noTarget']),
+          }),
+        ),
         prediction: z
-          .object({ etr: num, rs: num, diff: num, verdict: z.enum(['Ramalan Tepat', 'Hampir Tepat', 'Selisih Besar']) })
+          .object({
+            etr: num,
+            rs: num,
+            diff: num,
+            verdict: z.enum(['Ramalan Tepat', 'Hampir Tepat', 'Selisih Besar']),
+          })
           .nullable(),
         chart: z.object({
           labels: z.array(z.string()),
@@ -745,7 +916,9 @@ export const PerformanceHeadcountSummarySchema = z
     students: count,
     avgTov: num.nullable(),
     avgEtr: num.nullable(),
-    otrs: z.array(z.object({ n: z.number().int(), above: count, onTrack: count, below: count, na: count })),
+    otrs: z.array(
+      z.object({ n: z.number().int(), above: count, onTrack: count, below: count, na: count }),
+    ),
   })
   .meta({ id: 'PerformanceHeadcountSummary' })
 

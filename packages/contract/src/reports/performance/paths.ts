@@ -99,10 +99,14 @@ const err = (description: string) => json(ErrorBodySchema, description)
 const E401 = err(`UNAUTHORIZED: no valid session ("${MSG.unauthorized}").`)
 const E403 = (what: string) => err(`FORBIDDEN "${MSG.forbidden}": ${what}`)
 const E404 = (what: string) => err(`NOT_FOUND "${MSG.notFound}": ${what}`)
-const E403CSRF = err(`FORBIDDEN "${MSG.forbidden}", or CSRF_INVALID on a missing/invalid X-CSRF-Token.`)
+const E403CSRF = err(
+  `FORBIDDEN "${MSG.forbidden}", or CSRF_INVALID on a missing/invalid X-CSRF-Token.`,
+)
 
 const idParam = (name: string) => z.object({ [name]: IdSchema })
-const csrf = z.object({ 'X-CSRF-Token': z.string().min(1).meta({ description: 'Value of Session.csrf.' }) })
+const csrf = z.object({
+  'X-CSRF-Token': z.string().min(1).meta({ description: 'Value of Session.csrf.' }),
+})
 
 /** The headcount staff guard: admin, teacher, school_admin; every other role gets 403. */
 const STAFF = 'role not admin, teacher or school_admin'
@@ -186,14 +190,20 @@ export function registerPerformancePaths(registry: OpenAPIRegistry): void {
     '/item-analysis/school',
     'Item analysis of the own school (S9)',
     PerformanceSchoolItemAnalysisSchema,
-    { 403: E403('role has no access (parent, sponsor)'), 404: E404('viewer has no school, or no analysis') },
+    {
+      403: E403('role has no access (parent, sponsor)'),
+      404: E404('viewer has no school, or no analysis'),
+    },
     { query: PerformanceItemAnalysisQuerySchema },
   )
   get(
     '/item-analysis/school/{schoolId}',
     'Item analysis of a given school (S9, variant byId)',
     PerformanceSchoolItemAnalysisSchema,
-    { 403: E403('role has no access, or school outside the viewer scope'), 404: E404('no analysis') },
+    {
+      403: E403('role has no access, or school outside the viewer scope'),
+      404: E404('no analysis'),
+    },
     { params: idParam('schoolId'), query: PerformanceItemAnalysisQuerySchema },
     'Admin any school; PPD district / JPN state officers schools in scope; other roles own school. An unknown id answers the empty payload (FR-M08-143), not 404.',
   )
@@ -214,8 +224,20 @@ export function registerPerformancePaths(registry: OpenAPIRegistry): void {
   )
 
   // Rankings and social
-  get('/rankings', 'Ranking table (S19)', PerformanceRankingSchema, {}, { query: PerformanceRankingQuerySchema })
-  get('/leaderboard', 'Coin leaderboard (S20)', PerformanceLeaderboardSchema, {}, { query: PerformanceLeaderboardQuerySchema })
+  get(
+    '/rankings',
+    'Ranking table (S19)',
+    PerformanceRankingSchema,
+    {},
+    { query: PerformanceRankingQuerySchema },
+  )
+  get(
+    '/leaderboard',
+    'Coin leaderboard (S20)',
+    PerformanceLeaderboardSchema,
+    {},
+    { query: PerformanceLeaderboardQuerySchema },
+  )
   get('/timeline', 'Own timeline (S16)', PerformanceTimelineSchema, {})
 
   registry.registerPath({
@@ -223,16 +245,22 @@ export function registerPerformancePaths(registry: OpenAPIRegistry): void {
     path: '/timeline',
     tags: ['performance'],
     summary: 'Create a timeline post with 1 to 5 photos (S17)',
-    description: 'multipart/form-data. Photos are stored through file storage (BE-04); the response carries their URLs.',
+    description:
+      'multipart/form-data. Photos are stored through file storage (BE-04); the response carries their URLs.',
     request: {
       headers: [csrf],
-      body: { required: true, content: { 'multipart/form-data': { schema: PerformanceTimelineCreateRequestSchema } } },
+      body: {
+        required: true,
+        content: { 'multipart/form-data': { schema: PerformanceTimelineCreateRequestSchema } },
+      },
     },
     responses: {
       201: json(envelopeOf(PerformanceTimelinePostSchema), 'Post created.'),
       401: E401,
       403: E403CSRF,
-      422: err('VALIDATION_ERROR with fields (title, category, eventDate, story, photos); message = first field message plus "(and N more error(s))".'),
+      422: err(
+        'VALIDATION_ERROR with fields (title, category, eventDate, story, photos); message = first field message plus "(and N more error(s))".',
+      ),
     },
   })
 
@@ -241,9 +269,13 @@ export function registerPerformancePaths(registry: OpenAPIRegistry): void {
     path: '/public/students/{id}',
     tags: ['performance'],
     summary: 'Public student profile (S18), no session required',
-    description: 'Anonymous allowed (live parity). The mock does not check role or active state: see open question.',
+    description:
+      'Anonymous allowed (live parity). The mock does not check role or active state: see open question.',
     request: { params: idParam('id') },
-    responses: { 200: json(envelopeOf(PerformancePublicProfileSchema), 'Public profile.'), 404: E404('unknown user id') },
+    responses: {
+      200: json(envelopeOf(PerformancePublicProfileSchema), 'Public profile.'),
+      404: E404('unknown user id'),
+    },
   })
   registry.registerPath({
     method: 'get',
@@ -255,26 +287,48 @@ export function registerPerformancePaths(registry: OpenAPIRegistry): void {
   })
 
   // Headcount (TOV / RS)
-  const hc = (path: string, summary: string, schema: z.ZodType, request: { params?: z.ZodObject; query?: z.ZodObject } = {}) =>
+  const hc = (
+    path: string,
+    summary: string,
+    schema: z.ZodType,
+    request: { params?: z.ZodObject; query?: z.ZodObject } = {},
+  ) =>
     get(
       path,
       summary,
       schema,
       {
-        403: E403(`${STAFF}${request.params ? ', or a config/student outside the viewer scope' : ''}`),
+        403: E403(
+          `${STAFF}${request.params ? ', or a config/student outside the viewer scope' : ''}`,
+        ),
         ...(request.params ? { 404: E404('unknown id (checked before 403)') } : {}),
       },
       request,
       undefined,
       'headcount',
     )
-  hc('/headcounts', 'Own headcount configs (S12), newest first', z.array(PerformanceHeadcountListItemSchema))
+  hc(
+    '/headcounts',
+    'Own headcount configs (S12), newest first',
+    z.array(PerformanceHeadcountListItemSchema),
+  )
   hc('/headcounts/dashboard', 'Headcount dashboard (S13)', PerformanceHeadcountDashboardSchema)
-  hc('/headcounts/form-options', 'Create-form select options (S14)', PerformanceHeadcountFormOptionsSchema)
-  hc('/headcounts/students/{userId}', 'Headcount sections of one student (S15)', PerformanceHeadcountStudentSchema, {
-    params: idParam('userId'),
+  hc(
+    '/headcounts/form-options',
+    'Create-form select options (S14)',
+    PerformanceHeadcountFormOptionsSchema,
+  )
+  hc(
+    '/headcounts/students/{userId}',
+    'Headcount sections of one student (S15)',
+    PerformanceHeadcountStudentSchema,
+    {
+      params: idParam('userId'),
+    },
+  )
+  hc('/headcounts/{id}/summary', 'Class summary (S22)', PerformanceHeadcountSummarySchema, {
+    params: idParam('id'),
   })
-  hc('/headcounts/{id}/summary', 'Class summary (S22)', PerformanceHeadcountSummarySchema, { params: idParam('id') })
   hc('/headcounts/{id}', 'Headcount table (S23)', PerformanceHeadcountDetailSchema, {
     params: idParam('id'),
     query: PerformanceHeadcountSortQuerySchema,
@@ -320,17 +374,59 @@ export function registerPerformancePaths(registry: OpenAPIRegistry): void {
     })
   const own = { 404: E404('unknown id') }
 
-  post('post', '/headcounts', 'Create a headcount config (S14)', 201, z.object({ id: IdSchema }), {
-    409: err('CONFLICT: "Headcount Auto|Manual untuk kelas, subjek dan tahun ini sudah wujud."'),
-    422: err('VALIDATION_ERROR with fields classroomId, subjectId, educationLevelId, academicYear, activeOtrs, mode.'),
-  }, { body: PerformanceHeadcountCreateRequestSchema })
-  post('post', '/headcounts/auto-setup', 'Create Auto configs for the own classes of the chosen levels (idempotent)', 200, z.object({ created: z.number().int().min(0) }), {
-    422: err('VALIDATION_ERROR with field levels.'),
-  }, { body: PerformanceHeadcountAutoSetupRequestSchema })
-  post('post', '/headcounts/{id}/drop-students', 'Drop or restore students of a config', 200, z.object({ updated: z.number().int().min(0) }), {
-    ...own,
-    422: err('VALIDATION_ERROR with fields action, studentIds.'),
-  }, { params: idParam('id'), body: PerformanceHeadcountDropRequestSchema })
-  post('post', '/headcounts/{id}/reset', 'Reset all marks of a config', 200, z.object({ reset: z.literal(true) }), own, { params: idParam('id') })
-  post('delete', '/headcounts/{id}', 'Delete a config', 200, z.object({ deleted: z.literal(true) }), own, { params: idParam('id') })
+  post(
+    'post',
+    '/headcounts',
+    'Create a headcount config (S14)',
+    201,
+    z.object({ id: IdSchema }),
+    {
+      409: err('CONFLICT: "Headcount Auto|Manual untuk kelas, subjek dan tahun ini sudah wujud."'),
+      422: err(
+        'VALIDATION_ERROR with fields classroomId, subjectId, educationLevelId, academicYear, activeOtrs, mode.',
+      ),
+    },
+    { body: PerformanceHeadcountCreateRequestSchema },
+  )
+  post(
+    'post',
+    '/headcounts/auto-setup',
+    'Create Auto configs for the own classes of the chosen levels (idempotent)',
+    200,
+    z.object({ created: z.number().int().min(0) }),
+    {
+      422: err('VALIDATION_ERROR with field levels.'),
+    },
+    { body: PerformanceHeadcountAutoSetupRequestSchema },
+  )
+  post(
+    'post',
+    '/headcounts/{id}/drop-students',
+    'Drop or restore students of a config',
+    200,
+    z.object({ updated: z.number().int().min(0) }),
+    {
+      ...own,
+      422: err('VALIDATION_ERROR with fields action, studentIds.'),
+    },
+    { params: idParam('id'), body: PerformanceHeadcountDropRequestSchema },
+  )
+  post(
+    'post',
+    '/headcounts/{id}/reset',
+    'Reset all marks of a config',
+    200,
+    z.object({ reset: z.literal(true) }),
+    own,
+    { params: idParam('id') },
+  )
+  post(
+    'delete',
+    '/headcounts/{id}',
+    'Delete a config',
+    200,
+    z.object({ deleted: z.literal(true) }),
+    own,
+    { params: idParam('id') },
+  )
 }
