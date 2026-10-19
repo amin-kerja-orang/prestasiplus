@@ -10,6 +10,7 @@ export const DEFAULT_ERROR_MESSAGES: Readonly<Record<ErrorCode, string>> = {
   RATE_LIMITED: 'Too Many Attempts.',
   CONFLICT: 'Conflict.',
   VALIDATION_ERROR: 'The given data was invalid.',
+  PASSWORD_CHANGE_REQUIRED: 'Sila tukar kata laluan anda sebelum meneruskan.',
 }
 
 export interface ApiErrorOptions {

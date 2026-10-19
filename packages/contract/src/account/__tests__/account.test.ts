@@ -78,6 +78,7 @@ const session = (): Session =>
     landingPath: '/dashboard',
     expiresAt: '2026-10-16T17:30:00+08:00',
     csrf: 'tok',
+    mustChangePassword: false,
   })
 
 const register = {
