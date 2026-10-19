@@ -92,7 +92,7 @@ Scope at a glance (as coded): **teacher** = own classes and their pupils (M08, M
 | M10-22 | M10 | PUT | `/api/guru/questions/:id` | T, A (own) | BE-09 | missing |
 | M10-23 | M10 | DELETE | `/api/guru/questions/:id` | T, A (own) | BE-09 | missing |
 | M10-24 | M10 | GET | `/api/guru/galeri-rajah` | T, A | BE-17 | missing |
-| M10-25 | M10 | POST | `/api/guru/question-papers` | T, A | BE-18 | missing |
+| M10-25 | M10 | POST | `/api/guru/question-papers` | T, A | BE-18 (served by BE-37 `POST /api/intake/batches`, D53 OWN-1) | missing |
 | M10-26 | M10 | GET | `/api/guru/audio-kbat/template` | T, A | BE-18 | missing |
 | M10-27 | M10 | GET | `/api/guru/audio-kbat/template-word` | T, A | BE-18 | missing |
 | M10-28 | M10 | GET | `/api/kelas-saya` | any (own) | BE-17 | missing |
@@ -557,7 +557,7 @@ Purpose: teacher uploads a question paper (becomes an M04 QuestionSubmission `pe
 - **Roles/auth:** `teacherOnly`. **Request:** multipart `jenisSoalan` (one of `Soalan Umum|Trial Paper|Soalan DSKP|Buku Teks|Buku Latihan|Soalan Peperiksaan|Lain-lain`), `subject` (1-100), `tingkatan` 1-5 or `T1`-`T5` or empty, `tahun` 2000-2099 or empty (empty stored as the clock year), `disediakanOleh` (<= 150), `catatan` (<= 1000), `files` 1-5 of `.pdf .doc .docx .xls .xlsx`, each <= 20 MB.
 - **Response:** `201 {data: QuestionPaper}` (T:371): `id,teacherId,subjectText,levelCode,year,paperType,authorCredit,note,files[{index,name,size,mime}],status ("pending"),adminNotes,createdAt`. Side effect: `submissions.create` (M04); the mock stores only file name, size and type; the real API must store the files via BE-04.
 - **Errors (422):** `jenisSoalan` `Sila pilih jenis soalan.`; `subject` `Sila isi matapelajaran.` / `Matapelajaran tidak boleh melebihi 100 aksara.`; `tingkatan` `Tingkatan tidak sah.`; `tahun` `Tahun mesti antara 2000 dan 2099.`; `disediakanOleh` `Disediakan oleh tidak boleh melebihi 150 aksara.`; `catatan` `Catatan tidak boleh melebihi 1000 aksara.`; `files` `Sila pilih sekurang-kurangnya satu fail.` / `Maksimum 5 fail.` / `{name}: format atau saiz tidak dibenarkan.`.
-- **Handler:** `extras.ts:71`; `submitQuestionPaper`. **Card:** BE-18 (listed). **Contract:** missing.
+- **Handler:** `extras.ts:71`; `submitQuestionPaper`. **Card:** BE-18 (listed); served by BE-37 `POST /api/intake/batches` after D53 OWN-1. **Contract:** missing.
 
 ### M10-26 `GET /api/guru/audio-kbat/template`
 - **Roles/auth:** `teacherOnly`. **Response:** `200` file `text/csv; charset=UTF-8`, name `template-audio-kbat.csv`, UTF-8 BOM, header `tajuk,kod_subjek,kod_tingkatan,nama_fail_audio` and the example row `Contoh: KBAT Sains Bab 1,SCI,T4,kbat-sains-1.mp3` (cells quoted when they contain whitespace, comma or quote).

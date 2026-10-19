@@ -10,7 +10,7 @@ Snapshot: worktree `D:\Dev Projects\pp-docs`, branch `docs/v2-reference`, 2026-1
 - **UD-2 Impersonation is dropped.** Mod Pelajar works only through `POST /api/session/mode` (D31c). M02-09, M27-21 and M27-22 are "Not ported (UD-2)". Resolves CC-3.
 - **UD-3 Parent hadiah approvals are not built in B1.** M15-08..10: the backend does not register them, the frontend hides the entry point; card none.
 - **UD-4 M18 Amaran is folded into BE-21.** M18-01..04 now carry card BE-21.
-- **D53 (owner decisions recorded in the TRACKER, 2026-10-19).** (OWN-1) `intake_batches` (BE-37) is the one teacher Submission; `question_submissions` is dropped from BE-10, so M04-13/14/15 show "BE-37/BE-38 [pending card update]". (OWN-10) The teacher economy is backlog: 13 M14 routes "Not in B1 (D53)". (h) Questions tag `curriculum_node` only; `dskp_*` is the teacher picking list. (a) B1 = every module reachable in the prototype: M06 BE-41, M07 BE-42, M13 BE-43 (AI via the BE-36 adapter), M16 BE-44/BE-45 (split TBC; replicate the bot simulation), M20 BE-46, M21 student side BE-47 (Penaja out, D48), M25 BE-48 (= Heatmap Topik Lemah), M09 Audio KBAT play BE-24; all marked [pending card]. D52 intake (b2e1033) and paper builder (1b5193f) are merged locally and pending push; final admin routes are in part 2 section 11.
+- **D53 (owner decisions recorded in the TRACKER, 2026-10-19).** (OWN-1) `intake_batches` (BE-37) is the one teacher Submission; `question_submissions` is dropped from BE-10, so M04-13 shows BE-37, M04-14 BE-37/BE-38 and M04-15 BE-37 (BE-10 and BE-37 state how they are served). (OWN-10) The teacher economy is backlog: 13 M14 routes "Not in B1 (D53)". (h) Questions tag `curriculum_node` only; `dskp_*` is the teacher picking list. (a) B1 = every module reachable in the prototype: M06 BE-41, M07 BE-42, M13 BE-43 (AI via the BE-36 adapter), M16 BE-44/BE-45 (split TBC; replicate the bot simulation), M20 BE-46, M21 student side BE-47 (Penaja out, D48), M25 BE-48 (= Heatmap Topik Lemah), M09 Audio KBAT play BE-24; all marked. D52 intake (b2e1033) and paper builder (1b5193f) are merged locally and pending push; final admin routes are in part 2 section 11.
 
 ## 1. Parts
 
@@ -42,12 +42,12 @@ Counts verified for this index with a multi-line-aware script (`scratchpad/docs-
 | M01 authentication, account, notifications | 1 | 19 | BE-03, BE-06 | 0 | 0 / 2 / 17 |
 | M02 users, schools, subscriptions, parent invites | 1 | 49 | BE-05, BE-25 | 1 (M02-09 impersonate, UD-2) | 0 / 0 / 49 |
 | M03 curriculum | 1 | 29 | BE-08 | 0 | 0 / 0 / 29 |
-| M04 question bank | 2 | 30 | BE-09, BE-10; M04-13/14/15 BE-37/BE-38 [pending card update] (D53 OWN-1) | 0 | 0 / 0 / 30 |
+| M04 question bank | 2 | 30 | BE-09, BE-10; M04-13 BE-37, M04-14 BE-37/BE-38, M04-15 BE-37 (D53 OWN-1) | 0 | 0 / 0 / 30 |
 | M05 practice | 2 | 23 | BE-12, BE-13, BE-18 | 0 | 0 / 0 / 23 |
-| M06 SPM classic | 2 | 14 | BE-41 [pending card] (D53(a)) | 0 | 0 / 0 / 14 |
-| M07 PKSK | 2 | 21 | BE-42 [pending card] (D53(a)) | 0 | 0 / 0 / 21 |
-| M13 Cikgu Alesa | 2 | 10 | BE-43 [pending card] (D53(a)) | 0 | 0 / 0 / 10 |
-| M25 AI Centre (Heatmap Topik Lemah) | 2 | 1 | BE-48 [pending card] (D53(a)) | 0 | 0 / 0 / 1 |
+| M06 SPM classic | 2 | 14 | BE-41 (D53(a)) | 0 | 0 / 0 / 14 |
+| M07 PKSK | 2 | 21 | BE-42 (D53(a)) | 0 | 0 / 0 / 21 |
+| M13 Cikgu Alesa | 2 | 10 | BE-43 (D53(a)) | 0 | 0 / 0 / 10 |
+| M25 AI Centre (Heatmap Topik Lemah) | 2 | 1 | BE-48 (D53(a)) | 0 | 0 / 0 / 1 |
 | M28 Bijak SPM (16 class methods, 0 routes) | 2 | 0 | BE-14, BE-15, BE-16 | 1 (BJ-04) | 0 / 0 / 15, 1 n/a (BJ-12 sweeper) |
 | SPM intake D52 (operations IN-01..IN-10, source commit b2e1033; no HTTP routes) | 2 | 0 | BE-36..BE-40 (+BE-26 seed) | 2 with no card endpoint (IN-05, IN-09), IN-04 partial | all missing |
 | M08 student performance | 3 | 30 | BE-19 | 0 | 0 / 0 / 30 |
@@ -59,10 +59,10 @@ Counts verified for this index with a multi-line-aware script (`scratchpad/docs-
 | M27 school admin | 3 | 22 | BE-21 | 2 (impersonate, UD-2) | 0 / 0 / 22 |
 | M14 gamification | 4 | 42 | BE-11, BE-23 | 13 (teacher economy, Not in B1, D53 OWN-10) | 0 / 0 / 42 |
 | M15 rewards shop | 4 | 18 | BE-23 | 3 (parent approvals, UD-3) | 0 / 0 / 18 |
-| M16 battle, games, competitions | 4 | 52 | BE-44/BE-45 [pending card; split TBC] (D53(a)) | 0 | 0 / 0 / 52 |
+| M16 battle, games, competitions | 4 | 52 | BE-44 (M16-01..21, M16-42..45), BE-45 (M16-22..41, M16-46..52) (D53(a)) | 0 | 0 / 0 / 52 |
 | M09 content | 4 | 43 | BE-24 (incl. Audio KBAT play, D53(a)) | 0 | 0 / 0 / 43 |
-| M20 marketplace (buyer) | 4 | 5 | BE-46 [pending card] (D53(a)) | 0 | 0 / 0 / 5 |
-| M21 foster application (student side) | 4 | 1 | BE-47 [pending card] (D53(a)) | 0 | 0 / 0 / 1 |
+| M20 marketplace (buyer) | 4 | 5 | BE-46 (D53(a)) | 0 | 0 / 0 / 5 |
+| M21 foster application (student side) | 4 | 1 | BE-47 (D53(a)) | 0 | 0 / 0 / 1 |
 | M22 support tickets | 4 | 4 | BE-24 | 0 | 0 / 0 / 4 |
 | **HTTP total** | | **491 mock + 4 contract-only = 495** | | **19** | **4 / 2 / 489** |
 
@@ -114,7 +114,7 @@ Source of truth: `packages/contract/src/common/{envelope,error,ids,time,enums}.t
 
 ## 5. Uncovered endpoints (19 of 495 HTTP endpoints; 143 before the card audit, 112 before D53)
 
-"Uncovered" = no BE card endpoint table lists it, re-checked against the audited cards (LEAD audit, commit 63d363c, plus the catalogue additions marked "added from catalogue 2026-10-19"). Totals by reason after the owner decisions of 2026-10-19 (UD-1..UD-4, D53): dropped by user decision UD-2 3 (impersonation); not in B1 by user decision UD-3 3 (parent hadiah approvals); not in B1 by D53 OWN-10 13 (teacher economy); out of B1 / backlog 0 (was 106: D53(a) moved M06, M07, M13, M16, M20, M21 student side, M25 and Audio KBAT play into B1 with cards BE-41..BE-48 [pending card] and BE-24); in a card's scope but not listed 0; no card but needed 0. Total 143 -> 110 (card audit) -> 112 (UD) -> 19 (D53).
+"Uncovered" = no BE card endpoint table lists it, re-checked against the audited cards (LEAD audit, commit 63d363c, plus the catalogue additions marked "added from catalogue 2026-10-19"). Totals by reason after the owner decisions of 2026-10-19 (UD-1..UD-4, D53): dropped by user decision UD-2 3 (impersonation); not in B1 by user decision UD-3 3 (parent hadiah approvals); not in B1 by D53 OWN-10 13 (teacher economy); out of B1 / backlog 0 (was 106: D53(a) moved M06, M07, M13, M16, M20, M21 student side, M25 and Audio KBAT play into B1 with cards BE-41..BE-48 and BE-24); in a card's scope but not listed 0; no card but needed 0. Total 143 -> 110 (card audit) -> 112 (UD) -> 19 (D53).
 
 ### 5.1 In a card's scope but not listed (0)
 
@@ -122,7 +122,7 @@ None. The 33 endpoints that were here (M01 2, M02 6, M03 16, M04 5, M05 1, M10 3
 
 ### 5.2 Out of B1 / backlog (0)
 
-None. D53(a) (owner decision 2026-10-19) puts every module reachable in the prototype into B1: M06 -> BE-41, M07 -> BE-42, M13 -> BE-43 (AI through the BE-36 adapter), M16 -> BE-44/BE-45 (split TBC; replicate the bot simulation), M20 -> BE-46, M21 student side -> BE-47 (Penaja out, D48), M25 -> BE-48, M09 Audio KBAT student play -> BE-24. The new cards are being written; Card fields show [pending card]. The 106 endpoints formerly listed here (M06 14, M07 21, M13 10, M25 1, M16 52, M20 5, M21 1, M09 2) are no longer uncovered.
+None. D53(a) (owner decision 2026-10-19) puts every module reachable in the prototype into B1: M06 -> the cards BE-41..BE-48 are committed and list these endpoints. The 106 endpoints formerly listed here (M06 14, M07 21, M13 10, M25 1, M16 52, M20 5, M21 1, M09 2) are no longer uncovered.
 
 ### 5.3 Dropped or not built by owner decision 2026-10-19 (19)
 

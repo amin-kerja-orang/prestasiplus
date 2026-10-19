@@ -32,7 +32,7 @@
    - [3.10 Reports and analytics stores](#310-reports-and-analytics-stores)
    - [3.11 Content and support](#311-content-and-support)
    - [3.12 Migration control tables (ETL)](#312-migration-control-tables-etl)
-   - [3.12a Modules added to B1 by D53(a)](#312a-modules-added-to-b1-by-d53a-owner-cards-be-41-to-be-48-pending)
+   - [3.12a Modules added to B1 by D53(a)](#312a-modules-added-to-b1-by-d53a-owner-cards-be-41-to-be-48)
    - [3.13 Mock stores without a card (backlog and mock-only)](#313-mock-stores-without-a-card-backlog-and-mock-only)
 4. [Enums](#4-enums)
 5. [Read models and views](#5-read-models-and-views)
@@ -90,7 +90,7 @@ One place for the rules that apply to every table. Each rule names its source.
 ---
 ## 2. Store ownership
 
-D12 and ADR-0014: exactly one owner per store. This table lists **every** persisted table of release B1 (cards BE-01 to BE-40) plus the tables the mock needs that no card lists. Columns:
+D12 and ADR-0014: exactly one owner per store. This table lists **every** persisted table of release B1 (cards BE-01 to BE-40) plus the tables the mock needs that no card lists, and (after D53(a)) the tables of BE-41 to BE-48 (subsection "Added by D53(a)"). Columns:
 
 - **Table**: final snake_case name. A name in the plan or a card is kept; a name this document had to choose is marked **[P]**.
 - **Domain / owner card**: the card whose Prisma file **creates** the table (section 3 has its columns). "ext." means a later card extends it with columns in the same file (one open migration PR per owner module at a time, plan section 9).
@@ -116,6 +116,10 @@ D12 and ADR-0014: exactly one owner per store. This table lists **every** persis
 | OWN-10 | **Teacher economy: RESOLVED by D53 (owner decision 2026-10-19): backlog, not B1** | `teacher_wallets`, `teacher_ledger`, `teacher_rewards`, `teacher_redemptions`, `cash_withdrawals`, `teacher_badges`, `teacher_badge_awards` | No tables in B1. Their specification moved to section 3.13 (backlog). The teacher-economy endpoints are "Not in B1 (D53)". |
 | OWN-11 | **`curriculum_nodes` vs `dskp_bidang/sk/sp`: RESOLVED by D53(h) (owner decision 2026-10-19)** | BE-08 owns the DSKP node tree; BE-18 owns `dskp_bidang/sk/sp` (teacher picks). | **Questions tag `curriculum_node` only; `dskp_*` is the teacher picking list.** OQ-DM-08 resolved. |
 | OWN-12 | **`files`, `jobs`, `etl_*`** | Platform tables used by several owners (BE-04, BE-37, BE-34). Owned by the creating card; other modules use the service. | No action. |
+| OWN-13 | **Provisional owners for M24/M19 data (D53(a))** | `duta_profiles` (BE-41) is hosted by M06 because the real owner (M24) is not built; `pksk_packages` (BE-42) is hosted by M07 because the real owner (M19 packages) has no card. | Keep the provisional owners; the owning cards take over when they exist. |
+| OWN-14 | **PKSK domain reference across cards (D53(a))** | `pksk_domains` (BE-42) is referenced by `battles.pksk_domain_id` (BE-44, no FK) and by the question tag `pksk_domain` (BE-09 tags, by code). | No FK across owners (G-12); BE-44 and BE-09 reference the domain by code or plain column. |
+
+Recount after D53 (2026-10-19): 14 findings (OWN-1 to OWN-14); resolved: OWN-1 (one table `intake_batches`), OWN-8, OWN-10 (teacher economy backlog) and OWN-11 (curriculum nodes only); 10 remain open or provisional (OWN-2 to OWN-7, OWN-9, OWN-12 to OWN-14).
 
 ### 2.2 Ownership table
 
@@ -318,9 +322,63 @@ D12 and ADR-0014: exactly one owner per store. This table lists **every** persis
 |---|---|---|---|---|---|---|---|
 | `etl_runs`, `etl_checkpoints`, `etl_id_map`, `etl_rejects`, `etl_recon` | BE-34 | none | n/a | - | - | - | BE-28/29/30 still say `migration_runs/rejects/id_map` (GAP-14) |
 
+#### Added by D53(a) (cards BE-41 to BE-48)
+
+Same columns as above. "Mig" and "Migrated from" follow each card's migration-first section. `amaran_interventions` is BE-21 (UD-4) and `audio_kbat_attempts` is BE-24.
+
+| Table | Domain / owner card | Mock source | Migrated from | Wave | Mig | T | Flag |
+|---|---|---|---|---|---|---|---|
+| `spm_subject_configs` | BE-41 | `SPM_SUBJECTS` constants | new | - | - | - | K |
+| `spm_tracking_sets` | BE-41 | `m06.trackingSets` | not migrated | - | - | - |  |
+| `spm_tracking_set_questions` | BE-41 | `m06.trackingSets.question_ids` | not migrated | - | - | - |  |
+| `spm_mock_exams` | BE-41 | `m06.mockExams` | not migrated | - | - | T |  |
+| `spm_mock_exam_items` | BE-41 | `m06.mockExams.items` | not migrated | - | - | - |  |
+| `duta_profiles` | BE-41 (provisional) | M06 duta fixtures | new | - | - | - | P |
+| `pksk_domains` | BE-42 | `m07.domains` | new (reference) | W1 | - | - |  |
+| `pksk_packages` | BE-42 (provisional) | `m19.pkskPackages` | `pksk_packages` | W2 | M | - | P |
+| `pksk_accesses` | BE-42 | `m07.access` | `pksk_accesses` | W2 | M | - |  |
+| `pksk_exam_attempts` | BE-42 | `m07.examAttempts` | new | - | - | T |  |
+| `pksk_mastery` | BE-42 | `m07.mastery` | new | - | - | T |  |
+| `pksk_practice_loads` | BE-42 | `m07.practiceLoads` | new | - | - | - |  |
+| `chat_threads` | BE-43 | `cikgu.threads` | `chatbot_conversations` (not migrated in B1) | - | M | T |  |
+| `chat_messages` | BE-43 | `cikgu.messages` | `chatbot_messages` (not migrated in B1) | - | M | - |  |
+| `rph_plans` | BE-43 | `cikgu.rphs` | new | - | - | - |  |
+| `essay_markings` | BE-43 | `cikgu.essays` | new | - | - | T |  |
+| `pbd_tags` | BE-43 | `cikgu.pbdTags` | new | - | - | T |  |
+| `battles` | BE-44 | `m16.battles` | `battles` | W3 | H | - |  |
+| `battle_participants` | BE-44 | `m16.battles` sides | `battle_participants` | W3 | M | - |  |
+| `battle_questions` | BE-44 | `battles.questionIds` | new | - | - | - |  |
+| `battle_answers` | BE-44 | `m16.battleAnswers` | new | - | - | - |  |
+| `battle_queues` | BE-44 | `m16.battleQueues` | transient, not migrated | - | - | - |  |
+| `battle_invitations` | BE-44 | `m16.battleInvitations` | transient, not migrated | - | - | - |  |
+| `tournaments` | BE-44 | `m16.tournaments` | new | - | - | - |  |
+| `tournament_subjects` | BE-44 | `tournaments.mixedSubjectIds` | new | - | - | - |  |
+| `game_rooms` | BE-45 | `m16.gameRooms` | `game_rooms` (optional) | W3 | M | - |  |
+| `game_room_players` | BE-45 | `m16.roomPlayers` | `game_room_players` (optional) | W3 | M | - |  |
+| `game_standings` | BE-45 | `m16.gameStandings` | new | - | - | - |  |
+| `game_sessions` | BE-45 | `m16.gameSessions` | `game_sessions` | W3 | M | T |  |
+| `game_session_items` | BE-45 | `gameSessions.itemIds` | new | - | - | - |  |
+| `personal_bests` | BE-45 | `m16.personalBests` | new | - | - | - |  |
+| `jutawan_stats` | BE-45 | `m16.jutawanStats` | new | - | - | - |  |
+| `spins` | BE-45 | `m16.spins` | new | - | - | T |  |
+| `spin_stats` | BE-45 | `m16.spinStats` | new | - | - | - |  |
+| `pb_searches` | BE-45 | `m16.pbSearches` | transient | - | - | - |  |
+| `game_settings` | BE-45 | `m16.gameSettings` | new | - | - | - |  |
+| `leagues` | BE-45 | `m16.leagues` | not mapped (Q13) | - | - | - |  |
+| `league_class_levels` | BE-45 | `leagues.classLevels` | not mapped | - | - | - |  |
+| `league_schools` | BE-45 | `m16.leagueSchools` | not mapped | - | - | - |  |
+| `league_standings` | BE-45 | `m16.leagueStandings` | not mapped | - | - | - |  |
+| `sekolah_bersaing_weeks` | BE-45 | `m16.sekolahBersaing` | new (not `school_battle_rankings`) | - | - | - |  |
+| `marketplace_categories` | BE-46 | `marketplace.categories` | new | - | - | - |  |
+| `marketplace_sellers` | BE-46 | `marketplace.sellers` | `marketplace_sellers` (staged only in B1) | - | M | - |  |
+| `marketplace_products` | BE-46 | `marketplace.products` | `marketplace_products` (staged only in B1) | - | M | - |  |
+| `marketplace_product_images` | BE-46 | `marketplace.images` | new | - | - | - |  |
+| `marketplace_reviews` | BE-46 | `marketplace.reviews` | new | - | - | - |  |
+| `foster_applications` | BE-47 | `m21.fosterApplications` | `foster_applications` (none in B1, Q7) | - | M | T |  |
+
 #### Unowned / deferred (section 3.13)
 
-`settings`, `feature_flags`, `mood_checkins` (**[rev2]** no card; URS OQ-24), M26 tuition centres and the computed stores of M05/M08/M12 (3.13 and section 5). **D53(a):** PKSK, M06, M13, M16, M20, M21 (student side) are now B1 with pending cards BE-41..BE-47, M18 is BE-21 and Audio KBAT attempts are BE-24 (section 3.12a); the teacher economy is backlog (D53 OWN-10, 3.13).
+`settings`, `feature_flags`, `mood_checkins` (**[rev2]** no card; URS OQ-24), M26 tuition centres and the computed stores of M05/M08/M12 (3.13 and section 5). **D53(a):** PKSK, M06, M13, M16, M20, M21 (student side) are now B1 with cards BE-41..BE-47, M18 is BE-21 and Audio KBAT attempts are BE-24 (section 3.12a); the teacher economy is backlog (D53 OWN-10, 3.13).
 
 ---
 ## 3. Domains: ER diagrams and table specifications
@@ -1221,7 +1279,7 @@ Every transition not in the table of `v2-question-bank` 4.1 is refused (409) and
 
 #### `question_submissions`: dropped (D53 OWN-1, owner decision 2026-10-19)
 
-`intake_batches` (BE-37) is the one Submission table. `question_submissions` is dropped from BE-10 and gets no table; the mock `questionSubmissions` fields (subject text, level, year, paper type, author credit, note, files, status, admin notes) map onto the `intake_batches` declaration fields (3.5). The teacher-submission endpoints of M04 (`GET /api/question-submissions`, `PATCH .../:id/status`, `GET .../:id/files/:index`) are served by BE-37/BE-38 or a BE-10 read over intake (pending card update).
+`intake_batches` (BE-37) is the one Submission table. `question_submissions` is dropped from BE-10 and gets no table; the mock `questionSubmissions` fields (subject text, level, year, paper type, author credit, note, files, status, admin notes) map onto the `intake_batches` declaration fields (3.5). The teacher-submission endpoints of M04 (`GET /api/question-submissions`, `PATCH .../:id/status`, `GET .../:id/files/:index`) are served by BE-37/BE-38 or a BE-10 read over intake (BE-10 and BE-37 now state how: batches list, `GET /api/intake/files/:id/original`, BE-37 cancel and BE-38 reject).
 
 #### `question_imports` (PK, TS, no LEG) owner BE-10 (Excel/CSV only)
 
@@ -2742,23 +2800,204 @@ Owner: BE-34, Prisma file `etl.prisma` (`public` schema). The audited BE-28/BE-2
 
 ---
 
-### 3.12a Modules added to B1 by D53(a) (owner cards BE-41 to BE-48, pending)
+### 3.12a Modules added to B1 by D53(a) (owner cards BE-41 to BE-48)
 
-Owner decision D53(a), 2026-10-19: B1 is every module reachable in the prototype. M06 (the /spm hub, not replaced by M28), M07 PKSK, M13 Cikgu Alesa (AI through the BE-36 adapter), M16 games (replicating the bot simulation), M20 Marketplace, M21 student side only (Penaja out, D48) and M25 (Heatmap Topik Lemah) are B1; M18 Amaran is BE-21 (UD-4); M09 Audio KBAT student play is BE-24. The new cards BE-41 M06, BE-42 M07, BE-43 M13, BE-44 M16 battle, BE-45 M16 papan-bijak + hub, BE-46 M20, BE-47 M21, BE-48 M25 are being written; every table below is **[pending card]** and the card may refine columns. M25 (heatmap) has no table: it is a read model over the answer log (section 5). Rows moved here from the former deferral list of 3.13; "Owner" replaces the "why not B1" column.
+Owner decision D53(a), 2026-10-19: B1 is every module reachable in the prototype. The cards BE-41 to BE-48 are committed; **each table below is copied from the "DB tables" section of its card, and the card wins** (columns, checks and keys). Where a card departs from the mock the card says so; where a card contradicts the mock this section notes it. M18 Amaran is BE-21 (UD-4, `amaran_interventions`, no mock write route); M09 Audio KBAT attempts are BE-24 (`audio_kbat_attempts`, columns in 3.11 when the card is extended). Mapping-matrix proposals of the cards are in GAP-33 to GAP-40 (section 6).
 
-| Mock store (module) | Candidate table | Key columns | .cloud | Owner |
-|---|---|---|---|---|
-| `m07.domains`, `m19.pkskPackages`, `m07.access` | `pksk_domains`, `pksk_packages`, `pksk_accesses` | domain `{bahagian A\|B\|C, name, name_en, code, icon, color, order, is_active}`; package `{name, level T1\|T4\|ALL}`; access `{user_id, package_id, granted_by_id, granted_at, expires_at, status active\|revoked, revoked_at}` | `pksk_packages`, `pksk_accesses`, `pksk_questions` (body only) | BE-42 [pending card] |
-| `m07.examAttempts`, `m07.mastery`, `m07.practiceLoads` | `pksk_exam_attempts`, `pksk_mastery`, `pksk_practice_loads` | `{user_id, level T1\|T4, completed_at, score_pct, bahagian_a/b/c_pct, grade A..E}`; `{user_id, level, domain_id, mastery_pct}`; `{user_id, level, domain_id, loaded_at}` | none | BE-42 [pending card] |
-| `m06.trackingSets`, `m06.mockExams` | `tracking_sets`, `spm_mock_exams` | `{subject_id, year, set_no, question_ids[], dskp_tagged}`; `{user_id, subject_id, paper_number 1\|2, status in_progress\|submitted, score, max_score, grade, items[]}` | `spm_sets`/`spm_set_question` (lists, not migrated), `exam_attempts` | BE-41 [pending card] |
-| `cikgu.threads`, `messages`, `rphs`, `essays`, `pbdTags`, `testState` | `chat_threads`, `chat_messages`, `rph_plans`, `essay_markings`, `pbd_tags` | thread `{user_id}`; message `{thread_id, role user\|bot, text, tool, tool_hops, tokens_in, tokens_out}`; rph `{user_id, subject_name, level, tajuk, class_name, lesson_date, duration_minutes, time_slot, tema, status, source, content, thread_id}`; essay `{user_id, rubric_key, essay_text, marks, max_marks, comment}`; pbd `{user_id, classroom_id, student_id, sp, skor, tp, status, approved_at}`; `testState` is a test hook (mock-only) | `chatbot_conversations`, `chatbot_messages` (anonymous `visitor_id`, `rating`) | BE-43 [pending card] (AI via BE-36 adapter) |
-| `m16.battles`, `battleQueues`, `battleInvitations`, `battleAnswers` | `battles`, `battle_participants`, `battle_answers` | battle `{id uuid, mode quick_match\|school_battle\|challenge\|queue_join, question_type biasa\|pksk\|spm, subject_id, pksk_domain_id, level_id, player_a/b, school_a/b_id, score/correct a/b, answered, winner A\|B\|null, status active\|finished\|forfeited\|abandoned, finished_at, question_ids[]}`; queues and invitations are transient | `battles`, `battle_participants` (normalised, bots), `battle_queue`, `battle_invites` | BE-44/BE-45 [pending card; split TBC] |
-| `m16.tournaments`, `leagues`, `leagueSchools`, `leagueStandings`, `sekolahBersaing`, `storedStandings` | `tournaments`, `leagues`, `league_schools`, `league_standings`, `school_battle_rankings` | tournament `{title, format single_match\|knockout\|league\|hybrid, question_mode subject\|exam_paper\|random_mix, total_questions, time_window_minutes, status draft\|registration\|ongoing\|completed, ...}`; league `{name, type friendly\|tournament\|league, scope school\|district\|state\|national, game_mode, class_levels[], scoring_method, start/end_date, max_schools, invite_code, creator_id, status}` | `leagues`, `league_members` (user groups; divergent concept, Q13), `school_battle_rankings` (aggregate, recompute) | BE-44/BE-45 [pending card; split TBC] |
-| `m16.gameSessions`, `gameRooms`, `roomPlayers`, `gameStandings`, `personalBests`, `jutawanStats`, `spins`, `spinStats`, `pbSearches`, `gameSettings` | `game_sessions`, `game_rooms`, `game_room_players`, `personal_bests`, `spins`, ... | session `{id, user_id, game, darjah, score, coins_computed, coins_credited, is_new_record}`; room `{code, game, subject, grade_level, match_mode, max_players, host_id, status waiting\|playing\|finished\|closed, state}` (state may embed question ids, transient) | `games`, `game_sessions`, `game_rooms`, `game_room_players` | BE-45 [pending card] (hub, games, papan-bijak; split TBC) |
-| `m18.amaranInterventions`, `correctionSubjects` | `amaran_interventions` | `{student_id, teacher_id, school_id, classroom_id, type, intervention_date, status done\|planned, notes, follow_up, effectiveness belum_dinilai\|berkesan\|sederhana\|tidak_berkesan}`; `correctionSubjects` is a computed school/subject aggregate | none (`interventions` is M12) | BE-21 (UD-4) |
-| `marketplace.*` (categories, products, images, sellers, documents, reviews) | `marketplace_*` | seller `{user_id, shop_name, phone, whatsapp, status, verified_at, whatsapp_clicks}`; product `{seller_id, name, slug, category_id, price, original_price, condition, stock_status, status, shipping_method, shipping_fee, location, views}` | `marketplace_sellers`, `marketplace_products`, `marketplace_orders` | BE-46 [pending card] |
-| `m21.sponsors`, `anakAngkat`, `fosterApplications` | `sponsors`, `foster_sponsorships`, `foster_applications` | sponsor `{user_id, name, category, ..., contact_person_name, contact_email, contact_phone, status}`; foster `{sponsor_id, student_id, student_category B40\|Asnaf\|Yatim\|OKU, channel, status}`; application `{student_id, applicant_user_id, applicant_role, student_category, family_income_range, reason, status}` (personal and sensitive: Q7) | `sponsors`, `foster_sponsorships`, `foster_applications` | BE-47 [pending card] (only `foster_applications` is B1; `sponsors`, `foster_sponsorships` stay backlog, Penaja out, D48) |
-| `content.audioKbatAttempts` | `audio_kbat_attempts` | `{set_id, user_id, answers[{no, choice A..D}], score, total_marks, submitted_at}` | none | BE-24 (D53(a)) |
+#### BE-41: M06 SPM hub (the /spm hub, not replaced by M28)
+
+Owned by this card (bigint identity ids as decimal strings, G-01; English enum codes as text + check).
+
+| Table | Columns (all `not null` unless stated) | Keys, checks, indexes |
+|---|---|---|
+| `spm_subject_configs` | `id`, `subject_id` (FK `subjects.id`), `grp` text (`teras`, `elektif`), `display_order` int, `databank_order` int null (null = not on the Tahun Lepas list), `target_type` text null (`spm`, `custom`, `latihan`), `target_size` int null, `created_at`, `updated_at` | `unique (subject_id)`; checks on `grp` and `target_type`; `check ((target_type is null) = (target_size is null))`. Replaces the mock `SPM_SUBJECTS` constants (19 rows, from `mock/data/config.ts`: group order, databank order, targets) |
+| `spm_tracking_sets` | `id`, `subject_id` (FK), `year` int, `set_no` int, `dskp_tagged` int default 0, `created_at`, `updated_at` | `unique (subject_id, year, set_no)`; index `(subject_id, year)`. Status, ready count and bank size are **computed on read** (G-15), never stored |
+| `spm_tracking_set_questions` | `set_id` (FK cascade), `question_id` (FK `questions.id`), `position` int | `unique (set_id, position)`, `unique (set_id, question_id)`; index `(question_id)` |
+| `spm_mock_exams` | `id` uuid (see open question 4), `user_id` (FK), `subject_id` (FK), `subject_label` text (the S11 option text, snapshot), `paper_number` smallint (`1`, `2`), `status` text (`in_progress`, `submitted`), `created_at`, `submitted_at` null, `score` int null, `max_score` int, `percent` numeric(5,2) null, `grade` text null (`A+`, `A`, `B+`, `B`, `C`, `D`, `E`, `G`), `is_test` boolean default false | index `(user_id, created_at desc)`; checks on enums; `is_test` stamped from Mod Pelajar (G-07) |
+| `spm_mock_exam_items` | `id`, `mock_exam_id` (FK cascade), `item_no` int, `question_id` bigint null (FK `questions.id`, on delete set null), `question_text` text, `options` text[] null (Paper 1 only), `model_answer` text, `student_answer` text null, `marks` int null, `max_marks` int, `feedback` text null, `topic` text | `unique (mock_exam_id, item_no)`. A snapshot of the question as served, so a later edit of the bank cannot change a sat mock (G-18) |
+| `duta_profiles` | `id`, `slug` text, `name`, `initials`, `tier` text (`bintang`, `inspirasi`, `tetamu`), `tagline`, `subject` text, `state` text, `rating` numeric(3,2), `is_active` boolean, `created_at`, `updated_at` | `unique (slug)`. **Provisional owner** (the mock hosts `GET /api/duta/recommendations` in M06; the real owner M24 is not built). Rows are fictitious in seeds |
+
+```mermaid
+erDiagram
+  users ||--o{ spm_mock_exams : "sits"
+  subjects ||--o| spm_subject_configs : "configured"
+  subjects ||--o{ spm_tracking_sets : "sets"
+  spm_tracking_sets ||--o{ spm_tracking_set_questions : "lists"
+  questions ||--o{ spm_tracking_set_questions : "in"
+  spm_mock_exams ||--o{ spm_mock_exam_items : "items"
+  subjects ||--o{ spm_mock_exams : "of"
+```
+
+#### BE-42: M07 PKSK
+
+Owned by this card (bigint identity ids as decimal strings, G-01; English enum codes as text + check).
+
+| Table | Columns (all `not null` unless stated) | Keys, checks, indexes |
+|---|---|---|
+| `pksk_domains` | `id`, `bahagian` text (`A`, `B`, `C`), `name`, `name_en`, `code`, `icon` text, `color` text, `display_order` int, `is_active` boolean default true, `created_at`, `updated_at` | `unique (code)`; check on `bahagian`; index `(bahagian, display_order)`. Reference data, 15 rows (below) |
+| `pksk_packages` | `id`, `name`, `level` text (`T1`, `T4`, `ALL`), `created_at`, `updated_at`, `legacy_source`, `legacy_id` | `unique (legacy_source, legacy_id)`; check on `level`. Reference data, 3 rows (below). Provisional owner: the mock hosts it for M19 which has no card |
+| `pksk_accesses` | `id`, `user_id` (FK), `package_id` (FK), `granted_by_id` null (FK `users.id`), `granted_at` timestamptz, `expires_at` date null, `status` text (`active`, `revoked`), `revoked_at` timestamptz null, `created_at`, `updated_at`, `legacy_source`, `legacy_id` | `unique (legacy_source, legacy_id)`; check on `status`; index `(user_id)`, `(granted_at desc, id desc)`. Several rows per user are allowed (BR-M07-14). The mock's display status (`active`, `expired`, `revoked`) is computed, never stored |
+| `pksk_exam_attempts` | `id`, `user_id` (FK), `level` text (`T1`, `T4`), `completed_at` timestamptz, `score_pct` numeric(5,1), `bahagian_a_pct`, `bahagian_b_pct`, `bahagian_c_pct` numeric(5,1), `grade` text (`A`, `B`, `C`, `D`, `E`), `is_test` boolean default false, `created_at` | index `(user_id, level, completed_at desc)`; only completed attempts are stored. Not an M05 session and credits no syiling (SQ-M07-03) |
+| `pksk_mastery` | `id`, `user_id` (FK), `level`, `domain_id` (FK), `mastery_pct` smallint (0 to 100), `is_test`, `created_at`, `updated_at` | `unique (user_id, level, domain_id)`; absent row means 0 |
+| `pksk_practice_loads` | `id`, `user_id` (FK), `level`, `domain_id` (FK), `loaded_at` timestamptz | `unique (user_id, level, domain_id)`; upserted when a practice set is served and deleted when it is submitted; it only supplies the session start time (BR-M07-26 (1)) |
+
+```mermaid
+erDiagram
+  pksk_packages ||--o{ pksk_accesses : "granted as"
+  users ||--o{ pksk_accesses : "holds"
+  users ||--o{ pksk_exam_attempts : "sits"
+  users ||--o{ pksk_mastery : "has"
+  pksk_domains ||--o{ pksk_mastery : "of"
+  pksk_domains ||--o{ pksk_practice_loads : "of"
+  users ||--o{ pksk_practice_loads : "loads"
+```
+
+#### BE-43: M13 Cikgu Alesa (AI through the BE-36 adapter)
+
+New (owner this card): `chat_threads`, `chat_messages`, `rph_plans`, `essay_markings`, `pbd_tags`. Read through other owners' services: users (BE-05), subjects (BE-08), classes and enrolments (BE-17), practice answers (BE-12).
+
+| Table | Columns (types per G-01 to G-10) | Keys and indexes |
+|---|---|---|
+| `chat_threads` | `user_id` FK users, `created_at`, `updated_at`, `is_test` | index `(user_id, updated_at)`; legacy columns (G-03) |
+| `chat_messages` | `thread_id` FK cascade, `user_id` FK (copy of the thread owner, for the quota query), `role` check `user`/`bot`, `text`, `tool` null check `mark_essay`/`rph`/`practice`, `tool_hops` smallint check 0/1, `tokens_in`, `tokens_out` int, `created_at`, `is_test` | index `(user_id, created_at)` for the daily count; `(thread_id, created_at)`; legacy columns |
+| `rph_plans` | `user_id` FK, `subject_name` (<=100), `level` check D1..D6/T1..T5, `tajuk` (<=200), `class_name`, `lesson_date` date, `duration_minutes` smallint check 15..240, `time_slot`, `tema`, `pengajaran_keperluan` (nullable text), `status` check `generated`, `source` check `form`/`chat`, `content` text, `thread_id` FK null, `created_at`, `is_test` | index `(user_id, lesson_date desc, id desc)` |
+| `essay_markings` | `user_id` FK, `rubric_key` check the six keys, `subject_name`, `level`, `student_name`, `essay_title` (all nullable free text), `essay_text`, `marks` int, `max_marks` int, `comment`, `thread_id` FK, `created_at`, `is_test` | index `(user_id, created_at desc, id desc)` |
+| `pbd_tags` | `user_id` FK (teacher), `classroom_id` FK, `student_id` FK users, `sp` text, `skor` numeric(4,1), `tp` smallint check 1..6, `status` check `pending`/`approved`, `created_at` (roll-up time), `approved_at` null, `is_test` | `unique (user_id, classroom_id, student_id, sp)`; partial index on `status = 'pending'` by `(user_id, created_at desc)` |
+
+```mermaid
+erDiagram
+  users ||--o{ chat_threads : "chats"
+  chat_threads ||--o{ chat_messages : "messages"
+  users ||--o{ rph_plans : "plans"
+  users ||--o{ essay_markings : "marks"
+  chat_threads ||--o{ essay_markings : "from"
+  users ||--o{ pbd_tags : "tags"
+  classrooms ||--o{ pbd_tags : "class"
+```
+
+#### BE-44: M16 battle, standings, tournaments (M16-01..21, M16-42..45)
+
+All owned by this card. Conventions: G-01 (bigint identity ids serialised as decimal strings; **uuid** for `battles` and `battle_invitations`, which are session-like records and whose uuid is already the wire id), G-02 / G-03 (`LEG` columns only where noted), G-04 (`timestamptz`; the stored epoch-millisecond twins `createdAtMs` of the mock are computed, never stored), G-05 (English codes as `text` + `check`), G-07 (`is_test` where an admin or Mod Pelajar session can write), G-08, G-09 (no soft delete). Columns are proposed from the mock row types (`[P]`); the PR finalises names and records them in the mapping matrix and in data model section 3.14 (Open question 9).
+
+| Table | Purpose and key columns | Notes |
+|---|---|---|
+| `battles` | uuid PK; `mode` (`quick_match`, `school_battle`, `challenge`, `queue_join`); `question_type` (`biasa`, `pksk`, `spm`); `subject_id` FK subjects null; `pksk_domain_id` bigint null (no FK, Open question 6); `pksk_target_level` (`T1`, `T4`) null; `level_id` FK education_levels null (the queue owner's level at creation); `answered` smallint; `winner` (`A`, `B`) null; `status` (`active`, `finished`, `forfeited`, `abandoned`); `finished_at` null; `is_test`; `created_at` | `LEG+H` (migratable: `.cloud` `battles`). Index `(status, created_at)`. Winner is stored when the battle ends |
+| `battle_participants` | `battle_id` FK, `side` (`A`, `B`), `user_id` FK users, `school_id` FK schools null (school **at battle time**), `is_bot` boolean, `score` int, `correct` smallint; unique `(battle_id, side)` | `LEG` (`.cloud` `battle_participants`). The mock keeps scores in wide columns (`scoreA`, `correctA`, ...); this normalised shape is the `.cloud` one and the service re-assembles the wide view. Indexes `(user_id)`, `(school_id)` for the standings |
+| `battle_questions` | `battle_id` FK, `position` smallint 1..10, `question_id` FK questions; unique `(battle_id, position)` | The ten questions drawn once at creation (the mock's `questionIds[]`; a list of rows is a table, G-11). Born in v2, no `LEG` |
+| `battle_answers` | `battle_id` FK, `user_id` FK, `position`, `question_id`, `option_id` smallint 0..3 null (null = timeout), `correct`, `seconds` smallint 0..15, `points` int; unique `(battle_id, user_id, position)` | Holds the human's answers and the bot's pre-computed answers (the mock stores both at answer time). Born in v2, no `LEG` |
+| `battle_queues` | bigint identity PK (wire: decimal string); `owner_id` FK, `mode` (`quick_match`, `school_battle`), `question_type`, `subject_id`, `pksk_*`, `open_to_all` boolean, `status` (`waiting`, `incoming_challenge`, `matched`, `expired`, `abandoned`), `challenger_user_id` FK null, `battle_id` FK null, `polls` int, `wait_polls` int, `last_polled_at`, `joiner_user_id` FK null, `joiner_outcome` (`pending`, `matched`, `rejected`, `expired`) null, `created_at` | Transient. The mock's `sim` field is a test hook and is **not** stored (default behaviour is the mock's `match` mode). Index `(owner_id)`. Not migrated (transient) |
+| `battle_invitations` | uuid PK; `sender_id`, `receiver_id` FK users, `question_type`, `subject_id`, `pksk_*`, `status` (`pending`, `accepted`, `declined`, `expired`), `created_at` | Transient. Index `(receiver_id, status)`. Not migrated (transient) |
+| `tournaments` | uuid PK; `title` text (1..255); `description` text; `education_level_id` (`tingkatan4`, `tingkatan5`, `spm`); `format` (`single_match`, `knockout`, `league`, `hybrid`); `groups_count` smallint null; `question_mode` (`subject`, `exam_paper`, `random_mix`); `subject_id` FK null; `exam_paper_id` null (always null: refused); `total_questions`; `time_window_minutes`; `top_n_scoring`; `min_participants`; `registration_opens_at`, `registration_closes_at` timestamptz null; `status` (`draft`, `registration`, `ongoing`, `completed`); `created_by` FK users; `created_at` | Born in v2 (no `.cloud` source), no `LEG`. The mock's `liveMatch` is never written by any route or job (only test fixtures set it), so there is no column; the API returns `null`. Index `(status, registration_opens_at)` |
+| `tournament_subjects` | `tournament_id` FK, `subject_id` FK; unique pair | The mock's `mixedSubjectIds[]` (list of rows is a table) |
+
+```mermaid
+erDiagram
+  battles ||--o{ battle_participants : "sides"
+  battles ||--o{ battle_questions : "draws"
+  battles ||--o{ battle_answers : "answers"
+  users ||--o{ battle_participants : "plays"
+  schools ||--o{ battle_participants : "at time"
+  users ||--o{ battle_queues : "owns"
+  users ||--o{ battle_invitations : "sends"
+  tournaments ||--o{ tournament_subjects : "mixes"
+  subjects ||--o{ tournament_subjects : "in"
+```
+
+#### BE-45: M16 games hub, papan-bijak, leagues, Sekolah Bersaing, admin games (M16-22..41, M16-46..52)
+
+All owned by this card. Conventions as in BE-44: G-01 (bigint identity ids as decimal strings; **uuid** for `game_sessions`, which is session-like; the six-character code is the natural key of `game_rooms`), G-04, G-05, G-07 (`is_test` on user-written rows), G-08, G-09. Columns are proposed from the mock row types (`[P]`); the PR finalises names and records them in the mapping matrix and in data model section 3.14 (Open question 10).
+
+| Table | Purpose and key columns | Notes |
+|---|---|---|
+| `game_rooms` | `code` text(6) PK (random, unique; drawn from a named PRNG stream, retried on collision); `game` (the six room games); `subject` (`MATEMATIK`, `BAHASA_MELAYU`, `BAHASA_INGGERIS`, `SAINS`, `SEJARAH`) stored as an English code of the subject (Open question 5); `grade_level` (`DARJAH_1`..`DARJAH_6`, `TINGKATAN_1`..`TINGKATAN_5`); `match_mode` (`same_grade`, `same_level`, `custom`); `grade_min`, `grade_max` smallint null; `max_players` smallint; `host_id` FK users; `status` (`waiting`, `playing`, `finished`, `closed`); `started_at`, `finished_at` null; `state` jsonb null; `is_test`; `created_at` | `LEG` (`.cloud` `game_rooms`; transient, completed rooms only if the lead wants history, Open question 9). `state` is the engine document of the mock (`RoomState`: round, question pool ids, cursor, board, positions, meters, words, facts, team scores, log, round clock); it is a transient document written whole and never queried: an explicit G-11 exception to be recorded in the data model. Index `(status, created_at)`, `(host_id)` |
+| `game_room_players` | `room_code` FK, `user_id` FK, `team` smallint null, `points` int, `correct` smallint, `is_bot` boolean, `joined_at`; unique `(room_code, user_id)` | `LEG` (`.cloud` `game_room_players`). Index `(user_id)` |
+| `game_standings` | `game` (the six room games), `user_id` FK, `wins` int, `jumlah` int, `skor` int, `betul` int, `reached_at` timestamptz; unique `(game, user_id)` | Lobby leaderboards. Born in v2 (no `.cloud` source), no `LEG`. The mock's `orderKey` (stored order of the observed seed) is replaced by the identity `id` (creation order) as the last tie-break, and the seed inserts rows in the observed order |
+| `game_sessions` | uuid PK; `user_id` FK; `game` text check (`betul-salah`, `cabaran-kilat`, `tembak-jawapan`, `susun-jawapan`, `kad-memori`, `jutawan`); `darjah` smallint null; `item_count` smallint null; `max_score` int null; `score` int; `coins_computed` int; `coins_credited` int; `is_new_record` boolean; `submitted_at` null; Jutawan columns: `jutawan_subject_id` FK null, `jutawan_level` smallint, `jutawan_lifelines` smallint, `jutawan_removed_options` smallint[] (the 50:50 removal for the current question, empty otherwise), `jutawan_over` boolean; `is_test`; `created_at` | `LEG` (`.cloud` `game_sessions`: `game_id`, `score`, `result`; see mapping). The session id on the wire is the uuid string (the mock's `tf_`, `speed_`, `shoot_`, `ws_`, `mem_`, `jut_` prefixes are not carried; the client treats it as opaque). Unique use: one submit per session. Index `(user_id, game)` |
+| `game_session_items` | `session_id` FK, `position` smallint, `question_id` FK questions; unique `(session_id, position)` | The ids served in a solo payload or Jutawan run (the mock's `itemIds`), needed to check a submit and the Jutawan current question. Born in v2, no `LEG` |
+| `personal_bests` | `user_id` FK, `game` text, `best_score` int; unique `(user_id, game)` | Born in v2 |
+| `jutawan_stats` | `user_id` FK unique, `best_level` smallint, `games` int | Born in v2 |
+| `spins` | `user_id` FK, `spin_date` date (Malaysia calendar day), `segment_index` smallint 0..7, `type` (`syiling`, `nothing`), `value` int, `credited` int, `created_at`; **unique `(user_id, spin_date)`** | Enforces one spin per Malaysia day race-safely. Born in v2 |
+| `spin_stats` | `user_id` FK unique, `spins` int, `won` int, `last_spin_date` date null | Born in v2 |
+| `pb_searches` | `user_id` FK, `subject`, `match_mode` (`same_grade`, `same_level`), `status` (`searching`, `matched`, `expired`, `cancelled`), `polls` int, `room_code` FK null, `created_at` | Transient. The mock's `sim` field is a test hook and is not stored. Index `(user_id, created_at)` |
+| `game_settings` | one row: `boardgame_quiz_tiles` smallint 0..38 (check) | Born in v2. The "plain tiles" figure is derived: `max(0, 48 - 10 - quiz_tiles)` |
+| `leagues` | bigint identity PK; `name` (1..255); `type` (`friendly`, `tournament`, `league`); `scope` (`school`, `district`, `state`, `national`); `subject_id` FK null; `game_mode` (`mixed`, `quiz`, `multiplayer`); `scoring_method` (`total_score`, `avg_accuracy`, `wins`); `start_date`, `end_date` date; `max_schools` smallint null (2..500); `invite_code` text(8) unique (A-Z0-9); `creator_id` FK users; `status` (`upcoming`, `ongoing`, `ended`); `created_at` | `.cloud` leagues are user groups with member users (divergent concept, data migration Q13): **no mapping** until the lead answers, so no `LEG` columns are needed yet; if Q13 says "keep both", add them in a follow-up migration (Open question 9) |
+| `league_class_levels` | `league_id` FK, `level` (`D1`..`D6`, `T1`..`T5`); unique pair | The mock's `classLevels[]` (list of rows is a table) |
+| `league_schools` | `league_id` FK, `school_id` FK, `joined_at`; unique `(league_id, school_id)` | |
+| `league_standings` | `league_id` FK, `level`, `school_id` FK, `peserta` int, `skor` numeric(10,1), `purata` numeric(5,1), `sort_order` int | Stored output of an hourly job in the mock, never recomputed (OQ-M16-09, BR-M16-34); B1 is seed-only (Open question 7) |
+| `sekolah_bersaing_weeks` | `week_start` date (Monday), `rank` smallint, `school_id` FK, `aktif_pct` numeric(5,1), `streak_avg` numeric(5,1), `nota_per_10` numeric(5,1), `is_anonymous` boolean; unique `(week_start, rank)` | Stored weekly snapshot; the weekly job is undefined (OQ-API-B4-14, Open question 7). `.cloud` `school_battle_rankings` is an aggregate and is not migrated |
+
+```mermaid
+erDiagram
+  game_rooms ||--o{ game_room_players : "players"
+  users ||--o{ game_room_players : "joins"
+  users ||--o{ game_standings : "ranked"
+  users ||--o{ game_sessions : "plays"
+  game_sessions ||--o{ game_session_items : "serves"
+  users ||--o{ personal_bests : "best"
+  users ||--o| jutawan_stats : "stats"
+  users ||--o{ spins : "spins"
+  users ||--o| spin_stats : "totals"
+  users ||--o{ pb_searches : "searches"
+  leagues ||--o{ league_class_levels : "levels"
+  leagues ||--o{ league_schools : "members"
+  leagues ||--o{ league_standings : "table"
+  schools ||--o{ league_schools : "joins"
+  schools ||--o{ sekolah_bersaing_weeks : "ranked"
+```
+
+#### BE-46: M20 Marketplace (buyer slice)
+
+New (owner this card): `marketplace_categories`, `marketplace_sellers`, `marketplace_products`, `marketplace_product_images`, `marketplace_reviews`. Reads `users` only for the FK.
+
+| Table | Columns (types per G-01 to G-10) | Keys and indexes |
+|---|---|---|
+| `marketplace_categories` | `slug` unique, `name`, `icon` (text, verbatim from the mock e.g. `fa-pencil-ruler`) | static reference data, seeded |
+| `marketplace_sellers` | `user_id` FK users unique, `shop_name`, `description` null, `phone`, `whatsapp`, `status` check `pending`/`active`/`suspended`/`banned`, `verified_at` null, `whatsapp_clicks` int default 0, `created_at` | index `(status)`; legacy columns |
+| `marketplace_products` | `seller_id` FK null (platform product), `name`, `slug` unique, `category_id` FK, `price` numeric(10,2), `original_price` numeric(10,2) null, `description` null, `condition` check `new`/`used`, `stock_status` check `available`/`out_of_stock`, `status` check `active`/`draft`/`rejected`, `shipping_method` check `pickup`/`postage`/`cod`/`free`, `shipping_fee` numeric(10,2) null, `location` text not null default `''`, `views` int default 0, `created_at`, `updated_at` | indexes `(status, category_id)`, `(seller_id)`, `(created_at desc, id)`; legacy columns |
+| `marketplace_product_images` | `product_id` FK cascade, `position` smallint (1 = "Utama"), `url` text | `unique (product_id, position)` |
+| `marketplace_reviews` | `product_id` FK cascade, `user_id` FK, `rating` smallint check 1..5, `text`, `created_at` | index `(product_id, created_at desc)`; read only in B1 (no submission route; empty in the seed) |
+
+```mermaid
+erDiagram
+  users ||--o| marketplace_sellers : "is"
+  marketplace_sellers ||--o{ marketplace_products : "sells"
+  marketplace_categories ||--o{ marketplace_products : "groups"
+  marketplace_products ||--o{ marketplace_product_images : "images"
+  marketplace_products ||--o{ marketplace_reviews : "reviews"
+  users ||--o{ marketplace_reviews : "writes"
+```
+
+#### BE-47: M21 Mohon Keluarga Angkat (student side only; Penaja out, D48)
+
+New (owner this card): `foster_applications`. Reads `users` only through BE-05's `findByEmail`.
+
+| Column | Type | Notes |
+|---|---|---|
+| id | bigint identity | wire: decimal string |
+| student_id | bigint FK users, not null | the student found by e-mail |
+| applicant_user_id | bigint FK users, not null | session user |
+| applicant_role | text, not null | role code of the session user at submission, stored raw |
+| student_category | text, not null, check in the five values | verbatim wire values (Open questions 2) |
+| family_income_range | text, null, check null or the four values | verbatim wire values |
+| reason | text, not null | up to 5,000 characters |
+| status | text, not null, default `pending`, check `pending`/`approved`/`matched`/`rejected` | only `pending` is ever written in B1 |
+| created_at | timestamptz | |
+| is_test | boolean default false | G-07: stamped from the session mode |
+| legacy_source, legacy_id | text null, `unique (legacy_source, legacy_id)` | G-02 |
+
+```mermaid
+erDiagram
+  users ||--o{ foster_applications : "student"
+  users ||--o{ foster_applications : "applicant"
+```
+
+#### BE-48: M25 Heatmap Topik Lemah
+
+None created. Read only, through owners' repositories: `practice_answers` (BE-12, columns `user_id`, `chapter_id`, `is_correct`, `is_test` only), `chapters` and `subjects` (BE-08). No table, no cache table, no materialised view in B1 (G-15: derived values are not stored twice).
+
+No table. This is a read model (section 5): computed from `practice_answers`, `chapters` and `subjects`.
+
+Notes from the cards: `duta_profiles` (BE-41) has a **provisional owner** (the mock hosts `GET /api/duta/recommendations` in M06; the real owner M24 is not built). `pksk_packages` and `pksk_accesses` can receive .cloud rows (BE-42); `pksk_domain_id` on `battles` has no FK (BE-44, open question 6). `leagues` have no .cloud mapping (data-migration Q13). The mock `documents` table of M20 and the `sponsors`, `foster_sponsorships` tables of M21 are not created.
 
 ---
 
@@ -3061,8 +3300,16 @@ Comparison of this model with plan section 14.7 (the mapping matrix), `v2-data-m
 | GAP-29 | School | `schools.join_code` has no counterpart in the mock `School` type; `city` (mock) has no .cloud column in the migration doc. | `city` stays nullable; `join_code` is from .cloud (`join_code`, kept). | L |
 | GAP-30 | Coin ledger | The matrix keeps `balance_after` and reconciles. The idempotency key `(user_id, source, source_id)` is null for migrated rows (no `ref_id` in .cloud); `source` must be one of the profiled values. | Confirm that migrated rows leave `source_id` null and are excluded from the idempotent-credit unique index (partial index, done in 3.7). | L |
 | GAP-31 | Support ticket, Article, Note, Video | Enum maps are listed as "BM status -> English" only for tickets; articles, notes, videos use upper-case or mixed-case mock values (`TIPS_BELAJAR`, `Youtube`). | Add enum maps for every text column with a CHECK to the profile list (BE-27) per plan 14.2. | L |
+| GAP-33 | M06 hub (BE-41) | No mapping row: none of the `spm_*` tables or `duta_profiles` is migratable (`.cloud` `spm_sets`/`spm_set_question` are plain lists, not migrated). | Add rows "not migrated" with the reason (BE-41 proposes this in its PR). | L |
+| GAP-34 | PKSK (BE-42) | `pksk_packages` and `pksk_accesses` can receive .cloud rows (status word `aktif` to `active`); the four other tables are born in v2; .cloud `pksk_questions` are not migrated. Overlaps GAP-22. | Add rows for packages and accesses with BE-29 as the ETL card; "not migrated" for the rest. | M |
+| GAP-35 | Cikgu Alesa (BE-43) | `chatbot_conversations`/`chatbot_messages` map to `chat_threads`/`chat_messages` "not migrated in B1"; `rph_plans`, `essay_markings`, `pbd_tags` have no source. | Add the rows as the card proposes. | L |
+| GAP-36 | Battle (BE-44) | Rows proposed by the card: battle (reshape, `1v1` mode has no v2 code, its OQ 10), battle participant (pairs into sides A/B), queue and invites (drop), school battle ranking (drop, recomputed), tournaments/answers/questions/subjects (born in v2). | Add the five rows; ETL card BE-29, lead confirms. | M |
+| GAP-37 | Games (BE-45) | Rows proposed by the card: game catalogue (drop), game session (reshape, BE-29), game room and player (optional BE-29), league and member (not mapped, Q13), school battle ranking is not the target of `sekolah_bersaing_weeks`, the rest born in v2. | Add the rows; decide Q13 for leagues. | M |
+| GAP-38 | Marketplace (BE-46) | `marketplace_sellers`/`marketplace_products` reshape with ETL "none in B1 (staged and profiled only)"; `marketplace_orders` drop (D14); categories, images, reviews have no source. | Add the rows as the card proposes. | L |
+| GAP-39 | Keluarga angkat (BE-47) | `foster_applications` (.cloud: free-text `applicant_name`, no applicant user, no income range) ETL "none in B1" (Q7); `sponsors`, `foster_sponsorships` out of B1 (Penaja, D48). | Add the row; keep sensitive records unloaded until a user can be matched. | L |
+| GAP-40 | Heatmap (BE-48) | Derived entity: no old table, no new table, no ETL (computed from `practice_answers`, `chapters`, `subjects`). | Add the "derived" row. | L |
 
-Counts **[rev2]**: 32 findings numbered GAP-1 to GAP-32; GAP-14 is resolved, so 31 are open (6.1 = 10, 6.2 = 5 open + 1 resolved, 6.3 = 16).
+Counts **[rev2]**: 32 findings numbered GAP-1 to GAP-32; GAP-14 is resolved, so 31 are open (6.1 = 10, 6.2 = 5 open + 1 resolved, 6.3 = 16). **[D53]** GAP-33 to GAP-40 (mapping rows proposed by cards BE-41 to BE-48, all in 6.3) bring the total to 40 findings, 39 open.
 
 ---
 

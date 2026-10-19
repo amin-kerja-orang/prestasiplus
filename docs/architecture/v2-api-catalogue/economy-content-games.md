@@ -10,10 +10,10 @@ The frontend mock server is the behavioural spec for the real NestJS API (plan `
 |---|---|---|---|---|---|---|
 | M14 | Gamification (wallet, ledger, tiers, challenges, teacher economy, reward control) | `src/modules/m14-gamification/mock/handlers/{student,teacher,admin-economy,admin-ops}.ts` | **42** | 32 | BE-11 (3 routes), BE-23 (rest) | in B1 |
 | M15 | Rewards shop (Hadiah, Kotak Misteri, Cabutan, parent consent) | `src/modules/m15-rewards-shop/mock/handlers/{user,admin}.ts` | **18** | 18 | BE-23 | in B1 |
-| M16 | Battle, games, tournaments, leagues, Sekolah Bersaing | `src/modules/m16-battle-games/mock/handlers/{battle,standings,games,tournaments,leagues,admin-games}.ts` | **52** | 28 | BE-44/BE-45 [pending card; split TBC] | in B1 (D53(a)) |
+| M16 | Battle, games, tournaments, leagues, Sekolah Bersaing | `src/modules/m16-battle-games/mock/handlers/{battle,standings,games,tournaments,leagues,admin-games}.ts` | **52** | 28 | BE-44/BE-45 | in B1 (D53(a)) |
 | M09 | Content (articles, notes, banners, videos, perutusan, audio KBAT, screenshots, support config) | `src/modules/m09-content/mock/handlers/*.ts` | **43** | 25 | BE-24 | in B1 (Audio KBAT student play in BE-24, D53(a)) |
-| M20 | Marketplace (buyer slice) | `src/modules/m20-marketplace/mock/handlers/buyer.ts` | **5** | 5 | BE-46 [pending card] | in B1 (D53(a)) |
-| M21 | Foster-family application | `src/modules/m21-sponsorship/mock/handlers/foster-application.ts` | **1** | 1 | BE-47 [pending card] | student side in B1 (D53(a)); sponsor portal out |
+| M20 | Marketplace (buyer slice) | `src/modules/m20-marketplace/mock/handlers/buyer.ts` | **5** | 5 | BE-46 | in B1 (D53(a)) |
+| M21 | Foster-family application | `src/modules/m21-sponsorship/mock/handlers/foster-application.ts` | **1** | 1 | BE-47 | student side in B1 (D53(a)); sponsor portal out |
 | M22 | Support tickets | `src/modules/m22-support-tickets/mock/handlers/tickets.ts` | **4** | 4 | BE-24 | in B1 |
 | | | | **165** | 113 | | |
 
@@ -116,58 +116,58 @@ Contract status counts: `exists` 0, `partial` 0, `missing` 165. Card column: BE 
 | M15-16 | GET | `/api/admin/hadiah/:id` | admin | BE-23 | missing |
 | M15-17 | POST | `/api/admin/hadiah` | admin | BE-23 | missing |
 | M15-18 | PUT | `/api/admin/hadiah/:id` | admin | BE-23 | missing |
-| M16-01 | GET | `/api/tournament/active` | any session | BE-44/BE-45 [pending card; split TBC] | missing |
-| M16-02 | POST | `/api/battle/quick-match` | any session | BE-44/BE-45 [pending card; split TBC] | missing |
-| M16-03 | POST | `/api/battle/school-battle` | any session | BE-44/BE-45 [pending card; split TBC] | missing |
-| M16-04 | GET | `/api/battle/poll-match/:queueId` | any session | BE-44/BE-45 [pending card; split TBC] | missing |
-| M16-05 | POST | `/api/battle/accept-challenger/:queueId` | any session | BE-44/BE-45 [pending card; split TBC] | missing |
-| M16-06 | POST | `/api/battle/reject-challenger/:queueId` | any session | BE-44/BE-45 [pending card; split TBC] | missing |
-| M16-07 | GET | `/api/battle/search-opponent` | any session | BE-44/BE-45 [pending card; split TBC] | missing |
-| M16-08 | POST | `/api/battle/invite` | any session | BE-44/BE-45 [pending card; split TBC] | missing |
-| M16-09 | GET | `/api/battle/invitations` | any session | BE-44/BE-45 [pending card; split TBC] | missing |
-| M16-10 | POST | `/api/battle/invite/:uuid/accept` | any session | BE-44/BE-45 [pending card; split TBC] | missing |
-| M16-11 | POST | `/api/battle/invite/:uuid/decline` | any session | BE-44/BE-45 [pending card; split TBC] | missing |
-| M16-12 | POST | `/api/battle/join-queue/:queueId` | any session | BE-44/BE-45 [pending card; split TBC] | missing |
-| M16-13 | GET | `/api/battle/poll-challenger/:queueId` | any session | BE-44/BE-45 [pending card; split TBC] | missing |
-| M16-14 | POST | `/api/battle/forfeit/:uuid` | any session | BE-44/BE-45 [pending card; split TBC] | missing |
-| M16-15 | GET | `/api/battle/lobby` | any session | BE-44/BE-45 [pending card; split TBC] | missing |
-| M16-16 | GET | `/api/battle/arena/:uuid` | any session | BE-44/BE-45 [pending card; split TBC] | missing |
-| M16-17 | POST | `/api/battle/arena/:uuid/answer` | any session | BE-44/BE-45 [pending card; split TBC] | missing |
-| M16-18 | GET | `/api/battle/standings/students` | any session | BE-44/BE-45 [pending card; split TBC] | missing |
-| M16-19 | GET | `/api/battle/standings/schools` | any session | BE-44/BE-45 [pending card; split TBC] | missing |
-| M16-20 | GET | `/api/battle/schools/:id` | any session | BE-44/BE-45 [pending card; split TBC] | missing |
-| M16-21 | GET | `/api/battle/history` | any session | BE-44/BE-45 [pending card; split TBC] | missing |
-| M16-22 | GET | `/api/games/hub` | any session | BE-44/BE-45 [pending card; split TBC] | missing |
-| M16-23 | GET | `/api/games/:game/lobby` | any session | BE-44/BE-45 [pending card; split TBC] | missing |
-| M16-24 | POST | `/api/games/:game/rooms` | any session | BE-44/BE-45 [pending card; split TBC] | missing |
-| M16-25 | POST | `/api/games/:game/rooms/join` | any session | BE-44/BE-45 [pending card; split TBC] | missing |
-| M16-26 | GET | `/api/games/:game/rooms/:code` | any session | BE-44/BE-45 [pending card; split TBC] | missing |
-| M16-27 | POST | `/api/games/:game/rooms/:code/start` | any session | BE-44/BE-45 [pending card; split TBC] | missing |
-| M16-28 | POST | `/api/games/:game/rooms/:code/action` | any session | BE-44/BE-45 [pending card; split TBC] | missing |
-| M16-29 | POST | `/api/papan-bijak/quick-match` | any session | BE-44/BE-45 [pending card; split TBC] | missing |
-| M16-30 | GET | `/api/papan-bijak/quick-match/poll` | any session | BE-44/BE-45 [pending card; split TBC] | missing |
-| M16-31 | POST | `/api/papan-bijak/quick-match/cancel` | any session | BE-44/BE-45 [pending card; split TBC] | missing |
-| M16-32 | GET | `/api/games/solo/:game` | any session | BE-44/BE-45 [pending card; split TBC] | missing |
-| M16-33 | POST | `/api/games/solo/:game/submit` | any session | BE-44/BE-45 [pending card; split TBC] | missing |
-| M16-34 | GET | `/api/games/roda-nasib` | any session | BE-44/BE-45 [pending card; split TBC] | missing |
-| M16-35 | POST | `/api/games/roda-nasib/spin` | any session | BE-44/BE-45 [pending card; split TBC] | missing |
-| M16-36 | GET | `/api/games/jutawan` | any session | BE-44/BE-45 [pending card; split TBC] | missing |
-| M16-37 | POST | `/api/games/jutawan/start` | any session | BE-44/BE-45 [pending card; split TBC] | missing |
-| M16-38 | POST | `/api/games/jutawan/:sessionId/answer` | any session | BE-44/BE-45 [pending card; split TBC] | missing |
-| M16-39 | POST | `/api/games/jutawan/:sessionId/lifeline` | any session | BE-44/BE-45 [pending card; split TBC] | missing |
-| M16-40 | GET | `/api/games/pertandingan` | any session | BE-44/BE-45 [pending card; split TBC] | missing |
-| M16-41 | GET | `/api/games/uji-minda` | any session | BE-44/BE-45 [pending card; split TBC] | missing |
-| M16-42 | GET | `/api/tournaments` | any session | BE-44/BE-45 [pending card; split TBC] | missing |
-| M16-43 | GET | `/api/tournaments/form-options` | admin | BE-44/BE-45 [pending card; split TBC] | missing |
-| M16-44 | POST | `/api/tournaments` | admin | BE-44/BE-45 [pending card; split TBC] | missing |
-| M16-45 | GET | `/api/tournaments/:uuid` | any session | BE-44/BE-45 [pending card; split TBC] | missing |
-| M16-46 | GET | `/api/leagues` | any session | BE-44/BE-45 [pending card; split TBC] | missing |
-| M16-47 | POST | `/api/leagues` | any session | BE-44/BE-45 [pending card; split TBC] | missing |
-| M16-48 | POST | `/api/leagues/join` | any session | BE-44/BE-45 [pending card; split TBC] | missing |
-| M16-49 | GET | `/api/leagues/:id` | any session | BE-44/BE-45 [pending card; split TBC] | missing |
-| M16-50 | GET | `/api/sekolah-bersaing` | any session | BE-44/BE-45 [pending card; split TBC] | missing |
-| M16-51 | GET | `/api/admin/games` | admin | BE-44/BE-45 [pending card; split TBC] | missing |
-| M16-52 | PUT | `/api/admin/games/settings` | admin | BE-44/BE-45 [pending card; split TBC] | missing |
+| M16-01 | GET | `/api/tournament/active` | any session | BE-44 | missing |
+| M16-02 | POST | `/api/battle/quick-match` | any session | BE-44 | missing |
+| M16-03 | POST | `/api/battle/school-battle` | any session | BE-44 | missing |
+| M16-04 | GET | `/api/battle/poll-match/:queueId` | any session | BE-44 | missing |
+| M16-05 | POST | `/api/battle/accept-challenger/:queueId` | any session | BE-44 | missing |
+| M16-06 | POST | `/api/battle/reject-challenger/:queueId` | any session | BE-44 | missing |
+| M16-07 | GET | `/api/battle/search-opponent` | any session | BE-44 | missing |
+| M16-08 | POST | `/api/battle/invite` | any session | BE-44 | missing |
+| M16-09 | GET | `/api/battle/invitations` | any session | BE-44 | missing |
+| M16-10 | POST | `/api/battle/invite/:uuid/accept` | any session | BE-44 | missing |
+| M16-11 | POST | `/api/battle/invite/:uuid/decline` | any session | BE-44 | missing |
+| M16-12 | POST | `/api/battle/join-queue/:queueId` | any session | BE-44 | missing |
+| M16-13 | GET | `/api/battle/poll-challenger/:queueId` | any session | BE-44 | missing |
+| M16-14 | POST | `/api/battle/forfeit/:uuid` | any session | BE-44 | missing |
+| M16-15 | GET | `/api/battle/lobby` | any session | BE-44 | missing |
+| M16-16 | GET | `/api/battle/arena/:uuid` | any session | BE-44 | missing |
+| M16-17 | POST | `/api/battle/arena/:uuid/answer` | any session | BE-44 | missing |
+| M16-18 | GET | `/api/battle/standings/students` | any session | BE-44 | missing |
+| M16-19 | GET | `/api/battle/standings/schools` | any session | BE-44 | missing |
+| M16-20 | GET | `/api/battle/schools/:id` | any session | BE-44 | missing |
+| M16-21 | GET | `/api/battle/history` | any session | BE-44 | missing |
+| M16-22 | GET | `/api/games/hub` | any session | BE-45 | missing |
+| M16-23 | GET | `/api/games/:game/lobby` | any session | BE-45 | missing |
+| M16-24 | POST | `/api/games/:game/rooms` | any session | BE-45 | missing |
+| M16-25 | POST | `/api/games/:game/rooms/join` | any session | BE-45 | missing |
+| M16-26 | GET | `/api/games/:game/rooms/:code` | any session | BE-45 | missing |
+| M16-27 | POST | `/api/games/:game/rooms/:code/start` | any session | BE-45 | missing |
+| M16-28 | POST | `/api/games/:game/rooms/:code/action` | any session | BE-45 | missing |
+| M16-29 | POST | `/api/papan-bijak/quick-match` | any session | BE-45 | missing |
+| M16-30 | GET | `/api/papan-bijak/quick-match/poll` | any session | BE-45 | missing |
+| M16-31 | POST | `/api/papan-bijak/quick-match/cancel` | any session | BE-45 | missing |
+| M16-32 | GET | `/api/games/solo/:game` | any session | BE-45 | missing |
+| M16-33 | POST | `/api/games/solo/:game/submit` | any session | BE-45 | missing |
+| M16-34 | GET | `/api/games/roda-nasib` | any session | BE-45 | missing |
+| M16-35 | POST | `/api/games/roda-nasib/spin` | any session | BE-45 | missing |
+| M16-36 | GET | `/api/games/jutawan` | any session | BE-45 | missing |
+| M16-37 | POST | `/api/games/jutawan/start` | any session | BE-45 | missing |
+| M16-38 | POST | `/api/games/jutawan/:sessionId/answer` | any session | BE-45 | missing |
+| M16-39 | POST | `/api/games/jutawan/:sessionId/lifeline` | any session | BE-45 | missing |
+| M16-40 | GET | `/api/games/pertandingan` | any session | BE-45 | missing |
+| M16-41 | GET | `/api/games/uji-minda` | any session | BE-45 | missing |
+| M16-42 | GET | `/api/tournaments` | any session | BE-44 | missing |
+| M16-43 | GET | `/api/tournaments/form-options` | admin | BE-44 | missing |
+| M16-44 | POST | `/api/tournaments` | admin | BE-44 | missing |
+| M16-45 | GET | `/api/tournaments/:uuid` | any session | BE-44 | missing |
+| M16-46 | GET | `/api/leagues` | any session | BE-45 | missing |
+| M16-47 | POST | `/api/leagues` | any session | BE-45 | missing |
+| M16-48 | POST | `/api/leagues/join` | any session | BE-45 | missing |
+| M16-49 | GET | `/api/leagues/:id` | any session | BE-45 | missing |
+| M16-50 | GET | `/api/sekolah-bersaing` | any session | BE-45 | missing |
+| M16-51 | GET | `/api/admin/games` | admin | BE-45 | missing |
+| M16-52 | PUT | `/api/admin/games/settings` | admin | BE-45 | missing |
 | M09-01 | GET | `/api/admin/articles` | admin | BE-24 | missing |
 | M09-02 | GET | `/api/admin/articles/:id` | admin | BE-24 | missing |
 | M09-03 | POST | `/api/admin/articles` | admin | BE-24 | missing |
@@ -211,12 +211,12 @@ Contract status counts: `exists` 0, `partial` 0, `missing` 165. Card column: BE 
 | M09-41 | GET | `/api/admin/screenshots` | admin | BE-24 | missing |
 | M09-42 | POST | `/api/admin/screenshots` | admin | BE-24 | missing |
 | M09-43 | GET | `/api/config/support` | public | BE-24 | missing |
-| M20-13 | GET | `/api/marketplace/categories` | any session | BE-46 [pending card] | missing |
-| M20-14 | GET | `/api/marketplace/products` | any session | BE-46 [pending card] | missing |
-| M20-15 | GET | `/api/marketplace/products/:slug` | any session | BE-46 [pending card] | missing |
-| M20-16 | POST | `/api/marketplace/products/:slug/whatsapp` | any session | BE-46 [pending card] | missing |
-| M20-17 | GET | `/api/marketplace/sellers/:id` | any session | BE-46 [pending card] | missing |
-| M21-15 | POST | `/api/mohon-keluarga-angkat` | any session | BE-47 [pending card] | missing |
+| M20-13 | GET | `/api/marketplace/categories` | any session | BE-46 | missing |
+| M20-14 | GET | `/api/marketplace/products` | any session | BE-46 | missing |
+| M20-15 | GET | `/api/marketplace/products/:slug` | any session | BE-46 | missing |
+| M20-16 | POST | `/api/marketplace/products/:slug/whatsapp` | any session | BE-46 | missing |
+| M20-17 | GET | `/api/marketplace/sellers/:id` | any session | BE-46 | missing |
+| M21-15 | POST | `/api/mohon-keluarga-angkat` | any session | BE-47 | missing |
 | M22-01 | GET | `/api/tiket` | any session | BE-24 | missing |
 | M22-02 | POST | `/api/tiket` | any session | BE-24 | missing |
 | M22-03 | GET | `/api/admin/tiket` | admin | BE-24 | missing |
@@ -991,11 +991,11 @@ Module conventions:
 
 ## M16 Battle, games and competitions (`m16-battle-games`) - 52 routes
 
-> **D53(a): M16 is in B1; the backend replicates the bot simulation. BE-44 battle, BE-45 papan-bijak + hub (split to be confirmed by the LEAD, shown as BE-44/BE-45 until then).**
+> **D53(a): M16 is in B1; the backend replicates the bot simulation. BE-44 battle, standings and tournaments (M16-01..21, M16-42..45; 25 routes), BE-45 papan-bijak, games hub, leagues, Sekolah Bersaing and admin games (M16-22..41, M16-46..52; 27 routes).**
 
 Mock: `src/modules/m16-battle-games/mock/handlers/{battle,standings,games,tournaments,leagues,admin-games,common}.ts`; wire types `api/types.ts` (`T:`) and `api/game-types.ts` (`G:`); clients `api/battle.ts` (`B:`) and `api/games.ts`. SRS `docs/requirements/srs/M16-battle-games.md` (route numbers `#1` to `#52`; the block ids below use the SRS number). Count: the plan (section 6.3 and the README backlog) says 28; `grep -c "route("` finds 51 lines and the real number is **52** (battle.ts has one `route()` inside a factory `start(mode)` that is called twice for #2 and #3). Per file: battle 16, standings 4, games 20, tournaments 5, leagues 5, admin-games 2.
 
-**Scope status (D53(a), 2026-10-19): M16 is in B1.** The backend replicates the bot simulation; cards BE-44 (battle) and BE-45 (papan-bijak + hub), split to be confirmed (shown as `BE-44/BE-45 [pending card; split TBC]`). The earlier text "wave-4 backlog" is superseded.
+**Scope status (D53(a), 2026-10-19): M16 is in B1.** The backend replicates the bot simulation; cards BE-44 (battle) and BE-45 (papan-bijak + hub), . The earlier text "wave-4 backlog" is superseded.
 
 Module conventions:
 
@@ -1018,7 +1018,7 @@ Module conventions:
 - **Errors:** 401.
 - **Side effects:** none.
 - **Owner / handler / client:** M16, `handlers/tournaments.ts:26`, `fetchActiveTournaments`.
-- **Card:** BE-44/BE-45 [pending card; split TBC]
+- **Card:** BE-44
 - **Contract:** missing
 
 ### M16-02 `POST /api/battle/quick-match`
@@ -1030,7 +1030,7 @@ Module conventions:
 - **Errors:** 422 with body `{}` (invalid type "Jenis soalan tidak sah.", "Subjek tidak sah.", "Domain PKSK tidak sah.", "Tahap PKSK tidak sah.", or fewer than 10 eligible questions "Soalan tidak mencukupi."; the text is NOT sent); 403 with body `{}` (SPM requested by a user below Tingkatan 4; message "Khas untuk pelajar Tingkatan 4 & 5 sahaja." is NOT sent); 401.
 - **Side effects:** inserts a `waiting` queue row owned by the caller (expires 120 s after creation, treated as abandoned if not polled for 10 s). Pre-checks that 10 questions can be drawn.
 - **Owner / handler / client:** M16 (reads M04 pool, M03 subjects), `handlers/battle.ts:13-29`, `startBattle('quick-match')`.
-- **Card:** BE-44/BE-45 [pending card; split TBC]
+- **Card:** BE-44
 - **Contract:** missing
 
 ### M16-03 `POST /api/battle/school-battle`
@@ -1040,7 +1040,7 @@ Module conventions:
 - **Request / Response / Errors:** identical to M16-02.
 - **Side effects:** queue row with `mode=school_battle`.
 - **Owner / handler / client:** M16, `handlers/battle.ts:13-29`, `startBattle('school-battle')`.
-- **Card:** BE-44/BE-45 [pending card; split TBC]
+- **Card:** BE-44
 - **Contract:** missing
 
 ### M16-04 `GET /api/battle/poll-match/:queueId`
@@ -1052,7 +1052,7 @@ Module conventions:
 - **Errors:** 401. (A test-only simulation mode can answer `{error:'Ralat pelayan.'}` with a chosen 5xx.)
 - **Side effects:** increments poll counters, may expire the queue, may create the battle (10 questions drawn, status `active`).
 - **Owner / handler / client:** M16, `handlers/battle.ts:31`, `pollMatch`.
-- **Card:** BE-44/BE-45 [pending card; split TBC]
+- **Card:** BE-44
 - **Contract:** missing
 
 ### M16-05 `POST /api/battle/accept-challenger/:queueId`
@@ -1064,7 +1064,7 @@ Module conventions:
 - **Errors:** 404 `{error:"Giliran tidak dijumpai."}` (unknown, not own, or not in `incoming_challenge`); 401.
 - **Side effects:** creates the battle (owner = player A), queue -> `matched`.
 - **Owner / handler / client:** M16, `handlers/battle.ts:48`, `acceptChallenger`.
-- **Card:** BE-44/BE-45 [pending card; split TBC]
+- **Card:** BE-44
 - **Contract:** missing
 
 ### M16-06 `POST /api/battle/reject-challenger/:queueId`
@@ -1076,7 +1076,7 @@ Module conventions:
 - **Errors:** 404 `{error:"Giliran tidak dijumpai."}`; 401.
 - **Side effects:** queue -> `waiting`, challenger cleared, wait counter reset.
 - **Owner / handler / client:** M16, `handlers/battle.ts:68`, `rejectChallenger`.
-- **Card:** BE-44/BE-45 [pending card; split TBC]
+- **Card:** BE-44
 - **Contract:** missing
 
 ### M16-07 `GET /api/battle/search-opponent`
@@ -1088,7 +1088,7 @@ Module conventions:
 - **Errors:** 401.
 - **Side effects:** none.
 - **Owner / handler / client:** M16 (reads M01/M02), `handlers/battle.ts:84`, `searchOpponent`.
-- **Card:** BE-44/BE-45 [pending card; split TBC]
+- **Card:** BE-44
 - **Contract:** missing
 
 ### M16-08 `POST /api/battle/invite`
@@ -1100,7 +1100,7 @@ Module conventions:
 - **Errors (raw, `{error}`):** 422 "Penerima tidak sah." (bad receiver); 422 "Soalan tidak mencukupi."; 422 "Jenis soalan tidak sah." / "Subjek tidak sah." / "Domain PKSK tidak sah." / "Tahap PKSK tidak sah."; 403 "Khas untuk pelajar Tingkatan 4 & 5 sahaja." (here the message IS sent); 401.
 - **Side effects:** inserts a `pending` invitation (uuid) valid 24 h.
 - **Owner / handler / client:** M16, `handlers/battle.ts:91`, `sendInvite`.
-- **Card:** BE-44/BE-45 [pending card; split TBC]
+- **Card:** BE-44
 - **Contract:** missing
 
 ### M16-09 `GET /api/battle/invitations`
@@ -1112,7 +1112,7 @@ Module conventions:
 - **Errors:** 401.
 - **Side effects:** none.
 - **Owner / handler / client:** M16, `handlers/battle.ts:107`, `fetchInvitations`.
-- **Card:** BE-44/BE-45 [pending card; split TBC]
+- **Card:** BE-44
 - **Contract:** missing
 
 ### M16-10 `POST /api/battle/invite/:uuid/accept`
@@ -1124,7 +1124,7 @@ Module conventions:
 - **Errors:** 404 `{error:"Cabaran tidak dijumpai."}` (unknown, not receiver, not pending, or older than 24 h); 401.
 - **Side effects:** creates an `active` battle (sender = A, receiver = B, mode `challenge`), invitation -> `accepted`.
 - **Owner / handler / client:** M16, `handlers/battle.ts:112`, `acceptInvitation`.
-- **Card:** BE-44/BE-45 [pending card; split TBC]
+- **Card:** BE-44
 - **Contract:** missing
 
 ### M16-11 `POST /api/battle/invite/:uuid/decline`
@@ -1136,7 +1136,7 @@ Module conventions:
 - **Errors:** 404 `{error:"Cabaran tidak dijumpai."}`; 401.
 - **Side effects:** invitation -> `declined`.
 - **Owner / handler / client:** M16, `handlers/battle.ts:132`, `declineInvitation`.
-- **Card:** BE-44/BE-45 [pending card; split TBC]
+- **Card:** BE-44
 - **Contract:** missing
 
 ### M16-12 `POST /api/battle/join-queue/:queueId`
@@ -1148,7 +1148,7 @@ Module conventions:
 - **Errors:** 404 `{error:"Ralat menghantar permohonan."}` (unknown queue, own queue, queue not waiting/incoming, or a join already pending); 401.
 - **Side effects:** sets `joiner` {userId, outcome:'pending'}; the owner's next poll shows that user as the incoming challenger.
 - **Owner / handler / client:** M16, `handlers/battle.ts:148`, `joinQueue`.
-- **Card:** BE-44/BE-45 [pending card; split TBC]
+- **Card:** BE-44
 - **Contract:** missing
 
 ### M16-13 `GET /api/battle/poll-challenger/:queueId`
@@ -1160,7 +1160,7 @@ Module conventions:
 - **Errors:** 401.
 - **Side effects:** when the owner accepted and no battle exists yet, creates it (owner = A, joiner = B).
 - **Owner / handler / client:** M16, `handlers/battle.ts:164`, `pollChallenger`.
-- **Card:** BE-44/BE-45 [pending card; split TBC]
+- **Card:** BE-44
 - **Contract:** missing
 
 ### M16-14 `POST /api/battle/forfeit/:uuid`
@@ -1172,7 +1172,7 @@ Module conventions:
 - **Errors:** 404 `{error:"Battle tidak dijumpai."}` (unknown or not a player); 409 `{error:"Battle sudah tamat."}`; 401.
 - **Side effects:** battle -> `forfeited`, opponent wins, `finishedAt`; M14 `onGameResult` (game `battle`, event `forfeit`/`forfeit_win`, coins 0, xp 0) for the caller only.
 - **Owner / handler / client:** M16 (calls M14), `handlers/battle.ts:177`, `forfeitBattle`.
-- **Card:** BE-44/BE-45 [pending card; split TBC]
+- **Card:** BE-44
 - **Contract:** missing
 
 ### M16-15 `GET /api/battle/lobby`
@@ -1184,7 +1184,7 @@ Module conventions:
 - **Errors:** 401.
 - **Side effects:** none.
 - **Owner / handler / client:** M16 (reads M03, M04), `handlers/battle.ts:193`, `fetchBattleLobby`.
-- **Card:** BE-44/BE-45 [pending card; split TBC]
+- **Card:** BE-44
 - **Contract:** missing
 
 ### M16-16 `GET /api/battle/arena/:uuid`
@@ -1196,7 +1196,7 @@ Module conventions:
 - **Errors:** 404 `NOT_FOUND` "Battle tidak dijumpai."; 401.
 - **Side effects:** none.
 - **Owner / handler / client:** M16, `handlers/battle.ts:198`, `fetchArena`.
-- **Card:** BE-44/BE-45 [pending card; split TBC]
+- **Card:** BE-44
 - **Contract:** missing
 
 ### M16-17 `POST /api/battle/arena/:uuid/answer`
@@ -1208,7 +1208,7 @@ Module conventions:
 - **Errors:** 404 `NOT_FOUND` "Battle tidak dijumpai." / "Soalan tidak dijumpai."; 409 `CONFLICT` "Battle sudah tamat."; 422 `VALIDATION_ERROR` "Soalan tidak sah." (`fields.questionId`), "Jawapan tidak sah." (`fields.optionId`), "Masa tidak sah." (`fields.seconds`); 401.
 - **Side effects:** stores both answers; after answer 10: status `finished`, winner = higher total (equal non-zero = seri/null; 0-0 = player B, DV-M16-35); M14 `onGameResult` (game `battle`, event `win` or `finish`, coins 0, xp 0, correct, total) for the caller.
 - **Owner / handler / client:** M16 (calls M14), `handlers/battle.ts:213`, `answerArena`.
-- **Card:** BE-44/BE-45 [pending card; split TBC]
+- **Card:** BE-44
 - **Contract:** missing
 
 ### M16-18 `GET /api/battle/standings/students`
@@ -1220,7 +1220,7 @@ Module conventions:
 - **Errors:** 401.
 - **Side effects:** none.
 - **Owner / handler / client:** M16, `handlers/standings.ts:33`, `fetchStudentStandings`.
-- **Card:** BE-44/BE-45 [pending card; split TBC]
+- **Card:** BE-44
 - **Contract:** missing
 
 ### M16-19 `GET /api/battle/standings/schools`
@@ -1232,7 +1232,7 @@ Module conventions:
 - **Errors:** 401.
 - **Side effects:** none.
 - **Owner / handler / client:** M16 (reads M02 schools), `handlers/standings.ts:45`, `fetchSchoolStandings`.
-- **Card:** BE-44/BE-45 [pending card; split TBC]
+- **Card:** BE-44
 - **Contract:** missing
 
 ### M16-20 `GET /api/battle/schools/:id`
@@ -1244,7 +1244,7 @@ Module conventions:
 - **Errors:** 404 `NOT_FOUND` "Sekolah tidak dijumpai."; 401.
 - **Side effects:** none.
 - **Owner / handler / client:** M16, `handlers/standings.ts:65`, `fetchSchoolDetail`.
-- **Card:** BE-44/BE-45 [pending card; split TBC]
+- **Card:** BE-44
 - **Contract:** missing
 
 ### M16-21 `GET /api/battle/history`
@@ -1256,7 +1256,7 @@ Module conventions:
 - **Errors:** 401.
 - **Side effects:** none.
 - **Owner / handler / client:** M16, `handlers/standings.ts:103`, `fetchBattleHistory`.
-- **Card:** BE-44/BE-45 [pending card; split TBC]
+- **Card:** BE-44
 - **Contract:** missing
 
 ### M16-22 `GET /api/games/hub`
@@ -1268,7 +1268,7 @@ Module conventions:
 - **Errors:** 401.
 - **Side effects:** none.
 - **Owner / handler / client:** M16, `handlers/games.ts:53`, `fetchGamesHub`.
-- **Card:** BE-44/BE-45 [pending card; split TBC]
+- **Card:** BE-45
 - **Contract:** missing
 
 ### M16-23 `GET /api/games/:game/lobby`
@@ -1280,7 +1280,7 @@ Module conventions:
 - **Errors:** 404 `NOT_FOUND` "Permainan tidak dijumpai." (unknown game); 401.
 - **Side effects:** none.
 - **Owner / handler / client:** M16, `handlers/games.ts:166`, `fetchGameLobby`.
-- **Card:** BE-44/BE-45 [pending card; split TBC]
+- **Card:** BE-45
 - **Contract:** missing
 
 ### M16-24 `POST /api/games/:game/rooms`
@@ -1292,7 +1292,7 @@ Module conventions:
 - **Errors:** 404 "Permainan tidak dijumpai."; 422 `VALIDATION_ERROR` with `fields[x]` = message: "Subjek tidak sah." (`subject`), "Tahap soalan tidak sah." (`grade_level`), "Julat tahap tidak sah." (`match_mode` or `grade_min`), "Bilangan pemain tidak sah." (`max_players`); 401.
 - **Side effects:** inserts a `waiting` room and the host player.
 - **Owner / handler / client:** M16, `handlers/games.ts:179`, `createRoom`.
-- **Card:** BE-44/BE-45 [pending card; split TBC]
+- **Card:** BE-45
 - **Contract:** missing
 
 ### M16-25 `POST /api/games/:game/rooms/join`
@@ -1304,7 +1304,7 @@ Module conventions:
 - **Errors:** 404 `NOT_FOUND` "Bilik tidak dijumpai." for every refusal (blank code, unknown room, wrong game, not waiting, full, grade not allowed by the room's match mode); 404 "Permainan tidak dijumpai."; 401.
 - **Side effects:** adds the caller as a player.
 - **Owner / handler / client:** M16, `handlers/games.ts:190`, `joinRoom`.
-- **Card:** BE-44/BE-45 [pending card; split TBC]
+- **Card:** BE-45
 - **Contract:** missing
 
 ### M16-26 `GET /api/games/:game/rooms/:code`
@@ -1316,7 +1316,7 @@ Module conventions:
 - **Errors:** 404 `NOT_FOUND` "Bilik tidak dijumpai." (unknown, other game, or caller not a player); 404 "Permainan tidak dijumpai."; 401.
 - **Side effects:** (SIMULATION) polling by the host of a waiting room below the minimum players adds one bot player per poll; server clocks advance/finish timed games on read (`resolveClocks`), which can finish a game and settle rewards.
 - **Owner / handler / client:** M16, `handlers/games.ts:207`, `fetchRoom`.
-- **Card:** BE-44/BE-45 [pending card; split TBC]
+- **Card:** BE-45
 - **Contract:** missing
 
 ### M16-27 `POST /api/games/:game/rooms/:code/start`
@@ -1328,7 +1328,7 @@ Module conventions:
 - **Errors:** 404 "Bilik tidak dijumpai."; 403 `FORBIDDEN` "Hanya hos boleh memulakan permainan."; 409 `CONFLICT` "Permainan sudah dimulakan."; 409 "Pemain belum mencukupi." (below min players: 2 for most, 4 for Kuiz Relay); 409 "Soalan tidak mencukupi." (question pool); 401.
 - **Side effects:** room -> `playing`, `startedAt`, initial state and questions drawn.
 - **Owner / handler / client:** M16, `handlers/games.ts:220`, `startRoom`.
-- **Card:** BE-44/BE-45 [pending card; split TBC]
+- **Card:** BE-45
 - **Contract:** missing
 
 ### M16-28 `POST /api/games/:game/rooms/:code/action`
@@ -1340,7 +1340,7 @@ Module conventions:
 - **Errors:** 422 `VALIDATION_ERROR` "Soalan tidak sah." (`questionId`), "Pilihan tidak sah." (`optionId`), "Masa tidak sah." (`seconds`), "Tindakan tidak sah." (`type`), "Soalan tidak sepadan." (`questionId`), "Jawapan tidak sah." (`value`); 409 "Permainan belum bermula.", "Bukan giliran anda untuk gulung dadu.", "Tiada soalan untuk dijawab.", "Tiada jam untuk permainan ini."; 403 "Bukan giliran anda."; 404 "Bilik tidak dijumpai."; 401.
 - **Side effects:** advances the engine (other players are bots in the mock); on finish: game standings (`wins`, plus `jumlah/betul/skor` for Papan Bijak) and one M14 `onGameResult` for the caller. Coins: Papan Bijak = correct answers x tier `boardGameRewardCorrect` + win x tier `boardGameRewardWin`; Benteng Ilmu 8 played / 35 won; Perang Fakta 10 on a win; Perlumbaan Matematik 5 played; Kuiz Relay and Teka Silang Kata 0 (`ROOM_COINS`, `data/games.ts`).
 - **Owner / handler / client:** M16 (calls M14), `handlers/games.ts:233`, `roomAction`.
-- **Card:** BE-44/BE-45 [pending card; split TBC]
+- **Card:** BE-45
 - **Contract:** missing
 
 ### M16-29 `POST /api/papan-bijak/quick-match`
@@ -1352,7 +1352,7 @@ Module conventions:
 - **Errors:** 422 raw `{error:"Subjek tidak sah."}` or `{error:"Padanan tidak sah."}`; 401.
 - **Side effects:** inserts a search row.
 - **Owner / handler / client:** M16, `handlers/games.ts:150`, `startPbQuickMatch`.
-- **Card:** BE-44/BE-45 [pending card; split TBC]
+- **Card:** BE-45
 - **Contract:** missing
 
 ### M16-30 `GET /api/papan-bijak/quick-match/poll`
@@ -1364,7 +1364,7 @@ Module conventions:
 - **Errors:** 401.
 - **Side effects:** on match, creates a Papan Bijak room (host = caller, 4 seats, caller's grade level, a bot player added).
 - **Owner / handler / client:** M16, `handlers/games.ts:158`, `pollPbQuickMatch`.
-- **Card:** BE-44/BE-45 [pending card; split TBC]
+- **Card:** BE-45
 - **Contract:** missing
 
 ### M16-31 `POST /api/papan-bijak/quick-match/cancel`
@@ -1376,7 +1376,7 @@ Module conventions:
 - **Errors:** 401.
 - **Side effects:** a `searching` row -> `cancelled`.
 - **Owner / handler / client:** M16, `handlers/games.ts:161`, `cancelPbQuickMatch`.
-- **Card:** BE-44/BE-45 [pending card; split TBC]
+- **Card:** BE-45
 - **Contract:** missing
 
 ### M16-32 `GET /api/games/solo/:game`
@@ -1388,7 +1388,7 @@ Module conventions:
 - **Errors:** 404 `NOT_FOUND` "Permainan tidak dijumpai."; 422 `VALIDATION_ERROR` "Tahap tidak sah." (`fields.darjah`); 401.
 - **Side effects:** inserts a game session row (valid for one submit).
 - **Owner / handler / client:** M16 (reads M04 questions), `handlers/games.ts:115`, `fetchSoloGame`.
-- **Card:** BE-44/BE-45 [pending card; split TBC]
+- **Card:** BE-45
 - **Contract:** missing
 
 ### M16-33 `POST /api/games/solo/:game/submit`
@@ -1400,7 +1400,7 @@ Module conventions:
 - **Errors (raw `{message}`):** 422 "Keputusan tidak sah." (any bound/session failure; field not sent); 409 "Keputusan sudah dihantar." (second submit); 404 "Permainan tidak dijumpai."; 401.
 - **Side effects:** marks the session submitted; stores personal best (first result is a record, later must exceed); M14 `onGameResult` with the claimed coins (credited only when allowed, see conventions).
 - **Owner / handler / client:** M16 (calls M14), `handlers/games.ts:132`, `submitSoloGame`.
-- **Card:** BE-44/BE-45 [pending card; split TBC]
+- **Card:** BE-45
 - **Contract:** missing
 
 ### M16-34 `GET /api/games/roda-nasib`
@@ -1412,7 +1412,7 @@ Module conventions:
 - **Errors:** 401.
 - **Side effects:** none.
 - **Owner / handler / client:** M16, `handlers/games.ts:56`, `fetchSpinPage`.
-- **Card:** BE-44/BE-45 [pending card; split TBC]
+- **Card:** BE-45
 - **Contract:** missing
 
 ### M16-35 `POST /api/games/roda-nasib/spin`
@@ -1424,7 +1424,7 @@ Module conventions:
 - **Errors:** 409 raw `{success:false, message:"Anda sudah spin hari ini."}`; 401.
 - **Side effects:** spin row; stats updated; M14 `onGameResult` (game `roda_nasib`, event `spin`, coins = segment value for `syiling`).
 - **Owner / handler / client:** M16 (calls M14), `handlers/games.ts:59`, `spinWheel`.
-- **Card:** BE-44/BE-45 [pending card; split TBC]
+- **Card:** BE-45
 - **Contract:** missing
 
 ### M16-36 `GET /api/games/jutawan`
@@ -1436,7 +1436,7 @@ Module conventions:
 - **Errors:** 422 `VALIDATION_ERROR` "Tahap tidak sah." (`fields.darjah`); 401.
 - **Side effects:** none.
 - **Owner / handler / client:** M16, `handlers/games.ts:70`, `fetchJutawanPage`.
-- **Card:** BE-44/BE-45 [pending card; split TBC]
+- **Card:** BE-45
 - **Contract:** missing
 
 ### M16-37 `POST /api/games/jutawan/start`
@@ -1448,7 +1448,7 @@ Module conventions:
 - **Errors:** 422 "Tahap tidak sah." (`darjah`), "Subjek tidak sah." (`subject`), "Soalan tidak mencukupi." (`subject`); 401.
 - **Side effects:** inserts a session.
 - **Owner / handler / client:** M16, `handlers/games.ts:75`, `startJutawan`.
-- **Card:** BE-44/BE-45 [pending card; split TBC]
+- **Card:** BE-45
 - **Contract:** missing
 
 ### M16-38 `POST /api/games/jutawan/:sessionId/answer`
@@ -1460,7 +1460,7 @@ Module conventions:
 - **Errors:** 404 `NOT_FOUND` "Sesi tidak dijumpai.", "Soalan tidak dijumpai."; 409 `CONFLICT` "Permainan sudah tamat."; 422 "Soalan tidak sepadan." (`questionId`), "Pilihan tidak sah." (`optionId`); 401.
 - **Side effects:** on game end: M14 `onGameResult` (game `jutawan`, event `finish`, coins = 1000 for level 15, 50 for level 10 to 14, else 0 -- PROPOSED ladder), best level and games count updated.
 - **Owner / handler / client:** M16 (calls M14), `handlers/games.ts:78`, `answerJutawan`.
-- **Card:** BE-44/BE-45 [pending card; split TBC]
+- **Card:** BE-45
 - **Contract:** missing
 
 ### M16-39 `POST /api/games/jutawan/:sessionId/lifeline`
@@ -1472,7 +1472,7 @@ Module conventions:
 - **Errors:** 422 "Bantuan tidak sah." (`type`); 404 "Sesi tidak dijumpai."; 409 "Permainan sudah tamat.", "Tiada bantuan tersedia." (none left or already used on this question); 401.
 - **Side effects:** lifelines - 1; removed options remembered for the current question.
 - **Owner / handler / client:** M16, `handlers/games.ts:90`, `lifelineJutawan`.
-- **Card:** BE-44/BE-45 [pending card; split TBC]
+- **Card:** BE-45
 - **Contract:** missing
 
 ### M16-40 `GET /api/games/pertandingan`
@@ -1484,7 +1484,7 @@ Module conventions:
 - **Errors:** 401.
 - **Side effects:** none.
 - **Owner / handler / client:** M16 (reads M05 `weekRank`), `handlers/games.ts:109`, `fetchWeeklyCompetition`.
-- **Card:** BE-44/BE-45 [pending card; split TBC]
+- **Card:** BE-45
 - **Contract:** missing
 
 ### M16-41 `GET /api/games/uji-minda`
@@ -1496,7 +1496,7 @@ Module conventions:
 - **Errors:** 401.
 - **Side effects:** none.
 - **Owner / handler / client:** M16, `handlers/games.ts:112`, `fetchUjiMinda`.
-- **Card:** BE-44/BE-45 [pending card; split TBC]
+- **Card:** BE-45
 - **Contract:** missing
 
 ### M16-42 `GET /api/tournaments`
@@ -1508,7 +1508,7 @@ Module conventions:
 - **Errors:** 401.
 - **Side effects:** none.
 - **Owner / handler / client:** M16, `handlers/tournaments.ts:29`, `fetchTournaments`.
-- **Card:** BE-44/BE-45 [pending card; split TBC]
+- **Card:** BE-44
 - **Contract:** missing
 
 ### M16-43 `GET /api/tournaments/form-options`
@@ -1520,7 +1520,7 @@ Module conventions:
 - **Errors:** 401, 403.
 - **Side effects:** none.
 - **Owner / handler / client:** M16 (reads M03), `handlers/tournaments.ts:32`, `fetchTournamentFormOptions`.
-- **Card:** BE-44/BE-45 [pending card; split TBC]
+- **Card:** BE-44
 - **Contract:** missing
 
 ### M16-44 `POST /api/tournaments`
@@ -1532,7 +1532,7 @@ Module conventions:
 - **Errors:** 422 `VALIDATION_ERROR`, top-level message = first field message, `fields`: `title` "Tajuk tournament diperlukan.", `education_level_id` "Sila pilih tahap pendidikan.", `format` "Format tidak sah.", `groups_count` "Bilangan kumpulan mesti antara 2 dan 8.", `question_mode`/`subject_id`/`exam_paper_id`/`mixed_subject_ids` "Sila pilih sumber soalan.", `total_questions`/`time_window_minutes`/`top_n_scoring`/`min_participants` "Nilai di luar julat.", dates "Tarikh tidak sah." and `registration_closes_at` "Tarikh tutup mesti selepas tarikh buka.", `action` "Tindakan tidak sah."; 401, 403.
 - **Side effects:** inserts the tournament (`createdBy` = admin). No scheduling, matches or notifications exist in the mock.
 - **Owner / handler / client:** M16, `handlers/tournaments.ts:50`, `createTournament`.
-- **Card:** BE-44/BE-45 [pending card; split TBC]
+- **Card:** BE-44
 - **Contract:** missing
 
 ### M16-45 `GET /api/tournaments/:uuid`
@@ -1544,7 +1544,7 @@ Module conventions:
 - **Errors:** 404 `NOT_FOUND` "Tournament tidak dijumpai."; 401.
 - **Side effects:** none.
 - **Owner / handler / client:** M16, `handlers/tournaments.ts:61`, `fetchTournament`.
-- **Card:** BE-44/BE-45 [pending card; split TBC]
+- **Card:** BE-44
 - **Contract:** missing
 
 ### M16-46 `GET /api/leagues`
@@ -1556,7 +1556,7 @@ Module conventions:
 - **Errors:** 401.
 - **Side effects:** none.
 - **Owner / handler / client:** M16, `handlers/leagues.ts:22`, `fetchLeagues`.
-- **Card:** BE-44/BE-45 [pending card; split TBC]
+- **Card:** BE-45
 - **Contract:** missing
 
 ### M16-47 `POST /api/leagues`
@@ -1568,7 +1568,7 @@ Module conventions:
 - **Errors:** 422 `VALIDATION_ERROR` (top-level = first message): required-field fields (`name`, `type`, `scope`, `game_mode`, `scoring_method`, `start_date`, `end_date`) = "Sila lengkapkan semua medan wajib."; `end_date` "Tarikh tamat mesti selepas tarikh mula."; `max_schools` "Had sekolah mesti antara 2 dan 500."; `subject_id` "Mata pelajaran tidak sah."; `class_levels` "Tingkatan tidak sah."; 401.
 - **Side effects:** league `upcoming` with an 8-character invite code (A-Z0-9); the creator's school (if any) is added as a participant. The mock never moves `status` by date (OQ-API-B4-13).
 - **Owner / handler / client:** M16, `handlers/leagues.ts:27`, `createLeague`.
-- **Card:** BE-44/BE-45 [pending card; split TBC]
+- **Card:** BE-45
 - **Contract:** missing
 
 ### M16-48 `POST /api/leagues/join`
@@ -1580,7 +1580,7 @@ Module conventions:
 - **Errors:** 422 `VALIDATION_ERROR`, `fields.invite_code` = message: "Kod jemputan tidak sah.", "Liga ini sudah tamat.", "Anda perlu mempunyai sekolah untuk menyertai liga ini.", "Sekolah anda sudah menyertai liga ini.", "Liga ini sudah penuh."; 401.
 - **Side effects:** adds the caller's school to the league.
 - **Owner / handler / client:** M16, `handlers/leagues.ts:37`, `joinLeague`.
-- **Card:** BE-44/BE-45 [pending card; split TBC]
+- **Card:** BE-45
 - **Contract:** missing
 
 ### M16-49 `GET /api/leagues/:id`
@@ -1592,7 +1592,7 @@ Module conventions:
 - **Errors:** 404 `NOT_FOUND` "Liga tidak dijumpai."; 401.
 - **Side effects:** none.
 - **Owner / handler / client:** M16, `handlers/leagues.ts:50`, `fetchLeague`.
-- **Card:** BE-44/BE-45 [pending card; split TBC]
+- **Card:** BE-45
 - **Contract:** missing
 
 ### M16-50 `GET /api/sekolah-bersaing`
@@ -1604,7 +1604,7 @@ Module conventions:
 - **Errors:** 401.
 - **Side effects:** none.
 - **Owner / handler / client:** M16, `handlers/leagues.ts:62`, `fetchSekolahBersaing`.
-- **Card:** BE-44/BE-45 [pending card; split TBC]
+- **Card:** BE-45
 - **Contract:** missing
 
 ### M16-51 `GET /api/admin/games`
@@ -1616,7 +1616,7 @@ Module conventions:
 - **Errors:** 401, 403.
 - **Side effects:** none.
 - **Owner / handler / client:** M16, `handlers/admin-games.ts:13`, `fetchAdminGames`.
-- **Card:** BE-44/BE-45 [pending card; split TBC]
+- **Card:** BE-45
 - **Contract:** missing
 
 ### M16-52 `PUT /api/admin/games/settings`
@@ -1628,7 +1628,7 @@ Module conventions:
 - **Errors:** 422 `VALIDATION_ERROR` "Nilai mesti antara 0 dan 38." with `fields.boardgame_quiz_tiles`; 401, 403.
 - **Side effects:** updates the setting (plain tiles = 48 - 10 - quiz tiles).
 - **Owner / handler / client:** M16, `handlers/admin-games.ts:16`, `saveGameSettings`.
-- **Card:** BE-44/BE-45 [pending card; split TBC]
+- **Card:** BE-45
 - **Contract:** missing
 
 
@@ -2170,11 +2170,11 @@ Module conventions:
 
 ## M20 Marketplace (`m20-marketplace`) - 5 routes
 
-> **D53(a): M20 Marketplace is in B1. Owner card BE-46 [pending card].**
+> **D53(a): M20 Marketplace is in B1. Owner card BE-46.**
 
 Mock: `src/modules/m20-marketplace/mock/handlers/buyer.ts`; wire types `api/types.ts` (`T:`); client `api/marketplace.ts`. SRS `docs/requirements/srs/M20-marketplace.md` (route numbers `#13` to `#17`: the student/buyer slice only; seller and admin routes #1 to #12 are not built in the mock). Count: plan says 5, grep finds 5.
 
-**Scope status (D53(a), 2026-10-19): M20 Marketplace is in B1.** Owner card BE-46 [pending card]. The earlier "B1 non-goal" text is superseded.
+**Scope status (D53(a), 2026-10-19): M20 Marketplace is in B1.** Owner card BE-46. The earlier "B1 non-goal" text is superseded.
 
 Module conventions: every route is `requireAuth()` (any signed-in role; 401 "Unauthenticated."). Ids are integers (OQ-API-B4-1). Prices are decimal **strings** with 2 dp ("89.90"). Datetimes ISO `+08:00`. No data is written except the counters noted (D14: no cart, order or payment; the buyer is handed to WhatsApp). Contract status: **missing**.
 
@@ -2187,7 +2187,7 @@ Module conventions: every route is `requireAuth()` (any signed-in role; 401 "Una
 - **Errors:** 401.
 - **Side effects:** none.
 - **Owner / handler / client:** M20, `handlers/buyer.ts:85`, `fetchMarketplaceCategories`.
-- **Card:** BE-46 [pending card]
+- **Card:** BE-46
 - **Contract:** missing
 
 ### M20-14 `GET /api/marketplace/products`
@@ -2199,7 +2199,7 @@ Module conventions: every route is `requireAuth()` (any signed-in role; 401 "Una
 - **Errors:** 401.
 - **Side effects:** none.
 - **Owner / handler / client:** M20, `handlers/buyer.ts:86`, `searchMarketplaceProducts`.
-- **Card:** BE-46 [pending card]
+- **Card:** BE-46
 - **Contract:** missing
 
 ### M20-15 `GET /api/marketplace/products/:slug`
@@ -2211,7 +2211,7 @@ Module conventions: every route is `requireAuth()` (any signed-in role; 401 "Una
 - **Errors:** 404 `NOT_FOUND` "Not Found." (unknown slug or hidden product; nothing changes); 401.
 - **Side effects:** **`views` + 1 on every call** (BR-M20-12).
 - **Owner / handler / client:** M20, `handlers/buyer.ts:87`, `fetchMarketplaceProduct`.
-- **Card:** BE-46 [pending card]
+- **Card:** BE-46
 - **Contract:** missing
 
 ### M20-16 `POST /api/marketplace/products/:slug/whatsapp`
@@ -2223,7 +2223,7 @@ Module conventions: every route is `requireAuth()` (any signed-in role; 401 "Una
 - **Errors:** 404 "Not Found." (unknown or hidden); 401.
 - **Side effects:** a seller product adds 1 to the seller's `whatsappClicks`; a platform product counts nothing. The mock also logs the URL (test hook `whatsapp-log`); a real backend must not send messages.
 - **Owner / handler / client:** M20, `handlers/buyer.ts:88`, `recordWhatsappClick`.
-- **Card:** BE-46 [pending card]
+- **Card:** BE-46
 - **Contract:** missing
 
 ### M20-17 `GET /api/marketplace/sellers/:id`
@@ -2235,16 +2235,16 @@ Module conventions: every route is `requireAuth()` (any signed-in role; 401 "Una
 - **Errors:** 404 "Not Found." (unknown or non-active seller); 401.
 - **Side effects:** none.
 - **Owner / handler / client:** M20, `handlers/buyer.ts:91`, `fetchMarketplaceShop`.
-- **Card:** BE-46 [pending card]
+- **Card:** BE-46
 - **Contract:** missing
 
 ## M21 Sponsorship and Anak Angkat (`m21-sponsorship`) - 1 route
 
-> **D53(a): M21 student side only is in B1 (Penaja out, D48). Owner card BE-47 [pending card].**
+> **D53(a): M21 student side only is in B1 (Penaja out, D48). Owner card BE-47.**
 
 Mock: `src/modules/m21-sponsorship/mock/handlers/foster-application.ts`; wire types `api/types.ts` (`T:`); client `api/foster-application.ts`. SRS `docs/requirements/srs/M21-sponsorship.md` (route `#15`; the sponsor/admin routes #1 to #14 are not built in the mock). Count: plan says 1, grep finds 1.
 
-**Scope status (D53(a), 2026-10-19): M21 student side only is in B1** (Penaja out, D48). Owner card BE-47 [pending card]. The sponsor portal stays out.
+**Scope status (D53(a), 2026-10-19): M21 student side only is in B1** (Penaja out, D48). Owner card BE-47. The sponsor portal stays out.
 
 ### M21-15 `POST /api/mohon-keluarga-angkat`
 - **Roles:** any session
@@ -2255,7 +2255,7 @@ Mock: `src/modules/m21-sponsorship/mock/handlers/foster-application.ts`; wire ty
 - **Errors:** 422 `VALIDATION_ERROR` with `fields` (top-level message = first field message plus " (and N more error(s))" when several): `studentEmail` "Sila isi ruangan ini." (blank), "Format e-mel tidak sah.", "Email pelajar tidak dijumpai dalam PrestasiPlus." (no such student; this reveals whether an e-mail is a student, OQ-API-B4-20); `studentCategory` "Sila isi ruangan ini." / "Pilihan tidak sah."; `familyIncomeRange` "Pilihan tidak sah."; `reason` "Sila isi ruangan ini."; 401.
 - **Side effects:** inserts a `pending` application (student id, applicant id/role, category, income, reason, createdAt = now). No duplicate check, no notification, no e-mail (the SRS success text "Permohonan anda telah dihantar. Admin akan menyemak permohonan dalam 1-3 hari bekerja." is shown by the client).
 - **Owner / handler / client:** M21, `handlers/foster-application.ts:87`, `submitFosterApplication`.
-- **Card:** BE-47 [pending card]
+- **Card:** BE-47
 - **Contract:** missing
 
 ## M22 Support tickets (`m22-support-tickets`) - 4 routes
@@ -2314,7 +2314,7 @@ Module conventions: ids are integers (OQ-API-B4-1); statuses `dibuka|dalam_prose
 
 ## Uncovered endpoints
 
-16 of 165 endpoints have no BE card after D53 (63 after UD-3, 60 before). M16 (52), M20 (5), M21 (1) and M09 Audio KBAT play (2) are now in B1 (D53(a)): cards BE-44/BE-45, BE-46, BE-47 [pending card] and BE-24.
+16 of 165 endpoints have no BE card after D53 (63 after UD-3, 60 before). M16 (52), M20 (5), M21 (1) and M09 Audio KBAT play (2) are now in B1 (D53(a)): cards BE-44/BE-45, BE-46, BE-47 and BE-24.
 
 | Module | Count | Endpoint ids | Reason |
 |---|---|---|---|
@@ -2343,7 +2343,7 @@ Each question needs a lead or user answer before (or while) the owning card is b
 | OQ-API-B4-8 | BE-23 AC 5 mentions "lucky-draw creation and ticket allocation ... draw results are audited", but the mock has **no route to run a draw / pick winners / list tickets** (only create, list, buy-ticket). Is winner selection in B1? | M14-42, M15-06/07 | Out of B1 (no route in the mock); keep creation and ticket purchase only. |
 | OQ-API-B4-9 | BE-23 lists example M15 paths `GET /api/rewards...` that do not exist in the mock; the real M15 paths are `/api/admin/hadiah*`, `/api/hadiah/redemptions`, `/api/hadiah-digital/*`, `/api/gamification/mystery-boxes*`, `/api/cabutan*`, `/api/parent/hadiah-approvals*`. The card also omits tier `PUT/toggle`, challenge `PUT/toggle/DELETE`, badge `PUT`, `reward-control/rewards/:id/cost` and `guru/redemptions` PATCH. | BE-23 card text | Update the card to the path lists in this document. |
 | OQ-API-B4-10 | Mystery box result (M15-05) is a uniform integer in the box ranges drawn from a seeded PRNG (rule PROPOSED in the SRS). Production RNG, anti-replay, and whether ranges are inclusive (they are, in the mock) must be confirmed. | M15-05 | Server-side CSPRNG, inclusive ranges, one transaction. |
-| OQ-API-B4-11 | **D53(a): M16 is in B1; replicate the bot simulation (cards BE-44/BE-45 pending).** M16 is a simulation: opponents of battles, quick match, room games and the Papan Bijak quick match are bots chosen from fictitious students; waiting rooms get a bot per host poll; timing (3 polls to match, 120 s expiry) is mock-specific. What is the production behaviour (real matchmaking, push/websocket vs 3 s polling, bot fallback)? M16 has no BE card. | M16-02..17, 26..31 | Defer M16 (wave 4); when carded, keep polling contract and keep bot fallback behind a flag. |
+| OQ-API-B4-11 | **D53(a): M16 is in B1; replicate the bot simulation (cards BE-44/BE-45).** M16 is a simulation: opponents of battles, quick match, room games and the Papan Bijak quick match are bots chosen from fictitious students; waiting rooms get a bot per host poll; timing (3 polls to match, 120 s expiry) is mock-specific. What is the production behaviour (real matchmaking, push/websocket vs 3 s polling, bot fallback)? M16 has no BE card. | M16-02..17, 26..31 | Defer M16 (wave 4); when carded, keep polling contract and keep bot fallback behind a flag. |
 | OQ-API-B4-12 | Role-access matrix row 18 "Kedudukan" (Murid): `docs/requirements/srs/M08` maps `/ranking` to M08 S19 "Kedudukan" (academic ranking), while `v2-backend-plan` OD-11 says "M16 Kedudukan". Which routes back that menu item: M08 ranking, M16 battle standings (M16-18/19) or both? | M16-18/19, M08 | Confirm with the lead. |
 | OQ-API-B4-13 | League and tournament status: the mock never changes a league from `upcoming` to `ongoing`/`ended` by date, nor a tournament beyond `registration` to `ongoing` (derived from `registration_closes_at`). Which scheduler or derived rule applies? | M16-42..49 | Derive status from dates at read time (as the tournament rule does). |
 | OQ-API-B4-14 | `GET /api/sekolah-bersaing` (M16-50) serves stored weekly snapshot rows (`aktifPct`, `streakAvg`, `notaPer10`); the mock has no computation. The weekly job (formula, inputs from M05/M14, anonymisation flag) is undefined. | M16-50 | Define the job with the lead before carding; until then seed snapshots only. |
@@ -2351,7 +2351,7 @@ Each question needs a lead or user answer before (or while) the owning card is b
 | OQ-API-B4-16 | BE-24 AC 5: "teachers' uploaded videos need the approval state the mock uses". The mock videos have **no approval state**: any signed-in user publishes immediately (`visibility global|school`). | M09-29..31 | Replicate the mock (no approval); drop that AC or add the state with the lead. |
 | OQ-API-B4-17 | Video "form school" (M09-32/BR-M09-21) comes from a separate `videoSchools` table (one row per user), not the profile school; school-visibility uses it. How is it populated in the real system (migration, profile school)? | M09-27..32 | Use the user's profile school (`users.school_id`) unless the lead says otherwise. |
 | OQ-API-B4-18 | Perutusan comments are stored `pending` and never shown; no endpoint approves or lists pending comments (M09-39). Moderation flow? | M09-39 | Out of B1 until a moderation screen exists; keep storing `pending`. |
-| OQ-API-B4-19 | **D53(a): M21 student side is B1 (BE-47 pending card).** M21: only `POST /api/mohon-keluarga-angkat` exists; the admin side of applications (approve/reject, F-167) and the sponsor portal have no mock route, so nothing can ever move an application out of `pending`. | M21-15 | Document as store-only; admin review is a later card. |
+| OQ-API-B4-19 | **D53(a): M21 student side is B1 (BE-47).** M21: only `POST /api/mohon-keluarga-angkat` exists; the admin side of applications (approve/reject, F-167) and the sponsor portal have no mock route, so nothing can ever move an application out of `pending`. | M21-15 | Document as store-only; admin review is a later card. |
 | OQ-API-B4-20 | M21-15 answers 422 "Email pelajar tidak dijumpai dalam PrestasiPlus." for non-student e-mails, which lets any signed-in user test whether an e-mail belongs to a student account (enumeration). | M21-15 | Keep the copy (fidelity), add rate limiting (BE-33). |
 | OQ-API-B4-21 | M22 has no reply / status-change route: `adminReply` is always null and status stays `dibuka` for new tickets (read-only queue, D27). Who answers tickets and how does the student see it? | M22-01..04 | Out of B1 (replicate read-only); add admin reply endpoint with the Portal Pentadbiran tickets screen. |
 | OQ-API-B4-22 | Plan section 6.3 route counts are stale (M14 32 vs 42, M16 28 vs 52, M09 25 vs 43); the BE-24 and BE-23 endpoint tables omit many routes (now itemised, see section "Covered by card scope but not itemised"). | plan, cards | Update plan 6.3 and the two cards from this catalogue. |
