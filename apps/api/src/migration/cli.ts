@@ -152,6 +152,10 @@ export async function runCli(argv: readonly string[], deps: CliDeps = {}): Promi
   }
 
   const ownPool = deps.pool === undefined
+  const onPoolError = (e: unknown): void => {
+    const safe = sanitizeDbError(e)
+    err(`database pool error: ${safe instanceof Error && safe !== e ? safe.message : 'connection error'}`)
+  }
   let pool = deps.pool
   if (!pool) {
     const url = env.DATABASE_URL
@@ -160,6 +164,8 @@ export async function runCli(argv: readonly string[], deps: CliDeps = {}): Promi
       return EXIT.usage
     }
     pool = new pg.Pool({ connectionString: url, max: 4 })
+    // An idle-client error would otherwise crash the process with the server message; print the code only.
+    pool.on('error', onPoolError)
   }
   const ctx: CliContext = { pool, env, out, err }
   try {
@@ -183,7 +189,10 @@ export async function runCli(argv: readonly string[], deps: CliDeps = {}): Promi
     err(`${command} failed: ${safe instanceof Error ? safe.message : 'unexpected error'}`)
     return EXIT.failed
   } finally {
-    if (ownPool) await pool.end()
+    if (ownPool) {
+      pool.off('error', onPoolError)
+      await pool.end()
+    }
   }
 }
 

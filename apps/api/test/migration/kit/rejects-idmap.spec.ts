@@ -99,7 +99,7 @@ describe('Rejects', () => {
   it('M2: a legacyId that is an e-mail, an IC or a phone number is refused, without echoing it', async () => {
     const r = new Rejects()
     const map = new IdMap(kit.pool, 'cloud')
-    for (const bad of ['someone@example.test', '900101145555', '0123456789', 'u-0123456789-x']) {
+    for (const bad of ['someone@example.test', '900101145555', '0123456789', 'u-0123456789-x', '900101-14-5678', '012-345 6789']) {
       let msg = ''
       try {
         r.add({ entity: 'e', legacyId: bad, reason: 'UNSUPPORTED' })

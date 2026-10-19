@@ -26,8 +26,12 @@ function extractScript(): string {
   return body.join('\n')
 }
 
-const bash = spawnSync('bash', ['--version'], { encoding: 'utf8' })
-const hasBash = bash.status === 0
+// Needs a real bash 4+ (the script uses ${f,,} and arrays), not the Windows WSL stub in System32.
+const bashPath = spawnSync('bash', ['-c', 'command -v bash'], { encoding: 'utf8' })
+const bashMajor = spawnSync('bash', ['-c', 'echo ${BASH_VERSINFO[0]}'], { encoding: 'utf8' })
+const kernel = spawnSync('bash', ['-c', 'uname -r'], { encoding: 'utf8' })
+const isWslStub = /system32/i.test(bashPath.stdout) || /microsoft/i.test(kernel.stdout)
+const hasBash = bashMajor.status === 0 && Number(bashMajor.stdout.trim()) >= 4 && !isWslStub
 const git = spawnSync('git', ['--version'], { encoding: 'utf8' })
 const hasGit = git.status === 0
 

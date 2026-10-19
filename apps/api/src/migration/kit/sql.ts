@@ -52,7 +52,8 @@ const PERSONAL_ID = /@|\d{10,}/
  * repeats the value.
  */
 export function assertSurrogateLegacyId(legacyId: string, where: string): void {
-  if (PERSONAL_ID.test(legacyId)) {
+  // Digits split by spaces or dashes (900101-14-5678, 012-345 6789) are an IC or phone number too.
+  if (PERSONAL_ID.test(legacyId) || legacyId.replace(/[\s-]/g, '').replace(/\D/g, '').length >= 10) {
     throw new RangeError(
       `${where}: legacyId looks like personal data (contains "@" or 10 or more digits); use the surrogate primary key of the source row.`,
     )

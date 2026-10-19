@@ -147,6 +147,28 @@ describe('upsertByLegacy', () => {
     await expect(inTx((c) => upsertByLegacy(c, { ...base, source: 'nope' as 'cloud' }))).rejects.toThrow(/Unknown legacy source/)
   })
 
+  it('M1: a table without legacy_hash: changed value updates, NULL to value updates, same values are unchanged', async () => {
+    await kit.db.query(`create table demo_plain (
+      id bigint generated always as identity primary key, code text not null, note text,
+      legacy_source text, legacy_id text, constraint uq_demo_plain_legacy unique (legacy_source, legacy_id))`)
+    const run = (note: string | null) =>
+      inTx((c) =>
+        upsertByLegacy(c, {
+          table: 'demo_plain',
+          source: 'cloud',
+          columns: ['code', 'note'],
+          rows: [{ legacyId: 'p1', values: { code: 'P1', note } }],
+        }),
+      )
+    expect(await run(null)).toMatchObject({ inserted: 1, updated: 0, unchanged: 0 })
+    expect(await run(null)).toMatchObject({ inserted: 0, updated: 0, unchanged: 1 })
+    expect(await run('first')).toMatchObject({ inserted: 0, updated: 1, unchanged: 0 }) // NULL -> value
+    expect(await run('first')).toMatchObject({ inserted: 0, updated: 0, unchanged: 1 })
+    expect(await run('second')).toMatchObject({ inserted: 0, updated: 1, unchanged: 0 }) // changed value
+    expect(await run(null)).toMatchObject({ inserted: 0, updated: 1, unchanged: 0 }) // value -> NULL
+    expect(await run(null)).toMatchObject({ inserted: 0, updated: 0, unchanged: 1 })
+  })
+
   it('a bad value never appears in the error: only SQLSTATE, table, column and constraint', async () => {
     const secret = 'IC-900101-14-5555'
     for (const column of ['born_at', 'qty']) {
