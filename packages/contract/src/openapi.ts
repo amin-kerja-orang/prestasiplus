@@ -42,6 +42,7 @@ import { NOTIFICATIONS_COMPONENT_SCHEMAS, registerNotificationsPaths } from './n
 import { MISSIONS_COMPONENT_SCHEMAS, registerMissionsPaths } from './classes/missions/paths'
 import { QUESTION_SETS_COMPONENT_SCHEMAS, registerQuestionSetsPaths } from './classes/question-sets/paths'
 import { PKSK_COMPONENT_SCHEMAS, registerPkskPaths } from './pksk/paths'
+import { CIKGU_COMPONENT_SCHEMAS, registerCikguPaths } from './cikgu/paths'
 
 /** Every shared schema that becomes a component. Domain tasks (T07, T08, T24...) append here. */
 export const COMPONENT_SCHEMAS = {
@@ -85,6 +86,7 @@ export const COMPONENT_SCHEMAS = {
   ...MISSIONS_COMPONENT_SCHEMAS, // BE-18 (M10 missions, remedial)
   ...QUESTION_SETS_COMPONENT_SCHEMAS, // BE-18 (M10 question sets, DSKP)
   ...PERFORMANCE_COMPONENT_SCHEMAS, // BE-19
+  ...CIKGU_COMPONENT_SCHEMAS, // BE-43 (M13)
   // V2-T08 access matrix
   AccessGroupId: AccessGroupIdSchema,
   AccessGroup: AccessGroupSchema,
@@ -132,6 +134,7 @@ export function buildOpenApiDocument(): Record<string, unknown> {
   registerQuestionSetsPaths(registry) // BE-18 (M10 question sets, DSKP)
   registerPerformancePaths(registry) // BE-19
   registerPkskPaths(registry) // BE-42
+  registerCikguPaths(registry) // BE-43 (M13)
   const generator = new OpenApiGeneratorV31(registry.definitions)
   return generator.generateDocument({
     openapi: '3.1.0',
