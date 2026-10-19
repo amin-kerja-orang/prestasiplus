@@ -580,16 +580,15 @@ See 9.3 (generated counts). Every requirement maps to at least one card and ever
 6. Mock domains and matrix rows with no card are now listed one by one (sections 10 and 11) instead of one sentence.
 7. Rows that said "all cards" now name the cards, and 9.1 and 9.2 are generated from the rows.
 
-### 13.4 Card changes proposed (re-checked against the audited cards, commit 63d363c; the lead edits the cards)
+### 13.4 Card changes (re-checked after the audit and the card edits)
 
-Handled by the audit or the card edits: BE-01 ADR-0020; BE-14 ADR-0021; BE-10 paths; BE-13 no longer owns `missions/today` and `remedial-tests/mine` (moved to BE-18); BE-06 records the reset-disclosure deviation and logging of reset links in dev only (OQ-10 stays open for production delivery); BE-05 builds impersonate on the BE-03 session mode (BE-21 keeps it pending its own open question, OQ-17); BE-22/BE-28 no longer claim `mood_checkins`, and BE-28 states that `settings` and `packages` have no owner card (OQ-24 narrowed to that); BE-23 limits parent approvals to the BE-25 parent link (OQ-20 narrowed); cards README backlog counts re-verified.
+Applied in the cards: BE-01 ADR-0020; BE-14 ADR-0021; BE-10 paths and ACs (versioning, report fix loop, 4.8 gates, OQ-22/OQ-25 note); BE-13 reads moved to BE-18; BE-06 reset deviation; BE-03 AC for BE-NFR-39; BE-07/BE-26 guard allows `demo.test`; BE-29 T-10 AC; BE-12 open-question item for BE-18/BE-23 no-op ports; mood/settings; README counts.
 
-Still open:
+Still open: none to edit in the cards. Two items need a LEAD decision (below), and BE-21 keeps its impersonate routes pending OQ-17.
 
-1. BE-10: add AC for versioning (BE-FR-35: "Sunting" creates version n+1, n becomes Diarkib in the same transaction) and for the report statuses and 500-character comment (BE-FR-36); the auto-hide rule is OQ-22.
-2. BE-12: state that assigned-mode starts (`missionId`, `remedialTestId`, `questionSetId`) are enabled by BE-18 and quest rewards by BE-23, using a port with a no-op default until then.
-3. BE-03: add an AC for BE-NFR-39 (a role, school or active-flag change takes effect on the next request).
-4. BE-07 and BE-26: the e-mail guard must allow `demo.test` (canonical demo accounts) as well as `example.test`.
-5. BE-29: add an AC for T-10 (content file copy with checksum and path rewrite).
-6. BE-21: replace the impersonate routes by a pointer to BE-03 session mode once OQ-17 is answered.
-7. BE-06 and M01 BR-10: confirm the deviation wording (OQ-10).
+**LEAD decisions (audit position vs URS default; not resolved here)**
+
+| Id | Current card text (LEAD audit) | URS default / alternative |
+|---|---|---|
+| OQ-17 | BE-05 AC9: `POST /api/admin/users/:id/impersonate` is built on the BE-03 `mod_pelajar` session mode (`isTest = true`, audit row). BE-21 keeps its impersonate routes pending its own open question. | Drop the act-as-user routes and use only `POST /api/session/mode`, because D31c says Mod Pelajar acts as the admin account itself, not as a real student. |
+| OQ-20 | BE-23 keeps the parent approval routes (`/api/parent/hadiah-approvals*`) using the BE-25 parent link. | Not built in B1, because plan 2 gives the parent role no endpoints. |
