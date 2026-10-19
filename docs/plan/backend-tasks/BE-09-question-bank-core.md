@@ -113,7 +113,7 @@ npm run be:test -- apps/api/test/conformance   # only after BE-31 is merged
 
 Do not guess these; write your working assumption in the PR and ask the lead (issue labelled `question`) if it blocks you.
 
-1. **D54(a) (2026-10-19): decided in principle, exact codes still open.** The user decided that questions use the v2 lifecycle on the wire (Draf, Semakan, Lulus, Terbit, Diarkib per v2-question-bank 4.1 and exam schema D12 "keep exactly"; D54's short list names four states and omits Lulus, which the approved docs keep) and not the mock's `draft`/`pending_review`/`approved`/`rejected`; the mock is realigned at the http switch. The requirement docs define BM labels only, not codes, so the exact wire codes are open: default (written in Outputs above) `draft`, `review`, `approved`, `published`, `archived`. The contract PR (label `contract`) states the codes and the old-to-new mapping table; the part tree replaces the old `mcq`/`structured` types as in exam schema D1.
+1. **Decided (LEAD 2026-10-19, D54(a) corrected):** five states Draf, Semakan, Lulus, Diterbitkan, Diarkib; wire codes `draft`, `review`, `approved`, `published`, `archived` (D47, v2-question-bank 4.1, exam schema D12 win). The prototype action "Lulus & Terbit" passes through `approved` then `published` in one step; both states exist on the wire.
 2. `setStatus` is the interface BE-10 needs from this card; confirm the signature with PC-5 in the contract/cross-lane issue if BE-10 starts first.
 
 ## Prompt for Claude Code

@@ -102,6 +102,8 @@ npm run be:test -- apps/api/test/conformance   # only after BE-31 is merged
 - Add or update this entity's row in the mapping matrix (plan section 14.7) in the same PR.
 - Not migrated from .cloud (pipeline tables are archived): these tables are NOT in `migratable-models.json` and have no `legacy_*` columns; state that in the PR. Provenance fields on questions follow the BE-09 and BE-10 mapping rows (`source_papers.natural_key`, `content_hash`) so the BE-30 backfill can match later; do not drop them.
 
+**Status note (LEAD 2026-10-19, D54(a) corrected):** questions have five wire states `draft`, `review`, `approved`, `published`, `archived` (BM Draf, Semakan, Lulus, Diterbitkan, Diarkib). The prototype review action "Lulus & Terbit" moves a question through `approved` and then `published` in one step; both states still exist on the wire.
+
 ## Open questions
 
 Do not guess these; write your working assumption in the PR and ask the lead (issue labelled `question`) if it blocks you.

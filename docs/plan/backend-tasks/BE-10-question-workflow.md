@@ -61,7 +61,7 @@ Every route below exists in the mock (verified).
 | `GET /api/master-notes`, `POST /api/master-notes/:id/:action` | notes lookup and the approve / unflag / regen actions (SRS BR-M04-23) |
 | `POST /api/questions/:id/ai-explanation` | **stub** (see criterion 8) |
 
-**D54(a) (2026-10-19):** statuses cross the wire as the v2 lifecycle codes `draft`, `review`, `approved`, `published`, `archived` (BM Draf, Semakan, Lulus, Terbit, Diarkib in the UI; the exact codes are BE-09 open question 1), not the mock's `draft`/`pending_review`/`approved`/`rejected`; the mock is realigned at the http switch, so this card does not replicate the mock's status values.
+**D54(a) (2026-10-19):** statuses cross the wire as the v2 lifecycle codes `draft`, `review`, `approved`, `published`, `archived` (BM Draf, Semakan, Lulus, Diterbitkan, Diarkib in the UI; codes decided by the LEAD 2026-10-19, D54(a) corrected; "Lulus & Terbit" passes through `approved` then `published` in one step), not the mock's `draft`/`pending_review`/`approved`/`rejected`; the mock is realigned at the http switch, so this card does not replicate the mock's status values.
 
 The status-transition endpoint: the mock changes status through `POST /api/questions/bulk-action` and `PUT /api/questions/:id` (BE-09 routes). This card owns the transition table behind them (BE-09's controller calls the workflow service).
 
@@ -114,7 +114,7 @@ npm run be:test -- apps/api/test/conformance   # only after BE-31 is merged
 Do not guess these; write your working assumption in the PR and ask the lead (issue labelled `question`) if it blocks you.
 
 1. The mock reports deactivate an MCQ at the first report and a structured question at the third (SRS BR-M04-12); `v2-question-bank.md` Q7 says v2 unifies this. Which rule does the API implement? Working assumption: the mock's rule until Q7 is answered.
-2. **D54(a) (2026-10-19): closed in principle.** The mock's status values differ from the v2 lifecycle; the user decided the wire uses the v2 lifecycle and the mock is realigned at the http switch. The transition table above uses the v2 statuses; the exact codes are BE-09 open question 1.
+2. **D54(a) (2026-10-19): closed.** The mock's status values differ from the v2 lifecycle; the user decided the wire uses the v2 lifecycle and the mock is realigned at the http switch. The transition table above uses the v2 statuses; the codes are decided (LEAD 2026-10-19, D54(a) corrected): `draft`, `review`, `approved`, `published`, `archived`; closed.
 3. `source_papers` columns `natural_key` and `content_hash` are required by BE-30; confirm their definition (plan 14.7) before the migration.
 4. Pending LEAD decision: OQ-22 of the URS (auto-hide threshold for reported questions; URS default: pending review after 3 reports from different students, Admin Pusat can hide at once; this is the same question as item 1) and OQ-25 (CSV as the mock versus the Excel template of v2-question-bank 4.3). Build the mock behaviour until answered. (added 2026-10-19)
 

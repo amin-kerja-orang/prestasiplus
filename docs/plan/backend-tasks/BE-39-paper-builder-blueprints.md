@@ -90,6 +90,8 @@ npm run be:test -- apps/api/test/conformance   # only after BE-31 is merged
 5. Label `security-review` on the PR; list the security decisions and the tests that prove them.
 6. The card's tracker row is updated (status, PR number, one-line note) and the PR description follows the template in `docs/plan/backend-tasks/README.md`. Nothing stays only on your PC (AGENT-SYNC.md section 4).
 
+**Status note (LEAD 2026-10-19, D54(a) corrected):** questions have five wire states `draft`, `review`, `approved`, `published`, `archived` (BM Draf, Semakan, Lulus, Diterbitkan, Diarkib). The prototype review action "Lulus & Terbit" moves a question through `approved` and then `published` in one step; both states still exist on the wire.
+
 ## Open questions
 
 Do not guess these; write your working assumption in the PR and ask the lead (issue labelled `question`) if it blocks you.
