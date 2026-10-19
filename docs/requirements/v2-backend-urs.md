@@ -409,36 +409,36 @@ Cross-cutting requirements that apply in addition to every card that adds endpoi
 
 ## 10. Mock route groups and role-matrix coverage
 
-### 10.1 Mock route groups (checked against `src/modules/*/mock/handlers`: 354 single-line `route(...)` registrations found; a few multi-line ones such as `/api/amaran/schools/:id` are additional)
+### 10.1 Mock route groups (verified counts from [v2-api-catalogue](../architecture/v2-api-catalogue.md) section 3: 491 mock routes plus 4 contract-only session endpoints = 495; M28 has 16 class methods and no routes)
 
 | Mock module | Routes | Card | Status |
 |---|---|---|---|
-| M01 authentication, notifications | 17 | BE-03, BE-06 | carded |
-| M02 users, schools, subscriptions | 43 | BE-05, BE-25 | carded |
-| M03 curriculum | 12 | BE-08 | carded |
-| M04 question bank | 25 | BE-09, BE-10 | carded |
-| M05 practice | 20 | BE-12, BE-13 | carded |
-| M06 SPM classic (`/api/spm/*`, `/api/spm-mocks`, `/api/spm-walkthrough/solve`, `/api/duta/recommendations`) | 11 | none | not covered, OQ-11 |
-| M07 PKSK | 16 | none | not covered, OQ-11, OQ-21 |
-| M08 student performance | 17 | BE-19 | carded |
-| M09 content | 25 | BE-24 | carded (student Audio KBAT play is backlog) |
-| M10 classes, missions, Command Center | 33 | BE-17, BE-18, BE-22 | carded |
-| M11 teacher analytics | 4 | BE-20 | carded |
-| M12 Kirkpatrick | 13 | BE-20 | carded |
-| M13 Cikgu Alesa | 8 | none | out of B1 (plan non-goal, OD-7), OQ-11 |
-| M14 gamification | 32 | BE-11, BE-23 | carded |
+| M01 authentication, notifications | 19 | BE-03, BE-06 | carded |
+| M02 users, schools, subscriptions | 49 | BE-05, BE-25 | carded |
+| M03 curriculum | 29 | BE-08 | carded |
+| M04 question bank | 30 | BE-09, BE-10 | carded |
+| M05 practice | 23 | BE-12, BE-13 | carded |
+| M06 SPM classic (`/api/spm/*`, `/api/spm-mocks`, `/api/spm-walkthrough/solve`, `/api/duta/recommendations`) | 14 | none | not covered, OQ-11 |
+| M07 PKSK | 21 | none | not covered, OQ-11, OQ-21 |
+| M08 student performance | 30 | BE-19 | carded |
+| M09 content | 43 | BE-24 | carded (student Audio KBAT play is backlog) |
+| M10 classes, missions, Command Center | 39 | BE-17, BE-18, BE-22 | carded |
+| M11 teacher analytics | 7 | BE-20 | carded |
+| M12 Kirkpatrick | 14 | BE-20 | carded |
+| M13 Cikgu Alesa | 10 | none | out of B1 (plan non-goal, OD-7), OQ-11 |
+| M14 gamification | 42 | BE-11, BE-23 | carded |
 | M15 rewards shop | 18 | BE-23 | carded; parent approval routes: OQ-20 |
-| M16 battle, games, tournaments, leagues, Sekolah Bersaing | 28 | none | not covered, OQ-11, OQ-14 |
-| M17 admin dashboard | 2 | BE-22 | carded |
-| M18 PPD/JPN, Amaran Awal | 2 listed, plus the multi-line `/api/amaran/schools/:id` and export routes | none | not covered, OQ-12 |
+| M16 battle, games, tournaments, leagues, Sekolah Bersaing | 52 | none | not covered, OQ-11, OQ-14 |
+| M17 admin dashboard | 11 | BE-22 | carded |
+| M18 PPD/JPN, Amaran Awal | 4 | none | not covered, OQ-12 |
 | M20 marketplace | 5 | none | out of B1 (plan non-goal) |
 | M21 sponsorship | 1 | none | out of B1 (plan non-goal), OQ-11 |
 | M22 support tickets | 4 | BE-24 | carded |
 | M25 AI centre (`/api/buku-nota/heatmap`) | 1 | none | not covered, OQ-13 |
-| M27 school admin | 17 | BE-21 | carded |
-| M28 Bijak SPM | 0 (class `BijakServer`) | BE-15, BE-16, BE-39 | carded; HTTP surface is defined by the contract commit |
+| M27 school admin | 22 | BE-21 | carded |
+| M28 Bijak SPM | 0 routes, 16 `BijakServer` methods | BE-15, BE-16, BE-39 | carded; HTTP surface is defined by the contract commit |
 
-The backlog row of the cards README names four items (student Audio KBAT, M20, M21, M18) but gives three counts ("5, 1, 2"), so they cannot be matched to the items; the counts above are the measured ones (section 13.4).
+Core routes outside any module (`GET /api/me`, gamification summary, server status): 3, served by BE-06, BE-11, BE-22. The catalogue also lists 143 uncovered routes with the reason for each.
 
 ### 10.2 Role-matrix rows and the card that serves them
 
@@ -559,15 +559,15 @@ See 9.3 (generated counts). Every requirement maps to at least one card and ever
 
 | Conflict | Resolution |
 |---|---|
-| Backend stack ADR number: plan 3 and OD-19 say 0020; BE-01 AC2 and its prompt say 0019; BE-14 also writes `0020-exam-core-shared-package.md`. | Plan wins: 0020 is the backend stack; the exam-core ADR takes the next free number (0021 or later, numbered by the lead). Card changes proposed. |
+| Backend stack ADR number: plan 3 and OD-19 say 0020; BE-01 said 0019; BE-14 wrote 0020. | Resolved by the card audit: BE-01 is ADR-0020, BE-14 is ADR-0021. |
 | `legacy_cloud_id` (contract `common/ids.ts` comment, v2-data-migration X1 and risks) versus `legacy_source` + `legacy_id` (plan 5 and 14.2, which states it replaces the single column). | Plan 14.2 wins. The contract comment and the migration doc are stale; the LEAD owns the contract file. |
 | Mock authenticates with a Bearer token, contract uses cookie + CSRF. | Contract (plan 12). No Bearer on the real API. |
 | Mock ids are numbers for users and schools; contract ids are strings. | Contract (OD-9). |
 | Role keys `admin_sekolah`, `pegawai_ppd` versus `school_admin`, `ppd_officer`. | Contract codes. |
-| BE-10 paths: card body says `modules/question-workflow` and `question-workflow.prisma`; its programme update and sessions.md say `modules/questions/workflow` and `questions-workflow.prisma`. | The programme update wins (lane ownership). Card body to be fixed. |
+| BE-10 paths differed between its body and its programme update. | Resolved by the card audit (`modules/questions/workflow`; the new contract folder `question-workflow/` needs the lead's approval in the PR). |
 | Plan 15.4 says BE-10 keeps "Excel import"; the card and mock say CSV. | OQ-25. |
 | `demo.test` e-mails in `docs/AKAUN-DEMO.md` versus the `example.test` rule and guard test in BE-07 and BE-26. | Both reserved domains are fictitious; the guard must allow both (card change proposed). |
-| The cards README backlog row names four items (Audio KBAT play, M20, M21, M18) but gives three counts. | Section 10.1 holds the measured counts. |
+| Route counts in plan 6.3 and the cards README were stale. | The verified counts of the API catalogue (section 10.1) apply. |
 | `v2-portals` Q4 default (read-only preview) versus D31c and the contract (act fully as themselves, writes stamped `is_test`). | TRACKER D31c and the contract win (BE-FR-33). |
 
 ### 13.3 Gaps found and fixed in this edition
@@ -580,18 +580,16 @@ See 9.3 (generated counts). Every requirement maps to at least one card and ever
 6. Mock domains and matrix rows with no card are now listed one by one (sections 10 and 11) instead of one sentence.
 7. Rows that said "all cards" now name the cards, and 9.1 and 9.2 are generated from the rows.
 
-### 13.4 Card changes proposed (the lead edits the cards; this file does not)
+### 13.4 Card changes proposed (re-checked against the audited cards, commit 63d363c; the lead edits the cards)
 
-1. BE-01: AC2 and prompt say ADR-0019; use ADR-0020.
-2. BE-14: the ADR file name `0020-exam-core-shared-package.md` collides; use the next free number.
-3. BE-10: fix the body paths to `apps/api/src/modules/questions/workflow/**` and `questions-workflow.prisma`; add AC for versioning (BE-FR-35), report statuses and the 500-character comment (BE-FR-36), the 4.8 gates by name, and OQ-22.
-4. BE-12: state that assigned-mode starts (`missionId`, `remedialTestId`, `questionSetId`) are enabled by BE-18 and quest rewards by BE-23 (use a port with a no-op default until those merge); otherwise BE-12 depends on tables that do not exist yet.
-5. BE-13: `GET /api/remedial-tests/mine` and `GET /api/missions/today` read tables created by BE-18; move them to BE-18 or return an empty list until BE-18 merges.
-6. BE-03: add AC for BE-NFR-39 (permission change on the next request).
-7. BE-07 and BE-26: allow the `demo.test` domain of the canonical demo accounts in the e-mail guard.
-8. BE-29: add an AC for T-10 (content file copy with checksum and path rewrite) and clarify mood data.
-9. BE-22 and BE-28: remove `mood_checkins` / `settings` from the mapping matrix or add a card that creates them (OQ-24).
-10. BE-05 and BE-21: replace the two impersonate routes by a pointer to BE-03 session mode, pending OQ-17.
-11. BE-06: AC2 versus M01 BR-10 (OQ-10); say where the reset token may be logged.
-12. Cards README: fix the backlog row (four items, three counts; section 10.1 has the measured counts).
-13. BE-23: remove the parent approval routes from the 18 M15 routes unless OQ-20 is answered otherwise.
+Handled by the audit or the card edits: BE-01 ADR-0020; BE-14 ADR-0021; BE-10 paths; BE-13 no longer owns `missions/today` and `remedial-tests/mine` (moved to BE-18); BE-06 records the reset-disclosure deviation and logging of reset links in dev only (OQ-10 stays open for production delivery); BE-05 builds impersonate on the BE-03 session mode (BE-21 keeps it pending its own open question, OQ-17); BE-22/BE-28 no longer claim `mood_checkins`, and BE-28 states that `settings` and `packages` have no owner card (OQ-24 narrowed to that); BE-23 limits parent approvals to the BE-25 parent link (OQ-20 narrowed); cards README backlog counts re-verified.
+
+Still open:
+
+1. BE-10: add AC for versioning (BE-FR-35: "Sunting" creates version n+1, n becomes Diarkib in the same transaction) and for the report statuses and 500-character comment (BE-FR-36); the auto-hide rule is OQ-22.
+2. BE-12: state that assigned-mode starts (`missionId`, `remedialTestId`, `questionSetId`) are enabled by BE-18 and quest rewards by BE-23, using a port with a no-op default until then.
+3. BE-03: add an AC for BE-NFR-39 (a role, school or active-flag change takes effect on the next request).
+4. BE-07 and BE-26: the e-mail guard must allow `demo.test` (canonical demo accounts) as well as `example.test`.
+5. BE-29: add an AC for T-10 (content file copy with checksum and path rewrite).
+6. BE-21: replace the impersonate routes by a pointer to BE-03 session mode once OQ-17 is answered.
+7. BE-06 and M01 BR-10: confirm the deviation wording (OQ-10).

@@ -44,6 +44,8 @@ docs/ops/api-runbook.md           operations runbook (BE-33)
 
 Who may edit which folder is in [sessions.md](sessions.md) sections 5 and 6 and plan section 9; this guide does not repeat it. You never edit `src/**`, `e2e/**`, `docs/TRACKER.md`, `packages/contract/src/{common,session,auth,access}/**` or another lane's folders: open a GitHub issue labelled `cross-lane` or `contract` instead.
 
+**Look-ups:** endpoints, request/response shapes and error codes per route are in [v2-api-catalogue.md](../architecture/v2-api-catalogue.md); tables, columns and owners are in [v2-data-model.md](../architecture/v2-data-model.md). Check both before writing a contract or a migration.
+
 ## 2. Commands
 
 Run everything from the repository root. Only the first block exists today; the rest is added by the named card, so before that card merges the command does not exist (do not write docs or CI that assume it). Before BE-01 merges, use the checks per card type in [AGENT-SYNC.md](AGENT-SYNC.md) section 4 instead of `be:verify`.
