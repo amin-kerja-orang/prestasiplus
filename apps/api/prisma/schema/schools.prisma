@@ -67,6 +67,7 @@ model School {
   userScopes  UserScope[]
   auditEvents AuditEvent[]
   importJobs  ImportJob[]
+  subscriptions SchoolSubscription[]
 
   // uq_schools_code_lower (unique on lower(code)) and ix_schools_name_lower are hand-written in migration
   // 0004 (Prisma cannot express functional indexes); `migrate diff` ignores them.
@@ -75,4 +76,148 @@ model School {
   @@index([ppdId], map: "ix_schools_ppd_id")
   @@index([jpnId], map: "ix_schools_jpn_id")
   @@map("schools")
+}
+
+/// Subscription package catalogue (T4, T5, D1_D6, T1_T3). Price is RM per student per year, numeric(10,2).
+/// Checks and the legacy_source check are written by hand in migration 0006_subscriptions_parents.
+model SchoolPackage {
+  id             BigInt   @id @default(autoincrement())
+  /// `T4`, `T5`, `D1_D6`, `T1_T3` (check).
+  code           String   @unique(map: "uq_school_packages_code")
+  name           String
+  slug           String   @unique(map: "uq_school_packages_slug")
+  /// `spm`, `primary`, `lower_secondary` (check).
+  educationLevel String   @map("education_level")
+  /// `t4`, `t5`, `d1_d6`, `t1_t3` (check).
+  formLevel      String   @map("form_level")
+  priceAnnual    Decimal  @map("price_annual") @db.Decimal(10, 2)
+  /// Term years = maxRenewals + 1.
+  maxRenewals    Int      @default(0) @map("max_renewals") @db.SmallInt
+  isActive       Boolean  @default(true) @map("is_active")
+  createdAt      DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt      DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+  legacySource   String?  @map("legacy_source")
+  legacyId       String?  @map("legacy_id")
+
+  subscriptions SchoolSubscription[]
+  userPackages  UserPackage[]
+
+  @@unique([legacySource, legacyId], map: "uq_school_packages_legacy")
+  @@map("school_packages")
+}
+
+model SchoolSubscription {
+  id               BigInt   @id @default(autoincrement())
+  schoolId         BigInt   @map("school_id")
+  schoolPackageId  BigInt   @map("school_package_id")
+  /// `basic` (Pemantauan) or `full` (Penuh) (check).
+  packageTier      String   @map("package_tier")
+  /// Null only for migrated rows whose source has no student quota (OD-22); check >= 1 when set.
+  studentQuota     Int?     @map("student_quota")
+  /// `active`, `grace`, `expired`, `cancelled` (check). `none` is an API value, never stored.
+  status           String
+  startsOn         DateTime @map("starts_on") @db.Date
+  endsOn           DateTime @map("ends_on") @db.Date
+  questionLimit    Int?     @map("question_limit")
+  paymentReference String?  @map("payment_reference")
+  paymentNotes     String?  @map("payment_notes")
+  notes            String?
+  createdAt        DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt        DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+  legacySource     String?  @map("legacy_source")
+  legacyId         String?  @map("legacy_id")
+
+  school        School        @relation(fields: [schoolId], references: [id], onDelete: Restrict, map: "fk_school_subscriptions_school_id")
+  schoolPackage SchoolPackage @relation(fields: [schoolPackageId], references: [id], onDelete: Restrict, map: "fk_school_subscriptions_school_package_id")
+
+  @@unique([legacySource, legacyId], map: "uq_school_subscriptions_legacy")
+  // "Latest active or grace subscription" of a school: latest starts_on, then id.
+  @@index([schoolId, startsOn, id], map: "ix_school_subscriptions_school_starts")
+  @@index([schoolId, status], map: "ix_school_subscriptions_school_status")
+  @@index([schoolPackageId], map: "ix_school_subscriptions_school_package_id")
+  @@map("school_subscriptions")
+}
+
+/// School-admin package assignment (mock `schoolAdminPackages`). No .cloud source, no legacy columns.
+model UserPackage {
+  id              BigInt   @id @default(autoincrement())
+  userId          BigInt   @map("user_id")
+  /// `t4`, `t5` (check).
+  formLevel       String   @map("form_level")
+  schoolPackageId BigInt   @map("school_package_id")
+  studentQuota    Int      @map("student_quota")
+  assignedAt      DateTime @default(now()) @map("assigned_at") @db.Timestamptz(6)
+  createdAt       DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt       DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  user          User          @relation(fields: [userId], references: [id], onDelete: Cascade, map: "fk_user_packages_user_id")
+  schoolPackage SchoolPackage @relation(fields: [schoolPackageId], references: [id], onDelete: Restrict, map: "fk_user_packages_school_package_id")
+
+  @@index([userId, assignedAt], map: "ix_user_packages_user_assigned")
+  @@index([schoolPackageId], map: "ix_user_packages_school_package_id")
+  @@map("user_packages")
+}
+
+/// Parent to student link. `legacy_id` = `parent_id:student_id` of the source.
+model ParentLink {
+  id           BigInt   @id @default(autoincrement())
+  parentId     BigInt   @map("parent_id")
+  studentId    BigInt   @map("student_id")
+  /// Free text, at most 50 characters (OQ-DM-15); null when the source has none.
+  relationship String?
+  createdAt    DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt    DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+  legacySource String?  @map("legacy_source")
+  legacyId     String?  @map("legacy_id")
+
+  parent  User @relation("ParentLinkParent", fields: [parentId], references: [id], onDelete: Cascade, map: "fk_parent_links_parent_id")
+  student User @relation("ParentLinkStudent", fields: [studentId], references: [id], onDelete: Cascade, map: "fk_parent_links_student_id")
+
+  // All linked children of a parent are served by uq_parent_links_parent_student (parent_id leading).
+  @@unique([parentId, studentId], map: "uq_parent_links_parent_student")
+  @@unique([legacySource, legacyId], map: "uq_parent_links_legacy")
+  @@index([studentId], map: "ix_parent_links_student_id")
+  @@map("parent_links")
+}
+
+/// One live invite per student. The raw token is never stored: only its hash.
+model ParentInvite {
+  id           BigInt    @id @default(autoincrement())
+  studentId    BigInt    @unique(map: "uq_parent_invites_student_id") @map("student_id")
+  /// Hash of the random token. Unique. There is no raw token column.
+  tokenHash    String    @unique(map: "uq_parent_invites_token_hash") @map("token_hash")
+  expiresAt    DateTime  @map("expires_at") @db.Timestamptz(6)
+  /// Single use: set when accepted.
+  usedAt       DateTime? @map("used_at") @db.Timestamptz(6)
+  acceptedById BigInt?   @map("accepted_by_id")
+  createdAt    DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt    DateTime  @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+  legacySource String?   @map("legacy_source")
+  legacyId     String?   @map("legacy_id")
+
+  student    User  @relation("ParentInviteStudent", fields: [studentId], references: [id], onDelete: Cascade, map: "fk_parent_invites_student_id")
+  acceptedBy User? @relation("ParentInviteAcceptedBy", fields: [acceptedById], references: [id], onDelete: SetNull, map: "fk_parent_invites_accepted_by_id")
+
+  @@unique([legacySource, legacyId], map: "uq_parent_invites_legacy")
+  @@index([expiresAt], map: "ix_parent_invites_expires_at")
+  @@index([acceptedById], map: "ix_parent_invites_accepted_by_id")
+  @@map("parent_invites")
+}
+
+/// Complimentary (free) student profile. The IC lives only on `users` (ic_hash / ic_masked), never here.
+model CompStudent {
+  id                 BigInt   @id @default(autoincrement())
+  userId             BigInt   @unique(map: "uq_comp_students_user_id") @map("user_id")
+  coinsEnabled       Boolean  @default(false) @map("coins_enabled")
+  packageExpiresOn   DateTime @map("package_expires_on") @db.Date
+  originalSchoolName String?  @map("original_school_name")
+  createdAt          DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt          DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+  legacySource       String?  @map("legacy_source")
+  legacyId           String?  @map("legacy_id")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade, map: "fk_comp_students_user_id")
+
+  @@unique([legacySource, legacyId], map: "uq_comp_students_legacy")
+  @@map("comp_students")
 }

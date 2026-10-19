@@ -13,7 +13,36 @@ async function parentUser(query: FixtureQuery): Promise<string> {
   return (rows[0] as { id: string }).id
 }
 
+async function parentSchool(query: FixtureQuery): Promise<string> {
+  const rows = await query<{ id: string }>(`insert into schools (name) values ('Sekolah Contoh') returning id::text as id`)
+  return (rows[0] as { id: string }).id
+}
+
+async function parentPackage(query: FixtureQuery): Promise<string> {
+  const rows = await query<{ id: string }>(
+    `insert into school_packages (code, name, slug, education_level, form_level, price_annual)
+     values ('T4', 'Pakej Contoh', 'pakej-contoh', 'spm', 't4', 30.00) returning id::text as id`,
+  )
+  return (rows[0] as { id: string }).id
+}
+
 export const MODEL_FIXTURES: Record<string, Fixture> = {
+  comp_students: async (query) => ({ user_id: await parentUser(query), package_expires_on: '2027-01-01' }),
+  parent_invites: async (query) => ({
+    student_id: await parentUser(query),
+    token_hash: 'a'.repeat(64),
+    expires_at: '2027-01-01T00:00:00Z',
+  }),
+  parent_links: async (query) => ({ parent_id: await parentUser(query), student_id: await parentUser(query) }),
+  school_packages: { code: 'T5', name: 'Pakej T5', slug: 'pakej-t5', education_level: 'spm', form_level: 't5', price_annual: 30 },
+  school_subscriptions: async (query) => ({
+    school_id: await parentSchool(query),
+    school_package_id: await parentPackage(query),
+    package_tier: 'full',
+    status: 'active',
+    starts_on: '2026-01-01',
+    ends_on: '2026-12-31',
+  }),
   // schools: name (text) is generated; nothing else is required.
   user_roles: async (query) => ({ user_id: await parentUser(query), role: 'student' }),
   user_scopes: async (query) => ({ user_id: await parentUser(query), role: 'student', level: 'self' }),
