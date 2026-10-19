@@ -24,6 +24,13 @@ const MISSING = (what: string, level: string): Error =>
  * Builds the Prisma `where` fragment of the ACTIVE scope and checks single records against it.
  * The scope comes from `AuthContext` only. Merge the fragment with the repository's own filters
  * using `AND`, for example `where: { AND: [scope.where(cols), ownFilter] }`.
+ *
+ * Level semantics:
+ * - `class` scope is the school: the contract carries no class ids, so `class` filters by `schoolColumn`.
+ * - `self` filters by the owner column (`userColumn`) = the caller. For a `parent` the self scope is the
+ *   linked children, which this column check does not express, so a parent gets NO rows here;
+ *   BE-25 (parent portal) must build its own child-link filter.
+ * - `schoolRelation` must be a to-one relation to `School` (it is used with `is: {...}`).
  */
 export class ScopeFilter {
   constructor(private readonly auth: AuthContext) {}

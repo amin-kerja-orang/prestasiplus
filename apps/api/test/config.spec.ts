@@ -3,19 +3,31 @@ import { fileURLToPath } from 'node:url'
 
 import { describe, expect, it } from 'vitest'
 
-import { EnvSchema, loadEnv } from '../src/common/config/env.schema'
+import { DEV_SESSION_SECRET, EnvSchema, loadEnv } from '../src/common/config/env.schema'
 
 const DB_URL = 'postgresql://u:p@localhost:5432/x'
 const VALID = { NODE_ENV: 'test', PORT: '3000', LOG_LEVEL: 'info', DATABASE_URL: DB_URL }
 
 describe('env validation', () => {
   it('accepts a valid environment and applies defaults', () => {
-    expect(loadEnv({ NODE_ENV: 'production', DATABASE_URL: DB_URL })).toEqual({
+    expect(
+      loadEnv({ NODE_ENV: 'production', DATABASE_URL: DB_URL, SESSION_SECRET: 'x'.repeat(32) }),
+    ).toEqual({
       NODE_ENV: 'production',
       PORT: 3000,
       LOG_LEVEL: 'info',
       DATABASE_URL: DB_URL,
+      SESSION_SECRET: 'x'.repeat(32),
     })
+  })
+
+  it('requires a strong SESSION_SECRET in production and defaults it elsewhere', () => {
+    const prod = { NODE_ENV: 'production', DATABASE_URL: DB_URL }
+    expect(() => loadEnv(prod)).toThrow(/SESSION_SECRET/)
+    expect(() => loadEnv({ ...prod, SESSION_SECRET: 'change-me' })).toThrow(/SESSION_SECRET/)
+    expect(() => loadEnv({ ...prod, SESSION_SECRET: 'short' })).toThrow(/SESSION_SECRET/)
+    expect(loadEnv({ ...VALID }).SESSION_SECRET).toBe(DEV_SESSION_SECRET)
+    expect(loadEnv({ ...VALID, SESSION_SECRET: 'abc' }).SESSION_SECRET).toBe('abc')
   })
 
   const required = Object.entries(EnvSchema.shape)

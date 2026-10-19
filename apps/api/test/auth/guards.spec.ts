@@ -55,6 +55,12 @@ const CONTEXTS: Record<string, AuthContext> = {
   admin_active: ctxFor('school_admin', ['teacher', 'school_admin']),
   teacher_active: ctxFor('teacher', ['teacher', 'school_admin']),
   student: ctxFor('student', ['student']),
+  // Mod Pelajar: the account is school_admin, the request acts as student/self.
+  mod_pelajar: {
+    ...ctxFor('student', ['school_admin']),
+    mode: { kind: 'mod_pelajar', returnRole: 'school_admin', since: '2026-10-19T08:00:00+08:00', isTest: true },
+    active: { role: 'student', portal: 'pembelajaran', scope: SELF_SCOPE, via: 'mod_pelajar' },
+  },
 }
 const ADMIN_CAP = capabilitiesFor('school_admin', SCHOOL_SCOPE)[0]!.key
 
@@ -106,6 +112,7 @@ class GuardTestModule {
 describe('guards (BE-03 part B)', () => {
   let app: INestApplication
   const http = () => request(app.getHttpServer())
+  const resolver = () => app.get(SESSION_RESOLVER) as FakeResolver
 
   beforeAll(async () => {
     app = await createTestApp({ modules: [GuardTestModule], controllers: [] })
@@ -116,8 +123,10 @@ describe('guards (BE-03 part B)', () => {
 
   describe('AuthGuard', () => {
     it('lets a @Public() route through without calling the resolver for a session', async () => {
+      const before = resolver().calls
       const res = await http().get('/api/guard/public').expect(200)
       expect(res.body).toEqual({ data: 'public' })
+      expect(resolver().calls).toBe(before)
     })
 
     it('returns 401 UNAUTHORIZED, parsing as ErrorBodySchema, when the resolver yields null', async () => {
@@ -156,6 +165,12 @@ describe('guards (BE-03 part B)', () => {
       await http().get('/api/guard/admin-only').set('x-ctx', 'student').expect(403)
       await http().get('/api/guard/learners').set('x-ctx', 'admin_active').expect(403)
       await http().get('/api/guard/learners').set('x-ctx', 'teacher_active').expect(200)
+    })
+
+    it('refuses a Mod Pelajar session (account school_admin, active student/self) on @Roles(school_admin)', async () => {
+      expect(CONTEXTS.mod_pelajar!.roles.map((r) => r.role)).toEqual(['school_admin'])
+      await http().get('/api/guard/admin-only').set('x-ctx', 'mod_pelajar').expect(403)
+      await http().get('/api/guard/learners').set('x-ctx', 'mod_pelajar').expect(200)
     })
 
     it('answers 401 before 403 when there is no session', async () => {

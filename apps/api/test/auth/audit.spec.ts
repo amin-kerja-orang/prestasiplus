@@ -1,3 +1,4 @@
+import { ApiError } from '../../src/common/errors/api-error'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 
 import {
@@ -9,6 +10,8 @@ import {
 } from '../../src/common/audit'
 import { PrismaService } from '../../src/db/prisma.service'
 import { createTestDatabase, type TestDatabase } from '../support/db'
+
+const SECRET = 'test-secret-0123456789abcdef'
 
 interface AuditRow {
   action: string
@@ -30,6 +33,7 @@ const SELECT = `select action, actor_user_id::text, actor_role, scope_level, sco
 describe('AuditService', () => {
   let db: TestDatabase
   let audit: AuditService
+  let prisma: PrismaService
   let userId: string
   let schoolId: string
 
@@ -42,8 +46,8 @@ describe('AuditService', () => {
       await db.query<{ id: string }>(`insert into users (name) values ('Pengguna Audit') returning id::text`)
     )[0]!.id
     // PrismaService only needs a ConfigService-like object for DATABASE_URL.
-    const prisma = new PrismaService({ get: () => db.url } as never)
-    audit = new AuditService(prisma)
+    prisma = new PrismaService({ get: () => db.url } as never)
+    audit = new AuditService(prisma, { get: () => SECRET } as never)
   })
   afterAll(async () => {
     await db.drop()
@@ -91,7 +95,7 @@ describe('AuditService', () => {
       to: 'school_admin',
       sessionRowId: '00000000-0000-4000-8000-0000000000aa',
     })
-    expect(row!.ip_hash).toBe(hashIp('203.0.113.9'))
+    expect(row!.ip_hash).toBe(hashIp('203.0.113.9', SECRET))
   })
 
   it('stores only a hash of the IP, never the raw address', async () => {
@@ -115,7 +119,7 @@ describe('AuditService', () => {
         nested: { sessionCookie: secret, csrfToken: secret, ok: 1 },
         icNumber: '900101015555',
         note: '900101-01-5555',
-        list: [{ authorization: secret }, '010203040506'],
+        list: [{ authorization: secret }, 'ic 010203040506 end'],
       },
     })
     const [row] = await db.query<AuditRow>(SELECT)
@@ -136,6 +140,67 @@ describe('AuditService', () => {
     await expect(
       audit.record({ action: AUDIT_ACTIONS.LOGOUT, actorUserId: 'abc' }),
     ).rejects.toThrow(/actorUserId/)
+  })
+
+  it('the IP hash depends on the secret', () => {
+    expect(hashIp('203.0.113.9', SECRET)).toBe(hashIp('203.0.113.9', SECRET))
+    expect(hashIp('203.0.113.9', SECRET)).not.toBe(hashIp('203.0.113.9', SECRET + 'x'))
+    expect(hashIp('203.0.113.9', SECRET)).not.toBe(hashIp('203.0.113.10', SECRET))
+  })
+
+  it('writes isTest, omits details and keeps ip_hash null when ip is null', async () => {
+    await audit.record({ action: AUDIT_ACTIONS.MODE_ENTERED, actorUserId: userId, isTest: true, ip: null })
+    const [row] = await db.query<AuditRow>(SELECT)
+    expect(row).toMatchObject({ is_test: true, ip_hash: null, detail: null })
+  })
+
+  it('joins a caller transaction: a rollback removes the audit row', async () => {
+    const before = (await db.query<{ n: string }>('select count(*)::text n from audit_events'))[0]!.n
+    await prisma
+      .transaction(async (tx) => {
+        await audit.record({ action: AUDIT_ACTIONS.LOGOUT, actorUserId: userId, tx })
+        throw new Error('rollback')
+      })
+      .catch(() => undefined)
+    const after = (await db.query<{ n: string }>('select count(*)::text n from audit_events'))[0]!.n
+    expect(after).toBe(before)
+    await prisma.transaction(async (tx) => {
+      await audit.record({ action: AUDIT_ACTIONS.LOGOUT, actorUserId: userId, tx })
+    })
+    expect((await db.query<{ n: string }>('select count(*)::text n from audit_events'))[0]!.n).toBe(String(Number(before) + 1))
+  })
+
+  it('a bad id throws a typed ApiError', async () => {
+    await expect(audit.record({ action: 'x', actorUserId: '1;drop' })).rejects.toBeInstanceOf(ApiError)
+  })
+
+  it('redaction catches new keys and free-text IC numbers, and spares look-alike keys', () => {
+    const out = sanitizeDetails({
+      pwd: 'a', kata_laluan: 'b', otp: '123456', jwt: 'x', sid: 'y', apiKey: 'z', api_key: 'z', access_token: 't',
+      msg: 'user 900101-01-5555 and 900101 01 5555 and 900101015555 tried',
+      count: 900101015555,
+      passed: 'ok', bypass: 'ok', topic_no: '7', logic_hash: 'abc', schoolId: '123456789012', status: 'passed',
+      big: 12n, at: new Date('2026-10-19T00:00:00.000Z'),
+    }) as Record<string, unknown>
+    for (const k of ['pwd', 'kata_laluan', 'otp', 'jwt', 'sid', 'apiKey', 'api_key', 'access_token']) {
+      expect(out[k]).toBe(REDACTED)
+    }
+    expect(out.msg).toBe(`user ${REDACTED} and ${REDACTED} and ${REDACTED} tried`)
+    expect(out.count).toBe(REDACTED)
+    expect(out).toMatchObject({
+      passed: 'ok', bypass: 'ok', topic_no: '7', logic_hash: 'abc',
+      schoolId: '123456789012', // a bare 12-digit whole value is treated as an id
+      status: 'passed', big: '12', at: '2026-10-19T00:00:00.000Z',
+    })
+  })
+
+  it('sanitises targetId, requestId and actorRole', async () => {
+    await audit.record({
+      action: 'x.y', actorUserId: null, actorRole: 'role 900101-01-5555',
+      targetId: '900101-01-5555', requestId: 'r 900101 01 5555',
+    })
+    const [row] = await db.query<AuditRow>(SELECT)
+    expect(JSON.stringify(row)).not.toContain('900101')
   })
 
   it('sanitizeDetails leaves plain facts untouched', () => {
