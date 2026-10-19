@@ -24,7 +24,7 @@ describe('no connection string or credential in logs (AC5)', () => {
   const fakeTargetPool = {
     query: async (sql: string) => {
       if (/pg_control_system/.test(sql)) throw new Error('not readable')
-      return { rows: [{ database: 'target', address: '10.255.255.1', port: 5432 }] }
+      return { rows: [{ db: 'target', database: 'target', address: '10.255.255.1', port: 5432 }] }
     },
     connect: async () => {
       throw new Error('the target pool must not be used')
@@ -41,7 +41,13 @@ describe('no connection string or credential in logs (AC5)', () => {
     const stdout: string[] = []
     spies.push(vi.spyOn(process.stdout, 'write').mockImplementation(((c: unknown) => (stdout.push(String(c)), true)) as never))
     const code = await runStagingCli(argv, {
-      env: { DATABASE_URL: 'postgresql://target_user:target_pw_fixture@127.0.0.1:1/target', CLOUD_SOURCE_URL: cloudUrl },
+      env: {
+        NODE_ENV: 'test',
+        PP_ALLOW_STAGING_RESET: '1',
+        PP_STAGING_DB_ALLOWLIST: 'target',
+        DATABASE_URL: 'postgresql://target_user:target_pw_fixture@127.0.0.1:1/target',
+        CLOUD_SOURCE_URL: cloudUrl,
+      },
       pool: fakeTargetPool as never,
       out: io.out,
       err: io.err,
@@ -222,7 +228,7 @@ describe('runbook (AC6)', () => {
       'PP_ALLOW_STAGING_RESET=1', '_staging', 'revoke create on schema public from public', 'PostgreSQL 14',
       'Maximum retention', 'custodian is the lead', 'Full-disk encryption at rest', 'Write-ahead log', 'backups',
       'shell history', 'restricted', 'PDPA incident is reported to the lead immediately', '2^53', 'NULL',
-      'never carry the legacy token', 'sslmode=require', '[masked]', 'pg_write_server_files', 'SECURITY DEFINER',
+      'never carry the legacy token', 'sslmode=require', 'sslmode=verify-full', 'no partial load', '[masked]', 'pg_write_server_files', 'SECURITY DEFINER',
     ]
     for (const needle of needles) {
       expect(text, needle).toContain(needle)

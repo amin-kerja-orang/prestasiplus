@@ -1,4 +1,4 @@
-import { existsSync, mkdirSync, readFileSync, rmSync, statSync, symlinkSync, writeFileSync } from 'node:fs'
+import { existsSync, mkdirSync, readFileSync, rmdirSync, rmSync, statSync, symlinkSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
@@ -153,6 +153,24 @@ describe('enum cap and masking', () => {
   })
 })
 
+describe('profile options', () => {
+  it('falls back to the default concurrency for a value that is not a positive integer', async () => {
+    const tables = ['users', 'schools']
+    const base = await collectProfile(env.pool, NOW, { tables })
+    for (const concurrency of [0, -3, 1.5, Number.NaN, Infinity]) {
+      expect(await collectProfile(env.pool, NOW, { tables, concurrency }), String(concurrency)).toEqual(base)
+    }
+  })
+
+  it('rejects --tables with a duplicate or unknown table as a usage error', async () => {
+    for (const tables of ['users,users', 'users,nope']) {
+      const io = capture()
+      const code = await runStagingCli(['staging:profile', '--tables', tables], { env: {}, pool: env.pool, out: io.out, err: io.err, now: NOW })
+      expect(code, tables).toBe(STAGING_EXIT.usage)
+    }
+  })
+})
+
 describe('no personal value in the report (AC3 grep test)', () => {
   const personalValues = (): string[] => {
     const values = new Set<string>()
@@ -259,6 +277,7 @@ describe('report output guard (L3)', () => {
 describe('staging:profile command', () => {
   it('writes the report under a .migration-out folder in the working directory and returns 0', async () => {
     const base = join(process.cwd(), '.migration-out', `test-${process.pid}`)
+    const badDir = tempDir()
     try {
       const io = capture()
       const code = await runStagingCli(['staging:profile', '--tables', 'users,schools', '--out', base], { env: {}, pool: env.pool, out: io.out, err: io.err, now: NOW })
@@ -266,10 +285,16 @@ describe('staging:profile command', () => {
       expect(existsSync(join(base, 'profile-2026-10-19.md'))).toBe(true)
       const json = JSON.parse(readFileSync(join(base, 'profile-2026-10-19.json'), 'utf8')) as ProfileReport
       expect(json.tables.map((t) => t.table)).toEqual(['users', 'schools'])
-      const bad = await runStagingCli(['staging:profile', '--tables', 'users', '--out', join(tempDir().path, 'plain')], { env: {}, pool: env.pool, out: io.out, err: io.err, now: NOW })
+      const bad = await runStagingCli(['staging:profile', '--tables', 'users', '--out', join(badDir.path, 'plain')], { env: {}, pool: env.pool, out: io.out, err: io.err, now: NOW })
       expect(bad).toBe(STAGING_EXIT.failed)
     } finally {
       rmSync(base, { recursive: true, force: true })
+      badDir.cleanup()
+      try {
+        rmdirSync(join(process.cwd(), '.migration-out')) // only succeeds when empty; leave other users' reports alone
+      } catch {
+        // not empty or already gone
+      }
     }
   })
 })

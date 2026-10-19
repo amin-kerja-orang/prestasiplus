@@ -167,9 +167,9 @@ function assertTransportSecurity(url: string): void {
   } catch {
     throw new CloudSourceConfigError('CLOUD_SOURCE_URL is not a valid URL.')
   }
-  const socketDir = u.searchParams.get('host')
-  const host = u.hostname
-  if (host === '' || LOOPBACK.test(host) || socketDir?.startsWith('/')) return
+  // The `host` query parameter overrides the authority (libpq), so it is judged like a host name too.
+  const hosts = [u.hostname, ...(u.searchParams.get('host')?.split(',') ?? [])].filter((h) => h !== '')
+  if (hosts.every((h) => h.startsWith('/') || LOOPBACK.test(h))) return
   const mode = u.searchParams.get('sslmode')
   if (mode !== 'require' && mode !== 'verify-full') {
     throw new CloudSourceConfigError(

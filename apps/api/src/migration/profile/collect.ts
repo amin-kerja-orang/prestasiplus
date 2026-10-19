@@ -150,6 +150,11 @@ export async function profileTable(db: pg.Pool, spec: TableSpec): Promise<TableP
   return { schema: schemaOf(spec), table: spec.name, rowCount: total, nullRatios, enums, orphans, duplicates, hashPrefixes }
 }
 
+/** A positive integer, else the default of 4. */
+function validConcurrency(value: number | undefined): number {
+  return Number.isInteger(value) && (value as number) > 0 ? (value as number) : 4
+}
+
 export interface CollectOptions {
   /** Only these spec tables (names). Default: all. */
   tables?: readonly string[]
@@ -171,7 +176,7 @@ export async function collectProfile(db: pg.Pool, now: Date = new Date(), option
       if (await tableExists(db, spec)) results[i] = await profileTable(db, spec)
     }
   }
-  await Promise.all(Array.from({ length: Math.max(1, options.concurrency ?? 4) }, worker))
+  await Promise.all(Array.from({ length: validConcurrency(options.concurrency) }, worker))
   const tables = results.filter((t): t is TableProfile => t !== null)
   const missing = specs.filter((_, idx) => results[idx] === null).map((t) => t.name)
   return {

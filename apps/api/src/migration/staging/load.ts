@@ -43,8 +43,8 @@ export interface LoadOptions {
   /** Environment for the reset guard (default `process.env`). */
   env?: Readonly<Record<string, string | undefined>>
   /**
-   * Load only these spec tables, with DDL rendered for just them (tests that exercise failure paths
-   * and do not need all 118 tables). Default: every table, with `ddl/staging_cloud.sql`.
+   * TEST AID: replaces BOTH schemas with only these tables (the other tables are dropped, not kept).
+   * Not exposed on the CLI. Default: every table, with `ddl/staging_cloud.sql`.
    */
   tables?: readonly TableSpec[]
 }

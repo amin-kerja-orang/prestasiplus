@@ -5,7 +5,7 @@
  *   (a) the target `current_database()` ends in `_staging`, or is listed in `PP_STAGING_DB_ALLOWLIST`
  *       (comma separated database names);
  *   (b) `PP_ALLOW_STAGING_RESET=1`;
- *   (c) `NODE_ENV` is not `production`.
+ *   (c) `NODE_ENV` is not `production` or `prod` (any case).
  * The refusal happens before any DDL.
  */
 import type pg from 'pg'
@@ -22,7 +22,7 @@ export function stagingResetRefusals(database: string, env: Env): string[] {
     reasons.push(`the target database "${database}" is not a staging database (its name must end in "_staging" or be listed in PP_STAGING_DB_ALLOWLIST)`)
   }
   if (env.PP_ALLOW_STAGING_RESET !== '1') reasons.push('PP_ALLOW_STAGING_RESET=1 is not set')
-  if (env.NODE_ENV === 'production') reasons.push('NODE_ENV is production')
+  if (['production', 'prod'].includes((env.NODE_ENV ?? '').trim().toLowerCase())) reasons.push('NODE_ENV is production')
   return reasons
 }
 

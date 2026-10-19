@@ -1,4 +1,5 @@
 import { readFileSync } from 'node:fs'
+import net from 'node:net'
 import { join } from 'node:path'
 
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
@@ -167,6 +168,8 @@ describe('loader strictness', () => {
       expect(() => new DirReader(dir.path)).toThrow(DumpFormatError)
       write({ users: 5 })
       expect(() => new DirReader(dir.path)).toThrow(/must be an object/)
+      write({ users: [] })
+      expect(() => new DirReader(dir.path)).toThrow(/must be an object/)
       write({ users: null })
       expect(() => new DirReader(dir.path)).toThrow(/must be an object/)
       write({ users: { rows: 1, file: '../users.ndjson' } })
@@ -230,12 +233,50 @@ describe('destructive reset guard (M1)', () => {
     expect(stagingResetRefusals('staging_prestasiplus', { PP_ALLOW_STAGING_RESET: '1' })).toHaveLength(1)
     expect(stagingResetRefusals('prestasiplus', { PP_ALLOW_STAGING_RESET: '1', PP_STAGING_DB_ALLOWLIST: 'a, prestasiplus' })).toEqual([])
     expect(stagingResetRefusals('x_staging', { PP_ALLOW_STAGING_RESET: 'true' })).toHaveLength(1)
+    for (const value of ['production', 'Production', 'PRODUCTION', ' prod ', 'PROD']) {
+      expect(stagingResetRefusals('x_staging', { PP_ALLOW_STAGING_RESET: '1', NODE_ENV: value }), value).toEqual(['NODE_ENV is production'])
+    }
+    expect(stagingResetRefusals('x_staging', { PP_ALLOW_STAGING_RESET: '1', NODE_ENV: 'development' })).toEqual([])
+  })
+
+  it('a refused reset (exit 4) never opens a connection to the source', async () => {
+    let connections = 0
+    const server = net.createServer((socket) => {
+      connections++
+      socket.destroy()
+    })
+    await new Promise<void>((resolve) => server.listen(0, '127.0.0.1', resolve))
+    const port = (server.address() as net.AddressInfo).port
+    try {
+      const io = capture()
+      const code = await runStagingCli(['staging:load'], {
+        env: { NODE_ENV: 'test', CLOUD_SOURCE_URL: `postgresql://reader:pw@127.0.0.1:${port}/src` },
+        pool: env.pool,
+        out: io.out,
+        err: io.err,
+      })
+      expect(code).toBe(STAGING_EXIT.resetRefused)
+      await new Promise((resolve) => setTimeout(resolve, 200))
+      expect(connections).toBe(0)
+      // control: when the reset is allowed the same URL is contacted (and fails to authenticate)
+      const io2 = capture()
+      const code2 = await runStagingCli(['staging:load'], {
+        env: { ...stagingEnv(env.db), CLOUD_SOURCE_URL: `postgresql://reader:pw@127.0.0.1:${port}/src` },
+        pool: env.pool,
+        out: io2.out,
+        err: io2.err,
+      })
+      expect(code2).toBe(STAGING_EXIT.failed)
+      expect(connections).toBeGreaterThan(0)
+    } finally {
+      await new Promise((resolve) => server.close(resolve))
+    }
   })
 
   it('the CLI exits with the distinct reset-refused code and changes nothing', async () => {
     await sentinel()
     const io = capture()
-    const code = await runStagingCli(['staging:load', '--from', FIXTURE_DIR, '--tables', 'users,schools'], {
+    const code = await runStagingCli(['staging:load', '--from', FIXTURE_DIR], {
       env: { NODE_ENV: 'test' },
       pool: env.pool,
       out: io.out,
@@ -249,16 +290,28 @@ describe('destructive reset guard (M1)', () => {
 })
 
 describe('staging:load command', () => {
-  it('loads a table subset from --from and returns 0', async () => {
+  it('loads from --from and returns 0', async () => {
     const io = capture()
-    const code = await runStagingCli(['staging:load', '--from', FIXTURE_DIR, '--tables', 'users,schools'], {
+    const code = await runStagingCli(['staging:load', '--from', FIXTURE_DIR], {
       env: stagingEnv(env.db),
       pool: env.pool,
       out: io.out,
       err: io.err,
     })
     expect(code).toBe(STAGING_EXIT.ok)
-    expect(io.text()).toMatch(/Staging load finished: 2 tables/)
+    expect(io.text()).toMatch(/Staging load finished: 118 tables/)
+  }, FULL_LOAD_TIMEOUT)
+
+  it('rejects --tables on staging:load as a usage error, so a partial load can never wipe the other tables', async () => {
+    await env.pool.query('create schema if not exists staging_cloud')
+    await env.pool.query('create table if not exists staging_cloud.sentinel (id int)')
+    for (const argv of [['staging:load', '--from', FIXTURE_DIR, '--tables', 'users'], ['staging:load', '--tables=users,schools', '--from', FIXTURE_DIR]]) {
+      const io = capture()
+      expect(await runStagingCli(argv, { env: stagingEnv(env.db), pool: env.pool, out: io.out, err: io.err })).toBe(STAGING_EXIT.usage)
+      expect(io.text()).toMatch(/--tables is only for staging:profile/)
+    }
+    const left = await env.pool.query<{ ok: boolean }>(`select to_regclass('staging_cloud.sentinel') is not null as ok`)
+    expect(left.rows[0]?.ok).toBe(true)
   })
 
   it('returns 2 without an input, with both inputs, for an unknown source and for an unknown table', async () => {

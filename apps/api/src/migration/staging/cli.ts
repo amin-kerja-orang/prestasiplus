@@ -1,7 +1,7 @@
 /**
  * Staging CLI (BE-27). Plain Node entry (run from the root: `npm run staging:load -w @pp/api -- ...`).
  *
- *   staging:load    [--source cloud] [--from <dump dir>] [--source-schema <schema>] [--allow-extra-columns] [--tables a,b]
+ *   staging:load    [--source cloud] [--from <dump dir>] [--source-schema <schema>] [--allow-extra-columns]
  *   staging:profile [--out <dir containing .migration-out>] [--tables a,b]
  *
  * Environment: `DATABASE_URL` is the TARGET database (it gets the `staging_cloud` and `archive_cloud`
@@ -20,7 +20,7 @@ import { CloudSource, CloudSourceConfigError, CloudSourceConnectError, ReadOnlyV
 import { collectProfile, ProfileOutputError, writeProfile } from '../profile'
 import { findTable, type TableSpec } from '../ddl/spec'
 import { LEGACY_SOURCES, type LegacySource } from '../kit/types'
-import { serverIdentity, StagingResetRefusedError } from './guard'
+import { assertStagingResetAllowed, serverIdentity, StagingResetRefusedError } from './guard'
 import { scrub, scrubbingLogger, secretsFromUrl } from './log'
 import { loadStaging, LoaderError } from './load'
 import { DirReader, DumpFormatError, PgReader, type TableReader } from './readers'
@@ -38,7 +38,7 @@ export interface StagingCliDeps {
 
 class UsageError extends Error {}
 
-/** `--tables a,b` as spec tables (a subset load or profile). */
+/** `--tables a,b` (profile only) as spec tables; a duplicate or unknown name is a usage error. */
 function parseTables(value: string | undefined): TableSpec[] | undefined {
   if (value === undefined) return undefined
   return value.split(',').map((name) => {
@@ -46,6 +46,12 @@ function parseTables(value: string | undefined): TableSpec[] | undefined {
     if (!spec) throw new UsageError('--tables names a table that is not in the staging spec.')
     return spec
   })
+}
+
+function parseDistinctTables(value: string | undefined): TableSpec[] | undefined {
+  const tables = parseTables(value)
+  if (tables && new Set(tables.map((t) => t.name)).size !== tables.length) throw new UsageError('--tables lists a table twice.')
+  return tables
 }
 
 function parseFlags(argv: readonly string[]): { command: string | undefined; flags: Map<string, string | true> } {
@@ -99,7 +105,7 @@ export async function runStagingCli(argv: readonly string[], deps: StagingCliDep
     }
 
     if (command === 'staging:profile') {
-      const tables = parseTables(flagString(flags, 'tables'))
+      const tables = parseDistinctTables(flagString(flags, 'tables'))
       const report = await collectProfile(pool, deps.now, { tables: tables?.map((t) => t.name) })
       const outDir = flagString(flags, 'out') ?? resolve('.migration-out')
       const files = writeProfile(report, outDir)
@@ -107,6 +113,8 @@ export async function runStagingCli(argv: readonly string[], deps: StagingCliDep
       return STAGING_EXIT.ok
     }
 
+    // A partial load would drop the other tables (both schemas are replaced), so the load has no --tables.
+    if (flags.has('tables')) throw new UsageError('staging:load always loads every table; --tables is only for staging:profile.')
     const sourceFlag = flagString(flags, 'source') ?? 'cloud'
     if (!(LEGACY_SOURCES as readonly string[]).includes(sourceFlag)) throw new UsageError('Unknown --source. Allowed: cloud, my.')
     const source = sourceFlag as LegacySource
@@ -114,6 +122,11 @@ export async function runStagingCli(argv: readonly string[], deps: StagingCliDep
     if (from !== undefined && env.CLOUD_SOURCE_URL) {
       throw new UsageError('Give either --from <dump dir> or CLOUD_SOURCE_URL, not both.')
     }
+    if (from === undefined && !env.CLOUD_SOURCE_URL) {
+      throw new UsageError('Give --from <dump dir> or set CLOUD_SOURCE_URL (a read-only role).')
+    }
+    // M1 again, before the source is touched: a refused reset must not even open the source connection.
+    await assertStagingResetAllowed(pool, env)
     if (from !== undefined) reader = new DirReader(from)
     else if (env.CLOUD_SOURCE_URL) {
       const opened = await CloudSource.open({
@@ -130,7 +143,6 @@ export async function runStagingCli(argv: readonly string[], deps: StagingCliDep
       allowExtraColumns: flags.has('allow-extra-columns'),
       log,
       env,
-      tables: parseTables(flagString(flags, 'tables')),
     })
     const absent = result.tables.filter((t) => t.absent).length
     log.info(`Done: ${result.tables.length} tables (${absent} absent from the input), ${result.totalRows} rows.`)

@@ -40,6 +40,9 @@ const roles = {
   member: `pp_mem_${suffix}`,
   group: `pp_grp_${suffix}`,
   sequence: `pp_seq_${suffix}`,
+  chainA: `pp_cha_${suffix}`,
+  chainB: `pp_chb_${suffix}`,
+  chainC: `pp_chc_${suffix}`,
 }
 
 const urlFor = (role: string, database = sourceDb): string => {
@@ -110,6 +113,15 @@ beforeAll(async () => {
   await mk(roles.sequence)
   await sourceAdmin.query(`grant select on all tables in schema public to "${roles.sequence}"`)
 
+  // chained membership A -> B -> C, every step WITHOUT inherit, C holds INSERT
+  await mk(roles.chainC, '', false)
+  await sourceAdmin.query(`grant insert on public.users to "${roles.chainC}"`)
+  await mk(roles.chainB, '', false)
+  await admin.query(`grant "${roles.chainC}" to "${roles.chainB}" with inherit false`)
+  await mk(roles.chainA)
+  await sourceAdmin.query(`grant select on all tables in schema public to "${roles.chainA}"`)
+  await admin.query(`grant "${roles.chainB}" to "${roles.chainA}" with inherit false`)
+
   target = await createStagingDb()
 })
 
@@ -154,6 +166,12 @@ describe('read-only guard (AC2, BE-MIG-05)', () => {
     // Most of these roles cannot even SELECT, so reaching this error proves no table was read first.
     expect((err as Error).message).not.toContain(PASSWORD)
     expect((err as Error).message).not.toContain(role)
+  })
+
+  it('aborts for chained NOINHERIT membership A -> B -> C where only C holds INSERT', async () => {
+    const err = await CloudSource.open({ url: urlFor(roles.chainA) }).catch((e: unknown) => e)
+    expect(err).toBeInstanceOf(ReadOnlyViolationError)
+    expect((err as Error).message).toMatch(new RegExp(`member role ${roles.chainC}: INSERT on public\.users`))
   })
 
   it('aborts when the role may use or update a sequence (M2)', async () => {
@@ -254,6 +272,23 @@ describe('source configuration (L1, L2)', () => {
       expect(err, mode).toBeInstanceOf(CloudSourceConnectError)
       expect((err as Error).message).not.toContain(PASSWORD)
     }
+  })
+
+  it('applies the sslmode rule to the host= query parameter, which overrides the URL host (L2)', async () => {
+    for (const url of [
+      `postgresql://u:${PASSWORD}@localhost/db?host=db.remote.example`,
+      `postgresql://u:${PASSWORD}@127.0.0.1/db?host=/var/run/postgresql,db.remote.example`,
+    ]) {
+      const err = await CloudSource.open({ url }).catch((e: unknown) => e)
+      expect(err, url).toBeInstanceOf(CloudSourceConfigError)
+      expect((err as Error).message).toMatch(/sslmode=require/)
+    }
+    // the empty-authority form of the same bypass is not even a parsable URL here, so it is refused too
+    const empty = await CloudSource.open({ url: `postgresql://u:${PASSWORD}@/db?host=db.remote.example` }).catch((e: unknown) => e)
+    expect(empty).toBeInstanceOf(CloudSourceConfigError)
+    expect((empty as Error).message).not.toContain(PASSWORD)
+    const ok = await CloudSource.open({ url: `postgresql://u:${PASSWORD}@localhost/db?host=db.remote.example&sslmode=verify-full` }).catch((e: unknown) => e)
+    expect(ok).toBeInstanceOf(CloudSourceConnectError) // passes the TLS rule, then fails to connect
   })
 
   it('does not need sslmode on a loopback host', async () => {
