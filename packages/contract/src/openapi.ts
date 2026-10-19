@@ -119,7 +119,9 @@ export const CONTRACT_VERSION = '0.1.0'
 /** Builds the OpenAPI 3.1 document. Pure and deterministic (no dates, no environment). */
 export function buildOpenApiDocument(): Record<string, unknown> {
   const registry = new OpenAPIRegistry()
-  for (const [name, schema] of Object.entries(COMPONENT_SCHEMAS)) registry.register(name, schema)
+  // Widened on purpose: with 1000+ component schemas the literal union is too complex for tsc (TS2859).
+  const components = COMPONENT_SCHEMAS as Record<string, Parameters<OpenAPIRegistry["register"]>[1]>
+  for (const [name, schema] of Object.entries(components)) registry.register(name, schema)
   registerSessionPaths(registry) // V2-T07
   registerWalletPaths(registry) // BE-11
   registerContentPaths(registry) // BE-24 (M09)

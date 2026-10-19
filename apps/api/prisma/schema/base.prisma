@@ -1,0 +1,14 @@
+// Datasource and generator only. Every lane adds its own `<module>.prisma` in its first table card
+// (the schema folder is `prisma/schema`, see prisma.config.ts). Do not add models here.
+// Conventions for tables: docs/architecture/v2-backend-plan.md section 14.2.
+
+generator client {
+  provider     = "prisma-client"
+  output       = "../../src/db/generated"
+  moduleFormat = "esm"
+  runtime      = "nodejs"
+}
+
+datasource db {
+  provider = "postgresql"
+}

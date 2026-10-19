@@ -40,14 +40,13 @@ services:
     container_name: pretasiplus-api
     env_file:
       - path: .env.api              # secrets: DATABASE_URL, session secret; never committed
-        required: false             # optional until BE-02 adds required secrets
+        required: false             # optional so `docker compose config -q` passes in CI
     environment:
       NODE_ENV: production
       PORT: 3000
-    # depends_on is activated in BE-02 (when the db service exists):
-    # depends_on:
-    #   db:
-    #     condition: service_healthy
+    depends_on:
+      db:
+        condition: service_healthy
     expose:
       - '3000'
     read_only: true
@@ -59,18 +58,38 @@ services:
       - ALL
     restart: 'no'
 
-  # ---- Later: PostgreSQL ----
-  # db:
-  #   image: postgres:16-alpine
-  #   env_file: .env.db             # POSTGRES_USER, POSTGRES_PASSWORD, POSTGRES_DB
-  #   volumes:
-  #     - pgdata:/var/lib/postgresql/data
-  #   healthcheck:
-  #     test: ['CMD-SHELL', 'pg_isready -U "$$POSTGRES_USER" -d "$$POSTGRES_DB"']
-  #     interval: 10s
-  #     timeout: 5s
-  #     retries: 5
-  #   restart: 'no'                 # no host port: 5432/5433 are used by other stacks
+  # ---- PostgreSQL (BE-02). No host port: 5432/5433 are used by other stacks. ----
+  # Optional loopback port for local tooling: see compose.override.example.yaml.
+  db:
+    image: postgres:16-alpine
+    container_name: pretasiplus-db
+    env_file:
+      - path: .env.db               # POSTGRES_DB, POSTGRES_USER, POSTGRES_PASSWORD; never committed
+        required: false             # optional so `docker compose config -q` passes in CI
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    tmpfs:
+      - /tmp
+      - /run/postgresql:uid=70,gid=70,mode=0755   # postgres uid/gid in the alpine image
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U "$$POSTGRES_USER" -d "$$POSTGRES_DB"']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    read_only: true
+    security_opt:
+      - no-new-privileges:true
+    # The entrypoint starts as root to fix volume ownership, then drops to postgres.
+    cap_drop:
+      - ALL
+    cap_add:
+      - CHOWN
+      - DAC_OVERRIDE
+      - FOWNER
+      - SETUID
+      - SETGID
+    restart: 'no'
 
-# volumes:
-#   pgdata:
+volumes:
+  pgdata:

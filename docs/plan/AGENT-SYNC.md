@@ -74,8 +74,8 @@ A PC may claim **only** cards listed here. A card that is not listed is closed, 
 | Card | Mode | Opened | Note |
 |---|---|---|---|
 | BE-01 | full | 2026-10-19 | Scaffold + CI; first card on the critical path. |
-| BE-02 | full (stacked) | 2026-10-19 | Group A, for the holder of BE-01. Branch `be/BE-02-db-orm` from `origin/be/BE-01-scaffold-ci`, not from feature/v2-backend. Rebase onto feature/v2-backend after BE-01 merges. The LEAD merges BE-02 only after BE-01. |
-| BE-34 | full (stacked) | 2026-10-19 | Group A. Migration kit, stacked on `origin/be/BE-02-db-orm` (branch `be/BE-34-migration-kit`). Rebase onto feature/v2-backend after BE-02 merges; the LEAD merges BE-34 only after BE-02. |
+| BE-03 | full | 2026-10-19 | Group A (PC-1). Authentication, session, roles, scope and Mod Pelajar. Follow D55, D57, D59, UD-1 and UD-2 and the session contract in packages/contract/src/{session,auth,access}. **Security review required.** Unblocks most full cards. |
+| BE-34 | full | 2026-10-19 | Group A. Migration kit (branch `be/BE-34-migration-kit`). BE-02 is merged: merge origin/feature/v2-backend into the branch. |
 | BE-31 | harness-only | 2026-10-19 | Group A. Build the conformance harness (`packages/contract-tests/**` and its runner) and run it against the frontend mock now. Do not add the API-target wiring until BE-03 merges. Branch `be/BE-31-conformance-harness`. |
 | BE-05 | contract-only | 2026-10-19 | Users and schools: `packages/contract/src/{users,schools}/**`. |
 | BE-08 | contract-only | 2026-10-19 | Curriculum: `packages/contract/src/curriculum/**`. |
@@ -120,6 +120,7 @@ Rules for `contract-only`:
 
 ### Lead notices (current instructions; newest first)
 
+- 2026-10-19 18:15: **BE-02 merged (S2).** **BE-03 (auth) is open** for Group A, as a full card with a security review. BE-34 is no longer stacked; merge the base in.
 - 2026-10-19 17:45: **BE-39 mock reference is now on this branch:** `docs/reference/bijak-paper-builder-mock/` (read-only snapshot of the prototype paper-builder mock). BE-39 must match it. **D59a accepted risk:** IC self-reset for pupils was flagged High by security review; the user kept it (D59a) with the D55 limits plus notifications, recorded as an accepted risk.
 - 2026-10-19 17:00: **D59 (user):** IC reset stays for all roles (with D55 limits and a notification); initial passwords are random per account, shown once, with mustChangePassword (no shared default); Battle search covers all schools; the shared 429 response is coming to common/ (LEAD). **Reviewers are now read-only** (no worktrees, no npm); the LEAD runs the checks at merge.
 - 2026-10-19 16:20: **Group A opened:** BE-02 (database, stacked on the BE-01 branch, for BE-01's holder) and BE-31 harness-only (conformance runner against the mock). New mode `harness-only` means only the parts that need no unmerged dependency.
