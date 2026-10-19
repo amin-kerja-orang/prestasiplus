@@ -55154,6 +55154,3808 @@
           }
         }
       },
+      "IntakeLeafKind": {
+        "type": "string",
+        "enum": [
+          "working",
+          "numeric",
+          "short_text",
+          "match_letter",
+          "essay",
+          "drawing",
+          "table_fill"
+        ],
+        "description": "Answer mode of a leaf (prototype LeafKind). table_fill is a typed stub, drawing is a photo plus a teacher checklist."
+      },
+      "IntakeQuestionType": {
+        "type": "string",
+        "enum": [
+          "mcq",
+          "structured",
+          "short",
+          "essay"
+        ],
+        "description": "mcq = Objektif, structured = Berstruktur, short = Pendek, essay = Esei (prototype IntakeQType)."
+      },
+      "IntakeMcqOption": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 64,
+            "description": "Option key, e.g. \"A\"."
+          },
+          "text": {
+            "type": "string",
+            "maxLength": 2000,
+            "description": "May contain `$latex$` spans."
+          }
+        },
+        "required": [
+          "id",
+          "text"
+        ],
+        "additionalProperties": false,
+        "description": "Prototype McqOption."
+      },
+      "IntakeCurriculumTag": {
+        "type": "object",
+        "properties": {
+          "subject": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 32,
+            "example": "MAT"
+          },
+          "level": {
+            "type": "string",
+            "enum": [
+              "T4",
+              "T5",
+              "T4+T5"
+            ]
+          },
+          "unit": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "minLength": 1,
+            "maxLength": 64,
+            "description": "DSKP unit code from the controlled list, or null."
+          },
+          "unitLabel": {
+            "type": "string",
+            "maxLength": 200
+          },
+          "sp": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "maxLength": 64
+            },
+            "maxItems": 50,
+            "description": "Standard Pembelajaran codes."
+          },
+          "tp": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 99,
+            "description": "Tahap Penguasaan. The gate wants 1..6 (\"Tahap Penguasaan (TP) mesti antara 1 dan 6.\"); the wider range here only keeps a draft savable [PROPOSED bound]."
+          },
+          "formOrigin": {
+            "type": "string",
+            "enum": [
+              "T1-T3",
+              "T4",
+              "T5"
+            ]
+          }
+        },
+        "required": [
+          "subject",
+          "level",
+          "unit",
+          "unitLabel",
+          "sp",
+          "tp",
+          "formOrigin"
+        ],
+        "additionalProperties": false,
+        "description": "Prototype CurriculumTag, field for field."
+      },
+      "IntakePointCode": {
+        "type": "string",
+        "enum": [
+          "K",
+          "N",
+          "P",
+          "B",
+          "M",
+          "F",
+          "C"
+        ],
+        "description": "Prototype PointCode."
+      },
+      "IntakePointMatch": {
+        "oneOf": [
+          {
+            "type": "object",
+            "properties": {
+              "type": {
+                "type": "string",
+                "enum": [
+                  "step"
+                ]
+              },
+              "accept": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "maxLength": 500
+                },
+                "maxItems": 50
+              }
+            },
+            "required": [
+              "type",
+              "accept"
+            ],
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "properties": {
+              "type": {
+                "type": "string",
+                "enum": [
+                  "all_of"
+                ]
+              },
+              "items": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "maxLength": 500
+                },
+                "maxItems": 50
+              }
+            },
+            "required": [
+              "type",
+              "items"
+            ],
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "properties": {
+              "type": {
+                "type": "string",
+                "enum": [
+                  "final"
+                ]
+              }
+            },
+            "required": [
+              "type"
+            ],
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "properties": {
+              "type": {
+                "type": "string",
+                "enum": [
+                  "unit"
+                ]
+              }
+            },
+            "required": [
+              "type"
+            ],
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "properties": {
+              "type": {
+                "type": "string",
+                "enum": [
+                  "keywords"
+                ]
+              },
+              "anyOf": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "maxLength": 200
+                },
+                "maxItems": 50
+              }
+            },
+            "required": [
+              "type",
+              "anyOf"
+            ],
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "properties": {
+              "type": {
+                "type": "string",
+                "enum": [
+                  "manual"
+                ]
+              }
+            },
+            "required": [
+              "type"
+            ],
+            "additionalProperties": false
+          }
+        ],
+        "description": "How a mark point is matched (prototype PointMatch). `manual` is checked by a teacher and never auto-awarded."
+      },
+      "IntakeEcfRule": {
+        "oneOf": [
+          {
+            "type": "object",
+            "properties": {
+              "op": {
+                "type": "string",
+                "enum": [
+                  "same"
+                ]
+              }
+            },
+            "required": [
+              "op"
+            ],
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "properties": {
+              "op": {
+                "type": "string",
+                "enum": [
+                  "sub_from"
+                ]
+              },
+              "k": {
+                "type": "number"
+              }
+            },
+            "required": [
+              "op",
+              "k"
+            ],
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "properties": {
+              "op": {
+                "type": "string",
+                "enum": [
+                  "add"
+                ]
+              },
+              "k": {
+                "type": "number"
+              }
+            },
+            "required": [
+              "op",
+              "k"
+            ],
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "properties": {
+              "op": {
+                "type": "string",
+                "enum": [
+                  "mul"
+                ]
+              },
+              "k": {
+                "type": "number"
+              }
+            },
+            "required": [
+              "op",
+              "k"
+            ],
+            "additionalProperties": false
+          }
+        ],
+        "description": "Prototype EcfRule."
+      },
+      "IntakePoint": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 64
+          },
+          "code": {
+            "$ref": "#/components/schemas/IntakePointCode"
+          },
+          "marks": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 1000,
+            "description": "Explicit marks: the digit of a tag (K1, K2) is a sequence number, never the marks."
+          },
+          "label": {
+            "type": "string",
+            "maxLength": 2000
+          },
+          "match": {
+            "$ref": "#/components/schemas/IntakePointMatch"
+          },
+          "requires": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 64
+            },
+            "maxItems": 50,
+            "description": "Only awarded when every one of these other points was hit."
+          },
+          "ecf": {
+            "type": "object",
+            "properties": {
+              "fromPart": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 64
+              },
+              "rule": {
+                "$ref": "#/components/schemas/IntakeEcfRule"
+              },
+              "note": {
+                "type": "string",
+                "maxLength": 500
+              }
+            },
+            "required": [
+              "fromPart",
+              "rule",
+              "note"
+            ],
+            "additionalProperties": false,
+            "description": "Own figure carried forward from an earlier part."
+          }
+        },
+        "required": [
+          "id",
+          "code",
+          "marks",
+          "label",
+          "match"
+        ],
+        "additionalProperties": false,
+        "description": "Prototype PointDef."
+      },
+      "IntakePointGroup": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 64
+          },
+          "anyN": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 50
+          },
+          "pointIds": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 64
+            },
+            "minItems": 1,
+            "maxItems": 50
+          }
+        },
+        "required": [
+          "id",
+          "anyN",
+          "pointIds"
+        ],
+        "additionalProperties": false,
+        "description": "Prototype PointGroup."
+      },
+      "IntakeFinal": {
+        "type": "object",
+        "properties": {
+          "accept": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "maxLength": 500
+            },
+            "maxItems": 50,
+            "description": "Accepted equivalent forms (plain or LaTeX); any one matches."
+          },
+          "tolerance": {
+            "type": "number",
+            "minimum": 0,
+            "description": "Absolute tolerance for numeric answers."
+          },
+          "unit": {
+            "type": "string",
+            "maxLength": 32
+          },
+          "mustContain": {
+            "type": "string",
+            "maxLength": 200
+          },
+          "formHint": {
+            "type": "string",
+            "maxLength": 500
+          },
+          "display": {
+            "type": "string",
+            "maxLength": 1000,
+            "description": "LaTeX shown in the revealed scheme."
+          }
+        },
+        "required": [
+          "accept",
+          "display"
+        ],
+        "additionalProperties": false,
+        "description": "Prototype FinalDef."
+      },
+      "IntakeRubricBand": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "maxLength": 100
+          },
+          "range": {
+            "type": "array",
+            "prefixItems": [
+              {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 1000
+              },
+              {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 1000
+              }
+            ]
+          },
+          "descriptor": {
+            "type": "string",
+            "maxLength": 2000
+          }
+        },
+        "required": [
+          "name",
+          "range",
+          "descriptor"
+        ],
+        "additionalProperties": false,
+        "description": "Prototype RubricBand."
+      },
+      "IntakeScheme": {
+        "oneOf": [
+          {
+            "type": "object",
+            "properties": {
+              "kind": {
+                "type": "string",
+                "enum": [
+                  "option"
+                ]
+              },
+              "marks": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 1000
+              },
+              "correct": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 64,
+                "description": "Key of the correct option (McqOption.id)."
+              },
+              "reason": {
+                "type": "string",
+                "maxLength": 2000
+              }
+            },
+            "required": [
+              "kind",
+              "marks",
+              "correct",
+              "reason"
+            ],
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "properties": {
+              "kind": {
+                "type": "string",
+                "enum": [
+                  "mapping"
+                ]
+              },
+              "marks": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 1000
+              },
+              "map": {
+                "type": "object",
+                "additionalProperties": {
+                  "type": "string",
+                  "maxLength": 64
+                }
+              }
+            },
+            "required": [
+              "kind",
+              "marks",
+              "map"
+            ],
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "properties": {
+              "kind": {
+                "type": "string",
+                "enum": [
+                  "accepted"
+                ]
+              },
+              "marks": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 1000
+              },
+              "values": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "v": {
+                      "type": "string",
+                      "maxLength": 500
+                    },
+                    "tol": {
+                      "type": "number",
+                      "minimum": 0
+                    },
+                    "unit": {
+                      "type": "string",
+                      "maxLength": 32
+                    }
+                  },
+                  "required": [
+                    "v"
+                  ],
+                  "additionalProperties": false
+                },
+                "maxItems": 50
+              },
+              "caseSensitive": {
+                "type": "boolean"
+              }
+            },
+            "required": [
+              "kind",
+              "marks",
+              "values"
+            ],
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "properties": {
+              "kind": {
+                "type": "string",
+                "enum": [
+                  "points"
+                ]
+              },
+              "marks": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 1000
+              },
+              "points": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/IntakePoint"
+                },
+                "maxItems": 50
+              },
+              "groups": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/IntakePointGroup"
+                },
+                "maxItems": 50
+              },
+              "final": {
+                "$ref": "#/components/schemas/IntakeFinal"
+              },
+              "model": {
+                "type": "string",
+                "maxLength": 10000
+              }
+            },
+            "required": [
+              "kind",
+              "marks",
+              "points"
+            ],
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "properties": {
+              "kind": {
+                "type": "string",
+                "enum": [
+                  "rubric"
+                ]
+              },
+              "marks": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 1000
+              },
+              "criteria": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 64
+                    },
+                    "name": {
+                      "type": "string",
+                      "maxLength": 200
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "name"
+                  ],
+                  "additionalProperties": false
+                },
+                "maxItems": 50
+              },
+              "bands": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/IntakeRubricBand"
+                },
+                "maxItems": 50
+              },
+              "notes": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "maxLength": 1000
+                },
+                "maxItems": 50
+              }
+            },
+            "required": [
+              "kind",
+              "marks",
+              "criteria",
+              "bands"
+            ],
+            "additionalProperties": false
+          }
+        ],
+        "description": "Answer key and mark scheme (prototype SchemeDef). Visible to the reviewer only (Guru owner or Admin Pusat); a student never receives an intake item."
+      },
+      "IntakePart": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 64
+          },
+          "label": {
+            "type": "string",
+            "maxLength": 32,
+            "description": "Printed label, e.g. \"(a)\" or \"(a)(i)\"."
+          },
+          "prompt": {
+            "type": "string",
+            "maxLength": 10000
+          },
+          "marks": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 1000
+          },
+          "mode": {
+            "$ref": "#/components/schemas/IntakeLeafKind"
+          },
+          "scheme": {
+            "$ref": "#/components/schemas/IntakeScheme"
+          },
+          "unit": {
+            "type": "string",
+            "maxLength": 32,
+            "description": "Unit shown after a numeric answer."
+          },
+          "wordRange": {
+            "type": "object",
+            "properties": {
+              "min": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 100000
+              },
+              "max": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 100000
+              }
+            },
+            "required": [
+              "min",
+              "max"
+            ],
+            "additionalProperties": false
+          },
+          "lead": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 64
+                },
+                "label": {
+                  "type": "string",
+                  "maxLength": 32
+                },
+                "prompt": {
+                  "type": "string",
+                  "maxLength": 10000
+                }
+              },
+              "required": [
+                "id",
+                "label",
+                "prompt"
+              ],
+              "additionalProperties": false
+            },
+            "maxItems": 3,
+            "description": "Ancestors of a nested part; the editor shows one flat list and the nesting is rebuilt on save."
+          }
+        },
+        "required": [
+          "id",
+          "label",
+          "prompt",
+          "marks",
+          "mode"
+        ],
+        "additionalProperties": false,
+        "description": "Prototype IntakePart, field for field."
+      },
+      "IntakeQuestion": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "label": {
+            "type": "string",
+            "maxLength": 32,
+            "description": "Number label as printed on the paper, e.g. \"12\"."
+          },
+          "type": {
+            "$ref": "#/components/schemas/IntakeQuestionType"
+          },
+          "stem": {
+            "type": "string",
+            "maxLength": 20000
+          },
+          "options": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/IntakeMcqOption"
+            },
+            "maxItems": 10
+          },
+          "marks": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 1000,
+            "description": "Question marks; for a structured question it is the sum of the part marks."
+          },
+          "mode": {
+            "type": "string",
+            "enum": [
+              "working",
+              "numeric",
+              "short_text",
+              "match_letter",
+              "essay",
+              "drawing",
+              "table_fill"
+            ],
+            "description": "Leaf mode of a question without parts."
+          },
+          "unit": {
+            "type": "string",
+            "maxLength": 32,
+            "description": "Unit of a question without parts."
+          },
+          "wordRange": {
+            "type": "object",
+            "properties": {
+              "min": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 100000
+              },
+              "max": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 100000
+              }
+            },
+            "required": [
+              "min",
+              "max"
+            ],
+            "additionalProperties": false
+          },
+          "parts": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/IntakePart"
+            },
+            "maxItems": 50
+          },
+          "scheme": {
+            "oneOf": [
+              {
+                "type": "object",
+                "properties": {
+                  "kind": {
+                    "type": "string",
+                    "enum": [
+                      "option"
+                    ]
+                  },
+                  "marks": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 1000
+                  },
+                  "correct": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 64,
+                    "description": "Key of the correct option (McqOption.id)."
+                  },
+                  "reason": {
+                    "type": "string",
+                    "maxLength": 2000
+                  }
+                },
+                "required": [
+                  "kind",
+                  "marks",
+                  "correct",
+                  "reason"
+                ],
+                "additionalProperties": false
+              },
+              {
+                "type": "object",
+                "properties": {
+                  "kind": {
+                    "type": "string",
+                    "enum": [
+                      "mapping"
+                    ]
+                  },
+                  "marks": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 1000
+                  },
+                  "map": {
+                    "type": "object",
+                    "additionalProperties": {
+                      "type": "string",
+                      "maxLength": 64
+                    }
+                  }
+                },
+                "required": [
+                  "kind",
+                  "marks",
+                  "map"
+                ],
+                "additionalProperties": false
+              },
+              {
+                "type": "object",
+                "properties": {
+                  "kind": {
+                    "type": "string",
+                    "enum": [
+                      "accepted"
+                    ]
+                  },
+                  "marks": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 1000
+                  },
+                  "values": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "v": {
+                          "type": "string",
+                          "maxLength": 500
+                        },
+                        "tol": {
+                          "type": "number",
+                          "minimum": 0
+                        },
+                        "unit": {
+                          "type": "string",
+                          "maxLength": 32
+                        }
+                      },
+                      "required": [
+                        "v"
+                      ],
+                      "additionalProperties": false
+                    },
+                    "maxItems": 50
+                  },
+                  "caseSensitive": {
+                    "type": "boolean"
+                  }
+                },
+                "required": [
+                  "kind",
+                  "marks",
+                  "values"
+                ],
+                "additionalProperties": false
+              },
+              {
+                "type": "object",
+                "properties": {
+                  "kind": {
+                    "type": "string",
+                    "enum": [
+                      "points"
+                    ]
+                  },
+                  "marks": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 1000
+                  },
+                  "points": {
+                    "type": "array",
+                    "items": {
+                      "$ref": "#/components/schemas/IntakePoint"
+                    },
+                    "maxItems": 50
+                  },
+                  "groups": {
+                    "type": "array",
+                    "items": {
+                      "$ref": "#/components/schemas/IntakePointGroup"
+                    },
+                    "maxItems": 50
+                  },
+                  "final": {
+                    "$ref": "#/components/schemas/IntakeFinal"
+                  },
+                  "model": {
+                    "type": "string",
+                    "maxLength": 10000
+                  }
+                },
+                "required": [
+                  "kind",
+                  "marks",
+                  "points"
+                ],
+                "additionalProperties": false
+              },
+              {
+                "type": "object",
+                "properties": {
+                  "kind": {
+                    "type": "string",
+                    "enum": [
+                      "rubric"
+                    ]
+                  },
+                  "marks": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 1000
+                  },
+                  "criteria": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string",
+                          "minLength": 1,
+                          "maxLength": 64
+                        },
+                        "name": {
+                          "type": "string",
+                          "maxLength": 200
+                        }
+                      },
+                      "required": [
+                        "id",
+                        "name"
+                      ],
+                      "additionalProperties": false
+                    },
+                    "maxItems": 50
+                  },
+                  "bands": {
+                    "type": "array",
+                    "items": {
+                      "$ref": "#/components/schemas/IntakeRubricBand"
+                    },
+                    "maxItems": 50
+                  },
+                  "notes": {
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "maxLength": 1000
+                    },
+                    "maxItems": 50
+                  }
+                },
+                "required": [
+                  "kind",
+                  "marks",
+                  "criteria",
+                  "bands"
+                ],
+                "additionalProperties": false
+              }
+            ],
+            "description": "Answer key of a question without parts (MCQ key, short answer, essay points)."
+          },
+          "tag": {
+            "$ref": "#/components/schemas/IntakeCurriculumTag"
+          },
+          "stimulusId": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 64,
+            "description": "Stimulus group (the figure is stored once on the batch).",
+            "example": "1042"
+          },
+          "page": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 10000,
+            "description": "Source page (1-based)."
+          },
+          "lowFields": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 64
+            },
+            "maxItems": 50,
+            "description": "Fields the extractor was unsure of (e.g. tag.unit, tag.sp, marks, stem, scheme). Set by the server only; a client cannot write it."
+          },
+          "confirmed": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 64
+            },
+            "maxItems": 50,
+            "description": "Low fields a person confirmed."
+          },
+          "needsManual": {
+            "type": "boolean",
+            "description": "The extractor could not parse it: \"Perlu semak manual\"."
+          }
+        },
+        "required": [
+          "id",
+          "label",
+          "type",
+          "stem",
+          "options",
+          "marks",
+          "mode",
+          "parts",
+          "tag",
+          "page",
+          "lowFields",
+          "confirmed"
+        ],
+        "additionalProperties": false,
+        "description": "Prototype IntakeQuestion (the extracted, editable question content)."
+      },
+      "IntakeRegion": {
+        "type": "object",
+        "properties": {
+          "page": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 10000
+          },
+          "x": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 1
+          },
+          "y": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 1
+          },
+          "w": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 1
+          },
+          "h": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 1
+          }
+        },
+        "required": [
+          "page",
+          "x",
+          "y",
+          "w",
+          "h"
+        ],
+        "additionalProperties": false,
+        "description": "[PROPOSED] Source region as page fractions."
+      },
+      "IntakeStimulusKind": {
+        "type": "string",
+        "enum": [
+          "diagram",
+          "passage",
+          "table"
+        ],
+        "description": "Prototype StimulusDef.kind."
+      },
+      "IntakeStimulus": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "kind": {
+            "$ref": "#/components/schemas/IntakeStimulusKind"
+          },
+          "label": {
+            "type": "string",
+            "maxLength": 100,
+            "description": "Short label used in headings and chips, e.g. \"Rajah 2\"."
+          },
+          "caption": {
+            "type": "string",
+            "maxLength": 500
+          },
+          "alt": {
+            "type": "string",
+            "maxLength": 1000,
+            "description": "Accessible description. Required by the gate (\"Teks alternatif (alt) bagi rajah diperlukan.\")."
+          },
+          "svg": {
+            "type": "string",
+            "maxLength": 200000,
+            "description": "Response only, bundled trusted markup (demo seed). Never accepted on a write."
+          },
+          "text": {
+            "type": "string",
+            "maxLength": 20000
+          },
+          "table": {
+            "type": "object",
+            "properties": {
+              "head": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "maxLength": 500
+                },
+                "maxItems": 50
+              },
+              "rows": {
+                "type": "array",
+                "items": {
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "maxLength": 2000
+                  },
+                  "maxItems": 50
+                },
+                "maxItems": 500
+              }
+            },
+            "required": [
+              "head",
+              "rows"
+            ],
+            "additionalProperties": false
+          },
+          "page": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 10000,
+            "description": "Source page the figure was cropped from."
+          },
+          "figureId": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "minLength": 1,
+            "maxLength": 64,
+            "description": "[PROPOSED] BE-37 figure crop (served by GET /intake/figures/{id}/image). Opaque.",
+            "example": "1042"
+          },
+          "region": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "properties": {
+              "page": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 10000
+              },
+              "x": {
+                "type": "number",
+                "minimum": 0,
+                "maximum": 1
+              },
+              "y": {
+                "type": "number",
+                "minimum": 0,
+                "maximum": 1
+              },
+              "w": {
+                "type": "number",
+                "minimum": 0,
+                "maximum": 1
+              },
+              "h": {
+                "type": "number",
+                "minimum": 0,
+                "maximum": 1
+              }
+            },
+            "required": [
+              "page",
+              "x",
+              "y",
+              "w",
+              "h"
+            ],
+            "additionalProperties": false,
+            "description": "[PROPOSED] Crop region on `page`."
+          }
+        },
+        "required": [
+          "id",
+          "kind",
+          "label",
+          "alt"
+        ],
+        "additionalProperties": false,
+        "description": "Prototype IntakeStimulus, with the [PROPOSED] fields figureId and region."
+      },
+      "IntakeIssue": {
+        "type": "object",
+        "properties": {
+          "itemId": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 64,
+            "description": "Absent for a batch-level or stimulus-level issue.",
+            "example": "1042"
+          },
+          "where": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200
+          },
+          "message": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 500
+          }
+        },
+        "required": [
+          "where",
+          "message"
+        ],
+        "additionalProperties": false,
+        "description": "Prototype IntakeIssue (questionId renamed itemId). One failed quality-gate rule."
+      },
+      "IntakeItemState": {
+        "type": "string",
+        "enum": [
+          "generated",
+          "needs_review",
+          "accepted",
+          "rejected",
+          "duplicate"
+        ],
+        "description": "[PROPOSED] Review state of an extracted item (card BE-38): generated = Dijana, needs_review = Perlu semakan, accepted = Diterima (a Draf question exists), rejected = Ditolak (never becomes a question, kept with a reason), duplicate = Pendua. NOT a question status (D54a)."
+      },
+      "IntakeConfidenceBand": {
+        "type": "string",
+        "enum": [
+          "high",
+          "medium",
+          "low"
+        ],
+        "description": "[PROPOSED] high = Tinggi (>= 0.90), medium = Sederhana (0.70 to 0.89), low = Rendah (< 0.70). The band of an item is its LOWEST field (AC-07.1)."
+      },
+      "IntakeFieldConfidence": {
+        "type": "object",
+        "additionalProperties": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        },
+        "description": "[PROPOSED] Field name to confidence 0..1 (same scale as BE-36 `fieldConfidence`). The prototype only lists `lowFields`; `lowFields` stays the authority for the gate."
+      },
+      "IntakeDuplicateKind": {
+        "type": "string",
+        "enum": [
+          "exact",
+          "near",
+          "variant"
+        ],
+        "description": "[PROPOSED] exact = Pendua tepat, near = Mungkin pendua, variant = Varian (allowed)."
+      },
+      "IntakeDuplicateScope": {
+        "type": "string",
+        "enum": [
+          "bank",
+          "batch"
+        ],
+        "description": "[PROPOSED] bank = a question already in the bank (Draf, Semakan, Lulus, Terbit); batch = another item of the same upload (AC-06.1)."
+      },
+      "IntakeDuplicateFlag": {
+        "type": "object",
+        "properties": {
+          "kind": {
+            "$ref": "#/components/schemas/IntakeDuplicateKind"
+          },
+          "scope": {
+            "$ref": "#/components/schemas/IntakeDuplicateScope"
+          },
+          "similarity": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 1
+          },
+          "matchedQuestionId": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "minLength": 1,
+            "maxLength": 64,
+            "description": "Set when scope is bank.",
+            "example": "1042"
+          },
+          "matchedItemId": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "minLength": 1,
+            "maxLength": 64,
+            "description": "Set when scope is batch.",
+            "example": "1042"
+          },
+          "dismissed": {
+            "type": "boolean",
+            "description": "A reviewer chose \"Bukan pendua\": the flag is suppressed for this pair only (AC-06.5)."
+          }
+        },
+        "required": [
+          "kind",
+          "scope",
+          "similarity",
+          "matchedQuestionId",
+          "matchedItemId",
+          "dismissed"
+        ],
+        "additionalProperties": false,
+        "description": "[PROPOSED] Result of the duplicate check, with the matching id (card AC5)."
+      },
+      "IntakeActorRef": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200,
+            "description": "Display name (users table). Never an IC number."
+          }
+        },
+        "required": [
+          "id",
+          "name"
+        ],
+        "additionalProperties": false,
+        "description": "[PROPOSED] A user shown in the queue (uploader, decider)."
+      },
+      "IntakeAcceptedQuestion": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "version": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "status": {
+            "$ref": "#/components/schemas/QuestionWorkflowStatus"
+          }
+        },
+        "required": [
+          "id",
+          "version",
+          "status"
+        ],
+        "additionalProperties": false,
+        "description": "[PROPOSED] Link to the Draf question created by accept, with its current D54a status."
+      },
+      "IntakeSourceType": {
+        "type": "string",
+        "enum": [
+          "pdf",
+          "manual"
+        ],
+        "description": "Prototype IntakeSourceKind: pdf = an uploaded paper, manual = typed by hand (no file)."
+      },
+      "IntakeProvenance": {
+        "type": "object",
+        "properties": {
+          "sourceType": {
+            "$ref": "#/components/schemas/IntakeSourceType"
+          },
+          "fileId": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "minLength": 1,
+            "maxLength": 64,
+            "description": "BE-37 stored file; null for a manual item.",
+            "example": "1042"
+          },
+          "sourcePaperId": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "minLength": 1,
+            "maxLength": 64,
+            "description": "BE-10 source_papers pointer on the batch; null until set.",
+            "example": "1042"
+          },
+          "page": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 10000
+          },
+          "region": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/IntakeRegion"
+              },
+              {
+                "type": [
+                  "object",
+                  "null"
+                ]
+              }
+            ]
+          },
+          "numberLabel": {
+            "type": "string",
+            "maxLength": 32
+          },
+          "runId": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "minLength": 1,
+            "maxLength": 64,
+            "description": "Extraction run (ai_extraction_runs); null for a manual item.",
+            "example": "1042"
+          },
+          "provider": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "maxLength": 64,
+            "description": "Prototype IntakeBatch.provider (e.g. mock). Never a key or URL."
+          },
+          "model": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "maxLength": 128,
+            "description": "Prototype IntakeBatch.model."
+          }
+        },
+        "required": [
+          "sourceType",
+          "fileId",
+          "sourcePaperId",
+          "page",
+          "region",
+          "numberLabel",
+          "runId",
+          "provider",
+          "model"
+        ],
+        "additionalProperties": false,
+        "description": "[PROPOSED] Where the item came from (US-16)."
+      },
+      "IntakeEventAction": {
+        "type": "string",
+        "enum": [
+          "extracted",
+          "added",
+          "edited",
+          "confirmed",
+          "accepted",
+          "rejected",
+          "marked_duplicate",
+          "cleared_duplicate"
+        ],
+        "description": "[PROPOSED] What happened to an item."
+      },
+      "IntakeItemEvent": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "at": {
+            "$ref": "#/components/schemas/Timestamp"
+          },
+          "action": {
+            "$ref": "#/components/schemas/IntakeEventAction"
+          },
+          "actor": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/IntakeActorRef"
+              },
+              {
+                "type": [
+                  "object",
+                  "null"
+                ]
+              }
+            ]
+          },
+          "actorRole": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "minLength": 1,
+            "maxLength": 32,
+            "description": "RoleCode of the actor, kept as text in the audit row."
+          },
+          "from": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/IntakeItemState"
+              },
+              {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              }
+            ]
+          },
+          "to": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/IntakeItemState"
+              },
+              {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              }
+            ]
+          },
+          "field": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "minLength": 1,
+            "maxLength": 64,
+            "description": "Edited or confirmed field, e.g. stem, tag.unit."
+          },
+          "previous": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "maxLength": 20000,
+            "description": "Previous value of `field` as text (the AI text on the first human edit)."
+          },
+          "reason": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "maxLength": 500
+          }
+        },
+        "required": [
+          "id",
+          "at",
+          "action",
+          "actor",
+          "actorRole",
+          "from",
+          "to",
+          "field",
+          "previous",
+          "reason"
+        ],
+        "additionalProperties": false,
+        "description": "[PROPOSED] Audit row of one change to an item."
+      },
+      "IntakeItemRow": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "label": {
+            "type": "string",
+            "maxLength": 32,
+            "description": "Number label as printed."
+          },
+          "type": {
+            "$ref": "#/components/schemas/IntakeQuestionType"
+          },
+          "stemPreview": {
+            "type": "string",
+            "maxLength": 300,
+            "description": "Plain-text preview of the stem (first part prompt when the stem is empty). May hold `$latex$`."
+          },
+          "marks": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Question marks (sum of part marks for a structured question)."
+          },
+          "page": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "subject": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 32
+          },
+          "stimulusId": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "lowCount": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Low-confidence fields not yet confirmed (prototype IntakeSummary.lowCount, per item)."
+          },
+          "issueCount": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Open quality-gate issues of this item."
+          },
+          "needsManual": {
+            "type": "boolean"
+          },
+          "batchId": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 64,
+            "description": "The intake batch (BE-37 intake_batches = the Submission, D53/OWN-1).",
+            "example": "1042"
+          },
+          "position": {
+            "type": "integer",
+            "minimum": 1,
+            "description": "Order of the item in the paper. Items of one stimulus group stay contiguous."
+          },
+          "state": {
+            "$ref": "#/components/schemas/IntakeItemState"
+          },
+          "confidenceBand": {
+            "$ref": "#/components/schemas/IntakeConfidenceBand"
+          },
+          "uploader": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "$ref": "#/components/schemas/Id"
+              },
+              "name": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 200,
+                "description": "Display name (users table). Never an IC number."
+              }
+            },
+            "required": [
+              "id",
+              "name"
+            ],
+            "additionalProperties": false,
+            "description": "Owner of the batch. A Guru only ever sees own items."
+          },
+          "question": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "properties": {
+              "id": {
+                "$ref": "#/components/schemas/Id"
+              },
+              "version": {
+                "type": "integer",
+                "minimum": 1
+              },
+              "status": {
+                "$ref": "#/components/schemas/QuestionWorkflowStatus"
+              }
+            },
+            "required": [
+              "id",
+              "version",
+              "status"
+            ],
+            "additionalProperties": false,
+            "description": "Set once the item is accepted."
+          },
+          "duplicate": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/IntakeDuplicateFlag"
+              },
+              {
+                "type": [
+                  "object",
+                  "null"
+                ]
+              }
+            ]
+          },
+          "createdAt": {
+            "$ref": "#/components/schemas/Timestamp"
+          },
+          "updatedAt": {
+            "$ref": "#/components/schemas/Timestamp"
+          }
+        },
+        "required": [
+          "id",
+          "label",
+          "type",
+          "stemPreview",
+          "marks",
+          "page",
+          "subject",
+          "lowCount",
+          "issueCount",
+          "needsManual",
+          "batchId",
+          "position",
+          "state",
+          "confidenceBand",
+          "uploader",
+          "question",
+          "duplicate",
+          "createdAt",
+          "updatedAt"
+        ],
+        "additionalProperties": false,
+        "description": "[PROPOSED] One row of the review queue."
+      },
+      "IntakeItem": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "label": {
+            "type": "string",
+            "maxLength": 32,
+            "description": "Number label as printed on the paper, e.g. \"12\"."
+          },
+          "type": {
+            "$ref": "#/components/schemas/IntakeQuestionType"
+          },
+          "stem": {
+            "type": "string",
+            "maxLength": 20000
+          },
+          "options": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/IntakeMcqOption"
+            },
+            "maxItems": 10
+          },
+          "marks": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 1000,
+            "description": "Question marks; for a structured question it is the sum of the part marks."
+          },
+          "mode": {
+            "type": "string",
+            "enum": [
+              "working",
+              "numeric",
+              "short_text",
+              "match_letter",
+              "essay",
+              "drawing",
+              "table_fill"
+            ],
+            "description": "Leaf mode of a question without parts."
+          },
+          "unit": {
+            "type": "string",
+            "maxLength": 32,
+            "description": "Unit of a question without parts."
+          },
+          "wordRange": {
+            "type": "object",
+            "properties": {
+              "min": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 100000
+              },
+              "max": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 100000
+              }
+            },
+            "required": [
+              "min",
+              "max"
+            ],
+            "additionalProperties": false
+          },
+          "parts": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/IntakePart"
+            },
+            "maxItems": 50
+          },
+          "scheme": {
+            "oneOf": [
+              {
+                "type": "object",
+                "properties": {
+                  "kind": {
+                    "type": "string",
+                    "enum": [
+                      "option"
+                    ]
+                  },
+                  "marks": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 1000
+                  },
+                  "correct": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 64,
+                    "description": "Key of the correct option (McqOption.id)."
+                  },
+                  "reason": {
+                    "type": "string",
+                    "maxLength": 2000
+                  }
+                },
+                "required": [
+                  "kind",
+                  "marks",
+                  "correct",
+                  "reason"
+                ],
+                "additionalProperties": false
+              },
+              {
+                "type": "object",
+                "properties": {
+                  "kind": {
+                    "type": "string",
+                    "enum": [
+                      "mapping"
+                    ]
+                  },
+                  "marks": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 1000
+                  },
+                  "map": {
+                    "type": "object",
+                    "additionalProperties": {
+                      "type": "string",
+                      "maxLength": 64
+                    }
+                  }
+                },
+                "required": [
+                  "kind",
+                  "marks",
+                  "map"
+                ],
+                "additionalProperties": false
+              },
+              {
+                "type": "object",
+                "properties": {
+                  "kind": {
+                    "type": "string",
+                    "enum": [
+                      "accepted"
+                    ]
+                  },
+                  "marks": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 1000
+                  },
+                  "values": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "v": {
+                          "type": "string",
+                          "maxLength": 500
+                        },
+                        "tol": {
+                          "type": "number",
+                          "minimum": 0
+                        },
+                        "unit": {
+                          "type": "string",
+                          "maxLength": 32
+                        }
+                      },
+                      "required": [
+                        "v"
+                      ],
+                      "additionalProperties": false
+                    },
+                    "maxItems": 50
+                  },
+                  "caseSensitive": {
+                    "type": "boolean"
+                  }
+                },
+                "required": [
+                  "kind",
+                  "marks",
+                  "values"
+                ],
+                "additionalProperties": false
+              },
+              {
+                "type": "object",
+                "properties": {
+                  "kind": {
+                    "type": "string",
+                    "enum": [
+                      "points"
+                    ]
+                  },
+                  "marks": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 1000
+                  },
+                  "points": {
+                    "type": "array",
+                    "items": {
+                      "$ref": "#/components/schemas/IntakePoint"
+                    },
+                    "maxItems": 50
+                  },
+                  "groups": {
+                    "type": "array",
+                    "items": {
+                      "$ref": "#/components/schemas/IntakePointGroup"
+                    },
+                    "maxItems": 50
+                  },
+                  "final": {
+                    "$ref": "#/components/schemas/IntakeFinal"
+                  },
+                  "model": {
+                    "type": "string",
+                    "maxLength": 10000
+                  }
+                },
+                "required": [
+                  "kind",
+                  "marks",
+                  "points"
+                ],
+                "additionalProperties": false
+              },
+              {
+                "type": "object",
+                "properties": {
+                  "kind": {
+                    "type": "string",
+                    "enum": [
+                      "rubric"
+                    ]
+                  },
+                  "marks": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 1000
+                  },
+                  "criteria": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string",
+                          "minLength": 1,
+                          "maxLength": 64
+                        },
+                        "name": {
+                          "type": "string",
+                          "maxLength": 200
+                        }
+                      },
+                      "required": [
+                        "id",
+                        "name"
+                      ],
+                      "additionalProperties": false
+                    },
+                    "maxItems": 50
+                  },
+                  "bands": {
+                    "type": "array",
+                    "items": {
+                      "$ref": "#/components/schemas/IntakeRubricBand"
+                    },
+                    "maxItems": 50
+                  },
+                  "notes": {
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "maxLength": 1000
+                    },
+                    "maxItems": 50
+                  }
+                },
+                "required": [
+                  "kind",
+                  "marks",
+                  "criteria",
+                  "bands"
+                ],
+                "additionalProperties": false
+              }
+            ],
+            "description": "Answer key of a question without parts (MCQ key, short answer, essay points)."
+          },
+          "tag": {
+            "$ref": "#/components/schemas/IntakeCurriculumTag"
+          },
+          "stimulusId": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 64,
+            "description": "Stimulus group (the figure is stored once on the batch).",
+            "example": "1042"
+          },
+          "page": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 10000,
+            "description": "Source page (1-based)."
+          },
+          "lowFields": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 64
+            },
+            "maxItems": 50,
+            "description": "Fields the extractor was unsure of (e.g. tag.unit, tag.sp, marks, stem, scheme). Set by the server only; a client cannot write it."
+          },
+          "confirmed": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 64
+            },
+            "maxItems": 50,
+            "description": "Low fields a person confirmed."
+          },
+          "needsManual": {
+            "type": "boolean",
+            "description": "The extractor could not parse it: \"Perlu semak manual\"."
+          },
+          "batchId": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 64,
+            "description": "The intake batch (BE-37 intake_batches = the Submission, D53/OWN-1).",
+            "example": "1042"
+          },
+          "position": {
+            "type": "integer",
+            "minimum": 1,
+            "description": "Order of the item in the paper. Items of one stimulus group stay contiguous."
+          },
+          "state": {
+            "$ref": "#/components/schemas/IntakeItemState"
+          },
+          "confidenceBand": {
+            "$ref": "#/components/schemas/IntakeConfidenceBand"
+          },
+          "uploader": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "$ref": "#/components/schemas/Id"
+              },
+              "name": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 200,
+                "description": "Display name (users table). Never an IC number."
+              }
+            },
+            "required": [
+              "id",
+              "name"
+            ],
+            "additionalProperties": false,
+            "description": "Owner of the batch. A Guru only ever sees own items."
+          },
+          "question": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "properties": {
+              "id": {
+                "$ref": "#/components/schemas/Id"
+              },
+              "version": {
+                "type": "integer",
+                "minimum": 1
+              },
+              "status": {
+                "$ref": "#/components/schemas/QuestionWorkflowStatus"
+              }
+            },
+            "required": [
+              "id",
+              "version",
+              "status"
+            ],
+            "additionalProperties": false,
+            "description": "Set once the item is accepted."
+          },
+          "duplicate": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/IntakeDuplicateFlag"
+              },
+              {
+                "type": [
+                  "object",
+                  "null"
+                ]
+              }
+            ]
+          },
+          "createdAt": {
+            "$ref": "#/components/schemas/Timestamp"
+          },
+          "updatedAt": {
+            "$ref": "#/components/schemas/Timestamp"
+          },
+          "fieldConfidence": {
+            "$ref": "#/components/schemas/IntakeFieldConfidence"
+          },
+          "region": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "properties": {
+              "page": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 10000
+              },
+              "x": {
+                "type": "number",
+                "minimum": 0,
+                "maximum": 1
+              },
+              "y": {
+                "type": "number",
+                "minimum": 0,
+                "maximum": 1
+              },
+              "w": {
+                "type": "number",
+                "minimum": 0,
+                "maximum": 1
+              },
+              "h": {
+                "type": "number",
+                "minimum": 0,
+                "maximum": 1
+              }
+            },
+            "required": [
+              "page",
+              "x",
+              "y",
+              "w",
+              "h"
+            ],
+            "additionalProperties": false,
+            "description": "[PROPOSED] Region of the question on `page`, to highlight it beside the extracted fields (AC-08.1)."
+          },
+          "humanEdited": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 64
+            },
+            "maxItems": 100,
+            "description": "[PROPOSED] Fields a person edited: the UI marks them \"Disunting oleh manusia\" (AC-08.2). The AI text is in `events`."
+          },
+          "issues": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/IntakeIssue"
+            },
+            "description": "Quality-gate issues of this item right now (prototype validateBatch, per item). accept is refused with 422 while this list is not empty."
+          },
+          "stimulus": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "properties": {
+              "id": {
+                "$ref": "#/components/schemas/Id"
+              },
+              "kind": {
+                "$ref": "#/components/schemas/IntakeStimulusKind"
+              },
+              "label": {
+                "type": "string",
+                "maxLength": 100,
+                "description": "Short label used in headings and chips, e.g. \"Rajah 2\"."
+              },
+              "caption": {
+                "type": "string",
+                "maxLength": 500
+              },
+              "alt": {
+                "type": "string",
+                "maxLength": 1000,
+                "description": "Accessible description. Required by the gate (\"Teks alternatif (alt) bagi rajah diperlukan.\")."
+              },
+              "svg": {
+                "type": "string",
+                "maxLength": 200000,
+                "description": "Response only, bundled trusted markup (demo seed). Never accepted on a write."
+              },
+              "text": {
+                "type": "string",
+                "maxLength": 20000
+              },
+              "table": {
+                "type": "object",
+                "properties": {
+                  "head": {
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "maxLength": 500
+                    },
+                    "maxItems": 50
+                  },
+                  "rows": {
+                    "type": "array",
+                    "items": {
+                      "type": "array",
+                      "items": {
+                        "type": "string",
+                        "maxLength": 2000
+                      },
+                      "maxItems": 50
+                    },
+                    "maxItems": 500
+                  }
+                },
+                "required": [
+                  "head",
+                  "rows"
+                ],
+                "additionalProperties": false
+              },
+              "page": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 10000,
+                "description": "Source page the figure was cropped from."
+              },
+              "figureId": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "minLength": 1,
+                "maxLength": 64,
+                "description": "[PROPOSED] BE-37 figure crop (served by GET /intake/figures/{id}/image). Opaque.",
+                "example": "1042"
+              },
+              "region": {
+                "type": [
+                  "object",
+                  "null"
+                ],
+                "properties": {
+                  "page": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 10000
+                  },
+                  "x": {
+                    "type": "number",
+                    "minimum": 0,
+                    "maximum": 1
+                  },
+                  "y": {
+                    "type": "number",
+                    "minimum": 0,
+                    "maximum": 1
+                  },
+                  "w": {
+                    "type": "number",
+                    "minimum": 0,
+                    "maximum": 1
+                  },
+                  "h": {
+                    "type": "number",
+                    "minimum": 0,
+                    "maximum": 1
+                  }
+                },
+                "required": [
+                  "page",
+                  "x",
+                  "y",
+                  "w",
+                  "h"
+                ],
+                "additionalProperties": false,
+                "description": "[PROPOSED] Crop region on `page`."
+              }
+            },
+            "required": [
+              "id",
+              "kind",
+              "label",
+              "alt"
+            ],
+            "additionalProperties": false,
+            "description": "The shared stimulus of `stimulusId`, or null."
+          },
+          "rejectReason": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "maxLength": 500
+          },
+          "decidedBy": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "properties": {
+              "id": {
+                "$ref": "#/components/schemas/Id"
+              },
+              "name": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 200,
+                "description": "Display name (users table). Never an IC number."
+              }
+            },
+            "required": [
+              "id",
+              "name"
+            ],
+            "additionalProperties": false,
+            "description": "Who accepted or rejected the item."
+          },
+          "decidedAt": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/Timestamp"
+              },
+              {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              }
+            ]
+          },
+          "provenance": {
+            "$ref": "#/components/schemas/IntakeProvenance"
+          },
+          "events": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/IntakeItemEvent"
+            },
+            "description": "Oldest first."
+          }
+        },
+        "required": [
+          "id",
+          "label",
+          "type",
+          "stem",
+          "options",
+          "marks",
+          "mode",
+          "parts",
+          "tag",
+          "page",
+          "lowFields",
+          "confirmed",
+          "batchId",
+          "position",
+          "state",
+          "confidenceBand",
+          "uploader",
+          "question",
+          "duplicate",
+          "createdAt",
+          "updatedAt",
+          "fieldConfidence",
+          "region",
+          "humanEdited",
+          "issues",
+          "stimulus",
+          "rejectReason",
+          "decidedBy",
+          "decidedAt",
+          "provenance",
+          "events"
+        ],
+        "additionalProperties": false,
+        "description": "[PROPOSED] Prototype IntakeQuestion plus review state and provenance, flattened."
+      },
+      "IntakeItemListQuery": {
+        "type": "object",
+        "properties": {
+          "page": {
+            "type": "integer",
+            "minimum": 1,
+            "default": 1
+          },
+          "pageSize": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 100,
+            "default": 20
+          },
+          "state": {
+            "$ref": "#/components/schemas/IntakeItemState"
+          },
+          "batchId": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "subject": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 32
+          },
+          "uploaderId": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 64,
+            "description": "Admin Pusat only; ignored for a Guru.",
+            "example": "1042"
+          },
+          "band": {
+            "$ref": "#/components/schemas/IntakeConfidenceBand"
+          },
+          "duplicate": {
+            "type": "string",
+            "enum": [
+              "any",
+              "exact",
+              "near",
+              "variant",
+              "none"
+            ],
+            "description": "any = an open (not dismissed) flag of any kind; none = no open flag."
+          }
+        },
+        "description": "[PROPOSED] Filters of GET /intake/items. Order: newest batch first, then paper order."
+      },
+      "IntakeItemStateCounts": {
+        "type": "object",
+        "properties": {
+          "generated": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "needs_review": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "accepted": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "rejected": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "duplicate": {
+            "type": "integer",
+            "minimum": 0
+          }
+        },
+        "required": [
+          "generated",
+          "needs_review",
+          "accepted",
+          "rejected",
+          "duplicate"
+        ],
+        "additionalProperties": false,
+        "description": "[PROPOSED] Items per review state within the caller scope and the filters other than `state` (for the status tabs)."
+      },
+      "IntakeItemListMeta": {
+        "type": "object",
+        "properties": {
+          "page": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "pageSize": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "totalItems": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "totalPages": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "from": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "minimum": 1
+          },
+          "to": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "minimum": 1
+          },
+          "counts": {
+            "$ref": "#/components/schemas/IntakeItemStateCounts"
+          }
+        },
+        "required": [
+          "page",
+          "pageSize",
+          "totalItems",
+          "totalPages",
+          "counts"
+        ],
+        "additionalProperties": {},
+        "description": "[PROPOSED] Standard list meta plus per-state counts computed from the same query (no stored counts)."
+      },
+      "IntakeItemListResponse": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/IntakeItemRow"
+            }
+          },
+          "meta": {
+            "$ref": "#/components/schemas/IntakeItemListMeta"
+          }
+        },
+        "required": [
+          "data",
+          "meta"
+        ]
+      },
+      "IntakeRunState": {
+        "type": "string",
+        "enum": [
+          "queued",
+          "running",
+          "succeeded",
+          "failed"
+        ],
+        "description": "[PROPOSED] State of an extraction run (jobs states of plan 15.2, without cancelled)."
+      },
+      "IntakeRunReasonCode": {
+        "type": "string",
+        "enum": [
+          "AI_BUDGET_EXHAUSTED",
+          "AI_UNAVAILABLE",
+          "EXTRACTION_FAILED"
+        ],
+        "description": "[PROPOSED] AI_BUDGET_EXHAUSTED: the monthly cap is reached, the run stays queued and resumes when the cap is raised (card). AI_UNAVAILABLE: the provider is not configured or unreachable (failed after retries). EXTRACTION_FAILED: any other failure."
+      },
+      "IntakeExtractionRun": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 64,
+            "description": "Run id (the `runId` of provenance and of the AI cost log).",
+            "example": "1042"
+          },
+          "batchId": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "state": {
+            "$ref": "#/components/schemas/IntakeRunState"
+          },
+          "reason": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "properties": {
+              "code": {
+                "$ref": "#/components/schemas/IntakeRunReasonCode"
+              },
+              "message": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 500,
+                "description": "BM message, no secret, no content."
+              }
+            },
+            "required": [
+              "code",
+              "message"
+            ],
+            "additionalProperties": false,
+            "description": "Visible reason while queued (budget) or after a failure; null otherwise."
+          },
+          "itemCount": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "minimum": 0,
+            "description": "Items created (\"N dikesan\", AC-04.6); null until the run succeeded."
+          },
+          "provider": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "maxLength": 64
+          },
+          "model": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "maxLength": 128
+          },
+          "attempts": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "queuedAt": {
+            "$ref": "#/components/schemas/Timestamp"
+          },
+          "startedAt": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/Timestamp"
+              },
+              {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              }
+            ]
+          },
+          "finishedAt": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/Timestamp"
+              },
+              {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              }
+            ]
+          }
+        },
+        "required": [
+          "id",
+          "batchId",
+          "state",
+          "reason",
+          "itemCount",
+          "provider",
+          "model",
+          "attempts",
+          "queuedAt",
+          "startedAt",
+          "finishedAt"
+        ],
+        "additionalProperties": false,
+        "description": "[PROPOSED] One extraction run of a batch."
+      },
+      "IntakeExtractRequest": {
+        "type": "object",
+        "properties": {},
+        "additionalProperties": false,
+        "description": "[PROPOSED] Empty object. Input comes from the stored batch; the request cannot carry content or a provider choice."
+      },
+      "IntakeItemPatch": {
+        "type": "object",
+        "properties": {
+          "label": {
+            "type": "string",
+            "maxLength": 32
+          },
+          "type": {
+            "$ref": "#/components/schemas/IntakeQuestionType"
+          },
+          "stem": {
+            "type": "string",
+            "maxLength": 20000
+          },
+          "options": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/IntakeMcqOption"
+            },
+            "maxItems": 10
+          },
+          "marks": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 1000
+          },
+          "mode": {
+            "$ref": "#/components/schemas/IntakeLeafKind"
+          },
+          "unit": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "maxLength": 32
+          },
+          "wordRange": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "properties": {
+              "min": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 100000
+              },
+              "max": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 100000
+              }
+            },
+            "required": [
+              "min",
+              "max"
+            ],
+            "additionalProperties": false
+          },
+          "parts": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/IntakePart"
+            },
+            "maxItems": 50
+          },
+          "scheme": {
+            "$ref": "#/components/schemas/IntakeScheme"
+          },
+          "tag": {
+            "$ref": "#/components/schemas/IntakeCurriculumTag"
+          },
+          "stimulusId": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "minLength": 1,
+            "maxLength": 64,
+            "description": "Attach to (or, with null, detach from) a stimulus of the same batch. Attaching gathers the group contiguous: the response says `reordered`.",
+            "example": "1042"
+          },
+          "page": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 10000
+          },
+          "confirmed": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 64
+            },
+            "maxItems": 50,
+            "description": "The full list of confirmed low fields after this edit."
+          },
+          "needsManual": {
+            "type": "boolean",
+            "enum": [
+              false
+            ]
+          }
+        },
+        "additionalProperties": false,
+        "description": "Prototype IntakeQuestion fields that a person may edit. Partial; at least one key."
+      },
+      "IntakeItemPatchResult": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/IntakeItem"
+          },
+          "reordered": {
+            "type": "boolean",
+            "description": "True when attaching to a stimulus moved items to keep the group contiguous; the screen shows \"Soalan dipindahkan supaya kumpulan kekal berturutan.\"."
+          }
+        },
+        "required": [
+          "data",
+          "reordered"
+        ],
+        "additionalProperties": false
+      },
+      "IntakeItemCreateRequest": {
+        "type": "object",
+        "properties": {
+          "page": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 10000,
+            "description": "Page the missing question is on; defaults to 1."
+          }
+        },
+        "additionalProperties": false,
+        "description": "[PROPOSED] Body of POST /intake/batches/{id}/items."
+      },
+      "IntakeAcceptRequest": {
+        "type": "object",
+        "properties": {},
+        "additionalProperties": false,
+        "description": "[PROPOSED] Empty object. The server converts the stored item (prototype intakeToDef) into a Draf question through QuestionsService."
+      },
+      "IntakeRejectRequest": {
+        "type": "object",
+        "properties": {
+          "reason": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 500
+          }
+        },
+        "required": [
+          "reason"
+        ],
+        "additionalProperties": false,
+        "description": "[PROPOSED] A reason is mandatory; the item never becomes a question and is kept with the reason."
+      },
+      "IntakeDuplicateRequest": {
+        "type": "object",
+        "properties": {
+          "decision": {
+            "type": "string",
+            "enum": [
+              "duplicate",
+              "not_duplicate"
+            ]
+          },
+          "matchedQuestionId": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "matchedItemId": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "note": {
+            "type": "string",
+            "maxLength": 500
+          }
+        },
+        "required": [
+          "decision"
+        ],
+        "additionalProperties": false,
+        "description": "[PROPOSED] decision duplicate needs exactly one of matchedQuestionId / matchedItemId; not_duplicate takes neither."
+      },
+      "IntakeGateErrorBody": {
+        "type": "object",
+        "properties": {
+          "error": {
+            "type": "object",
+            "properties": {
+              "code": {
+                "type": "string",
+                "enum": [
+                  "VALIDATION_ERROR"
+                ]
+              },
+              "message": {
+                "type": "string",
+                "enum": [
+                  "Soalan belum memenuhi semakan kualiti. Baiki isu yang disenaraikan."
+                ]
+              },
+              "details": {
+                "type": "object",
+                "properties": {
+                  "issues": {
+                    "type": "array",
+                    "items": {
+                      "$ref": "#/components/schemas/IntakeIssue"
+                    },
+                    "minItems": 1
+                  }
+                },
+                "required": [
+                  "issues"
+                ],
+                "additionalProperties": false
+              },
+              "requestId": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "code",
+              "message",
+              "details"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "required": [
+          "error"
+        ],
+        "additionalProperties": false,
+        "description": "[PROPOSED] ErrorBody whose details.issues lists every failed gate rule (BM, verbatim from the prototype)."
+      },
+      "IntakeBulkRequest": {
+        "type": "object",
+        "properties": {
+          "action": {
+            "type": "string",
+            "enum": [
+              "accept",
+              "reject"
+            ]
+          },
+          "ids": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Id"
+            },
+            "minItems": 1,
+            "maxItems": 100
+          },
+          "reason": {
+            "type": "string",
+            "maxLength": 500
+          }
+        },
+        "required": [
+          "action",
+          "ids"
+        ],
+        "additionalProperties": false,
+        "description": "[PROPOSED] Body of POST /intake/items/bulk."
+      },
+      "IntakeBulkSkipReason": {
+        "type": "string",
+        "enum": [
+          "NOT_FOUND",
+          "WRONG_STATE",
+          "GATE_FAILED",
+          "BELOW_THRESHOLD"
+        ],
+        "description": "[PROPOSED] NOT_FOUND: unknown id or outside the caller scope (the two are not told apart). WRONG_STATE: already accepted or rejected. GATE_FAILED: see `issues`. BELOW_THRESHOLD: the confidence band is under the bulk-accept threshold."
+      },
+      "IntakeBulkResultItem": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "outcome": {
+            "type": "string",
+            "enum": [
+              "done",
+              "skipped"
+            ]
+          },
+          "reason": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/IntakeBulkSkipReason"
+              },
+              {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              }
+            ]
+          },
+          "issues": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/IntakeIssue"
+            },
+            "description": "Present when reason is GATE_FAILED."
+          },
+          "item": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "properties": {
+              "id": {
+                "$ref": "#/components/schemas/Id"
+              },
+              "label": {
+                "type": "string",
+                "maxLength": 32,
+                "description": "Number label as printed."
+              },
+              "type": {
+                "$ref": "#/components/schemas/IntakeQuestionType"
+              },
+              "stemPreview": {
+                "type": "string",
+                "maxLength": 300,
+                "description": "Plain-text preview of the stem (first part prompt when the stem is empty). May hold `$latex$`."
+              },
+              "marks": {
+                "type": "integer",
+                "minimum": 0,
+                "description": "Question marks (sum of part marks for a structured question)."
+              },
+              "page": {
+                "type": "integer",
+                "minimum": 1
+              },
+              "subject": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 32
+              },
+              "stimulusId": {
+                "$ref": "#/components/schemas/Id"
+              },
+              "lowCount": {
+                "type": "integer",
+                "minimum": 0,
+                "description": "Low-confidence fields not yet confirmed (prototype IntakeSummary.lowCount, per item)."
+              },
+              "issueCount": {
+                "type": "integer",
+                "minimum": 0,
+                "description": "Open quality-gate issues of this item."
+              },
+              "needsManual": {
+                "type": "boolean"
+              },
+              "batchId": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 64,
+                "description": "The intake batch (BE-37 intake_batches = the Submission, D53/OWN-1).",
+                "example": "1042"
+              },
+              "position": {
+                "type": "integer",
+                "minimum": 1,
+                "description": "Order of the item in the paper. Items of one stimulus group stay contiguous."
+              },
+              "state": {
+                "$ref": "#/components/schemas/IntakeItemState"
+              },
+              "confidenceBand": {
+                "$ref": "#/components/schemas/IntakeConfidenceBand"
+              },
+              "uploader": {
+                "type": "object",
+                "properties": {
+                  "id": {
+                    "$ref": "#/components/schemas/Id"
+                  },
+                  "name": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 200,
+                    "description": "Display name (users table). Never an IC number."
+                  }
+                },
+                "required": [
+                  "id",
+                  "name"
+                ],
+                "additionalProperties": false,
+                "description": "Owner of the batch. A Guru only ever sees own items."
+              },
+              "question": {
+                "type": [
+                  "object",
+                  "null"
+                ],
+                "properties": {
+                  "id": {
+                    "$ref": "#/components/schemas/Id"
+                  },
+                  "version": {
+                    "type": "integer",
+                    "minimum": 1
+                  },
+                  "status": {
+                    "$ref": "#/components/schemas/QuestionWorkflowStatus"
+                  }
+                },
+                "required": [
+                  "id",
+                  "version",
+                  "status"
+                ],
+                "additionalProperties": false,
+                "description": "Set once the item is accepted."
+              },
+              "duplicate": {
+                "allOf": [
+                  {
+                    "$ref": "#/components/schemas/IntakeDuplicateFlag"
+                  },
+                  {
+                    "type": [
+                      "object",
+                      "null"
+                    ]
+                  }
+                ]
+              },
+              "createdAt": {
+                "$ref": "#/components/schemas/Timestamp"
+              },
+              "updatedAt": {
+                "$ref": "#/components/schemas/Timestamp"
+              }
+            },
+            "required": [
+              "id",
+              "label",
+              "type",
+              "stemPreview",
+              "marks",
+              "page",
+              "subject",
+              "lowCount",
+              "issueCount",
+              "needsManual",
+              "batchId",
+              "position",
+              "state",
+              "confidenceBand",
+              "uploader",
+              "question",
+              "duplicate",
+              "createdAt",
+              "updatedAt"
+            ],
+            "additionalProperties": false,
+            "description": "The item after the action; null when skipped."
+          }
+        },
+        "required": [
+          "id",
+          "outcome",
+          "reason",
+          "item"
+        ],
+        "additionalProperties": false
+      },
+      "IntakeBulkResult": {
+        "type": "object",
+        "properties": {
+          "action": {
+            "type": "string",
+            "enum": [
+              "accept",
+              "reject"
+            ]
+          },
+          "threshold": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "enum": [
+              "high",
+              "medium",
+              "low",
+              null
+            ],
+            "description": "The band floor applied to an accept; null for reject."
+          },
+          "results": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/IntakeBulkResultItem"
+            },
+            "description": "One entry per requested id, in request order."
+          },
+          "done": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "skipped": {
+            "type": "integer",
+            "minimum": 0
+          }
+        },
+        "required": [
+          "action",
+          "threshold",
+          "results",
+          "done",
+          "skipped"
+        ],
+        "additionalProperties": false,
+        "description": "[PROPOSED] Per-id outcome of a bulk action."
+      },
+      "IntakeStimulusCreateRequest": {
+        "type": "object",
+        "properties": {
+          "kind": {
+            "$ref": "#/components/schemas/IntakeStimulusKind"
+          },
+          "label": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 100
+          },
+          "page": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 10000
+          },
+          "caption": {
+            "type": "string",
+            "maxLength": 500
+          },
+          "alt": {
+            "type": "string",
+            "maxLength": 1000
+          },
+          "text": {
+            "type": "string",
+            "maxLength": 20000
+          },
+          "table": {
+            "type": "object",
+            "properties": {
+              "head": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "maxLength": 500
+                },
+                "maxItems": 50
+              },
+              "rows": {
+                "type": "array",
+                "items": {
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "maxLength": 2000
+                  },
+                  "maxItems": 50
+                },
+                "maxItems": 500
+              }
+            },
+            "required": [
+              "head",
+              "rows"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "required": [
+          "kind"
+        ],
+        "additionalProperties": false,
+        "description": "[PROPOSED] Body of POST /intake/batches/{id}/stimuli."
+      },
+      "IntakeStimulusUpdateRequest": {
+        "type": "object",
+        "properties": {
+          "label": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 100
+          },
+          "caption": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "maxLength": 500
+          },
+          "alt": {
+            "type": "string",
+            "maxLength": 1000
+          },
+          "text": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "maxLength": 20000
+          },
+          "table": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "properties": {
+              "head": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "maxLength": 500
+                },
+                "maxItems": 50
+              },
+              "rows": {
+                "type": "array",
+                "items": {
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "maxLength": 2000
+                  },
+                  "maxItems": 50
+                },
+                "maxItems": 500
+              }
+            },
+            "required": [
+              "head",
+              "rows"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "additionalProperties": false,
+        "description": "[PROPOSED] Body of PATCH /intake/stimuli/{id}. Partial; at least one key."
+      },
+      "IntakeStimulusRemoved": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "detachedItemIds": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Id"
+            }
+          }
+        },
+        "required": [
+          "id",
+          "detachedItemIds"
+        ],
+        "additionalProperties": false,
+        "description": "[PROPOSED] Stimulus removed; the listed items no longer have a stimulusId."
+      },
+      "IntakeGroup": {
+        "type": "object",
+        "properties": {
+          "stimulusId": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "itemIds": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Id"
+            }
+          },
+          "from": {
+            "type": "string",
+            "maxLength": 32,
+            "description": "Printed label of the first item."
+          },
+          "to": {
+            "type": "string",
+            "maxLength": 32,
+            "description": "Printed label of the last item."
+          },
+          "contiguous": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "stimulusId",
+          "itemIds",
+          "from",
+          "to",
+          "contiguous"
+        ],
+        "additionalProperties": false,
+        "description": "Prototype GroupInfo with questionIds renamed itemIds."
+      },
+      "IntakeBatchReview": {
+        "type": "object",
+        "properties": {
+          "batchId": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "provider": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "maxLength": 64,
+            "description": "Prototype IntakeBatch.provider (\"Pengekstrak: <provider> (<model>)\"). Never a key or URL."
+          },
+          "model": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "maxLength": 128
+          },
+          "unmatched": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "maxLength": 200
+            },
+            "description": "Scheme entries whose question number was not found (AC-04.2), e.g. \"Skema 9\". Prototype ExtractedPaper.unmatched."
+          },
+          "warnings": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "maxLength": 500
+            },
+            "description": "Paper-level BM warnings, e.g. \"Tiada soalan dikesan dalam teks kertas.\" (prototype ExtractedPaper.warnings)."
+          },
+          "stimuli": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/IntakeStimulus"
+            }
+          },
+          "groups": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/IntakeGroup"
+            }
+          },
+          "counts": {
+            "type": "object",
+            "properties": {
+              "items": {
+                "type": "integer",
+                "minimum": 0,
+                "description": "Prototype \"N soalan\"."
+              },
+              "marks": {
+                "type": "integer",
+                "minimum": 0,
+                "description": "Prototype \"N markah\" (paperMarks)."
+              },
+              "groups": {
+                "type": "integer",
+                "minimum": 0,
+                "description": "Prototype \"N kumpulan rajah\"."
+              },
+              "low": {
+                "type": "integer",
+                "minimum": 0,
+                "description": "Low fields not yet confirmed (prototype lowCount)."
+              },
+              "states": {
+                "$ref": "#/components/schemas/IntakeItemStateCounts"
+              }
+            },
+            "required": [
+              "items",
+              "marks",
+              "groups",
+              "low",
+              "states"
+            ],
+            "additionalProperties": false
+          },
+          "issues": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/IntakeIssue"
+            },
+            "description": "Gate issues of the whole batch: every item issue (with itemId) plus the batch-level and stimulus-level ones (no itemId): \"Kertas\" source and copyright, empty batch, non-contiguous group, missing alt text."
+          },
+          "extraction": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "properties": {
+              "id": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 64,
+                "description": "Run id (the `runId` of provenance and of the AI cost log).",
+                "example": "1042"
+              },
+              "batchId": {
+                "$ref": "#/components/schemas/Id"
+              },
+              "state": {
+                "$ref": "#/components/schemas/IntakeRunState"
+              },
+              "reason": {
+                "type": [
+                  "object",
+                  "null"
+                ],
+                "properties": {
+                  "code": {
+                    "$ref": "#/components/schemas/IntakeRunReasonCode"
+                  },
+                  "message": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 500,
+                    "description": "BM message, no secret, no content."
+                  }
+                },
+                "required": [
+                  "code",
+                  "message"
+                ],
+                "additionalProperties": false,
+                "description": "Visible reason while queued (budget) or after a failure; null otherwise."
+              },
+              "itemCount": {
+                "type": [
+                  "integer",
+                  "null"
+                ],
+                "minimum": 0,
+                "description": "Items created (\"N dikesan\", AC-04.6); null until the run succeeded."
+              },
+              "provider": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "maxLength": 64
+              },
+              "model": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "maxLength": 128
+              },
+              "attempts": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "queuedAt": {
+                "$ref": "#/components/schemas/Timestamp"
+              },
+              "startedAt": {
+                "allOf": [
+                  {
+                    "$ref": "#/components/schemas/Timestamp"
+                  },
+                  {
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  }
+                ]
+              },
+              "finishedAt": {
+                "allOf": [
+                  {
+                    "$ref": "#/components/schemas/Timestamp"
+                  },
+                  {
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  }
+                ]
+              }
+            },
+            "required": [
+              "id",
+              "batchId",
+              "state",
+              "reason",
+              "itemCount",
+              "provider",
+              "model",
+              "attempts",
+              "queuedAt",
+              "startedAt",
+              "finishedAt"
+            ],
+            "additionalProperties": false,
+            "description": "The latest run; null before extraction was requested."
+          }
+        },
+        "required": [
+          "batchId",
+          "provider",
+          "model",
+          "unmatched",
+          "warnings",
+          "stimuli",
+          "groups",
+          "counts",
+          "issues",
+          "extraction"
+        ],
+        "additionalProperties": false,
+        "description": "[PROPOSED] Review header and side panels of one batch."
+      },
       "QuestionBulkResult": {
         "type": "object",
         "properties": {
@@ -55192,6 +58994,72 @@
         },
         "required": [
           "removed"
+        ]
+      },
+      "IntakeExtractionRunEnvelope": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/IntakeExtractionRun"
+          }
+        },
+        "required": [
+          "data"
+        ]
+      },
+      "IntakeBatchReviewEnvelope": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/IntakeBatchReview"
+          }
+        },
+        "required": [
+          "data"
+        ]
+      },
+      "IntakeItemEnvelope": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/IntakeItem"
+          }
+        },
+        "required": [
+          "data"
+        ]
+      },
+      "IntakeStimulusEnvelope": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/IntakeStimulus"
+          }
+        },
+        "required": [
+          "data"
+        ]
+      },
+      "IntakeStimulusRemovedEnvelope": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/IntakeStimulusRemoved"
+          }
+        },
+        "required": [
+          "data"
+        ]
+      },
+      "IntakeBulkResultEnvelope": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/IntakeBulkResult"
+          }
+        },
+        "required": [
+          "data"
         ]
       }
     },
@@ -95232,6 +99100,1408 @@
                 "schema": {
                   "type": "integer",
                   "minimum": 1
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/intake/batches/{id}/extract": {
+      "post": {
+        "tags": [
+          "intake"
+        ],
+        "summary": "Enqueue extraction of a batch (idempotent)",
+        "description": "Card BE-38. Roles (D40a): Guru (`teacher`) on the batches they own, Admin Pusat (`admin`) on all. Admin Sekolah, PPD and every other role get 403. Idempotent per batch: a new request enqueues a run (202); a request while a run is queued or running returns that run (202); a request after a succeeded run returns it unchanged (200, no new items, no cost). After a failed run the same request retries and creates no duplicate items. When BE-36 reports the monthly budget exhausted the run stays `queued` with `reason.code` AI_BUDGET_EXHAUSTED and resumes when the cap is raised (202, not an error). A file whose hash was already imported by ANOTHER finished batch is refused before any provider call: 409 CONFLICT \"Kertas sama sudah diimport\" with `details.batchId` of the earlier batch. The request body is empty; the pages come from the stored batch.",
+        "parameters": [
+          {
+            "schema": {
+              "$ref": "#/components/schemas/Id"
+            },
+            "required": true,
+            "description": "Opaque entity id (string). Never parse or construct on the client.",
+            "name": "id",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Value of Session.csrf; required on mutating requests."
+            },
+            "required": true,
+            "description": "Value of Session.csrf; required on mutating requests.",
+            "name": "X-CSRF-Token",
+            "in": "header"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/IntakeExtractRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The extraction already succeeded; the run is returned unchanged.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/IntakeExtractionRunEnvelope"
+                }
+              }
+            }
+          },
+          "202": {
+            "description": "Queued or running. Poll GET /intake/batches/{id}/review (`extraction`) or GET /intake/items.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/IntakeExtractionRunEnvelope"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED: no valid session.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN (a role without access), or CSRF_INVALID when X-CSRF-Token is missing or wrong.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "NOT_FOUND \"Kumpulan ekstrak tidak ditemui\": unknown batch, or one outside the caller scope (the two are not told apart).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "CONFLICT \"Kertas sama sudah diimport\": the file hash was imported by another batch (details.batchId). No provider call, no cost.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "VALIDATION_ERROR: one response, `fields` keyed by input name (BM messages).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "RATE_LIMITED \"Terlalu banyak percubaan. Sila cuba sebentar lagi.\" [PROPOSED] (the shared 429 moves to common/, D59d). The body carries retryAfter (seconds) and the Retry-After header carries the same value.",
+            "headers": {
+              "Retry-After": {
+                "description": "Seconds until a retry is allowed (same value as error.retryAfter).",
+                "schema": {
+                  "type": "integer",
+                  "minimum": 0
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/intake/batches/{id}/review": {
+      "get": {
+        "tags": [
+          "intake"
+        ],
+        "summary": "Review summary of a batch (counts, stimuli, groups, gate issues)",
+        "description": "[PROPOSED] Replaces what the prototype review page read from getIntakeBatch and validateBatch. Roles (D40a): Guru (`teacher`) on the batches they own, Admin Pusat (`admin`) on all. Admin Sekolah, PPD and every other role get 403. The batch declaration and processing status are BE-37.",
+        "parameters": [
+          {
+            "schema": {
+              "$ref": "#/components/schemas/Id"
+            },
+            "required": true,
+            "description": "Opaque entity id (string). Never parse or construct on the client.",
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Summary.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/IntakeBatchReviewEnvelope"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED: no valid session.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN (a role without access), or CSRF_INVALID when X-CSRF-Token is missing or wrong.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "NOT_FOUND \"Kumpulan ekstrak tidak ditemui\": unknown batch, or one outside the caller scope (the two are not told apart).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/intake/batches/{id}/items": {
+      "post": {
+        "tags": [
+          "intake"
+        ],
+        "summary": "Add a blank item (\"Tambah soalan\")",
+        "description": "[PROPOSED] Prototype review page \"Tambah soalan\" (blankQuestion, nextLabel; AC-04.6). The item is `manual` source, state `generated`. Roles (D40a): Guru (`teacher`) on the batches they own, Admin Pusat (`admin`) on all. Admin Sekolah, PPD and every other role get 403.",
+        "parameters": [
+          {
+            "schema": {
+              "$ref": "#/components/schemas/Id"
+            },
+            "required": true,
+            "description": "Opaque entity id (string). Never parse or construct on the client.",
+            "name": "id",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Value of Session.csrf; required on mutating requests."
+            },
+            "required": true,
+            "description": "Value of Session.csrf; required on mutating requests.",
+            "name": "X-CSRF-Token",
+            "in": "header"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/IntakeItemCreateRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "The new item.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/IntakeItemEnvelope"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED: no valid session.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN (a role without access), or CSRF_INVALID when X-CSRF-Token is missing or wrong.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "NOT_FOUND \"Kumpulan ekstrak tidak ditemui\": unknown batch, or one outside the caller scope (the two are not told apart).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "VALIDATION_ERROR: one response, `fields` keyed by input name (BM messages).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "RATE_LIMITED \"Terlalu banyak percubaan. Sila cuba sebentar lagi.\" [PROPOSED] (the shared 429 moves to common/, D59d). The body carries retryAfter (seconds) and the Retry-After header carries the same value.",
+            "headers": {
+              "Retry-After": {
+                "description": "Seconds until a retry is allowed (same value as error.retryAfter).",
+                "schema": {
+                  "type": "integer",
+                  "minimum": 0
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/intake/batches/{id}/stimuli": {
+      "post": {
+        "tags": [
+          "intake"
+        ],
+        "summary": "Add a rajah or petikan to a batch",
+        "description": "[PROPOSED] Prototype addStimulus. The label is numbered by the server (\"Rajah 1\", \"Petikan 2\") unless sent. `svg` cannot be sent. Roles (D40a): Guru (`teacher`) on the batches they own, Admin Pusat (`admin`) on all. Admin Sekolah, PPD and every other role get 403.",
+        "parameters": [
+          {
+            "schema": {
+              "$ref": "#/components/schemas/Id"
+            },
+            "required": true,
+            "description": "Opaque entity id (string). Never parse or construct on the client.",
+            "name": "id",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Value of Session.csrf; required on mutating requests."
+            },
+            "required": true,
+            "description": "Value of Session.csrf; required on mutating requests.",
+            "name": "X-CSRF-Token",
+            "in": "header"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/IntakeStimulusCreateRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "The new stimulus.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/IntakeStimulusEnvelope"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED: no valid session.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN (a role without access), or CSRF_INVALID when X-CSRF-Token is missing or wrong.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "NOT_FOUND \"Kumpulan ekstrak tidak ditemui\": unknown batch, or one outside the caller scope (the two are not told apart).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "VALIDATION_ERROR: one response, `fields` keyed by input name (BM messages).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "RATE_LIMITED \"Terlalu banyak percubaan. Sila cuba sebentar lagi.\" [PROPOSED] (the shared 429 moves to common/, D59d). The body carries retryAfter (seconds) and the Retry-After header carries the same value.",
+            "headers": {
+              "Retry-After": {
+                "description": "Seconds until a retry is allowed (same value as error.retryAfter).",
+                "schema": {
+                  "type": "integer",
+                  "minimum": 0
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/intake/stimuli/{id}": {
+      "patch": {
+        "tags": [
+          "intake"
+        ],
+        "summary": "Edit a stimulus (caption, alt text, passage text)",
+        "description": "[PROPOSED] Prototype patchStimulus. Group membership is edited on the item (PATCH /intake/items/{id} stimulusId). Roles (D40a): Guru (`teacher`) on the batches they own, Admin Pusat (`admin`) on all. Admin Sekolah, PPD and every other role get 403.",
+        "parameters": [
+          {
+            "schema": {
+              "$ref": "#/components/schemas/Id"
+            },
+            "required": true,
+            "description": "Opaque entity id (string). Never parse or construct on the client.",
+            "name": "id",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Value of Session.csrf; required on mutating requests."
+            },
+            "required": true,
+            "description": "Value of Session.csrf; required on mutating requests.",
+            "name": "X-CSRF-Token",
+            "in": "header"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/IntakeStimulusUpdateRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The stimulus after the edit.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/IntakeStimulusEnvelope"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED: no valid session.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN (a role without access), or CSRF_INVALID when X-CSRF-Token is missing or wrong.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "NOT_FOUND \"Rajah atau petikan tidak ditemui\": unknown stimulus, or one outside the caller scope (the two are not told apart).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "VALIDATION_ERROR: one response, `fields` keyed by input name (BM messages).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "RATE_LIMITED \"Terlalu banyak percubaan. Sila cuba sebentar lagi.\" [PROPOSED] (the shared 429 moves to common/, D59d). The body carries retryAfter (seconds) and the Retry-After header carries the same value.",
+            "headers": {
+              "Retry-After": {
+                "description": "Seconds until a retry is allowed (same value as error.retryAfter).",
+                "schema": {
+                  "type": "integer",
+                  "minimum": 0
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "intake"
+        ],
+        "summary": "Remove a stimulus and detach its items",
+        "description": "[PROPOSED] Prototype removeStimulus (dropStimulus): every item that used it loses its stimulusId. Roles (D40a): Guru (`teacher`) on the batches they own, Admin Pusat (`admin`) on all. Admin Sekolah, PPD and every other role get 403.",
+        "parameters": [
+          {
+            "schema": {
+              "$ref": "#/components/schemas/Id"
+            },
+            "required": true,
+            "description": "Opaque entity id (string). Never parse or construct on the client.",
+            "name": "id",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Value of Session.csrf; required on mutating requests."
+            },
+            "required": true,
+            "description": "Value of Session.csrf; required on mutating requests.",
+            "name": "X-CSRF-Token",
+            "in": "header"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Removed; lists the detached items.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/IntakeStimulusRemovedEnvelope"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED: no valid session.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN (a role without access), or CSRF_INVALID when X-CSRF-Token is missing or wrong.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "NOT_FOUND \"Rajah atau petikan tidak ditemui\": unknown stimulus, or one outside the caller scope (the two are not told apart).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "RATE_LIMITED \"Terlalu banyak percubaan. Sila cuba sebentar lagi.\" [PROPOSED] (the shared 429 moves to common/, D59d). The body carries retryAfter (seconds) and the Retry-After header carries the same value.",
+            "headers": {
+              "Retry-After": {
+                "description": "Seconds until a retry is allowed (same value as error.retryAfter).",
+                "schema": {
+                  "type": "integer",
+                  "minimum": 0
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/intake/items": {
+      "get": {
+        "tags": [
+          "intake"
+        ],
+        "summary": "Review queue (paginated, filterable)",
+        "description": "Card BE-38, v2-question-bank US-07. Roles (D40a): Guru (`teacher`) on the batches they own, Admin Pusat (`admin`) on all. Admin Sekolah, PPD and every other role get 403. A Guru sees own items only; Admin Pusat sees all. Page size 20 (max 100). `meta.counts` holds the per-state counts for the status tabs.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "default": 1
+            },
+            "required": false,
+            "name": "page",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100,
+              "default": 20
+            },
+            "required": false,
+            "name": "pageSize",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "$ref": "#/components/schemas/IntakeItemState"
+            },
+            "required": false,
+            "description": "[PROPOSED] Review state of an extracted item (card BE-38): generated = Dijana, needs_review = Perlu semakan, accepted = Diterima (a Draf question exists), rejected = Ditolak (never becomes a question, kept with a reason), duplicate = Pendua. NOT a question status (D54a).",
+            "name": "state",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "$ref": "#/components/schemas/Id"
+            },
+            "required": false,
+            "description": "Opaque entity id (string). Never parse or construct on the client.",
+            "name": "batchId",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 32
+            },
+            "required": false,
+            "name": "subject",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 64,
+              "description": "Admin Pusat only; ignored for a Guru.",
+              "example": "1042"
+            },
+            "required": false,
+            "description": "Admin Pusat only; ignored for a Guru.",
+            "name": "uploaderId",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "$ref": "#/components/schemas/IntakeConfidenceBand"
+            },
+            "required": false,
+            "description": "[PROPOSED] high = Tinggi (>= 0.90), medium = Sederhana (0.70 to 0.89), low = Rendah (< 0.70). The band of an item is its LOWEST field (AC-07.1).",
+            "name": "band",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "enum": [
+                "any",
+                "exact",
+                "near",
+                "variant",
+                "none"
+              ],
+              "description": "any = an open (not dismissed) flag of any kind; none = no open flag."
+            },
+            "required": false,
+            "description": "any = an open (not dismissed) flag of any kind; none = no open flag.",
+            "name": "duplicate",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "A page of rows.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/IntakeItemListResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED: no valid session.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN (a role without access), or CSRF_INVALID when X-CSRF-Token is missing or wrong.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "VALIDATION_ERROR: one response, `fields` keyed by input name (BM messages).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/intake/items/{id}": {
+      "get": {
+        "tags": [
+          "intake"
+        ],
+        "summary": "One item with its fields, confidence, region, gate issues and history",
+        "description": "Card BE-38. Roles (D40a): Guru (`teacher`) on the batches they own, Admin Pusat (`admin`) on all. Admin Sekolah, PPD and every other role get 403.",
+        "parameters": [
+          {
+            "schema": {
+              "$ref": "#/components/schemas/Id"
+            },
+            "required": true,
+            "description": "Opaque entity id (string). Never parse or construct on the client.",
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The item.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/IntakeItemEnvelope"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED: no valid session.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN (a role without access), or CSRF_INVALID when X-CSRF-Token is missing or wrong.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "NOT_FOUND \"Item ekstrak tidak ditemui\": unknown item, or one outside the caller scope (the two are not told apart).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      },
+      "patch": {
+        "tags": [
+          "intake"
+        ],
+        "summary": "Edit the extracted fields of an item",
+        "description": "Card BE-38 (prototype saveExtracted, per item). Roles (D40a): Guru (`teacher`) on the batches they own, Admin Pusat (`admin`) on all. Admin Sekolah, PPD and every other role get 403. Marks each edited field as edited by a human and keeps the previous text in the item history (AC-08.2). `lowFields`, the review state and `needsManual: true` cannot be written; `confirmed` may list only low fields. An accepted or rejected item is final: 409 CONFLICT \"Item ini sudah diterima atau ditolak dan tidak boleh disunting.\".",
+        "parameters": [
+          {
+            "schema": {
+              "$ref": "#/components/schemas/Id"
+            },
+            "required": true,
+            "description": "Opaque entity id (string). Never parse or construct on the client.",
+            "name": "id",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Value of Session.csrf; required on mutating requests."
+            },
+            "required": true,
+            "description": "Value of Session.csrf; required on mutating requests.",
+            "name": "X-CSRF-Token",
+            "in": "header"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/IntakeItemPatch"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The item after the edit, and whether the paper order changed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/IntakeItemPatchResult"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED: no valid session.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN (a role without access), or CSRF_INVALID when X-CSRF-Token is missing or wrong.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "NOT_FOUND \"Item ekstrak tidak ditemui\": unknown item, or one outside the caller scope (the two are not told apart).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "CONFLICT \"Item ini sudah diterima atau ditolak dan tidak boleh disunting.\"",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "VALIDATION_ERROR: one response, `fields` keyed by input name (BM messages).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "RATE_LIMITED \"Terlalu banyak percubaan. Sila cuba sebentar lagi.\" [PROPOSED] (the shared 429 moves to common/, D59d). The body carries retryAfter (seconds) and the Retry-After header carries the same value.",
+            "headers": {
+              "Retry-After": {
+                "description": "Seconds until a retry is allowed (same value as error.retryAfter).",
+                "schema": {
+                  "type": "integer",
+                  "minimum": 0
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/intake/items/{id}/accept": {
+      "post": {
+        "tags": [
+          "intake"
+        ],
+        "summary": "Accept an item: create a Draf question",
+        "description": "Card BE-38 (AC1, AC3, AC4, AC9). Roles (D40a): Guru (`teacher`) on the batches they own, Admin Pusat (`admin`) on all. Admin Sekolah, PPD and every other role get 403. Only an authenticated human reviewer can call it; the AI service cannot. Runs the quality gate (every rule of the prototype validateBatch for this item: low fields confirmed, tags valid, marks equal the sum of the part marks, the stimulus resolves); on failure 422 VALIDATION_ERROR with `details.issues`. On success the server creates a question through QuestionsService with status `draft` (wire code, D54a) and provenance, and stores its id and version on the item (`question`). Submit, approve and publish are the BE-10 endpoints.",
+        "parameters": [
+          {
+            "schema": {
+              "$ref": "#/components/schemas/Id"
+            },
+            "required": true,
+            "description": "Opaque entity id (string). Never parse or construct on the client.",
+            "name": "id",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Value of Session.csrf; required on mutating requests."
+            },
+            "required": true,
+            "description": "Value of Session.csrf; required on mutating requests.",
+            "name": "X-CSRF-Token",
+            "in": "header"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/IntakeAcceptRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The item, now `accepted`, with `question` set.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/IntakeItemEnvelope"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED: no valid session.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN (a role without access), or CSRF_INVALID when X-CSRF-Token is missing or wrong.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "NOT_FOUND \"Item ekstrak tidak ditemui\": unknown item, or one outside the caller scope (the two are not told apart).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "CONFLICT \"Item ini sudah diterima.\" (or the item was rejected).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "VALIDATION_ERROR \"Soalan belum memenuhi semakan kualiti. Baiki isu yang disenaraikan.\" with details.issues.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/IntakeGateErrorBody"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "RATE_LIMITED \"Terlalu banyak percubaan. Sila cuba sebentar lagi.\" [PROPOSED] (the shared 429 moves to common/, D59d). The body carries retryAfter (seconds) and the Retry-After header carries the same value.",
+            "headers": {
+              "Retry-After": {
+                "description": "Seconds until a retry is allowed (same value as error.retryAfter).",
+                "schema": {
+                  "type": "integer",
+                  "minimum": 0
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/intake/items/{id}/reject": {
+      "post": {
+        "tags": [
+          "intake"
+        ],
+        "summary": "Reject an item with a reason",
+        "description": "Card BE-38. Roles (D40a): Guru (`teacher`) on the batches they own, Admin Pusat (`admin`) on all. Admin Sekolah, PPD and every other role get 403. The reason is mandatory (\"Sebab penolakan diperlukan.\"); the item never becomes a question and is kept with the reason. Prototype \"Buang soalan\" maps here.",
+        "parameters": [
+          {
+            "schema": {
+              "$ref": "#/components/schemas/Id"
+            },
+            "required": true,
+            "description": "Opaque entity id (string). Never parse or construct on the client.",
+            "name": "id",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Value of Session.csrf; required on mutating requests."
+            },
+            "required": true,
+            "description": "Value of Session.csrf; required on mutating requests.",
+            "name": "X-CSRF-Token",
+            "in": "header"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/IntakeRejectRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The item, now `rejected`.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/IntakeItemEnvelope"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED: no valid session.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN (a role without access), or CSRF_INVALID when X-CSRF-Token is missing or wrong.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "NOT_FOUND \"Item ekstrak tidak ditemui\": unknown item, or one outside the caller scope (the two are not told apart).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "CONFLICT \"Item ini sudah diterima atau ditolak dan tidak boleh disunting.\"",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "VALIDATION_ERROR: one response, `fields` keyed by input name (BM messages).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "RATE_LIMITED \"Terlalu banyak percubaan. Sila cuba sebentar lagi.\" [PROPOSED] (the shared 429 moves to common/, D59d). The body carries retryAfter (seconds) and the Retry-After header carries the same value.",
+            "headers": {
+              "Retry-After": {
+                "description": "Seconds until a retry is allowed (same value as error.retryAfter).",
+                "schema": {
+                  "type": "integer",
+                  "minimum": 0
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/intake/items/{id}/duplicate": {
+      "post": {
+        "tags": [
+          "intake"
+        ],
+        "summary": "Link an item to the question or item it duplicates, or dismiss the flag",
+        "description": "Card BE-38, v2-question-bank US-06. Roles (D40a): Guru (`teacher`) on the batches they own, Admin Pusat (`admin`) on all. Admin Sekolah, PPD and every other role get 403. `decision: duplicate` links to exactly one of matchedQuestionId (bank) or matchedItemId (same batch) and sets the state `duplicate`; `not_duplicate` (\"Bukan pendua\") dismisses the flag for that pair only.",
+        "parameters": [
+          {
+            "schema": {
+              "$ref": "#/components/schemas/Id"
+            },
+            "required": true,
+            "description": "Opaque entity id (string). Never parse or construct on the client.",
+            "name": "id",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Value of Session.csrf; required on mutating requests."
+            },
+            "required": true,
+            "description": "Value of Session.csrf; required on mutating requests.",
+            "name": "X-CSRF-Token",
+            "in": "header"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/IntakeDuplicateRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The item after the decision.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/IntakeItemEnvelope"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED: no valid session.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN (a role without access), or CSRF_INVALID when X-CSRF-Token is missing or wrong.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "NOT_FOUND \"Item ekstrak tidak ditemui\": unknown item, or one outside the caller scope (the two are not told apart).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "CONFLICT \"Item ini sudah diterima atau ditolak dan tidak boleh disunting.\"",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "VALIDATION_ERROR: one response, `fields` keyed by input name (BM messages).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "RATE_LIMITED \"Terlalu banyak percubaan. Sila cuba sebentar lagi.\" [PROPOSED] (the shared 429 moves to common/, D59d). The body carries retryAfter (seconds) and the Retry-After header carries the same value.",
+            "headers": {
+              "Retry-After": {
+                "description": "Seconds until a retry is allowed (same value as error.retryAfter).",
+                "schema": {
+                  "type": "integer",
+                  "minimum": 0
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/intake/items/bulk": {
+      "post": {
+        "tags": [
+          "intake"
+        ],
+        "summary": "Bulk accept or reject",
+        "description": "Card BE-38. Roles (D40a): Guru (`teacher`) on the batches they own, Admin Pusat (`admin`) on all. Admin Sekolah, PPD and every other role get 403. `accept` is Admin Pusat only (a Guru gets 403) and only for items at or above the server confidence threshold (default band `high`, card open question 2; returned as `threshold`). `reject` needs a reason. Up to 100 ids. The same gate as a single accept applies; an item that fails is skipped and listed with its reason, never dropped, and the response is 200 with per-id outcomes.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Value of Session.csrf; required on mutating requests."
+            },
+            "required": true,
+            "description": "Value of Session.csrf; required on mutating requests.",
+            "name": "X-CSRF-Token",
+            "in": "header"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/IntakeBulkRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Per-id outcomes in request order.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/IntakeBulkResultEnvelope"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED: no valid session.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN (a role without access), or CSRF_INVALID when X-CSRF-Token is missing or wrong.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "VALIDATION_ERROR: one response, `fields` keyed by input name (BM messages).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "RATE_LIMITED \"Terlalu banyak percubaan. Sila cuba sebentar lagi.\" [PROPOSED] (the shared 429 moves to common/, D59d). The body carries retryAfter (seconds) and the Retry-After header carries the same value.",
+            "headers": {
+              "Retry-After": {
+                "description": "Seconds until a retry is allowed (same value as error.retryAfter).",
+                "schema": {
+                  "type": "integer",
+                  "minimum": 0
                 }
               }
             },
