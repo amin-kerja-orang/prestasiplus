@@ -18,10 +18,10 @@ Endpoint ids are `Mnn-kk` (module, sequence in the part's summary table), `C-nn`
 
 ## 2. How to use it
 
-- **Building a backend card (BE-05, BE-06, BE-08..13, BE-17..25).** Open the part and module of the card, filter the summary table by the card id (Card column), implement each block as written (path string, guard, body shape, status code, BM message verbatim), then read that module's open questions and the "Uncovered endpoints" table below: endpoints marked `UNCOVERED` or `BE-nn*` belong to your module but are missing from the card's endpoint table; ask the LEAD before building them.
+- **Building a backend card (BE-05, BE-06, BE-08..13, BE-17..25).** Open the part and module of the card, filter the summary table by the card id (Card column), implement each block as written (path string, guard, body shape, status code, BM message verbatim), then read that module's open questions and the "Uncovered endpoints" table below: endpoints marked `UNCOVERED` (M18 and the backlog modules) have no card; ask the LEAD before building them.
 - **Building a contract-only card (BE-03, BE-31).** The contract (`packages/contract/src/**`) currently holds only common schemas, session/auth paths and the access matrix. Every other endpoint is `missing`: write the zod schema and `openapi.ts` path from the block's Request/Response/Errors lines, then run the conformance suite (BE-31) against the mock and the new handler. Shapes the blocks mark RAW (bare arrays, `200 {error}`, files) need an explicit contract exception (section 4, "Non-standard bodies").
 - **Switching the frontend (BE-32, V2-T31).** The switch is a no-op only if the real API reproduces the mock's wire exactly: path strings (including BM paths), envelope variant, `status`/`message` siblings, fixed page sizes and BM copy. Section 4 lists the places where the mock and the contract differ today; each is an open decision, and until it is decided the real API must follow the mock.
-- **Reading a block.** "Roles/auth" is the guard as coded (the mock uses a Bearer token; see section 4). "Card" is the BE card that lists the endpoint; `UNCOVERED` = no card lists it; `BE-nn*` or "(implied)" = inside the card's goal but not in its endpoint table. "Contract" is `exists` (zod schema and `openapi.ts` path), `partial` (path registered, shape differs from the mock) or `missing` (neither).
+- **Reading a block.** "Roles/auth" is the guard as coded (the mock uses a Bearer token; see section 4). "Card" is the BE card that lists the endpoint; `UNCOVERED` = no card lists it (the earlier `BE-nn*` implied markers are gone after the card audit). "Contract" is `exists` (zod schema and `openapi.ts` path), `partial` (path registered, shape differs from the mock) or `missing` (neither).
 
 ## 3. Per-module table
 
@@ -31,11 +31,11 @@ Counts verified for this index with a multi-line-aware script (`scratchpad/docs-
 |---|---|---:|---|---:|---|
 | core (`GET /api/me`, gamification summary, server status) | 1 | 3 | BE-06, BE-11, BE-22 | 0 | 0 / 0 / 3 |
 | session contract (S-01..S-04, no mock handler) | 1 | 4 | BE-03 | 0 | 4 / 0 / 0 |
-| M01 authentication, account, notifications | 1 | 19 | BE-03, BE-06 | 2 | 0 / 2 / 17 |
-| M02 users, schools, subscriptions, parent invites | 1 | 49 | BE-05, BE-25 | 6 | 0 / 0 / 49 |
-| M03 curriculum | 1 | 29 | BE-08 | 16 | 0 / 0 / 29 |
-| M04 question bank | 2 | 30 | BE-09, BE-10 | 5 | 0 / 0 / 30 |
-| M05 practice | 2 | 23 | BE-12, BE-13 | 1 | 0 / 0 / 23 |
+| M01 authentication, account, notifications | 1 | 19 | BE-03, BE-06 | 0 | 0 / 2 / 17 |
+| M02 users, schools, subscriptions, parent invites | 1 | 49 | BE-05, BE-25 | 0 | 0 / 0 / 49 |
+| M03 curriculum | 1 | 29 | BE-08 | 0 | 0 / 0 / 29 |
+| M04 question bank | 2 | 30 | BE-09, BE-10 | 0 | 0 / 0 / 30 |
+| M05 practice | 2 | 23 | BE-12, BE-13, BE-18 | 0 | 0 / 0 / 23 |
 | M06 SPM classic | 2 | 14 | none (wave-4 backlog) | 14 | 0 / 0 / 14 |
 | M07 PKSK | 2 | 21 | none (wave-4 backlog) | 21 | 0 / 0 / 21 |
 | M13 Cikgu Alesa | 2 | 10 | none (backlog) | 10 | 0 / 0 / 10 |
@@ -43,7 +43,7 @@ Counts verified for this index with a multi-line-aware script (`scratchpad/docs-
 | M28 Bijak SPM (16 class methods, 0 routes) | 2 | 0 | BE-14, BE-15, BE-16 | 1 (BJ-04) | 0 / 0 / 15, 1 n/a (BJ-12 sweeper) |
 | SPM intake D52 (operations IN-01..IN-10, source commit b2e1033; no HTTP routes) | 2 | 0 | BE-36..BE-40 (+BE-26 seed) | 2 with no card endpoint (IN-05, IN-09), IN-04 partial | all missing |
 | M08 student performance | 3 | 30 | BE-19 | 0 | 0 / 0 / 30 |
-| M10 teacher and class | 3 | 39 | BE-09, BE-10, BE-17, BE-18, BE-22 | 3 | 0 / 0 / 39 |
+| M10 teacher and class | 3 | 39 | BE-09, BE-10, BE-17, BE-18, BE-22 | 0 | 0 / 0 / 39 |
 | M11 teacher analytics | 3 | 7 | BE-20 | 0 | 0 / 0 / 7 |
 | M12 Kirkpatrick | 3 | 14 | BE-20 | 0 | 0 / 0 / 14 |
 | M17 admin dashboard (Command Center) | 3 | 11 | BE-22 | 0 | 0 / 0 / 11 |
@@ -56,7 +56,7 @@ Counts verified for this index with a multi-line-aware script (`scratchpad/docs-
 | M20 marketplace (buyer) | 4 | 5 | none (B1 non-goal) | 5 | 0 / 0 / 5 |
 | M21 sponsorship (foster application) | 4 | 1 | none (B1 non-goal) | 1 | 0 / 0 / 1 |
 | M22 support tickets | 4 | 4 | BE-24 | 0 | 0 / 0 / 4 |
-| **HTTP total** | | **491 mock + 4 contract-only = 495** | | **143** | **4 / 2 / 489** |
+| **HTTP total** | | **491 mock + 4 contract-only = 495** | | **110** | **4 / 2 / 489** |
 
 Note: `GET /api/me/gamification-summary` (M14 SRS #1) is listed once, in part 1 (C-02); part 4's M14 count (42) excludes it, so M14 SRS-wise has 43.
 
@@ -104,23 +104,13 @@ Source of truth: `packages/contract/src/common/{envelope,error,ids,time,enums}.t
 - **BM messages.** Domain messages in the blocks are verbatim BM and must be reproduced exactly. The mock's generic messages (`Unauthenticated.`, `This action is unauthorized.`, `Not Found.`, `Server Error`, Laravel validation templates `The :attribute field is required.`) are English, while the contract says `message` is BM for direct display and the contract auth copy is BM (CC-5).
 - **Where the mock deviates from the contract today:** login/logout shape, Bearer vs cookie, numeric vs string ids, the `status` envelope sibling, bare/non-enveloped bodies, fixed page size vs `pageSize`, epoch-ms times, English generic messages, 8 roles vs 7 (`jpn_officer`). All are listed in section 6.
 
-## 5. Uncovered endpoints (143 of 495 HTTP endpoints, plus 1 Bijak method)
+## 5. Uncovered endpoints (110 of 495 HTTP endpoints; was 143 before the card audit)
 
-"Uncovered" = no BE card endpoint table lists it. The three groups are for the LEAD to decide.
+"Uncovered" = no BE card endpoint table lists it, re-checked against the audited cards (LEAD audit, commit 63d363c, plus the catalogue additions marked "added from catalogue 2026-10-19"). Before/after by reason: in a card's scope but not listed 33 -> 0; out of v2 B1 scope or backlog 106 -> 106; no card but needed by a carded module 4 -> 4; total 143 -> 110. The `BE-nn*` implied markers (part 3: 24) and the "not itemised" notes (part 4: 31) are gone because those endpoints are now listed explicitly.
 
-### 5.1 In a card's scope but not listed (33): add to the card's table or drop
+### 5.1 In a card's scope but not listed (0)
 
-| Endpoint | Module | Suggested card |
-|---|---|---|
-| `POST /api/me/notifications/:id/read` (M01-17), `DELETE /api/me/notifications/:id` (M01-18) | M01 | BE-06 |
-| `GET /api/admin/schools/:id` (M02-26), `PUT` (M02-28), `POST .../toggle` (M02-29), `GET .../quota` (M02-15), `GET .../students` (M02-16), `GET /api/jpn/:id/ppd` (M02-44) | M02 | BE-05 (quota also BE-25) |
-| M03-02, 04, 05, 06 (subjects `:id` GET/PUT/PATCH active/DELETE); M03-08, 10, 11, 12 (levels, same); M03-14, 16, 17 (chapters `:id` GET/PUT/DELETE); M03-18, 20, 21 (topics `:id`); M03-23, 24 (subtopics `:id` PUT/DELETE) | M03 (16) | BE-08 |
-| `PATCH /api/question-submissions/:id/status` (M04-14), `GET .../files/:index` (M04-15), `POST /api/diagram-audit/:kind/:id/dismiss` (M04-23), `POST /api/master-notes/:id/:action` (M04-25) | M04 | BE-10 (M04-15 with BE-04) |
-| `GET /api/structured-questions/:id` (M04-27) | M04 | BE-09 |
-| `GET /api/remedial-tests/:id` (M05-23) | M05 | BE-13 or BE-18 |
-| `GET/PUT/DELETE /api/guru/questions/:id` | M10 (data: M04) | BE-09 |
-
-A further tier is inside a card's goal but only implied: part 3 marks 24 endpoints `BE-nn*` (BE-17 3, BE-19 13, BE-21 8) and part 4 lists 31 "covered by card scope but not itemised" (M14 9, M15 6, M09 16, section "Covered by card scope but not itemised"). The card owners should add these to the card tables; they are not counted in the 143.
+None. The 33 endpoints that were here (M01 2, M02 6, M03 16, M04 5, M05 1, M10 3) are now in the card tables: BE-06, BE-05, BE-08, BE-09/BE-10 and BE-09. The audit moved some ownership, which the parts now show in their Card column: `GET /api/admin/schools/:id/quota` (M02-15), `POST /api/admin/students/import` (M02-14) and the user-package routes (M02-11/12) are BE-25, not BE-05; `GET /api/remedial-tests/mine`, `GET /api/missions/today` and `GET /api/remedial-tests/:id` (M05-21..23) are BE-18, no longer BE-13.
 
 ### 5.2 No card, out of v2 B1 scope (106): backlog, no action before wave 4
 
@@ -141,7 +131,7 @@ A further tier is inside a card's goal but only implied: part 3 marks 24 endpoin
 |---|---|---|
 | `GET /api/amaran/schools/:id`, `GET /api/amaran/summary`, `GET /api/amaran/effectiveness`, `GET /api/amaran/export/school/:id` | M18 | M18 PPD/JPN is wave-4 backlog, but M27 (BE-21 scope) calls the school page and CSV and its dashboard reads the same risk tally; BE-21 cannot reach parity without them. Decide: new M18 card, or fold the school family into BE-21. |
 
-Not HTTP, no card endpoint: `BJ-04 subjects()` (Bijak subject dictionary), intake `IN-05 submitForReview` (batch Draf to Semakan; BE-10 owns submit, OQ B2-26) and `IN-09` DSKP units for the intake tag selector (OQ B2-30); `IN-04 saveExtracted` is only partly covered (BE-38 has item-level PATCH, no batch replace, OQ B2-25). IN-06 and IN-08 have no public endpoint of their own. Card-only endpoints without a mock (photo upload, admin papers and blueprints BE-39, AI status/usage BE-36, intake dashboard BE-40) are in part 2 sections 11 and 12. These do not change the 143 HTTP total.
+Not HTTP, no card endpoint: `BJ-04 subjects()` (Bijak subject dictionary), intake `IN-05 submitForReview` (batch Draf to Semakan; BE-10 owns submit, OQ B2-26) and `IN-09` DSKP units for the intake tag selector (OQ B2-30); `IN-04 saveExtracted` is only partly covered (BE-38 has item-level PATCH, no batch replace, OQ B2-25). IN-06 and IN-08 have no public endpoint of their own. Card-only endpoints without a mock (photo upload, admin papers and blueprints BE-39, AI status/usage BE-36, intake dashboard BE-40) are in part 2 sections 11 and 12. These do not change the 110 HTTP total.
 
 ## 6. Cross-cutting open questions
 
@@ -161,7 +151,7 @@ Deduplicated from the 4 parts. Part-local ids: `B1-n` = `OQ-API-B1-n` (part 1), 
 | CC-10 | **Privacy of minors.** Public student profile (no session), student names on leaderboards, opponent search, battle history; parent-invite preview on a public endpoint; interventions/wellbeing data without scope; e-mail enumeration (M21). | B3-2, B3-9, B4-4, B4-20, B1-15 |
 | CC-11 | **Security copy vs fidelity.** Password reset discloses account existence, returns the reset token for IC reset and does not invalidate sessions; default passwords returned to the admin UI; solo-game answer keys sent to the client; invite tokens in clear, reusable. Card requirements differ from the mock. | B1-10, B1-15, B1-16, B4-24 |
 | CC-12 | **Card text vs mock.** Request/response/path differences between cards and mock (check-answer body, `/attempts` path, `clientUuid`, conversion daily cap, video approval state, BE-23 example paths, BE-24 AC, `GET /api/schools` public) and cards that omit routes. Cards need updating from the catalogue. | B1-8, B1-14, B2-3, B2-4, B2-7, B4-3, B4-9, B4-16 |
-| CC-13 | **Stale counts and uncovered lists.** Plan 6.3 and the READMEs (section 3 above). Decide who adds the section 5.1 endpoints to the card tables. | B1-19, B2-5, B2-9, B4-22 |
+| CC-13 | **Stale counts and uncovered lists.** Plan 6.3 and the READMEs (section 3 above). The card tables were audited (63d363c); the remaining uncovered endpoints are backlog or M18 (section 5). | B1-19, B2-5, B2-9, B4-22 |
 | CC-14 | **Pagination.** Fixed page sizes vs `pageSize` (max 100); M27 clamps an out-of-range page instead of returning an empty page; some lists return all rows although the card says paginated. | B1-20, B3-15, B4-2 |
 | CC-15 | **Files, uploads, exports.** Mock stores only metadata or data URLs; real endpoints need BE-04 storage, limits, magic-byte checks, CSV formula-injection guard, PDF export (`PdfPort`), multipart vs two-step upload. | B1-9, B2-22, B3-18, B3-6, B4 (section 3 Files) |
 | CC-16 | **Mock constants vs computed values.** Display constants and stored aggregates (M12 correlation, M17 engagement buckets, M08 GPS rows, SPM targets progress, Sekolah Bersaing snapshots, hub constants) have no computation rule; also performance of full-log scans. | B3-8, B3-17, B2-8, B2-9, B4-14 |
@@ -177,15 +167,15 @@ Substantive conflicts and overlaps found while comparing the parts (formatting i
 
 1. **No duplicate method+path** across the 495 summary rows (checked by script).
 2. **Endpoints called by another module's client / data owned elsewhere.**
-   - `GET /api/remedial-tests/mine` (M05-21) and `GET /api/missions/today` (M05-22) are in part 2 under BE-13 (read side). BE-18 owns the tables they read (it only creates the data). Implement the read in the BE-13 module against BE-18 tables; build order BE-18 data model first or stub.
+   - `GET /api/remedial-tests/mine` (M05-21) and `GET /api/missions/today` (M05-22) (and `GET /api/remedial-tests/:id`, M05-23) are in part 2 (M05), and after the card audit are listed in BE-18 (BE-13 now says they are not in its card; the mock reads M10 records through seams). Build them with BE-18's data model.
    - `GET /api/guru/dskp/{bidang,sk,sp}` are registered by M04 (M04-28..30, BE-10, part 2) but the data and the POST creates are M10 (part 3, BE-18). One implementation please (B2-21).
-   - `GET/POST /api/guru/questions*` (M10, part 3) write the M04 question store; cards BE-09/BE-10 list some of them. Part 3 marks `GET/PUT/DELETE /api/guru/questions/:id` UNCOVERED; part 2's OQ B2-21 says the same routes belong to the M10 part.
+   - `GET/POST /api/guru/questions*` (M10, part 3) write the M04 question store; BE-09 now lists all five `/api/guru/questions*` routes (part 3 no longer marks `:id` uncovered); part 2's OQ B2-21 says the same routes belong to the M10 part.
    - `GET /api/amaran/*` (M18, part 3) is called by the M27 school-admin client (part 3) and read by the M27 dashboard (BE-21). It is the only cross-card gap with no card (section 5.3).
    - `GET /api/duta/recommendations` is registered by M06 (M06-14) but declared in the M25 client; counted once, under M06.
    - `GET /api/me/gamification-summary` (C-02, part 1, BE-11) is the M14 SRS route #1; part 4 excludes it (resolves B4-27).
    - M02 `GET /api/schools` (M02-31) is consumed by M04 (SRS #31); `GET /api/admin/schools/options` is an XL-13 alias of `GET /api/schools?all=1`.
    - M14 wallet writes: M15 and M16 call the M14 wallet service in the caller's transaction (ADR-0014); M05/M06/Bijak submit calls also feed it (gamification result in M05-03).
-3. **Notation differences** (documented in the parts, not rewritten): envelope names (section 4 table); card column (`BE-nn`, `BE-nn*`, `**UNCOVERED** (BE-nn)`, `UNCOVERED`, "(implied)"); part 1 and part 4 count "uncovered" differently from part 3 (part 3 counts `*` implied separately, part 4 lists "not itemised" separately), so section 5 re-bases all four on "no card endpoint table lists it".
+3. **Notation differences** (documented in the parts, not rewritten): envelope names (section 4 table); card column is now uniform (`BE-nn` or `UNCOVERED`) in all four parts after the card audit; the earlier per-part differences in how "uncovered" was counted are gone.
 4. **Contract vocabulary** is `exists / partial / missing` in all parts; part 1's `exists (no mock)` was normalised to `exists`; Bijak row BJ-12 uses `n/a` (scheduled job, no endpoint).
 5. **Part 2 section 11 (D52 intake)** is final: documented as 10 operations IN-01..IN-10 from commit b2e1033 (a browser-side domain/store, no HTTP routes), with OQ-API-B2-23..30. Route total stays 99; the 52 uncovered routes are unchanged. Operations without a card endpoint: IN-05, IN-09; partial: IN-04.
 6. **Part 2 state:** consistent with the index; no fixes outstanding. Cosmetic only: part 2 lists open questions in a table while parts 1 and 3 use bullets.

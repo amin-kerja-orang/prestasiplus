@@ -82,8 +82,8 @@ Roles: `any signed-in` = `requireAuth()` only. "Card" lists the backend card tha
 | M04-11 | GET | `/api/question-reports/mine` | any signed-in | BE-10 | missing |
 | M04-12 | PATCH | `/api/question-reports/:id` | admin | BE-10 | missing |
 | M04-13 | GET | `/api/question-submissions` | admin | BE-10 | missing |
-| M04-14 | PATCH | `/api/question-submissions/:id/status` | admin | UNCOVERED | missing |
-| M04-15 | GET | `/api/question-submissions/:id/files/:index` | admin | UNCOVERED | missing |
+| M04-14 | PATCH | `/api/question-submissions/:id/status` | admin | BE-10 | missing |
+| M04-15 | GET | `/api/question-submissions/:id/files/:index` | admin | BE-10 | missing |
 | M04-16 | POST | `/api/question-imports` | admin | BE-10 | missing |
 | M04-17 | GET | `/api/question-imports/template` | admin | BE-10 | missing |
 | M04-18 | GET | `/api/question-imports` | admin | BE-10 | missing |
@@ -91,11 +91,11 @@ Roles: `any signed-in` = `requireAuth()` only. "Card" lists the backend card tha
 | M04-20 | POST | `/api/question-quality/audit` | admin | BE-10 | missing |
 | M04-21 | GET | `/api/diagram-audit` | admin | BE-10 | missing |
 | M04-22 | POST | `/api/diagram-audit/:kind/:id/image` | admin | BE-10 | missing |
-| M04-23 | POST | `/api/diagram-audit/:kind/:id/dismiss` | admin | UNCOVERED | missing |
+| M04-23 | POST | `/api/diagram-audit/:kind/:id/dismiss` | admin | BE-10 | missing |
 | M04-24 | GET | `/api/master-notes` | admin | BE-10 | missing |
-| M04-25 | POST | `/api/master-notes/:id/:action` | admin | UNCOVERED | missing |
+| M04-25 | POST | `/api/master-notes/:id/:action` | admin | BE-10 | missing |
 | M04-26 | GET | `/api/structured-questions` | admin | BE-09 | missing |
-| M04-27 | GET | `/api/structured-questions/:id` | admin | UNCOVERED | missing |
+| M04-27 | GET | `/api/structured-questions/:id` | admin | BE-09 | missing |
 | M04-28 | GET | `/api/guru/dskp/bidang` | admin, teacher | BE-10 | missing |
 | M04-29 | GET | `/api/guru/dskp/sk` | admin, teacher | BE-10 | missing |
 | M04-30 | GET | `/api/guru/dskp/sp` | admin, teacher | BE-10 | missing |
@@ -119,9 +119,9 @@ Roles: `any signed-in` = `requireAuth()` only. "Card" lists the backend card tha
 | M05-18 | POST | `/api/practice/structured/:id/attempts` | any signed-in | BE-13 | missing |
 | M05-19 | GET | `/api/spm-targets` | any signed-in | BE-13 | missing |
 | M05-20 | PUT | `/api/spm-targets` | any signed-in | BE-13 | missing |
-| M05-21 | GET | `/api/remedial-tests/mine` | any signed-in | BE-13 | missing |
-| M05-22 | GET | `/api/missions/today` | any signed-in | BE-13 | missing |
-| M05-23 | GET | `/api/remedial-tests/:id` | any signed-in | UNCOVERED | missing |
+| M05-21 | GET | `/api/remedial-tests/mine` | any signed-in | BE-18 | missing |
+| M05-22 | GET | `/api/missions/today` | any signed-in | BE-18 | missing |
+| M05-23 | GET | `/api/remedial-tests/:id` | any signed-in | BE-18 | missing |
 | M06-01 | GET | `/api/spm/overview` | any signed-in | UNCOVERED | missing |
 | M06-02 | GET | `/api/spm/databank` | any signed-in | UNCOVERED | missing |
 | M06-03 | GET | `/api/spm/latih-tubi` | any signed-in | UNCOVERED | missing |
@@ -362,7 +362,7 @@ Module-wide facts (apply to every M04 endpoint unless a block says otherwise):
 - **Errors:** `E-ADMIN`; 404 unknown id (checked first); 422 `fields.status` "Status tidak sah."; `fields.adminNotes` "Nota admin tidak boleh melebihi 1000 aksara.".
 - **Side effects:** update row.
 - **Owner / code / client:** M04 / `submissions.ts:64` / `updateSubmissionStatus` (`api/submissions.ts:72`).
-- **Card:** **UNCOVERED** (BE-10 lists only `GET /api/question-submissions`; OQ-API-B2-5). **Contract:** missing.
+- **Card:** BE-10. **Contract:** missing.
 
 ### M04-15 `GET /api/question-submissions/:id/files/:index`
 
@@ -372,7 +372,7 @@ Module-wide facts (apply to every M04 endpoint unless a block says otherwise):
 - **Errors:** `E-ADMIN`; 404 unknown submission or index.
 - **Side effects:** none.
 - **Owner / code / client:** M04 / `submissions.ts:96` / `downloadSubmissionFile` (`api/submissions.ts:83`).
-- **Card:** **UNCOVERED** (BE-04 provides file storage; no card lists this path). **Contract:** missing.
+- **Card:** BE-10. **Contract:** missing.
 
 ### M04-16 `POST /api/question-imports`
 
@@ -457,7 +457,7 @@ Module-wide facts (apply to every M04 endpoint unless a block says otherwise):
 - **Errors:** `E-ADMIN`; 404.
 - **Side effects:** `needsDiagram=false`.
 - **Owner / code / client:** M04 / `diagram-audit.ts:238` (fn :226) / `dismissDiagram` (`api/diagram-audit.ts:108`).
-- **Card:** **UNCOVERED** (BE-10 lists GET and POST image only). **Contract:** missing.
+- **Card:** BE-10. **Contract:** missing.
 
 ### M04-24 `GET /api/master-notes`
 
@@ -478,7 +478,7 @@ Module-wide facts (apply to every M04 endpoint unless a block says otherwise):
 - **Errors:** `E-ADMIN`; 404 unknown id or unknown action.
 - **Side effects:** `approve` => `teacherApproved=true, flagged=false`; `unflag` => `flagged=false`; `regen` => next canned note (`noteText`, `trapText`, `tokens`, `regenCount+1`), flags kept (the real backend would call the AI provider; BE-36 owns that, OD-7 says stub in B1).
 - **Owner / code / client:** M04 / `master-notes.ts:81` / `actOnMasterNote` (`api/master-notes.ts:54`).
-- **Card:** **UNCOVERED**. **Contract:** missing.
+- **Card:** BE-10. **Contract:** missing.
 
 ### M04-26 `GET /api/structured-questions`
 
@@ -499,7 +499,7 @@ Module-wide facts (apply to every M04 endpoint unless a block says otherwise):
 - **Errors:** `E-ADMIN`; 404.
 - **Side effects:** none.
 - **Owner / code / client:** M04 / `structured.ts:82` / `fetchStructuredQuestion` (`api/structured.ts:113`).
-- **Card:** **UNCOVERED** (BE-09 lists the list only; target model is the v2 part tree, OQ-API-B2-2). **Contract:** missing.
+- **Card:** BE-09. **Contract:** missing.
 
 ### M04-28 `GET /api/guru/dskp/bidang`
 
@@ -753,7 +753,7 @@ Module-wide facts:
 - **Response:** 200 `{ data: RemedialTestItem[], meta }` unpaged; status `active` or `completed` only (cancelled hidden); newest first. Item `{ id, subjectName, totalQuestions, status:'active'|'completed', createdAt, teacherName }`.
 - **Errors:** `E-AUTH`. **Side effects:** none.
 - **Owner / code / client:** M05 (data M10) / `assigned.ts:37` / `fetchRemedialTests` (`api/practice.ts:255`).
-- **Card:** BE-13 (read side; creation BE-18). **Contract:** missing.
+- **Card:** BE-18. **Contract:** missing.
 
 ### M05-22 `GET /api/missions/today`
 
@@ -762,7 +762,7 @@ Module-wide facts:
 - **Response:** 200 `{ data: MissionItem[], meta }` unpaged, oldest first. Item `{ id, title, typeLabel ('Latih Tubi SPM'|'Tracking A'|'Soalan & Rujukan'|''), subjectName, questionCount, coinsPerCorrect, resourceTitle, resourceUrl, resourceNote (nullable), status:'new'|'in_progress'|'completed' }` (completed beats in_progress).
 - **Errors:** `E-AUTH`. **Side effects:** none.
 - **Owner / code / client:** M05 (data M10) / `assigned.ts:57` / `fetchTodayMissions` (`api/practice.ts:260`).
-- **Card:** BE-13 (read side; creation BE-18). **Contract:** missing.
+- **Card:** BE-18. **Contract:** missing.
 
 ### M05-23 `GET /api/remedial-tests/:id`
 
@@ -771,7 +771,7 @@ Module-wide facts:
 - **Response:** 200 `{ data: RemedialPreview }` = `{ id, subjectName, status:'active'|'completed'|'cancelled', totalQuestions, createdAt, teacherName, studentName, questions: { id, questionText, textDirection, scriptType, options:{id,label,text}[], correctOptionId:number|null }[] }`.
 - **Errors:** `E-AUTH`; 404 `NOT_FOUND` "Not Found.". **Side effects:** none.
 - **Owner / code / client:** M05 (data M10) / `assigned.ts:100` / `fetchRemedialPreview` (`api/practice.ts:265`).
-- **Card:** **UNCOVERED** (BE-13 lists `/mine` only). **Contract:** missing.
+- **Card:** BE-18. **Contract:** missing.
 
 ## 6. M06 SPM classic (14 routes)
 
@@ -1521,18 +1521,7 @@ Builds batch `ek-demo-1` (subject MAT, kertas 2, year 2025, paper type "Percubaa
 
 ## 12. Uncovered endpoints
 
-No backend card defines these routes (checked against cards BE-09, BE-10, BE-12, BE-13, BE-14, BE-15, BE-16, BE-36 to BE-40, the cards' README and a text search of all other cards for the paths). 52 of the 99 HTTP routes are uncovered.
-
-**Uncovered although the module has a card (gaps inside covered areas), 6:**
-
-| ID | Endpoint | Why it matters | Suggested owner |
-|---|---|---|---|
-| M04-14 | `PATCH /api/question-submissions/:id/status` | BE-10 lists only the GET queue; admins cannot change a paper's status without it | BE-10 |
-| M04-15 | `GET /api/question-submissions/:id/files/:index` | file download of an uploaded paper | BE-10 with BE-04 |
-| M04-23 | `POST /api/diagram-audit/:kind/:id/dismiss` | BE-10 lists only GET and POST image | BE-10 |
-| M04-25 | `POST /api/master-notes/:id/:action` | BE-10 lists only the GET | BE-10 (AI part stays a stub) |
-| M04-27 | `GET /api/structured-questions/:id` | BE-09 lists the structured list only | BE-09 |
-| M05-23 | `GET /api/remedial-tests/:id` | BE-13 lists `/mine` only; teacher/admin preview | BE-13 or BE-18 |
+No backend card defines these routes (re-checked against the audited cards, commit 63d363c, and the catalogue additions to them). 46 of the 99 HTTP routes are uncovered, all of them whole-module backlog items; the 6 gaps inside covered areas that this part listed before the audit (M04-14, M04-15, M04-23, M04-25, M04-27, M05-23) are now in the card tables: M04-14, M04-15, M04-23 and M04-25 in BE-10, M04-27 in BE-09. M05-23 `GET /api/remedial-tests/:id` moved with M05-21 and M05-22 from BE-13 to BE-18 (BE-13 now says these three are not in its card).
 
 **Uncovered because the whole module is a Wave 4+ backlog item (README "Wave 4+ backlog"):**
 
@@ -1558,7 +1547,7 @@ Each question names the owner who should answer. IDs are stable.
 | OQ-API-B2-2 | The M04 mock is the flat objective model (`options[4]`, `correctAnswer 0..3`, one answer, statuses `draft|pending_review|approved|rejected|archived|pending`), whereas BE-09 builds the part-tree model of `v2-exam-schema.md` and the lifecycle `Draf, Semakan, Lulus, Terbit, Diarkib`. Which wire do `GET/POST/PUT /api/questions*` use after BE-09: the mock shape (mapped onto the new tables) or a new shape with a frontend change? M04-27 structured detail and the M05/M06 reads of structured questions depend on the same answer. | section 4 | Lead + BE-09 owner |
 | OQ-API-B2-3 | `POST /api/questions/bulk-action` and `POST /api/questions` accept any status change, and create saves `approved` (admin) or `draft` (CSV import); BE-10 AC-1 requires only the allowed transitions (409 otherwise), "only Admin Pusat approves and publishes" (D40a) and quality gates. Which behaviour is the contract: keep the mock (any admin transition) or enforce BE-10? Also: should `bulk-action` write status events? | M04-03, M04-07 | BE-10 owner |
 | OQ-API-B2-4 | The TS type `ReportSource` lists `quiz` and `papan_bijak`, but `POST /api/question-reports` rejects every source except `spm, structured_attempt, latihan, revision, teacher_databank` ("Sumber laporan tidak sah."). Which set is correct? BE-10 AC-3 says a duplicate open report is handled "as the mock does": the mock does nothing special (no duplicate check). Confirm. | M04-10 | BE-10 owner |
-| OQ-API-B2-5 | Routes without a card: M04-14, M04-15, M04-23, M04-25, M04-27, M05-23 (section 12). Add them to BE-09/BE-10/BE-13 (or BE-18)? | section 12 | Lead |
+| OQ-API-B2-5 | RESOLVED by the card audit (63d363c): M04-14, M04-15, M04-23, M04-25 are in BE-10, M04-27 in BE-09, and M05-21/22/23 are in BE-18 (moved from BE-13). Only the module-backlog routes (section 12) have no card. | section 12 | Lead |
 | OQ-API-B2-6 | M05 routes are `requireAuth()` only (any role, including parent/sponsor/teacher); the matrix gives practice to Murid, and teachers use only S4 chapter lists and previews. Should the backend add role guards (student for session endpoints, teacher/admin for remedial preview) or keep "any session"? Also the 402 trial rule: `TrialStatus.limit` is the constant 50 (provisional M19 rule); confirm for BE-12 + BE-25 (`isSubscribed`). | section 5 | BE-12 and BE-25 owners |
 | OQ-API-B2-7 | Card BE-12/BE-13 and the mock differ: check-answer body `{questionId, optionId}` (card) vs `{questionId, selectedOptionId}` (mock/client); `clientUuid` idempotency and the `409` on a second submit (card; the mock has the 409 `ALREADY_SUBMITTED` but no `clientUuid`); structured attempt path `/api/practice/structured/:id/attempt` (card) vs `/attempts` (mock/client); submit response `{ results:{ score, total, gamification } }` (mock). The card says "keep the mock's path strings"; confirm these four. | M05-01 to M05-03, M05-18 | BE-12 and BE-13 owner |
 | OQ-API-B2-8 | `GET /api/spm-targets` returns progress (`answered`, `accuracyPct`, `band`, `predictedGrade`) only when a **test fixture** (`mock.setSpmProgress`) set it; the live source is UNVERIFIED (BR-27). In the real backend what feeds it: the answer log by subject (M05), and with which accuracy window? Grade floors are INFERRED. | M05-19 | Lead (product) |

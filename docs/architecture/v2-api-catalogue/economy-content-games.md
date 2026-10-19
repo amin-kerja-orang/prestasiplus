@@ -35,7 +35,7 @@ Each endpoint has one `###` block with the same bullets:
 - **Auth detail:** guard as coded plus scope rules and the role-access-matrix link.
 - **Purpose / Request / Response / Errors / Side effects:** as coded. "Response" names the envelope. `ListMeta` = `{page, pageSize, totalItems, totalPages, from, to}` (`@pp/contract` `ListMetaSchema`) plus module extras.
 - **Owner / handler / client:** owning module, `file:line` of the `route()` call in the mock, and the frontend client function that calls it.
-- **Card:** the BE card(s), or **UNCOVERED**. "(implied)" or "(not itemised)" = inside the card's scope but the card text does not list this exact path.
+- **Card:** the BE card(s) that list the endpoint, or **UNCOVERED**. After the LEAD card audit (commit 63d363c) BE-11, BE-23 and BE-24 list every in-scope route explicitly; the earlier "(not itemised)" notes are gone.
 - **Contract:** `exists` / `partial` / `missing`, checked against `packages/contract/src/openapi.ts`. Today the contract holds only the common schemas (`Id`, `Timestamp`, `DateOnly`, envelope, `ListMeta`, `ErrorBody`, enums), session/auth paths and the access matrix; **no path of this part is registered, so all 165 are `missing`**.
 
 ## 3. Cross-cutting conventions (from `src/mock/server` and `packages/contract/src/common`)
@@ -462,7 +462,7 @@ Module conventions (apply to every M14 block):
 - **Errors:** 422 `VALIDATION_ERROR` "Sila lengkapkan semua medan wajib." + per-field copy (see module conventions); 404 `NOT_FOUND` "Tier tidak dijumpai." 401, 403.
 - **Side effects:** none on wallets (tier assignment re-evaluates at the next credit, BR-M14-08).
 - **Owner / handler / client:** M14, `handlers/admin-economy.ts:177`, `updateAdminTier`.
-- **Card:** BE-23 (not itemised: card lists only `POST ... tiers`)
+- **Card:** BE-23
 - **Contract:** missing
 
 ### M14-20 `POST /api/admin/gamification/tiers/:id/toggle`
@@ -474,7 +474,7 @@ Module conventions (apply to every M14 block):
 - **Errors:** 404 `NOT_FOUND` "Tier tidak dijumpai."; 401, 403.
 - **Side effects:** flips `isActive`.
 - **Owner / handler / client:** M14, `handlers/admin-economy.ts:198`, `toggleAdminTier`.
-- **Card:** BE-23 (not itemised in the card list)
+- **Card:** BE-23
 - **Contract:** missing
 
 ### M14-21 `POST /api/admin/gamification/tiers`
@@ -510,7 +510,7 @@ Module conventions (apply to every M14 block):
 - **Errors:** 422 (conventions); 404 `NOT_FOUND` "Cabaran tidak dijumpai."; 401, 403.
 - **Side effects:** internal metric is kept unless `challengeType` changes (then reset to the type default metric, `DEFAULT_METRIC_BY_TYPE` in `repository/gamification.ts`).
 - **Owner / handler / client:** M14, `handlers/admin-economy.ts:231`, `updateAdminChallenge`.
-- **Card:** BE-23 (not itemised: card lists only `POST challenges`)
+- **Card:** BE-23
 - **Contract:** missing
 
 ### M14-24 `POST /api/admin/gamification/challenges/:id/toggle`
@@ -522,7 +522,7 @@ Module conventions (apply to every M14 block):
 - **Errors:** 404 "Cabaran tidak dijumpai."; 401, 403.
 - **Side effects:** flips `isActive`.
 - **Owner / handler / client:** M14, `handlers/admin-economy.ts:245`, `toggleAdminChallenge`.
-- **Card:** BE-23 (not itemised)
+- **Card:** BE-23
 - **Contract:** missing
 
 ### M14-25 `DELETE /api/admin/gamification/challenges/:id`
@@ -534,7 +534,7 @@ Module conventions (apply to every M14 block):
 - **Errors:** 404 "Cabaran tidak dijumpai."; 401, 403.
 - **Side effects:** removes the challenge row (completions are not touched by the mock; FK/cascade rule is OQ-API-B4-6).
 - **Owner / handler / client:** M14, `handlers/admin-economy.ts:254`, `deleteAdminChallenge`.
-- **Card:** BE-23 (not itemised)
+- **Card:** BE-23
 - **Contract:** missing
 
 ### M14-26 `POST /api/admin/gamification/challenges`
@@ -606,7 +606,7 @@ Module conventions (apply to every M14 block):
 - **Errors:** 404 "Lencana tidak dijumpai."; 422 (conventions; repository also "Sila lengkapkan semua medan wajib." on blank name/threshold < 1/bonus < 0); 401, 403.
 - **Side effects:** none.
 - **Owner / handler / client:** M14, `handlers/admin-ops.ts:133`, `updateTeacherBadge`.
-- **Card:** BE-23 (not itemised)
+- **Card:** BE-23
 - **Contract:** missing
 
 ### M14-32 `POST /api/admin/gamification/guru/rewards`
@@ -642,7 +642,7 @@ Module conventions (apply to every M14 block):
 - **Errors:** 404 "Tebusan tidak dijumpai."; 422 `VALIDATION_ERROR` "Status tebusan tidak boleh ditukar." (illegal transition); 409 `OUT_OF_STOCK` "Stok habis." and 409 `INSUFFICIENT_BALANCE` "Baki syiling tidak mencukupi." on DELIVERED; 401, 403.
 - **Side effects:** entering `DELIVERED` (once, `debited` flag): teacher ledger debit `-costCoins` with description `Tebusan: {reward name}` and reward `stock - 1` (if stock is limited). `CANCELLED` writes nothing.
 - **Owner / handler / client:** M14, `handlers/admin-ops.ts:206`, `updateTeacherRedemption`.
-- **Card:** BE-23 (not itemised: PATCH)
+- **Card:** BE-23
 - **Contract:** missing
 
 ### M14-35 `GET /api/admin/gamification/guru/cash`
@@ -666,7 +666,7 @@ Module conventions (apply to every M14 block):
 - **Errors:** 404 `NOT_FOUND` "Permohonan tidak dijumpai."; 422 (conventions); 401, 403.
 - **Side effects:** entering `PAID` debits the teacher wallet once (`paidDebited`), ledger description `Tebus Tunai #{id}`; leaving `PAID` credits it back with `Tebus Tunai #{id} dibatalkan`.
 - **Owner / handler / client:** M14, `handlers/admin-ops.ts:234`, `updateTeacherCashRequest`.
-- **Card:** BE-23 (not itemised: PATCH)
+- **Card:** BE-23
 - **Contract:** missing
 
 ### M14-37 `GET /api/admin/gamification/settings`
@@ -726,7 +726,7 @@ Module conventions (apply to every M14 block):
 - **Errors:** 404 `NOT_FOUND` "Hadiah tidak dijumpai."; 422 (conventions); 401, 403.
 - **Side effects:** updates the reward cost value (liability tile input).
 - **Owner / handler / client:** M14, `handlers/admin-ops.ts:308`, `saveRewardCost`.
-- **Card:** BE-23 (**not itemised in the card list**)
+- **Card:** BE-23
 - **Contract:** missing
 
 ### M14-42 `POST /api/admin/reward-control/draws`
@@ -765,7 +765,7 @@ Module conventions:
 - **Errors:** 401.
 - **Side effects:** none.
 - **Owner / handler / client:** M15, `handlers/user.ts:253` (`digitalItems`), `fetchDigitalItems`.
-- **Card:** BE-23 (generic "M15 shop" line; endpoint not named)
+- **Card:** BE-23
 - **Contract:** missing
 
 ### M15-02 `GET /api/hadiah-digital/redemptions`
@@ -777,7 +777,7 @@ Module conventions:
 - **Errors:** 401.
 - **Side effects:** none.
 - **Owner / handler / client:** M15, `handlers/user.ts:254` (`digitalRedemptions`), `fetchDigitalRedemptions`.
-- **Card:** BE-23 (not named)
+- **Card:** BE-23
 - **Contract:** missing
 
 ### M15-03 `POST /api/hadiah/redemptions`
@@ -801,7 +801,7 @@ Module conventions:
 - **Errors:** 401.
 - **Side effects:** none.
 - **Owner / handler / client:** M15, `handlers/user.ts:256` (`listBoxes`), `fetchMysteryBoxes`.
-- **Card:** BE-23 (covered by the generic "M15 shop" line; endpoint not named)
+- **Card:** BE-23
 - **Contract:** missing
 
 ### M15-05 `POST /api/gamification/mystery-boxes/:id/open`
@@ -849,7 +849,7 @@ Module conventions:
 - **Errors:** 401.
 - **Side effects:** none.
 - **Owner / handler / client:** M15 (reads M02 links), `handlers/user.ts:264`, `fetchParentApprovals`.
-- **Card:** BE-23 (needs BE-25 parent links; parent routes not named in the card)
+- **Card:** BE-23
 - **Contract:** missing
 
 ### M15-09 `POST /api/parent/hadiah-approvals/:id/approve`
@@ -861,7 +861,7 @@ Module conventions:
 - **Errors:** 404 `NOT_FOUND` "Tebusan tidak dijumpai." (unknown or not a child's); 409 `CONFLICT` "Tebusan ini tidak lagi menunggu kelulusan." (not `pending_parent_consent`); 401, 403.
 - **Side effects:** status -> `pending_admin`, `parentDecisionBy` = parent id, `parentDecidedAt` = now.
 - **Owner / handler / client:** M15, `handlers/user.ts:265`, `approveParentRequest`.
-- **Card:** BE-23 (+BE-25; not itemised)
+- **Card:** BE-23
 - **Contract:** missing
 
 ### M15-10 `POST /api/parent/hadiah-approvals/:id/reject`
@@ -873,7 +873,7 @@ Module conventions:
 - **Errors:** as M15-09 (404 "Tebusan tidak dijumpai.", 409 `CONFLICT` "Tebusan ini tidak lagi menunggu kelulusan.").
 - **Side effects:** M14 token credit of `tokenCost` (source `hadiah_refund`, ref `redemption:{id}`), reward stock + 1 if it was reserved, status `cancelled`, `cancelledBy=parent`, `cancelledAt`, parent decision fields set.
 - **Owner / handler / client:** M15, `handlers/user.ts:268`, `rejectParentRequest`.
-- **Card:** BE-23 (+BE-25; not itemised)
+- **Card:** BE-23
 - **Contract:** missing
 
 ### M15-11 `GET /api/admin/hadiah`
@@ -1652,7 +1652,7 @@ Module conventions:
 - **Errors:** 404 `NOT_FOUND` "Artikel tidak dijumpai."; 401, 403.
 - **Side effects:** none.
 - **Owner / handler / client:** M09, `handlers/admin-articles.ts:166`, `fetchAdminArticle`.
-- **Card:** BE-24 (item route implied by the `GET/POST /admin/articles` line)
+- **Card:** BE-24
 - **Contract:** missing
 
 ### M09-03 `POST /api/admin/articles`
@@ -1676,7 +1676,7 @@ Module conventions:
 - **Errors:** 404 "Artikel tidak dijumpai."; 422 as M09-03; 401, 403.
 - **Side effects:** `publishedAt` set at first publish only (kept after unpublish); `updatedAt` = now; slug unchanged.
 - **Owner / handler / client:** M09, `handlers/admin-articles.ts:184`, `updateAdminArticle`.
-- **Card:** BE-24 (implied)
+- **Card:** BE-24
 - **Contract:** missing
 
 ### M09-05 `DELETE /api/admin/articles/:id`
@@ -1688,7 +1688,7 @@ Module conventions:
 - **Errors:** 404 "Artikel tidak dijumpai."; 401, 403.
 - **Side effects:** hard delete (attachments removed; stored files per BE-04).
 - **Owner / handler / client:** M09, `handlers/admin-articles.ts:205`, `deleteAdminArticle`.
-- **Card:** BE-24 (implied)
+- **Card:** BE-24
 - **Contract:** missing
 
 ### M09-06 `GET /api/articles`
@@ -1760,7 +1760,7 @@ Module conventions:
 - **Errors:** 404 `NOT_FOUND` "Nota tidak dijumpai."; 401, 403.
 - **Side effects:** none.
 - **Owner / handler / client:** M09, `handlers/admin-notes.ts:170`, `fetchAdminNote`.
-- **Card:** BE-24 (implied)
+- **Card:** BE-24
 - **Contract:** missing
 
 ### M09-12 `POST /api/admin/notes`
@@ -1784,7 +1784,7 @@ Module conventions:
 - **Errors:** 404 "Nota tidak dijumpai."; 422; 401, 403.
 - **Side effects:** `updatedAt`.
 - **Owner / handler / client:** M09, `handlers/admin-notes.ts:188`, `updateAdminNote`.
-- **Card:** BE-24 (implied)
+- **Card:** BE-24
 - **Contract:** missing
 
 ### M09-14 `DELETE /api/admin/notes/:id`
@@ -1796,7 +1796,7 @@ Module conventions:
 - **Errors:** 404 "Nota tidak dijumpai."; 401, 403.
 - **Side effects:** hard delete.
 - **Owner / handler / client:** M09, `handlers/admin-notes.ts:203`, `deleteAdminNote`.
-- **Card:** BE-24 (implied)
+- **Card:** BE-24
 - **Contract:** missing
 
 ### M09-15 `GET /api/admin/banners`
@@ -1820,7 +1820,7 @@ Module conventions:
 - **Errors:** 404 `NOT_FOUND` "Banner tidak dijumpai."; 401, 403.
 - **Side effects:** none.
 - **Owner / handler / client:** M09, `handlers/admin-banners.ts:160`, `fetchAdminBanner`.
-- **Card:** BE-24 (implied)
+- **Card:** BE-24
 - **Contract:** missing
 
 ### M09-17 `POST /api/admin/banners`
@@ -1844,7 +1844,7 @@ Module conventions:
 - **Errors:** 404 "Banner tidak dijumpai."; 422; 401, 403.
 - **Side effects:** `updatedAt`.
 - **Owner / handler / client:** M09, `handlers/admin-banners.ts:177`, `updateBanner`.
-- **Card:** BE-24 (implied)
+- **Card:** BE-24
 - **Contract:** missing
 
 ### M09-19 `DELETE /api/admin/banners/:id`
@@ -1856,7 +1856,7 @@ Module conventions:
 - **Errors:** 404 "Banner tidak dijumpai."; 401, 403.
 - **Side effects:** hard delete.
 - **Owner / handler / client:** M09, `handlers/admin-banners.ts:192`, `deleteBanner`.
-- **Card:** BE-24 (implied)
+- **Card:** BE-24
 - **Contract:** missing
 
 ### M09-20 `GET /api/banners/active`
@@ -1964,7 +1964,7 @@ Module conventions:
 - **Errors:** 404 `NOT_FOUND` "Not Found."
 - **Side effects:** `views + 1` after the response is built, unless `for=edit` (BR-M09-07).
 - **Owner / handler / client:** M09, `handlers/videos.ts:184`, `fetchVideo`.
-- **Card:** BE-24 (implied)
+- **Card:** BE-24
 - **Contract:** missing
 
 ### M09-29 `POST /api/videos`
@@ -1988,7 +1988,7 @@ Module conventions:
 - **Errors:** 404 "Not Found."; 403 `FORBIDDEN` "This action is unauthorized."; 422 as M09-29; 403 "Anda tidak dibenarkan mengubah video ini." (repository, race); 401.
 - **Side effects:** update, re-parse URL, `updatedAt`.
 - **Owner / handler / client:** M09, `handlers/videos.ts:214`, `updateVideo`.
-- **Card:** BE-24 (implied)
+- **Card:** BE-24
 - **Contract:** missing
 
 ### M09-31 `DELETE /api/videos/:id`
@@ -2000,7 +2000,7 @@ Module conventions:
 - **Errors:** 404, 403 as M09-30 ("Anda tidak dibenarkan memadam video ini."); 401.
 - **Side effects:** hard delete.
 - **Owner / handler / client:** M09, `handlers/videos.ts:237`, `deleteVideo`.
-- **Card:** BE-24 (implied)
+- **Card:** BE-24
 - **Contract:** missing
 
 ### M09-32 `GET /api/videos/form-context`
@@ -2048,7 +2048,7 @@ Module conventions:
 - **Errors:** 404 `NOT_FOUND` "Not Found."; 401.
 - **Side effects:** **read counting**: a signed-in viewer who is neither admin nor the author counts once per post (`reads + 1`, one read row per user and post).
 - **Owner / handler / client:** M09, `handlers/perutusan.ts:245`, `fetchPerutusanDetail`.
-- **Card:** BE-24 (implied)
+- **Card:** BE-24
 - **Contract:** missing
 
 ### M09-36 `GET /api/perutusan/compose-context`
@@ -2084,7 +2084,7 @@ Module conventions:
 - **Errors:** 404 "Not Found."; 422 `fields.type` "Medan ini diperlukan." / "Medan ini tidak sah."; 401.
 - **Side effects:** insert/delete the (post, user, type) reaction row.
 - **Owner / handler / client:** M09, `handlers/perutusan.ts:264`, `reactToPerutusan`.
-- **Card:** BE-24 (implied)
+- **Card:** BE-24
 - **Contract:** missing
 
 ### M09-39 `POST /api/perutusan/:id/comments`
@@ -2096,7 +2096,7 @@ Module conventions:
 - **Errors:** 404; 422 `fields.body` "Medan ini diperlukan." / "Medan ini tidak sah." / "Komen mesti antara 1 hingga 1000 aksara."; 401.
 - **Side effects:** stores the comment as `pending`; it is not shown (comment counts and lists use approved only). **No moderation endpoint exists in the mock** (OQ-API-B4-18).
 - **Owner / handler / client:** M09, `handlers/perutusan.ts:285`, `commentOnPerutusan`.
-- **Card:** BE-24 (implied)
+- **Card:** BE-24
 - **Contract:** missing
 
 ### M09-40 `GET /api/public/perutusan/:id`
@@ -2108,7 +2108,7 @@ Module conventions:
 - **Errors:** 404 "Not Found."
 - **Side effects:** none (counts no read).
 - **Owner / handler / client:** M09, `handlers/perutusan.ts:310`, `fetchPublicPerutusan`.
-- **Card:** BE-24 (implied; `v2-portals` moves public pages to `awam`)
+- **Card:** BE-24
 - **Contract:** missing
 
 ### M09-41 `GET /api/admin/screenshots`
@@ -2303,13 +2303,7 @@ M14, M15 and M22 have no uncovered endpoint (BE-11/BE-23/BE-24 cover them).
 
 ### Covered by card scope but not itemised
 
-These endpoints sit inside a card's stated scope but the card's endpoint table does not list them. The card owner should add them (OQ-API-B4-9, OQ-API-B4-22).
-
-| Module | Endpoint ids |
-|---|---|
-| M14 | M14-19, M14-20, M14-23, M14-24, M14-25, M14-31, M14-34, M14-36, M14-41 |
-| M15 | M15-01, M15-02, M15-04, M15-08, M15-09, M15-10 |
-| M09 | M09-02, M09-04, M09-05, M09-11, M09-13, M09-14, M09-16, M09-18, M09-19, M09-28, M09-30, M09-31, M09-35, M09-38, M09-39, M09-40 |
+None after the card audit (commit 63d363c). The 31 endpoints this part used to list here (M14 9, M15 6, M09 16) are now itemised in BE-23 and BE-24. Of the 60 uncovered, M09-25 and M09-26 are named in BE-24 as explicit backlog ("not built here"), so they stay uncovered.
 
 ## Open questions
 
@@ -2338,7 +2332,7 @@ Each question needs a lead or user answer before (or while) the owning card is b
 | OQ-API-B4-19 | M21: only `POST /api/mohon-keluarga-angkat` exists; the admin side of applications (approve/reject, F-167) and the sponsor portal have no mock route, so nothing can ever move an application out of `pending`. | M21-15 | Document as store-only; admin review is a later card. |
 | OQ-API-B4-20 | M21-15 answers 422 "Email pelajar tidak dijumpai dalam PrestasiPlus." for non-student e-mails, which lets any signed-in user test whether an e-mail belongs to a student account (enumeration). | M21-15 | Keep the copy (fidelity), add rate limiting (BE-33). |
 | OQ-API-B4-21 | M22 has no reply / status-change route: `adminReply` is always null and status stays `dibuka` for new tickets (read-only queue, D27). Who answers tickets and how does the student see it? | M22-01..04 | Out of B1 (replicate read-only); add admin reply endpoint with the Portal Pentadbiran tickets screen. |
-| OQ-API-B4-22 | Plan section 6.3 route counts are stale (M14 32 vs 42, M16 28 vs 52, M09 25 vs 43); the BE-24 and BE-23 endpoint tables omit many routes (see section "Covered by card scope but not itemised"). | plan, cards | Update plan 6.3 and the two cards from this catalogue. |
+| OQ-API-B4-22 | Plan section 6.3 route counts are stale (M14 32 vs 42, M16 28 vs 52, M09 25 vs 43); the BE-24 and BE-23 endpoint tables omit many routes (now itemised, see section "Covered by card scope but not itemised"). | plan, cards | Update plan 6.3 and the two cards from this catalogue. |
 | OQ-API-B4-23 | Teacher economy (M14-11 to M14-16, M14-30 to M14-36): teacher wallets, cash-out and teacher reward shop are "out of v2 per D28c" in BE-23 and gated on Q10/OD-8; `v2-cloud-gap` F-94 marks teacher gamification Hidden-OOS. Build now (disabled cash-out) or defer? | M14-11..16, 30..36 | Build read routes; keep cash-out disabled until Q10 (card AC 7). |
 | OQ-API-B4-24 | M16 solo games (M16-32) send the **answer keys to the client** (`correct`, `is_true`, `answer`, SEC-M16-01 as live) and M16-33 trusts client-reported `score`/`syiling_earned` within server-computed maxima. Replicate or grade server-side? | M16-32/33 | Replicate for the unchanged client; cap coin credit server-side as the mock does. |
 | OQ-API-B4-25 | M15 parent routes (M15-08..10) need role `parent` and M02 parent links; parent is out of B1 (plan section 2). `GET /api/parent/hadiah-approvals` is `requireAuth` only (empty for non-parents). Build behind BE-25 or defer? | M15-08..10 | Defer with the parent role; admin queue `pending_parent_consent` rows simply stay pending. |

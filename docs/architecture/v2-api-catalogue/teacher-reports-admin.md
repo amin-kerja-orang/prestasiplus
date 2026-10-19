@@ -29,7 +29,7 @@ Contract status (checked in `packages/contract/src/openapi.ts` and `session/path
 - **Validation messages.** Default copy for the `required/min/max/email/unique/confirmed/in/exists` rules is English Laravel text (`The :attribute field is required.`, etc.); `:attribute` is the camelCase key split into lower-case words. BM strings quoted in entries are verbatim from the handlers.
 - **Time.** Day logic is Asia/Kuala_Lumpur (MYT). The mock clock is the "project clock" (`ctx.clock.now()`), the real API uses server time. Timestamps are ISO 8601 `+08:00` (one exception: `GET /api/amaran/summary` `generatedAt` is epoch ms).
 - **`is_test`.** The plan (section 5) stamps data written under Mod Pelajar with `is_test` and says aggregates exclude it. **None of the 127 handlers filters `is_test`** (no field exists in the mock); see OQ-API-B3-1. The "fixture schools" 900001-900099 are the mock's way of keeping demo schools out of platform roll-ups (M11 BR-M11-34, M17 BR-M17-02, M12 BR-M12-01, M18 BR-M18-02).
-- **Card column.** `BE-nn` = the endpoint is in that card's endpoint table. `BE-nn*` = not in the table but inside the card's stated goal or inputs (implied). `UNCOVERED` = no card lists it and no card goal clearly covers it (also collected in section 11).
+- **Card column.** `BE-nn` = the endpoint is listed in that card's endpoint table (after the LEAD card audit, commit 63d363c, every route of M08, M10, M11, M12, M17 and M27 is listed explicitly; the earlier `BE-nn*` implied marker is gone). `UNCOVERED` = no card lists it (also collected in section 11).
 - **Entry blocks.** `Roles/auth` = guard as coded plus matrix row from `role-access-matrix.md` (rows 1-53; the matrix covers Murid, Guru and Admin Sekolah only: Admin Pusat, PPD and JPN scopes are as coded and unverified against the matrix). Types referenced as `T:nn` are line numbers in the module's TypeScript type file named at the top of each section, so every response field is findable there.
 
 ## 3. Summary table (127 endpoints)
@@ -40,19 +40,19 @@ Scope at a glance (as coded): **teacher** = own classes and their pupils (M08, M
 |---:|---|---|---|---|---|---|
 | M08-01 | M08 | GET | `/api/performance/school` | any (scope: A platform, others own school) | BE-19 | missing |
 | M08-02 | M08 | GET | `/api/performance/levels` | any (same scope) | BE-19 | missing |
-| M08-03 | M08 | GET | `/api/performance/levels/:code` | any (same scope) | BE-19* | missing |
+| M08-03 | M08 | GET | `/api/performance/levels/:code` | any (same scope) | BE-19 | missing |
 | M08-04 | M08 | GET | `/api/performance/classes` | any (teacher: own classes; others empty) | BE-19 | missing |
-| M08-05 | M08 | GET | `/api/performance/classes/:id` | A any class, T own, SA own-school classes | BE-19* | missing |
-| M08-06 | M08 | GET | `/api/performance/students/:userId` | A, T own pupils, SA own school, S self, PPD district, JPN state | BE-19* | missing |
+| M08-05 | M08 | GET | `/api/performance/classes/:id` | A any class, T own, SA own-school classes | BE-19 | missing |
+| M08-06 | M08 | GET | `/api/performance/students/:userId` | A, T own pupils, SA own school, S self, PPD district, JPN state | BE-19 | missing |
 | M08-07 | M08 | GET | `/api/analytics/me` | any (own data) | BE-19 | missing |
 | M08-08 | M08 | GET | `/api/analytics/classes` | A, T | BE-19 | missing |
 | M08-09 | M08 | GET | `/api/item-analysis/school` | A, T, SA, S, PPD, JPN (own school) | BE-19 | missing |
-| M08-10 | M08 | GET | `/api/item-analysis/school/:schoolId` | same roles; A any, PPD district, JPN state, others own | BE-19* | missing |
+| M08-10 | M08 | GET | `/api/item-analysis/school/:schoolId` | same roles; A any, PPD district, JPN state, others own | BE-19 | missing |
 | M08-11 | M08 | GET | `/api/item-analysis/classes` | A all classes, T own | BE-19 | missing |
-| M08-12 | M08 | GET | `/api/item-analysis/classes/:id` | A any, T own | BE-19* | missing |
+| M08-12 | M08 | GET | `/api/item-analysis/classes/:id` | A any, T own | BE-19 | missing |
 | M08-13 | M08 | GET | `/api/timeline` | any (own) | BE-19 | missing |
 | M08-14 | M08 | POST | `/api/timeline` | any (own) | BE-19 | missing |
-| M08-15 | M08 | GET | `/api/public/students/:id` | none (anonymous) | BE-19* | missing |
+| M08-15 | M08 | GET | `/api/public/students/:id` | none (anonymous) | BE-19 | missing |
 | M08-16 | M08 | GET | `/api/rankings` | any | BE-19 | missing |
 | M08-17 | M08 | GET | `/api/leaderboard` | any | BE-19 | missing |
 | M08-18 | M08 | GET | `/api/weekly-report` | any (always 403) | BE-19 | missing |
@@ -61,21 +61,21 @@ Scope at a glance (as coded): **teacher** = own classes and their pupils (M08, M
 | M08-21 | M08 | GET | `/api/headcounts/form-options` | A, T, SA | BE-19 | missing |
 | M08-22 | M08 | POST | `/api/headcounts` | A, T, SA (own class) | BE-19 | missing |
 | M08-23 | M08 | POST | `/api/headcounts/auto-setup` | A, T, SA | BE-19 | missing |
-| M08-24 | M08 | GET | `/api/headcounts/students/:userId` | A, T, SA | BE-19* | missing |
-| M08-25 | M08 | GET | `/api/headcounts/:id/summary` | A any, T own, SA own school | BE-19* | missing |
-| M08-26 | M08 | GET | `/api/headcounts/:id/export` | A any, T own, SA own school | BE-19* | missing |
-| M08-27 | M08 | GET | `/api/headcounts/:id` | A any, T own, SA own school | BE-19* | missing |
-| M08-28 | M08 | POST | `/api/headcounts/:id/reset` | A any, T own, SA own school | BE-19* | missing |
-| M08-29 | M08 | DELETE | `/api/headcounts/:id` | A any, T own, SA own school | BE-19* | missing |
-| M08-30 | M08 | POST | `/api/headcounts/:id/drop-students` | A any, T own, SA own school | BE-19* | missing |
+| M08-24 | M08 | GET | `/api/headcounts/students/:userId` | A, T, SA | BE-19 | missing |
+| M08-25 | M08 | GET | `/api/headcounts/:id/summary` | A any, T own, SA own school | BE-19 | missing |
+| M08-26 | M08 | GET | `/api/headcounts/:id/export` | A any, T own, SA own school | BE-19 | missing |
+| M08-27 | M08 | GET | `/api/headcounts/:id` | A any, T own, SA own school | BE-19 | missing |
+| M08-28 | M08 | POST | `/api/headcounts/:id/reset` | A any, T own, SA own school | BE-19 | missing |
+| M08-29 | M08 | DELETE | `/api/headcounts/:id` | A any, T own, SA own school | BE-19 | missing |
+| M08-30 | M08 | POST | `/api/headcounts/:id/drop-students` | A any, T own, SA own school | BE-19 | missing |
 | M10-01 | M10 | GET | `/api/guru/dashboard` | T, A | BE-17 | missing |
 | M10-02 | M10 | GET | `/api/guru/remedial-progress` | T, A | BE-18 | missing |
 | M10-03 | M10 | GET | `/api/guru/classes` | T, A (own) | BE-17 | missing |
 | M10-04 | M10 | POST | `/api/guru/classes` | T, A | BE-17 | missing |
-| M10-05 | M10 | GET | `/api/guru/classes/:id/qr-data` | T, A (own class) | BE-17* | missing |
+| M10-05 | M10 | GET | `/api/guru/classes/:id/qr-data` | T, A (own class) | BE-17 | missing |
 | M10-06 | M10 | GET | `/api/guru/students` | T, A | BE-17 | missing |
-| M10-07 | M10 | PUT | `/api/guru/students/:id` | T, A (own class) | BE-17* | missing |
-| M10-08 | M10 | DELETE | `/api/guru/students/:id` | T, A (own class) | BE-17* | missing |
+| M10-07 | M10 | PUT | `/api/guru/students/:id` | T, A (own class) | BE-17 | missing |
+| M10-08 | M10 | DELETE | `/api/guru/students/:id` | T, A (own class) | BE-17 | missing |
 | M10-09 | M10 | GET | `/api/guru/chapters` | T, A | BE-17 | missing |
 | M10-10 | M10 | POST | `/api/guru/chapters` | T, A | BE-17 | missing |
 | M10-11 | M10 | GET | `/api/guru/topics` | T, A | BE-17 | missing |
@@ -88,9 +88,9 @@ Scope at a glance (as coded): **teacher** = own classes and their pupils (M08, M
 | M10-18 | M10 | POST | `/api/guru/questions` | T, A | BE-09 | missing |
 | M10-19 | M10 | GET | `/api/guru/questions/template` | T, A | BE-10 | missing |
 | M10-20 | M10 | POST | `/api/guru/questions/import` | T, A | BE-10 | missing |
-| M10-21 | M10 | GET | `/api/guru/questions/:id` | T, A (own) | UNCOVERED | missing |
-| M10-22 | M10 | PUT | `/api/guru/questions/:id` | T, A (own) | UNCOVERED | missing |
-| M10-23 | M10 | DELETE | `/api/guru/questions/:id` | T, A (own) | UNCOVERED | missing |
+| M10-21 | M10 | GET | `/api/guru/questions/:id` | T, A (own) | BE-09 | missing |
+| M10-22 | M10 | PUT | `/api/guru/questions/:id` | T, A (own) | BE-09 | missing |
+| M10-23 | M10 | DELETE | `/api/guru/questions/:id` | T, A (own) | BE-09 | missing |
 | M10-24 | M10 | GET | `/api/guru/galeri-rajah` | T, A | BE-17 | missing |
 | M10-25 | M10 | POST | `/api/guru/question-papers` | T, A | BE-18 | missing |
 | M10-26 | M10 | GET | `/api/guru/audio-kbat/template` | T, A | BE-18 | missing |
@@ -151,22 +151,22 @@ Scope at a glance (as coded): **teacher** = own classes and their pupils (M08, M
 | M27-06 | M27 | GET | `/api/admin-sekolah/kelas` | SA | BE-21 | missing |
 | M27-07 | M27 | GET | `/api/admin-sekolah/pelajar` | SA | BE-21 | missing |
 | M27-08 | M27 | GET | `/api/admin-sekolah/guru` | SA | BE-21 | missing |
-| M27-09 | M27 | GET | `/api/admin-sekolah/pelajar/export.csv` | SA | BE-21* | missing |
-| M27-10 | M27 | GET | `/api/admin-sekolah/guru/export.csv` | SA | BE-21* | missing |
+| M27-09 | M27 | GET | `/api/admin-sekolah/pelajar/export.csv` | SA | BE-21 | missing |
+| M27-10 | M27 | GET | `/api/admin-sekolah/guru/export.csv` | SA | BE-21 | missing |
 | M27-11 | M27 | GET | `/api/admin-sekolah/pelajar/form-options` | SA | BE-21 | missing |
-| M27-12 | M27 | GET | `/api/admin-sekolah/pelajar/:id` | SA | BE-21* | missing |
-| M27-13 | M27 | GET | `/api/admin-sekolah/guru/:id` | SA | BE-21* | missing |
+| M27-12 | M27 | GET | `/api/admin-sekolah/pelajar/:id` | SA | BE-21 | missing |
+| M27-13 | M27 | GET | `/api/admin-sekolah/guru/:id` | SA | BE-21 | missing |
 | M27-14 | M27 | POST | `/api/admin-sekolah/pelajar` | SA | BE-21 | missing |
 | M27-15 | M27 | POST | `/api/admin-sekolah/guru` | SA | BE-21 | missing |
-| M27-16 | M27 | PUT | `/api/admin-sekolah/pelajar/:id` | SA | BE-21* | missing |
-| M27-17 | M27 | PUT | `/api/admin-sekolah/guru/:id` | SA | BE-21* | missing |
-| M27-18 | M27 | POST | `/api/admin-sekolah/pelajar/:id/reset-password` | SA | BE-21* | missing |
-| M27-19 | M27 | POST | `/api/admin-sekolah/guru/:id/reset-password` | SA | BE-21* | missing |
+| M27-16 | M27 | PUT | `/api/admin-sekolah/pelajar/:id` | SA | BE-21 | missing |
+| M27-17 | M27 | PUT | `/api/admin-sekolah/guru/:id` | SA | BE-21 | missing |
+| M27-18 | M27 | POST | `/api/admin-sekolah/pelajar/:id/reset-password` | SA | BE-21 | missing |
+| M27-19 | M27 | POST | `/api/admin-sekolah/guru/:id/reset-password` | SA | BE-21 | missing |
 | M27-20 | M27 | POST | `/api/admin-sekolah/guru/:id/toggle-active` | SA | BE-21 | missing |
 | M27-21 | M27 | POST | `/api/admin-sekolah/users/:id/impersonate` | SA (checked in M01 contract) | BE-21 | missing |
 | M27-22 | M27 | POST | `/api/admin-sekolah/impersonate/leave` | impersonated session | BE-21 | missing |
 
-Legend: `*` = implied by the card goal, not in its endpoint table. Roles use the abbreviations of section 2.
+Legend: (the earlier `*` implied marker is gone after the card audit.) Roles use the abbreviations of section 2.
 
 ## 4. M08 Student performance (`src/modules/m08-student-performance/mock/handlers`)
 
@@ -206,7 +206,7 @@ Purpose: level detail S3.
 - **Request:** path `code` string; only `t4` and `t5` are valid.
 - **Response:** `200 {data: LevelDetail}` (T:107): `{code,name,classes,students,subjects,accuracy,sessions,onTrack,below,onTrackPct,classRows[LevelClassRow],topStudents[],atRisk[]}`. Computation (`performance.ts:levelDetail`): aggregate = classes of the level in scope (all `kind`s incl. school classes), distinct active members, sessions = sum of session totals (all modes), accuracy = mean session accuracy; `subjects` = distinct subject ids of the classes; onTrack/below count headcount entries of the scope at that level id (10/11) where pair is on (latest AR >= target) else below (no AR/target counts below); `onTrackPct = round(on/(on+below)*100)`. `classRows` ordered by group (classes without subject first, then subject name A-Z, school classes last), then class name, then id; row accuracy = sum(correct)/sum(questions) of the members' sessions (all modes), onTrack/below per pupil of that class's entries (status: any pair on = on, else any below); `href = /prestasi/kelas/{id}` for classrooms, null for school classes; `subject` text "Tiada Subjek" or "Kelas Sekolah". `topStudents` = members with >=3 sessions, ordered by mean session accuracy desc then user id, top 10. `atRisk` = entries with an AR and a target and AR < target, ordered by gap (AR - target) ascending, then config id, then user id, top 15 (`checkpoint` = latest AR checkpoint number).
 - **Errors:** `404 NOT_FOUND` "Not Found." for a code other than t4/t5. 401.
-- **Handler:** `performance.ts:50`; `fetchLevelDetail`. **Card:** BE-19 (implied; not in the card table). **Contract:** missing.
+- **Handler:** `performance.ts:50`; `fetchLevelDetail`. **Card:** BE-19. **Contract:** missing.
 
 ### M08-04 `GET /api/performance/classes`
 Purpose: the viewer's own classes (S4).
@@ -220,7 +220,7 @@ Purpose: class dashboard S5.
 - **Request:** path `id` int.
 - **Response:** `200 {data: ClassDashboard}` (T:451): `class{id,name,school,subject,year,joinCode}`, `stats{students,accuracy,sessions,answered,avgMinutes,active7d}`, `headcount{configId,onTrack,below,noData,pct{on,below,none},avgTov,avgEtr}|null`, `attention[{userId,name,sessions,accuracy|null}]`, `trend[{date,sessions,avgAccuracy,activeStudents}]`, `ranking[{rank,userId,name,sessions,answered,accuracy|null,headcount on|below|na,lastActiveAt|null}]`. Computation (`class-performance.ts`): members = active enrolments; figures from practice-mode sessions of the members in the class subject (all subjects if the class has none); `stats.accuracy` = sum(correct)/sum(answered); `avgMinutes = seconds/sessions/60` (1 dp, 0 if no sessions); `active7d` = distinct members with a session in the last 7 days; `trend` = one point per MYT date with sessions in the last 30 days (today and 29 before), `avgAccuracy` = sum correct/sum answered of that day; `headcount` = the class's most recently updated config: per non-dropped roster line the band of the latest AR (above+on = onTrack, below, else noData), pct = share of total, avgTov/avgEtr from the config summary, null when the class has no config. `ranking`: members by raw accuracy desc (null last), ties by user id. `attention` = members with accuracy < 50 (desc), then members with no sessions (by id).
 - **Errors:** `404 NOT_FOUND` "Not Found." for unknown class, a school class, or a class the viewer may not open (module rule BR-M08-26: 404 not 403). 401.
-- **Handler:** `class.ts:31`; `fetchClassDashboard`. **Card:** BE-19 (implied). **Contract:** missing.
+- **Handler:** `class.ts:31`; `fetchClassDashboard`. **Card:** BE-19. **Contract:** missing.
 
 ### M08-06 `GET /api/performance/students/:userId`
 Purpose: Prestasi 360 of one pupil (S6).
@@ -228,7 +228,7 @@ Purpose: Prestasi 360 of one pupil (S6).
 - **Request:** path `userId` int.
 - **Response:** `200 {data: StudentPerformance}` (T:167): `user{id,name,initial}`, `heroAccuracy` (rounded accuracy), `streak`, `stats{sessions,accuracy,answered,seconds}`, `headcount[]` (cards per config holding an entry; chips TOV, OTRn for keyed ARs, ETR), `mastery[{subjectCode,subjectName,color,accuracy,sessions,answered}]` (practice sessions grouped by subject; ordered by answered desc then code), `activity{streakCurrent,streakBest,koinTotal,practiceDays}` (streak from M14 `streak`, `koinTotal` = wallet `currentSyiling`, `practiceDays` = stored learner activity counter), `badges[{icon,name}]` (M14 learner badges), `heatmap[{date,sessions}]` (90 MYT days ending today), `weakTopics[WeakTopic]` (stored SP records with source `log`, accuracy < 50, lowest first; `focusCount = min(available questions, 25)`), `suggestions[{kind,text}]` (ordered BM sentences; text templates in `repository/student.ts:suggestionsOf`, kinds inactive, no-sessions, subject, topic, headcount, start).
 - **Errors:** `404 NOT_FOUND` "Not Found." unknown user id; `403 FORBIDDEN` "This action is unauthorized." not permitted. 401.
-- **Handler:** `student.ts:16`; `fetchStudentPerformance`. **Card:** BE-19 (implied). **Contract:** missing.
+- **Handler:** `student.ts:16`; `fetchStudentPerformance`. **Card:** BE-19. **Contract:** missing.
 
 ### M08-07 `GET /api/analytics/me`
 Purpose: the viewer's own adaptive analytics (S7, Analitik Adaptif).
@@ -258,7 +258,7 @@ Purpose: same, for a given school id (variant `byId`).
 - **Request:** path `schoolId` int; query `tingkatan`.
 - **Response:** `200 {data: SchoolItemAnalysis}` with `variant: "byId"`. For admin an unknown school id is NOT an error: it answers the empty payload (`school.name ""`, zero counts, `gps.value null`, empty `subjects` and `questions`; FR-M08-143). Order of checks: role gate (403), scope gate (403 for a non-admin whose own school differs, including an unknown id, unless officer coverage matches), unknown id = empty payload, then the analysis (`404` if none).
 - **Errors:** 403 (role or out of scope), 401.
-- **Handler:** `item-analysis.ts:88`; same client. **Card:** BE-19 (implied). **Contract:** missing.
+- **Handler:** `item-analysis.ts:88`; same client. **Card:** BE-19. **Contract:** missing.
 
 ### M08-11 `GET /api/item-analysis/classes`
 Purpose: class list for the item analysis picker (S10).
@@ -272,7 +272,7 @@ Purpose: class item analysis (S11): difficulty and discrimination.
 - **Roles/auth:** admin any classroom; teacher own classroom.
 - **Response:** `200 {data: ClassItemAnalysis}` (T:332): `class{id,name,subjectName,levelSlug,year,students}`, `analysis{questionCount, summary{mudah,sederhana,sukar}, difficulty[], discrimination{sufficient, rows[]}}`. Computation (`repository/item-analysis.ts`): answers of the class members to questions of the class subject (all answers when the class has no subject), tallied per question: attempts, distinct students, correct; `index = round(1 - correct/attempts, 2)`, `level` by index, `accuracy = correct/attempts` (1 dp); `wrongStudents[{userId,name,times}]` by user id; `popularWrong` = most selected wrong option (lowest option index on ties); rows ordered by index desc then question id. Discrimination: N = members with >=1 finished session in the class subject; `sufficient = N >= 4`; ranked by member accuracy desc (ties by id); group size `g = max(1, round(0.27 N))` upper and lower; `index = upperCorrectShare - lowerCorrectShare` (3 dp); rows with no answers in either group are skipped; ordered by index desc.
 - **Errors:** `403 FORBIDDEN` "This action is unauthorized." for unknown class, school class, or class not allowed (documented exception: the live page is "Akses Ditolak"). 401.
-- **Handler:** `item-analysis.ts:120`; `fetchClassItemAnalysis`. **Card:** BE-19 (implied). **Contract:** missing.
+- **Handler:** `item-analysis.ts:120`; `fetchClassItemAnalysis`. **Card:** BE-19. **Contract:** missing.
 
 ### M08-13 `GET /api/timeline`
 Purpose: the viewer's own timeline (S16, "Timeline Saya").
@@ -295,7 +295,7 @@ Purpose: public pupil profile (S18), no session required.
 - **Request:** path `id` int.
 - **Response:** `200 {data: PublicProfile}` (T:376): `id,name,firstName,schoolName,levelName,joinedAt,daysWith,tier{key,name,emoji,level,ordinal,progressPct,toNext,nextName,nextKey},syiling,streak{current,best},accuracy,activity{sessions,practiceDays,correct,bestStreak},posts[]`. Computation: sessions = practice-mode sessions of the user; `accuracy = round(cap(correct/asked*100),1)`; `practiceDays` = distinct MYT dates with a session; `joinedAt` = stored activity `joinedAt` else `user.createdAt`; `daysWith = floor((now - joinedAt)/86400000)`; tier, syiling, level from M14 wallet summary; `ordinal` = 1-based position of the tier among active tiers by `minSyiling`; `levelName` from `profileLevelId` else user grade via M03.
 - **Errors:** `404 NOT_FOUND` "Not Found." for an unknown id. Note: the mock does not check the user's role or active state.
-- **Handler:** `social.ts:141`; `fetchPublicProfile`. **Card:** BE-19 (implied). **Contract:** missing.
+- **Handler:** `social.ts:141`; `fetchPublicProfile`. **Card:** BE-19. **Contract:** missing.
 
 ### M08-16 `GET /api/rankings`
 Purpose: national/state/district/school ranking table (S19, Kedudukan).
@@ -354,43 +354,43 @@ Purpose: a pupil's headcount sections (S15).
 - **Roles/auth:** admin/teacher/school_admin guard. admin: any pupil, all configs. school_admin: pupil of own school only, configs of own school. teacher: pupil must be in an own class or hold an entry in an own config; only own configs shown.
 - **Response:** `200 {data: HeadcountStudent}` (HT:114): `student{id,name,school}`, `sections[HeadcountSection]` (HT:82) one per visible config with an entry, config id ascending: `status, tov, etr, rs{value,recordedAt}|null, projection{value,variant,trend,confidence}|null, rows[{checkpoint,target,targetGrade,ar,arGrade,tone}], prediction{etr,rs,diff,verdict}|null, chart{labels,target,actual,projection,rs}`. Projection (`headcount-views.ts:314`, INFERRED) = last AR + mean step, clamped 0-100; prediction diff = RS - ETR (1 dp), `|d|<=5 Ramalan Tepat`, `<=10 Hampir Tepat`, else `Selisih Besar`.
 - **Errors:** `404 NOT_FOUND` unknown or non-student user; `403 FORBIDDEN` out of scope. A pupil with no visible entry gets `200` with `sections: []` (dropped entries are excluded).
-- **Handler:** `headcount.ts:215`; `fetchHeadcountStudent`. **Card:** BE-19 (implied). **Contract:** missing.
+- **Handler:** `headcount.ts:215`; `fetchHeadcountStudent`. **Card:** BE-19. **Contract:** missing.
 
 ### M08-25 `GET /api/headcounts/:id/summary`
 Purpose: class summary (S22).
 - **Roles/auth:** guard; config access `mayUse`: admin any, teacher own config (`teacherId`), school_admin config whose class/teacher school = own school.
 - **Response:** `200 {data: HeadcountSummary}` (HT:120): `config{id,subject,className,levelName,year,activeOtrs}`, `students` (non-dropped), `avgTov`, `avgEtr` (1 dp means), `otrs[{n,above,onTrack,below,na}]` counts per checkpoint by band status of that checkpoint's AR vs target.
-- **Errors:** `404` unknown config (checked before 403), `403` not permitted. **Handler:** `headcount.ts:248`; `fetchHeadcountSummary`. **Card:** BE-19 (implied). **Contract:** missing.
+- **Errors:** `404` unknown config (checked before 403), `403` not permitted. **Handler:** `headcount.ts:248`; `fetchHeadcountSummary`. **Card:** BE-19. **Contract:** missing.
 
 ### M08-26 `GET /api/headcounts/:id/export`
 Purpose: CSV download of the S23 table.
 - **Roles/auth:** as summary. **Request:** query `sort` ranking|name (default ranking).
 - **Response:** `200` file `text/csv`, `Content-Disposition: attachment; filename="headcount-{id}.csv"`. Content (`headcount-views.ts:csvOf`): UTF-8 with BOM, CRLF; columns `Bil, Nama, TOV (%), Gred TOV`, per OTR target/AR with grades, `ETR (%), Gred ETR`, one line per shown (not dropped) pupil in the chosen order plus a "Purata Kelas" line. Column titles are UNVERIFIED against live (L-12).
-- **Errors:** 404, 403. **Handler:** `headcount.ts:259`; `downloadHeadcountCsv`. **Card:** BE-19 (implied). **Contract:** missing.
+- **Errors:** 404, 403. **Handler:** `headcount.ts:259`; `downloadHeadcountCsv`. **Card:** BE-19. **Contract:** missing.
 
 ### M08-27 `GET /api/headcounts/:id`
 Purpose: headcount table (S23).
 - **Roles/auth:** as summary. **Request:** query `sort` ranking (latest AR desc, no AR last, then name) | name.
 - **Response:** `200 {data: HeadcountDetail}` (HT:157): `config{id,subject,className,levelName,year,teacherName,status "active",activeOtrs}`, `chips{onTrack,below,empty,total}` (non-dropped lines by band of latest AR: above+on = onTrack), `rows[HeadcountRow]` (includes dropped rows with `dropped: true`), `averages{tov,otrs[],ars[],etr}` (1 dp means over non-dropped rows).
-- **Errors:** 404, 403. **Handler:** `headcount.ts:272`; `fetchHeadcountDetail`. **Card:** BE-19 (implied). **Contract:** missing.
+- **Errors:** 404, 403. **Handler:** `headcount.ts:272`; `fetchHeadcountDetail`. **Card:** BE-19. **Contract:** missing.
 
 ### M08-28 `POST /api/headcounts/:id/reset`
 Purpose: clear all marks of a config ("Ya, Reset").
 - **Roles/auth:** as summary. **Response:** `200 {data: {reset: true}}`.
 - **Side effects:** every entry of the config gets `tov, etr, rs, rsRecordedAt` null and `targets, actuals` blank slots (`activeOtrs` length); config `updatedAt` refreshed.
-- **Errors:** 404, 403. **Handler:** `headcount.ts:283`; `resetHeadcount`. **Card:** BE-19 (implied). **Contract:** missing.
+- **Errors:** 404, 403. **Handler:** `headcount.ts:283`; `resetHeadcount`. **Card:** BE-19. **Contract:** missing.
 
 ### M08-29 `DELETE /api/headcounts/:id`
 Purpose: delete a config ("Ya, Padam").
 - **Roles/auth:** as summary. **Response:** `200 {data: {deleted: true}}` (not 204). **Side effects:** removes the config and its entries.
-- **Errors:** 404, 403. **Handler:** `headcount.ts:296`; `deleteHeadcount`. **Card:** BE-19 (implied). **Contract:** missing.
+- **Errors:** 404, 403. **Handler:** `headcount.ts:296`; `deleteHeadcount`. **Card:** BE-19. **Contract:** missing.
 
 ### M08-30 `POST /api/headcounts/:id/drop-students`
 Purpose: drop or restore pupils in a config ("Gugurkan" / "Kembalikan").
 - **Roles/auth:** as summary. **Request:** `{action: "drop"|"restore", studentIds: int[]}`; every id must be in the config roster (active class members plus pupils holding an entry).
 - **Response:** `200 {data: {updated: number}}` = number of pupils whose flag changed (distinct ids). Dropping a pupil without an entry creates an empty entry (INFERRED).
 - **Errors:** 404/403 as above; `422` fields `action` `Tindakan tidak sah.`, `studentIds` `Pilih sekurang-kurangnya seorang murid.` (empty) or `Murid tidak sah.` (id not in roster).
-- **Side effects:** sets `dropped` flag, updates config `updatedAt`. **Handler:** `headcount.ts:309`; `dropHeadcountStudents`. **Card:** BE-19 (implied). **Contract:** missing.
+- **Side effects:** sets `dropped` flag, updates config `updatedAt`. **Handler:** `headcount.ts:309`; `dropHeadcountStudents`. **Card:** BE-19. **Contract:** missing.
 
 ## 5. M10 Teacher and class (`src/modules/m10-teacher-class/mock/handlers`)
 
@@ -439,7 +439,7 @@ Purpose: join-QR data of an own class.
 - **Roles/auth:** `teacherOnly`; the class must be an own classroom (`teacherId = viewer`).
 - **Response:** `200` **bare** `{name, school|null, joinUrl}` with `joinUrl = https://prestasiplus.my/kelas-saya?kod={joinCode}` (PROPOSED; the host must come from configuration in the real API).
 - **Errors:** `404 NOT_FOUND` "Not Found." for unknown, not owned, or school class (never names a model).
-- **Handler:** `classes.ts:111`; `fetchClassQrData`. **Card:** BE-17 (implied; not in card table). **Contract:** missing.
+- **Handler:** `classes.ts:111`; `fetchClassQrData`. **Card:** BE-17. **Contract:** missing.
 
 ### M10-06 `GET /api/guru/students`
 Purpose: "Pelajar Saya" (S6).
@@ -453,14 +453,14 @@ Purpose: add a student to an own class (INFERRED control, S6).
 - **Roles/auth:** `teacherOnly`. **Request:** body `{classroomId}` int; path `id` = student user id.
 - **Response:** `200 {data: ClassroomStudent}` (T:137): `{classroomKind,classroomId,studentId,status,source:"teacher",joinedAt}`. Side effect: inserts an active enrolment with source `teacher`.
 - **Errors (check order):** `422` `classroomId` `Kelas tidak sah.` (missing/<1); `404` `Pelajar tidak dijumpai.` (user not found or not a student); `404` `Kelas tidak sah.` (class unknown); `403` `Kelas ini bukan milik anda.`; `403` `Pelajar bukan daripada sekolah anda.` (teacher profile has no school, or student's `schoolId` differs); `409 CONFLICT` `Pelajar sudah berada dalam kelas ini.`.
-- **Handler:** `students.ts:121`; `addStudentToClass`. **Card:** BE-17 (implied). **Contract:** missing.
+- **Handler:** `students.ts:121`; `addStudentToClass`. **Card:** BE-17. **Contract:** missing.
 
 ### M10-08 `DELETE /api/guru/students/:id`
 Purpose: remove a student from an own class.
 - **Roles/auth:** `teacherOnly`. **Request:** path `id` student; query `classroomId`.
 - **Response:** `200 {data: {removed: 1}}`. Side effect: enrolment status becomes `removed`.
 - **Errors:** `422` `classroomId` `Kelas tidak sah.`; `404` `Kelas tidak sah.` (unknown class); `403` `Kelas ini bukan milik anda.`; `404` `Pelajar tiada dalam kelas ini.`.
-- **Handler:** `students.ts:155`; `removeStudentFromClass`. **Card:** BE-17 (implied). **Contract:** missing.
+- **Handler:** `students.ts:155`; `removeStudentFromClass`. **Card:** BE-17. **Contract:** missing.
 
 ### M10-09 `GET /api/guru/chapters`
 Purpose: chapter options for a subject and level (M03 data).
@@ -537,16 +537,16 @@ Purpose: CSV import of contributed questions (S21).
 
 ### M10-21 `GET /api/guru/questions/:id`
 - **Roles/auth:** `teacherOnly`; own objective question only (`createdBy = viewer`, not PKSK). **Response:** `200 {data: ContributedQuestionDetail}`. **Errors:** `404 NOT_FOUND` "Not Found." for unknown or not own (ids cannot be probed).
-- **Handler:** `questions.ts:503`; `fetchContributedQuestion`. **Card:** **UNCOVERED**. **Contract:** missing.
+- **Handler:** `questions.ts:503`; `fetchContributedQuestion`. **Card:** BE-09. **Contract:** missing.
 
 ### M10-22 `PUT /api/guru/questions/:id`
 - **Roles/auth:** `teacherOnly`; own only. **Request:** `questionText` (required, 1-2000), optional `difficultyLevel` (kept when absent), for MCQ: `options` 4 items `{id 0-3, optionText}` (multipart `options[i][id]`/`options[i][optionText]`) plus `correctOptionId` (index or letter), `explanation`, `image`/`questionImage` file.
 - **Response:** `200 {data: ContributedQuestionDetail}`; `404` if not own or vanished. **Errors (422):** `questionText` messages as create; `difficultyLevel` `Sila pilih tahap kesukaran.`; `options` `Sila isi semua pilihan jawapan.` / `Pilihan jawapan tidak boleh melebihi 500 aksara.`; `correctOptionId` `Sila pilih jawapan betul.`; `image` `Gambar mesti jenis JPG, PNG atau WebP dan tidak melebihi 2MB.`.
-- **Side effects:** `questions.updateOwn`. **Handler:** `questions.ts:514`; `updateContributedQuestion`. **Card:** **UNCOVERED**. **Contract:** missing.
+- **Side effects:** `questions.updateOwn`. **Handler:** `questions.ts:514`; `updateContributedQuestion`. **Card:** BE-09. **Contract:** missing.
 
 ### M10-23 `DELETE /api/guru/questions/:id`
 - **Roles/auth:** `teacherOnly`; own only. **Response:** `200 {data: {removed: 1}}`; `404` unknown/not own. Side effect: `questions.deleteOwn`; contribution credit is not taken back.
-- **Handler:** `questions.ts:534`; `deleteContributedQuestion`. **Card:** **UNCOVERED**. **Contract:** missing.
+- **Handler:** `questions.ts:534`; `deleteContributedQuestion`. **Card:** BE-09. **Contract:** missing.
 
 ### M10-24 `GET /api/guru/galeri-rajah`
 - **Roles/auth:** `teacherOnly`. **Request:** query `folder` optional. **Response:** `200` bare `{folders: []}` or, when `folder` is non-empty, `{images: []}`; always empty (DV-M10-09).
@@ -970,11 +970,11 @@ Purpose: S8 class list of the school.
 
 ### M27-09 `GET /api/admin-sekolah/pelajar/export.csv`
 - **Roles/auth:** SA. **Request (query):** `is_active`, `search` as the list. **Response:** `200` file `text/csv; charset=utf-8`, `Content-Disposition` filename `users-pelajar-{yyyy-mm-dd}.csv` (clock date). Body: UTF-8 BOM, `\n` rows, header `id,name,email,role,sekolah,kelas,is_active,created_at`; the school's matching pupils ordered by id; `role` word `pelajar`; `sekolah` school name; `kelas` names of active classes joined by ", "; `is_active` 1/0; cells starting with `=`, `+`, `-`, `@`, tab or CR prefixed with `'`; quoted when containing comma, quote or newline; no IC, no phone. (Literal path wins over `:id`.)
-- **Handler:** `users-read.ts:86` (factory `csvRoute` :44); `downloadPupilsCsv`. **Card:** BE-21 (implied). **Contract:** missing.
+- **Handler:** `users-read.ts:86` (factory `csvRoute` :44); `downloadPupilsCsv`. **Card:** BE-21. **Contract:** missing.
 
 ### M27-10 `GET /api/admin-sekolah/guru/export.csv`
 - Same as above for teachers: filename `users-guru-{yyyy-mm-dd}.csv`, `role` word `guru`, `kelas` empty.
-- **Handler:** `users-read.ts:87`; `downloadTeachersCsv`. **Card:** BE-21 (implied). **Contract:** missing.
+- **Handler:** `users-read.ts:87`; `downloadTeachersCsv`. **Card:** BE-21. **Contract:** missing.
 
 ### M27-11 `GET /api/admin-sekolah/pelajar/form-options`
 Purpose: data for the create-pupil form (S12).
@@ -984,10 +984,10 @@ Purpose: data for the create-pupil form (S12).
 ### M27-12 `GET /api/admin-sekolah/pelajar/:id`
 - **Roles/auth:** SA; target must be a pupil of the school. **Response:** `200 {data: SchoolUserDetail}` (S:345): `id,name,email,phone|null,isActive,createdAt,updatedAt,role ("student"),school{id,name,code,district,state}`; no IC.
 - **Errors:** `404` not a pupil of this school/unknown/non-digit; `403` inactive pupil.
-- **Handler:** `users-read.ts:89` (factory :53); `fetchSchoolPupil`. **Card:** BE-21 (implied). **Contract:** missing.
+- **Handler:** `users-read.ts:89` (factory :53); `fetchSchoolPupil`. **Card:** BE-21. **Contract:** missing.
 
 ### M27-13 `GET /api/admin-sekolah/guru/:id`
-- Same for a teacher (`role "teacher"`). **Handler:** `users-read.ts:90`; `fetchSchoolTeacher`. **Card:** BE-21 (implied). **Contract:** missing.
+- Same for a teacher (`role "teacher"`). **Handler:** `users-read.ts:90`; `fetchSchoolTeacher`. **Card:** BE-21. **Contract:** missing.
 
 ### M27-14 `POST /api/admin-sekolah/pelajar`
 Purpose: create a pupil (S12).
@@ -1006,18 +1006,18 @@ Purpose: create a teacher (S11).
 - **Roles/auth:** SA; target a pupil of the school and active (404 then 403). **Request:** `name`, `email`, `phone` (`null` clears; absent keeps), optional `newPassword` (>= 6) + `newPasswordConfirmation`. Other keys ignored; role, school, status, grade never change.
 - **Response:** `200 {data: SchoolUserDetail, status: "Pengguna berjaya dikemaskini."}`. Side effects: updates the user; if `newPassword`, replaces the hash and revokes **all** the target's sessions.
 - **Errors:** 404, 403 (inactive), 422 (name/email/phone/newPassword rules; e-mail uniqueness excludes self).
-- **Handler:** `users-write.ts:231`; `updateSchoolPupil`. **Card:** BE-21 (implied). **Contract:** missing.
+- **Handler:** `users-write.ts:231`; `updateSchoolPupil`. **Card:** BE-21. **Contract:** missing.
 
 ### M27-17 `PUT /api/admin-sekolah/guru/:id`
-- Same for a teacher. **Handler:** `users-write.ts:232`; `updateSchoolTeacher`. **Card:** BE-21 (implied). **Contract:** missing.
+- Same for a teacher. **Handler:** `users-write.ts:232`; `updateSchoolTeacher`. **Card:** BE-21. **Contract:** missing.
 
 ### M27-18 `POST /api/admin-sekolah/pelajar/:id/reset-password`
 - **Roles/auth:** SA; pupil of the school, active. **Request:** `{newPassword (required, >= 6), newPasswordConfirmation}`. **Response:** `200 {data: {reset: true}, status: "Pengguna berjaya dikemaskini."}`. Side effects: replaces the password hash at once, revokes the target's sessions (not the actor's), bumps `updatedAt`.
 - **Errors:** 404, 403 (inactive), `422` (`The new password field is required.`, `The new password field must be at least 6 characters.`, `The new password field confirmation does not match.`).
-- **Handler:** `users-write.ts:233`; `resetSchoolPupilPassword`. **Card:** BE-21 (implied). **Contract:** missing.
+- **Handler:** `users-write.ts:233`; `resetSchoolPupilPassword`. **Card:** BE-21. **Contract:** missing.
 
 ### M27-19 `POST /api/admin-sekolah/guru/:id/reset-password`
-- Same for a teacher. **Handler:** `users-write.ts:234`; `resetSchoolTeacherPassword`. **Card:** BE-21 (implied). **Contract:** missing.
+- Same for a teacher. **Handler:** `users-write.ts:234`; `resetSchoolTeacherPassword`. **Card:** BE-21. **Contract:** missing.
 
 ### M27-20 `POST /api/admin-sekolah/guru/:id/toggle-active`
 Purpose: switch a teacher active/inactive (either direction, including an inactive teacher). Pupils cannot be toggled.
@@ -1039,13 +1039,10 @@ Purpose: "Menyamar" (school admin opens a pupil's or teacher's account with a wa
 
 ## 11. Uncovered endpoints
 
-Endpoints that no BE card lists in its endpoint table and whose goal does not clearly cover them (7), plus the two groups the lead should rule on.
+After the card audit (commit 63d363c) 4 endpoints are uncovered (before: 7). `GET/PUT/DELETE /api/guru/questions/:id` (M10-21..23, data owner M04) are now listed in BE-09 and no longer uncovered; the 24 endpoints that carried an implied `BE-nn*` marker (BE-17 3, BE-19 13, BE-21 8) are now listed explicitly.
 
 | Endpoint | Module | Why uncovered | Suggested owner |
 |---|---|---|---|
-| `GET /api/guru/questions/:id` | M10 (data: M04) | BE-09 lists only `GET/POST /api/guru/questions`; BE-10 lists import and template | BE-09 (owner M04) |
-| `PUT /api/guru/questions/:id` | M10 (data: M04) | same | BE-09 |
-| `DELETE /api/guru/questions/:id` | M10 (data: M04) | same | BE-09 |
 | `GET /api/amaran/schools/:id` | M18 | M18 PPD/JPN is wave-4 backlog, no card; but M27 S0 and S4 (BE-21 scope) call it | new M18 card, or fold the school family into BE-21 |
 | `GET /api/amaran/summary` | M18 | same | same |
 | `GET /api/amaran/effectiveness` | M18 | same | same |

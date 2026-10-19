@@ -17,7 +17,7 @@ Count method (re-runnable): a script (`scratchpad/docs-owner/api-b1/count.mjs`) 
 | M03 curriculum | 29 | 0 | = M03 SRS §7 #1–#29. The plan/brief figure "12" is stale. |
 | **Total** | **100** | **4** | 104 endpoint sections. |
 
-Contract status totals (packages/contract/src/openapi.ts registers 6 paths, all in `session/paths.ts`): `exists` 4 (all contract-only), `partial` 2 (`POST /auth/login`, `POST /auth/logout`: path and schema registered but the shape differs from the mock, OQ-API-B1-1), `missing` 98 (every other mock route). Card coverage: 24 mock routes are **UNCOVERED** (no BE card endpoint table lists them): 2 in M01, 6 in M02, 16 in M03, 0 in core (section 10).
+Contract status totals (packages/contract/src/openapi.ts registers 6 paths, all in `session/paths.ts`): `exists` 4 (all contract-only), `partial` 2 (`POST /auth/login`, `POST /auth/logout`: path and schema registered but the shape differs from the mock, OQ-API-B1-1), `missing` 98 (every other mock route). Card coverage (after the LEAD card audit, commit 63d363c): every route is listed in a BE card endpoint table, 0 **UNCOVERED** (section 10 records what changed).
 
 Reference prefixes used in "Source" lines (all under `src/`): `core/` = `mock/core-data/`, `m01/` = `modules/m01-authentication/mock/handlers/`, `m02/` = `modules/m02-users-schools/mock/handlers/`, `m03/` = `modules/m03-curriculum/mock/handlers/`; client files are `modules/mNN-*/api/*.ts`. Line numbers are of the `route(` registration (R) and the handler function (H).
 
@@ -121,8 +121,8 @@ Roles: `any` = any logged-in role; `public` = no session needed; `admin` = Admin
 | M01-14 | POST | `/api/me/notifications/read-all` | any (own) | BE-06 | missing |
 | M01-15 | POST | `/api/me/notifications/bulk-read` | any (own) | BE-06 | missing |
 | M01-16 | POST | `/api/me/notifications/bulk-delete` | any (own) | BE-06 | missing |
-| M01-17 | POST | `/api/me/notifications/:id/read` | any (own) | **UNCOVERED** (BE-06) | missing |
-| M01-18 | DELETE | `/api/me/notifications/:id` | any (own) | **UNCOVERED** (BE-06) | missing |
+| M01-17 | POST | `/api/me/notifications/:id/read` | any (own) | BE-06 | missing |
+| M01-18 | DELETE | `/api/me/notifications/:id` | any (own) | BE-06 | missing |
 | M01-19 | GET | `/api/public/stats` | public | BE-06 | missing |
 | M02-01 | GET | `/api/admin/users` | admin | BE-05 | missing |
 | M02-02 | GET | `/api/admin/users/filters` | admin | BE-05 | missing |
@@ -137,9 +137,9 @@ Roles: `any` = any logged-in role; `public` = no session needed; `admin` = Admin
 | M02-11 | GET | `/api/admin/users/:id/packages` | admin | BE-25 | missing |
 | M02-12 | POST | `/api/admin/users/:id/packages` | admin | BE-25 | missing |
 | M02-13 | POST | `/api/admin/users/bulk-import` | admin | BE-05 | missing |
-| M02-14 | POST | `/api/admin/students/import` | admin | BE-05 | missing |
-| M02-15 | GET | `/api/admin/schools/:id/quota` | admin | **UNCOVERED** (BE-05/BE-25) | missing |
-| M02-16 | GET | `/api/admin/schools/:id/students` | admin | **UNCOVERED** (BE-05) | missing |
+| M02-14 | POST | `/api/admin/students/import` | admin | BE-25 | missing |
+| M02-15 | GET | `/api/admin/schools/:id/quota` | admin | BE-25 | missing |
+| M02-16 | GET | `/api/admin/schools/:id/students` | admin | BE-05 | missing |
 | M02-17 | GET | `/api/admin/comp-students` | admin | BE-25 | missing |
 | M02-18 | POST | `/api/admin/comp-students` | admin | BE-25 | missing |
 | M02-19 | GET | `/api/admin/comp-students/:id` | admin | BE-25 | missing |
@@ -149,10 +149,10 @@ Roles: `any` = any logged-in role; `public` = no session needed; `admin` = Admin
 | M02-23 | GET | `/api/admin/teachers` | admin | BE-05 | missing |
 | M02-24 | GET | `/api/admin/teachers/:id/classrooms` | admin | BE-05 | missing |
 | M02-25 | GET | `/api/admin/schools` | admin | BE-05 | missing |
-| M02-26 | GET | `/api/admin/schools/:id` | admin | **UNCOVERED** (BE-05) | missing |
+| M02-26 | GET | `/api/admin/schools/:id` | admin | BE-05 | missing |
 | M02-27 | POST | `/api/admin/schools` | admin | BE-05 | missing |
-| M02-28 | PUT | `/api/admin/schools/:id` | admin | **UNCOVERED** (BE-05) | missing |
-| M02-29 | POST | `/api/admin/schools/:id/toggle` | admin | **UNCOVERED** (BE-05) | missing |
+| M02-28 | PUT | `/api/admin/schools/:id` | admin | BE-05 | missing |
+| M02-29 | POST | `/api/admin/schools/:id/toggle` | admin | BE-05 | missing |
 | M02-30 | GET | `/api/admin/schools/options` | admin | BE-05 | missing |
 | M02-31 | GET | `/api/schools` (`?all=1`) | admin | BE-05 (listed as public, OQ) | missing |
 | M02-32 | GET | `/api/admin/school-subscriptions` | admin | BE-25 | missing |
@@ -167,36 +167,36 @@ Roles: `any` = any logged-in role; `public` = no session needed; `admin` = Admin
 | M02-41 | GET | `/api/admin/school-subscriptions/:id/renewal-invoice` | admin | BE-25 | missing |
 | M02-42 | GET | `/api/schools/search` | public | BE-05 | missing |
 | M02-43 | GET | `/api/jpn` | public | BE-05 | missing |
-| M02-44 | GET | `/api/jpn/:id/ppd` | public | **UNCOVERED** (BE-05) | missing |
+| M02-44 | GET | `/api/jpn/:id/ppd` | public | BE-05 | missing |
 | M02-45 | GET | `/api/me/parent-invite` | student | BE-25 | missing |
 | M02-46 | POST | `/api/me/parent-invite/generate` | student | BE-25 | missing |
 | M02-47 | GET | `/api/parent-invites/:token` | public (viewer from token) | BE-25 | missing |
 | M02-48 | POST | `/api/parent-invites/:token/accept` | parent | BE-25 | missing |
 | M02-49 | GET | `/api/admin/config/defaults` | admin | BE-05 | missing |
 | M03-01 | GET | `/api/admin/subjects` | admin | BE-08 | missing |
-| M03-02 | GET | `/api/admin/subjects/:id` | admin | **UNCOVERED** (BE-08) | missing |
+| M03-02 | GET | `/api/admin/subjects/:id` | admin | BE-08 | missing |
 | M03-03 | POST | `/api/admin/subjects` | admin | BE-08 | missing |
-| M03-04 | PUT | `/api/admin/subjects/:id` | admin | **UNCOVERED** (BE-08) | missing |
-| M03-05 | PATCH | `/api/admin/subjects/:id/active` | admin | **UNCOVERED** (BE-08) | missing |
-| M03-06 | DELETE | `/api/admin/subjects/:id` | admin | **UNCOVERED** (BE-08) | missing |
+| M03-04 | PUT | `/api/admin/subjects/:id` | admin | BE-08 | missing |
+| M03-05 | PATCH | `/api/admin/subjects/:id/active` | admin | BE-08 | missing |
+| M03-06 | DELETE | `/api/admin/subjects/:id` | admin | BE-08 | missing |
 | M03-07 | GET | `/api/admin/education-levels` | admin | BE-08 | missing |
-| M03-08 | GET | `/api/admin/education-levels/:id` | admin | **UNCOVERED** (BE-08) | missing |
+| M03-08 | GET | `/api/admin/education-levels/:id` | admin | BE-08 | missing |
 | M03-09 | POST | `/api/admin/education-levels` | admin | BE-08 | missing |
-| M03-10 | PUT | `/api/admin/education-levels/:id` | admin | **UNCOVERED** (BE-08) | missing |
-| M03-11 | PATCH | `/api/admin/education-levels/:id/active` | admin | **UNCOVERED** (BE-08) | missing |
-| M03-12 | DELETE | `/api/admin/education-levels/:id` | admin | **UNCOVERED** (BE-08) | missing |
+| M03-10 | PUT | `/api/admin/education-levels/:id` | admin | BE-08 | missing |
+| M03-11 | PATCH | `/api/admin/education-levels/:id/active` | admin | BE-08 | missing |
+| M03-12 | DELETE | `/api/admin/education-levels/:id` | admin | BE-08 | missing |
 | M03-13 | GET | `/api/admin/curriculum` | admin | BE-08 | missing |
-| M03-14 | GET | `/api/admin/curriculum/chapters/:id` | admin | **UNCOVERED** (BE-08) | missing |
+| M03-14 | GET | `/api/admin/curriculum/chapters/:id` | admin | BE-08 | missing |
 | M03-15 | POST | `/api/admin/curriculum/chapters` | admin | BE-08 | missing |
-| M03-16 | PUT | `/api/admin/curriculum/chapters/:id` | admin | **UNCOVERED** (BE-08) | missing |
-| M03-17 | DELETE | `/api/admin/curriculum/chapters/:id` | admin | **UNCOVERED** (BE-08) | missing |
-| M03-18 | GET | `/api/admin/curriculum/topics/:id` | admin | **UNCOVERED** (BE-08) | missing |
+| M03-16 | PUT | `/api/admin/curriculum/chapters/:id` | admin | BE-08 | missing |
+| M03-17 | DELETE | `/api/admin/curriculum/chapters/:id` | admin | BE-08 | missing |
+| M03-18 | GET | `/api/admin/curriculum/topics/:id` | admin | BE-08 | missing |
 | M03-19 | POST | `/api/admin/curriculum/topics` | admin | BE-08 | missing |
-| M03-20 | PUT | `/api/admin/curriculum/topics/:id` | admin | **UNCOVERED** (BE-08) | missing |
-| M03-21 | DELETE | `/api/admin/curriculum/topics/:id` | admin | **UNCOVERED** (BE-08) | missing |
+| M03-20 | PUT | `/api/admin/curriculum/topics/:id` | admin | BE-08 | missing |
+| M03-21 | DELETE | `/api/admin/curriculum/topics/:id` | admin | BE-08 | missing |
 | M03-22 | POST | `/api/admin/curriculum/subtopics` | admin | BE-08 | missing |
-| M03-23 | PUT | `/api/admin/curriculum/subtopics/:id` | admin | **UNCOVERED** (BE-08) | missing |
-| M03-24 | DELETE | `/api/admin/curriculum/subtopics/:id` | admin | **UNCOVERED** (BE-08) | missing |
+| M03-23 | PUT | `/api/admin/curriculum/subtopics/:id` | admin | BE-08 | missing |
+| M03-24 | DELETE | `/api/admin/curriculum/subtopics/:id` | admin | BE-08 | missing |
 | M03-25 | GET | `/api/topics` | any | BE-08 | missing |
 | M03-26 | GET | `/api/topics/:id` | any | BE-08 | missing |
 | M03-27 | GET | `/api/learning-map` | any | BE-08 | missing |
@@ -430,11 +430,11 @@ All routes in this section use `requireAuth()` and operate on the session user o
 - Path: `id` integer (non-numeric: the route does not match, so `404 E404`).
 - Response: 200 `Env-D` `{ success: true }`; reading twice keeps the first `readAt`.
 - Errors: 401; 404 `E404` (`Not Found.`) for an unknown or foreign id.
-- Side effects: `readAt`. Source: R:111. Client: `markNotificationRead`. Card: **UNCOVERED** (BE-06 lists only `{read-all,bulk-read,bulk-delete}`). Contract: missing.
+- Side effects: `readAt`. Source: R:111. Client: `markNotificationRead`. Card: BE-06. Contract: missing.
 
 ### M01-18 `DELETE /api/me/notifications/:id`
 - Path: `id` integer. Response: 200 `Env-D` `{ success: true }` (not 204). Errors: 401; 404 `E404` for an unknown or foreign id.
-- Side effects: row deleted. Source: R:122. Client: `deleteNotification`. Card: **UNCOVERED** (BE-06). Contract: missing.
+- Side effects: row deleted. Source: R:122. Client: `deleteNotification`. Card: BE-06. Contract: missing.
 
 ### M01-19 `GET /api/public/stats`
 - Purpose: login page counters, computed per request (M01 SRS #21, BR-21; no stored figures).
@@ -552,17 +552,17 @@ Shapes (client types in `modules/m02-users-schools/api/*.ts`):
 - School checks: no active/grace subscription -> 422 `Sekolah ini tiada langganan aktif. Import pelajar tidak dibenarkan.` (`fields.schoolId`, `imports.ts:59`); more new records than the remaining quota -> 422 `Kuota tidak mencukupi.` (`fields.schoolId`, `:61`; the whole import is refused). No data rows -> `Tiada data untuk diimport.`
 - Response: 200 `Env-DS` `ImportResult`, `status: "Import selesai: {created} pelajar didaftarkan, {skipped} dilangkau."`.
 - Errors: 401, 403, 422. Side effects: `users` rows.
-- Source: R:286, H:197. Client: `importStudents` (raw). Card: BE-05. Contract: missing.
+- Source: R:286, H:197. Client: `importStudents` (raw). Card: BE-25. Contract: missing.
 
 ### M02-15 `GET /api/admin/schools/:id/quota` (SRS #14)
 - Response: 200 `Env-D` `SchoolQuota` = `{ hasSubscription: false }` or `{ hasSubscription: true, quota, used, remaining }`. `quota` = `studentQuota` of the latest-starting `active` (or `grace`) subscription of the school (tie: higher id); `used` = all students of the school, active and inactive; `remaining = max(0, quota - used)`.
 - Errors: 401, 403, 404 `E404` (unknown school).
-- Source: `imports.ts` R:287, quota in `mock/quota.ts:66`. Client: `fetchSchoolQuota`. Card: **UNCOVERED** (BE-05 / BE-25). Contract: missing.
+- Source: `imports.ts` R:287, quota in `mock/quota.ts:66`. Client: `fetchSchoolQuota`. Card: BE-25. Contract: missing.
 
 ### M02-16 `GET /api/admin/schools/:id/students` (SRS #15)
 - Query: `search` (substring of name, e-mail or DELIMa id, case-insensitive), `classLevel` (`D1..T5`, exact). Not paginated; max 200; sorted by name then id.
 - Response: 200 `Env-D` `[{ id, name, email, idDelima|null, classLevel|null, isActive }]`. Errors: 401, 403, 404 (unknown school).
-- Source: `imports.ts` R:297. Client: `fetchSchoolStudents`. Card: **UNCOVERED** (BE-05). Contract: missing.
+- Source: `imports.ts` R:297. Client: `fetchSchoolStudents`. Card: BE-05. Contract: missing.
 
 ### M02-17 `GET /api/admin/comp-students` (SRS #16)
 - Purpose: S6 complimentary students (role student, `isComplimentary`).
@@ -612,7 +612,7 @@ Shapes (client types in `modules/m02-users-schools/api/*.ts`):
 
 ### M02-26 `GET /api/admin/schools/:id` (SRS #25)
 - Response: 200 `Env-D` `AdminSchool`. Errors: 401, 403, 404 `E404`.
-- Source: R:171. Client: `fetchAdminSchool`. Card: **UNCOVERED** (BE-05). Contract: missing.
+- Source: R:171. Client: `fetchAdminSchool`. Card: BE-05. Contract: missing.
 
 ### M02-27 `POST /api/admin/schools` (SRS #26)
 - Request body (strings trimmed; blank is not converted to null here): `name` (required, string, max 255), `code` (required, string, max 20, unique case-insensitive: `The code has already been taken.`), `type` (required; one of the 6 types), `state` (required; one of the 16 JPN/state names in `m02/../data/geo.ts` `STATE_NAMES`), `district` (string, max 255), `city` (string, max 255), `isActive` (boolean; default true).
@@ -623,11 +623,11 @@ Shapes (client types in `modules/m02-users-schools/api/*.ts`):
 ### M02-28 `PUT /api/admin/schools/:id` (SRS #27)
 - Request body as M02-27 (the school's own code is not a duplicate; an absent `isActive` keeps the stored value).
 - Response: 200 `Env-DS` `AdminSchool`, `status: "Sekolah berjaya disimpan."`. Errors: 401, 403, 404, 422.
-- Source: R:190. Client: `updateSchool` (raw). Card: **UNCOVERED** (BE-05). Contract: missing.
+- Source: R:190. Client: `updateSchool` (raw). Card: BE-05. Contract: missing.
 
 ### M02-29 `POST /api/admin/schools/:id/toggle` (SRS #28)
 - Response: 200 `Env-DS` `{ isActive }`, `status: "Status sekolah berjaya dikemaskini."` (`schools-admin.ts:54`). Errors: 401, 403, 404. A school is never deleted (BR-20, INFERRED).
-- Source: R:207. Client: `toggleSchool` (raw). Card: **UNCOVERED** (BE-05). Contract: missing.
+- Source: R:207. Client: `toggleSchool` (raw). Card: BE-05. Contract: missing.
 
 ### M02-30 `GET /api/admin/schools/options` (XL-13 alias)
 - Response: 200 `Env-D` `[{ id, name }]`: every school, active and inactive, name A-Z, no paging. Errors: 401, 403.
@@ -698,7 +698,7 @@ Shapes (client types in `modules/m02-users-schools/api/*.ts`):
 
 ### M02-44 `GET /api/jpn/:id/ppd` (SRS #41)
 - Auth: public. Response: 200 `Env-D` `Ppd[]` = `[{ id, jpnId, code (e.g. "PPD GOMBAK"), name (e.g. "PPD Gombak") }]` by code. Errors: 404 `E404` for an unknown JPN.
-- Source: R:34. Client: `fetchPpdList`. Card: **UNCOVERED** (BE-05 lists only `GET /api/jpn`). Contract: missing.
+- Source: R:34. Client: `fetchPpdList`. Card: BE-05. Contract: missing.
 
 ### M02-45 `GET /api/me/parent-invite` (L45 #1)
 - Auth: `requireRole('student')` (401; 403 for other roles).
@@ -743,7 +743,7 @@ Shapes (client `modules/m03-curriculum/api/*.ts`):
 
 ### M03-02 `GET /api/admin/subjects/:id` (SRS #2)
 - Response: 200 `Env-D` `Subject`. Errors: 401, 403, 404 `NOT_FOUND` `Subjek tidak dijumpai.`
-- Source: R:143. Client: `fetchAdminSubject`. Card: **UNCOVERED** (BE-08). Contract: missing.
+- Source: R:143. Client: `fetchAdminSubject`. Card: BE-08. Contract: missing.
 
 ### M03-03 `POST /api/admin/subjects` (SRS #3)
 - Request body: `name` (required, string, max 255), `nameEn` (required, string, max 255), `code` (required, string, max 20, unique case-insensitive across subjects: `The code has already been taken.`; stored upper-case), `icon` (string, max 100; an empty value is stored as null; default when the key is absent: `fas fa-book`), `color` (string `#RRGGBB`: `The color field format is invalid.`; default `#4f46e5`), `isCore` (boolean, default false), `order` (integer >= 0: `The order field must be at least 0.`, default 0), `educationLevelIds` (array of existing level ids: `The education level ids field must be an array.` / `The selected education level ids is invalid.`; default `[]`).
@@ -754,24 +754,24 @@ Shapes (client `modules/m03-curriculum/api/*.ts`):
 ### M03-04 `PUT /api/admin/subjects/:id` (SRS #4)
 - Request body: as M03-03; on update an absent `icon`, `color`, `isCore`, `order` or `educationLevelIds` key keeps the stored value (INFERRED); `name`, `nameEn`, `code` stay required; the code is unique ignoring this subject. Links are replaced by `educationLevelIds` when sent.
 - Response: 200 `Env-DS` `Subject`, `status: "Subjek berjaya dikemaskini."`. Errors: 401, 403, 404 (`Subjek tidak dijumpai.`), 422.
-- Source: R:162. Client: `updateSubject` (raw). Card: **UNCOVERED** (BE-08). Contract: missing.
+- Source: R:162. Client: `updateSubject` (raw). Card: BE-08. Contract: missing.
 
 ### M03-05 `PATCH /api/admin/subjects/:id/active` (SRS #5)
 - Request body: `isActive` (required, boolean: `The is active field is required.` / `The is active field must be true or false.`).
 - Response: 200 `Env-D` `{ id, isActive }` (no `status`). Errors: 401, 403, 404 (`Subjek tidak dijumpai.`), 422.
-- Source: R:179. Client: `setSubjectActive`. Card: **UNCOVERED** (BE-08). Contract: missing.
+- Source: R:179. Client: `setSubjectActive`. Card: BE-08. Contract: missing.
 
 ### M03-06 `DELETE /api/admin/subjects/:id` (SRS #6)
 - Response: 200 `Env-DS` `{ deleted: 1 }`, `status: "Subjek berjaya dipadam."`. Cascade (BR-10): the level links and every chapter of the subject (including out-of-tree chapters) with their topics and subtopics. The mock does not touch M04 questions.
 - Errors: 401, 403, 404 (`Subjek tidak dijumpai.`). Side effects: cascade delete in one transaction.
-- Source: R:196. Client: `deleteSubject` (raw). Card: **UNCOVERED** (BE-08). Contract: missing.
+- Source: R:196. Client: `deleteSubject` (raw). Card: BE-08. Contract: missing.
 
 ### M03-07 `GET /api/admin/education-levels` (SRS #7)
 - Response: 200 `Env-L` (unpaged) of the level plus `questionCount`, `subjectCount`; all levels, `order` then id. Errors: 401, 403.
 - Source: `admin-levels.ts` R:95. Client: `fetchAdminLevels`; `fetchLevelOptions`. Card: BE-08. Contract: missing.
 
 ### M03-08 `GET /api/admin/education-levels/:id` (SRS #8)
-- Response: 200 `Env-D` `EducationLevel`. Errors: 401, 403, 404 (`Tahap Pendidikan tidak dijumpai.`). Source: R:105. Client: `fetchAdminLevel`. Card: **UNCOVERED** (BE-08). Contract: missing.
+- Response: 200 `Env-D` `EducationLevel`. Errors: 401, 403, 404 (`Tahap Pendidikan tidak dijumpai.`). Source: R:105. Client: `fetchAdminLevel`. Card: BE-08. Contract: missing.
 
 ### M03-09 `POST /api/admin/education-levels` (SRS #9)
 - Request body: `name` (required, string, max 255), `nameEn` (required, string, max 255), `code` (required, string, max 10, unique case-insensitive: `The code has already been taken.`; stored upper-case), `stage` (required; one of the 3 stages), `curriculum` (required, string, max 255), `order` (integer >= 0; default 0).
@@ -781,15 +781,15 @@ Shapes (client `modules/m03-curriculum/api/*.ts`):
 ### M03-10 `PUT /api/admin/education-levels/:id` (SRS #10)
 - Request body as M03-09 (code unique ignoring itself). `isActive` and `grade` are not changed by this call.
 - Response: 200 `Env-DS` `EducationLevel`, `status: "Tahap Pendidikan berjaya dikemaskini."`. Errors: 401, 403, 404, 422.
-- Source: R:125. Client: `updateLevel` (raw). Card: **UNCOVERED** (BE-08). Contract: missing.
+- Source: R:125. Client: `updateLevel` (raw). Card: BE-08. Contract: missing.
 
 ### M03-11 `PATCH /api/admin/education-levels/:id/active` (SRS #11)
 - Request and response as M03-05 (`{ id, isActive }`); 404 `Tahap Pendidikan tidak dijumpai.`
-- Source: R:141. Client: `setLevelActive`. Card: **UNCOVERED** (BE-08). Contract: missing.
+- Source: R:141. Client: `setLevelActive`. Card: BE-08. Contract: missing.
 
 ### M03-12 `DELETE /api/admin/education-levels/:id` (SRS #12)
 - Response: 200 `Env-DS` `{ deleted: 1 }`, `status: "Tahap Pendidikan berjaya dipadam."`. Cascade: subject links of the level and every chapter of the level (with topics and subtopics).
-- Errors: 401, 403, 404. Source: R:158. Client: `deleteLevel` (raw). Card: **UNCOVERED** (BE-08). Contract: missing.
+- Errors: 401, 403, 404. Source: R:158. Client: `deleteLevel` (raw). Card: BE-08. Contract: missing.
 
 ### M03-13 `GET /api/admin/curriculum` (SRS #13)
 - Purpose: S1 curriculum tree of one subject and level.
@@ -800,7 +800,7 @@ Shapes (client `modules/m03-curriculum/api/*.ts`):
 
 ### M03-14 `GET /api/admin/curriculum/chapters/:id` (SRS #14)
 - Response: 200 `Env-D` chapter + `subject: {id,name}` + `level: {id,name}`. Errors: 401, 403, 404 `Bab tidak dijumpai.`
-- Source: R:195. Client: `fetchChapter`. Card: **UNCOVERED** (BE-08). Contract: missing.
+- Source: R:195. Client: `fetchChapter`. Card: BE-08. Contract: missing.
 
 ### M03-15 `POST /api/admin/curriculum/chapters` (SRS #15)
 - Request body: `subjectId` (required integer, existing subject), `educationLevelId` (required integer, existing level), `name` (required, string, max 255), `nameEn` (string, max 255), `chapterNumber` (integer >= 1: `The chapter number field must be at least 1.`), `description` (string). Invalid references: `The selected subject id is invalid.` / `The selected education level id is invalid.`
@@ -810,15 +810,15 @@ Shapes (client `modules/m03-curriculum/api/*.ts`):
 ### M03-16 `PUT /api/admin/curriculum/chapters/:id` (SRS #16)
 - Request body as M03-15 (subject and level can be re-assigned) plus `isActive` (boolean; absent keeps the stored value).
 - Response: 200 `Env-DS` chapter, `status: "Bab berjaya dikemaskini."`. Errors: 401, 403, 404 `Bab tidak dijumpai.`, 422.
-- Source: R:214. Client: `updateChapter` (raw). Card: **UNCOVERED** (BE-08). Contract: missing.
+- Source: R:214. Client: `updateChapter` (raw). Card: BE-08. Contract: missing.
 
 ### M03-17 `DELETE /api/admin/curriculum/chapters/:id` (SRS #17)
 - Response: 200 `Env-DS` `{ deleted: { chapters: 1, topics: n, subtopics: m } }`, `status: "Bab berjaya dipadam."`. Cascade to topics and subtopics.
-- Errors: 401, 403, 404 `Bab tidak dijumpai.` (also for an out-of-tree chapter). Source: R:237. Client: `deleteChapter`. Card: **UNCOVERED** (BE-08). Contract: missing.
+- Errors: 401, 403, 404 `Bab tidak dijumpai.` (also for an out-of-tree chapter). Source: R:237. Client: `deleteChapter`. Card: BE-08. Contract: missing.
 
 ### M03-18 `GET /api/admin/curriculum/topics/:id` (SRS #18)
 - Response: 200 `Env-D` topic + `chapter` (= chapter + `subject` + `level` refs). Errors: 401, 403, 404 `Topik tidak dijumpai.`
-- Source: R:251. Client: `api/admin-curriculum.ts` `fetchTopic`. Card: **UNCOVERED** (BE-08). Contract: missing.
+- Source: R:251. Client: `api/admin-curriculum.ts` `fetchTopic`. Card: BE-08. Contract: missing.
 
 ### M03-19 `POST /api/admin/curriculum/topics` (SRS #19)
 - Request body: `chapterId` (required integer; an existing in-tree chapter: `The selected chapter id is invalid.`), `name` (required, string, max 255), `nameEn` (string, max 255), `topicNumber` (string, max 20; a JSON number is read as its text), `description` (string), `learningStandard` (string).
@@ -828,11 +828,11 @@ Shapes (client `modules/m03-curriculum/api/*.ts`):
 ### M03-20 `PUT /api/admin/curriculum/topics/:id` (SRS #20)
 - Request body as M03-19 without `chapterId` (fixed after creation, ignored) plus `isActive` (absent keeps).
 - Response: 200 `Env-DS` topic, `status: "Topik berjaya dikemaskini."`. Errors: 401, 403, 404 `Topik tidak dijumpai.`, 422.
-- Source: R:278. Client: `updateTopic` (raw). Card: **UNCOVERED** (BE-08). Contract: missing.
+- Source: R:278. Client: `updateTopic` (raw). Card: BE-08. Contract: missing.
 
 ### M03-21 `DELETE /api/admin/curriculum/topics/:id` (SRS #21)
 - Response: 200 `Env-DS` `{ deleted: { topics: 1, subtopics: n } }`, `status: "Topik berjaya dipadam."`. Errors: 401, 403, 404 `Topik tidak dijumpai.`
-- Source: R:301. Client: `deleteTopic`. Card: **UNCOVERED** (BE-08). Contract: missing.
+- Source: R:301. Client: `deleteTopic`. Card: BE-08. Contract: missing.
 
 ### M03-22 `POST /api/admin/curriculum/subtopics` (SRS #22)
 - Request body: `topicId` (required integer, existing topic: `The selected topic id is invalid.`), `name` (required, string, max 255), `nameEn` (string, max 255), `learningObjective` (string).
@@ -841,11 +841,11 @@ Shapes (client `modules/m03-curriculum/api/*.ts`):
 
 ### M03-23 `PUT /api/admin/curriculum/subtopics/:id` (SRS #23)
 - Request body: `name` (required), `nameEn`, `learningObjective` as M03-22 (topic fixed). Response: 200 `Env-DS` subtopic, `status: "Subtopik berjaya dikemaskini."`. Errors: 401, 403, 404 `Subtopik tidak dijumpai.`, 422.
-- Source: R:327. Client: `updateSubtopic` (raw). Card: **UNCOVERED** (BE-08). Contract: missing.
+- Source: R:327. Client: `updateSubtopic` (raw). Card: BE-08. Contract: missing.
 
 ### M03-24 `DELETE /api/admin/curriculum/subtopics/:id` (SRS #24)
 - Response: 200 `Env-DS` `{ deleted: 1 }`, `status: "Subtopik berjaya dipadam."`. Errors: 401, 403, 404 `Subtopik tidak dijumpai.`
-- Source: R:345. Client: `deleteSubtopic`. Card: **UNCOVERED** (BE-08). Contract: missing.
+- Source: R:345. Client: `deleteSubtopic`. Card: BE-08. Contract: missing.
 
 ### M03-25 `GET /api/topics` (SRS #25)
 - Purpose: S12 Topik catalogue (the legacy "topics" of grade levels, a dataset separate from the admin chapter tree).
@@ -880,14 +880,7 @@ Shapes (client `modules/m03-curriculum/api/*.ts`):
 
 ## 10. Uncovered endpoints
 
-Mock routes that no BE card lists in its endpoint table (24). The scope owner in brackets is the card whose Goal/Outputs/tables clearly include the entity; the lead should add each route to that card's endpoint table (or decide to drop it). Routes named in a card with shorthand (`.../:id/students`, `{read-all,bulk-read,bulk-delete}`, `.../:id/toggle-active`) are treated as covered.
-
-| Module | Routes (summary IDs) | Scope owner |
-|---|---|---|
-| M01 (2) | `POST /api/me/notifications/:id/read` (M01-17), `DELETE /api/me/notifications/:id` (M01-18) | BE-06 |
-| M02 (6) | `GET /api/admin/schools/:id` (M02-26), `PUT /api/admin/schools/:id` (M02-28), `POST /api/admin/schools/:id/toggle` (M02-29), `GET /api/admin/schools/:id/quota` (M02-15), `GET /api/admin/schools/:id/students` (M02-16), `GET /api/jpn/:id/ppd` (M02-44) | BE-05 (quota also reads BE-25 subscriptions) |
-| M03 (16) | Subjects: `GET :id` (M03-02), `PUT :id` (M03-04), `PATCH :id/active` (M03-05), `DELETE :id` (M03-06). Levels: `GET :id` (M03-08), `PUT :id` (M03-10), `PATCH :id/active` (M03-11), `DELETE :id` (M03-12). Curriculum: `GET chapters/:id` (M03-14), `PUT chapters/:id` (M03-16), `DELETE chapters/:id` (M03-17), `GET topics/:id` (M03-18), `PUT topics/:id` (M03-20), `DELETE topics/:id` (M03-21), `PUT subtopics/:id` (M03-23), `DELETE subtopics/:id` (M03-24) | BE-08 (its Goal says "serve the learner and admin endpoints of M03" but the table lists only the list/create/learner routes) |
-| Core (0) | all three are named (BE-06 `GET /api/me`, BE-11 gamification summary, BE-22 server status) | none |
+None. Before the card audit (commit 63d363c) 24 mock routes were not in any BE card endpoint table (M01 2, M02 6, M03 16); BE-06, BE-05 and BE-08 now list them. The audit assigns four M02 routes to BE-25, not BE-05: `GET /api/admin/schools/:id/quota` (M02-15), `POST /api/admin/students/import` (M02-14) and the user-package routes (M02-11, M02-12). One card/mock difference remains: BE-05 lists `GET /api/schools` as a public picker while the mock route is admin-only (M02-31, OQ-API-B1-14).
 
 Contract-only endpoints (S-01..S-04) have a card (BE-03) but no mock handler and no frontend client.
 
