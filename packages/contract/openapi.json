@@ -7776,6 +7776,2137 @@
           "meta"
         ]
       },
+      "QuestionWorkflowStatus": {
+        "type": "string",
+        "enum": [
+          "draft",
+          "review",
+          "approved",
+          "published",
+          "archived"
+        ],
+        "description": "Question lifecycle code (D54a): draft = Draf, review = Semakan, approved = Lulus, published = Diterbitkan, archived = Diarkib."
+      },
+      "QuestionWorkflowActor": {
+        "type": "string",
+        "enum": [
+          "admin",
+          "owner_teacher"
+        ],
+        "description": "admin = Admin Pusat; owner_teacher = the Guru who created the question."
+      },
+      "QuestionWorkflowGate": {
+        "type": "string",
+        "enum": [
+          "submit",
+          "approve",
+          "publish"
+        ],
+        "description": "Gate that must pass for a transition: submit (draft to review), approve (review to approved), publish (approved to published)."
+      },
+      "QuestionWorkflowTransitionRule": {
+        "type": "object",
+        "properties": {
+          "from": {
+            "$ref": "#/components/schemas/QuestionWorkflowStatus"
+          },
+          "to": {
+            "$ref": "#/components/schemas/QuestionWorkflowStatus"
+          },
+          "actors": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/QuestionWorkflowActor"
+            },
+            "minItems": 1
+          },
+          "gate": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/QuestionWorkflowGate"
+              },
+              {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              }
+            ]
+          },
+          "reasonRequired": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "from",
+          "to",
+          "actors",
+          "gate",
+          "reasonRequired"
+        ],
+        "additionalProperties": false,
+        "description": "One allowed status change of the lifecycle table."
+      },
+      "QuestionWorkflowStatusEvent": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "questionId": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "from": {
+            "$ref": "#/components/schemas/QuestionWorkflowStatus"
+          },
+          "to": {
+            "$ref": "#/components/schemas/QuestionWorkflowStatus"
+          },
+          "actorId": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "actorRole": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Role code of the actor (RoleCode), kept as text in the audit row."
+          },
+          "reason": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "at": {
+            "$ref": "#/components/schemas/Timestamp"
+          }
+        },
+        "required": [
+          "id",
+          "questionId",
+          "from",
+          "to",
+          "actorId",
+          "actorRole",
+          "reason",
+          "at"
+        ],
+        "additionalProperties": false,
+        "description": "Audit row of one status transition."
+      },
+      "QuestionReportQuestionType": {
+        "type": "string",
+        "enum": [
+          "mcq",
+          "structured"
+        ],
+        "description": "mcq = objective question, structured = subjective question."
+      },
+      "QuestionReportSource": {
+        "type": "string",
+        "enum": [
+          "spm",
+          "structured_attempt",
+          "latihan",
+          "revision",
+          "teacher_databank"
+        ],
+        "description": "Where the report was filed. Default spm (mcq) or structured_attempt (structured)."
+      },
+      "QuestionReportStatus": {
+        "type": "string",
+        "enum": [
+          "pending",
+          "reviewed",
+          "fixed",
+          "dismissed"
+        ]
+      },
+      "QuestionReportDisplayStatus": {
+        "type": "string",
+        "enum": [
+          "pending",
+          "reviewed",
+          "fixed",
+          "removed",
+          "dismissed"
+        ]
+      },
+      "QuestionReportFilter": {
+        "type": "string",
+        "enum": [
+          "pending",
+          "reviewed",
+          "fixed",
+          "dismissed",
+          "all"
+        ]
+      },
+      "QuestionReportCategory": {
+        "type": "string",
+        "enum": [
+          "Jawapan Salah",
+          "Tak Jelas",
+          "Lain-lain"
+        ],
+        "description": "Badge from the first reason (BR-M04-15)."
+      },
+      "QuestionReportCreateRequest": {
+        "type": "object",
+        "properties": {
+          "questionId": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 64,
+            "description": "Sila pilih soalan.",
+            "example": "1042"
+          },
+          "questionType": {
+            "$ref": "#/components/schemas/QuestionReportQuestionType"
+          },
+          "reasons": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "minItems": 1
+          },
+          "comment": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "maxLength": 500
+          },
+          "source": {
+            "$ref": "#/components/schemas/QuestionReportSource"
+          },
+          "quizSessionId": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "pattern": "^([A-Za-z0-9._:-]{1,64})?$"
+          },
+          "roomCode": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "pattern": "^([A-Za-z0-9._:-]{1,64})?$"
+          }
+        },
+        "required": [
+          "questionId",
+          "reasons"
+        ]
+      },
+      "QuestionReportCreated": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "enum": [
+              true
+            ]
+          },
+          "message": {
+            "type": "string",
+            "enum": [
+              "Laporan berjaya dihantar."
+            ]
+          }
+        },
+        "required": [
+          "success",
+          "message"
+        ],
+        "additionalProperties": false
+      },
+      "QuestionReportQuestionRef": {
+        "type": "object",
+        "properties": {
+          "exists": {
+            "type": "boolean"
+          },
+          "type": {
+            "$ref": "#/components/schemas/QuestionReportQuestionType"
+          },
+          "id": {
+            "$ref": "#/components/schemas/Id"
+          }
+        },
+        "required": [
+          "exists",
+          "type",
+          "id"
+        ]
+      },
+      "QuestionReportQuestionView": {
+        "type": "object",
+        "properties": {
+          "exists": {
+            "type": "boolean"
+          },
+          "type": {
+            "$ref": "#/components/schemas/QuestionReportQuestionType"
+          },
+          "id": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "text": {
+            "type": "string"
+          },
+          "options": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "correctAnswer": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "minimum": 0,
+            "maximum": 3
+          },
+          "subjectName": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "levelName": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "complianceStatus": {
+            "type": "string"
+          },
+          "isActive": {
+            "type": "boolean"
+          },
+          "practiceUrl": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "exists",
+          "type",
+          "id"
+        ]
+      },
+      "QuestionReportView": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "questionType": {
+            "$ref": "#/components/schemas/QuestionReportQuestionType"
+          },
+          "questionId": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "questionVersion": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "reasons": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "reasonLabels": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "category": {
+            "$ref": "#/components/schemas/QuestionReportCategory"
+          },
+          "comment": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "source": {
+            "$ref": "#/components/schemas/QuestionReportSource"
+          },
+          "quizSessionId": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "roomCode": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "sourceSet": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "status": {
+            "$ref": "#/components/schemas/QuestionReportStatus"
+          },
+          "displayStatus": {
+            "$ref": "#/components/schemas/QuestionReportDisplayStatus"
+          },
+          "adminNotes": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "createdAt": {
+            "$ref": "#/components/schemas/Timestamp"
+          },
+          "updatedAt": {
+            "$ref": "#/components/schemas/Timestamp"
+          },
+          "reporter": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "$ref": "#/components/schemas/Id"
+              },
+              "name": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              }
+            },
+            "required": [
+              "id",
+              "name"
+            ]
+          },
+          "question": {
+            "$ref": "#/components/schemas/QuestionReportQuestionView"
+          }
+        },
+        "required": [
+          "id",
+          "questionType",
+          "questionId",
+          "reasons",
+          "reasonLabels",
+          "category",
+          "comment",
+          "source",
+          "quizSessionId",
+          "roomCode",
+          "sourceSet",
+          "status",
+          "displayStatus",
+          "adminNotes",
+          "createdAt",
+          "updatedAt",
+          "reporter",
+          "question"
+        ]
+      },
+      "QuestionReportMineView": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "questionType": {
+            "$ref": "#/components/schemas/QuestionReportQuestionType"
+          },
+          "questionId": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "questionVersion": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "reasons": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "reasonLabels": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "category": {
+            "$ref": "#/components/schemas/QuestionReportCategory"
+          },
+          "comment": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "source": {
+            "$ref": "#/components/schemas/QuestionReportSource"
+          },
+          "quizSessionId": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "roomCode": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "sourceSet": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "status": {
+            "$ref": "#/components/schemas/QuestionReportStatus"
+          },
+          "displayStatus": {
+            "$ref": "#/components/schemas/QuestionReportDisplayStatus"
+          },
+          "adminNotes": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "createdAt": {
+            "$ref": "#/components/schemas/Timestamp"
+          },
+          "updatedAt": {
+            "$ref": "#/components/schemas/Timestamp"
+          },
+          "reporter": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "$ref": "#/components/schemas/Id"
+              },
+              "name": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              }
+            },
+            "required": [
+              "id",
+              "name"
+            ]
+          },
+          "question": {
+            "$ref": "#/components/schemas/QuestionReportQuestionRef"
+          }
+        },
+        "required": [
+          "id",
+          "questionType",
+          "questionId",
+          "reasons",
+          "reasonLabels",
+          "category",
+          "comment",
+          "source",
+          "quizSessionId",
+          "roomCode",
+          "sourceSet",
+          "status",
+          "displayStatus",
+          "adminNotes",
+          "createdAt",
+          "updatedAt",
+          "reporter",
+          "question"
+        ]
+      },
+      "QuestionReportCounts": {
+        "type": "object",
+        "properties": {
+          "pending": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "reviewed": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "fixed": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "dismissed": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "all": {
+            "type": "integer",
+            "minimum": 0
+          }
+        },
+        "required": [
+          "pending",
+          "reviewed",
+          "fixed",
+          "dismissed",
+          "all"
+        ],
+        "additionalProperties": false
+      },
+      "QuestionReportListQuery": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string",
+            "description": "pending | reviewed | fixed | dismissed | all. Default pending; unknown = empty list and meta.activeTab null."
+          }
+        }
+      },
+      "QuestionReportListMeta": {
+        "type": "object",
+        "properties": {
+          "page": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "pageSize": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "totalItems": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "totalPages": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "from": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "minimum": 1
+          },
+          "to": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "minimum": 1
+          },
+          "counts": {
+            "$ref": "#/components/schemas/QuestionReportCounts"
+          },
+          "activeTab": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/QuestionReportFilter"
+              },
+              {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              }
+            ]
+          }
+        },
+        "required": [
+          "page",
+          "pageSize",
+          "totalItems",
+          "totalPages",
+          "counts",
+          "activeTab"
+        ],
+        "additionalProperties": {}
+      },
+      "QuestionReportListResponse": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/QuestionReportView"
+            }
+          },
+          "meta": {
+            "$ref": "#/components/schemas/QuestionReportListMeta"
+          }
+        },
+        "required": [
+          "data",
+          "meta"
+        ]
+      },
+      "QuestionReportMineMeta": {
+        "type": "object",
+        "properties": {
+          "page": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "pageSize": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "totalItems": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "totalPages": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "from": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "minimum": 1
+          },
+          "to": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "minimum": 1
+          },
+          "counts": {
+            "$ref": "#/components/schemas/QuestionReportCounts"
+          }
+        },
+        "required": [
+          "page",
+          "pageSize",
+          "totalItems",
+          "totalPages",
+          "counts"
+        ],
+        "additionalProperties": {}
+      },
+      "QuestionReportMineResponse": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/QuestionReportMineView"
+            }
+          },
+          "meta": {
+            "$ref": "#/components/schemas/QuestionReportMineMeta"
+          }
+        },
+        "required": [
+          "data",
+          "meta"
+        ]
+      },
+      "QuestionReportUpdateRequest": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": [
+              "fixed",
+              "dismissed",
+              "reviewed"
+            ]
+          },
+          "adminNotes": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "maxLength": 1000
+          },
+          "reactivate": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "number",
+                "enum": [
+                  1
+                ]
+              },
+              {
+                "type": "number",
+                "enum": [
+                  0
+                ]
+              },
+              {
+                "type": "string",
+                "enum": [
+                  "1"
+                ]
+              },
+              {
+                "type": "string",
+                "enum": [
+                  "0"
+                ]
+              },
+              {
+                "type": "string",
+                "enum": [
+                  "true"
+                ]
+              },
+              {
+                "type": "string",
+                "enum": [
+                  "false"
+                ]
+              }
+            ]
+          },
+          "forceDeactivate": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "number",
+                "enum": [
+                  1
+                ]
+              },
+              {
+                "type": "number",
+                "enum": [
+                  0
+                ]
+              },
+              {
+                "type": "string",
+                "enum": [
+                  "1"
+                ]
+              },
+              {
+                "type": "string",
+                "enum": [
+                  "0"
+                ]
+              },
+              {
+                "type": "string",
+                "enum": [
+                  "true"
+                ]
+              },
+              {
+                "type": "string",
+                "enum": [
+                  "false"
+                ]
+              }
+            ]
+          }
+        },
+        "required": [
+          "status"
+        ]
+      },
+      "QuestionReportUpdateResult": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "status": {
+            "$ref": "#/components/schemas/QuestionReportStatus"
+          },
+          "adminNotes": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "updatedAt": {
+            "$ref": "#/components/schemas/Timestamp"
+          }
+        },
+        "required": [
+          "id",
+          "status",
+          "adminNotes",
+          "updatedAt"
+        ],
+        "additionalProperties": false
+      },
+      "QuestionReportUpdated": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/QuestionReportUpdateResult"
+          },
+          "status": {
+            "type": "string",
+            "minLength": 1,
+            "description": "BM flash text for the success message."
+          }
+        },
+        "required": [
+          "data",
+          "status"
+        ]
+      },
+      "QuestionImportFailure": {
+        "type": "object",
+        "properties": {
+          "row": {
+            "type": "integer",
+            "minimum": 1,
+            "description": "1-based line of the file where the record starts; the header is line 1."
+          },
+          "message": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "required": [
+          "row",
+          "message"
+        ],
+        "additionalProperties": false
+      },
+      "QuestionImportDefaults": {
+        "type": "object",
+        "properties": {
+          "subjectId": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/Id"
+              },
+              {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              }
+            ]
+          },
+          "educationLevelId": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/Id"
+              },
+              {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              }
+            ]
+          },
+          "difficultyLevel": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "minimum": 1,
+            "maximum": 5
+          }
+        },
+        "required": [
+          "subjectId",
+          "educationLevelId",
+          "difficultyLevel"
+        ],
+        "additionalProperties": false
+      },
+      "QuestionImportRun": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "fileName": {
+            "type": "string"
+          },
+          "importedCount": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "failedCount": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "failures": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/QuestionImportFailure"
+            }
+          },
+          "defaults": {
+            "$ref": "#/components/schemas/QuestionImportDefaults"
+          },
+          "createdBy": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "createdAt": {
+            "$ref": "#/components/schemas/Timestamp"
+          },
+          "createdMonth": {
+            "type": "string",
+            "pattern": "^\\d{4}-(0[1-9]|1[0-2])$",
+            "description": "YYYY-MM of createdAt."
+          }
+        },
+        "required": [
+          "id",
+          "fileName",
+          "importedCount",
+          "failedCount",
+          "failures",
+          "defaults",
+          "createdBy",
+          "createdAt",
+          "createdMonth"
+        ],
+        "additionalProperties": false
+      },
+      "QuestionImportCreateRequest": {
+        "type": "object",
+        "properties": {
+          "csvFile": {
+            "type": "string",
+            "format": "binary",
+            "description": "CSV or TXT file, UTF-8, at most 5 MB. Storage: BE-04."
+          },
+          "defaultSubjectId": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "defaultEducationLevelId": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "defaultDifficultyLevel": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 5
+          }
+        },
+        "required": [
+          "csvFile"
+        ]
+      },
+      "QuestionImportCreated": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/QuestionImportRun"
+          },
+          "status": {
+            "type": "string",
+            "minLength": 1,
+            "description": "BM flash text for the success message."
+          }
+        },
+        "required": [
+          "data",
+          "status"
+        ]
+      },
+      "QuestionImportListQuery": {
+        "type": "object",
+        "properties": {
+          "page": {
+            "type": "integer",
+            "minimum": 1,
+            "description": "Invalid or missing means 1. Page size is fixed at 20."
+          }
+        }
+      },
+      "QuestionImportGuruRequest": {
+        "type": "object",
+        "properties": {
+          "csvFile": {
+            "type": "string",
+            "format": "binary",
+            "description": "CSV or TXT file, UTF-8, at most 5 MB. Every row must carry subject_id, education_level_id and difficulty_level."
+          }
+        },
+        "required": [
+          "csvFile"
+        ]
+      },
+      "QuestionImportGuruResult": {
+        "type": "object",
+        "properties": {
+          "imported": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "failed": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/QuestionImportFailure"
+            }
+          }
+        },
+        "required": [
+          "imported",
+          "failed"
+        ],
+        "additionalProperties": false
+      },
+      "QuestionQualityBand": {
+        "type": "string",
+        "enum": [
+          "cemerlang",
+          "baik",
+          "lemah",
+          "kritikal"
+        ],
+        "description": "Cemerlang 76 to 100, Baik 51 to 75, Lemah 26 to 50, Kritikal 0 to 25."
+      },
+      "QuestionQualityRef": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "name": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "name"
+        ],
+        "additionalProperties": false,
+        "description": "{ id, name } of a subject or education level."
+      },
+      "QuestionQualityActionRow": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "questionText": {
+            "type": "string"
+          },
+          "subject": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/QuestionQualityRef"
+              },
+              {
+                "type": [
+                  "object",
+                  "null"
+                ]
+              }
+            ]
+          },
+          "level": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/QuestionQualityRef"
+              },
+              {
+                "type": [
+                  "object",
+                  "null"
+                ]
+              }
+            ]
+          },
+          "sourceSet": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "qualityScore": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 100
+          }
+        },
+        "required": [
+          "id",
+          "questionText",
+          "subject",
+          "level",
+          "sourceSet",
+          "qualityScore"
+        ],
+        "additionalProperties": false
+      },
+      "QuestionQualitySummary": {
+        "type": "object",
+        "properties": {
+          "total": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "average": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 100,
+            "description": "Mean over the scored questions; 0 when none is scored."
+          },
+          "scoredCount": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "excellentCount": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "activeActionCount": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "buckets": {
+            "type": "object",
+            "properties": {
+              "baik": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "lemahKritikal": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "legacyGeneric": {
+                "type": "integer",
+                "minimum": 0
+              }
+            },
+            "required": [
+              "baik",
+              "lemahKritikal",
+              "legacyGeneric"
+            ],
+            "additionalProperties": false
+          },
+          "distribution": {
+            "type": "object",
+            "properties": {
+              "cemerlang": {
+                "type": "number",
+                "minimum": 0,
+                "maximum": 100
+              },
+              "baik": {
+                "type": "number",
+                "minimum": 0,
+                "maximum": 100
+              },
+              "lemah": {
+                "type": "number",
+                "minimum": 0,
+                "maximum": 100
+              },
+              "kritikal": {
+                "type": "number",
+                "minimum": 0,
+                "maximum": 100
+              }
+            },
+            "required": [
+              "cemerlang",
+              "baik",
+              "lemah",
+              "kritikal"
+            ],
+            "additionalProperties": false
+          },
+          "bySubject": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "subjectId": {
+                  "$ref": "#/components/schemas/Id"
+                },
+                "name": {
+                  "type": "string"
+                },
+                "count": {
+                  "type": "integer",
+                  "minimum": 1
+                },
+                "average": {
+                  "type": "number",
+                  "minimum": 0,
+                  "maximum": 100
+                },
+                "excellentPct": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 100
+                }
+              },
+              "required": [
+                "subjectId",
+                "name",
+                "count",
+                "average",
+                "excellentPct"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "byLevel": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "levelId": {
+                  "$ref": "#/components/schemas/Id"
+                },
+                "name": {
+                  "type": "string"
+                },
+                "count": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "average": {
+                  "type": "number",
+                  "minimum": 0,
+                  "maximum": 100
+                }
+              },
+              "required": [
+                "levelId",
+                "name",
+                "count",
+                "average"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "actionList": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/QuestionQualityActionRow"
+            }
+          },
+          "lastAuditAt": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/Timestamp"
+              },
+              {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              }
+            ]
+          }
+        },
+        "required": [
+          "total",
+          "average",
+          "scoredCount",
+          "excellentCount",
+          "activeActionCount",
+          "buckets",
+          "distribution",
+          "bySubject",
+          "byLevel",
+          "actionList",
+          "lastAuditAt"
+        ],
+        "additionalProperties": false
+      },
+      "QuestionQualityAuditResult": {
+        "type": "object",
+        "properties": {
+          "lastAuditAt": {
+            "$ref": "#/components/schemas/Timestamp"
+          }
+        },
+        "required": [
+          "lastAuditAt"
+        ],
+        "additionalProperties": false
+      },
+      "QuestionQualityAudited": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/QuestionQualityAuditResult"
+          },
+          "status": {
+            "type": "string",
+            "minLength": 1,
+            "description": "BM flash text for the success message."
+          }
+        },
+        "required": [
+          "data",
+          "status"
+        ]
+      },
+      "DiagramAuditKind": {
+        "type": "string",
+        "enum": [
+          "mcq",
+          "structured"
+        ],
+        "description": "mcq = objective question, structured = subjective question. Any other value does not match the route (404)."
+      },
+      "DiagramAuditQuery": {
+        "type": "object",
+        "properties": {
+          "subjectId": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "schoolId": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "mcqPage": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "strPage": {
+            "type": "integer",
+            "minimum": 1
+          }
+        }
+      },
+      "DiagramAuditMcqItem": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "questionText": {
+            "type": "string"
+          },
+          "subject": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "properties": {
+              "id": {
+                "$ref": "#/components/schemas/Id"
+              },
+              "name": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "id",
+              "name"
+            ],
+            "additionalProperties": false
+          },
+          "createdBy": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "$ref": "#/components/schemas/Id"
+              },
+              "name": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              }
+            },
+            "required": [
+              "id",
+              "name"
+            ],
+            "additionalProperties": false
+          },
+          "sourceFile": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "sourcePage": {
+            "type": [
+              "integer",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "id",
+          "questionText",
+          "subject",
+          "createdBy",
+          "sourceFile",
+          "sourcePage"
+        ],
+        "additionalProperties": false
+      },
+      "DiagramAuditStructuredItem": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "stimulusExcerpt": {
+            "type": "string"
+          },
+          "subject": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "properties": {
+              "id": {
+                "$ref": "#/components/schemas/Id"
+              },
+              "name": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "id",
+              "name"
+            ],
+            "additionalProperties": false
+          },
+          "createdBy": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "$ref": "#/components/schemas/Id"
+              },
+              "name": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              }
+            },
+            "required": [
+              "id",
+              "name"
+            ],
+            "additionalProperties": false
+          },
+          "sourceFile": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "sourcePage": {
+            "type": [
+              "integer",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "id",
+          "stimulusExcerpt",
+          "subject",
+          "createdBy",
+          "sourceFile",
+          "sourcePage"
+        ],
+        "additionalProperties": false
+      },
+      "DiagramAuditPageMeta": {
+        "type": "object",
+        "properties": {
+          "page": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "pageSize": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "totalItems": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "totalPages": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "from": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "minimum": 1
+          },
+          "to": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "minimum": 1
+          }
+        },
+        "required": [
+          "page",
+          "pageSize",
+          "totalItems",
+          "totalPages",
+          "from",
+          "to"
+        ],
+        "additionalProperties": false
+      },
+      "DiagramAuditMeta": {
+        "type": "object",
+        "properties": {
+          "stats": {
+            "type": "object",
+            "properties": {
+              "mcq": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "structured": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "total": {
+                "type": "integer",
+                "minimum": 0
+              }
+            },
+            "required": [
+              "mcq",
+              "structured",
+              "total"
+            ],
+            "additionalProperties": false,
+            "description": "The stat cards, under the active filters."
+          },
+          "bySubject": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "name": {
+                  "type": "string"
+                },
+                "count": {
+                  "type": "integer",
+                  "minimum": 1
+                }
+              },
+              "required": [
+                "name",
+                "count"
+              ],
+              "additionalProperties": false
+            },
+            "maxItems": 10,
+            "description": "Top 10 subjects by flagged MCQ count, global under every filter; ties by id."
+          },
+          "unfilteredMcq": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Flagged MCQ count without filters (the SHU badge)."
+          }
+        },
+        "required": [
+          "stats",
+          "bySubject",
+          "unfilteredMcq"
+        ],
+        "additionalProperties": false
+      },
+      "DiagramAuditResponse": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "object",
+            "properties": {
+              "mcq": {
+                "type": "object",
+                "properties": {
+                  "items": {
+                    "type": "array",
+                    "items": {
+                      "$ref": "#/components/schemas/DiagramAuditMcqItem"
+                    }
+                  },
+                  "meta": {
+                    "$ref": "#/components/schemas/DiagramAuditPageMeta"
+                  }
+                },
+                "required": [
+                  "items",
+                  "meta"
+                ],
+                "additionalProperties": false
+              },
+              "structured": {
+                "type": "object",
+                "properties": {
+                  "items": {
+                    "type": "array",
+                    "items": {
+                      "$ref": "#/components/schemas/DiagramAuditStructuredItem"
+                    }
+                  },
+                  "meta": {
+                    "$ref": "#/components/schemas/DiagramAuditPageMeta"
+                  }
+                },
+                "required": [
+                  "items",
+                  "meta"
+                ],
+                "additionalProperties": false
+              }
+            },
+            "required": [
+              "mcq",
+              "structured"
+            ],
+            "additionalProperties": false
+          },
+          "meta": {
+            "$ref": "#/components/schemas/DiagramAuditMeta"
+          }
+        },
+        "required": [
+          "data",
+          "meta"
+        ],
+        "additionalProperties": false
+      },
+      "DiagramAuditImageRequest": {
+        "type": "object",
+        "properties": {
+          "image": {
+            "type": "string",
+            "format": "binary",
+            "description": "JPG, PNG, WebP or GIF (SVG refused), at most 2 MB. Storage: BE-04."
+          }
+        },
+        "required": [
+          "image"
+        ]
+      },
+      "DiagramAuditResult": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "needsDiagram": {
+            "type": "boolean",
+            "enum": [
+              false
+            ]
+          }
+        },
+        "required": [
+          "id",
+          "needsDiagram"
+        ],
+        "additionalProperties": false
+      },
+      "DiagramAuditMutation": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/DiagramAuditResult"
+          },
+          "status": {
+            "type": "string",
+            "minLength": 1,
+            "description": "BM flash text for the success message."
+          }
+        },
+        "required": [
+          "data",
+          "status"
+        ]
+      },
+      "GuruDskpBidang": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "code": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "name": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "code",
+          "name"
+        ],
+        "additionalProperties": false
+      },
+      "GuruDskpSk": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "code": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "code",
+          "description"
+        ],
+        "additionalProperties": false
+      },
+      "GuruDskpSp": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "code": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "code",
+          "description"
+        ],
+        "additionalProperties": false
+      },
+      "GuruDskpBidangQuery": {
+        "type": "object",
+        "properties": {
+          "subjectId": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "educationLevelId": {
+            "$ref": "#/components/schemas/Id"
+          }
+        },
+        "description": "Both are needed; if either is missing or not an id the answer is an empty array."
+      },
+      "GuruDskpSkQuery": {
+        "type": "object",
+        "properties": {
+          "bidangId": {
+            "$ref": "#/components/schemas/Id"
+          }
+        },
+        "description": "Missing or not an id: empty array."
+      },
+      "GuruDskpSpQuery": {
+        "type": "object",
+        "properties": {
+          "skId": {
+            "$ref": "#/components/schemas/Id"
+          }
+        },
+        "description": "Missing or not an id: empty array."
+      },
+      "GuruDskpBidangList": {
+        "type": "array",
+        "items": {
+          "$ref": "#/components/schemas/GuruDskpBidang"
+        }
+      },
+      "GuruDskpSkList": {
+        "type": "array",
+        "items": {
+          "$ref": "#/components/schemas/GuruDskpSk"
+        }
+      },
+      "GuruDskpSpList": {
+        "type": "array",
+        "items": {
+          "$ref": "#/components/schemas/GuruDskpSp"
+        }
+      },
+      "MasterNoteTab": {
+        "type": "string",
+        "enum": [
+          "flagged",
+          "approved",
+          "all"
+        ]
+      },
+      "MasterNoteAction": {
+        "type": "string",
+        "enum": [
+          "approve",
+          "regen",
+          "unflag"
+        ],
+        "description": "approve = teacherApproved true and flagged false; unflag = flagged false; regen = next note, flags kept. An unknown action does not match the route (404)."
+      },
+      "MasterNoteListQuery": {
+        "type": "object",
+        "properties": {
+          "tab": {
+            "type": "string",
+            "description": "flagged | approved | all. Unknown falls back to flagged (reported in meta.activeTab)."
+          },
+          "page": {
+            "type": "integer",
+            "minimum": 1
+          }
+        }
+      },
+      "MasterNoteRow": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "questionId": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "subjectName": {
+            "type": "string"
+          },
+          "chapter": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "model": {
+            "type": "string"
+          },
+          "tokens": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "confidence": {
+            "type": "number",
+            "minimum": 0
+          },
+          "questionText": {
+            "type": "string"
+          },
+          "noteText": {
+            "type": "string"
+          },
+          "trapText": {
+            "type": "string"
+          },
+          "flagged": {
+            "type": "boolean"
+          },
+          "teacherApproved": {
+            "type": "boolean"
+          },
+          "createdAt": {
+            "$ref": "#/components/schemas/Timestamp"
+          }
+        },
+        "required": [
+          "id",
+          "questionId",
+          "subjectName",
+          "chapter",
+          "model",
+          "tokens",
+          "confidence",
+          "questionText",
+          "noteText",
+          "trapText",
+          "flagged",
+          "teacherApproved",
+          "createdAt"
+        ],
+        "additionalProperties": false
+      },
+      "MasterNoteListMeta": {
+        "type": "object",
+        "properties": {
+          "page": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "pageSize": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "totalItems": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "totalPages": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "from": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "minimum": 1
+          },
+          "to": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "minimum": 1
+          },
+          "counts": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "number"
+            }
+          },
+          "activeTab": {
+            "$ref": "#/components/schemas/MasterNoteTab"
+          },
+          "summary": {
+            "type": "object",
+            "properties": {
+              "flagged": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "teacherApproved": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "total": {
+                "type": "integer",
+                "minimum": 0
+              }
+            },
+            "required": [
+              "flagged",
+              "teacherApproved",
+              "total"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "required": [
+          "page",
+          "pageSize",
+          "totalItems",
+          "totalPages",
+          "activeTab",
+          "summary"
+        ],
+        "additionalProperties": {}
+      },
+      "MasterNoteListResponse": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/MasterNoteRow"
+            }
+          },
+          "meta": {
+            "$ref": "#/components/schemas/MasterNoteListMeta"
+          }
+        },
+        "required": [
+          "data",
+          "meta"
+        ]
+      },
+      "MasterNoteActionResult": {
+        "type": "object",
+        "properties": {
+          "ok": {
+            "type": "boolean",
+            "enum": [
+              true
+            ]
+          }
+        },
+        "required": [
+          "ok"
+        ],
+        "additionalProperties": false
+      },
+      "QuestionWorkflowAiExplanationQuery": {
+        "type": "object",
+        "properties": {
+          "force": {
+            "type": "string",
+            "description": "Only the value 1 regenerates an existing explanation; any other value is ignored."
+          }
+        }
+      },
+      "QuestionWorkflowAiExplanationResult": {
+        "type": "object",
+        "properties": {
+          "ok": {
+            "type": "boolean",
+            "enum": [
+              true
+            ]
+          },
+          "message": {
+            "type": "string",
+            "enum": [
+              "Penjelasan AI berjaya dijana.",
+              "Penjelasan AI sudah wujud."
+            ]
+          },
+          "stub": {
+            "type": "boolean",
+            "enum": [
+              true
+            ],
+            "description": "Always true: the explanation is canned text, no AI was called (OD-7)."
+          }
+        },
+        "required": [
+          "ok",
+          "message",
+          "stub"
+        ],
+        "additionalProperties": false
+      },
       "AccessGroupId": {
         "type": "string",
         "enum": [
@@ -14873,6 +17004,1366 @@
           },
           "422": {
             "description": "VALIDATION_ERROR with fields (name -> Laravel-style English message, see REWARD_VALIDATION_MESSAGES); the top-level message is the first field message plus \" (and N more error(s))\" when several.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/question-reports": {
+      "get": {
+        "tags": [
+          "question-workflow",
+          "question-reports"
+        ],
+        "summary": "Admin triage list of student reports (Laporan Soalan)",
+        "description": "Admin only. `status` pending|reviewed|fixed|dismissed|all; absent or empty means pending; unknown gives an empty list and meta.activeTab null. NOT paged (newest first, createdAt desc then id desc); meta.counts is over all reports regardless of the filter. `displayStatus` is `removed` when the status is fixed, the question exists and is inactive.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "description": "pending | reviewed | fixed | dismissed | all. Default pending; unknown = empty list and meta.activeTab null."
+            },
+            "required": false,
+            "description": "pending | reviewed | fixed | dismissed | all. Default pending; unknown = empty list and meta.activeTab null.",
+            "name": "status",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Reports with tab counts.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/QuestionReportListResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED \"Unauthenticated.\" (no valid session).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN \"This action is unauthorized.\" (role is not admin; Admin Sekolah and every other role included).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "question-workflow",
+          "question-reports"
+        ],
+        "summary": "File a report on a question (Lapor Soalan)",
+        "description": "Any signed-in user. Creates a `pending` report. The response is RAW (no data envelope). No duplicate-open-report check (as the mock): a second report by the same user for the same question is accepted. Whether and when the report deactivates the question is Open question 1 of the card (mock: an MCQ at the first report, a structured question at the third open report).",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Value of Session.csrf; required on mutating requests."
+            },
+            "required": true,
+            "description": "Value of Session.csrf; required on mutating requests.",
+            "name": "X-CSRF-Token",
+            "in": "header"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/QuestionReportCreateRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Report filed: { success: true, message: \"Laporan berjaya dihantar.\" }.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/QuestionReportCreated"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED \"Unauthenticated.\" (no valid session).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "CSRF_INVALID (missing or wrong X-CSRF-Token).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "NOT_FOUND \"Not Found.\" (the question does not exist).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "VALIDATION_ERROR with fields: questionType \"Jenis soalan tidak sah.\"; questionId \"Sila pilih soalan.\"; reasons \"Sila pilih sekurang-kurangnya satu sebab laporan.\" or \"Sebab laporan tidak sah.\"; source \"Sumber laporan tidak sah.\"; comment \"Komen tidak boleh melebihi 500 aksara.\"; quizSessionId and roomCode \"Rujukan sesi atau bilik tidak sah.\". Top-level message is the first field message plus \" (and N more error(s))\" when several.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/question-reports/mine": {
+      "get": {
+        "tags": [
+          "question-workflow",
+          "question-reports"
+        ],
+        "summary": "My reports (Laporan Soalan Saya)",
+        "description": "Any signed-in user; only the caller's own reports, newest first, not paged. The `question` block carries only { exists, type, id }; meta.counts is over the caller's reports only. Matches before any `{id}` path.",
+        "responses": {
+          "200": {
+            "description": "The caller's reports.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/QuestionReportMineResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED \"Unauthenticated.\" (no valid session).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/question-reports/{id}": {
+      "patch": {
+        "tags": [
+          "question-workflow",
+          "question-reports"
+        ],
+        "summary": "Resolve a report",
+        "description": "Admin only. Sets status (fixed|dismissed|reviewed), the admin note and optionally reactivates (applied first) or force-deactivates the question. Flash: \"Laporan berjaya dikemaskini.\". The screen sends the notes \"Soalan dan jawapan disemak — tiada masalah\" (dismiss and reactivate) and \"Dinyahaktifkan segera oleh admin\" (force deactivate). BE-10 AC 11: the reporter is notified on every status change, and the status becomes fixed when the linked fixing version is published.",
+        "parameters": [
+          {
+            "schema": {
+              "$ref": "#/components/schemas/Id"
+            },
+            "required": true,
+            "description": "Opaque entity id (string). Never parse or construct on the client.",
+            "name": "id",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Value of Session.csrf; required on mutating requests."
+            },
+            "required": true,
+            "description": "Value of Session.csrf; required on mutating requests.",
+            "name": "X-CSRF-Token",
+            "in": "header"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/QuestionReportUpdateRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Updated; status is the flash text.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/QuestionReportUpdated"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED \"Unauthenticated.\" (no valid session).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN \"This action is unauthorized.\" (role is not admin), or CSRF_INVALID (missing or wrong X-CSRF-Token).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "NOT_FOUND \"Not Found.\" (unknown id, or a segment that does not match the route).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "VALIDATION_ERROR with fields.status \"Status tidak sah.\" or fields.adminNotes \"Nota admin tidak boleh melebihi 1000 aksara.\".",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/question-imports": {
+      "get": {
+        "tags": [
+          "question-workflow",
+          "question-imports"
+        ],
+        "summary": "Import history",
+        "description": "Admin only. Newest first, 20 per page (no pageSize override).",
+        "parameters": [
+          {
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "description": "Invalid or missing means 1. Page size is fixed at 20."
+            },
+            "required": false,
+            "description": "Invalid or missing means 1. Page size is fixed at 20.",
+            "name": "page",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "A page of import runs.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/QuestionImportRun"
+                      }
+                    },
+                    "meta": {
+                      "$ref": "#/components/schemas/ListMeta"
+                    }
+                  },
+                  "required": [
+                    "data",
+                    "meta"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED \"Unauthenticated.\" (no valid session).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN \"This action is unauthorized.\" (role is not admin; Admin Sekolah and every other role included).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "question-workflow",
+          "question-imports"
+        ],
+        "summary": "Import questions from a CSV file",
+        "description": "Admin only. multipart/form-data (file storage: BE-04). UTF-8, first row is the header (case-insensitive), comma separator, `\"` quoting with `\"\"`, quoted fields may span lines, blank lines ignored. Required columns question_text, option_a, option_b, correct_answer; correct_answer is a letter A to D (any case); subject_id, education_level_id and difficulty_level come from the row or the form default; marks default 1. Each valid row creates a `draft` question (it never bypasses review); a bad row is reported with its 1-based file line (header = line 1) and does not stop the others. The whole import is one transaction. An accepted file always answers 201. Flash: \"Import selesai: <x> soalan diimport, <y> gagal.\".",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Value of Session.csrf; required on mutating requests."
+            },
+            "required": true,
+            "description": "Value of Session.csrf; required on mutating requests.",
+            "name": "X-CSRF-Token",
+            "in": "header"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "$ref": "#/components/schemas/QuestionImportCreateRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "The run with its failures; status is the flash text.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/QuestionImportCreated"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED \"Unauthenticated.\" (no valid session).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN \"This action is unauthorized.\" (role is not admin), or CSRF_INVALID (missing or wrong X-CSRF-Token).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "VALIDATION_ERROR with fields.csvFile: \"Sila pilih fail CSV.\" (missing), \"Fail mesti jenis CSV atau TXT dan tidak melebihi 5MB.\" (extension, MIME or size), \"Fail CSV mesti mempunyai kolum <missing columns joined by comma and space>.\" or \"Fail CSV tiada baris data.\" Also fields.defaultSubjectId \"Sila pilih subjek.\", fields.defaultEducationLevelId \"Sila pilih tahap pendidikan.\", fields.defaultDifficultyLevel \"Sila pilih tahap kesukaran.\". Row failures (200/201 body, not 422): \"Baris tidak lengkap.\", \"Jawapan betul mesti A, B, C atau D.\", \"Jawapan betul merujuk pilihan yang kosong.\", \"Subjek tidak sah.\", \"Tahap pendidikan tidak sah.\", \"Tahap kesukaran mesti 1 hingga 5.\", \"Markah mesti nombor bulat sekurang-kurangnya 1.\".",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/question-imports/template": {
+      "get": {
+        "tags": [
+          "question-workflow",
+          "question-imports"
+        ],
+        "summary": "Download the CSV template",
+        "description": "Admin only. A file, not JSON: `template-import-soalan.csv`, text/csv, CRLF, header line plus 2 sample rows. Matches before any `{id}` path. Cells starting with `=`, `+`, `-` or `@` are neutralised in any generated CSV. The v2 Excel template is Open question 4 of the card (OQ-25).",
+        "responses": {
+          "200": {
+            "description": "The template file.",
+            "headers": {
+              "Content-Disposition": {
+                "description": "attachment; filename=\"template-import-soalan.csv\"",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "text/csv": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED \"Unauthenticated.\" (no valid session).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN \"This action is unauthorized.\" (role is not admin; Admin Sekolah and every other role included).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/guru/questions/template": {
+      "get": {
+        "tags": [
+          "question-workflow",
+          "guru-question-import"
+        ],
+        "summary": "Guru CSV template (same file as the admin template)",
+        "description": "Teacher or admin. `template-import-soalan.csv`, text/csv with Content-Disposition attachment; the same bytes as GET /question-imports/template. A static path: it matches before `/guru/questions/{id}` of the BE-09 contract.",
+        "responses": {
+          "200": {
+            "description": "The template file.",
+            "headers": {
+              "Content-Disposition": {
+                "description": "attachment; filename=\"template-import-soalan.csv\"",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "text/csv": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED \"Unauthenticated.\" (no valid session).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN \"This action is unauthorized.\" (role is not teacher or admin).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/guru/questions/import": {
+      "post": {
+        "tags": [
+          "question-workflow",
+          "guru-question-import"
+        ],
+        "summary": "Guru CSV contribution (same import service, no defaults)",
+        "description": "Teacher or admin. multipart/form-data `csvFile` (.csv or .txt, up to 5 MB). Same parser and template as the admin import but no form defaults: each row must carry subject_id, education_level_id and difficulty_level; extra caps question text up to 2000 and each option up to 500 characters. Valid rows are created as `review` questions owned by the caller (D54a; the mock says pending_review) and each counts as a contribution; bad rows are listed ordered by file row. Answers 200 (not 201) with { data: { imported, failed } } and no flash. Row messages as the admin import plus \"Soalan tidak boleh melebihi 2000 aksara.\" and \"Pilihan jawapan tidak boleh melebihi 500 aksara.\". A static path: it matches before `/guru/questions/{id}` of the BE-09 contract.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Value of Session.csrf; required on mutating requests."
+            },
+            "required": true,
+            "description": "Value of Session.csrf; required on mutating requests.",
+            "name": "X-CSRF-Token",
+            "in": "header"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "$ref": "#/components/schemas/QuestionImportGuruRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Imported count and failed rows.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/QuestionImportGuruResult"
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED \"Unauthenticated.\" (no valid session).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN \"This action is unauthorized.\" (role is not teacher or admin), or CSRF_INVALID (missing or wrong X-CSRF-Token).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "VALIDATION_ERROR with fields.csvFile: \"Sila pilih fail CSV.\" (missing), \"Fail mesti jenis CSV atau TXT dan tidak melebihi 5MB.\" (extension, MIME or size), \"Fail CSV mesti mempunyai kolum <missing columns joined by comma and space>.\" or \"Fail CSV tiada baris data.\"",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/question-quality": {
+      "get": {
+        "tags": [
+          "question-workflow",
+          "question-quality"
+        ],
+        "summary": "Quality dashboard",
+        "description": "Admin only. Every figure is computed from the question store. Bands: Cemerlang 76 to 100, Baik 51 to 75, Lemah 26 to 50, Kritikal 0 to 25 (BR-M04-21). `actionList` holds non-legacy rows scoring 50 or less, id descending; `legacyGeneric` counts scored rows with sourceType ai_generated.",
+        "responses": {
+          "200": {
+            "description": "The summary.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/QuestionQualitySummary"
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED \"Unauthenticated.\" (no valid session).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN \"This action is unauthorized.\" (role is not admin; Admin Sekolah and every other role included).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/question-quality/audit": {
+      "post": {
+        "tags": [
+          "question-workflow",
+          "question-quality"
+        ],
+        "summary": "Run the quality audit again (Jalankan Audit Semula)",
+        "description": "Admin only. No request body, no confirmation. Re-scores questions with the mock's score function (v2: every question, one `quality_audits` row per run) and stores the time. Flash: \"Audit kualiti selesai.\".",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Value of Session.csrf; required on mutating requests."
+            },
+            "required": true,
+            "description": "Value of Session.csrf; required on mutating requests.",
+            "name": "X-CSRF-Token",
+            "in": "header"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Audit done; status is the flash text.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/QuestionQualityAudited"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED \"Unauthenticated.\" (no valid session).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN \"This action is unauthorized.\" (role is not admin), or CSRF_INVALID (missing or wrong X-CSRF-Token).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/diagram-audit": {
+      "get": {
+        "tags": [
+          "question-workflow",
+          "diagram-audit"
+        ],
+        "summary": "Questions flagged as needing a diagram",
+        "description": "Admin only. Two lists with separate pagers (mcqPage, strPage; 20 per page; id descending). subjectId filters both lists, schoolId the MCQ list only; a malformed or unknown filter matches nothing. The body is { data: { mcq, structured }, meta: { stats, bySubject, unfilteredMcq } }, not the standard list meta.",
+        "parameters": [
+          {
+            "schema": {
+              "$ref": "#/components/schemas/Id"
+            },
+            "required": false,
+            "description": "Opaque entity id (string). Never parse or construct on the client.",
+            "name": "subjectId",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "$ref": "#/components/schemas/Id"
+            },
+            "required": false,
+            "description": "Opaque entity id (string). Never parse or construct on the client.",
+            "name": "schoolId",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "required": false,
+            "name": "mcqPage",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "required": false,
+            "name": "strPage",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Both lists with aggregates.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DiagramAuditResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED \"Unauthenticated.\" (no valid session).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN \"This action is unauthorized.\" (role is not admin; Admin Sekolah and every other role included).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/diagram-audit/{kind}/{id}/image": {
+      "post": {
+        "tags": [
+          "question-workflow",
+          "diagram-audit"
+        ],
+        "summary": "Attach a diagram image and clear the flag",
+        "description": "Admin only. multipart/form-data `image` (JPG, PNG, WebP or GIF, SVG refused, up to 2 MB; storage: BE-04). Sets needsDiagram false and stores the image reference. Flash: \"Gambar rajah berjaya dimuat naik.\".",
+        "parameters": [
+          {
+            "schema": {
+              "$ref": "#/components/schemas/DiagramAuditKind"
+            },
+            "required": true,
+            "description": "mcq = objective question, structured = subjective question. Any other value does not match the route (404).",
+            "name": "kind",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "$ref": "#/components/schemas/Id"
+            },
+            "required": true,
+            "description": "Opaque entity id (string). Never parse or construct on the client.",
+            "name": "id",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Value of Session.csrf; required on mutating requests."
+            },
+            "required": true,
+            "description": "Value of Session.csrf; required on mutating requests.",
+            "name": "X-CSRF-Token",
+            "in": "header"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "$ref": "#/components/schemas/DiagramAuditImageRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Image attached; status is the flash text.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DiagramAuditMutation"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED \"Unauthenticated.\" (no valid session).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN \"This action is unauthorized.\" (role is not admin), or CSRF_INVALID (missing or wrong X-CSRF-Token).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "NOT_FOUND \"Not Found.\" (kind is not mcq or structured, or the question does not exist; a PKSK MCQ row is also 404).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "VALIDATION_ERROR fields.image \"Sila pilih fail gambar.\" (missing or not an image) or \"Gambar mesti jenis JPG, PNG, WebP atau GIF dan tidak melebihi 2MB.\".",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/diagram-audit/{kind}/{id}/dismiss": {
+      "post": {
+        "tags": [
+          "question-workflow",
+          "diagram-audit"
+        ],
+        "summary": "Remove a question from the audit list without an image",
+        "description": "Admin only. No body. Sets needsDiagram false. Flash: \"Soalan telah dikeluarkan daripada senarai audit.\".",
+        "parameters": [
+          {
+            "schema": {
+              "$ref": "#/components/schemas/DiagramAuditKind"
+            },
+            "required": true,
+            "description": "mcq = objective question, structured = subjective question. Any other value does not match the route (404).",
+            "name": "kind",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "$ref": "#/components/schemas/Id"
+            },
+            "required": true,
+            "description": "Opaque entity id (string). Never parse or construct on the client.",
+            "name": "id",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Value of Session.csrf; required on mutating requests."
+            },
+            "required": true,
+            "description": "Value of Session.csrf; required on mutating requests.",
+            "name": "X-CSRF-Token",
+            "in": "header"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Dismissed; status is the flash text.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DiagramAuditMutation"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED \"Unauthenticated.\" (no valid session).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN \"This action is unauthorized.\" (role is not admin), or CSRF_INVALID (missing or wrong X-CSRF-Token).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "NOT_FOUND \"Not Found.\" (kind is not mcq or structured, or the question does not exist).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/guru/dskp/bidang": {
+      "get": {
+        "tags": [
+          "question-workflow",
+          "guru-dskp"
+        ],
+        "summary": "DSKP cascade step 1: Bidang of a subject and level",
+        "description": "Teacher or admin. Needs both subjectId and educationLevelId, else []. The POST writers are BE-18. A question is tagged with curriculum_node only (D53h); DSKP rows are never a question tag.",
+        "parameters": [
+          {
+            "schema": {
+              "$ref": "#/components/schemas/Id"
+            },
+            "required": false,
+            "description": "Opaque entity id (string). Never parse or construct on the client.",
+            "name": "subjectId",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "$ref": "#/components/schemas/Id"
+            },
+            "required": false,
+            "description": "Opaque entity id (string). Never parse or construct on the client.",
+            "name": "educationLevelId",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The Bidang options as a BARE array (no data envelope); empty when a query value is missing or not an id.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GuruDskpBidangList"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED \"Unauthenticated.\" (no valid session).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN \"This action is unauthorized.\" (role is not teacher or admin).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/guru/dskp/sk": {
+      "get": {
+        "tags": [
+          "question-workflow",
+          "guru-dskp"
+        ],
+        "summary": "DSKP cascade step 2: Standard Kandungan of a Bidang",
+        "description": "Teacher or admin. Needs bidangId, else [].",
+        "parameters": [
+          {
+            "schema": {
+              "$ref": "#/components/schemas/Id"
+            },
+            "required": false,
+            "description": "Opaque entity id (string). Never parse or construct on the client.",
+            "name": "bidangId",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The SK options as a BARE array (no data envelope); empty when a query value is missing or not an id.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GuruDskpSkList"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED \"Unauthenticated.\" (no valid session).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN \"This action is unauthorized.\" (role is not teacher or admin).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/guru/dskp/sp": {
+      "get": {
+        "tags": [
+          "question-workflow",
+          "guru-dskp"
+        ],
+        "summary": "DSKP cascade step 3: Standard Pembelajaran of an SK",
+        "description": "Teacher or admin. Needs skId, else [].",
+        "parameters": [
+          {
+            "schema": {
+              "$ref": "#/components/schemas/Id"
+            },
+            "required": false,
+            "description": "Opaque entity id (string). Never parse or construct on the client.",
+            "name": "skId",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The SP options as a BARE array (no data envelope); empty when a query value is missing or not an id.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GuruDskpSpList"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED \"Unauthenticated.\" (no valid session).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN \"This action is unauthorized.\" (role is not teacher or admin).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/master-notes": {
+      "get": {
+        "tags": [
+          "question-workflow",
+          "master-notes"
+        ],
+        "summary": "AI master notes for admin review",
+        "description": "Admin only. `tab` flagged|approved|all (default and fallback flagged, reported in meta.activeTab); 15 per page, id descending; meta.summary { flagged, teacherApproved, total }.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "description": "flagged | approved | all. Unknown falls back to flagged (reported in meta.activeTab)."
+            },
+            "required": false,
+            "description": "flagged | approved | all. Unknown falls back to flagged (reported in meta.activeTab).",
+            "name": "tab",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "required": false,
+            "name": "page",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "A page of notes.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MasterNoteListResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED \"Unauthenticated.\" (no valid session).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN \"This action is unauthorized.\" (role is not admin; Admin Sekolah and every other role included).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/master-notes/{id}/{action}": {
+      "post": {
+        "tags": [
+          "question-workflow",
+          "master-notes"
+        ],
+        "summary": "Approve, unflag or regenerate a master note",
+        "description": "Admin only. No body. approve: teacherApproved true and flagged false; unflag: flagged false; regen: the next canned note (text, trap, tokens), flags kept; the AI provider is BE-36 and a stub in B1 (OD-7). The body is RAW { ok: true } with no flash; the page judges success by the status only.",
+        "parameters": [
+          {
+            "schema": {
+              "$ref": "#/components/schemas/Id"
+            },
+            "required": true,
+            "description": "Opaque entity id (string). Never parse or construct on the client.",
+            "name": "id",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "$ref": "#/components/schemas/MasterNoteAction"
+            },
+            "required": true,
+            "description": "approve = teacherApproved true and flagged false; unflag = flagged false; regen = next note, flags kept. An unknown action does not match the route (404).",
+            "name": "action",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Value of Session.csrf; required on mutating requests."
+            },
+            "required": true,
+            "description": "Value of Session.csrf; required on mutating requests.",
+            "name": "X-CSRF-Token",
+            "in": "header"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Done.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MasterNoteActionResult"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED \"Unauthenticated.\" (no valid session).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN \"This action is unauthorized.\" (role is not admin), or CSRF_INVALID (missing or wrong X-CSRF-Token).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "NOT_FOUND \"Not Found.\" (unknown id, or an action that is not approve|regen|unflag).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/questions/{id}/ai-explanation": {
+      "post": {
+        "tags": [
+          "question-workflow",
+          "question-ai-explanation"
+        ],
+        "summary": "Generate the AI explanation of a question (STUB)",
+        "description": "Admin only. STUB (OD-7): no AI provider and no network call; the server builds a deterministic canned Markdown explanation and stores it as { markdown, generatedAt } on the question. Without `force=1` an existing explanation is returned unchanged (\"Penjelasan AI sudah wujud.\"); with `force=1` it is replaced and the text changes (\"Penjelasan AI berjaya dijana.\"). The body is RAW { ok, message, stub: true } (no data envelope); `stub` is an addition to the mock body.",
+        "parameters": [
+          {
+            "schema": {
+              "$ref": "#/components/schemas/Id"
+            },
+            "required": true,
+            "description": "Opaque entity id (string). Never parse or construct on the client.",
+            "name": "id",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "description": "Only the value 1 regenerates an existing explanation; any other value is ignored."
+            },
+            "required": false,
+            "description": "Only the value 1 regenerates an existing explanation; any other value is ignored.",
+            "name": "force",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Value of Session.csrf; required on mutating requests."
+            },
+            "required": true,
+            "description": "Value of Session.csrf; required on mutating requests.",
+            "name": "X-CSRF-Token",
+            "in": "header"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Generated, or kept.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/QuestionWorkflowAiExplanationResult"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED \"Unauthenticated.\" (no valid session).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN \"This action is unauthorized.\" (role is not admin), or CSRF_INVALID (missing or wrong X-CSRF-Token).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "NOT_FOUND \"Not Found.\" (unknown question, or a PKSK row).",
             "content": {
               "application/json": {
                 "schema": {
