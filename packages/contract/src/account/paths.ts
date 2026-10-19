@@ -23,6 +23,8 @@ import {
   AccountPictureUploadRequestSchema,
   AccountPlatformStatsSchema,
   AccountProfileUpdateRequestSchema,
+  AccountRegisterPendingSchema,
+  AccountRegisterResponseSchema,
   AccountRegisterRequestSchema,
   AccountResetTokenSchema,
   AccountSchoolSummarySchema,
@@ -41,6 +43,8 @@ export const ACCOUNT_COMPONENT_SCHEMAS = {
   AccountUserMe: AccountUserMeSchema,
   AccountStatus: AccountStatusSchema,
   AccountRegisterRequest: AccountRegisterRequestSchema,
+  AccountRegisterPending: AccountRegisterPendingSchema,
+  AccountRegisterResponse: AccountRegisterResponseSchema,
   AccountPasswordEmailRequest: AccountPasswordEmailRequestSchema,
   AccountPasswordResetRequest: AccountPasswordResetRequestSchema,
   AccountPasswordResetIcRequest: AccountPasswordResetIcRequestSchema,
@@ -104,10 +108,10 @@ export function registerAccountPaths(registry: OpenAPIRegistry): void {
     tags: ['account'],
     summary: 'Self-registration (Murid, Guru, Ibu Bapa)',
     description:
-      'Public. Roles are limited to student, teacher and parent (default student); any other role in the body is a 422. Creates an active account and logs it in: the response is the contract Session and the session cookie is set (not remembered). A duplicate e-mail (case-insensitive) is a 422 on `fields.email`. Rate limit (BE-06 AC6, D57a): per client IP, ' + THROTTLE_TEXT + '; only refused attempts (422) count, so legitimate registrations are not slowed. The response is Cache-Control: no-store (it sets a session). Accepted residual risk (security review, by design as the mock and the UX): the 422 emailTaken lets a client learn whether an e-mail is registered; it is bounded only by the per-IP limit above. ' + REDACTION_TEXT,
+      'Public. Roles are limited to student, teacher and parent (default student); any other role in the body is a 422. Student and parent: creates an active account and logs it in (the response is the contract Session and the session cookie is set, not remembered). Teacher (privacy: a teacher gets school scope, which reaches the data of children): created inactive, with no school and the requested school kept as pending, and NO session; the answer is {status: pending_verification, message}. Until a school_admin verifies the account (BE-21), login is 403 ACCOUNT_INACTIVE. A teacher must give a schoolId (422 otherwise). A duplicate e-mail (case-insensitive) is a 422 on `fields.email`. Rate limit (BE-06 AC6, D57a): per client IP, ' + THROTTLE_TEXT + '; only refused attempts (422) count, so legitimate registrations are not slowed. The response is Cache-Control: no-store (it sets a session). Accepted residual risk (security review, by design as the mock and the UX): the 422 emailTaken lets a client learn whether an e-mail is registered; it is bounded only by the per-IP limit above. ' + REDACTION_TEXT,
     request: { body: body(AccountRegisterRequestSchema) },
     responses: {
-      201: jsonNoStore(envelopeOf(SessionSchema), 'Registered and logged in.'),
+      201: jsonNoStore(AccountRegisterResponseSchema, 'Student or parent: registered and logged in (data is the Session, cookie set). Teacher: created INACTIVE with no school scope and no session until a school_admin verifies the account; data is {status: pending_verification, message} and no cookie is set.'),
       422: validation(
         `Copy: name/email/password "The <field> field is required."; email "The email field must be a valid email address." / "${ACCOUNT_AUTH_MESSAGES.emailTaken}"; phone and ic number max 14; role "The selected role is invalid."; students: "${ACCOUNT_AUTH_MESSAGES.gradeRequired}" / "${ACCOUNT_AUTH_MESSAGES.gradeInvalid}"; school "${ACCOUNT_AUTH_MESSAGES.schoolInvalid}"; password min 6 and "The password field confirmation does not match.".`,
       ),
