@@ -87,16 +87,12 @@ const isInside = (child: string, parent: string): boolean => {
 }
 
 /**
- * Writes `profile-<date>.md` and `.json` (mode 0600, directory 0700). The directory, after resolving
- * symbolic links, must sit under a `.migration-out` folder (git-ignored by BE-34) AND under one of
- * `allowedRoots` (default: the working directory or the repository root), and an existing report file
- * that is a symbolic link is refused, so a report can never be redirected to a tracked or foreign path.
+ * Resolves and creates an output directory (mode 0700) and returns its real path. After resolving
+ * symbolic links it must sit under a `.migration-out` folder (git-ignored by BE-34) AND under one of
+ * `allowedRoots` (default: the working directory or the repository root). Shared by the profile
+ * report and the BE-35 anonymiser, so both have the same guard.
  */
-export function writeProfile(
-  report: ProfileReport,
-  outDir: string,
-  allowedRoots: readonly string[] = defaultOutputRoots(),
-): { md: string; json: string } {
+export function prepareOutputDir(outDir: string, allowedRoots: readonly string[] = defaultOutputRoots()): string {
   const wanted = resolve(outDir)
   const check = (dir: string) => {
     if (!dir.split(sep).includes('.migration-out')) {
@@ -115,6 +111,20 @@ export function writeProfile(
   const dir = real(wanted)
   if (!existed) chmodSync(dir, 0o700)
   check(dir)
+  return dir
+}
+
+/**
+ * Writes `profile-<date>.md` and `.json` (mode 0600) under a directory accepted by `prepareOutputDir`,
+ * and an existing report file that is a symbolic link is refused, so a report can never be redirected
+ * to a tracked or foreign path.
+ */
+export function writeProfile(
+  report: ProfileReport,
+  outDir: string,
+  allowedRoots: readonly string[] = defaultOutputRoots(),
+): { md: string; json: string } {
+  const dir = prepareOutputDir(outDir, allowedRoots)
   const date = report.generatedAt.slice(0, 10)
   const md = join(dir, `profile-${date}.md`)
   const json = join(dir, `profile-${date}.json`)
