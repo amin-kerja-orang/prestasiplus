@@ -3,7 +3,6 @@ import { Module } from '@nestjs/common'
 import { AuditModule } from '../../common/audit/audit.module'
 import { ThrottleModule } from '../../common/throttle'
 import { AccountRepository as AuthAccountRepository } from '../auth/account.repository'
-import { LoginThrottle } from '../auth/login-throttle.service'
 import { AuthModule } from '../auth'
 import { FilesModule } from '../files'
 import { NotificationsModule } from '../notifications'
@@ -29,8 +28,8 @@ import { SettingsService, StatsService } from './settings.service'
  * - `MAIL_PORT`: logging only in B1 (OD-7); nothing is e-mailed.
  * - `NOTIFICATION_PORT`: bound to part B's `NotificationsService.push` (D59a); sent after commit.
  *
- * `LoginThrottle` and the auth `AccountRepository` are stateless and not exported by `AuthModule`,
- * so they are provided here again (same code, same counters in `login_attempts`).
+ * The auth `AccountRepository` is stateless and not exported by `AuthModule`,
+ * so it is provided here again.
  */
 @Module({
   imports: [AuditModule, ThrottleModule, AuthModule, UsersModule, SchoolsModule, FilesModule, NotificationsModule],
@@ -46,7 +45,6 @@ import { SettingsService, StatsService } from './settings.service'
     StatsService,
     PictureInterceptor,
     IcService,
-    LoginThrottle,
     AuthAccountRepository,
     { provide: MAIL_PORT, useClass: LoggingMailPort },
     { provide: NOTIFICATION_PORT, useClass: NotificationsAdapter },

@@ -24,6 +24,8 @@ export const EnvSchema = z.object({
   THROTTLE_LOGIN_PER_MINUTE: z.coerce.number().int().min(1).optional(),
   // BE-05 (schools): requests per minute, counted per process. Public routes per client address, admin routes per user.
   THROTTLE_PUBLIC_PER_MINUTE: z.coerce.number().int().min(1).default(60),
+  // BE-06: self-registration attempts per minute per client address (own bucket, tolerant of a school behind one NAT).
+  THROTTLE_REGISTER_PER_MINUTE: z.coerce.number().int().min(1).default(30),
   THROTTLE_PUBLIC_SEARCH_PER_MINUTE: z.coerce.number().int().min(1).default(300),
   THROTTLE_ADMIN_READ_PER_MINUTE: z.coerce.number().int().min(1).default(300),
   THROTTLE_ADMIN_WRITE_PER_MINUTE: z.coerce.number().int().min(1).default(30),

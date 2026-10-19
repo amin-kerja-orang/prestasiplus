@@ -14,7 +14,7 @@ describe('POST /api/auth/register (mock cases, AC1 and AC6)', () => {
     t = await bootAccountApp()
     schoolId = await schoolIdOf(t.db, 'DEMO001')
   })
-  // Refused attempts count 5 per minute per address: every test starts in a fresh window.
+  // The register bucket (30 per minute per address) starts fresh for every test.
   beforeEach(() => {
     t.clock.advance(61_000)
   })
@@ -149,23 +149,17 @@ describe('POST /api/auth/register (mock cases, AC1 and AC6)', () => {
     expect(count[0]?.n).toBe('1')
   })
 
-  it('AC6: 5 refused attempts per minute per address, then 429 with retryAfter (even for a valid body); created accounts do not count', async () => {
-    t.clock.advance(120_000)
-    // Successful sign-ups never use up the budget.
-    for (let i = 0; i < 7; i++) {
-      const ok = await t.http().post('/api/auth/register').send(body({ role: 'parent', grade: null, schoolId: undefined }))
-      expect(ok.status, JSON.stringify(ok.body)).toBe(201)
-    }
-    for (let i = 0; i < 5; i++) {
-      const bad = await t.http().post('/api/auth/register').send(body({ email: 'pelajar@demo.test' }))
-      expect(bad.status).toBe(422)
-    }
-    const blocked = await t.http().post('/api/auth/register').send(body())
-    const err = errorOf(blocked, 429, 'RATE_LIMITED')
-    expect(err.retryAfter).toBeGreaterThan(0)
-    expect(blocked.headers['retry-after']).toBe(String(err.retryAfter))
-    t.clock.advance(61_000)
-    const again = await t.http().post('/api/auth/register').send(body())
-    expect(again.status, JSON.stringify(again.body)).toBe(201)
+  it('AC6: a register flood is limited by its own bucket and never touches the login throttle of that address', async () => {
+    // Refusals (422) and sign-ups alike are attempts of the register bucket; the login counters are not used at all.
+    const count = async () => (await t.db.query<{ n: string }>('select coalesce(sum(attempts), 0)::text as n from login_attempts'))[0]?.n
+    const before = await count()
+    for (let i = 0; i < 8; i++) expect((await t.http().post('/api/auth/register').send(body({ email: 'pelajar@demo.test' }))).status).toBe(422)
+    expect(await count()).toBe(before)
+    // The same address can still log in (its login budget is untouched).
+    const login = await t.http().post('/api/auth/login').send({ identifier: 'pelajar@demo.test', password: 'Demo1234' })
+    expect(login.status).toBe(200)
+    // Valid sign-ups are not slowed either.
+    const ok = await t.http().post('/api/auth/register').send(body({ role: 'parent', grade: null, schoolId: undefined }))
+    expect(ok.status, JSON.stringify(ok.body)).toBe(201)
   })
 })

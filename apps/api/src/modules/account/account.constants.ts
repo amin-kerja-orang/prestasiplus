@@ -73,7 +73,7 @@ export const ACCOUNT_TX = { maxWait: 10_000, timeout: 15_000 } as const
 /** Per-user limit of the write routes (D57a). Env `THROTTLE_ACCOUNT_WRITE_PER_MINUTE`, else 30. */
 export const ACCOUNT_LIMITS = {
   write: { bucket: 'account.write', env: 'THROTTLE_ACCOUNT_WRITE_PER_MINUTE', default: 30, per: 'user' },
-  /** Registration, per client address (all attempts; the failure budget is the BE-03 login throttle). */
-  register: { bucket: 'account.register', env: 'THROTTLE_PUBLIC_PER_MINUTE', default: 60, per: 'ip' },
+  /** Registration, per client address, every attempt counts. Independent of the login throttle. */
+  register: { bucket: 'account.register', env: 'THROTTLE_REGISTER_PER_MINUTE', default: 30, per: 'ip' },
   stats: { bucket: 'account.stats', env: 'THROTTLE_PUBLIC_PER_MINUTE', default: 60, per: 'ip' },
 } as const satisfies Record<string, RateLimitSpec>

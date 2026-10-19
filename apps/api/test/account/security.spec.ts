@@ -120,13 +120,26 @@ describe('rate limits on writes and public lookups (D57a)', () => {
     expect((await put(who, '/me/password', {})).status).toBe(429)
   })
 
-  it('public stats and registration are limited per client address', async () => {
+  it('public stats are limited per client address', async () => {
     const t = await boot({ env: { THROTTLE_PUBLIC_PER_MINUTE: '3' } })
     for (let i = 0; i < 3; i++) expect((await t.http().get('/api/public/stats')).status).toBe(200)
     const stats = await t.http().get('/api/public/stats')
     expect(errorOf(stats, 429, 'RATE_LIMITED').retryAfter).toBeGreaterThan(0)
+  })
+
+  it('registration throttles at THROTTLE_REGISTER_PER_MINUTE with 429 and Retry-After, and the login of that address still works', async () => {
+    const t = await boot({ env: { THROTTLE_REGISTER_PER_MINUTE: '3' } })
     for (let i = 0; i < 3; i++) expect((await t.http().post('/api/auth/register').send({ name: 'x' })).status).toBe(422)
-    errorOf(await t.http().post('/api/auth/register').send({ name: 'x' }), 429, 'RATE_LIMITED')
+    const blocked = await t.http().post('/api/auth/register').send({ name: 'x' })
+    const err = errorOf(blocked, 429, 'RATE_LIMITED')
+    expect(err.retryAfter).toBeGreaterThan(0)
+    expect(blocked.headers['retry-after']).toBe(String(err.retryAfter))
+    // The flood did not consume the login throttle of this address.
+    const login = await t.http().post('/api/auth/login').send({ identifier: STUDENT, password: 'Demo1234' })
+    expect(login.status).toBe(200)
+    // The window ends with the clock.
+    t.clock.advance(61_000)
+    expect((await t.http().post('/api/auth/register').send({ name: 'x' })).status).toBe(422)
   })
 
   it('an overloaded database is answered 429 with retryAfter, never 500; other errors pass through', async () => {

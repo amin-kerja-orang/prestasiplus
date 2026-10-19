@@ -5,14 +5,13 @@ import { AuditService } from '../../common/audit/audit.service'
 import { CLOCK, type Clock } from '../../db/clock'
 import { PrismaService } from '../../db/prisma.service'
 import type { RequestInfo, SessionGrant } from '../auth/auth.service'
-import { isOverloadError, rateLimited } from '../auth/auth.errors'
-import { LoginThrottle } from '../auth/login-throttle.service'
 import { PasswordService } from '../auth/password.service'
 import { SchoolsRepository } from '../schools'
 import { IcService } from '../users/credentials'
 import { UsersRepository, uniqueField } from '../users'
 import { ApiError } from '../../common/errors/api-error'
 import { ACCOUNT_AUDIT, ACCOUNT_TX } from './account.constants'
+import { overloadTo429 } from './helpers'
 import { fieldsOf, invalid } from './account.errors'
 import { SessionIssuer } from './session-issuer.service'
 
@@ -24,9 +23,9 @@ const asRecord = (v: unknown): Record<string, unknown> => (typeof v === 'object'
 
 /**
  * Self-registration (mock `register()`, BR-04, BR-05). The role is limited to student, teacher and
- * parent by the contract schema. Rate limit (BE-06 AC6): the BE-03 login throttle component at its
- * default (5 refused attempts per minute per address, plus the per-address ceiling); an attempt that
- * ends in a created account gives its count back, so legitimate sign-ups are not slowed.
+ * parent by the contract schema. Rate limit (LEAD 2026-10-20): per client address through the common `RateLimit`
+ * guard only, bucket `account.register`, `THROTTLE_REGISTER_PER_MINUTE` (default 30), so a school behind one NAT is
+ * not refused and the login throttle is neither shared nor weakened.
  */
 @Injectable()
 export class RegistrationService {
@@ -35,7 +34,6 @@ export class RegistrationService {
   constructor(
     @Inject(PrismaService) private readonly prisma: PrismaService,
     @Inject(CLOCK) private readonly clock: Clock,
-    @Inject(LoginThrottle) private readonly throttle: LoginThrottle,
     @Inject(UsersRepository) private readonly users: UsersRepository,
     @Inject(SchoolsRepository) private readonly schools: SchoolsRepository,
     @Inject(PasswordService) private readonly passwords: PasswordService,
@@ -44,23 +42,9 @@ export class RegistrationService {
     @Inject(AuditService) private readonly audit: AuditService,
   ) {}
 
+  /** The rate limit is the `RateLimit` guard of the controller (own bucket, own env key); nothing is shared with the login throttle. */
   async register(raw: unknown, info: RequestInfo): Promise<SessionGrant | 'pending'> {
-    const keys = this.throttle.keys('register', info.ip)
-    await this.throttle.begin(keys, this.clock.now())
-    try {
-      const grant = await this.create(raw, info)
-      await this.throttle.clear(keys).catch(() => {
-        this.logger.warn(`registration throttle reset failed (requestId=${info.requestId ?? '-'})`)
-      })
-      return grant
-    } catch (err) {
-      // Never tested anything: give the reserved unit back and ask the client to retry.
-      if (isOverloadError(err)) {
-        await this.throttle.refund(keys).catch(() => undefined)
-        throw rateLimited(5)
-      }
-      throw err
-    }
+    return overloadTo429(() => this.create(raw, info))
   }
 
   private async create(raw: unknown, info: RequestInfo): Promise<SessionGrant | 'pending'> {
