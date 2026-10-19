@@ -3,11 +3,20 @@
  * from the file name or the client header, and raster images are rewritten without metadata.
  *
  * Decision (open question 2): no re-encoding (that needs an image library that is not a dependency).
- * Instead each container is parsed and rebuilt with an allow-list of segments or chunks, so EXIF
- * (GPS, camera, time), XMP, IPTC, comments and text chunks are dropped, as is anything appended after
- * the end marker (polyglot payloads). For JPEG only the EXIF orientation value is kept, in a minimal
- * synthetic EXIF segment, so phone photos still display upright. A file whose structure does not
- * parse is refused like a wrong type.
+ * Instead each container is parsed and rebuilt from a STRICT ALLOW-LIST, so everything not named is
+ * dropped: EXIF (GPS, camera, time), XMP, IPTC, MPF, comments, text chunks, unknown chunks and
+ * anything appended after the end marker (polyglot payloads).
+ *
+ * - JPEG keeps: the tables, frame and scan segments (markers C0-DF), a rebuilt minimal JFIF APP0
+ *   (the embedded thumbnail is removed), an ICC profile APP2, an Adobe APP14 of at most 14 bytes, and
+ *   the EXIF orientation value only, in a minimal synthetic EXIF block so phone photos stay upright.
+ *   Application markers E3-ED and EF, the extension markers F0-FE and the reserved markers are
+ *   dropped (reserved ones refuse the file). 0xFF fill bytes between segments are accepted.
+ * - PNG keeps: IHDR, PLTE, IDAT, IEND, tRNS, gAMA, cHRM, sRGB, iCCP, sBIT, pHYs, bKGD, acTL, fcTL, fdAT.
+ * - WebP keeps: VP8X, VP8 , VP8L, ALPH, ANIM, ANMF, ICCP (the EXIF flag is cleared; ANMF frames may
+ *   contain only ALPH, VP8 and VP8L).
+ * - Every declared image size (JPEG SOF, PNG IHDR and fcTL, WebP VP8X, VP8, VP8L and ANMF) is checked
+ *   against MAX_PIXELS. A file whose structure does not parse is refused like a wrong type.
  */
 
 export type DetectedMime = 'image/jpeg' | 'image/png' | 'image/webp' | 'application/pdf'
@@ -106,6 +115,15 @@ function readOrientation(payload: Buffer): number | null {
   return null
 }
 
+/** JFIF APP0 with the embedded thumbnail removed (thumbnail width and height set to 0). */
+function minimalJfif(segment: Buffer): Buffer {
+  const out = Buffer.from(segment.subarray(0, 4 + 14))
+  out.writeUInt16BE(16, 2)
+  out[4 + 12] = 0
+  out[4 + 13] = 0
+  return out
+}
+
 function sanitizeJpeg(b: Buffer): Buffer | null {
   const kept: Buffer[] = []
   let orientation: number | null = null
@@ -146,12 +164,14 @@ function sanitizeJpeg(b: Buffer): Buffer | null {
     } else if (marker === 0xe2) {
       if (payload.toString('latin1', 0, 12) === 'ICC_PROFILE\0') kept.push(segment)
     } else if (marker === 0xee) {
-      kept.push(segment) // Adobe colour transform
+      if (length <= 14 && payload.toString('latin1', 0, 5) === 'Adobe') kept.push(segment) // colour transform
     } else if (marker === 0xe0) {
-      if (payload.toString('latin1', 0, 5) === 'JFIF\0') kept.push(segment)
-    } else if (marker < 0xe0 || marker > 0xef) {
-      if (marker !== 0xfe) kept.push(segment) // everything but comments
-    } // other APPn (EXIF/XMP/IPTC/Photoshop) are dropped
+      if (payload.toString('latin1', 0, 5) === 'JFIF\0' && payload.length >= 14) kept.push(minimalJfif(segment))
+    } else if (marker >= 0xc0 && marker <= 0xdf) {
+      kept.push(segment) // tables, frame, scan, restart interval
+    } else if (marker < 0xc0) {
+      return null // reserved markers
+    } // E3-ED, EF and F0-FE (other APPn, JPGn, comments) are dropped
 
     pos += 2 + length
     if (marker === 0xda) {
@@ -226,6 +246,12 @@ function sanitizePng(b: Buffer): Buffer | null {
       if (width === 0 || height === 0 || width * height > MAX_PIXELS) return null
       first = false
     }
+    if (type === 'fcTL') {
+      if (length !== 26) return null
+      const fw = chunk.readUInt32BE(12)
+      const fh = chunk.readUInt32BE(16)
+      if (fw === 0 || fh === 0 || fw * fh > MAX_PIXELS) return null
+    }
     if (type === 'IDAT') sawData = true
     if (PNG_KEEP.has(type)) kept.push(chunk)
     pos += 12 + length
@@ -240,7 +266,46 @@ function sanitizePng(b: Buffer): Buffer | null {
 
 // ---- WebP ---------------------------------------------------------------------------------------
 
-const WEBP_DROP = new Set(['EXIF', 'XMP '])
+const WEBP_KEEP = new Set(['VP8X', 'VP8 ', 'VP8L', 'ALPH', 'ANIM', 'ANMF', 'ICCP'])
+const ANMF_INNER = new Set(['ALPH', 'VP8 ', 'VP8L'])
+
+/** Checks the size declared by a VP8 (lossy) or VP8L (lossless) bitstream header. */
+function webpBitstreamOk(fourcc: string, payload: Buffer): boolean {
+  let width: number
+  let height: number
+  if (fourcc === 'VP8 ') {
+    if (payload.length < 10 || payload[3] !== 0x9d || payload[4] !== 0x01 || payload[5] !== 0x2a) return false
+    width = payload.readUInt16LE(6) & 0x3fff
+    height = payload.readUInt16LE(8) & 0x3fff
+  } else {
+    if (payload.length < 5 || payload[0] !== 0x2f) return false
+    const bits = payload.readUInt32LE(1)
+    width = (bits & 0x3fff) + 1
+    height = ((bits >>> 14) & 0x3fff) + 1
+  }
+  return width > 0 && height > 0 && width * height <= MAX_PIXELS
+}
+
+/** An animation frame: its own size and only ALPH, VP8 and VP8L inside. Returns the frame pixels, or null. */
+function anmfPixels(payload: Buffer): number | null {
+  if (payload.length < 16) return null
+  const width = payload.readUIntLE(6, 3) + 1
+  const height = payload.readUIntLE(9, 3) + 1
+  if (width * height > MAX_PIXELS) return null
+  let pos = 16
+  let sawImage = false
+  while (pos + 8 <= payload.length) {
+    const fourcc = payload.toString('latin1', pos, pos + 4)
+    const size = payload.readUInt32LE(pos + 4)
+    if (pos + 8 + size > payload.length || !ANMF_INNER.has(fourcc)) return null
+    if (fourcc !== 'ALPH') {
+      if (!webpBitstreamOk(fourcc, payload.subarray(pos + 8, pos + 8 + size))) return null
+      sawImage = true
+    }
+    pos += 8 + size + (size % 2)
+  }
+  return sawImage ? width * height : null
+}
 
 function sanitizeWebp(b: Buffer): Buffer | null {
   const riffSize = b.readUInt32LE(4)
@@ -250,25 +315,37 @@ function sanitizeWebp(b: Buffer): Buffer | null {
   let pos = 12
   let sawImage = false
   let index = 0
+  let framePixels = 0
 
   while (pos + 8 <= total) {
     const fourcc = b.toString('latin1', pos, pos + 4)
     const size = b.readUInt32LE(pos + 4)
     const padded = size + (size % 2)
     if (pos + 8 + padded > total) return null
+    const payload = b.subarray(pos + 8, pos + 8 + size)
     let chunk: Buffer = b.subarray(pos, pos + 8 + padded)
 
     if (index === 0 && fourcc !== 'VP8 ' && fourcc !== 'VP8L' && fourcc !== 'VP8X') return null
-    if (fourcc === 'VP8X') {
-      if (size < 10 || index !== 0) return null
-      const width = (b.readUIntLE(pos + 12, 3) & 0xffffff) + 1
-      const height = (b.readUIntLE(pos + 15, 3) & 0xffffff) + 1
-      if (width * height > MAX_PIXELS) return null
-      chunk = Buffer.from(chunk)
-      chunk[8] = (chunk[8] as number) & ~(0x08 | 0x04) // clear the EXIF and XMP flags
-    }
-    if (fourcc === 'VP8 ' || fourcc === 'VP8L' || fourcc === 'ANMF') sawImage = true
-    if (!WEBP_DROP.has(fourcc)) kept.push(chunk)
+    if (WEBP_KEEP.has(fourcc)) {
+      if (fourcc === 'VP8X') {
+        if (size < 10 || index !== 0) return null
+        const width = payload.readUIntLE(4, 3) + 1
+        const height = payload.readUIntLE(7, 3) + 1
+        if (width * height > MAX_PIXELS) return null
+        chunk = Buffer.from(chunk)
+        chunk[8] = (chunk[8] as number) & ~(0x08 | 0x04) // clear the EXIF and XMP flags
+      } else if (fourcc === 'VP8 ' || fourcc === 'VP8L') {
+        if (!webpBitstreamOk(fourcc, payload)) return null
+        sawImage = true
+      } else if (fourcc === 'ANMF') {
+        const pixels = anmfPixels(payload)
+        if (pixels === null) return null
+        framePixels += pixels
+        if (framePixels > 4 * MAX_PIXELS) return null
+        sawImage = true
+      }
+      kept.push(chunk)
+    } // EXIF, XMP and every other chunk are dropped
     pos += 8 + padded
     index += 1
   }
