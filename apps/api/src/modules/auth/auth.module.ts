@@ -7,6 +7,7 @@ import { AccountRepository } from './account.repository'
 import { AuthConfig } from './auth.config'
 import { AuthController, SessionController } from './auth.controller'
 import { AuthService } from './auth.service'
+import { LegacyBcryptPool } from './legacy-bcrypt'
 import { LoginThrottle } from './login-throttle.service'
 import { PasswordService } from './password.service'
 import { PostgresSessionResolver } from './session-resolver.service'
@@ -23,6 +24,7 @@ import { SessionStore } from './session.store'
   providers: [
     AuthConfig,
     AccountRepository,
+    LegacyBcryptPool,
     PasswordService,
     LoginThrottle,
     SessionStore,

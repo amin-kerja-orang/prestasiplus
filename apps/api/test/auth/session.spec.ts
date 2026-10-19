@@ -1,7 +1,11 @@
+import { ApiError } from '../../src/common/errors/api-error'
 import { SessionSchema } from '@pp/contract'
-import { afterAll, beforeAll, describe, expect, it } from 'vitest'
+import { afterAll, afterEach, beforeAll, describe, expect, it } from 'vitest'
 
-import { addCalendarYears } from '../../src/modules/auth/session.store'
+import { DEMO_ACCOUNTS } from '../../prisma/seed/core/identity'
+import { AuthService } from '../../src/modules/auth/auth.service'
+import type { ResolvedSession } from '../../src/modules/auth/session-resolver.service'
+
 import {
   type AuthTestApp,
   bootAuthApp,
@@ -119,31 +123,63 @@ describe('session endpoints', () => {
       expectError(await me.agent.get('/api/session'), 'UNAUTHORIZED')
     })
 
-    it('with remember: 5 calendar years after creation, no sliding', async () => {
+    const DAY = 24 * 60 * MIN
+    const expiresOf = async (token: string) =>
+      (await t.db.query<{ expires_at: Date }>(
+        `select expires_at from sessions where token_hash = encode(sha256($1::bytea), 'hex')`,
+        [token],
+      ))[0]!.expires_at.getTime()
+
+    it('with remember: 30 days for a learner, no sliding, 401 afterwards', async () => {
       const me = await login('pelajar2@demo.test', true)
-      const created = t.clock.now()
-      const expected = addCalendarYears(created, 5)
-      const rows = await t.db.query<{ expires_at: Date }>(
-        `select expires_at from sessions where token_hash = encode(sha256($1::bytea), 'hex')`,
-        [me.token],
-      )
-      expect(rows[0]?.expires_at.getTime()).toBe(expected.getTime())
-      expect(expected.getUTCFullYear() - created.getUTCFullYear()).toBe(5)
+      const created = t.clock.now().getTime()
+      expect(await expiresOf(me.token)).toBe(created + 30 * DAY)
+      expect(setCookieLine(me.res)).toMatch(new RegExp(`Max-Age=${30 * 24 * 60 * 60}`))
 
-      t.clock.advance(2 * 365 * 24 * 60 * MIN)
+      t.clock.advance(20 * DAY)
       await me.agent.get('/api/session').expect(200)
-      const after = await t.db.query<{ expires_at: Date }>(
-        `select expires_at from sessions where token_hash = encode(sha256($1::bytea), 'hex')`,
-        [me.token],
-      )
-      expect(after[0]?.expires_at.getTime()).toBe(expected.getTime())
+      expect(await expiresOf(me.token)).toBe(created + 30 * DAY) // did not slide
 
-      t.clock.advance(4 * 365 * 24 * 60 * MIN)
+      t.clock.advance(11 * DAY)
       expectError(await me.agent.get('/api/session'), 'UNAUTHORIZED')
     })
 
-    it('addCalendarYears falls back from 29 February', () => {
-      expect(addCalendarYears(new Date('2028-02-29T04:00:00Z'), 5).toISOString()).toBe('2033-02-28T04:00:00.000Z')
+    it('with remember: admin and school_admin are capped at 1 day', async () => {
+      for (const email of ['admin@demo.test', 'adminsekolah@demo.test']) {
+        const me = await login(email, true)
+        const created = t.clock.now().getTime()
+        expect(await expiresOf(me.token)).toBe(created + DAY)
+        t.clock.advance(23 * 60 * MIN)
+        await me.agent.get('/api/session').expect(200)
+        t.clock.advance(2 * 60 * MIN)
+        expectError(await me.agent.get('/api/session'), 'UNAUTHORIZED')
+      }
+    })
+
+    it('with remember: a teacher + school_admin account gets the staff cap, also after a role switch', async () => {
+      const me = await login('guruadmin@demo.test', true)
+      const created = t.clock.now().getTime()
+      expect(await expiresOf(me.token)).toBe(created + DAY)
+      const sw = await me.agent.post('/api/session/role').set('X-CSRF-Token', me.csrf).send({ role: 'teacher' })
+      expect(await expiresOf(cookieValue(sw) as string)).toBe(created + DAY) // rotation keeps the expiry
+    })
+
+    it('SESSION_REMEMBER_DAYS and SESSION_REMEMBER_DAYS_STAFF are honoured; the staff value never exceeds the general one', async () => {
+      const custom = await bootAuthApp({ db: t.db, env: { SESSION_REMEMBER_DAYS: '7', SESSION_REMEMBER_DAYS_STAFF: '3' } })
+      const capped = await bootAuthApp({ db: t.db, env: { SESSION_REMEMBER_DAYS: '2', SESSION_REMEMBER_DAYS_STAFF: '10' } })
+      try {
+        const days = async (app: AuthTestApp, email: string) => {
+          const res = await app.http().post('/api/auth/login').send({ identifier: email, password: DEMO_PASSWORD, remember: true })
+          expect(res.status).toBe(200)
+          return (await expiresOf(cookieValue(res) as string)) - app.clock.now().getTime()
+        }
+        expect(await days(custom, 'guru@demo.test')).toBe(7 * DAY)
+        expect(await days(custom, 'admin@demo.test')).toBe(3 * DAY)
+        expect(await days(capped, 'admin@demo.test')).toBe(2 * DAY)
+      } finally {
+        await custom.app.close()
+        await capped.app.close()
+      }
     })
   })
 
@@ -278,6 +314,32 @@ describe('session endpoints', () => {
   })
 
   describe('AC11 permission changes apply on the next request', () => {
+    /** Puts every row these tests change back to the seeded state, even when a test fails half way. */
+    afterEach(async () => {
+      await t.db.query(`update schools set is_active = true`)
+      for (const a of DEMO_ACCOUNTS) {
+        const where = a.email ? `lower(email) = '${a.email}'` : `email is null and lower(username) = '${a.username}'`
+        await t.db.query(
+          `update users set is_active = $1, is_suspended = $2,
+             school_id = (select id from schools where code = $3) where ${where}`,
+          [a.isActive ?? true, a.isSuspended ?? false, a.schoolCode],
+        )
+        if (a.email) {
+          await t.db.query(
+            `delete from user_roles where user_id = (select id from users where lower(email) = $1) and role <> all($2::text[])`,
+            [a.email, [...a.roles]],
+          )
+          for (const role of a.roles) {
+            await t.db.query(
+              `insert into user_roles (user_id, role) select id, $2 from users where lower(email) = $1 on conflict do nothing`,
+              [a.email, role],
+            )
+          }
+        }
+      }
+      await t.db.query(`delete from user_scopes where role <> 'admin'`)
+    })
+
     it('a changed school shows the new scope and label at once', async () => {
       const me = await login('guru@demo.test')
       expect(me.session.active.scope).toMatchObject({ level: 'school', label: 'SMK Demo Satu' })
@@ -362,5 +424,50 @@ describe('session endpoints', () => {
         `delete from user_roles where role = 'teacher' and user_id = (select id from users where email = 'pelajar@demo.test')`,
       )
     })
+  })
+})
+
+describe('session rotation race', () => {
+  it('a rotation that lost to a parallel request answers 401 (no second session is created)', async () => {
+    const rotated: unknown[] = []
+    const service = new AuthService(
+      { transaction: (fn: () => Promise<unknown>) => fn() } as never,
+      { now: () => new Date() },
+      { secret: 'x' } as never,
+      {} as never,
+      {} as never,
+      {} as never,
+      { regenerate: async () => (rotated.push(1), null) } as never,
+      { record: async () => undefined } as never,
+    )
+    const state = {
+      auth: { mode: null, userId: '1' },
+      grants: [{ role: 'admin' }, { role: 'teacher' }],
+      assembled: { baseRole: 'admin', mode: null, grants: [] },
+      row: {},
+      account: {},
+    } as unknown as ResolvedSession
+    const err = await service
+      .switchRole(state, 'teacher', { ip: '::1', userAgent: null, requestId: null })
+      .catch((e: unknown) => e)
+    expect(err).toBeInstanceOf(ApiError)
+    expect((err as ApiError).code).toBe('UNAUTHORIZED')
+    expect(rotated).toHaveLength(1)
+  })
+
+  it('two parallel role switches with the same cookie: one wins, the other is refused', async () => {
+    const t = await bootAuthApp()
+    try {
+      const me = await loginAs(t, 'guruadmin@demo.test')
+      const one = () => t.http().post('/api/session/role').set('Cookie', `${COOKIE_NAME}=${me.token}`).set('X-CSRF-Token', me.csrf).send({ role: 'teacher' })
+      const results = await Promise.all([one(), one(), one()])
+      const statuses = results.map((r) => r.status).sort()
+      expect(statuses.filter((s) => s === 200)).toHaveLength(1)
+      expect(statuses.filter((s) => s === 401)).toHaveLength(2)
+      const live = await t.db.query(`select 1 from sessions where revoked_at is null`)
+      expect(live).toHaveLength(1)
+    } finally {
+      await t.close()
+    }
   })
 })

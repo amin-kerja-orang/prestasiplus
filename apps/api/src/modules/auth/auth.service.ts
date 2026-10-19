@@ -1,4 +1,4 @@
-import { Inject, Injectable } from '@nestjs/common'
+import { Inject, Injectable, Logger } from '@nestjs/common'
 import {
   canEnterModPelajar,
   type LoginRequest,
@@ -13,9 +13,10 @@ import { ApiError } from '../../common/errors/api-error'
 import { CLOCK, type Clock } from '../../db/clock'
 import type { Session as SessionRow } from '../../db/generated/client'
 import { PrismaService } from '../../db/prisma.service'
-import { AccountRepository, type LoginCandidate } from './account.repository'
+import { AccountRepository, type AccountRecord, type LoginCandidate } from './account.repository'
 import { AuthConfig } from './auth.config'
-import { authError } from './auth.errors'
+import { authError, rateLimited } from './auth.errors'
+import { LegacyBcryptBusyError } from './legacy-bcrypt'
 import { LoginThrottle } from './login-throttle.service'
 import { PasswordService } from './password.service'
 import type { ResolvedSession } from './session-resolver.service'
@@ -39,6 +40,8 @@ export interface SessionGrant {
 
 @Injectable()
 export class AuthService {
+  private readonly logger = new Logger(AuthService.name)
+
   constructor(
     @Inject(PrismaService) private readonly prisma: PrismaService,
     @Inject(CLOCK) private readonly clock: Clock,
@@ -62,14 +65,12 @@ export class AuthService {
     await this.throttle.begin(keys, now)
 
     const candidates = await this.accounts.findLoginCandidates(body.identifier, body.schoolId)
-    const checks =
-      candidates.length === 0
-        ? [{ candidate: null, ok: (await this.passwords.check(body.password, null)).ok, needsRehash: false }]
-        : await this.checkAll(candidates, body.password)
+    const checks = await this.checkAll(candidates, body.password)
     const matches = checks.filter((c) => c.ok && c.candidate)
 
     if (matches.length === 0) {
       const only = candidates.length === 1 ? (candidates[0] as LoginCandidate) : null
+      await this.throttle.fail(keys, now, checks.length)
       await this.refuse(info, 'invalid_credentials', only?.id ?? null)
       throw authError('INVALID_CREDENTIALS')
     }
@@ -119,6 +120,8 @@ export class AuthService {
         userId: account.user.id,
         activeRole,
         remember: body.remember,
+        // "Remember me" is capped by the highest-privilege role of the account (LEAD, M2).
+        rememberDays: this.config.rememberDaysFor(grants.map((g) => g.role)),
         userAgent: info.userAgent,
         ip: info.ip,
       })
@@ -137,7 +140,12 @@ export class AuthService {
       })
       return out
     })
-    await this.throttle.clear(keys)
+    try {
+      await this.throttle.clear(keys)
+    } catch {
+      // The login already succeeded; a stale counter only expires with its window.
+      this.logger.warn(`login throttle reset failed (requestId=${info.requestId ?? '-'})`)
+    }
     return granted
   }
 
@@ -145,15 +153,20 @@ export class AuthService {
   async logout(token: string | undefined, state: ResolvedSession | null, info: RequestInfo): Promise<void> {
     if (token) await this.store.revokeByToken(token)
     if (state) {
-      await this.audit.record({
-        action: AUDIT_ACTIONS.LOGOUT,
-        actorUserId: state.auth.userId,
-        actorRole: state.auth.active.role,
-        sessionRowId: state.row.id,
-        requestId: info.requestId,
-        ip: info.ip,
-        isTest: state.auth.mode !== null,
-      })
+      try {
+        await this.audit.record({
+          action: AUDIT_ACTIONS.LOGOUT,
+          actorUserId: state.auth.userId,
+          actorRole: state.auth.active.role,
+          sessionRowId: state.row.id,
+          requestId: info.requestId,
+          ip: info.ip,
+          isTest: state.auth.mode !== null,
+        })
+      } catch {
+        // The session is already revoked; an audit failure must not keep the cookie alive.
+        this.logger.warn(`logout audit write failed (requestId=${info.requestId ?? '-'})`)
+      }
     }
   }
 
@@ -193,11 +206,24 @@ export class AuthService {
     })
   }
 
+  /**
+   * Password checks for every candidate (at most MAX_LOGIN_CANDIDATES). With no candidate one dummy
+   * check still runs, so an unknown identifier costs the same as a known one. A full legacy-bcrypt
+   * queue answers 429 instead of waiting.
+   */
   private async checkAll(candidates: LoginCandidate[], password: string) {
-    const out: { candidate: LoginCandidate; ok: boolean; needsRehash: boolean }[] = []
-    for (const candidate of candidates) {
-      const check = await this.passwords.check(password, candidate.passwordHash)
-      out.push({ candidate, ok: check.ok, needsRehash: check.needsRehash })
+    const out: { candidate: LoginCandidate | null; ok: boolean; needsRehash: boolean }[] = []
+    try {
+      if (candidates.length === 0) {
+        out.push({ candidate: null, ok: (await this.passwords.check(password, null)).ok, needsRehash: false })
+      }
+      for (const candidate of candidates) {
+        const check = await this.passwords.check(password, candidate.passwordHash)
+        out.push({ candidate, ok: check.ok, needsRehash: check.needsRehash })
+      }
+    } catch (err) {
+      if (err instanceof LegacyBcryptBusyError) throw rateLimited(5)
+      throw err
     }
     return out
   }
@@ -206,14 +232,15 @@ export class AuthService {
   private async refuse(info: RequestInfo, reason: string, userId: bigint | null): Promise<void> {
     try {
       await this.audit.record({
-      action: AUDIT_ACTIONS.LOGIN_FAILED,
-      actorUserId: userId === null ? null : userId.toString(),
-      requestId: info.requestId,
-      ip: info.ip,
-      details: { reason },
-    })
+        action: AUDIT_ACTIONS.LOGIN_FAILED,
+        actorUserId: userId === null ? null : userId.toString(),
+        requestId: info.requestId,
+        ip: info.ip,
+        details: { reason },
+      })
     } catch {
-      // An audit failure must never change the auth response.
+      // An audit failure must never change the auth response. Log the reason code and request id only.
+      this.logger.warn(`login failure audit write failed (reason=${reason}, requestId=${info.requestId ?? '-'})`)
     }
   }
 
@@ -244,7 +271,7 @@ export class AuthService {
     })
   }
 
-  private grantFrom(issued: IssuedSession, account: Parameters<typeof assemble>[0]): SessionGrant {
+  private grantFrom(issued: IssuedSession, account: AccountRecord): SessionGrant {
     const row: SessionRow = issued.row
     const assembled = assemble(account, row, deriveCsrf(this.config.secret, issued.token))
     if (!assembled) throw authError('ACCOUNT_INACTIVE')

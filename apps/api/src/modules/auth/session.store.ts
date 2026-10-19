@@ -4,10 +4,10 @@ import { CLOCK, type Clock } from '../../db/clock'
 import type { Session as SessionRow } from '../../db/generated/client'
 import { PrismaService } from '../../db/prisma.service'
 import { AuthConfig } from './auth.config'
-import { REMEMBER_YEARS, SESSION_IDLE_MS, SESSION_SLIDE_INTERVAL_MS } from './auth.constants'
+import { SESSION_IDLE_MS, SESSION_SLIDE_INTERVAL_MS } from './auth.constants'
 import { deriveCsrf, hmacHex, newSessionToken, sha256Hex } from './tokens'
 
-const MYT_OFFSET_MS = 8 * 60 * 60 * 1000
+const DAY_MS = 24 * 60 * 60_000
 const USER_AGENT_MAX = 200
 
 export interface ModeInit {
@@ -23,24 +23,17 @@ export interface NewSession {
   mode?: ModeInit | null
   userAgent?: string | null
   ip?: string | null
-  /** Kept when a session is regenerated, so a remembered session does not get a fresh 5 years. */
+  /** Kept when a session is regenerated, so a remembered session does not get a fresh lifetime. */
   createdAt?: Date
   expiresAt?: Date
+  /** Lifetime of a remembered session in days (decided at login from the account roles). */
+  rememberDays?: number
 }
 
 export interface IssuedSession {
   row: SessionRow
   /** The raw cookie value. Exists only here, in memory, and in the cookie; the database keeps its hash. */
   token: string
-}
-
-/** `date` plus whole calendar years in Malaysia time (29 February falls back to 28 February). */
-export function addCalendarYears(date: Date, years: number): Date {
-  const local = new Date(date.getTime() + MYT_OFFSET_MS)
-  const month = local.getUTCMonth()
-  local.setUTCFullYear(local.getUTCFullYear() + years)
-  if (local.getUTCMonth() !== month) local.setUTCDate(0)
-  return new Date(local.getTime() - MYT_OFFSET_MS)
 }
 
 /** Postgres session store: one row per live session, looked up by the SHA-256 of the cookie value. */
@@ -52,9 +45,9 @@ export class SessionStore {
     @Inject(AuthConfig) private readonly config: AuthConfig,
   ) {}
 
-  /** Expiry of a session created or slid at `at`: 5 calendar years from creation, or 120 minutes idle. */
-  expiryFor(remember: boolean, at: Date, createdAt: Date): Date {
-    return remember ? addCalendarYears(createdAt, REMEMBER_YEARS) : new Date(at.getTime() + SESSION_IDLE_MS)
+  /** Expiry of a new session: `rememberDays` after creation (a remembered session never slides), or 120 minutes idle. */
+  expiryFor(remember: boolean, at: Date, createdAt: Date, rememberDays = 1): Date {
+    return remember ? new Date(createdAt.getTime() + rememberDays * DAY_MS) : new Date(at.getTime() + SESSION_IDLE_MS)
   }
 
   async create(input: NewSession): Promise<IssuedSession> {
@@ -73,7 +66,7 @@ export class SessionStore {
         remember: input.remember,
         createdAt,
         lastSeenAt: now,
-        expiresAt: input.expiresAt ?? this.expiryFor(input.remember, now, createdAt),
+        expiresAt: input.expiresAt ?? this.expiryFor(input.remember, now, createdAt, input.rememberDays),
         userAgent: input.userAgent ? input.userAgent.slice(0, USER_AGENT_MAX) : null,
         ipHash: input.ip ? hmacHex(this.config.secret, 'ip', input.ip) : null,
       },
@@ -120,6 +113,8 @@ export class SessionStore {
   }
 
   /**
+   * (Rotation DELETES the old row, because it is replaced by a new one for the same login and a
+   * dead row would only be clutter; logout REVOKES instead, keeping a trace of the ended session.)
    * New cookie value for the same login (login, role switch and mode change all call this): the
    * old row is deleted and a new one with a fresh token is created in the caller's transaction. If
    * the old row is already gone (a parallel request won) it returns null and nothing is created.

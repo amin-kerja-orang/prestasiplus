@@ -62,6 +62,11 @@ export async function bootAuthApp(opts: BootOptions = {}): Promise<AuthTestApp> 
     SESSION_COOKIE_NAME: undefined,
     COOKIE_DOMAIN: undefined,
     THROTTLE_LOGIN_PER_MINUTE: undefined,
+    SESSION_REMEMBER_DAYS: undefined,
+    SESSION_REMEMBER_DAYS_STAFF: undefined,
+    TRUST_PROXY_HOPS: undefined,
+    // Cheap dummy bcrypt work in tests; the timing test raises it.
+    LEGACY_BCRYPT_DUMMY_COST: '4',
     ...opts.env,
   }
   for (const [k, v] of Object.entries(env)) {
