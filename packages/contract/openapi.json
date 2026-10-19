@@ -64949,6 +64949,25 @@
                 }
               }
             }
+          },
+          "429": {
+            "description": "RATE_LIMITED (BM \"Terlalu banyak percubaan. Sila cuba sebentar lagi.\"): body error.retryAfter and the Retry-After header carry the seconds to wait.",
+            "headers": {
+              "Retry-After": {
+                "description": "Seconds until a retry is allowed (same value as error.retryAfter).",
+                "schema": {
+                  "type": "integer",
+                  "minimum": 0
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
           }
         }
       }
@@ -65017,6 +65036,25 @@
           },
           "404": {
             "description": "NOT_FOUND \"Not Found.\": unknown slug, or a hidden product (status other than active, or the seller is not active). Nothing is counted.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "RATE_LIMITED (BM \"Terlalu banyak percubaan. Sila cuba sebentar lagi.\"): body error.retryAfter and the Retry-After header carry the seconds to wait.",
+            "headers": {
+              "Retry-After": {
+                "description": "Seconds until a retry is allowed (same value as error.retryAfter).",
+                "schema": {
+                  "type": "integer",
+                  "minimum": 0
+                }
+              }
+            },
             "content": {
               "application/json": {
                 "schema": {
