@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest'
+import { afterAll, describe, expect, it } from 'vitest'
 
 import { loadStaging, SyntheticDumpRefusedError } from '../../../src/migration/staging/load'
 import { DirReader } from '../../../src/migration/staging/readers'
@@ -8,6 +8,7 @@ import { join } from 'node:path'
 
 /** M2: a dump marked anonymised or synthetic (known dummy password) is refused when NODE_ENV is production. */
 const work = scratch()
+afterAll(() => work.cleanup())
 const pool = { connect: () => Promise.reject(new Error('must not connect')), query: () => Promise.reject(new Error('must not query')) } as never
 
 function dumpWith(name: string, flag: 'anonymised' | 'synthetic' | null): string {
