@@ -19,6 +19,7 @@ import {
   ASSIGNABLE_ROLES,
   BULK_IMPORT_ROLES_BY_CALLER,
   ImportRoleForbiddenSchema,
+  IMPORT_ROLE_FORBIDDEN_MESSAGE,
   LAST_ADMIN_MESSAGE,
   LastAdminConflictSchema,
   USER_ACCESS,
@@ -371,7 +372,9 @@ describe('D58 decisions', () => {
     expect(BULK_IMPORT_ROLES_BY_CALLER.admin).toContain('parent')
     expect(ASSIGNABLE_ROLES.school_admin).not.toContain('parent')
     expect(USER_ACCESS['POST /admin/users/bulk-import'].scope).toMatch(/teacher only/)
-    expect(ImportRoleForbiddenSchema.safeParse({ error: { code: 'FORBIDDEN', message: 'x' } }).success).toBe(true)
+    expect(IMPORT_ROLE_FORBIDDEN_MESSAGE).toBe('Admin sekolah hanya boleh mengimport guru.')
+    expect(ImportRoleForbiddenSchema.safeParse({ error: { code: 'FORBIDDEN', message: IMPORT_ROLE_FORBIDDEN_MESSAGE } }).success).toBe(true)
+    expect(ImportRoleForbiddenSchema.safeParse({ error: { code: 'FORBIDDEN', message: 'x' } }).success).toBe(false)
     expect(ImportRoleForbiddenSchema.safeParse({ error: { code: 'NOT_FOUND', message: 'x' } }).success).toBe(false)
     const forbidden = op('/admin/users/bulk-import', 'post').responses['403']?.content?.['application/json'].schema
     expect(JSON.stringify(forbidden)).toContain('ImportRoleForbidden')

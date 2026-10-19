@@ -228,7 +228,7 @@ export function registerUsersPaths(registry: OpenAPIRegistry): void {
       401: unauthorized,
       403: json(
         z.union([ImportRoleForbiddenSchema, ErrorBodySchema]),
-        'FORBIDDEN: a school_admin importing any role but teacher (D58, server-enforced because the schema cannot see the caller), another role not allowed, or CSRF_INVALID.',
+        'FORBIDDEN: a school_admin importing any role but teacher (D58, message "Admin sekolah hanya boleh mengimport guru.", server-enforced because the schema cannot see the caller), another role not allowed, or CSRF_INVALID.',
       ),
       413: err('PAYLOAD_TOO_LARGE: multipart file over 1 MB.'),
       422: invalid,

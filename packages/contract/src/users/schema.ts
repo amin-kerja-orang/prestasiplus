@@ -311,9 +311,12 @@ export const LastAdminConflictSchema = z
   })
   .meta({ id: 'LastAdminConflict' })
 
+/** D58: BM copy of the 403 when a school_admin imports any role but teacher. */
+export const IMPORT_ROLE_FORBIDDEN_MESSAGE = 'Admin sekolah hanya boleh mengimport guru.'
+
 /** 403 of bulk-import when a school_admin asks for a role other than teacher (server-enforced). */
 export const ImportRoleForbiddenSchema = z
-  .object({ error: ErrorPayloadSchema.extend({ code: z.literal('FORBIDDEN') }) })
+  .object({ error: ErrorPayloadSchema.extend({ code: z.literal('FORBIDDEN'), message: z.literal(IMPORT_ROLE_FORBIDDEN_MESSAGE) }) })
   .meta({ id: 'ImportRoleForbidden' })
 
 export const BulkImportRoleSchema = z.enum(BULK_IMPORT_ROLES).meta({ id: 'BulkImportRole' })
