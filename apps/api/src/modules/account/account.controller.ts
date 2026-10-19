@@ -200,7 +200,7 @@ export class MeController extends Cookies {
     @Res({ passthrough: true }) res: Response,
   ): Promise<{ data: { status: string } }> {
     const rotated = await this.profile.changePassword(authOf(req), raw, infoOf(req))
-    if (rotated) this.setCookie(res, rotated)
+    this.setCookie(res, rotated)
     return ok({ status: ACCOUNT_MESSAGES.passwordChanged })
   }
 

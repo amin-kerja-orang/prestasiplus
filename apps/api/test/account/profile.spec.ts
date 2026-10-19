@@ -177,7 +177,7 @@ describe('GET/PUT /api/me, password, picture, settings, stats (AC1, AC5, AC8, AC
   })
 
   describe('PUT /me/password (BR-16, AC5)', () => {
-    it('needs the current password; validates; rehashes with argon2id; keeps the session; ends the other sessions', async () => {
+    it('needs the current password; validates; rehashes with argon2id; rotates the caller session; ends the other sessions', async () => {
       const who = await login(t, 'pelajarmaju@demo.test')
       const otherDevice = await login(t, 'pelajarmaju@demo.test')
 
@@ -193,9 +193,13 @@ describe('GET/PUT /api/me, password, picture, settings, stats (AC1, AC5, AC8, AC
       expect(ok.body).toEqual({ data: { status: ACCOUNT_MESSAGES.passwordChanged } })
       expect(ok.headers['cache-control']).toBe('no-store')
       expect((await userRow(t.db, 'pelajarmaju@demo.test'))?.password_hash).toMatch(/^\$argon2id\$/)
-      // Same session still works (no rotation when the flag was not set); the other one is gone.
-      expect(cookieValue(ok)).toBeUndefined()
-      expect((await get(who, '/me')).status).toBe(200)
+      // The caller's session is rotated (new cookie, old one dead); the agent keeps the new cookie. The other device is gone.
+      expect(cookieValue(ok)).toBeTruthy()
+      expect(cookieValue(ok)).not.toBe(who.token)
+      expect((await t.http().get('/api/session').set('Cookie', `pp_session=${who.token}`)).status).toBe(401)
+      const fresh = await get(who, '/session')
+      expect(fresh.status).toBe(200)
+      expect(SessionSchema.parse(fresh.body.data).csrf).not.toBe(who.csrf)
       await otherDevice.agent.get('/api/session').expect(401)
       expect((await t.http().post('/api/auth/login').send({ identifier: 'pelajarmaju@demo.test', password: 'baharu1' })).status).toBe(200)
       expect((await t.http().post('/api/auth/login').send({ identifier: 'pelajarmaju@demo.test', password: DEMO_PASSWORD })).status).toBe(401)
@@ -213,7 +217,7 @@ describe('GET/PUT /api/me, password, picture, settings, stats (AC1, AC5, AC8, AC
       expect((await put(who, '/me/password', { currentPassword: DEMO_PASSWORD, password: DEMO_PASSWORD, passwordConfirmation: DEMO_PASSWORD })).status).toBe(200)
     })
 
-    it('clears must_reset_password and rotates the session (new cookie, old one dead)', async () => {
+    it('clears must_reset_password (and rotates the session, as every change does)', async () => {
       await t.db.query(`update users set must_reset_password = true where email = 'guru@demo.test'`)
       const who = await login(t, 'guru@demo.test')
       const res = await put(who, '/me/password', { currentPassword: DEMO_PASSWORD, password: 'baharu1', passwordConfirmation: 'baharu1' })
@@ -242,6 +246,11 @@ describe('GET/PUT /api/me, password, picture, settings, stats (AC1, AC5, AC8, AC
       expect(first.body.data.avatarUrl).toMatch(/^\/api\/files\/[A-Za-z0-9_-]{22}$/)
       expect((await who.agent.get(first.body.data.avatarUrl as string)).headers['content-type']).toBe('image/png')
       expect(AccountUserMeSchema.parse((await get(who, '/me')).body.data).avatarUrl).toBe(first.body.data.avatarUrl)
+      // AC8: after an upload GET /session and GET /me still agree, avatar included.
+      const me1 = AccountUserMeSchema.parse((await get(who, '/me')).body.data)
+      const session1 = SessionSchema.parse((await get(who, '/session')).body.data)
+      expect(session1.user.avatarUrl).toBe(first.body.data.avatarUrl)
+      expect(accountUserMeMismatches(me1, session1)).toEqual([])
 
       const second = await attach(who, makePng({ width: 3, height: 3 }), 'image/png')
       expect(second.status).toBe(200)

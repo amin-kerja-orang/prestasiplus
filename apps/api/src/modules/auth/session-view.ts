@@ -199,7 +199,7 @@ export function assemble(account: AccountRecord, state: SessionState, csrf: stri
       name: user.name,
       email: user.email,
       username: user.username,
-      avatarUrl: null,
+      avatarUrl: account.avatarUrl,
       schoolId: user.schoolId === null ? null : idToString(user.schoolId),
     },
     roles: grants,

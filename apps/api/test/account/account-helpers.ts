@@ -86,6 +86,8 @@ export interface BootOptions {
   realMail?: boolean
   /** Spy that also calls the real logging MailPort (log-leak tests). */
   teeMail?: boolean
+  /** Keep the real NotificationsService adapter instead of the spy. */
+  realNotices?: boolean
   db?: TestDatabase
 }
 
@@ -125,8 +127,7 @@ export async function bootAccountApp(opts: BootOptions = {}): Promise<AccountTes
   })
     .overrideProvider(CLOCK)
     .useValue(clock)
-    .overrideProvider(NOTIFICATION_PORT)
-    .useValue(notices)
+  if (!opts.realNotices) builder = builder.overrideProvider(NOTIFICATION_PORT).useValue(notices)
   if (opts.teeMail) {
     builder = builder.overrideProvider(MAIL_PORT).useFactory({
       factory: (config: ConfigService) => (mail = new TeeMail(new LoggingMailPort(config))),

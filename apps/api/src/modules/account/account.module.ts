@@ -6,14 +6,16 @@ import { AccountRepository as AuthAccountRepository } from '../auth/account.repo
 import { LoginThrottle } from '../auth/login-throttle.service'
 import { AuthModule } from '../auth'
 import { FilesModule } from '../files'
+import { NotificationsModule } from '../notifications'
 import { SchoolsModule } from '../schools'
 import { IcService } from '../users/credentials'
 import { UsersModule } from '../users'
+import { NotificationsAdapter } from './notifications.adapter'
 import { AccountPublicController, MeController, PictureInterceptor, PublicStatsController } from './account.controller'
 import { AccountDataRepository } from './account-data.repository'
 import { AccountThrottle } from './account-throttle.service'
 import { PasswordResetService } from './password-reset.service'
-import { LoggingMailPort, MAIL_PORT, NOTIFICATION_PORT, NoopNotificationPort } from './ports'
+import { LoggingMailPort, MAIL_PORT, NOTIFICATION_PORT } from './ports'
 import { ProfileService } from './profile.service'
 import { RegistrationService } from './registration.service'
 import { SessionIssuer } from './session-issuer.service'
@@ -25,13 +27,13 @@ import { SettingsService, StatsService } from './settings.service'
  *
  * Seams the LEAD wires later (override the provider, or replace `useClass`):
  * - `MAIL_PORT`: logging only in B1 (OD-7); nothing is e-mailed.
- * - `NOTIFICATION_PORT`: a no-op until `NotificationsService.push` (part B) is bound behind it (D59a).
+ * - `NOTIFICATION_PORT`: bound to part B's `NotificationsService.push` (D59a); sent after commit.
  *
  * `LoginThrottle` and the auth `AccountRepository` are stateless and not exported by `AuthModule`,
  * so they are provided here again (same code, same counters in `login_attempts`).
  */
 @Module({
-  imports: [AuditModule, ThrottleModule, AuthModule, UsersModule, SchoolsModule, FilesModule],
+  imports: [AuditModule, ThrottleModule, AuthModule, UsersModule, SchoolsModule, FilesModule, NotificationsModule],
   controllers: [AccountPublicController, MeController, PublicStatsController],
   providers: [
     AccountDataRepository,
@@ -47,7 +49,7 @@ import { SettingsService, StatsService } from './settings.service'
     LoginThrottle,
     AuthAccountRepository,
     { provide: MAIL_PORT, useClass: LoggingMailPort },
-    { provide: NOTIFICATION_PORT, useClass: NoopNotificationPort },
+    { provide: NOTIFICATION_PORT, useClass: NotificationsAdapter },
   ],
   exports: [MAIL_PORT, NOTIFICATION_PORT],
 })

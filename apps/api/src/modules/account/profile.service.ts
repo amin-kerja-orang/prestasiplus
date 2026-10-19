@@ -165,11 +165,11 @@ export class ProfileService {
 
   /**
    * Requires the current password (a wrong one is counted: 5 per minute per user, then 429), re-hashes
-   * with argon2id, clears `must_reset_password` and ends the user's OTHER sessions. When the account was
-   * flagged `must_reset_password` the caller's own session is rotated too (new cookie); then the client
-   * must read `GET /session` for the new CSRF token. Returns the new grant, or null when the session is kept.
+   * with argon2id, clears `must_reset_password`, ends the user's OTHER sessions and ALWAYS rotates the caller's own
+   * session (new cookie, old row deleted; OWASP, lead decision 2026-10-20). The CSRF token changes, so the client
+   * must read `GET /session` afterwards. Returns the new grant.
    */
-  async changePassword(auth: AuthContext, raw: unknown, info: RequestInfo): Promise<SessionGrant | null> {
+  async changePassword(auth: AuthContext, raw: unknown, info: RequestInfo): Promise<SessionGrant> {
     return overloadTo429(async () => {
       const parsed = AccountPasswordChangeRequestSchema.safeParse(raw)
       if (!parsed.success) throw invalid(fieldsOf(parsed.error))
@@ -189,7 +189,7 @@ export class ProfileService {
       const grant = await this.prisma.transaction(async () => {
         await this.users.update(auth.userId, { passwordHash, mustChangePassword: false, now })
         await this.data.revokeOtherSessions(auth.userId, auth.sessionRowId, now)
-        const rotated = credentials.mustChangePassword ? await this.issuer.rotate(auth.sessionRowId, info) : null
+        const rotated = await this.issuer.rotate(auth.sessionRowId, info)
         await this.audit.record({
           action: ACCOUNT_AUDIT.PASSWORD_CHANGED,
           actorUserId: auth.userId,
@@ -199,7 +199,7 @@ export class ProfileService {
           requestId: info.requestId,
           ip: info.ip,
           isTest: auth.mode !== null,
-          details: { rotated: rotated !== null, clearedMustChange: credentials.mustChangePassword },
+          details: { rotated: true, clearedMustChange: credentials.mustChangePassword },
         })
         return rotated
       }, ACCOUNT_TX)
