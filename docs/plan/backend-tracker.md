@@ -12,10 +12,10 @@ Single source of truth for the **state of every backend card**. The lead's proje
 
 | Priority | Cards | Of which done |
 |---|---|---|
-| P0 | 13 | 4 |
+| P0 | 13 | 5 |
 | P1 | 23 | 1 |
 | P2 | 12 | 0 |
-| **Total** | **48** | **5** |
+| **Total** | **48** | **6** |
 
 (Done = implementation squash-merged into feature/v2-backend: BE-01, BE-02, BE-03. "Contract merged" rows are contract-only, not yet done.)
 
@@ -29,7 +29,7 @@ Single source of truth for the **state of every backend card**. The lead's proje
 | BE-02 | PostgreSQL service, Prisma setup and test harness | PC-1 | P0 | BE-01 | M | done | pc-aminfaudzi/S2 | `be/BE-02-db-orm` | - (LEAD merges by git) | Merged 2026-10-19 (LEAD review Approve; be:verify green on the LEAD PC with Testcontainers Postgres 16). Open: migrations from the runtime image (one-shot migrate container vs prisma in deps). |
 | BE-03 | Authentication, session, roles, scope and Mod Pelajar | PC-1 | P0 | BE-02 | L | done | pc-aminfaudzi/S2 | `be/BE-03-auth-session` | - (LEAD merges by git) | **Merged 2026-10-19 (squash b85df54a), gate S3 passed.** LEAD independent verify: contract:check PASS + be:verify PASS (24 files, 195 passed, 1 skipped, build OK, real Testcontainers Postgres). Code review Approve, security PASS (H1-H3, M1, M2, L1/L2/L5, N1, N3 closed; residuals to BE-33). Remember-me caps: learners 30d, staff (admin/school_admin/ppd_officer) 1d. Throttle 100/15min per id + global. Open: landingPath guru /dashboard (14.9 #6, awaits BE-34). Unblocks BE-04/05/08/36 + frontend L1. |
 | BE-04 | File storage service and upload handling | PC-1 | P0 | BE-03 | S | todo | - | `be/BE-04-file-storage` | - | Sync S4. Security review (uploads). Also derived files for BE-37. |
-| BE-05 | Users and schools (M02): admin CRUD, search, import | PC-1 | P0 | BE-03 | L | todo | - | `be/BE-05-users-schools` | - | Contract merged 2026-10-19 (PR -, be/BE-05-contract). Sync S5. Security review (IC, passwords). Unblocks BE-17, BE-25. |
+| BE-05 | Users and schools (M02): admin CRUD, search, import | PC-1 | P0 | BE-03 | L | done | pc-aminfaudzi/S2 | `be/BE-05-users-schools` | - (LEAD merges by git) | **Merged 2026-10-20 (squash), base 8115bb94.** LEAD independent verify: contract:check + be:verify PASS (53 files/553 passed, build OK, real Testcontainers, no health flake) + 1188 contract tests; independent focused security review PASS (no Crit/High) — parent visibility fail-closed, school scope 404, Argon2id, no-store confirmed. callerOf guard added (non-admin without school → 404). Migration 0004_schools_import. Shared PC-1 infra: common/{throttle,http}, Argon2Gate. LEAD-tracked follow-ups (not in BE-05): pino query-string PII strip, audit 12-digit redaction, CSV formula on export, per-school create quota (BE-25), shared throttle store multi-instance (all BE-33/devops). Unblocks BE-17, BE-25. |
 | BE-06 | Account basics (M01): register, password reset, profile, settings, notifications | PC-1 | P1 | BE-03, BE-04, BE-05 | M | todo | - | `be/BE-06-account-notifications` | - | Contract merged 2026-10-19 (PR #4, be/BE-06-contract). Reset e-mail logged, not sent. Review fixes + D57 applied. |
 | BE-07 | Seed: core population (schools, users, roles) for the PoC profile | PC-1 | P0 | BE-05 | S | todo | - | `be/BE-07-seed-core-accounts` | - | Demo accounts only (Demo1234). |
 | BE-08 | Curriculum (M03): levels, subjects, chapters, topics, DSKP tree | PC-2 | P0 | BE-03 | M | todo | - | `be/BE-08-curriculum` | - | Contract merged 2026-10-19 (PR -, be/BE-08-contract). Sync S5. Unblocks BE-09. |

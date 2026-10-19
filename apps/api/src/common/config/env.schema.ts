@@ -20,6 +20,15 @@ export const EnvSchema = z.object({
   COOKIE_DOMAIN: z.string().optional(),
   COOKIE_SECURE: z.enum(['true', 'false']).optional(),
   THROTTLE_LOGIN_PER_MINUTE: z.coerce.number().int().min(1).optional(),
+  // BE-05 (schools): requests per minute, counted per process. Public routes per client address, admin routes per user.
+  THROTTLE_PUBLIC_PER_MINUTE: z.coerce.number().int().min(1).default(60),
+  THROTTLE_PUBLIC_SEARCH_PER_MINUTE: z.coerce.number().int().min(1).default(300),
+  THROTTLE_ADMIN_READ_PER_MINUTE: z.coerce.number().int().min(1).default(300),
+  THROTTLE_ADMIN_WRITE_PER_MINUTE: z.coerce.number().int().min(1).default(30),
+  // BE-05 (users): bulk imports per hour per user.
+  THROTTLE_IMPORT_PER_HOUR: z.coerce.number().int().min(1).default(10),
+  // BE-05 (users): HMAC key of the IC number hash. Unset: SESSION_SECRET is used (required in production). Rotating it breaks IC lookups until every ic_hash is recomputed.
+  IC_HASH_KEY: z.preprocess((v) => (v === '' ? undefined : v), z.string().min(16).optional()),
   /** Reverse-proxy hops to trust for the client address (0 = none). */
   TRUST_PROXY_HOPS: z.coerce.number().int().min(0).default(0),
   /** Lifetime of a "remember me" session in days (LEAD decision: 30). */
@@ -50,14 +59,21 @@ export function loadEnv(raw: Record<string, unknown> = process.env): Env {
 
 export const DEV_SESSION_SECRET = 'dev-only-session-secret-not-for-production'
 const MIN_SECRET_LENGTH = 16
+const MIN_IC_KEY_LENGTH = 32
 
-/** SESSION_SECRET: a strong value is mandatory in production (boot fails); other environments get a dev default. */
+/** SESSION_SECRET and IC_HASH_KEY: strong values are mandatory in production (boot fails; no fallback between them); other environments get a dev default. */
 function withSessionSecret(env: Env): Env {
   if (env.NODE_ENV !== 'production') return { ...env, SESSION_SECRET: env.SESSION_SECRET || DEV_SESSION_SECRET }
   const secret = env.SESSION_SECRET
   if (!secret || secret.length < MIN_SECRET_LENGTH || secret === 'change-me') {
     throw new Error(
       `Invalid environment configuration. SESSION_SECRET: required in production, at least ${MIN_SECRET_LENGTH} characters and not the placeholder`,
+    )
+  }
+  const icKey = env.IC_HASH_KEY
+  if (!icKey || icKey.length < MIN_IC_KEY_LENGTH || icKey === secret) {
+    throw new Error(
+      `Invalid environment configuration. IC_HASH_KEY: required in production, at least ${MIN_IC_KEY_LENGTH} characters and different from SESSION_SECRET`,
     )
   }
   return env
