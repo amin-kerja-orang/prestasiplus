@@ -285,7 +285,7 @@ describe('exact mock BM copy per field (create)', () => {
     ['questionText', { questionText: 'pendek' }, m.text],
     ['questionText', { questionText: undefined }, m.text],
     ['language', { language: 'fr' }, m.language],
-    ['dskpSpId', { dskpSpId: '' }, m.sp],
+    ['dskpSpId', { dskpSpId: 3 }, m.sp],
     ['pointsValue', { pointsValue: 0 }, m.points],
     ['tfAnswer', { tfAnswer: 'maybe' }, m.tfAnswer],
     ['options', { options: ['a', '', 'c', 'd'] }, m.options],

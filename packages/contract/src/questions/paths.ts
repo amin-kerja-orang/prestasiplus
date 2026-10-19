@@ -94,7 +94,7 @@ const StructuredListEnvelope = z.object({
   meta: ListMetaSchema.extend({ stats: QuestionStructuredStatsSchema }),
 })
 
-/** Registers the BE-09 endpoints. Admin routes: Admin Pusat only. Guru routes: Guru, own rows only. */
+/** Registers the BE-09 endpoints. Admin routes: Admin Pusat only. Guru routes: Guru or Admin (mock teacherOnly), own rows only. GET /guru/questions/template and POST /guru/questions/import (BE-10) and GET /guru/contributions (BE-17) belong to other cards. */
 export function registerQuestionsPaths(registry: OpenAPIRegistry): void {
   const admin = ['questions']
   const guru = ['questions', 'guru']
@@ -142,7 +142,7 @@ export function registerQuestionsPaths(registry: OpenAPIRegistry): void {
     tags: admin,
     summary: 'Create a question',
     description:
-      'JSON, or multipart when images are sent (`questionImage`, `optionImages[i]`: JPG/PNG/WebP up to 2MB). Status defaults to `draft`. `status: published` needs subject, level, unit, SP and TP (422). Flash: "Soalan berjaya ditambah."',
+      'JSON, or multipart when images are sent (`questionImage`, `optionImages[i]`: JPG/PNG/WebP up to 2MB; their errors use the keys `questionImage` and `optionImages.<i>`). Status defaults to `draft`. Service rule (not enforced by the body schema): `status: published` needs subject, level, unit, SP and TP (422). A bad MCQ option is always reported under the single key `options`. Flash: "Soalan berjaya ditambah."',
     request: { headers: [csrf], body: body(QuestionCreateRequestSchema) },
     responses: {
       201: json(mutationEnvelopeOf(QuestionSchema), 'Created.'),

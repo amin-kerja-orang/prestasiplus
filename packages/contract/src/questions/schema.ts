@@ -3,6 +3,7 @@ import { PageQuerySchema } from '../common/envelope'
 import { IdSchema } from '../common/ids'
 import { TimestampSchema } from '../common/time'
 import {
+  QUESTION_STATUS_MESSAGE,
   QuestionCurriculumTagSchema,
   QuestionPartSchema,
   QuestionPublicPartSchema,
@@ -47,6 +48,9 @@ export const QUESTION_MESSAGES = {
   guruText: 'Sila isi soalan.',
   guruTextLong: 'Soalan tidak boleh melebihi 2000 aksara.',
   guruTf: 'Sila pilih betul atau salah.',
+  guruOptionLong: 'Pilihan jawapan tidak boleh melebihi 500 aksara.',
+  guruAnswerLong: 'Jawapan betul tidak boleh melebihi 500 aksara.',
+  status: QUESTION_STATUS_MESSAGE,
   guruChapter: 'Bab tidak sah.',
   guruTopic: 'Topik tidak sah.',
   guruScript: 'Jenis tulisan tidak sah.',
@@ -193,17 +197,50 @@ export const QuestionDetailSchema = QuestionSchema.omit({ createdBy: true })
 /** An id field whose every failure (missing, not a string, empty) gives one BM message. */
 const idWith = (message: string) => z.string({ error: message }).min(1, message).max(64, message)
 
+/** Like `idWith` but `''` and null (clear) are allowed, as the mock's optional id fields. */
+const idOrBlank = (message: string) => z.string({ error: message }).max(64, message).nullable().optional()
+
+/** An option as sent: a string, `{ text }` or `{ optionText }` (mock `optionText()`). */
+const optText = (v: unknown): string => {
+  if (typeof v === 'string') return v.trim()
+  if (typeof v === 'object' && v !== null) {
+    const o = v as { text?: unknown; optionText?: unknown }
+    const t = typeof o.optionText === 'string' ? o.optionText : typeof o.text === 'string' ? o.text : ''
+    return t.trim()
+  }
+  return ''
+}
+const OPTION_MAX = 500
+const charLen = (t: string) => [...t].length
+
+/**
+ * MCQ option list. Every per-element failure is ONE issue on the list itself, so the `fields` key is
+ * `options` exactly as in the mock (never `options.1`). `indexed`: the Guru edit form, items
+ * `{ id: 0..3, optionText }` whose four ids must be unique.
+ */
+const optionList = (o: { long?: string; indexed?: boolean; item: Record<string, unknown> }) =>
+  z
+    .array(z.unknown(), { error: QUESTION_MESSAGES.options })
+    .superRefine((list, ctx) => {
+      const fail = (message: string) => ctx.addIssue({ code: 'custom', message })
+      const texts = list.map(optText)
+      if (o.indexed) {
+        const ids = new Set(list.map((e) => (typeof e === 'object' && e !== null ? Number((e as { id?: unknown }).id) : NaN)))
+        if (list.length !== 4 || ids.size !== 4 || [...ids].some((i) => !Number.isInteger(i) || i < 0 || i > 3)) return fail(QUESTION_MESSAGES.options)
+      } else if (list.length !== 4) return fail(QUESTION_MESSAGES.options)
+      if (texts.some((t) => t === '')) return fail(QUESTION_MESSAGES.options)
+      if (o.long && texts.some((t) => charLen(t) > OPTION_MAX)) fail(o.long)
+    })
+    .meta({ type: 'array', minItems: 4, maxItems: 4, items: o.item })
+
 const baseInput = z.object({
   subjectId: idWith(QUESTION_MESSAGES.subject),
   educationLevelId: idWith(QUESTION_MESSAGES.level),
   difficultyLevel: z.coerce.number({ error: QUESTION_MESSAGES.difficulty }).int(QUESTION_MESSAGES.difficulty).min(1, QUESTION_MESSAGES.difficulty).max(5, QUESTION_MESSAGES.difficulty),
   questionText: z.string({ error: QUESTION_MESSAGES.text }).trim().min(10, QUESTION_MESSAGES.text),
-  dskpSpId: idWith(QUESTION_MESSAGES.sp).nullable().optional(),
-  /** MCQ: four texts A to D. */
-  options: z
-    .array(z.string({ error: QUESTION_MESSAGES.options }).trim().min(1, QUESTION_MESSAGES.options), { error: QUESTION_MESSAGES.options })
-    .length(4, QUESTION_MESSAGES.options)
-    .optional(),
+  dskpSpId: idOrBlank(QUESTION_MESSAGES.sp),
+  /** MCQ: four texts A to D. A bad item is reported once, under `options`. */
+  options: optionList({ item: { type: 'string', minLength: 1 } }).optional(),
   correctAnswer: z.coerce.number({ error: QUESTION_MESSAGES.correctAnswer }).int(QUESTION_MESSAGES.correctAnswer).min(0, QUESTION_MESSAGES.correctAnswer).max(3, QUESTION_MESSAGES.correctAnswer).optional(),
   tfAnswer: z.boolean({ error: QUESTION_MESSAGES.tfAnswer }).nullable().optional(),
   correctAnswerText: z.string().trim().nullable().optional(),
@@ -387,41 +424,86 @@ export const QuestionGuruDetailSchema = QuestionGuruSummarySchema.extend({
   usage: z.object({ attempts: z.number().int().min(0), correct: z.number().int().min(0), accuracy: z.number().int().min(0).max(100) }),
 }).meta({ id: 'QuestionGuruDetail' })
 
-const OptionInput = z.union([z.string(), z.object({ text: z.string() }), z.object({ optionText: z.string() })])
+const GuruDifficulty = z.union([z.enum(['easy', 'medium', 'hard'], QUESTION_MESSAGES.difficulty), z.coerce.number({ error: QUESTION_MESSAGES.difficulty }).int(QUESTION_MESSAGES.difficulty).min(1, QUESTION_MESSAGES.difficulty).max(5, QUESTION_MESSAGES.difficulty)], { error: QUESTION_MESSAGES.difficulty })
+const GuruText = z.string({ error: QUESTION_MESSAGES.guruText }).trim().min(1, QUESTION_MESSAGES.guruText).max(2000, QUESTION_MESSAGES.guruTextLong)
 
-/** POST /guru/questions: always saved as `review` (was pending_review), owner = caller. Difficulty may be easy/medium/hard (2/3/4). */
+/** MCQ key as the mock reads it: index 0..3, a digit string, or a letter A to D. */
+const keyIndex = (v: unknown): number | undefined => {
+  if (typeof v === 'number') return Number.isInteger(v) && v >= 0 && v <= 3 ? v : undefined
+  if (typeof v !== 'string') return undefined
+  const t = v.trim().toUpperCase()
+  if (/^\d+$/.test(t)) return Number(t) <= 3 ? Number(t) : undefined
+  return /^[A-D]$/.test(t) ? t.charCodeAt(0) - 65 : undefined
+}
+const tfValid = (v: unknown) => v === true || v === false || v === 'true' || v === 'false' || v === '1' || v === '0' || v === 1 || v === 0
+
+const GuruOptionItem = { oneOf: [{ type: 'string' }, { type: 'object', properties: { text: { type: 'string' } } }, { type: 'object', properties: { optionText: { type: 'string' } } }] }
+
+/**
+ * POST /guru/questions: saved as `review`, owner = caller. Difficulty may be easy/medium/hard (2/3/4).
+ * Rules per type are the mock's `parseCreate`; the issue key is the `fields` key: `options` (empty item,
+ * or item over 500), `correctAnswer` (MCQ key; for short_answer/fill_blank the answer text, empty or over
+ * 500), `tfAnswer`. Image errors use the key `questionImage` / `optionImages.<i>` (multipart). Chapter,
+ * topic and SP ownership checks need the curriculum and are service rules (same keys and copy).
+ */
 export const QuestionGuruCreateRequestSchema = z
   .object({
-    educationLevelId: IdSchema,
-    subjectId: IdSchema,
+    educationLevelId: idWith(QUESTION_MESSAGES.level),
+    subjectId: idWith(QUESTION_MESSAGES.subject),
     questionType: QuestionTypeSchema,
-    difficultyLevel: z.union([z.enum(['easy', 'medium', 'hard']), z.coerce.number().int().min(1).max(5)]),
-    questionText: z.string().trim().min(1, QUESTION_MESSAGES.guruText).max(2000, QUESTION_MESSAGES.guruTextLong),
-    options: z.array(OptionInput).length(4, QUESTION_MESSAGES.options).optional(),
-    correctAnswer: z.union([z.coerce.number().int().min(0).max(3), z.string().regex(/^[A-Da-d]$/), z.string().max(500)]).optional(),
-    tfAnswer: z.boolean().optional(),
-    correctAnswerText: z.string().max(500).optional(),
+    difficultyLevel: GuruDifficulty,
+    questionText: GuruText,
+    options: optionList({ long: QUESTION_MESSAGES.guruOptionLong, item: GuruOptionItem }).optional(),
+    correctAnswer: z.union([z.number(), z.string()]).optional(),
+    tfAnswer: z.union([z.boolean(), z.string(), z.number()]).nullable().optional(),
+    correctAnswerText: z.string().optional(),
     altAnswers: z.union([z.string(), z.array(z.string())]).optional(),
     modelAnswer: z.string().optional(),
     explanation: z.string().optional(),
     questionImageUrl: z.string().optional(),
-    curriculumChapterId: IdSchema.nullable().optional(),
-    curriculumTopicId: IdSchema.nullable().optional(),
-    dskpSpId: IdSchema.nullable().optional(),
-    scriptType: ScriptType.optional(),
+    curriculumChapterId: idOrBlank(QUESTION_MESSAGES.guruChapter),
+    curriculumTopicId: idOrBlank(QUESTION_MESSAGES.guruTopic),
+    dskpSpId: idOrBlank(QUESTION_MESSAGES.sp),
+    scriptType: z.enum(['rumi', 'arab', 'jawi', 'mixed'], QUESTION_MESSAGES.guruScript).optional(),
     parts: z.array(QuestionPartSchema).min(1).optional(),
     tag: QuestionCurriculumTagSchema.optional(),
   })
+  .superRefine((v, ctx) => {
+    const bad = (path: string, message: string) => ctx.addIssue({ code: 'custom', path: [path], message })
+    if (v.questionType === 'mcq') {
+      if (v.options === undefined) bad('options', QUESTION_MESSAGES.options)
+      if (keyIndex(v.correctAnswer) === undefined) bad('correctAnswer', QUESTION_MESSAGES.correctAnswer)
+    } else if (v.questionType === 'true_false') {
+      if (!tfValid(v.tfAnswer)) bad('tfAnswer', QUESTION_MESSAGES.guruTf)
+    } else if (v.questionType === 'short_answer' || v.questionType === 'fill_blank') {
+      const answer = (typeof v.correctAnswerText === 'string' ? v.correctAnswerText : typeof v.correctAnswer === 'string' ? v.correctAnswer : '').trim()
+      if (answer === '') bad('correctAnswer', QUESTION_MESSAGES.answerText)
+      else if (charLen(answer) > OPTION_MAX) bad('correctAnswer', QUESTION_MESSAGES.guruAnswerLong)
+    }
+  })
   .meta({ id: 'QuestionGuruCreateRequest' })
 
-/** PUT /guru/questions/:id (own only). MCQ options are `{ id: 0..3, optionText }`. */
+/**
+ * PUT /guru/questions/:id (own only). MCQ options are `{ id: 0..3, optionText }` with four unique ids.
+ * When `options` or `correctOptionId` is sent, both are required (`options`, `correctOptionId` keys);
+ * that they apply only to an MCQ is a service rule (the saved type is not in the body).
+ */
 export const QuestionGuruUpdateRequestSchema = z
   .object({
-    questionText: z.string().trim().min(1, QUESTION_MESSAGES.guruText).max(2000, QUESTION_MESSAGES.guruTextLong),
-    difficultyLevel: z.union([z.enum(['easy', 'medium', 'hard']), z.coerce.number().int().min(1).max(5)]).optional(),
-    options: z.array(z.object({ id: z.number().int().min(0).max(3), optionText: z.string().trim().min(1).max(500) })).length(4, QUESTION_MESSAGES.options).optional(),
-    correctOptionId: z.union([z.coerce.number().int().min(0).max(3), z.string().regex(/^[A-Da-d]$/)]).optional(),
+    questionText: GuruText,
+    difficultyLevel: GuruDifficulty.optional(),
+    options: optionList({
+      long: QUESTION_MESSAGES.guruOptionLong,
+      indexed: true,
+      item: { type: 'object', required: ['id', 'optionText'], properties: { id: { type: 'integer', minimum: 0, maximum: 3 }, optionText: { type: 'string', minLength: 1, maxLength: 500 } } },
+    }).optional(),
+    correctOptionId: z.union([z.number(), z.string()]).optional(),
     explanation: z.string().nullable().optional(),
+  })
+  .superRefine((v, ctx) => {
+    if (v.options === undefined && v.correctOptionId === undefined) return
+    if (v.options === undefined) ctx.addIssue({ code: 'custom', path: ['options'], message: QUESTION_MESSAGES.options })
+    if (keyIndex(v.correctOptionId) === undefined) ctx.addIssue({ code: 'custom', path: ['correctOptionId'], message: QUESTION_MESSAGES.correctAnswer })
   })
   .meta({ id: 'QuestionGuruUpdateRequest' })
 

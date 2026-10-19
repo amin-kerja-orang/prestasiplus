@@ -10,7 +10,8 @@ import { IdSchema } from '../common/ids'
 
 /** D12 / D54(a): the only lifecycle codes on the wire. BM labels (UI only): Draf, Semakan, Lulus, Diterbitkan, Diarkib. */
 export const QUESTION_STATUSES = ['draft', 'review', 'approved', 'published', 'archived'] as const
-export const QuestionStatusSchema = z.enum(QUESTION_STATUSES).meta({ id: 'QuestionStatus' })
+export const QUESTION_STATUS_MESSAGE = 'Status tidak sah.'
+export const QuestionStatusSchema = z.enum(QUESTION_STATUSES, QUESTION_STATUS_MESSAGE).meta({ id: 'QuestionStatus' })
 export type QuestionStatus = z.infer<typeof QuestionStatusSchema>
 
 /** Rich text `{ ms, en? }` (D2); LaTeX/MathML allowed inside the strings. */
