@@ -33,7 +33,7 @@ const liveData = {
   accuracy: 71,
   gpsOverall: null,
   classes: [
-    { id: '11', name: '5 Amanah', educationLevel: 'tingkatan-5', studentCount: 30, active: 12, accuracy: 68 },
+    { id: '11', name: '5 Amanah', educationLevel: 'TINGKATAN_5', studentCount: 30, active: 12, accuracy: 68 },
   ],
   topStudents: [rank],
   leaderboardWeek: [rank],
@@ -59,7 +59,7 @@ describe('CommandCenterGuruLiveData', () => {
   })
   it('accepts a numeric gps and rejects a bad class level or missing key', () => {
     expect(CommandCenterGuruLiveDataSchema.safeParse({ ...liveData, gpsOverall: 4.69 }).success).toBe(true)
-    const bad = { ...liveData, classes: [{ ...liveData.classes[0], educationLevel: 'tingkatan-9' }] }
+    const bad = { ...liveData, classes: [{ ...liveData.classes[0], educationLevel: 'TINGKATAN_9' }] }
     expect(CommandCenterGuruLiveDataSchema.safeParse(bad).success).toBe(false)
     const rest: Record<string, unknown> = { ...liveData }
     delete rest.mood

@@ -1,5 +1,6 @@
 import { z } from '../../zod'
 import { IdSchema } from '../../common/ids'
+import { CurriculumGradeCodeSchema } from '../../curriculum/schema'
 import { DateOnlySchema, TimestampSchema } from '../../common/time'
 
 /**
@@ -17,23 +18,6 @@ const count = z.number().int().min(0)
 const num = z.number()
 const FIELD = (description: string) => ({ description })
 const HHMM = /^\d{2}:\d{2}$/
-
-/** Slug of the class level, e.g. `tahun-4`, `tingkatan-5` (DATA-M10-01). */
-export const CommandCenterGuruEducationLevelSchema = z
-  .enum([
-    'tahun-1',
-    'tahun-2',
-    'tahun-3',
-    'tahun-4',
-    'tahun-5',
-    'tahun-6',
-    'tingkatan-1',
-    'tingkatan-2',
-    'tingkatan-3',
-    'tingkatan-4',
-    'tingkatan-5',
-  ])
-  .meta({ id: 'CommandCenterGuruEducationLevel' })
 
 /** BR-M08-01: the ten SPM grades in point order (A+ 0 ... G 9). */
 export const COMMAND_CENTER_GURU_GRADES = ['A+', 'A', 'A-', 'B+', 'B', 'C+', 'C', 'D', 'E', 'G'] as const
@@ -53,7 +37,10 @@ export const CommandCenterGuruClassRowSchema = z
   .object({
     id: IdSchema.meta(FIELD('Class id.')),
     name: z.string(),
-    educationLevel: CommandCenterGuruEducationLevelSchema,
+    educationLevel: CurriculumGradeCodeSchema.meta({
+      description:
+        'Class level as the BE-08 curriculum grade code (DARJAH_1..6, TINGKATAN_1..5). Shape differs from the mock, which emits slugs "tahun-1".."tahun-6", "tingkatan-1".."tingkatan-5" (tahun-n maps to DARJAH_n, tingkatan-n to TINGKATAN_n).',
+    }),
     studentCount: count,
     active: count.meta(FIELD('Members with at least one answer in the last 7 days.')),
     accuracy: count.meta(FIELD('Whole percent over all answers of the members; 0 when none.')),
@@ -123,7 +110,7 @@ export const CommandCenterGuruLiveDataSchema = z
     accuracy: count.meta(FIELD('round(correct / answered * 100) over all answers; 0 when none.')),
     gpsOverall: num
       .nullable()
-      .meta(FIELD('GPS over graded headcount entries (2 dp); null when none. Display constant 4.69 for the seed snapshot user.')),
+      .meta(FIELD('GPS over graded headcount entries (2 dp); null when none. For the seed snapshot user (id 1) the value is the documented display constant 4.69 (D11 exception).')),
     classes: z.array(CommandCenterGuruClassRowSchema),
     topStudents: z
       .array(CommandCenterGuruStudentRankSchema)

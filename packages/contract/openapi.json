@@ -12462,7 +12462,7 @@
           "minimum",
           "disengaged"
         ],
-        "description": "Platform view: documented display constants (DC-M17-05). School view: zeros."
+        "description": "Platform view: display constant DC-M17-05 (D11 exception). School view: zeros."
       },
       "CommandCenterCorrection": {
         "type": "object",
@@ -12491,7 +12491,7 @@
           "improvedCount",
           "topImprovers"
         ],
-        "description": "Platform view: documented display constants (DC-M17-03). School view: zeros."
+        "description": "Platform view: display constant DC-M17-03 (D11 exception). School view: zeros."
       },
       "CommandCenterDailyPoint": {
         "type": "object",
@@ -12726,7 +12726,7 @@
           },
           "timeAgo": {
             "type": "string",
-            "description": "Human-readable age (diffForHumans)."
+            "description": "Human-readable age (diffForHumans), mock wire text. Open question for the frontend: BM rendering of relative time."
           }
         },
         "required": [
@@ -12815,7 +12815,8 @@
             ]
           },
           "lastActiveHuman": {
-            "type": "string"
+            "type": "string",
+            "description": "Mock wire text. Open question for the frontend: BM rendering of relative time."
           }
         },
         "required": [
@@ -13226,7 +13227,8 @@
                   "maximum": 100
                 },
                 "lastActiveHuman": {
-                  "type": "string"
+                  "type": "string",
+                  "description": "Mock wire text. Open question for the frontend: BM rendering of relative time."
                 }
               },
               "required": [
@@ -13286,7 +13288,8 @@
                   "type": "string"
                 },
                 "timeAgo": {
-                  "type": "string"
+                  "type": "string",
+                  "description": "Mock wire text. Open question for the frontend: BM rendering of relative time."
                 }
               },
               "required": [
@@ -14371,22 +14374,6 @@
           "data"
         ]
       },
-      "CommandCenterGuruEducationLevel": {
-        "type": "string",
-        "enum": [
-          "tahun-1",
-          "tahun-2",
-          "tahun-3",
-          "tahun-4",
-          "tahun-5",
-          "tahun-6",
-          "tingkatan-1",
-          "tingkatan-2",
-          "tingkatan-3",
-          "tingkatan-4",
-          "tingkatan-5"
-        ]
-      },
       "CommandCenterGuruClassRow": {
         "type": "object",
         "properties": {
@@ -14401,7 +14388,21 @@
             "type": "string"
           },
           "educationLevel": {
-            "$ref": "#/components/schemas/CommandCenterGuruEducationLevel"
+            "type": "string",
+            "enum": [
+              "DARJAH_1",
+              "DARJAH_2",
+              "DARJAH_3",
+              "DARJAH_4",
+              "DARJAH_5",
+              "DARJAH_6",
+              "TINGKATAN_1",
+              "TINGKATAN_2",
+              "TINGKATAN_3",
+              "TINGKATAN_4",
+              "TINGKATAN_5"
+            ],
+            "description": "Class level as the BE-08 curriculum grade code (DARJAH_1..6, TINGKATAN_1..5). Shape differs from the mock, which emits slugs \"tahun-1\"..\"tahun-6\", \"tingkatan-1\"..\"tingkatan-5\" (tahun-n maps to DARJAH_n, tingkatan-n to TINGKATAN_n)."
           },
           "studentCount": {
             "type": "integer",
@@ -14626,7 +14627,7 @@
               "number",
               "null"
             ],
-            "description": "GPS over graded headcount entries (2 dp); null when none. Display constant 4.69 for the seed snapshot user."
+            "description": "GPS over graded headcount entries (2 dp); null when none. For the seed snapshot user (id 1) the value is the documented display constant 4.69 (D11 exception)."
           },
           "classes": {
             "type": "array",
@@ -28587,7 +28588,7 @@
           "command-center"
         ],
         "summary": "Live board (Command Center, admin and school admin)",
-        "description": "Roles admin and school_admin. Admin gets the platform view (students outside fixture schools 900001-900099); a school_admin gets every figure filtered to the session school (a client school id is ignored), topSchools empty, dailyTrend filled. Poll with ETag / If-None-Match; no websockets.\nengagement and correction are documented display constants on the platform view and zeros on the school view.",
+        "description": "Roles admin and school_admin. Admin gets the platform view (students outside fixture schools 900001-900099); a school_admin gets every figure filtered to the session school (a client school id is ignored), topSchools empty, dailyTrend filled. Poll with ETag / If-None-Match; no websockets. Implementation excludes is_test accounts (card AC2, OQ-API-B3-1).\nengagement and correction are documented display constants on the platform view and zeros on the school view.",
         "responses": {
           "200": {
             "description": "The live board.",
@@ -28628,7 +28629,7 @@
           "command-center"
         ],
         "summary": "Daily activity board (Aktiviti Harian)",
-        "description": "Roles admin and school_admin (a school_admin is forced to the session school and `schools` is omitted). `period` is today, week or month; any other value answers with today figures and echoes the raw value in `period`.",
+        "description": "Roles admin and school_admin (a school_admin is forced to the session school and `schools` is omitted). `period` is today, week or month; any other value answers with today figures and echoes the raw value in `period`. Implementation excludes is_test accounts (card AC2, OQ-API-B3-1).",
         "parameters": [
           {
             "schema": {
@@ -28681,7 +28682,7 @@
           "command-center"
         ],
         "summary": "Daily activity drill of one school",
-        "description": "Role admin only (a school_admin or teacher gets 403). Unknown school answers 404; same `period` rule as the board.",
+        "description": "Role admin only (a school_admin or teacher gets 403). Unknown school answers 404; same `period` rule as the board. Implementation excludes is_test accounts (card AC2, OQ-API-B3-1).",
         "parameters": [
           {
             "schema": {
@@ -28757,7 +28758,7 @@
           "command-center"
         ],
         "summary": "School page (S4)",
-        "description": "Scope (guard admin, teacher or school_admin): admin sees every id that exists; a teacher only the schools of own active classes, own page, own active classes, their active members and the headcount configs of those classes; a school_admin only the session school (never the request), its teachers, classes (class school, else owner school), pupils (active or not), their sessions and the headcount configs of those classes. Out of scope or unknown answers 404. GET only, so no CSRF header. Personal data: responses carry Cache-Control no-store; ETag / If-None-Match gives 304.",
+        "description": "Scope (guard admin, teacher or school_admin): admin sees every id that exists; a teacher only the schools of own active classes, own page, own active classes, their active members and the headcount configs of those classes; a school_admin only the session school (never the request), its teachers, classes (class school, else owner school), pupils (active or not), their sessions and the headcount configs of those classes. Out of scope or unknown answers 404. GET only, so no CSRF header. Implementation excludes is_test accounts (card AC2, OQ-API-B3-1). Personal data: responses carry Cache-Control no-store; ETag / If-None-Match gives 304.",
         "parameters": [
           {
             "schema": {
@@ -28823,7 +28824,7 @@
           "command-center"
         ],
         "summary": "Teacher page (S5)",
-        "description": "Scope (guard admin, teacher or school_admin): admin sees every id that exists; a teacher only the schools of own active classes, own page, own active classes, their active members and the headcount configs of those classes; a school_admin only the session school (never the request), its teachers, classes (class school, else owner school), pupils (active or not), their sessions and the headcount configs of those classes. Out of scope or unknown answers 404. GET only, so no CSRF header. Personal data: responses carry Cache-Control no-store; ETag / If-None-Match gives 304. A teacher may open only the own page.",
+        "description": "Scope (guard admin, teacher or school_admin): admin sees every id that exists; a teacher only the schools of own active classes, own page, own active classes, their active members and the headcount configs of those classes; a school_admin only the session school (never the request), its teachers, classes (class school, else owner school), pupils (active or not), their sessions and the headcount configs of those classes. Out of scope or unknown answers 404. GET only, so no CSRF header. Implementation excludes is_test accounts (card AC2, OQ-API-B3-1). Personal data: responses carry Cache-Control no-store; ETag / If-None-Match gives 304. A teacher may open only the own page.",
         "parameters": [
           {
             "schema": {
@@ -28902,7 +28903,7 @@
           "command-center"
         ],
         "summary": "Class page (S6)",
-        "description": "Scope (guard admin, teacher or school_admin): admin sees every id that exists; a teacher only the schools of own active classes, own page, own active classes, their active members and the headcount configs of those classes; a school_admin only the session school (never the request), its teachers, classes (class school, else owner school), pupils (active or not), their sessions and the headcount configs of those classes. Out of scope or unknown answers 404. GET only, so no CSRF header. Personal data: responses carry Cache-Control no-store; ETag / If-None-Match gives 304.",
+        "description": "Scope (guard admin, teacher or school_admin): admin sees every id that exists; a teacher only the schools of own active classes, own page, own active classes, their active members and the headcount configs of those classes; a school_admin only the session school (never the request), its teachers, classes (class school, else owner school), pupils (active or not), their sessions and the headcount configs of those classes. Out of scope or unknown answers 404. GET only, so no CSRF header. Implementation excludes is_test accounts (card AC2, OQ-API-B3-1). Personal data: responses carry Cache-Control no-store; ETag / If-None-Match gives 304.",
         "parameters": [
           {
             "schema": {
@@ -28968,7 +28969,7 @@
           "command-center"
         ],
         "summary": "Headcount detail (S7 modal)",
-        "description": "Scope (guard admin, teacher or school_admin): admin sees every id that exists; a teacher only the schools of own active classes, own page, own active classes, their active members and the headcount configs of those classes; a school_admin only the session school (never the request), its teachers, classes (class school, else owner school), pupils (active or not), their sessions and the headcount configs of those classes. Out of scope or unknown answers 404. GET only, so no CSRF header. Personal data: responses carry Cache-Control no-store; ETag / If-None-Match gives 304. The class of the config must be in scope.",
+        "description": "Scope (guard admin, teacher or school_admin): admin sees every id that exists; a teacher only the schools of own active classes, own page, own active classes, their active members and the headcount configs of those classes; a school_admin only the session school (never the request), its teachers, classes (class school, else owner school), pupils (active or not), their sessions and the headcount configs of those classes. Out of scope or unknown answers 404. GET only, so no CSRF header. Implementation excludes is_test accounts (card AC2, OQ-API-B3-1). Personal data: responses carry Cache-Control no-store; ETag / If-None-Match gives 304. The class of the config must be in scope.",
         "parameters": [
           {
             "schema": {
@@ -29034,7 +29035,7 @@
           "command-center"
         ],
         "summary": "Pupil page (S7)",
-        "description": "Scope (guard admin, teacher or school_admin): admin sees every id that exists; a teacher only the schools of own active classes, own page, own active classes, their active members and the headcount configs of those classes; a school_admin only the session school (never the request), its teachers, classes (class school, else owner school), pupils (active or not), their sessions and the headcount configs of those classes. Out of scope or unknown answers 404. GET only, so no CSRF header. Personal data: responses carry Cache-Control no-store; ETag / If-None-Match gives 304. The id must be a student.",
+        "description": "Scope (guard admin, teacher or school_admin): admin sees every id that exists; a teacher only the schools of own active classes, own page, own active classes, their active members and the headcount configs of those classes; a school_admin only the session school (never the request), its teachers, classes (class school, else owner school), pupils (active or not), their sessions and the headcount configs of those classes. Out of scope or unknown answers 404. GET only, so no CSRF header. Implementation excludes is_test accounts (card AC2, OQ-API-B3-1). Personal data: responses carry Cache-Control no-store; ETag / If-None-Match gives 304. The id must be a student.",
         "parameters": [
           {
             "schema": {
@@ -29100,7 +29101,7 @@
           "command-center"
         ],
         "summary": "Completed sessions of one subject of a pupil",
-        "description": "Scope (guard admin, teacher or school_admin): admin sees every id that exists; a teacher only the schools of own active classes, own page, own active classes, their active members and the headcount configs of those classes; a school_admin only the session school (never the request), its teachers, classes (class school, else owner school), pupils (active or not), their sessions and the headcount configs of those classes. Out of scope or unknown answers 404. GET only, so no CSRF header. Personal data: responses carry Cache-Control no-store; ETag / If-None-Match gives 304. Newest first; code UMUM is free practice; an unknown code gives an empty list (200).",
+        "description": "Scope (guard admin, teacher or school_admin): admin sees every id that exists; a teacher only the schools of own active classes, own page, own active classes, their active members and the headcount configs of those classes; a school_admin only the session school (never the request), its teachers, classes (class school, else owner school), pupils (active or not), their sessions and the headcount configs of those classes. Out of scope or unknown answers 404. GET only, so no CSRF header. Implementation excludes is_test accounts (card AC2, OQ-API-B3-1). Personal data: responses carry Cache-Control no-store; ETag / If-None-Match gives 304. Newest first; code UMUM is free practice; an unknown code gives an empty list (200).",
         "parameters": [
           {
             "schema": {
@@ -29176,7 +29177,7 @@
           "command-center"
         ],
         "summary": "Completed sessions of a pupil in a date range",
-        "description": "Scope (guard admin, teacher or school_admin): admin sees every id that exists; a teacher only the schools of own active classes, own page, own active classes, their active members and the headcount configs of those classes; a school_admin only the session school (never the request), its teachers, classes (class school, else owner school), pupils (active or not), their sessions and the headcount configs of those classes. Out of scope or unknown answers 404. GET only, so no CSRF header. Personal data: responses carry Cache-Control no-store; ETag / If-None-Match gives 304. Scope is checked first (404), then the range. Sessions finished in [start 00:00, end + 1 day 00:00) Malaysia time, oldest first. The all-sessions modal uses start 2020-01-01 and end 2030-12-31.",
+        "description": "Scope (guard admin, teacher or school_admin): admin sees every id that exists; a teacher only the schools of own active classes, own page, own active classes, their active members and the headcount configs of those classes; a school_admin only the session school (never the request), its teachers, classes (class school, else owner school), pupils (active or not), their sessions and the headcount configs of those classes. Out of scope or unknown answers 404. GET only, so no CSRF header. Implementation excludes is_test accounts (card AC2, OQ-API-B3-1). Personal data: responses carry Cache-Control no-store; ETag / If-None-Match gives 304. Scope is checked first (404), then the range. Sessions finished in [start 00:00, end + 1 day 00:00) Malaysia time, oldest first. The all-sessions modal uses start 2020-01-01 and end 2030-12-31.",
         "parameters": [
           {
             "schema": {
@@ -29270,7 +29271,7 @@
           "command-center"
         ],
         "summary": "Session detail (S7 modal)",
-        "description": "Scope (guard admin, teacher or school_admin): admin sees every id that exists; a teacher only the schools of own active classes, own page, own active classes, their active members and the headcount configs of those classes; a school_admin only the session school (never the request), its teachers, classes (class school, else owner school), pupils (active or not), their sessions and the headcount configs of those classes. Out of scope or unknown answers 404. GET only, so no CSRF header. Personal data: responses carry Cache-Control no-store; ETag / If-None-Match gives 304. The pupil of the session must be in scope.",
+        "description": "Scope (guard admin, teacher or school_admin): admin sees every id that exists; a teacher only the schools of own active classes, own page, own active classes, their active members and the headcount configs of those classes; a school_admin only the session school (never the request), its teachers, classes (class school, else owner school), pupils (active or not), their sessions and the headcount configs of those classes. Out of scope or unknown answers 404. GET only, so no CSRF header. Implementation excludes is_test accounts (card AC2, OQ-API-B3-1). Personal data: responses carry Cache-Control no-store; ETag / If-None-Match gives 304. The pupil of the session must be in scope.",
         "parameters": [
           {
             "schema": {
@@ -29375,7 +29376,7 @@
           "command-center-guru"
         ],
         "summary": "Command Center live tiles and panels (polled every 10 s)",
-        "description": "Roles teacher and admin. Scope: the viewer's own students (distinct students with an active enrolment in an active class the viewer owns); admin sees only its own (normally empty) classes. The body is bare (no `{ data }` envelope). GET only, polling-friendly. Each count has a formatted string and a `...Raw` number. MYT day windows: week = 7 calendar days ending today.",
+        "description": "Roles teacher and admin. Scope: the viewer's own students (distinct students with an active enrolment in an active class the viewer owns); admin sees only its own (normally empty) classes. The body is bare (no `{ data }` envelope). GET only, polling-friendly. Implementation excludes is_test accounts (card AC2, OQ-API-B3-1). Each count has a formatted string and a `...Raw` number. MYT day windows: week = 7 calendar days ending today.",
         "responses": {
           "200": {
             "description": "Live data.",
@@ -29416,7 +29417,7 @@
           "command-center-guru"
         ],
         "summary": "Drill-down table behind a tile or panel",
-        "description": "Roles teacher and admin. Scope: the viewer's own students (distinct students with an active enrolment in an active class the viewer owns); admin sees only its own (normally empty) classes. The body is bare (no `{ data }` envelope). GET only, polling-friendly. Row shape depends on `type`; kirk t2-t4 return an empty `students` plus `extra` and `vsLabel`.",
+        "description": "Roles teacher and admin. Scope: the viewer's own students (distinct students with an active enrolment in an active class the viewer owns); admin sees only its own (normally empty) classes. The body is bare (no `{ data }` envelope). GET only, polling-friendly. Implementation excludes is_test accounts (card AC2, OQ-API-B3-1). Row shape depends on `type`; kirk t2-t4 return an empty `students` plus `extra` and `vsLabel`.",
         "parameters": [
           {
             "schema": {
@@ -29498,7 +29499,7 @@
           "command-center-guru"
         ],
         "summary": "Risk evaluation alerts (read-only)",
-        "description": "Roles teacher and admin. Scope: the viewer's own students (distinct students with an active enrolment in an active class the viewer owns); admin sees only its own (normally empty) classes. The body is bare (no `{ data }` envelope). GET only, polling-friendly. Alerts: inactive >= 7 days, accuracy < 40%, trend < -10.",
+        "description": "Roles teacher and admin. Scope: the viewer's own students (distinct students with an active enrolment in an active class the viewer owns); admin sees only its own (normally empty) classes. The body is bare (no `{ data }` envelope). GET only, polling-friendly. Implementation excludes is_test accounts (card AC2, OQ-API-B3-1). Alerts: inactive >= 7 days, accuracy < 40%, trend < -10.",
         "responses": {
           "200": {
             "description": "Summary and alerts.",
@@ -29539,7 +29540,7 @@
           "command-center-guru"
         ],
         "summary": "Predicted SPM grade per student",
-        "description": "Roles teacher and admin. Scope: the viewer's own students (distinct students with an active enrolment in an active class the viewer owns); admin sees only its own (normally empty) classes. The body is bare (no `{ data }` envelope). GET only, polling-friendly. Students with at least 10 answers only.",
+        "description": "Roles teacher and admin. Scope: the viewer's own students (distinct students with an active enrolment in an active class the viewer owns); admin sees only its own (normally empty) classes. The body is bare (no `{ data }` envelope). GET only, polling-friendly. Implementation excludes is_test accounts (card AC2, OQ-API-B3-1). Students with at least 10 answers only.",
         "responses": {
           "200": {
             "description": "Predictions and aggregates.",
@@ -29580,7 +29581,7 @@
           "command-center-guru"
         ],
         "summary": "Badge statistics of the viewer's students (read-only)",
-        "description": "Roles teacher and admin. Scope: the viewer's own students (distinct students with an active enrolment in an active class the viewer owns); admin sees only its own (normally empty) classes. The body is bare (no `{ data }` envelope). GET only, polling-friendly. Nothing is awarded on GET.",
+        "description": "Roles teacher and admin. Scope: the viewer's own students (distinct students with an active enrolment in an active class the viewer owns); admin sees only its own (normally empty) classes. The body is bare (no `{ data }` envelope). GET only, polling-friendly. Implementation excludes is_test accounts (card AC2, OQ-API-B3-1). Nothing is awarded on GET.",
         "responses": {
           "200": {
             "description": "Achievements panel.",
@@ -29621,7 +29622,7 @@
           "command-center-guru"
         ],
         "summary": "Holders of one badge among the viewer's students",
-        "description": "Roles teacher and admin. Scope: the viewer's own students (distinct students with an active enrolment in an active class the viewer owns); admin sees only its own (normally empty) classes. The body is bare (no `{ data }` envelope). GET only, polling-friendly.",
+        "description": "Roles teacher and admin. Scope: the viewer's own students (distinct students with an active enrolment in an active class the viewer owns); admin sees only its own (normally empty) classes. The body is bare (no `{ data }` envelope). GET only, polling-friendly. Implementation excludes is_test accounts (card AC2, OQ-API-B3-1).",
         "parameters": [
           {
             "schema": {

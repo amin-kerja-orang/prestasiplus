@@ -6,7 +6,6 @@ import * as g from './guru'
 
 /** Components contributed by BE-22 (guru half); keys equal the `.meta({ id })` ids. */
 export const COMMAND_CENTER_GURU_COMPONENT_SCHEMAS = {
-  CommandCenterGuruEducationLevel: g.CommandCenterGuruEducationLevelSchema,
   CommandCenterGuruClassRow: g.CommandCenterGuruClassRowSchema,
   CommandCenterGuruStudentRank: g.CommandCenterGuruStudentRankSchema,
   CommandCenterGuruFeedItem: g.CommandCenterGuruFeedItemSchema,
@@ -53,6 +52,7 @@ const UNAUTHORIZED = err('UNAUTHORIZED "Unauthenticated." (no valid session).')
 const FORBIDDEN = err(
   'FORBIDDEN "This action is unauthorized." (role is not teacher or admin; school_admin gets 403 here).',
 )
+const IS_TEST = 'Implementation excludes is_test accounts (card AC2, OQ-API-B3-1).'
 const BASE = '/guru/command-center'
 const COMMON =
   "Roles teacher and admin. Scope: the viewer's own students (distinct students with an active enrolment in an active class the viewer owns); admin sees only its own (normally empty) classes. The body is bare (no `{ data }` envelope). GET only, polling-friendly."
@@ -64,7 +64,7 @@ export function registerCommandCenterGuruPaths(registry: OpenAPIRegistry): void 
     path: `${BASE}/live-data`,
     tags: ['command-center-guru'],
     summary: 'Command Center live tiles and panels (polled every 10 s)',
-    description: `${COMMON} Each count has a formatted string and a \`...Raw\` number. MYT day windows: week = 7 calendar days ending today.`,
+    description: `${COMMON} ${IS_TEST} Each count has a formatted string and a \`...Raw\` number. MYT day windows: week = 7 calendar days ending today.`,
     responses: {
       200: json(g.CommandCenterGuruLiveDataSchema, 'Live data.'),
       401: UNAUTHORIZED,
@@ -77,7 +77,7 @@ export function registerCommandCenterGuruPaths(registry: OpenAPIRegistry): void 
     path: `${BASE}/drill`,
     tags: ['command-center-guru'],
     summary: 'Drill-down table behind a tile or panel',
-    description: `${COMMON} Row shape depends on \`type\`; kirk t2-t4 return an empty \`students\` plus \`extra\` and \`vsLabel\`.`,
+    description: `${COMMON} ${IS_TEST} Row shape depends on \`type\`; kirk t2-t4 return an empty \`students\` plus \`extra\` and \`vsLabel\`.`,
     request: { query: g.CommandCenterGuruDrillQuerySchema },
     responses: {
       200: json(g.CommandCenterGuruDrillSchema, 'Title and rows.'),
@@ -94,7 +94,7 @@ export function registerCommandCenterGuruPaths(registry: OpenAPIRegistry): void 
     path: `${BASE}/evaluate`,
     tags: ['command-center-guru'],
     summary: 'Risk evaluation alerts (read-only)',
-    description: `${COMMON} Alerts: inactive >= 7 days, accuracy < 40%, trend < -10.`,
+    description: `${COMMON} ${IS_TEST} Alerts: inactive >= 7 days, accuracy < 40%, trend < -10.`,
     responses: {
       200: json(g.CommandCenterGuruEvaluationSchema, 'Summary and alerts.'),
       401: UNAUTHORIZED,
@@ -107,7 +107,7 @@ export function registerCommandCenterGuruPaths(registry: OpenAPIRegistry): void 
     path: `${BASE}/predictive`,
     tags: ['command-center-guru'],
     summary: 'Predicted SPM grade per student',
-    description: `${COMMON} Students with at least 10 answers only.`,
+    description: `${COMMON} ${IS_TEST} Students with at least 10 answers only.`,
     responses: {
       200: json(g.CommandCenterGuruPredictiveSchema, 'Predictions and aggregates.'),
       401: UNAUTHORIZED,
@@ -120,7 +120,7 @@ export function registerCommandCenterGuruPaths(registry: OpenAPIRegistry): void 
     path: `${BASE}/achievements`,
     tags: ['command-center-guru'],
     summary: "Badge statistics of the viewer's students (read-only)",
-    description: `${COMMON} Nothing is awarded on GET.`,
+    description: `${COMMON} ${IS_TEST} Nothing is awarded on GET.`,
     responses: {
       200: json(g.CommandCenterGuruAchievementsSchema, 'Achievements panel.'),
       401: UNAUTHORIZED,
@@ -133,7 +133,7 @@ export function registerCommandCenterGuruPaths(registry: OpenAPIRegistry): void 
     path: `${BASE}/badge-holders`,
     tags: ['command-center-guru'],
     summary: "Holders of one badge among the viewer's students",
-    description: COMMON,
+    description: `${COMMON} ${IS_TEST}`,
     request: { query: g.CommandCenterGuruBadgeHoldersQuerySchema },
     responses: {
       200: json(g.CommandCenterGuruBadgeHoldersSchema, 'Badge and holders.'),

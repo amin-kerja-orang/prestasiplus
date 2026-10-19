@@ -116,7 +116,7 @@ export const CommandCenterEngagementBucketsSchema = z
   .object({ champion: count, consistent: count, developing: count, minimum: count, disengaged: count })
   .meta({
     id: 'CommandCenterEngagementBuckets',
-    description: 'Platform view: documented display constants (DC-M17-05). School view: zeros.',
+    description: 'Platform view: display constant DC-M17-05 (D11 exception). School view: zeros.',
   })
 export type CommandCenterEngagementBuckets = z.infer<typeof CommandCenterEngagementBucketsSchema>
 
@@ -129,7 +129,7 @@ export const CommandCenterCorrectionSchema = z
   })
   .meta({
     id: 'CommandCenterCorrection',
-    description: 'Platform view: documented display constants (DC-M17-03). School view: zeros.',
+    description: 'Platform view: display constant DC-M17-03 (D11 exception). School view: zeros.',
   })
 export type CommandCenterCorrection = z.infer<typeof CommandCenterCorrectionSchema>
 
@@ -205,7 +205,7 @@ export const CommandCenterLoginRowSchema = z
     schoolId: IdSchema.nullable(),
     schoolName: z.string().nullable().meta(FIELD('Null for a user without a school.')),
     package: CommandCenterPackageChipSchema,
-    timeAgo: z.string().meta(FIELD('Human-readable age (diffForHumans).')),
+    timeAgo: z.string().meta(FIELD('Human-readable age (diffForHumans), mock wire text. Open question for the frontend: BM rendering of relative time.')),
   })
   .meta({ id: 'CommandCenterLoginRow' })
 export type CommandCenterLoginRow = z.infer<typeof CommandCenterLoginRowSchema>
@@ -231,7 +231,7 @@ export const CommandCenterSchoolActivitySchema = z
     activeTeachers: count,
     loginCount: count,
     lastActive: TimestampSchema.nullable(),
-    lastActiveHuman: z.string(),
+    lastActiveHuman: z.string().meta(FIELD('Mock wire text. Open question for the frontend: BM rendering of relative time.')),
   })
   .meta({ id: 'CommandCenterSchoolActivity' })
 export type CommandCenterSchoolActivity = z.infer<typeof CommandCenterSchoolActivitySchema>
@@ -318,13 +318,13 @@ export const CommandCenterSchoolDrillSchema = z
         name: z.string(),
         students: count,
         accuracy: pct,
-        lastActiveHuman: z.string(),
+        lastActiveHuman: z.string().meta(FIELD('Mock wire text. Open question for the frontend: BM rendering of relative time.')),
       }),
     ),
     students: z.array(
       z.object({ userId: IdSchema, name: z.string(), answers: count, accuracy: pct, lastActiveHuman: z.string() }),
     ),
-    logins: z.array(z.object({ userId: IdSchema, name: z.string(), role: z.string(), timeAgo: z.string() })),
+    logins: z.array(z.object({ userId: IdSchema, name: z.string(), role: z.string(), timeAgo: z.string().meta(FIELD('Mock wire text. Open question for the frontend: BM rendering of relative time.')) })),
   })
   .meta({ id: 'CommandCenterSchoolDrill' })
 export type CommandCenterSchoolDrill = z.infer<typeof CommandCenterSchoolDrillSchema>

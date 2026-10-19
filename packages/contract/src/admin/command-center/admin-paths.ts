@@ -144,7 +144,7 @@ const NOT_FOUND_SCOPE = err(
 )
 
 const SCOPE_NOTE =
-  'Scope (guard admin, teacher or school_admin): admin sees every id that exists; a teacher only the schools of own active classes, own page, own active classes, their active members and the headcount configs of those classes; a school_admin only the session school (never the request), its teachers, classes (class school, else owner school), pupils (active or not), their sessions and the headcount configs of those classes. Out of scope or unknown answers 404. GET only, so no CSRF header. Personal data: responses carry Cache-Control no-store; ETag / If-None-Match gives 304.'
+  'Scope (guard admin, teacher or school_admin): admin sees every id that exists; a teacher only the schools of own active classes, own page, own active classes, their active members and the headcount configs of those classes; a school_admin only the session school (never the request), its teachers, classes (class school, else owner school), pupils (active or not), their sessions and the headcount configs of those classes. Out of scope or unknown answers 404. GET only, so no CSRF header. Implementation excludes is_test accounts (card AC2, OQ-API-B3-1). Personal data: responses carry Cache-Control no-store; ETag / If-None-Match gives 304.'
 
 /** Registers the 12 admin/school Command Center routes of BE-22. Bodies are `{ data }` or `{ error }`. */
 export function registerCommandCenterAdminPaths(registry: OpenAPIRegistry): void {
@@ -154,7 +154,7 @@ export function registerCommandCenterAdminPaths(registry: OpenAPIRegistry): void
     tags: ['command-center'],
     summary: 'Live board (Command Center, admin and school admin)',
     description: [
-      'Roles admin and school_admin. Admin gets the platform view (students outside fixture schools 900001-900099); a school_admin gets every figure filtered to the session school (a client school id is ignored), topSchools empty, dailyTrend filled. Poll with ETag / If-None-Match; no websockets.',
+      'Roles admin and school_admin. Admin gets the platform view (students outside fixture schools 900001-900099); a school_admin gets every figure filtered to the session school (a client school id is ignored), topSchools empty, dailyTrend filled. Poll with ETag / If-None-Match; no websockets. Implementation excludes is_test accounts (card AC2, OQ-API-B3-1).',
       'engagement and correction are documented display constants on the platform view and zeros on the school view.',
     ].join('\n'),
     responses: {
@@ -170,7 +170,7 @@ export function registerCommandCenterAdminPaths(registry: OpenAPIRegistry): void
     tags: ['command-center'],
     summary: 'Daily activity board (Aktiviti Harian)',
     description:
-      'Roles admin and school_admin (a school_admin is forced to the session school and `schools` is omitted). `period` is today, week or month; any other value answers with today figures and echoes the raw value in `period`.',
+      'Roles admin and school_admin (a school_admin is forced to the session school and `schools` is omitted). `period` is today, week or month; any other value answers with today figures and echoes the raw value in `period`. Implementation excludes is_test accounts (card AC2, OQ-API-B3-1).',
     request: { query: CommandCenterDailyQuerySchema },
     responses: {
       200: json(CommandCenterDailyActivityResponseSchema, 'The daily board for the period.'),
@@ -185,7 +185,7 @@ export function registerCommandCenterAdminPaths(registry: OpenAPIRegistry): void
     tags: ['command-center'],
     summary: 'Daily activity drill of one school',
     description:
-      'Role admin only (a school_admin or teacher gets 403). Unknown school answers 404; same `period` rule as the board.',
+      'Role admin only (a school_admin or teacher gets 403). Unknown school answers 404; same `period` rule as the board. Implementation excludes is_test accounts (card AC2, OQ-API-B3-1).',
     request: { params: CommandCenterIdParamsSchema, query: CommandCenterDailyQuerySchema },
     responses: {
       200: json(CommandCenterSchoolDrillResponseSchema, 'Teachers, pupils and logins of the school.'),
