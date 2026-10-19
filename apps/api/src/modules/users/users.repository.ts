@@ -227,17 +227,32 @@ export class UsersRepository {
   }
 
   /**
-   * Users the caller may see and change. Admin: everyone. school_admin: users of its own school
-   * whose roles are all in `SCHOOL_ADMIN_VISIBLE_ROLES` (and at least one is); any other target
-   * is "not found" (never 403).
+   * Users the caller may see and change. Admin: everyone. school_admin (any other target is "not
+   * found", never 403):
+   * - student/teacher: of its own school, all roles in `SCHOOL_ADMIN_VISIBLE_ROLES`, at least one;
+   * - parent (BE-25, AC 7): a parent-only account with AT LEAST ONE linked child (`some`) and EVERY
+   *   linked child in the caller's school (`every`). `every` alone is true for a parent with no
+   *   children, which would expose every childless parent nationwide, so `some` is required too
+   *   (fail closed). The parent's own `school_id` does not matter (parents usually have none).
    */
   visibleWhere(caller: Caller): Prisma.UserWhereInput {
     const scope = this.scopeWhere(caller)
     if (caller.isAdmin) return scope
     const visible = [...SCHOOL_ADMIN_VISIBLE_ROLES]
-    return {
+    const staffAndStudents: Prisma.UserWhereInput = {
       AND: [scope, { roles: { some: { role: { in: visible } } } }, { roles: { none: { role: { notIn: visible } } } }],
     }
+    if (caller.schoolId === null || !isIdString(caller.schoolId)) return staffAndStudents
+    const school = idFromString(caller.schoolId)
+    const parents: Prisma.UserWhereInput = {
+      AND: [
+        { roles: { some: { role: 'parent' } } },
+        { roles: { none: { role: { not: 'parent' } } } },
+        { parentLinksAsParent: { some: {} } },
+        { parentLinksAsParent: { every: { student: { schoolId: school } } } },
+      ],
+    }
+    return { OR: [staffAndStudents, parents] }
   }
 
   async findVisible(caller: Caller, id: string): Promise<UserRecord | null> {
@@ -298,7 +313,7 @@ export class UsersRepository {
   async schoolIdsWithUsers(caller: Caller): Promise<string[]> {
     const groups = await this.prisma.client.user.groupBy({
       by: ['schoolId'],
-      where: { AND: [this.visibleWhere(caller), { schoolId: { not: null } }] },
+      where: { AND: [this.visibleWhere(caller), this.scopeWhere(caller), { schoolId: { not: null } }] },
     })
     return groups.flatMap((g) => (g.schoolId === null ? [] : [idToString(g.schoolId)]))
   }
@@ -344,6 +359,25 @@ export class UsersRepository {
       select: STUDENT_SELECT,
       orderBy: [{ name: 'asc' }, { id: 'asc' }],
       take: limit,
+    })
+    return rows.map(toStudent)
+  }
+
+  /**
+   * Children linked to a parent, A to Z. A school_admin gets only the children of its own school
+   * (the contract hides the others); admin gets all.
+   */
+  async linkedStudents(caller: Caller, parentId: string): Promise<StudentRow[]> {
+    if (!isIdString(parentId)) return []
+    const school = !caller.isAdmin && caller.schoolId !== null && isIdString(caller.schoolId) ? idFromString(caller.schoolId) : null
+    if (!caller.isAdmin && school === null) return []
+    const rows = await this.prisma.client.user.findMany({
+      where: {
+        parentLinksAsStudent: { some: { parentId: idFromString(parentId) } },
+        ...(school === null ? {} : { schoolId: school }),
+      },
+      select: STUDENT_SELECT,
+      orderBy: [{ name: 'asc' }, { id: 'asc' }],
     })
     return rows.map(toStudent)
   }

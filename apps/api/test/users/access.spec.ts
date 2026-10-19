@@ -107,21 +107,31 @@ describe('roles, scope and guards (AC 3, 9, 10)', () => {
       expect(rows.map((r) => r.id)).not.toContain(otherTeacher)
     })
 
-    it('LEAD rule: a school_admin sees no parent (404), with or without children, on every route', async () => {
+    it('LEAD rule (BE-25, AC 7): a parent is visible only with a child and ALL children in the own school', async () => {
       const student = (await t.db.query<{ id: string }>(`select u.id::text from users u join user_roles r on r.user_id = u.id where r.role = 'student' and u.school_id = $1 limit 1`, [s1]))[0]?.id as string
       const lone = CreatedUserSchema.parse((await admin.post('/admin/users', { roles: ['parent'], name: 'Ibu Tanpa Anak', email: 'ibu.tanpa@ujian.test', schoolId: s1 })).body.data).id
       const withChild = CreatedUserSchema.parse(
-        (await admin.post('/admin/users', { roles: ['parent'], name: 'Ibu Beranak', email: 'ibu.anak@ujian.test', schoolId: s1, linkedStudentIds: [student] })).body.data,
+        (await admin.post('/admin/users', { roles: ['parent'], name: 'Ibu Beranak', email: 'ibu.anak@ujian.test', schoolId: s1 })).body.data,
       ).id
-      for (const id of [lone, withChild]) {
-        expectError(await sa.get(`/admin/users/${id}`), 'NOT_FOUND')
-        expectError(await sa.put(`/admin/users/${id}`, { roles: ['parent'], name: 'X' }), 'NOT_FOUND')
-        expectError(await sa.post(`/admin/users/${id}/toggle-active`), 'NOT_FOUND')
-        expectError(await sa.del(`/admin/users/${id}`), 'NOT_FOUND')
-      }
+      await t.db.query('insert into parent_links (parent_id, student_id) values ($1, $2)', [withChild, student])
+      // A parent with no child is never visible: 404 on every route, absent from the list and from roleCounts.
+      expectError(await sa.get(`/admin/users/${lone}`), 'NOT_FOUND')
+      expectError(await sa.put(`/admin/users/${lone}`, { roles: ['parent'], name: 'X' }), 'NOT_FOUND')
+      expectError(await sa.post(`/admin/users/${lone}/toggle-active`), 'NOT_FOUND')
+      expectError(await sa.del(`/admin/users/${lone}`), 'NOT_FOUND')
+      // A parent whose only child is in the own school is visible; its linkedStudents lists that child.
+      const detail = await sa.get(`/admin/users/${withChild}`)
+      expect(detail.status, JSON.stringify(detail.body)).toBe(200)
+      expect(detail.body.data.linkedStudents.map((x: { id: string }) => x.id)).toEqual([student])
       const list = await sa.get('/admin/users?role=parent')
-      expect(list.body.data).toEqual([])
-      expect(UserListMetaSchema.parse(list.body.meta).roleCounts.parent).toBe(0)
+      expect(list.body.data.map((x: { id: string }) => x.id)).toEqual([withChild])
+      expect(UserListMetaSchema.parse(list.body.meta).roleCounts.parent).toBe(1)
+      // The role set of a parent target cannot be changed by a school_admin (403), the other fields can.
+      expectError(await sa.put(`/admin/users/${withChild}`, { roles: ['teacher'], name: 'X' }), 'FORBIDDEN')
+      const edit = await sa.put(`/admin/users/${withChild}`, { roles: ['parent'], name: 'Ibu Beranak Baru' })
+      expect(edit.status, JSON.stringify(edit.body)).toBe(200)
+      expect((await sa.post(`/admin/users/${withChild}/toggle-active`)).status).toBe(200)
+      expect((await sa.del(`/admin/users/${withChild}`)).status).toBe(200)
     })
 
     it('filters offers the own school only', async () => {
