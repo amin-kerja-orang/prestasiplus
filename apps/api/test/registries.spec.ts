@@ -7,7 +7,7 @@ import { describe, expect, it } from 'vitest'
 
 import { runSeeds, seedModules } from '../prisma/seed'
 import { featureModules } from '../src/modules'
-import { createTestApp } from './helpers/app'
+import { createTestApp } from './support/app'
 
 @Controller('dummy')
 class DummyController {

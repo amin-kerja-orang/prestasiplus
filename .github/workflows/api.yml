@@ -8,6 +8,8 @@ on:
       - 'packages/**'
       - 'docker/api/**'
       - 'compose.yaml'
+      - '.env.db.example'
+      - 'compose.override.example.yaml'
       - 'package.json'
       - 'package-lock.json'
       - '.github/workflows/api.yml'
@@ -18,6 +20,8 @@ on:
       - 'packages/**'
       - 'docker/api/**'
       - 'compose.yaml'
+      - '.env.db.example'
+      - 'compose.override.example.yaml'
       - 'package.json'
       - 'package-lock.json'
       - '.github/workflows/api.yml'
@@ -33,6 +37,24 @@ jobs:
   verify:
     runs-on: ubuntu-latest
     timeout-minutes: 20
+    # Throw-away Postgres for the integration tests (BE-02). Throw-away credentials, CI-only.
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_DB: prestasiplus_test
+          POSTGRES_USER: pp
+          POSTGRES_PASSWORD: ci-throwaway-not-a-secret
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U pp -d prestasiplus_test"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      TEST_DATABASE_URL: postgresql://pp:ci-throwaway-not-a-secret@localhost:5432/prestasiplus_test
+      DATABASE_URL: postgresql://pp:ci-throwaway-not-a-secret@localhost:5432/prestasiplus_test
     steps:
       - uses: actions/checkout@v4.2.2
       - uses: actions/setup-node@v4.4.0

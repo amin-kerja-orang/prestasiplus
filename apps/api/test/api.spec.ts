@@ -3,27 +3,41 @@ import { ErrorBodySchema, TimestampSchema } from '@pp/contract'
 import request from 'supertest'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 
-import { createTestApp, LogCapture } from './helpers/app'
+import { createTestApp, LogCapture } from './support/app'
+import { createTestDatabase, type TestDatabase } from './support/db'
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/
 
 describe('API cross-cutting behaviour', () => {
   let app: INestApplication
+  let db: TestDatabase
   const logs = new LogCapture()
 
   beforeAll(async () => {
     process.env.LOG_LEVEL = 'info'
-    app = await createTestApp({ logStream: logs })
+    db = await createTestDatabase()
+    app = await createTestApp({ logStream: logs, db })
   })
   afterAll(async () => {
     await app.close()
+    await db.drop()
   })
 
   it('GET /api/health returns the envelope, a +08:00 time and no cookie', async () => {
     const res = await request(app.getHttpServer()).get('/api/health').expect(200)
     expect(res.body.data.status).toBe('ok')
+    expect(res.body.data.db).toBe('up')
     expect(TimestampSchema.safeParse(res.body.data.time).success).toBe(true)
     expect(res.headers['set-cookie']).toBeUndefined()
+  })
+
+  it('health checks are not access-logged', async () => {
+    logs.lines.length = 0
+    await request(app.getHttpServer()).get('/api/health').set('X-Request-Id', 'hc-1').expect(200)
+    await request(app.getHttpServer()).get('/api/_test/query?n=1').set('X-Request-Id', 'q-1').expect(200)
+    const ids = logs.lines.map((l) => (JSON.parse(l) as { requestId?: string }).requestId)
+    expect(ids).toContain('q-1')
+    expect(ids).not.toContain('hc-1')
   })
 
   it('echoes X-Request-Id unchanged and generates a UUID otherwise', async () => {
