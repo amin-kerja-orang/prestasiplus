@@ -1,0 +1,17 @@
+# Secret scan config (CI: .github/workflows/api.yml). Extends the default rules; no rule is disabled.
+title = "PrestasiPlus gitleaks config"
+
+[extend]
+useDefault = true
+
+[allowlist]
+description = "Known false positives (generic-api-key on non-secret identifiers)"
+paths = [
+  # Discovery inventories and screen lists: JSON "key" fields such as "S1-ppd-dashboard".
+  '''^docs/discovery/''',
+]
+regexTarget = "line"
+regexes = [
+  # Mock handler constants AI_LATENCY_KEY = 'm04.aiLatencyMs' / 'm13.aiLatencyMs': store key names, not credentials.
+  '''AI_LATENCY_KEY\s*=\s*.m(04|13)\.aiLatencyMs.''',
+]
