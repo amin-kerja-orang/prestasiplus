@@ -133,6 +133,7 @@ const cardFields = [
 
 <template>
   <DsPage data-testid="prestasi-kelas-detail-page">
+    <h1 v-if="loadFailed || !data" class="sr-only">Prestasi</h1>
     <DsLoadError v-if="loadFailed" :message="LOAD_ERROR" testid="page-error" @retry="reload()" />
 
     <template v-else-if="data">

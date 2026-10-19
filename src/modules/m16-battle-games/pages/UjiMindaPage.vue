@@ -19,6 +19,7 @@ const view = useApi((signal) => fetchUjiMinda({ signal }))
 <template>
   <DsPage data-testid="m16-uji-minda-page">
     <DsBackLink :to="BACK_LINK.to" :label="BACK_LINK.label" data-testid="m16-back-link" />
+    <h1 v-if="view.error.value || !view.data.value" class="sr-only">{{ COPY.heading }}</h1>
 
     <DsLoadError v-if="view.error.value" :message="LOAD_COPY.failed" testid="m16-load-error" retry-testid="m16-retry" @retry="view.reload()" />
     <div

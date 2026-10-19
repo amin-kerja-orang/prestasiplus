@@ -31,6 +31,7 @@ const routes: RouteRecordRaw[] = [
     name: 'm08.prestasi.360',
     component: () => import('../pages/Prestasi360Page.vue'),
     meta: {
+      ownsH1: true,
       layout: 'user',
       access: 'auth',
       header: { title: 'Prestasi 360', subtitle: 'Selamat datang kembali' },

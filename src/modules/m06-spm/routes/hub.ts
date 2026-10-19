@@ -14,6 +14,7 @@ const routes: RouteRecordRaw[] = [
     name: 'm06.spm',
     component: () => import('../pages/SpmHubPage.vue'),
     meta: {
+      ownsH1: true,
       layout: 'user',
       access: 'auth',
       title: 'Mod SPM - PRESTASIPLUS',
@@ -27,6 +28,7 @@ const routes: RouteRecordRaw[] = [
     name: 'm06.spm.databank',
     component: () => import('../pages/DatabankPage.vue'),
     meta: {
+      ownsH1: true,
       layout: 'user',
       access: 'auth',
       title: 'Databank Soalan SPM - PRESTASIPLUS',
@@ -53,6 +55,7 @@ const routes: RouteRecordRaw[] = [
     name: 'm06.spm.latih-tubi',
     component: () => import('../pages/LatihTubiListPage.vue'),
     meta: {
+      ownsH1: true,
       layout: 'user',
       access: 'auth',
       title: 'Latih Tubi SPM - PRESTASIPLUS',
@@ -66,6 +69,7 @@ const routes: RouteRecordRaw[] = [
     name: 'm06.spm.latih-tubi.config',
     component: () => import('../pages/LatihTubiConfigPage.vue'),
     meta: {
+      ownsH1: true,
       layout: 'user',
       access: 'auth',
       title: 'Latih Tubi SPM - PRESTASIPLUS',
@@ -92,6 +96,7 @@ const routes: RouteRecordRaw[] = [
     name: 'm06.spm.history',
     component: () => import('../pages/HistoryPage.vue'),
     meta: {
+      ownsH1: true,
       layout: 'user',
       access: 'auth',
       title: 'Sejarah Kuiz SPM - PRESTASIPLUS',

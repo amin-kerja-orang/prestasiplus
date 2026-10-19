@@ -16,6 +16,7 @@ const routes: RouteRecordRaw[] = [
     name: 'm06.spm.ramalan',
     component: () => import('../pages/TrackingAHubPage.vue'),
     meta: {
+      ownsH1: true,
       layout: 'user',
       access: 'auth',
       title: 'Tracking A SPM - PRESTASIPLUS',
@@ -29,6 +30,7 @@ const routes: RouteRecordRaw[] = [
     name: 'm06.spm.ramalan.subject',
     component: () => import('../pages/TrackingACodePage.vue'),
     meta: {
+      ownsH1: true,
       layout: 'user',
       access: 'auth',
       title: 'Tracking A SPM - PRESTASIPLUS',
@@ -42,6 +44,7 @@ const routes: RouteRecordRaw[] = [
     name: 'm06.spm.subjektif',
     component: () => import('../pages/SubjektifPage.vue'),
     meta: {
+      ownsH1: true,
       layout: 'user',
       access: 'auth',
       title: 'Latihan Subjektif SPM - PRESTASIPLUS',

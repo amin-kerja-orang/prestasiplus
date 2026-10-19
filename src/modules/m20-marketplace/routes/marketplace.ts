@@ -26,6 +26,7 @@ const routes: RouteRecordRaw[] = [
     component: () => import('../pages/PenjualShopPage.vue'),
     props: (route) => ({ id: String(route.params.id) }),
     meta: {
+      ownsH1: true,
       layout: 'user',
       access: 'auth',
       title: 'Kedai Penjual - Marketplace PRESTASIPLUS',

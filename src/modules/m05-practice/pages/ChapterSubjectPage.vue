@@ -73,6 +73,7 @@ function onLevelChange(id: unknown): void {
 
 <template>
   <div class="flex min-w-0 flex-col gap-4 md:gap-6" data-testid="chapter-subject-page">
+    <h1 v-if="!data" class="sr-only">Soalan by Chapter</h1>
     <template v-if="data">
       <div class="flex flex-col gap-3" data-testid="chapter-subject-hero">
         <UButton

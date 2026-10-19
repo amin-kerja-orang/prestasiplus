@@ -83,11 +83,14 @@ const headerTitle = (s: StartSessionResponse): string =>
     :report="{ source: 'revision', failureText: 'Gagal menghantar laporan. Sila cuba lagi.' }"
     :accent-color="ready.subject.color"
   />
-  <DsLoadError
-    v-else-if="error && !notFound"
-    :message="LOAD_ERROR"
-    retry-testid="revision-quiz-retry"
-    testid="revision-quiz-error"
-    @retry="reload()"
-  />
+  <template v-else>
+    <h1 class="sr-only">Soalan Aku Salah</h1>
+    <DsLoadError
+      v-if="error && !notFound"
+      :message="LOAD_ERROR"
+      retry-testid="revision-quiz-retry"
+      testid="revision-quiz-error"
+      @retry="reload()"
+    />
+  </template>
 </template>

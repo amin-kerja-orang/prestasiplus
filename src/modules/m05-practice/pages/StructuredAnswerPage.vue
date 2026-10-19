@@ -101,6 +101,7 @@ async function submit(): Promise<void> {
 
 <template>
   <div class="flex min-w-0 flex-col gap-4 md:gap-6" data-testid="answer-page">
+    <h1 v-if="!data" class="sr-only">Soalan Berstruktur</h1>
     <template v-if="data">
       <UButton
         :to="data.backUrl"
@@ -203,7 +204,7 @@ async function submit(): Promise<void> {
 
         <div
           v-if="!result"
-          class="sticky bottom-16 flex flex-wrap items-center gap-3 bg-muted py-3 md:static md:py-0"
+          class="sticky bottom-16 flex flex-wrap items-center gap-3 bg-muted py-3 pe-16 md:static md:py-0 lg:pe-0"
         >
           <UButton
             type="button"
@@ -221,7 +222,7 @@ async function submit(): Promise<void> {
             type="submit"
             size="lg"
             :disabled="sending"
-            class="min-h-14 flex-1 justify-center md:flex-none md:px-8"
+            class="me-4 min-h-14 flex-1 justify-center md:flex-none md:px-8 lg:me-0"
             data-testid="answer-submit"
             >Hantar</UButton
           >

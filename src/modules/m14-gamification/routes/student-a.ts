@@ -14,6 +14,7 @@ const routes: RouteRecordRaw[] = [
     name: 'gamification-dashboard',
     component: () => import('../pages/GamificationDashboardPage.vue'),
     meta: {
+      ownsH1: true,
       layout: 'user',
       access: 'auth',
       title: 'Gamifikasi Dashboard',
@@ -27,6 +28,7 @@ const routes: RouteRecordRaw[] = [
     name: 'gamification-convert',
     component: () => import('../pages/GamificationConvertPage.vue'),
     meta: {
+      ownsH1: true,
       layout: 'user',
       access: 'auth',
       title: 'Tukar Token',
@@ -40,6 +42,7 @@ const routes: RouteRecordRaw[] = [
     name: 'gamification-challenges',
     component: () => import('../pages/GamificationChallengesPage.vue'),
     meta: {
+      ownsH1: true,
       layout: 'user',
       access: 'auth',
       title: 'Cabaran Harian',
@@ -53,6 +56,7 @@ const routes: RouteRecordRaw[] = [
     name: 'gamification-history',
     component: () => import('../pages/GamificationHistoryPage.vue'),
     meta: {
+      ownsH1: true,
       layout: 'user',
       access: 'auth',
       title: 'Sejarah Transaksi',

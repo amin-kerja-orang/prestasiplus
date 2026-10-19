@@ -12,6 +12,7 @@ const routes: RouteRecordRaw[] = [
     name: 'm25.heatmap',
     component: () => import('../pages/HeatmapTopikLemahPage.vue'),
     meta: {
+      ownsH1: true,
       layout: 'user',
       access: 'auth',
       roles: ['student', 'admin'],

@@ -11,6 +11,7 @@ const routes: RouteRecordRaw[] = [
     name: 'm16.permainan',
     component: () => import('../pages/PermainanPage.vue'),
     meta: {
+      ownsH1: true,
       layout: 'user',
       access: 'auth',
       title: 'Permainan — PRESTASIPLUS',

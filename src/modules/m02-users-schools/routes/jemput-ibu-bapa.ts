@@ -13,6 +13,7 @@ const routes: RouteRecordRaw[] = [
     name: 'm02.jemput-ibu-bapa',
     component: () => import('../pages/JemputIbuBapaPage.vue'),
     meta: {
+      ownsH1: true,
       layout: 'user',
       access: 'auth',
       roles: ['student'],

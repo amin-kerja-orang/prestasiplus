@@ -27,6 +27,7 @@ const card = computed(() => (duta.error.value ? null : (duta.data.value ?? null)
 
 <template>
   <DsPage data-testid="heatmap-page">
+    <h1 v-if="!heatmap.data.value" class="sr-only">Heatmap Topik Lemah</h1>
     <template v-if="heatmap.data.value">
       <!-- Prototype scope (D43): the card links to Bilik Duta, which is outside the matrix. -->
       <CikguPakarBlock v-if="card && allows('/bilik-duta')" :card="card" />

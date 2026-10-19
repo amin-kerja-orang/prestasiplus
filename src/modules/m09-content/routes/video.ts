@@ -35,6 +35,7 @@ const routes: RouteRecordRaw[] = [
     component: () => import('../pages/VideoFormPage.vue'),
     props: { mode: 'create' },
     meta: {
+      ownsH1: true,
       layout: 'user',
       access: 'auth',
       title: VIDEO_TITLES.add,

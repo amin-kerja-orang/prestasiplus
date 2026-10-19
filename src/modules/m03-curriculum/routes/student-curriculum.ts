@@ -27,6 +27,7 @@ const routes: RouteRecordRaw[] = [
     component: () => import('../pages/TopicDetailPage.vue'),
     props: (route) => ({ id: Number(route.params.id) }),
     meta: {
+      ownsH1: true,
       layout: 'user',
       access: 'auth',
       title: TOPIC_TAB_TITLE,
@@ -39,6 +40,7 @@ const routes: RouteRecordRaw[] = [
     name: STUDENT_ROUTES.map,
     component: () => import('../pages/LearningMapPage.vue'),
     meta: {
+      ownsH1: true,
       layout: 'user',
       access: 'auth',
       title: 'Peta Belajar — PRESTASIPLUS',

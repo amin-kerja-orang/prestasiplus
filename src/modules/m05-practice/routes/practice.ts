@@ -25,6 +25,7 @@ const routes: RouteRecordRaw[] = [
     name: 'm05.practice.config',
     component: () => import('../pages/PracticeConfigPage.vue'),
     meta: {
+      ownsH1: true,
       layout: 'user',
       access: 'auth',
       // The tab title is "{subject} - Latihan" once the subject is known (the page sets it).
@@ -40,6 +41,7 @@ const routes: RouteRecordRaw[] = [
     name: 'm05.practice.quiz',
     component: () => import('../pages/PracticeQuizPage.vue'),
     meta: {
+      ownsH1: true,
       layout: 'user',
       access: 'auth',
       title: 'Latih Tubi - PRESTASIPLUS',

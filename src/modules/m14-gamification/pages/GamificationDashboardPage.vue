@@ -20,6 +20,7 @@ const dashboard = useApi((signal) => fetchGamificationDashboard({ signal }))
 
 <template>
   <DsPage data-testid="gamification-dashboard-page">
+    <h1 v-if="dashboard.error.value || !dashboard.data.value" class="sr-only">Gamifikasi Dashboard</h1>
     <UAlert
       v-if="dashboard.error.value"
       color="error"

@@ -17,6 +17,7 @@ const routes: RouteRecordRaw[] = [
     name: 'm16.pertandingan',
     component: () => import('../pages/PertandinganPage.vue'),
     meta: {
+      ownsH1: true,
       layout: 'user',
       access: 'auth',
       title: 'Pertandingan Mingguan — PRESTASIPLUS',
@@ -30,6 +31,7 @@ const routes: RouteRecordRaw[] = [
     name: 'm16.uji-minda',
     component: () => import('../pages/UjiMindaPage.vue'),
     meta: {
+      ownsH1: true,
       layout: 'user',
       access: 'auth',
       title: 'Uji Minda — Belum Ada Cabaran',

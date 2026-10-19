@@ -44,7 +44,12 @@ const routes: RouteRecordRaw[] = [
     path: '/spm/bijak/kertas/:paperId',
     name: 'm28.bijak.cover',
     component: () => import('./pages/PaperCoverPage.vue'),
-    meta: { ...base, title: 'Bijak SPM - PRESTASIPLUS', header: { title: 'Bijak SPM' } },
+    meta: {
+      ...base,
+      title: 'Bijak SPM - PRESTASIPLUS',
+      header: { title: 'Bijak SPM' },
+      ownsH1: true,
+    },
   },
   {
     path: '/spm/bijak/percubaan/:attemptId',

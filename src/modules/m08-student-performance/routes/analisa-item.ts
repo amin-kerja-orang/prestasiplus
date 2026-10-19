@@ -70,6 +70,7 @@ const routes: RouteRecordRaw[] = [
     name: 'm08.analisa-item.kelas.detail',
     component: () => import('../pages/AnalisaItemKelasPage.vue'),
     meta: {
+      ownsH1: true,
       layout: 'user',
       access: 'auth',
       roles: ['admin', 'teacher'],

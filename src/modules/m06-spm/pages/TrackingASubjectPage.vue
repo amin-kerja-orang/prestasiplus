@@ -79,6 +79,7 @@ const size = computed(() => setSize(subject.value?.targetSize ?? null))
 
 <template>
   <div class="flex min-w-0 flex-col gap-4 md:gap-6" data-testid="tracking-subject-page">
+    <h1 v-if="!subject" class="sr-only">Tracking A SPM</h1>
     <template v-if="subject">
       <DsBackLink to="/spm/ramalan" label="Kembali" data-testid="spm-back" />
 

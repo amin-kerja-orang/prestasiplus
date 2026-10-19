@@ -14,6 +14,7 @@ const routes: RouteRecordRaw[] = [
     name: 'gamification-leaderboard',
     component: () => import('../pages/student-b/LeaderboardPage.vue'),
     meta: {
+      ownsH1: true,
       layout: 'user',
       access: 'auth',
       title: 'Papan Pendahulu',
@@ -27,6 +28,7 @@ const routes: RouteRecordRaw[] = [
     name: 'gamification-achievements',
     component: () => import('../pages/student-b/AchievementsPage.vue'),
     meta: {
+      ownsH1: true,
       layout: 'user',
       access: 'auth',
       title: 'Pencapaian — PRESTASIPLUS',
@@ -40,6 +42,7 @@ const routes: RouteRecordRaw[] = [
     name: 'gamification-referral',
     component: () => import('../pages/student-b/ReferralPage.vue'),
     meta: {
+      ownsH1: true,
       layout: 'user',
       access: 'auth',
       title: 'Rujuk Kawan — PRESTASIPLUS',

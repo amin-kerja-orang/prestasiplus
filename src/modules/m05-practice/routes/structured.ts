@@ -11,6 +11,7 @@ const routes: RouteRecordRaw[] = [
     name: 'm05.structured',
     component: () => import('../pages/StructuredListPage.vue'),
     meta: {
+      ownsH1: true,
       layout: 'user',
       access: 'auth',
       title: 'Soalan Berstruktur - PRESTASIPLUS',
@@ -25,6 +26,7 @@ const routes: RouteRecordRaw[] = [
     name: 'm05.structured.answer',
     component: () => import('../pages/StructuredAnswerPage.vue'),
     meta: {
+      ownsH1: true,
       layout: 'user',
       access: 'auth',
       // UNVERIFIED (Q3 never opened on live): the S10 title.

@@ -46,6 +46,7 @@ async function onConvert(amount: number): Promise<void> {
 
 <template>
   <DsPage data-testid="gamification-convert-page">
+    <h1 v-if="info.error.value || !info.data.value" class="sr-only">Tukar Syiling → Token</h1>
     <UAlert
       v-if="info.error.value"
       color="error"

@@ -15,6 +15,7 @@ const routes: RouteRecordRaw[] = [
     name: 'm15.digital-shop',
     component: () => import('../pages/DigitalShopPage.vue'),
     meta: {
+      ownsH1: true,
       layout: 'user',
       access: 'auth',
       title: 'Kedai Hadiah Digital',
@@ -28,6 +29,7 @@ const routes: RouteRecordRaw[] = [
     name: 'm15.digital-redemptions',
     component: () => import('../pages/MyRedemptionsPage.vue'),
     meta: {
+      ownsH1: true,
       layout: 'user',
       access: 'auth',
       title: 'Tebusan Saya',

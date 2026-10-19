@@ -14,6 +14,7 @@ const challenges = useApi((signal) => fetchGamificationChallenges({ signal }))
 
 <template>
   <DsPage data-testid="gamification-challenges-page">
+    <h1 v-if="challenges.error.value || !challenges.data.value" class="sr-only">Cabaran Harian</h1>
     <UAlert
       v-if="challenges.error.value"
       color="error"

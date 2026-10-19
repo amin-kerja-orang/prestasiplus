@@ -16,6 +16,7 @@ const routes: RouteRecordRaw[] = [
     name: 'guru-command-center',
     component: () => import('../pages/CommandCenterPage.vue'),
     meta: {
+      ownsH1: true,
       layout: 'user',
       v2: true,
       access: 'auth',

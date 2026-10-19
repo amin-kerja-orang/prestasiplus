@@ -63,6 +63,7 @@ onMounted(load)
 
 <template>
   <DsPage class="max-w-2xl" data-testid="jemput-page">
+    <h1 v-if="loading || loadFailed" class="sr-only">Jemput Ibu Bapa</h1>
     <UAlert
       v-if="flash"
       color="success"

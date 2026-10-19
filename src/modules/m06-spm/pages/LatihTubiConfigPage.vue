@@ -105,6 +105,7 @@ const pick = (on: boolean, color: 'primary' | 'success' | 'info' | 'warning' | '
 
 <template>
   <div class="flex min-w-0 flex-col gap-4 md:gap-6" data-testid="spm-config-page">
+    <h1 v-if="!config" class="sr-only">Latih Tubi SPM</h1>
     <template v-if="config">
       <DsBackLink to="/spm/latih-tubi" label="Kembali" data-testid="spm-back" />
 

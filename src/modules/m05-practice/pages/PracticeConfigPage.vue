@@ -118,6 +118,7 @@ const pick = (on: boolean) => ({ color: on ? 'primary' : 'neutral', variant: on 
 
 <template>
   <div class="flex min-w-0 flex-col gap-4 md:gap-6" data-testid="practice-config-page">
+    <h1 v-if="!config" class="sr-only">Latih Tubi</h1>
     <template v-if="config">
       <UButton
         to="/practice"

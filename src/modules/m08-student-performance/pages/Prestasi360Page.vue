@@ -92,6 +92,7 @@ const activity = computed(() => {
 
 <template>
   <DsPage data-testid="prestasi360-page">
+    <h1 v-if="loadFailed || !data" class="sr-only">Prestasi 360</h1>
     <DsLoadError v-if="loadFailed" :message="LOAD_ERROR" testid="page-error" @retry="reload()" />
 
     <template v-else-if="data">

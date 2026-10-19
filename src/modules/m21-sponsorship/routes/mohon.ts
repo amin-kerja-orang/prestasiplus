@@ -11,6 +11,7 @@ const routes: RouteRecordRaw[] = [
     name: 'm21.mohon-keluarga-angkat',
     component: () => import('../pages/MohonKeluargaAngkatPage.vue'),
     meta: {
+      ownsH1: true,
       layout: 'user',
       access: 'auth',
       title: 'Mohon Keluarga Angkat',

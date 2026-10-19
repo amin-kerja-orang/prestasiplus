@@ -12,6 +12,7 @@ const routes: RouteRecordRaw[] = [
     name: 'm22.tickets',
     component: () => import('../pages/TicketsPage.vue'),
     meta: {
+      ownsH1: true,
       layout: 'user',
       access: 'auth',
       title: 'Tiket Bantuan - PRESTASIPLUS',

@@ -22,6 +22,7 @@ const loading = computed(() => hub.value === null && error.value === null)
 
 <template>
   <DsPage data-testid="hub-page">
+    <h1 v-if="!hub" class="sr-only">{{ HUB_HEADING }}</h1>
     <div v-if="loading" class="flex flex-col gap-4" aria-busy="true" data-testid="hub-loading">
       <USkeleton class="h-28 w-full" />
       <USkeleton class="h-28 w-full" />

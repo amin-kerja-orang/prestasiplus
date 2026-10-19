@@ -45,6 +45,8 @@ declare module 'vue-router' {
     header?: PageHeader
     /** The shell prints this page's title, so `DsPageHeader` (showTitle auto) leaves its h1 out. */
     shellTitle?: boolean
+    /** The page prints its own visible h1, so the Pembelajaran shell prints its title as plain text, not an h1. */
+    ownsH1?: boolean
     module?: ModuleId
     /** Page already built in v2: renders directly in the Pembelajaran layout (others sit in a light island). */
     v2?: boolean

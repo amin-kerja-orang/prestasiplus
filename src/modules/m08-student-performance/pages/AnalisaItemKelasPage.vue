@@ -76,6 +76,7 @@ const classPills = computed<PillItem<number>[]>(() =>
 
 <template>
   <DsPage data-testid="analisa-item-kelas-page">
+    <h1 v-if="loadFailed || !data" class="sr-only">Analisa Item</h1>
     <DsLoadError v-if="loadFailed" :message="LOAD_ERROR" testid="page-error" @retry="reload()" />
 
     <template v-else-if="data">

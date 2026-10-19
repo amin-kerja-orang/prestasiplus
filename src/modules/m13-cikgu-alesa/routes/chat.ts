@@ -12,6 +12,7 @@ const routes: RouteRecordRaw[] = [
     name: 'cikgu',
     component: () => import('../pages/ChatPage.vue'),
     meta: {
+      ownsH1: true,
       layout: 'user',
       access: 'auth',
       title: 'Cikgu Alesa',

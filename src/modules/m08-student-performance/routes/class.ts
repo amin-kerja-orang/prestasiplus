@@ -13,6 +13,7 @@ const routes: RouteRecordRaw[] = [
     name: 'm08.prestasi.kelas.detail',
     component: () => import('../pages/PrestasiKelasDetailPage.vue'),
     meta: {
+      ownsH1: true,
       layout: 'user',
       access: 'auth',
       roles: ['admin', 'teacher', 'school_admin'],

@@ -16,6 +16,7 @@ const routes: RouteRecordRaw[] = [
     name: 'm15.rewards',
     component: () => import('../pages/RewardsShopPage.vue'),
     meta: {
+      ownsH1: true,
       layout: 'user',
       access: 'auth',
       title: 'Kedai Hadiah',
@@ -29,6 +30,7 @@ const routes: RouteRecordRaw[] = [
     name: 'm15.mystery-box',
     component: () => import('../pages/MysteryBoxPage.vue'),
     meta: {
+      ownsH1: true,
       layout: 'user',
       access: 'auth',
       title: 'Kotak Misteri — PRESTASIPLUS',
@@ -42,6 +44,7 @@ const routes: RouteRecordRaw[] = [
     name: 'm15.cabutan',
     component: () => import('../pages/CabutanPage.vue'),
     meta: {
+      ownsH1: true,
       layout: 'user',
       access: 'auth',
       title: 'Cabutan Bertuah - PRESTASIPLUS',

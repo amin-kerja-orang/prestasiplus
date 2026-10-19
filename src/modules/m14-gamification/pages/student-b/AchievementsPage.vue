@@ -46,6 +46,7 @@ const progressWidth = computed(() =>
 
 <template>
   <DsPage data-testid="achievements-page">
+    <h1 v-if="!data" class="sr-only">Pencapaian Anda</h1>
     <template v-if="data">
       <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
         <UCard data-testid="achievements-hero">

@@ -52,6 +52,7 @@ const BADGES = [
 
 <template>
   <DsPage data-testid="topic-detail-page">
+    <h1 v-if="!topic" class="sr-only">Topik</h1>
     <UButton
       :to="TOPICS_PATH"
       color="neutral"

@@ -22,7 +22,7 @@ const routes: RouteRecordRaw[] = [
     path: '/pksk',
     name: 'm07.pksk',
     component: () => import('../pages/PkskHubPage.vue'),
-    meta: { ...base, header: pksk },
+    meta: { ...base, header: pksk, ownsH1: true },
   },
   {
     path: `/pksk/level/${LEVEL}`,

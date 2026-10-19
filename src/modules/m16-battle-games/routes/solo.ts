@@ -66,6 +66,7 @@ const routes: RouteRecordRaw[] = [
     name: 'permainan-kad-memori',
     component: () => import('../pages/SoloKadMemoriPage.vue'),
     meta: {
+      ownsH1: true,
       layout: 'user',
       access: 'auth',
       title: 'Kad Memori — PRESTASIPLUS',
@@ -79,6 +80,7 @@ const routes: RouteRecordRaw[] = [
     name: 'permainan-roda-nasib',
     component: () => import('../pages/RodaNasibPage.vue'),
     meta: {
+      ownsH1: true,
       layout: 'user',
       access: 'auth',
       title: 'Roda Nasib — PRESTASIPLUS',
@@ -92,6 +94,7 @@ const routes: RouteRecordRaw[] = [
     name: 'permainan-jutawan',
     component: () => import('../pages/JutawanPage.vue'),
     meta: {
+      ownsH1: true,
       layout: 'user',
       access: 'auth',
       title: 'Jutawan Ilmu 💰 — PRESTASIPLUS',

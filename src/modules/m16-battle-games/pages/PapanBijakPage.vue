@@ -58,6 +58,7 @@ async function join(code: string): Promise<void> {
 
 <template>
   <DsPage data-testid="pb-page">
+    <h1 v-if="!lobby" class="sr-only">{{ meta.title }}</h1>
     <div v-if="loading" class="flex flex-col gap-4" aria-busy="true" data-testid="pb-loading">
       <USkeleton class="h-28 w-full" />
       <USkeleton class="h-40 w-full" />

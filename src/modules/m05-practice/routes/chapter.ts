@@ -28,6 +28,7 @@ const routes: RouteRecordRaw[] = [
     name: 'm05.chapter.subject',
     component: () => import('../pages/ChapterSubjectPage.vue'),
     meta: {
+      ownsH1: true,
       layout: 'user',
       access: 'auth',
       // "Chapter {subject} - PRESTASIPLUS" and the subtitle "{subject}" are set once the subject is known.
@@ -42,6 +43,7 @@ const routes: RouteRecordRaw[] = [
     name: 'm05.chapter.quiz',
     component: () => import('../pages/ChapterQuizPage.vue'),
     meta: {
+      ownsH1: true,
       layout: 'user',
       access: 'auth',
       // INFERRED (FR-M05-52 table: Q2 "Soalan by Chapter" / "{subject}"; UNVERIFIED tab title).
@@ -70,6 +72,7 @@ const routes: RouteRecordRaw[] = [
     name: 'm05.revision.quiz',
     component: () => import('../pages/RevisionQuizPage.vue'),
     meta: {
+      ownsH1: true,
       layout: 'user',
       access: 'auth',
       // "Ulang Kaji — {subject}" is set once the subject is known.

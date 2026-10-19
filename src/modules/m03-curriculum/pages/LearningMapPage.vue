@@ -28,6 +28,7 @@ const { data: map, error } = useApi(
 
 <template>
   <DsPage data-testid="map-page">
+    <h1 v-if="!map" class="sr-only">Peta Belajar</h1>
     <UAlert
       v-if="error"
       color="error"

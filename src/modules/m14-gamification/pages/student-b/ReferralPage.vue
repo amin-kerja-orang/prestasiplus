@@ -37,6 +37,7 @@ async function copyLink(): Promise<void> {
 
 <template>
   <DsPage data-testid="referral-page">
+    <h1 v-if="!data" class="sr-only">Rujuk Kawan, Dapat Syiling!</h1>
     <template v-if="data">
       <UCard data-testid="referral-hero">
         <div class="flex flex-col gap-1">
