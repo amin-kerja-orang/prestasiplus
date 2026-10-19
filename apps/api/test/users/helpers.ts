@@ -38,8 +38,6 @@ export interface BootOptions {
   env?: Record<string, string | undefined>
   /** Log lines of this app go here (log-capture test). */
   logStream?: NodeJS.WritableStream
-  /** Raises the JSON body limit like the production setting recommended in the report (default 1100kb). */
-  jsonLimit?: string | null
 }
 
 /** Nest app with the auth and users modules on a private migrated database (identity + schools seeds). */
@@ -78,11 +76,6 @@ export async function bootUsersApp(opts: BootOptions = {}): Promise<UsersTestApp
     .compile()
   const app = moduleRef.createNestApplication({ bufferLogs: false })
   configureApp(app)
-  if (opts.jsonLimit !== null) {
-    ;(app as unknown as { useBodyParser(type: string, options: object): void }).useBodyParser('json', {
-      limit: opts.jsonLimit ?? '1100kb',
-    })
-  }
   await app.init()
 
   return {
@@ -137,8 +130,9 @@ export function detailOf(res: Response): AdminUserDetail {
 }
 
 /** A body that creates a teacher in the given school; override any field. */
+let counter = 0
 export function teacherBody(schoolId: string, over: Record<string, unknown> = {}): Record<string, unknown> {
-  const n = Math.random().toString(36).slice(2, 10)
+  const n = String(++counter)
   return { roles: ['teacher'], name: 'Guru Ujian', email: `guru.${n}@ujian.test`, schoolId, ...over }
 }
 

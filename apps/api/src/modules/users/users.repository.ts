@@ -6,6 +6,7 @@ import type { Prisma } from '../../db/generated/client'
 import { idFromString, idToString, isIdString } from '../../db/ids'
 import { PrismaService } from '../../db/prisma.service'
 import { ROLE_PRIORITY } from '../auth/auth.constants'
+import { SessionStore } from '../auth/session.store'
 import type { Caller } from './caller'
 import { gradeOfClassLevel } from './class-level'
 import { SCHOOL_ADMIN_VISIBLE_ROLES } from './users.constants'
@@ -174,7 +175,10 @@ export function uniqueField(err: unknown): 'email' | 'username' | null {
  */
 @Injectable()
 export class UsersRepository {
-  constructor(@Inject(PrismaService) private readonly prisma: PrismaService) {}
+  constructor(
+    @Inject(PrismaService) private readonly prisma: PrismaService,
+    @Inject(SessionStore) private readonly sessions: SessionStore,
+  ) {}
 
   // --- doorway for other cards ------------------------------------------------------------------
 
@@ -471,15 +475,9 @@ export class UsersRepository {
     })
   }
 
-  /**
-   * Ends every live session of the users (password reset, deactivation, role or school change).
-   * The sessions table belongs to the auth module, which has no bulk revoke yet; this is the same
-   * single UPDATE as its `revokeRow`, done here so it commits or rolls back with the user change.
-   */
-  async revokeSessions(ids: readonly string[], now: Date): Promise<void> {
-    const userIds = ids.filter(isIdString).map(idFromString)
-    if (userIds.length === 0) return
-    await this.prisma.client.session.updateMany({ where: { userId: { in: userIds }, revokedAt: null }, data: { revokedAt: now } })
+  /** Ends every live session of the users, in the current transaction (SessionStore.revokeAllFor; PrismaService.client is the active transaction). */
+  async revokeSessions(ids: readonly string[]): Promise<void> {
+    for (const id of ids.filter(isIdString)) await this.sessions.revokeAllFor(idFromString(id))
   }
 
   /** Hard delete; roles, scopes and sessions go with the user (FK cascade), audit actors become null. */

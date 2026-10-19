@@ -5,8 +5,9 @@ import type { z } from 'zod'
 import { Roles } from '../../common/guards/decorators'
 import { ZodValidationPipe } from '../../common/validation/zod-validation.pipe'
 import { CurrentCaller, type Caller } from './caller'
-import { NoStoreInterceptor } from './no-store.interceptor'
-import { RateLimit, UsersRateLimitGuard } from './rate-limit'
+import { NoStoreInterceptor } from '../../common/http'
+import { RateLimit, RateLimitGuard } from '../../common/throttle'
+import { USER_LIMITS } from './users.constants'
 import { UsersService } from './users.service'
 
 /**
@@ -14,7 +15,7 @@ import { UsersService } from './users.service'
  * minors or staff: `no-store`, rate limited per user, scoped by the caller's role.
  */
 @Controller()
-@UseGuards(UsersRateLimitGuard)
+@UseGuards(RateLimitGuard)
 @UseInterceptors(NoStoreInterceptor)
 export class LookupsController {
   constructor(private readonly users: UsersService) {}
@@ -22,7 +23,7 @@ export class LookupsController {
   /** Staff only: student, teacher, school_admin and admin; a student, parent or sponsor gets 403. */
   @Get('students/search')
   @Roles('admin', 'school_admin', 'teacher')
-  @RateLimit('read')
+  @RateLimit(USER_LIMITS.read)
   async searchStudents(
     @CurrentCaller() caller: Caller,
     @Query(new ZodValidationPipe(StudentSearchQuerySchema)) query: z.infer<typeof StudentSearchQuerySchema>,
@@ -32,7 +33,7 @@ export class LookupsController {
 
   @Get('admin/teachers')
   @Roles('admin', 'school_admin')
-  @RateLimit('read')
+  @RateLimit(USER_LIMITS.read)
   async teachers(@CurrentCaller() caller: Caller) {
     return { data: await this.users.teachers(caller) }
   }
@@ -40,14 +41,14 @@ export class LookupsController {
   /** `[]` for now: the classes table arrives with BE-17 (mock shape, no 404 for an unknown teacher). */
   @Get('admin/teachers/:id/classrooms')
   @Roles('admin', 'school_admin')
-  @RateLimit('read')
+  @RateLimit(USER_LIMITS.read)
   classrooms() {
     return { data: [] as never[] }
   }
 
   @Get('admin/schools/:id/students')
   @Roles('admin', 'school_admin')
-  @RateLimit('read')
+  @RateLimit(USER_LIMITS.read)
   async schoolStudents(
     @CurrentCaller() caller: Caller,
     @Param('id') id: string,

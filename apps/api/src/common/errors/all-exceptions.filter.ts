@@ -48,7 +48,11 @@ export class AllExceptionsFilter implements ExceptionFilter {
       // A malformed body (400 from the body parser or BadRequestException) is a validation error.
       const mapped = raw === 400 ? 422 : raw
       const code = mapped ? CODE_BY_STATUS[mapped] : undefined
-      if (code) {
+      if (mapped === 413) {
+        // A body over the parser limit (JSON_BODY_LIMIT) or an upload over its size limit.
+        status = 413
+        payload = { code: 'PAYLOAD_TOO_LARGE', message: 'Payload Too Large.' }
+      } else if (code) {
         status = ERROR_STATUS[code]
         payload = { code, message: DEFAULT_ERROR_MESSAGES[code] }
       } else {

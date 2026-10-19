@@ -107,6 +107,23 @@ describe('roles, scope and guards (AC 3, 9, 10)', () => {
       expect(rows.map((r) => r.id)).not.toContain(otherTeacher)
     })
 
+    it('LEAD rule: a school_admin sees no parent (404), with or without children, on every route', async () => {
+      const student = (await t.db.query<{ id: string }>(`select u.id::text from users u join user_roles r on r.user_id = u.id where r.role = 'student' and u.school_id = $1 limit 1`, [s1]))[0]?.id as string
+      const lone = CreatedUserSchema.parse((await admin.post('/admin/users', { roles: ['parent'], name: 'Ibu Tanpa Anak', email: 'ibu.tanpa@ujian.test', schoolId: s1 })).body.data).id
+      const withChild = CreatedUserSchema.parse(
+        (await admin.post('/admin/users', { roles: ['parent'], name: 'Ibu Beranak', email: 'ibu.anak@ujian.test', schoolId: s1, linkedStudentIds: [student] })).body.data,
+      ).id
+      for (const id of [lone, withChild]) {
+        expectError(await sa.get(`/admin/users/${id}`), 'NOT_FOUND')
+        expectError(await sa.put(`/admin/users/${id}`, { roles: ['parent'], name: 'X' }), 'NOT_FOUND')
+        expectError(await sa.post(`/admin/users/${id}/toggle-active`), 'NOT_FOUND')
+        expectError(await sa.del(`/admin/users/${id}`), 'NOT_FOUND')
+      }
+      const list = await sa.get('/admin/users?role=parent')
+      expect(list.body.data).toEqual([])
+      expect(UserListMetaSchema.parse(list.body.meta).roleCounts.parent).toBe(0)
+    })
+
     it('filters offers the own school only', async () => {
       const res = await sa.get('/admin/users/filters')
       expect(res.body.data.schools.map((s: { id: string }) => s.id)).toEqual([s1])

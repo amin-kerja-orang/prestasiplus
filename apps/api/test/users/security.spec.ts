@@ -195,18 +195,70 @@ describe('uniqueField maps a race past the pre-check', () => {
   })
 })
 
-describe('body limit', () => {
-  it('with Nest defaults a JSON body over 100 kb is refused before the import runs (see the report: configureApp needs a larger json limit)', async () => {
-    const t = await bootUsersApp({ jsonLimit: null })
+describe('audit keeps the credential-reset marker', () => {
+  it('a password reset is audited as credentialReset: true (not redacted); an unknown id is 404 first', async () => {
+    const t = await bootUsersApp()
     try {
-      const who = apiOf(await login(t, ADMIN))
+      const a = apiOf(await login(t, ADMIN))
       const s = await schoolIdOf(t.db, 'DEMO001')
-      const rows = Array.from({ length: 4000 }, (_, i) => `Guru ${i},defaultlimit${i}@import.test`).join('\n')
-      const res = await who.post('/admin/users/bulk-import', { role: 'teacher', schoolId: s, importMode: 'paste', pasteContent: rows })
-      expect(res.status).toBeGreaterThanOrEqual(400)
-      expect((await t.db.query(`select 1 from users where email like 'defaultlimit%'`)).length).toBe(0)
+      const u = CreatedUserSchema.parse((await a.post('/admin/users', teacherBody(s))).body.data)
+      const res = await a.put(`/admin/users/${u.id}`, { roles: ['teacher'], name: 'Tetap', resetPassword: true })
+      expect(res.status).toBe(200)
+      const rows = await t.db.query<{ detail: { credentialReset?: unknown } }>(`select detail from audit_events where action = 'users.updated'`)
+      expect(rows[0]?.detail.credentialReset).toBe(true)
+      expectError(await a.put('/admin/users/987654321', { roles: ['teacher'], name: 'X', resetPassword: true }), 'NOT_FOUND')
     } finally {
       await t.close()
     }
+  })
+})
+
+describe('body limit (configureApp, JSON_BODY_LIMIT)', () => {
+  let t: UsersTestApp
+  let who: Api
+  let s1: string
+  beforeAll(async () => {
+    t = await bootUsersApp()
+    who = apiOf(await login(t, ADMIN))
+    s1 = await schoolIdOf(t.db, 'DEMO001')
+  })
+  afterAll(async () => {
+    await t.close()
+  })
+
+  it('a 1 MB import text fits the JSON limit (the one long row fails its name rule, status 200)', async () => {
+    const res = await who.post('/admin/users/bulk-import', { role: 'teacher', schoolId: s1, importMode: 'paste', pasteContent: `${'x'.repeat(1_048_000)},a@b.my` })
+    expect(res.status, JSON.stringify(res.body).slice(0, 200)).toBe(200)
+    expect(res.body.data.failed).toBe(1)
+  })
+
+  it('a multipart text field over the size limit is 413 too (not 400)', async () => {
+    const l = await login(t, ADMIN)
+    const res = await l.agent
+      .post('/api/admin/users/bulk-import')
+      .set('X-CSRF-Token', l.csrf)
+      .field('role', 'teacher')
+      .field('schoolId', s1)
+      .field('importMode', 'paste')
+      .field('pasteContent', `A,a@b.my\n${'x'.repeat(1_048_576)}`)
+    expect(res.status).toBe(413)
+    expect(res.body.error).toMatchObject({ code: 'PAYLOAD_TOO_LARGE' })
+  })
+
+  it('a body over the limit is 413 PAYLOAD_TOO_LARGE, never 500', async () => {
+    const res = await who.post('/admin/users/bulk-import', { role: 'teacher', schoolId: s1, importMode: 'paste', pasteContent: 'x'.repeat(1_200_000) })
+    expect(res.status).toBe(413)
+    expect(res.body.error).toMatchObject({ code: 'PAYLOAD_TOO_LARGE' })
+    expect(res.body.error.requestId).toBeTruthy()
+  })
+})
+
+describe('IcService key', () => {
+  const cfg = (env: Record<string, string>) => ({ get: (k: string) => env[k] }) as never
+  it('production without IC_HASH_KEY throws; development falls back to the session secret', async () => {
+    const { IcService } = await import('../../src/modules/users/credentials')
+    expect(() => new IcService(cfg({ NODE_ENV: 'production', SESSION_SECRET: 'x'.repeat(20) }))).toThrow(/IC_HASH_KEY is required in production/)
+    expect(() => new IcService(cfg({ NODE_ENV: 'production', IC_HASH_KEY: 'k'.repeat(20) }))).not.toThrow()
+    expect(new IcService(cfg({ NODE_ENV: 'test', SESSION_SECRET: 'abc' })).hash('990101015555')).toHaveLength(64)
   })
 })

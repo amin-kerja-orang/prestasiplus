@@ -1,4 +1,5 @@
 import type { RoleCode } from '@pp/contract'
+import type { RateLimitSpec } from '../../common/throttle'
 
 /** Audit actions of the user writes and reads. `details` carry ids, counts and field names only. */
 export const USER_AUDIT = {
@@ -36,3 +37,10 @@ export const IMPORT_TX = { maxWait: 20_000, timeout: 60_000 } as const
 
 export const TEACHER_SEARCH_NOTE =
   'A teacher sees only students of its own classes; no classes table exists before BE-17, so the result is empty.'
+
+/** Shared limiter specs (common/throttle). Buckets are this module's own; ceilings come from env, else the default. */
+export const USER_LIMITS = {
+  read: { bucket: 'users.admin.read', env: 'THROTTLE_ADMIN_READ_PER_MINUTE', default: 300, per: 'user' },
+  write: { bucket: 'users.admin.write', env: 'THROTTLE_ADMIN_WRITE_PER_MINUTE', default: 30, per: 'user' },
+  import: { bucket: 'users.import', env: 'THROTTLE_IMPORT_PER_HOUR', default: 10, per: 'user', windowSeconds: 3600 },
+} as const satisfies Record<string, RateLimitSpec>

@@ -107,8 +107,8 @@ export class UsersService {
 
   /** Schools with at least one visible user, by name (case-insensitive), then id. */
   async filters(caller: Caller): Promise<{ schools: { id: string; name: string }[] }> {
-    const ids = new Set(await this.users.schoolIdsWithUsers(caller))
-    const schools = (await this.schools.options()).filter((s) => ids.has(s.id))
+    // Only the schools that have a user are read (not the whole schools table).
+    const schools = (await this.schools.getMany(await this.users.schoolIdsWithUsers(caller))).map((s) => ({ id: s.id, name: s.name }))
     schools.sort((a, b) => {
       const x = a.name.toLowerCase()
       const y = b.name.toLowerCase()
@@ -217,6 +217,9 @@ export class UsersService {
 
   async update(caller: Caller, id: string, body: UpdateUserRequest): Promise<{ data: UpdatedUser; status: string }> {
     if (!isIdString(id)) throw notFound()
+    // Cheap pre-check, so an unknown or out-of-scope id (404) does not cost a hash. The locked
+    // re-read inside the transaction stays the authority.
+    if (body.resetPassword === true && !(await this.users.findVisible(caller, id))) throw notFound()
     // Hash first: the transaction (and the admin lock) must not wait on argon2id.
     const newPassword = body.resetPassword === true ? generatePassword() : null
     const newHash = newPassword === null ? null : await this.passwords.hash(newPassword)
@@ -322,7 +325,7 @@ export class UsersService {
       // A role, status, school or password change ends the sessions of the target (BE-NFR-39).
       const deactivated = target.isActive && !nextActive
       if (rolesChanged || deactivated || newHash !== null || schoolId !== target.schoolId) {
-        await this.users.revokeSessions([id], now)
+        await this.users.revokeSessions([id])
       }
       await this.audit.record({
         tx,
@@ -330,7 +333,7 @@ export class UsersService {
         details: {
           changed: changedFields(body),
           ...(rolesChanged ? { roles } : {}),
-          ...(newHash !== null ? { passwordReset: true } : {}),
+          ...(newHash !== null ? { credentialReset: true } : {}),
         },
       })
     })
@@ -352,7 +355,7 @@ export class UsersService {
       const next = !target.isActive
       if (!next && target.roles.includes('admin') && (await this.users.countActiveAdmins([target.id])) === 0) throw lastAdmin()
       await this.users.update(id, { isActive: next, now })
-      if (!next) await this.users.revokeSessions([id], now)
+      if (!next) await this.users.revokeSessions([id])
       await this.audit.record({
         tx,
         ...this.auditBase(caller, USER_AUDIT.TOGGLED, target),

@@ -30,7 +30,10 @@ export class IcService {
   private readonly key: string
 
   constructor(@Inject(ConfigService) config: ConfigService) {
-    const key = config.get<string>('IC_HASH_KEY') || config.get<string>('SESSION_SECRET')
+    const own = config.get<string>('IC_HASH_KEY')
+    // The session-secret fallback is for development and tests only; production needs its own key.
+    if (!own && config.get<string>('NODE_ENV') === 'production') throw new Error('IC_HASH_KEY is required in production to hash IC numbers.')
+    const key = own || config.get<string>('SESSION_SECRET')
     if (!key) throw new Error('IC_HASH_KEY or SESSION_SECRET is required to hash IC numbers.')
     this.key = key
   }
