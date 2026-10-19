@@ -1,7 +1,7 @@
 import type pg from 'pg'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 
-import { batches, hashRow, upsertByLegacy } from '../../../src/migration/kit'
+import { batches, hashRow, MigrationDbError, upsertByLegacy } from '../../../src/migration/kit'
 import { createKitDb, DEMO_DDL, type KitDb } from './helpers'
 
 let kit: KitDb
@@ -141,10 +141,29 @@ describe('upsertByLegacy', () => {
 
   it('rejects reserved columns, bad identifiers and unknown sources before touching the database', async () => {
     const base = spec([{ id: 'z', code: 'Z', name: null, qty: 1 }])
-    await expect(upsertByLegacy(kit.pool, { ...base, columns: ['code', 'legacy_id'] })).rejects.toThrow(/managed by the kit/)
-    await expect(upsertByLegacy(kit.pool, { ...base, columns: ['id'] })).rejects.toThrow(/managed by the kit/)
-    await expect(upsertByLegacy(kit.pool, { ...base, table: 'demo_items; drop table x' })).rejects.toThrow(/Invalid SQL identifier/)
-    await expect(upsertByLegacy(kit.pool, { ...base, source: 'nope' as 'cloud' })).rejects.toThrow(/Unknown legacy source/)
+    await expect(inTx((c) => upsertByLegacy(c, { ...base, columns: ['code', 'legacy_id'] }))).rejects.toThrow(/managed by the kit/)
+    await expect(inTx((c) => upsertByLegacy(c, { ...base, columns: ['id'] }))).rejects.toThrow(/managed by the kit/)
+    await expect(inTx((c) => upsertByLegacy(c, { ...base, table: 'demo_items; drop table x' }))).rejects.toThrow(/Invalid SQL identifier/)
+    await expect(inTx((c) => upsertByLegacy(c, { ...base, source: 'nope' as 'cloud' }))).rejects.toThrow(/Unknown legacy source/)
+  })
+
+  it('a bad value never appears in the error: only SQLSTATE, table, column and constraint', async () => {
+    const secret = 'IC-900101-14-5555'
+    for (const column of ['born_at', 'qty']) {
+      const bad = {
+        table: 'demo_items',
+        source: 'cloud' as const,
+        columns: ['code', column],
+        rows: [{ legacyId: 'bad1', values: { code: 'B1', [column]: secret } }],
+      }
+      const err: unknown = await inTx((c) => upsertByLegacy(c, bad)).catch((e: unknown) => e)
+      expect(err).toBeInstanceOf(MigrationDbError)
+      const e = err as MigrationDbError
+      expect(e.code).toMatch(/^[0-9A-Z]{5}$/)
+      expect(e.table).toBe('demo_items')
+      expect(JSON.stringify({ message: e.message, stack: e.stack, own: { ...e } })).not.toContain(secret)
+      expect(e.message).not.toMatch(/invalid input syntax/i)
+    }
   })
 })
 

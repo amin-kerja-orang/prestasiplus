@@ -5,9 +5,15 @@
  *   migrate:list                       lists registered commands
  *   migrate:<name> [--dry-run|--apply] a command registered by BE-27 .. BE-30
  *
- * `--dry-run` is the default; `--apply` needs a passing dry-run on the same input hash.
- * Exit codes: 0 ok, 1 run failed or reconciliation mismatch, 2 usage or configuration error,
- * 3 `--apply` refused (no passing dry-run), 4 another run on the same input is active.
+ * `--dry-run` is the default; `--apply` needs a passing dry-run on the same input hash, and
+ * `PP_ALLOW_MIGRATE_APPLY=1`. When `NODE_ENV` is production (or prod), `--apply` also needs
+ * `PP_MIGRATE_TARGET_DB` equal to the connected `current_database()` (wrong-database guard).
+ * Exit codes: 0 ok, 1 run failed or reconciliation mismatch, 2 usage or configuration error
+ * (also a refused apply guard), 3 `--apply` refused (no passing dry-run), 4 another run on the
+ * same input is active.
+ *
+ * Database errors are printed as SQLSTATE, table, column and constraint only (never the server
+ * message, which can quote a row value).
  *
  * Commands self-register: every `.ts` / `.js` file in `src/migration/commands/` is imported at
  * start-up and calls `registerMigrateCommand` (see `kit/registry.ts`). The kit has no real entity.
@@ -23,6 +29,7 @@ import {
   findMigrateCommand,
   listMigrateCommands,
   RunInProgressError,
+  sanitizeDbError,
   type CliContext,
   type CommandArgs,
 } from './kit'
@@ -30,6 +37,48 @@ import {
 export const EXIT = { ok: 0, failed: 1, usage: 2, applyRefused: 3, busy: 4 } as const
 
 export class UsageError extends Error {}
+
+/** `--apply` was not explicitly allowed for this environment or database. */
+export class ApplyGuardError extends Error {
+  constructor(message: string) {
+    super(message)
+    this.name = 'ApplyGuardError'
+  }
+}
+
+const PRODUCTION = /^\s*prod(uction)?\s*$/i
+
+/** Host name of a connection URL (never user, password or query); `unknown host` when it cannot be read. */
+function hostOf(url: string | undefined): string {
+  if (!url) return 'unknown host'
+  try {
+    return new URL(url).hostname || 'unknown host'
+  } catch {
+    return 'unknown host'
+  }
+}
+
+/**
+ * Guards `--apply` against running on the wrong database (security M3). Needs
+ * `PP_ALLOW_MIGRATE_APPLY=1`; in production also `PP_MIGRATE_TARGET_DB` equal to the connected
+ * database name. Returns the line to print (host and database name only, no credentials).
+ */
+export async function assertApplyAllowed(
+  pool: pg.Pool,
+  env: Readonly<Record<string, string | undefined>>,
+): Promise<string> {
+  if (env.PP_ALLOW_MIGRATE_APPLY !== '1') {
+    throw new ApplyGuardError('Refusing --apply: set PP_ALLOW_MIGRATE_APPLY=1 to allow writes by the migration kit.')
+  }
+  const res = await pool.query<{ db: string }>('SELECT current_database() AS db')
+  const db = res.rows[0]?.db ?? ''
+  if (PRODUCTION.test(env.NODE_ENV ?? '') && env.PP_MIGRATE_TARGET_DB !== db) {
+    throw new ApplyGuardError(
+      `Refusing --apply in production: PP_MIGRATE_TARGET_DB must equal the connected database name ("${db}") on ${hostOf(env.DATABASE_URL)}.`,
+    )
+  }
+  return `--apply target: database "${db}" on ${hostOf(env.DATABASE_URL)}`
+}
 
 /** `--dry-run` / `--apply` choose the mode (default dry-run); giving both is an error. */
 export function parseArgs(argv: readonly string[]): { command: string | undefined; args: CommandArgs } {
@@ -114,8 +163,13 @@ export async function runCli(argv: readonly string[], deps: CliDeps = {}): Promi
   }
   const ctx: CliContext = { pool, env, out, err }
   try {
+    if (args.mode === 'apply') out(await assertApplyAllowed(pool, env))
     return await found.run(args, ctx)
   } catch (e) {
+    if (e instanceof ApplyGuardError) {
+      err(e.message)
+      return EXIT.usage
+    }
     if (e instanceof ApplyRefusedError) {
       err(e.message)
       return EXIT.applyRefused
@@ -124,8 +178,9 @@ export async function runCli(argv: readonly string[], deps: CliDeps = {}): Promi
       err(e.message)
       return EXIT.busy
     }
-    // Messages from the kit carry ids and counts only; never print row values.
-    err(`${command} failed: ${e instanceof Error ? e.message : String(e)}`)
+    // Never print row values: a Postgres error is reduced to SQLSTATE, table, column and constraint.
+    const safe = sanitizeDbError(e)
+    err(`${command} failed: ${safe instanceof Error ? safe.message : 'unexpected error'}`)
     return EXIT.failed
   } finally {
     if (ownPool) await pool.end()
@@ -139,7 +194,8 @@ async function main(): Promise<void> {
 
 if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
   main().catch((e: unknown) => {
-    console.error(e instanceof Error ? e.message : String(e))
+    const safe = sanitizeDbError(e)
+    console.error(safe instanceof Error ? safe.message : 'unexpected error')
     process.exit(EXIT.failed)
   })
 }

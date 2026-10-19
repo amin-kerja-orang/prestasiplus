@@ -11,11 +11,11 @@ import {
   type RunCounters,
 } from './ledger'
 import { Rejects } from './rejects'
-import { type LegacySource, type LoadStats, type RunMode, type RunStatus, type SqlExecutor } from './types'
+import { type LegacySource, type LoadStats, type RunMode, type RunStatus } from './types'
 
 /** Everything a loader needs inside one batch. `db` is the batch's transaction client. */
 export interface BatchContext {
-  db: SqlExecutor
+  db: pg.PoolClient
   source: LegacySource
   idMap: IdMap
   rejects: Rejects
@@ -166,7 +166,8 @@ export class Runner {
           }
         }
       } catch (err) {
-        await this.ledger.finish(runId, 'failed', mode === 'apply' ? undefined : counters)
+        // A failing bookkeeping write must not mask the original error.
+        await this.ledger.finish(runId, 'failed', mode === 'apply' ? undefined : counters).catch(() => undefined)
         throw err
       }
 
@@ -212,8 +213,7 @@ export class Runner {
         }
       }
     } finally {
-      await client.query('ROLLBACK').catch(() => undefined)
-      client.release()
+      await rollbackAndRelease(client)
     }
     return counters
   }
@@ -232,6 +232,7 @@ export class Runner {
       batchNo++
       const next: EntityCounters = { ...(counters[step.entity] as EntityCounters) }
       const client = await this.pool.connect()
+      let released = false
       try {
         await client.query('BEGIN')
         const result = await step.load(rows, {
@@ -252,11 +253,12 @@ export class Runner {
         await this.ledger.saveCounters(runId, { ...counters, [step.entity]: next }, client)
         await client.query('COMMIT')
       } catch (err) {
-        await client.query('ROLLBACK').catch(() => undefined)
         rejects.clear()
+        await rollbackAndRelease(client)
+        released = true
         throw err
       } finally {
-        client.release()
+        if (!released) client.release()
       }
       counters[step.entity] = next
     }
@@ -290,6 +292,15 @@ export class Runner {
       }
     })
   }
+}
+
+/** ROLLBACK, then return the client; when the ROLLBACK itself fails the connection is destroyed, not pooled. */
+async function rollbackAndRelease(client: pg.PoolClient): Promise<void> {
+  let broken = false
+  await client.query('ROLLBACK').catch(() => {
+    broken = true
+  })
+  client.release(broken ? true : undefined)
 }
 
 function addBatch(c: EntityCounters, read: number, result: BatchResult | void): void {

@@ -1,4 +1,4 @@
-import { createHash } from 'node:crypto'
+import { createHash, createHmac } from 'node:crypto'
 
 const IDENT = /^[a-z_][a-z0-9_]{0,62}$/
 
@@ -35,9 +35,28 @@ export function hashRow(values: Record<string, unknown>): string {
   return createHash('sha256').update(JSON.stringify(canonical(values))).digest('hex')
 }
 
-/** Short stable hash for a value that must not be stored (reject `offending` column). */
-export function hashValue(value: unknown): string {
-  return `sha256:${createHash('sha256').update(JSON.stringify(canonical(value))).digest('hex').slice(0, 16)}`
+/**
+ * Keyed hash for a value that must not be stored (reject `offending` column): HMAC-SHA-256 under
+ * `key`, truncated. The key is a per-run random secret held in memory only (see `Rejects`), so the
+ * hash of a low-entropy value (phone, IC) cannot be brute-forced from the stored rows.
+ */
+export function hashValue(value: unknown, key: Uint8Array): string {
+  return `hmac:${createHmac('sha256', key).update(JSON.stringify(canonical(value))).digest('hex').slice(0, 16)}`
+}
+
+const PERSONAL_ID = /@|\d{10,}/
+
+/**
+ * A `legacyId` must be a surrogate primary key of the source row. An e-mail address, or a run of 10
+ * or more digits (IC number, phone number), is personal data and is refused. The message never
+ * repeats the value.
+ */
+export function assertSurrogateLegacyId(legacyId: string, where: string): void {
+  if (PERSONAL_ID.test(legacyId)) {
+    throw new RangeError(
+      `${where}: legacyId looks like personal data (contains "@" or 10 or more digits); use the surrogate primary key of the source row.`,
+    )
+  }
 }
 
 /** Hash of the inputs of a run (dump file hashes, entity list, ...), used as the dry-run / apply link. */

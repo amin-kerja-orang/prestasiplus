@@ -6,7 +6,6 @@ import {
   Runner,
   REJECT_REASONS,
   hashInput,
-  hashValue,
   resolveSelfReferences,
   upsertByLegacy,
 } from '../../../src/migration/kit'
@@ -40,8 +39,7 @@ describe('Rejects', () => {
     const dump = JSON.stringify(stored)
     for (const secret of [email, name, 'Fictitious', 'someone']) expect(dump).not.toContain(secret)
     // a non code-like "enum" value is stored as a hash only
-    expect(reject.offending).toBe(hashValue(name))
-    expect(String(reject.offending)).toMatch(/^sha256:[0-9a-f]{16}$/)
+    expect(String(reject.offending)).toMatch(/^hmac:[0-9a-f]{16}$/)
   })
 
   it('stores a code-like enum value as is, hashes anything else, and validates reason codes', async () => {
@@ -57,8 +55,63 @@ describe('Rejects', () => {
     const rows = await kit.db.query<{ legacy_id: string | null; offending: string | null }>(
       `select legacy_id, offending from etl_rejects where run_id = $1 order by id`, [run?.id],
     )
-    expect(rows.map((x) => x.offending)).toEqual(['principal_x', hashValue('0123456789'), null])
+    expect(rows.map((x) => x.offending)).toEqual(['principal_x', expect.stringMatching(/^hmac:[0-9a-f]{16}$/), null])
     expect(REJECT_REASONS).toEqual(['UNKNOWN_ENUM', 'ORPHAN_PARENT', 'DUPLICATE_KEY', 'INVALID_VALUE', 'UNSUPPORTED'])
+  })
+
+  it('M2: IC-like, phone-like and digit-heavy enum values are hashed; known codes and short codes stay raw', async () => {
+    const r = new Rejects()
+    const add = (enumValue: string, allowedCodes?: readonly string[]) =>
+      r.add({ entity: 'e', legacyId: '1', reason: 'UNKNOWN_ENUM', column: 'c', enumValue, allowedCodes })
+    add('900101145555') // IC shape: digits only
+    add('0123456789') // phone shape
+    add('ic_900101145555') // a letter, but more than 4 digits
+    add('990101-14-5555') // IC with dashes
+    add('teacher_x') // code-like
+    add('grade_12') // a letter and 2 digits
+    add('12345', ['12345']) // allow-listed for the column
+    const run = (await kit.db.query<{ id: string }>(`insert into etl_runs (mode) values ('dry-run') returning id::text id`))[0]
+    await r.flush(kit.pool, run?.id ?? '0')
+    const rows = await kit.db.query<{ offending: string }>(`select offending from etl_rejects where run_id = $1 order by id`, [run?.id])
+    const hashed = /^hmac:[0-9a-f]{16}$/
+    expect(rows.slice(0, 4).every((x) => hashed.test(x.offending))).toBe(true)
+    expect(rows.slice(4).map((x) => x.offending)).toEqual(['teacher_x', 'grade_12', '12345'])
+  })
+
+  it('M2: the hash is keyed per run (same value, same hash within a run; different hash in another run)', async () => {
+    const stored = async (r: Rejects) => {
+      const run = (await kit.db.query<{ id: string }>(`insert into etl_runs (mode) values ('dry-run') returning id::text id`))[0]
+      await r.flush(kit.pool, run?.id ?? '0')
+      return (await kit.db.query<{ offending: string }>(`select offending from etl_rejects where run_id = $1 order by id`, [run?.id])).map((x) => x.offending)
+    }
+    const a = new Rejects()
+    const b = new Rejects()
+    const value = '0123456789'
+    a.add({ entity: 'e', legacyId: '1', reason: 'INVALID_VALUE', valueToHash: value })
+    a.add({ entity: 'e', legacyId: '2', reason: 'INVALID_VALUE', valueToHash: value })
+    b.add({ entity: 'e', legacyId: '1', reason: 'INVALID_VALUE', valueToHash: value })
+    const [a1, a2] = await stored(a)
+    const [b1] = await stored(b)
+    expect(a1).toBe(a2)
+    expect(a1).not.toBe(b1)
+  })
+
+  it('M2: a legacyId that is an e-mail, an IC or a phone number is refused, without echoing it', async () => {
+    const r = new Rejects()
+    const map = new IdMap(kit.pool, 'cloud')
+    for (const bad of ['someone@example.test', '900101145555', '0123456789', 'u-0123456789-x']) {
+      let msg = ''
+      try {
+        r.add({ entity: 'e', legacyId: bad, reason: 'UNSUPPORTED' })
+      } catch (e) {
+        msg = (e as Error).message
+      }
+      expect(msg).toMatch(/looks like personal data/)
+      expect(msg).not.toContain(bad)
+      await expect(map.register('e', bad, '1')).rejects.toThrow(/looks like personal data/)
+    }
+    expect(() => r.add({ entity: 'e', legacyId: '123456789', reason: 'UNSUPPORTED' })).not.toThrow()
+    expect(() => r.add({ entity: 'e', legacyId: '12:34', reason: 'UNSUPPORTED' })).not.toThrow()
   })
 
   it('the database refuses a reason outside the five codes and a mode outside dry-run/apply', async () => {

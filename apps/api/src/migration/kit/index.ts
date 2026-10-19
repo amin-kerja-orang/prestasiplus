@@ -11,6 +11,7 @@
  *   registerMigrateCommand  how a `migrate:*` CLI command self-registers
  */
 export { batches } from './batches'
+export { isPgError, MigrationDbError, sanitizeDbError } from './errors'
 export { loadCheckpoint, saveCheckpoint, type Checkpoint } from './checkpoint'
 export { IdMap } from './id-map'
 export {
@@ -44,7 +45,7 @@ export {
   type RunReport,
 } from './runner'
 export { resolveSelfReferences, type SelfReferenceSpec } from './self-reference'
-export { hashInput, hashRow, hashValue } from './sql'
+export { assertSurrogateLegacyId, hashInput, hashRow, hashValue } from './sql'
 export {
   assertLegacySource,
   LEGACY_SOURCES,

@@ -1,3 +1,4 @@
+import { assertSurrogateLegacyId } from './sql'
 import { assertLegacySource, type LegacySource, type SqlExecutor } from './types'
 
 /**
@@ -37,6 +38,7 @@ export class IdMap {
     const legacyIds: string[] = []
     const newIds: string[] = []
     for (const [legacyId, newId] of pairs) {
+      assertSurrogateLegacyId(legacyId, 'IdMap.register')
       legacyIds.push(legacyId)
       newIds.push(String(newId))
     }
