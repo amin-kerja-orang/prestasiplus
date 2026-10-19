@@ -7,20 +7,7 @@
  */
 import { computed, ref } from 'vue'
 
-import {
-  DsChart,
-  DsEmptyState,
-  DsLoadError,
-  DsPage,
-  DsPageHeader,
-  DsPanel,
-  DsStatRow,
-  DsCluster,
-  DsStack,
-  DsGrid,
-  DsHeading,
-  DsText,
-} from '@/ds'
+import { DsChart, DsEmptyState, DsLoadError, DsPage, DsPageHeader, DsPanel, DsStatRow } from '@/ds'
 
 import { fetchHeadcountDashboard } from '../api/headcount'
 import { dashboardLevels, dashboardStats } from '../lib/headcount/format'
@@ -68,15 +55,10 @@ const gaps = (v: (number | null)[]): number[] => v as number[]
       </template>
     </DsPageHeader>
 
-    <DsLoadError
-      v-if="isLoadError(error)"
-      :message="LOAD_ERROR"
-      testid="page-error"
-      @retry="reload()"
-    />
+    <DsLoadError v-if="isLoadError(error)" :message="LOAD_ERROR" testid="page-error" @retry="reload()" />
 
     <template v-else-if="data">
-      <DsCluster gap="xs" role="group" aria-label="Tapis" data-testid="level-filter">
+      <div class="flex flex-wrap items-center gap-2" role="group" aria-label="Tapis" data-testid="level-filter">
         <span class="inline-flex items-center gap-1 text-label text-muted"
           ><UIcon name="i-ph-funnel" class="size-5" />Tapis:</span
         >
@@ -102,18 +84,18 @@ const gaps = (v: (number | null)[]): number[] => v as number[]
           :data-testid="`filter-level-${String(l.level)}`"
           @click="filterLevel = l.level"
         />
-      </DsCluster>
+      </div>
 
       <DsStatRow :items="statItems(tiles)" data-testid="stat-cards" :cols="4" prefix="stat" />
 
       <DsPanel v-if="stats.tracked > 0" data-testid="overall-card">
-        <DsStack gap="sm">
-          <DsCluster align="baseline" justify="between" :wrap="false">
-            <DsHeading :level="2" variant="subheading">Keseluruhan On-Track</DsHeading>
-            <DsText variant="heading" as="span" tabular data-testid="overall-pct"
-              >{{ stats.onPct }}%</DsText
+        <div class="flex flex-col gap-3">
+          <div class="flex items-baseline justify-between gap-3">
+            <h2 class="text-subheading text-highlighted">Keseluruhan On-Track</h2>
+            <span class="tabular text-heading text-highlighted" data-testid="overall-pct"
+              >{{ stats.onPct }}%</span
             >
-          </DsCluster>
+          </div>
           <UProgress
             :model-value="stats.onPct"
             :max="100"
@@ -126,14 +108,14 @@ const gaps = (v: (number | null)[]): number[] => v as number[]
             <span>Off Track: {{ stats.offTrack }}</span>
             <span>Tiada Data: {{ stats.noData }}</span>
           </div>
-        </DsStack>
+        </div>
       </DsPanel>
 
       <div v-if="configs.length === 0" data-testid="dashboard-empty">
         <DsEmptyState title="Belum ada headcount." icon="clipboard-text" />
       </div>
 
-      <DsGrid v-else :cols="{ base: 1, md: 2 }" data-testid="dashboard-charts">
+      <div v-else class="grid grid-cols-1 gap-4 md:grid-cols-2" data-testid="dashboard-charts">
         <DsPanel
           v-for="c in filtered"
           :key="c.id"
@@ -152,14 +134,9 @@ const gaps = (v: (number | null)[]): number[] => v as number[]
             :data-testid="`headcount-chart-${String(c.id)}`"
           />
         </DsPanel>
-      </DsGrid>
+      </div>
     </template>
-    <div
-      v-else-if="!error"
-      class="flex flex-col gap-4 md:gap-6"
-      aria-busy="true"
-      data-testid="page-loading"
-    >
+    <div v-else-if="!error" class="flex flex-col gap-4 md:gap-6" aria-busy="true" data-testid="page-loading">
       <USkeleton class="h-24 w-full" />
       <USkeleton class="h-64 w-full" />
     </div>

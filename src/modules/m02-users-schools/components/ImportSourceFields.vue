@@ -5,7 +5,7 @@
  * sini" / "atau" / "Pilih Fail", `accept=".csv,.txt"`; a drop copies the file into the input; status "Tiada
  * fail dipilih" / "Fail dipilih: {name}"). The format box differs per screen and comes in the `format` slot.
  */
-import { DsFileField, DsStack, DsGrid, DsText } from '@/ds'
+import { DsFileField } from '@/ds'
 
 import type { ImportMode } from '../api/imports'
 
@@ -24,12 +24,12 @@ function onPick(value: File | File[] | null): void {
 </script>
 
 <template>
-  <DsStack data-testid="import-source">
+  <div class="flex flex-col gap-4" data-testid="import-source">
     <p class="flex items-center gap-2 text-label text-default">
       <UIcon name="i-ph-upload-simple" class="size-4 text-muted" aria-hidden="true" />
       Kaedah Import <span class="text-error">*</span>
     </p>
-    <DsGrid :cols="{ base: 1, sm: 2 }" gap="sm">
+    <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
       <UButton
         type="button"
         block
@@ -50,10 +50,10 @@ function onPick(value: File | File[] | null): void {
         data-testid="import-mode-paste"
         @click="mode = 'paste'"
       />
-    </DsGrid>
+    </div>
 
     <div v-if="mode === 'csv'" data-testid="import-csv">
-      <DsStack gap="xs" data-testid="import-dropzone">
+      <div class="flex flex-col gap-2" data-testid="import-dropzone">
         <DsFileField
           :model-value="file"
           name="csv_file"
@@ -63,10 +63,10 @@ function onPick(value: File | File[] | null): void {
           hint="atau klik untuk memilih fail"
           @update:model-value="onPick"
         />
-        <DsText variant="label" as="p" tone="muted" data-testid="import-file-status">
+        <p class="text-label text-muted" data-testid="import-file-status">
           {{ file ? `Fail dipilih: ${file.name}` : 'Tiada fail dipilih' }}
-        </DsText>
-      </DsStack>
+        </p>
+      </div>
     </div>
 
     <UTextarea
@@ -80,5 +80,5 @@ function onPick(value: File | File[] | null): void {
     />
 
     <slot name="format" :mode="mode" />
-  </DsStack>
+  </div>
 </template>

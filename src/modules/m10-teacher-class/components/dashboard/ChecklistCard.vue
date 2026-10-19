@@ -2,7 +2,7 @@
 /** FN-M10-2.1.2: "Checklist Guru" (FR-M10-09, BR-M10-05). */
 import { computed } from 'vue'
 
-import { DsIconChip, DsPanel, DsCluster, DsText } from '@/ds'
+import { DsIconChip, DsPanel } from '@/ds'
 import { usePrototypeScope } from '@/composables'
 
 import type { GuruDashboard } from '../../api/types'
@@ -18,21 +18,21 @@ const ICONS = ['i-ph-laptop-duotone', 'i-ph-users-three-duotone', 'i-ph-rocket-l
 
 <template>
   <DsPanel data-testid="checklist-card">
-    <DsCluster align="start" justify="between" :wrap="false">
+    <div class="flex items-start justify-between gap-3">
       <div class="min-w-0">
         <h2 class="flex items-center gap-2 text-subheading text-highlighted">
           <UIcon name="i-ph-clipboard-text-duotone" class="size-5 shrink-0 text-primary-t" />{{
             DASH_COPY.checklistTitle
           }}
         </h2>
-        <DsText variant="caption" data-testid="checklist-count">
+        <p class="text-caption text-muted" data-testid="checklist-count">
           {{ progress.done }}/3 langkah selesai
-        </DsText>
+        </p>
       </div>
-      <DsText variant="heading" tabular data-testid="checklist-percent">
+      <p class="tabular text-heading text-highlighted" data-testid="checklist-percent">
         {{ progress.percent }}%
-      </DsText>
-    </DsCluster>
+      </p>
+    </div>
     <UProgress
       :model-value="progress.percent"
       class="mt-3"
@@ -47,11 +47,11 @@ const ICONS = ['i-ph-laptop-duotone', 'i-ph-users-three-duotone', 'i-ph-rocket-l
         data-testid="checklist-row"
       >
         <DsPanel tone="inset">
-          <DsCluster :wrap="false">
+          <div class="flex min-w-0 items-center gap-3">
             <DsIconChip :icon="checklist[row.key] ? 'i-ph-check-circle-duotone' : ICONS[i]!" />
             <div class="min-w-0 flex-1">
-              <DsText variant="label" as="p" tone="highlighted">{{ row.title }}</DsText>
-              <DsText variant="caption">{{ row.text }}</DsText>
+              <p class="text-label text-highlighted">{{ row.title }}</p>
+              <p class="text-caption text-muted">{{ row.text }}</p>
             </div>
             <UButton
               v-if="allows(row.to)"
@@ -63,7 +63,7 @@ const ICONS = ['i-ph-laptop-duotone', 'i-ph-users-three-duotone', 'i-ph-rocket-l
               data-testid="checklist-link"
               >{{ DASH_COPY.view }}</UButton
             >
-          </DsCluster>
+          </div>
         </DsPanel>
       </li>
     </ul>

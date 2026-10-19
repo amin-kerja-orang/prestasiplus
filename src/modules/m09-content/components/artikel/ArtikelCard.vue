@@ -6,7 +6,7 @@
  */
 import { computed } from 'vue'
 
-import { DsMediaCard, DsStack, DsText } from '@/ds'
+import { DsMediaCard } from '@/ds'
 import { diffForHumans } from '@/lib/time'
 
 import type { ArticleCard } from '../../api'
@@ -30,7 +30,11 @@ const meta = computed(() =>
 </script>
 
 <template>
-  <DsStack gap="xs" class="h-full" data-testid="artikel-card" :data-slug="article.slug">
+  <div
+    class="flex h-full min-w-0 flex-col gap-2"
+    data-testid="artikel-card"
+    :data-slug="article.slug"
+  >
     <DsMediaCard
       kind="article"
       :title="article.title"
@@ -38,8 +42,8 @@ const meta = computed(() =>
       :meta="meta"
       :to="`/artikel/${article.slug}`"
     />
-    <DsText v-if="article.excerpt" variant="caption" :clamp="2" wrap="anywhere">
+    <p v-if="article.excerpt" class="line-clamp-2 text-caption break-words text-muted">
       {{ article.excerpt }}
-    </DsText>
-  </DsStack>
+    </p>
+  </div>
 </template>

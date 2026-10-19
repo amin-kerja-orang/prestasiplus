@@ -12,16 +12,7 @@ import { RouterLink, useRoute, useRouter } from 'vue-router'
 import { isApiError } from '@/api'
 import { setRouteOutcome } from '@/app/router/outcome'
 import { useApi, usePageMeta } from '@/composables'
-import {
-  DsBackLink,
-  DsEmptyState,
-  DsIconChip,
-  DsLoadError,
-  DsCluster,
-  DsStack,
-  DsHeading,
-  DsText,
-} from '@/ds'
+import { DsBackLink, DsEmptyState, DsIconChip, DsLoadError } from '@/ds'
 import { formatCount } from '@/lib/number'
 import { subjectGlyph } from '@/modules/m05-practice'
 
@@ -83,6 +74,7 @@ const hasTarget = computed(
   () => subject.value?.targetType != null && subject.value.targetSize != null,
 )
 const size = computed(() => setSize(subject.value?.targetSize ?? null))
+
 </script>
 
 <template>
@@ -91,22 +83,22 @@ const size = computed(() => setSize(subject.value?.targetSize ?? null))
       <DsBackLink to="/spm/ramalan" label="Kembali" data-testid="spm-back" />
 
       <UCard data-testid="subject-hero">
-        <DsCluster gap="md" :wrap="false">
+        <div class="flex items-center gap-4">
           <DsIconChip :icon="subjectGlyph(subject.icon)" size="lg" data-testid="subject-icon" />
-          <DsStack gap="2xs">
-            <DsHeading :level="1" wrap="anywhere" data-testid="subject-title">
+          <div class="flex min-w-0 flex-col gap-1">
+            <h1 class="text-title break-words text-highlighted" data-testid="subject-title">
               {{ subject.name }}
-            </DsHeading>
-            <DsText variant="body" tone="muted" data-testid="subject-sub">
+            </h1>
+            <p class="text-body text-muted" data-testid="subject-sub">
               Tracking A SPM<template v-if="hasTarget">
                 · Target {{ typeName }} set: {{ subject.targetSize }} soalan</template
               >
-            </DsText>
-          </DsStack>
-        </DsCluster>
+            </p>
+          </div>
+        </div>
       </UCard>
 
-      <DsCluster gap="xs" align="stretch" data-testid="subject-summary">
+      <div class="flex flex-wrap gap-2" data-testid="subject-summary">
         <UBadge
           color="success"
           variant="soft"
@@ -144,18 +136,11 @@ const size = computed(() => setSize(subject.value?.targetSize ?? null))
           data-testid="sum-target"
           >Target {{ typeName }}: {{ subject.targetSize }} / set</UBadge
         >
-      </DsCluster>
+      </div>
 
       <template v-if="subject.sets.length > 0">
-        <h2
-          class="flex items-center gap-2 text-heading text-highlighted"
-          data-testid="year-heading"
-        >
-          <UIcon
-            name="i-ph-calendar-blank-duotone"
-            class="size-6 text-primary-t"
-            aria-hidden="true"
-          />
+        <h2 class="flex items-center gap-2 text-heading text-highlighted" data-testid="year-heading">
+          <UIcon name="i-ph-calendar-blank-duotone" class="size-6 text-primary-t" aria-hidden="true" />
           Tracking A 2026
         </h2>
         <div class="grid grid-cols-1 gap-3 md:grid-cols-2 md:gap-4" data-testid="set-grid">
@@ -168,52 +153,42 @@ const size = computed(() => setSize(subject.value?.targetSize ?? null))
                 ? { to: setHref(subject.code, s.setNo) }
                 : { 'data-inert': 'true' }
             "
-            :class="isStartable(s.status) ? 'block min-w-0' : 'pointer-events-none block min-w-0'"
+            :class="isStartable(s.status) ? 'block min-w-0' : 'block min-w-0 pointer-events-none'"
             :data-testid="`set-card-${s.setNo}`"
             :data-status="s.status"
           >
             <UCard class="h-full" :ui="{ body: 'flex items-center gap-3 p-4' }">
               <div class="flex min-w-0 flex-1 flex-col gap-1">
-                <DsCluster gap="xs">
-                  <DsHeading :level="3" data-testid="set-title"> Set {{ s.setNo }} </DsHeading>
-                  <UBadge
-                    :color="SET_STATUS[s.status].color"
-                    variant="soft"
-                    data-testid="set-badge"
-                    >{{ SET_STATUS[s.status].label }}</UBadge
-                  >
-                </DsCluster>
-                <DsText variant="body" data-testid="set-ready">
+                <div class="flex flex-wrap items-center gap-2">
+                  <h3 class="text-subheading text-highlighted" data-testid="set-title">
+                    Set {{ s.setNo }}
+                  </h3>
+                  <UBadge :color="SET_STATUS[s.status].color" variant="soft" data-testid="set-badge">{{
+                    SET_STATUS[s.status].label
+                  }}</UBadge>
+                </div>
+                <p class="text-body text-default" data-testid="set-ready">
                   {{ formatCount(s.readyCount) }} soalan kuiz siap guna
-                </DsText>
-                <DsText
+                </p>
+                <p
                   v-if="hasTarget || !isStartable(s.status)"
-                  variant="caption"
+                  class="text-caption text-muted"
                   data-testid="set-format"
                 >
                   Format set: {{ s.readyCount }} / {{ size }}
-                </DsText>
-                <DsText
-                  v-if="s.status === 'bank_besar'"
-                  variant="caption"
-                  tone="info"
-                  data-testid="set-bank"
-                >
-                  Bank source: {{ s.bankSource }}. Sistem tetap ambil {{ size }} soalan ikut
-                  prioriti semasa.
-                </DsText>
-                <DsText
+                </p>
+                <p v-if="s.status === 'bank_besar'" class="text-caption text-info" data-testid="set-bank">
+                  Bank source: {{ s.bankSource }}. Sistem tetap ambil {{ size }} soalan ikut prioriti
+                  semasa.
+                </p>
+                <p
                   v-if="s.status === 'belum_cukup'"
-                  variant="caption"
-                  tone="warning"
+                  class="text-caption text-warning"
                   data-testid="set-locked-note"
                 >
                   Belum cukup soalan untuk format KPM.
-                </DsText>
-                <p
-                  class="inline-flex items-center gap-1 text-caption text-muted"
-                  data-testid="set-dskp"
-                >
+                </p>
+                <p class="inline-flex items-center gap-1 text-caption text-muted" data-testid="set-dskp">
                   <UIcon name="i-ph-tag-bold" class="size-3.5" aria-hidden="true" />
                   {{ dskpLine(s) }}
                 </p>
@@ -236,13 +211,7 @@ const size = computed(() => setSize(subject.value?.targetSize ?? null))
         />
       </UCard>
     </template>
-    <DsLoadError
-      v-else-if="error && !notFound"
-      :message="LOAD_ERROR"
-      testid="spm-error"
-      retry-testid="spm-retry"
-      @retry="reload()"
-    />
+    <DsLoadError v-else-if="error && !notFound" :message="LOAD_ERROR" testid="spm-error" retry-testid="spm-retry" @retry="reload()" />
     <SkeletonCards v-else-if="!notFound" :count="4" />
   </div>
 </template>

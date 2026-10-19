@@ -5,7 +5,7 @@
  */
 import { RouterLink } from 'vue-router'
 
-import { DsPanel, DsText } from '@/ds'
+import { DsPanel } from '@/ds'
 
 import type { BandCount } from '../../../api/types'
 import { BAND, pct, plain } from '../common/kirkpatrick-format'
@@ -27,12 +27,12 @@ defineProps<{ bands: BandCount[]; monitoringPath: string }>()
         <p :class="['tabular text-subheading', BAND[b.key].text]" data-testid="band-count">
           {{ plain(b.count) }}
         </p>
-        <DsText variant="body" tone="highlighted" wrap="anywhere" data-testid="band-label">
+        <p class="text-body break-words text-highlighted" data-testid="band-label">
           {{ BAND[b.key].label }}
-        </DsText>
-        <DsText variant="body" tone="muted" data-testid="band-caption">
+        </p>
+        <p class="text-body text-muted" data-testid="band-caption">
           {{ BAND_CAPTION[b.key] }}
-        </DsText>
+        </p>
         <UProgress
           :model-value="b.pct"
           :max="100"

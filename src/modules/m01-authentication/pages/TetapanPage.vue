@@ -7,7 +7,7 @@
  */
 import { computed, onMounted, reactive, ref } from 'vue'
 
-import { DsPage, DsLoadError, DsStack, DsCluster, DsText } from '@/ds'
+import { DsPage, DsLoadError } from '@/ds'
 
 import { getSettings, saveSettings, type Faith, type UserSettings } from '../api'
 import SettingRow from '../components/tetapan/SettingRow.vue'
@@ -127,10 +127,16 @@ onMounted(load)
       </template>
     </UAlert>
 
-    <DsStack v-if="loading" role="status" aria-busy="true" data-testid="tetapan-loading">
+    <div
+      v-if="loading"
+      class="flex flex-col gap-4"
+      role="status"
+      aria-busy="true"
+      data-testid="tetapan-loading"
+    >
       <USkeleton class="h-48 w-full" />
       <USkeleton class="h-24 w-full" />
-    </DsStack>
+    </div>
 
     <DsLoadError v-else-if="loadFailed" retry-testid="tetapan-retry" @retry="load" />
 
@@ -142,17 +148,17 @@ onMounted(load)
     >
       <div class="grid grid-cols-1 items-start gap-4 md:gap-6 xl:grid-cols-2">
         <UCard>
-          <DsStack>
-            <DsStack gap="2xs">
+          <div class="flex flex-col gap-4">
+            <div class="flex flex-col gap-1">
               <h2 class="flex items-center gap-2 text-subheading text-highlighted">
                 <UIcon name="i-ph-moon-stars" class="size-5" aria-hidden="true" />
                 🕌 Mod Rohani
               </h2>
-              <DsText variant="caption">
+              <p class="text-caption text-muted">
                 Personalisasi pembelajaran ikut nilai keagamaan anda. Boleh toggle off bila-bila
                 masa.
-              </DsText>
-            </DsStack>
+              </p>
+            </div>
 
             <SettingRow
               id="spiritual_mode"
@@ -182,30 +188,30 @@ onMounted(load)
               label="Mod Ramadan"
               description="Push waktu sahur (~4:30am) untuk study sebelum Subuh. Pace lebih ringan waktu Ramadan."
             />
-          </DsStack>
+          </div>
         </UCard>
 
         <UCard>
-          <DsStack>
-            <DsStack gap="2xs">
+          <div class="flex flex-col gap-4">
+            <div class="flex flex-col gap-1">
               <h2 class="flex items-center gap-2 text-subheading text-highlighted">
                 <UIcon name="i-ph-globe-hemisphere-west" class="size-5" aria-hidden="true" />
                 🌍 Latar Agama (opsyen)
               </h2>
-              <DsText variant="caption">
+              <p class="text-caption text-muted">
                 Bagi konteks supaya AI dan content lebih relevan. Tidak diwajibkan.
-              </DsText>
-            </DsStack>
+              </p>
+            </div>
 
             <div class="flex min-h-14 flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
               <div class="min-w-0 flex-1">
-                <DsText for="faith" variant="label" as="label" tone="highlighted" class="block">
+                <label for="faith" class="block text-label text-highlighted">
                   Agama / kepercayaan
-                </DsText>
-                <DsText variant="caption">
+                </label>
+                <p class="text-caption text-muted">
                   Untuk mod rohani yang sesuai. Future: Hindu/Buddhist/Christian content akan
                   ditambah.
-                </DsText>
+                </p>
               </div>
               <USelect
                 id="faith"
@@ -217,11 +223,11 @@ onMounted(load)
                 data-testid="tetapan-faith"
               />
             </div>
-          </DsStack>
+          </div>
         </UCard>
       </div>
 
-      <DsCluster gap="none" align="stretch" justify="end" :wrap="false">
+      <div class="flex justify-end">
         <UButton
           type="submit"
           color="primary"
@@ -232,7 +238,7 @@ onMounted(load)
           data-testid="tetapan-submit"
           >Simpan Tetapan</UButton
         >
-      </DsCluster>
+      </div>
     </form>
   </DsPage>
 </template>

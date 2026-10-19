@@ -3,7 +3,6 @@
 import type { McqOption, PartAnswer, PartView } from '../domain/types'
 import PartInput from './PartInput.vue'
 import RichText from './RichText.vue'
-import { DsText } from '@/ds'
 
 defineOptions({ name: 'PartNode' })
 
@@ -27,8 +26,8 @@ const emit = defineEmits<{ answer: [partId: string, answer: PartAnswer] }>()
     <p class="flex flex-wrap items-baseline gap-x-2 text-body text-highlighted">
       <span v-if="part.label" class="font-bold">{{ part.label }}</span>
       <RichText :text="part.prompt" />
-      <DsText v-if="!part.children?.length" variant="caption" as="span" tabular
-        >[{{ part.marks }} markah]</DsText
+      <span v-if="!part.children?.length" class="tabular text-caption text-muted"
+        >[{{ part.marks }} markah]</span
       >
     </p>
     <template v-if="part.children?.length">

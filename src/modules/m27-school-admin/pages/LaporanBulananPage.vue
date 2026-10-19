@@ -16,7 +16,7 @@ import { isApiError } from '@/api'
 import { setRouteOutcome } from '@/app/router/outcome'
 import { useApi } from '@/composables'
 import { usePageMeta } from '@/composables/usePageMeta'
-import { DsBreadcrumb, DsLoadError, DsPage, DsCluster, DsStack, DsHeading, DsText } from '@/ds'
+import { DsBreadcrumb, DsLoadError, DsPage } from '@/ds'
 
 import { fetchMonthlyReport } from '../api/school-admin'
 import MonthlyCards from '../components/monthly/MonthlyCards.vue'
@@ -72,11 +72,15 @@ function print() {
       <DsBreadcrumb v-if="data" :items="crumbs" data-testid="lb-breadcrumb" />
     </template>
     <template v-if="data">
-      <DsCluster gap="md" row-gap="2xs" justify="between" data-testid="lb-month-nav">
-        <DsHeading :level="2" variant="title" data-testid="lb-heading">
+
+      <div
+        class="flex min-w-0 flex-wrap items-center justify-between gap-x-4 gap-y-1"
+        data-testid="lb-month-nav"
+      >
+        <h2 class="text-title text-highlighted" data-testid="lb-heading">
           Laporan {{ data.label }}
-        </DsHeading>
-        <DsCluster gap="md" row-gap="none">
+        </h2>
+        <div class="flex flex-wrap items-center gap-x-4">
           <UButton
             :to="{ query: { bulan: data.prev } }"
             color="neutral"
@@ -94,8 +98,8 @@ function print() {
             :label="`${monthLabel(data.next)} →`"
             data-testid="lb-next"
           />
-        </DsCluster>
-      </DsCluster>
+        </div>
+      </div>
 
       <MonthlyCards :cards="data.cards" />
 
@@ -108,9 +112,9 @@ function print() {
         class="flex min-w-0 flex-col gap-3 sm:flex-row sm:items-center sm:justify-between"
         data-testid="lb-footer"
       >
-        <DsText variant="caption" data-testid="lb-generated">
+        <p class="text-caption text-muted" data-testid="lb-generated">
           Laporan dijana: {{ generatedAtLabel(data.generatedAt) }} · PrestasiPlus
-        </DsText>
+        </p>
         <UButton
           type="button"
           color="neutral"
@@ -130,9 +134,9 @@ function print() {
       testid="lb-error"
       @retry="reload"
     />
-    <DsStack v-else-if="loading" aria-busy="true" data-testid="lb-loading">
+    <div v-else-if="loading" class="flex flex-col gap-4" aria-busy="true" data-testid="lb-loading">
       <USkeleton class="h-24 w-full" />
       <USkeleton class="h-64 w-full" />
-    </DsStack>
+    </div>
   </DsPage>
 </template>

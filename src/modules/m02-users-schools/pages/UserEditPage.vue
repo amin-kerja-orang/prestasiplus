@@ -29,10 +29,6 @@ import {
   DsNativeSelect,
   DsPage,
   DsPanel,
-  DsStack,
-  DsGrid,
-  DsHeading,
-  DsText,
 } from '@/ds'
 
 import type { SchoolSummary } from '../api/schools'
@@ -196,10 +192,10 @@ async function submit(): Promise<void> {
     data-testid="user-edit-page"
   >
     <!-- Unknown id or a failed load: red box + the way back (INFERRED). -->
-    <DsStack v-if="loadError && !notFound" data-testid="user-load-error">
+    <div v-if="loadError && !notFound" class="flex flex-col gap-4" data-testid="user-load-error">
       <DsLoadError message="Tidak dapat memuatkan pengguna. Sila cuba semula." @retry="reload()" />
       <DsBackLink :to="USERS_LIST_PATH" />
-    </DsStack>
+    </div>
 
     <DsPanel v-else-if="!ready || loaded === null" padding="none" data-testid="user-form-skeleton">
       <div class="flex flex-col gap-6 p-6">
@@ -209,11 +205,9 @@ async function submit(): Promise<void> {
     </DsPanel>
 
     <template v-else>
-      <DsStack
+      <form
         method="post"
-        as="form"
-        gap="lg"
-        class="w-full"
+        class="flex w-full min-w-0 flex-col gap-6"
         data-testid="user-form"
         @submit.prevent="submit"
       >
@@ -226,13 +220,13 @@ async function submit(): Promise<void> {
               alt="Avatar"
               size="3xl"
             />
-            <DsStack gap="2xs">
-              <DsHeading :level="3" variant="heading" truncate data-testid="user-profile-name">
+            <div class="flex min-w-0 flex-col gap-1">
+              <h3 class="truncate text-heading text-highlighted" data-testid="user-profile-name">
                 {{ loaded.name }}
-              </DsHeading>
-              <DsText variant="body" tone="muted" truncate data-testid="user-profile-email">
+              </h3>
+              <p class="truncate text-body text-muted" data-testid="user-profile-email">
                 {{ loaded.email }}
-              </DsText>
+              </p>
               <p class="flex flex-wrap gap-x-6 gap-y-1 text-label text-muted">
                 <span class="inline-flex items-center gap-2" data-testid="user-profile-created">
                   <UIcon name="i-ph-calendar-blank" class="size-4" aria-hidden="true" />
@@ -243,7 +237,7 @@ async function submit(): Promise<void> {
                   Kemaskini: {{ formatDateTime(loaded.updatedAt) }}
                 </span>
               </p>
-            </DsStack>
+            </div>
           </div>
         </DsPanel>
 
@@ -257,9 +251,9 @@ async function submit(): Promise<void> {
             data-testid="user-form-alert"
           >
             <template #description>
-              <DsStack gap="2xs">
+              <div class="flex flex-col gap-1">
                 <p v-for="m in errors" :key="m">{{ m }}</p>
-              </DsStack>
+              </div>
             </template>
           </UAlert>
         </div>
@@ -296,7 +290,7 @@ async function submit(): Promise<void> {
 
           <DsFormField native for="user-phone" label="No. Telefon">
             <template #label-extra>
-              <DsText variant="caption" as="span">(Pilihan)</DsText></template
+              <span class="text-caption text-muted">(Pilihan)</span></template
             >
             <UInput
               id="user-phone"
@@ -356,7 +350,7 @@ async function submit(): Promise<void> {
               hint="12 digit MyKad. Dilindungi PDPA."
             >
               <template #label-extra>
-                <DsText variant="caption" as="span">(Pilihan)</DsText></template
+                <span class="text-caption text-muted">(Pilihan)</span></template
               >
               <UInput
                 id="user-ic"
@@ -450,17 +444,17 @@ async function submit(): Promise<void> {
               data-testid="user-password-toggle"
               @click="passwordOpen = !passwordOpen"
             />
-            <DsText v-if="!passwordOpen" variant="label" as="p" tone="muted">
+            <p v-if="!passwordOpen" class="text-label text-muted">
               Klik untuk buka bahagian reset kata laluan
-            </DsText>
+            </p>
             <DsPanel
               v-show="passwordOpen"
               id="user-password-panel"
               tone="inset"
               data-testid="user-password-panel"
             >
-              <DsStack>
-                <DsGrid :cols="{ base: 1, md: 2 }" gap="lg">
+              <div class="flex flex-col gap-4">
+                <div class="grid grid-cols-1 gap-6 md:grid-cols-2">
                   <DsFormField native for="user-new-password" label="Kata Laluan Baru">
                     <UInput
                       id="user-new-password"
@@ -489,13 +483,13 @@ async function submit(): Promise<void> {
                       data-testid="user-new-password-confirm"
                     />
                   </DsFormField>
-                </DsGrid>
+                </div>
                 <p class="flex items-start gap-2 text-label text-muted">
                   <UIcon name="i-ph-info" class="size-4 shrink-0" aria-hidden="true" />
                   Kosongkan jika tidak mahu tukar kata laluan. Kata laluan baru akan berkuat kuasa
                   serta-merta.
                 </p>
-              </DsStack>
+              </div>
             </DsPanel>
           </div>
         </DsPanel>
@@ -517,7 +511,7 @@ async function submit(): Promise<void> {
         </DsPanel>
 
         <DsFormBar :cancel-to="USERS_LIST_PATH" submit-label="Kemaskini" :saving="saving" />
-      </DsStack>
+      </form>
     </template>
   </DsPage>
 </template>

@@ -8,7 +8,7 @@
  */
 import { ref, watch } from 'vue'
 
-import { DsIconChip, DsStack, DsText } from '@/ds'
+import { DsIconChip } from '@/ds'
 
 import type { SchoolSummary } from '../../api'
 import { SCHOOL_MIN_QUERY, useSchoolSearch } from '../../composables/useSchoolSearch'
@@ -53,18 +53,12 @@ function detail(school: SchoolSummary): string {
     >
       <DsIconChip icon="buildings" accent="win" />
       <div class="min-w-0 flex-1">
-        <DsText
-          variant="label"
-          as="div"
-          tone="highlighted"
-          wrap="anywhere"
-          data-testid="school-chip-name"
-        >
+        <div class="text-label break-words text-highlighted" data-testid="school-chip-name">
           {{ picker.selected.value.name }}
-        </DsText>
-        <DsText variant="caption" as="div" data-testid="school-chip-detail">
+        </div>
+        <div class="text-caption text-muted" data-testid="school-chip-detail">
           {{ detail(picker.selected.value) }}
-        </DsText>
+        </div>
       </div>
       <UButton
         type="button"
@@ -107,7 +101,7 @@ function detail(school: SchoolSummary): string {
         "
         data-testid="school-dropdown"
       >
-        <DsStack as="ul" gap="2xs" class="max-h-72 overflow-y-auto">
+        <ul class="flex max-h-72 flex-col gap-1 overflow-y-auto">
           <li v-for="school in picker.results.value" :key="school.id">
             <UButton
               type="button"
@@ -120,14 +114,12 @@ function detail(school: SchoolSummary): string {
             >
               <DsIconChip icon="buildings" size="sm" />
               <span class="min-w-0 flex-1">
-                <DsText variant="label" tone="highlighted" wrap="anywhere" class="block">{{
-                  school.name
-                }}</DsText>
-                <DsText variant="caption" as="span" class="block">{{ detail(school) }}</DsText>
+                <span class="block text-label break-words text-highlighted">{{ school.name }}</span>
+                <span class="block text-caption text-muted">{{ detail(school) }}</span>
               </span>
             </UButton>
           </li>
-        </DsStack>
+        </ul>
         <div
           v-if="
             picker.results.value.length === 0 &&
@@ -139,8 +131,8 @@ function detail(school: SchoolSummary): string {
           data-testid="school-empty"
         >
           <UIcon name="i-ph-magnifying-glass" class="size-6 text-muted" aria-hidden="true" />
-          <DsText variant="label" as="p">Tiada sekolah dijumpai</DsText>
-          <DsText variant="caption">Cuba tukar negeri atau kata kunci lain</DsText>
+          <p class="text-label text-default">Tiada sekolah dijumpai</p>
+          <p class="text-caption text-muted">Cuba tukar negeri atau kata kunci lain</p>
         </div>
       </UCard>
     </template>

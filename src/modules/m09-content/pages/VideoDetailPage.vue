@@ -16,7 +16,7 @@ import { useRouter } from 'vue-router'
 
 import { setRouteOutcome } from '@/app/router/outcome'
 import { confirmNative, useApi, useFlash, usePageMeta } from '@/composables'
-import { DsLoadError, DsMediaCard, DsPage, DsStack, DsCluster, DsHeading, DsText } from '@/ds'
+import { DsLoadError, DsMediaCard, DsPage } from '@/ds'
 import { formatDateEn } from '@/lib/time'
 
 import { deleteVideo, fetchVideo } from '../api/content'
@@ -120,12 +120,12 @@ async function remove(): Promise<void> {
       />
 
       <UCard as="article" class="min-w-0">
-        <DsStack>
-          <DsCluster align="start" justify="between">
+        <div class="flex flex-col gap-4">
+          <div class="flex flex-wrap items-start justify-between gap-3">
             <div class="min-w-0 flex-1">
-              <DsHeading :level="1" variant="heading" wrap="anywhere" data-testid="video-title">
+              <h1 class="text-heading break-words text-highlighted" data-testid="video-title">
                 {{ video.title }}
-              </DsHeading>
+              </h1>
               <p class="mt-2 text-label text-muted" data-testid="video-meta">
                 <span class="tabular" data-testid="video-views">{{ COPY.views(video.views) }}</span>
                 <span class="mx-2" aria-hidden="true">·</span>
@@ -134,14 +134,7 @@ async function remove(): Promise<void> {
                 }}</span>
               </p>
             </div>
-            <DsCluster
-              v-if="video.canManage"
-              gap="xs"
-              align="stretch"
-              :wrap="false"
-              class="shrink-0"
-              data-testid="video-actions"
-            >
+            <div v-if="video.canManage" class="flex shrink-0 gap-2" data-testid="video-actions">
               <UButton
                 :to="videoEditPath(video.id)"
                 color="neutral"
@@ -159,8 +152,8 @@ async function remove(): Promise<void> {
                 @click="remove"
                 >{{ COPY.remove }}</UButton
               >
-            </DsCluster>
-          </DsCluster>
+            </div>
+          </div>
 
           <UAlert
             v-if="failure.length"
@@ -170,7 +163,7 @@ async function remove(): Promise<void> {
             :description="failure.join(' ')"
           />
 
-          <DsCluster gap="xs" align="stretch" data-testid="video-chips">
+          <div class="flex flex-wrap gap-2" data-testid="video-chips">
             <UBadge
               color="neutral"
               variant="soft"
@@ -192,42 +185,38 @@ async function remove(): Promise<void> {
               :label="video.subject.name"
               data-testid="video-chip-subject"
             />
-          </DsCluster>
+          </div>
 
           <UCard variant="soft" data-testid="video-uploader">
-            <DsCluster :wrap="false">
+            <div class="flex items-center gap-3">
               <UAvatar :text="video.uploader.initial" size="lg" />
               <div class="min-w-0">
-                <DsText
-                  variant="label"
-                  as="p"
-                  tone="highlighted"
-                  truncate
-                  data-testid="video-uploader-name"
-                >
+                <p class="truncate text-label text-highlighted" data-testid="video-uploader-name">
                   {{ video.uploader.name }}
-                </DsText>
-                <DsText variant="caption" data-testid="video-uploader-role">
+                </p>
+                <p class="text-caption text-muted" data-testid="video-uploader-role">
                   {{ video.uploader.roleLabel }}
-                </DsText>
+                </p>
               </div>
-            </DsCluster>
+            </div>
           </UCard>
 
-          <DsText
+          <p
             v-if="video.description"
-            variant="body"
-            wrap="anywhere"
-            class="max-w-prose whitespace-pre-line"
+            class="max-w-prose text-body break-words whitespace-pre-line text-default"
             data-testid="video-description"
           >
             {{ video.description }}
-          </DsText>
-        </DsStack>
+          </p>
+        </div>
       </UCard>
 
-      <DsStack v-if="video.related.length > 0" as="section" gap="sm" data-testid="video-related">
-        <DsHeading :level="2">{{ COPY.related }}</DsHeading>
+      <section
+        v-if="video.related.length > 0"
+        class="flex flex-col gap-3"
+        data-testid="video-related"
+      >
+        <h2 class="text-heading text-highlighted">{{ COPY.related }}</h2>
         <ul class="grid grid-cols-1 gap-4 sm:grid-cols-2 md:gap-6 lg:grid-cols-3">
           <li v-for="r in video.related" :key="r.id" class="min-w-0">
             <DsMediaCard
@@ -241,7 +230,7 @@ async function remove(): Promise<void> {
             />
           </li>
         </ul>
-      </DsStack>
+      </section>
     </template>
   </DsPage>
 </template>

@@ -14,7 +14,7 @@ import { isApiError } from '@/api'
 import { setRouteOutcome } from '@/app/router/outcome'
 import { useApi } from '@/composables'
 import { usePageMeta } from '@/composables/usePageMeta'
-import { DsLoadError, DsPage, DsStack } from '@/ds'
+import { DsLoadError, DsPage } from '@/ds'
 
 import { fetchSchoolDashboard } from '../api/dashboard'
 import PerformanceSummary from '../components/dashboard/PerformanceSummary.vue'
@@ -58,9 +58,9 @@ watch(
       testid="sd-error"
       @retry="reload"
     />
-    <DsStack v-else-if="loading" aria-busy="true" data-testid="sd-loading">
+    <div v-else-if="loading" class="flex flex-col gap-4" aria-busy="true" data-testid="sd-loading">
       <USkeleton class="h-24 w-full" />
       <USkeleton class="h-64 w-full" />
-    </DsStack>
+    </div>
   </DsPage>
 </template>

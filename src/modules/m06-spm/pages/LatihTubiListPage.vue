@@ -10,17 +10,7 @@
 import { RouterLink } from 'vue-router'
 
 import { useApi } from '@/composables'
-import {
-  DsBackLink,
-  DsIconChip,
-  DsPage,
-  type DsAccent,
-  DsLoadError,
-  DsStack,
-  DsCluster,
-  DsHeading,
-  DsText,
-} from '@/ds'
+import { DsBackLink, DsIconChip, DsPage, type DsAccent, DsLoadError } from '@/ds'
 import { formatCount } from '@/lib/number'
 import { subjectGlyph } from '@/modules/m05-practice'
 
@@ -68,17 +58,13 @@ const groups = (d: { teras: LatihTubiCard[]; elektif: LatihTubiCard[] }) => [
     </template>
 
     <template v-if="data">
-      <DsStack
+      <section
         v-for="g in groups(data)"
         :key="g.id"
-        as="section"
-        gap="sm"
+        class="flex flex-col gap-3"
         :data-testid="`latih-tubi-section-${g.id}`"
       >
-        <h2
-          class="flex items-center gap-2 text-heading text-highlighted"
-          data-testid="section-heading"
-        >
+        <h2 class="flex items-center gap-2 text-heading text-highlighted" data-testid="section-heading">
           <DsIconChip :icon="g.icon" :accent="g.accent" size="sm" />
           {{ g.title }} ({{ g.cards.length }})
         </h2>
@@ -88,7 +74,7 @@ const groups = (d: { teras: LatihTubiCard[]; elektif: LatihTubiCard[] }) => [
             v-for="c in g.cards"
             :key="c.code"
             v-bind="c.locked ? { href: 'javascript:void(0)' } : { to: `/spm/latih-tubi/${c.code}` }"
-            :class="c.locked ? 'pointer-events-none block min-w-0' : 'block min-w-0'"
+            :class="c.locked ? 'block min-w-0 pointer-events-none' : 'block min-w-0'"
             :data-testid="`latih-tubi-card-${c.code}`"
             :data-locked="c.locked ? 'true' : 'false'"
           >
@@ -101,14 +87,17 @@ const groups = (d: { teras: LatihTubiCard[]; elektif: LatihTubiCard[] }) => [
               />
               <div class="flex min-w-0 flex-1 flex-col gap-2">
                 <div class="min-w-0">
-                  <DsHeading :level="3" wrap="anywhere" data-testid="latih-tubi-name">
+                  <h3
+                    class="text-subheading break-words text-highlighted"
+                    data-testid="latih-tubi-name"
+                  >
                     {{ c.name }}
-                  </DsHeading>
-                  <DsText variant="caption" data-testid="latih-tubi-name-en">
+                  </h3>
+                  <p class="text-caption text-muted" data-testid="latih-tubi-name-en">
                     {{ c.nameEn }}
-                  </DsText>
+                  </p>
                 </div>
-                <DsCluster gap="xs" align="stretch">
+                <div class="flex flex-wrap gap-2">
                   <UBadge
                     color="primary"
                     variant="soft"
@@ -132,7 +121,7 @@ const groups = (d: { teras: LatihTubiCard[]; elektif: LatihTubiCard[] }) => [
                     data-testid="latih-tubi-locked"
                     >Locked: {{ c.total }}/{{ c.targetSize }}</UBadge
                   >
-                </DsCluster>
+                </div>
               </div>
               <UIcon
                 :name="c.locked ? 'i-ph-lock-bold' : 'i-ph-caret-right-bold'"
@@ -142,15 +131,9 @@ const groups = (d: { teras: LatihTubiCard[]; elektif: LatihTubiCard[] }) => [
             </UCard>
           </component>
         </div>
-      </DsStack>
+      </section>
     </template>
-    <DsLoadError
-      v-else-if="error"
-      :message="LOAD_ERROR"
-      testid="spm-error"
-      retry-testid="spm-retry"
-      @retry="reload()"
-    />
+    <DsLoadError v-else-if="error" :message="LOAD_ERROR" testid="spm-error" retry-testid="spm-retry" @retry="reload()" />
     <SkeletonCards v-else />
   </DsPage>
 </template>

@@ -10,7 +10,7 @@
  */
 import { computed, onMounted, ref, watch } from 'vue'
 
-import { DsFormField, DsLoadError, DsNativeSelect, DsText } from '@/ds'
+import { DsFormField, DsLoadError, DsNativeSelect } from '@/ds'
 
 import {
   fetchDskpBidang,
@@ -205,6 +205,7 @@ const spModel = computed({
 function removeTag(): void {
   resetAll()
 }
+
 </script>
 
 <template>
@@ -212,7 +213,7 @@ function removeTag(): void {
     <div class="mb-4 flex flex-wrap items-center justify-between gap-2">
       <h3 class="flex items-center gap-2 text-label text-highlighted">
         <UIcon name="i-ph-tag" class="size-5 text-primary-t" />
-        DSKP Tagging <DsText variant="caption" as="span">(Pilihan)</DsText>
+        DSKP Tagging <span class="text-caption text-muted">(Pilihan)</span>
       </h3>
       <UButton
         v-if="edit && bidangId !== ''"

@@ -3,7 +3,6 @@
 import type { TeacherReport } from '../../api/types'
 import { activityPanelTitle } from './copy'
 import { grouped, type ActivityKey } from './format'
-import { DsStack, DsText } from '@/ds'
 
 defineProps<{ activity: TeacherReport['activity']; range: number }>()
 
@@ -20,7 +19,7 @@ const TILES: { key: ActivityKey | 'jumlah'; label: string; icon: string }[] = [
 
 <template>
   <UCard data-testid="panel-aktiviti">
-    <DsStack>
+    <div class="flex flex-col gap-4">
       <h2 class="flex items-center gap-2 text-label text-highlighted">
         <UIcon name="i-ph-chart-pie" class="size-4 text-primary-t" />
         <span data-testid="panel-title">{{ activityPanelTitle(range) }}</span>
@@ -32,14 +31,14 @@ const TILES: { key: ActivityKey | 'jumlah'; label: string; icon: string }[] = [
           class="flex min-w-0 flex-col items-center gap-1 bg-soft p-3 text-center"
           :data-testid="`tile-${t.key}`"
         >
-          <DsText variant="heading" tabular data-testid="tile-value">
+          <p class="tabular text-heading text-highlighted" data-testid="tile-value">
             {{ grouped(t.key === 'jumlah' ? activity.total : activity.byType[t.key]) }}
-          </DsText>
+          </p>
           <p class="flex items-center justify-center gap-1 text-caption text-muted">
             <UIcon :name="t.icon" class="size-3 shrink-0" />{{ t.label }}
           </p>
         </div>
       </div>
-    </DsStack>
+    </div>
   </UCard>
 </template>

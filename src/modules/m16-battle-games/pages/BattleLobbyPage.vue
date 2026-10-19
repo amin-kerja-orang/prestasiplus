@@ -15,17 +15,7 @@ import { computed, onBeforeUnmount, onMounted, reactive, ref } from 'vue'
 import { useRouter } from 'vue-router'
 
 import { useApi, useClickOutside } from '@/composables'
-import {
-  DsArt3D,
-  DsIconChip,
-  DsPage,
-  DsLoadError,
-  DsStack,
-  DsCluster,
-  DsGrid,
-  DsHeading,
-  DsText,
-} from '@/ds'
+import { DsArt3D, DsIconChip, DsPage, DsLoadError } from '@/ds'
 
 import {
   fetchBattleLobby,
@@ -168,10 +158,15 @@ onBeforeUnmount(() => {
 
 <template>
   <DsPage data-testid="battle-lobby">
-    <DsStack v-if="!lobby && !lobbyError" aria-busy="true" data-testid="battle-loading">
+    <div
+      v-if="!lobby && !lobbyError"
+      class="flex flex-col gap-4"
+      aria-busy="true"
+      data-testid="battle-loading"
+    >
       <USkeleton class="h-28 w-full" />
       <USkeleton class="h-48 w-full" />
-    </DsStack>
+    </div>
     <DsLoadError
       v-else-if="lobbyError"
       message="Maaf, berlaku ralat. Sila cuba semula."
@@ -192,23 +187,23 @@ onBeforeUnmount(() => {
       />
 
       <UCard>
-        <DsCluster gap="md" justify="between" :wrap="false">
-          <DsStack gap="2xs">
-            <DsCluster gap="xs">
-              <DsHeading :level="2" variant="title">Battle Arena</DsHeading>
+        <div class="flex items-center justify-between gap-4">
+          <div class="flex min-w-0 flex-col gap-1">
+            <div class="flex flex-wrap items-center gap-2">
+              <h2 class="text-title text-highlighted">Battle Arena</h2>
               <UBadge color="warning" variant="solid" size="md">BARU</UBadge>
-            </DsCluster>
-            <DsText variant="body" tone="muted" class="max-w-prose">
+            </div>
+            <p class="max-w-prose text-body text-muted">
               Cabar kawan, cari lawan, atau wakili sekolah anda!
-            </DsText>
-          </DsStack>
+            </p>
+          </div>
           <DsArt3D name="fire" size="hero" float class="hidden sm:block" />
-        </DsCluster>
+        </div>
       </UCard>
 
       <!-- Question type, subjects, domains -->
       <UCard>
-        <DsGrid :cols="3" gap="xs" data-testid="battle-type-row">
+        <div class="grid grid-cols-3 gap-2" data-testid="battle-type-row">
           <UButton
             size="xl"
             :color="sel.questionType === 'biasa' ? 'primary' : 'neutral'"
@@ -261,7 +256,7 @@ onBeforeUnmount(() => {
               SPM
             </UButton>
           </div>
-        </DsGrid>
+        </div>
         <UAlert
           v-if="showSpmTip"
           color="neutral"
@@ -275,7 +270,7 @@ onBeforeUnmount(() => {
         <!-- Biasa -->
         <div v-if="sel.questionType === 'biasa'" class="mt-4" data-testid="battle-panel-biasa">
           <p class="mb-2 text-overline text-muted">Subjek Teras</p>
-          <DsGrid :cols="{ base: 2, sm: 3, md: 4 }" gap="xs">
+          <div class="grid grid-cols-2 gap-2 sm:grid-cols-3 md:grid-cols-4">
             <UButton
               v-for="s in showMore ? lobby.subjects : coreSubjects"
               :key="s.id"
@@ -290,7 +285,7 @@ onBeforeUnmount(() => {
             >
               {{ s.name }}
             </UButton>
-          </DsGrid>
+          </div>
           <UButton
             v-if="moreSubjects.length > 0"
             color="primary"
@@ -313,7 +308,7 @@ onBeforeUnmount(() => {
         >
           <div>
             <p class="mb-2 text-overline text-muted">Pilih Domain PKSK</p>
-            <DsGrid :cols="{ base: 2, sm: 3 }" gap="xs">
+            <div class="grid grid-cols-2 gap-2 sm:grid-cols-3">
               <UButton
                 v-for="d in lobby.pkskDomains"
                 :key="d.id"
@@ -328,11 +323,11 @@ onBeforeUnmount(() => {
               >
                 {{ d.name }}
               </UButton>
-            </DsGrid>
+            </div>
           </div>
           <div>
             <p class="mb-2 text-overline text-muted">Pilih Tahap</p>
-            <DsGrid :cols="2" gap="xs">
+            <div class="grid grid-cols-2 gap-2">
               <UButton
                 size="lg"
                 :color="sel.pkskLevel === 'T1' ? 'primary' : 'neutral'"
@@ -357,14 +352,14 @@ onBeforeUnmount(() => {
               >
                 Tingkatan 4
               </UButton>
-            </DsGrid>
+            </div>
           </div>
         </div>
 
         <!-- SPM (unlocked accounts; layout PROPOSED, in the Biasa tile style) -->
         <div v-else class="mt-4" data-testid="battle-panel-spm">
           <p class="mb-2 text-overline text-muted">Subjek SPM</p>
-          <DsGrid :cols="{ base: 2, sm: 3, md: 4 }" gap="xs">
+          <div class="grid grid-cols-2 gap-2 sm:grid-cols-3 md:grid-cols-4">
             <UButton
               v-for="s in lobby.spmSubjects ?? []"
               :key="s.id"
@@ -378,25 +373,25 @@ onBeforeUnmount(() => {
             >
               {{ s.name }}
             </UButton>
-          </DsGrid>
+          </div>
         </div>
       </UCard>
 
       <!-- Searching / incoming / waiting -->
       <UCard v-if="searching" data-testid="battle-searching">
-        <DsStack gap="xs" align="center" class="text-center">
+        <div class="flex flex-col items-center gap-2 text-center">
           <DsArt3D name="bolt" size="hero" float />
-          <DsHeading :level="3">Mencari Lawan...</DsHeading>
-          <DsText variant="body" tone="muted">
+          <h3 class="text-subheading text-highlighted">Mencari Lawan...</h3>
+          <p class="text-body text-muted">
             {{
               sel.openToAll
                 ? 'Menunggu pelajar dari mana-mana gred'
                 : 'Menunggu pelajar sama darjah & subjek'
             }}
-          </DsText>
-          <DsText variant="title" tone="primary" tabular data-testid="battle-timer">
+          </p>
+          <p class="tabular text-title text-primary-t" data-testid="battle-timer">
             {{ search.elapsedText.value }}
-          </DsText>
+          </p>
           <UButton
             color="neutral"
             variant="soft"
@@ -408,26 +403,26 @@ onBeforeUnmount(() => {
           >
             Batal
           </UButton>
-        </DsStack>
+        </div>
       </UCard>
       <UCard
         v-else-if="search.phase.value === 'incoming' && search.challenger.value"
         data-testid="battle-incoming"
       >
-        <DsStack gap="xs" align="center" class="text-center">
+        <div class="flex flex-col items-center gap-2 text-center">
           <DsIconChip icon="user-plus" accent="heat" size="lg" />
-          <DsHeading :level="3">Cabaran Masuk!</DsHeading>
-          <DsText variant="body" tone="muted">
+          <h3 class="text-subheading text-highlighted">Cabaran Masuk!</h3>
+          <p class="text-body text-muted">
             {{ search.challenger.value.name }} ingin menyertai battle anda
-          </DsText>
-          <DsCluster gap="xs" align="stretch" justify="center">
+          </p>
+          <div class="flex flex-wrap justify-center gap-2">
             <UBadge color="neutral" variant="soft" size="lg">{{
               search.challenger.value.grade_label
             }}</UBadge>
             <UBadge color="neutral" variant="soft" size="lg">{{
               search.challenger.value.school
             }}</UBadge>
-          </DsCluster>
+          </div>
           <p class="flex items-start justify-center gap-2 text-caption text-muted">
             <UIcon name="i-ph-info-duotone" class="mt-1 size-4 shrink-0" aria-hidden="true" />
             <span>Soalan mengikut gred anda. Lawan akan bermain soalan gred anda.</span>
@@ -455,18 +450,18 @@ onBeforeUnmount(() => {
               Tolak
             </UButton>
           </div>
-        </DsStack>
+        </div>
       </UCard>
       <UCard v-else-if="search.phase.value === 'waiting'" data-testid="battle-waiting">
-        <DsStack gap="xs" align="center" class="text-center">
+        <div class="flex flex-col items-center gap-2 text-center">
           <DsArt3D name="party" size="hero" float />
-          <DsHeading :level="3">Menunggu Kelulusan...</DsHeading>
-          <DsText variant="body" tone="muted">
+          <h3 class="text-subheading text-highlighted">Menunggu Kelulusan...</h3>
+          <p class="text-body text-muted">
             Menunggu {{ search.waitingName.value }} menerima permohonan anda
-          </DsText>
-          <DsText v-if="search.waitingGrade.value" variant="caption">
+          </p>
+          <p v-if="search.waitingGrade.value" class="text-caption text-muted">
             {{ search.waitingGrade.value }}
-          </DsText>
+          </p>
           <UButton
             color="neutral"
             variant="soft"
@@ -478,12 +473,12 @@ onBeforeUnmount(() => {
           >
             Batal
           </UButton>
-        </DsStack>
+        </div>
       </UCard>
 
       <!-- Visibility -->
       <UCard v-if="!hideVisibility" data-testid="battle-visibility">
-        <DsCluster justify="between" :wrap="false">
+        <div class="flex items-center justify-between gap-3">
           <div class="min-w-0 flex-1">
             <p class="flex items-center gap-2 text-label text-highlighted">
               <UIcon name="i-ph-globe-duotone" class="size-5 shrink-0" aria-hidden="true" />
@@ -508,12 +503,17 @@ onBeforeUnmount(() => {
               }}</span>
             </template>
           </USwitch>
-        </DsCluster>
+        </div>
       </UCard>
 
       <!-- Mode buttons (disabled until a selection is complete) -->
-      <DsGrid :cols="{ base: 1, md: 3 }">
-        <UCard v-for="m in modes" :key="m.testid" :ui="{ body: 'p-0 sm:p-0' }" class="h-full">
+      <div class="grid grid-cols-1 gap-4 md:grid-cols-3">
+        <UCard
+          v-for="m in modes"
+          :key="m.testid"
+          :ui="{ body: 'p-0 sm:p-0' }"
+          class="h-full"
+        >
           <UButton
             color="neutral"
             variant="ghost"
@@ -525,13 +525,13 @@ onBeforeUnmount(() => {
           >
             <DsArt3D :name="m.art" size="lg" />
             <span class="mt-2 block text-subheading text-highlighted">{{ m.title }}</span>
-            <DsText variant="body" as="span" tone="muted" class="block">{{ m.text }}</DsText>
+            <span class="block text-body text-muted">{{ m.text }}</span>
           </UButton>
         </UCard>
-      </DsGrid>
+      </div>
 
       <!-- Ranking links -->
-      <DsGrid :cols="2">
+      <div class="grid grid-cols-2 gap-4">
         <UButton
           to="/battle/leaderboard"
           color="neutral"
@@ -554,7 +554,7 @@ onBeforeUnmount(() => {
         >
           Ranking Sekolah
         </UButton>
-      </DsGrid>
+      </div>
 
       <ChallengeFriendModal
         v-model:open="showChallenge"

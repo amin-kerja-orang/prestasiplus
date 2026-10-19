@@ -6,7 +6,7 @@
  */
 import { computed, ref } from 'vue'
 
-import { DsQuizOption, DsCluster, DsStack, DsText } from '@/ds'
+import { DsQuizOption } from '@/ds'
 
 import { leavesOf } from '../domain/paper-model'
 import type { PartAnswer, QuestionResult, QuestionView } from '../domain/types'
@@ -62,7 +62,7 @@ function pick(id: string): void {
     :data-testid="`question-${question.id}`"
     :aria-labelledby="`h-${question.id}`"
   >
-    <DsCluster as="header" align="start" justify="between" :wrap="false">
+    <header class="flex items-start justify-between gap-3">
       <div class="min-w-0">
         <h2
           :id="`h-${question.id}`"
@@ -74,7 +74,7 @@ function pick(id: string): void {
           Soalan {{ question.number
           }}<template v-if="stimulusLabel"> · berdasarkan {{ stimulusLabel }}</template>
         </h2>
-        <DsText variant="caption" tabular>[{{ question.marks }} markah]</DsText>
+        <p class="tabular text-caption text-muted">[{{ question.marks }} markah]</p>
       </div>
       <UButton
         type="button"
@@ -87,7 +87,7 @@ function pick(id: string): void {
         @click="emit('toggle-flag')"
         >{{ flagged ? 'Ditanda' : 'Tanda soalan' }}</UButton
       >
-    </DsCluster>
+    </header>
 
     <UCheckbox
       v-if="choose"
@@ -98,11 +98,11 @@ function pick(id: string): void {
       @update:model-value="emit('toggle-choose')"
     />
 
-    <DsText v-if="question.stem" variant="body" data-testid="question-stem">
+    <p v-if="question.stem" class="text-body text-default" data-testid="question-stem">
       <RichText :text="question.stem" />
-    </DsText>
+    </p>
 
-    <DsStack v-if="question.mcq" gap="sm" role="group" aria-label="Pilihan jawapan">
+    <div v-if="question.mcq" class="flex flex-col gap-3" role="group" aria-label="Pilihan jawapan">
       <DsQuizOption
         v-for="(o, i) in question.mcq.options"
         :key="o.id"
@@ -113,7 +113,7 @@ function pick(id: string): void {
       >
         <RichText :text="o.text" />
       </DsQuizOption>
-    </DsStack>
+    </div>
 
     <template v-else>
       <PartNode
@@ -128,13 +128,13 @@ function pick(id: string): void {
       />
     </template>
 
-    <DsStack v-if="check && !question.mcq" gap="sm" data-testid="check-results">
+    <div v-if="check && !question.mcq" class="flex flex-col gap-3" data-testid="check-results">
       <PartResultCard
         v-for="r in partResults"
         :key="r.partId"
         :result="r"
         :title="leaves.find((l) => l.id === r.partId)?.label"
       />
-    </DsStack>
+    </div>
   </article>
 </template>

@@ -13,7 +13,7 @@ import { computed } from 'vue'
 import { useRoute } from 'vue-router'
 
 import { useApi, useFlash } from '@/composables'
-import { DsEmptyState, DsLoadError, DsPage, DsPanel, DsPillNav, type PillItem, DsStack } from '@/ds'
+import { DsEmptyState, DsLoadError, DsPage, DsPanel, DsPillNav, type PillItem } from '@/ds'
 
 import { fetchQuestionReports, type ReportFilter } from '../api/reports'
 import ReportCard from '../components/report/ReportCard.vue'
@@ -109,8 +109,8 @@ const SKELETON_CARDS = 3
       <DsEmptyState title="Tiada laporan buat masa ini" icon="checks" />
     </DsPanel>
 
-    <DsStack v-else data-testid="reports-list">
+    <div v-else class="flex flex-col gap-4" data-testid="reports-list">
       <ReportCard v-for="r in rows" :key="r.id" :report="r" @saved="onSaved" @failed="onFailed" />
-    </DsStack>
+    </div>
   </DsPage>
 </template>

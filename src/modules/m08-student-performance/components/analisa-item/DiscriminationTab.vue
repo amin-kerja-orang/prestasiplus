@@ -3,7 +3,7 @@
 import { computed } from 'vue'
 import type { TableColumn } from '@nuxt/ui'
 
-import { DsDataTable, DsEmptyState, DsPanel, DsStack, DsCluster, DsText } from '@/ds'
+import { DsDataTable, DsEmptyState, DsPanel } from '@/ds'
 import { formatNumber } from '@/lib/number'
 
 import type { ItemAnalysis } from '../../api/types'
@@ -64,25 +64,25 @@ const cardFields = [
 </script>
 
 <template>
-  <DsStack data-testid="discrimination-tab">
+  <div class="flex min-w-0 flex-col gap-4" data-testid="discrimination-tab">
     <DsPanel data-testid="discrimination-guide">
-      <DsStack gap="sm">
+      <div class="flex flex-col gap-3">
         <h3 class="flex items-center gap-2 text-subheading text-highlighted">
           <UIcon :name="icon('info')" class="size-5 text-primary-t" />Panduan Indeks Diskriminasi
         </h3>
-        <DsCluster as="ul" gap="xs" align="stretch">
+        <ul class="flex flex-wrap gap-2">
           <li v-for="g in GUIDE" :key="g.range">
             <UBadge :color="g.color" variant="subtle" size="lg">
               <strong>{{ g.range }}</strong> {{ g.label }}
             </UBadge>
           </li>
-        </DsCluster>
-        <DsText variant="caption">
+        </ul>
+        <p class="text-caption text-muted">
           Indeks dikira berdasarkan perbezaan prestasi antara
           <strong>27% pelajar terbaik</strong> dan <strong>27% pelajar bawah</strong> dengan
           menggunakan semua sesi latihan.
-        </DsText>
-      </DsStack>
+        </p>
+      </div>
     </DsPanel>
 
     <DsDataTable
@@ -129,5 +129,5 @@ const cardFields = [
         icon="chart-line-up"
       />
     </div>
-  </DsStack>
+  </div>
 </template>

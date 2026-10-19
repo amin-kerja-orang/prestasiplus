@@ -13,7 +13,6 @@ import {
   ARTIKEL_PATH,
   listQuery,
 } from '../../lib/artikel/artikel'
-import { DsCluster, DsStack, DsText } from '@/ds'
 
 const props = defineProps<{ search: string; category: string; guest?: boolean }>()
 const emit = defineEmits<{ submit: [search: string] }>()
@@ -32,7 +31,7 @@ function to(category: string) {
 </script>
 
 <template>
-  <DsStack data-testid="artikel-filters">
+  <div class="flex flex-col gap-4" data-testid="artikel-filters">
     <form
       class="w-full max-w-xl self-center"
       method="get"
@@ -54,8 +53,8 @@ function to(category: string) {
       />
     </form>
 
-    <DsText v-if="guest" variant="label" as="p">{{ ARTIKEL_COPY.pickCategory }}</DsText>
-    <DsCluster as="nav" gap="xs" align="stretch" data-testid="artikel-pills">
+    <p v-if="guest" class="text-label text-default">{{ ARTIKEL_COPY.pickCategory }}</p>
+    <nav class="flex flex-wrap gap-2" data-testid="artikel-pills">
       <UButton
         :to="to('')"
         :color="category === '' ? 'primary' : 'neutral'"
@@ -79,6 +78,6 @@ function to(category: string) {
         :data-active="category === option.value"
         >{{ option.label }}</UButton
       >
-    </DsCluster>
-  </DsStack>
+    </nav>
+  </div>
 </template>

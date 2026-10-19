@@ -7,7 +7,7 @@
  */
 import { computed } from 'vue'
 
-import { DsChart, DsStack, DsCluster, DsHeading, DsText } from '@/ds'
+import { DsChart } from '@/ds'
 import { formatNumber } from '@/lib/number'
 
 import type { DashboardGrade } from '../../api/dashboard'
@@ -18,13 +18,17 @@ const props = defineProps<{ distribution: readonly DashboardGrade[]; total: numb
 const labels = computed(() =>
   props.distribution.map((d) => `${d.grade} (${formatNumber(d.pct, { decimals: 1 })}%)`),
 )
-const series = computed(() => [{ label: 'Rekod', data: props.distribution.map((d) => d.count) }])
+const series = computed(() => [
+  { label: 'Rekod', data: props.distribution.map((d) => d.count) },
+])
 </script>
 
 <template>
-  <DsStack gap="sm" data-testid="sd-grades">
-    <DsCluster row-gap="none" justify="between">
-      <DsHeading :level="3" data-testid="sd-grades-heading"> Taburan Gred (Anggaran) </DsHeading>
+  <div class="flex min-w-0 flex-col gap-3" data-testid="sd-grades">
+    <div class="flex flex-wrap items-center justify-between gap-x-3">
+      <h3 class="text-subheading text-highlighted" data-testid="sd-grades-heading">
+        Taburan Gred (Anggaran)
+      </h3>
       <UButton
         :to="PATHS.school"
         color="primary"
@@ -32,7 +36,7 @@ const series = computed(() => [{ label: 'Rekod', data: props.distribution.map((d
         label="Lihat penuh →"
         data-testid="sd-grades-full"
       />
-    </DsCluster>
+    </div>
     <DsChart
       v-if="distribution.length > 0"
       type="bar"
@@ -43,8 +47,8 @@ const series = computed(() => [{ label: 'Rekod', data: props.distribution.map((d
       :series="series"
       data-testid="sd-grades-chart"
     />
-    <DsText variant="caption" align="end" data-testid="sd-grades-total">
+    <p class="text-end text-caption text-muted" data-testid="sd-grades-total">
       Jumlah: {{ count(total) }} rekod
-    </DsText>
-  </DsStack>
+    </p>
+  </div>
 </template>

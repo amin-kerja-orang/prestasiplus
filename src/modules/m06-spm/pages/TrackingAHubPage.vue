@@ -9,19 +9,7 @@
 import { RouterLink } from 'vue-router'
 
 import { useApi } from '@/composables'
-import {
-  DsBackLink,
-  DsCharacterCard,
-  DsIconChip,
-  DsPage,
-  DsPanel,
-  DsLoadError,
-  DsCluster,
-  DsStack,
-  DsGrid,
-  DsText,
-  DsHeading,
-} from '@/ds'
+import { DsBackLink, DsCharacterCard, DsIconChip, DsPage, DsPanel, DsLoadError } from '@/ds'
 import { formatCount } from '@/lib/number'
 
 import { fetchTrackingAHub } from '../api'
@@ -65,8 +53,8 @@ const { data, error, reload } = useApi((signal) => fetchTrackingAHub({ signal })
           description="Khusus untuk kertas objektif penuh yang boleh terus berjalan ikut set."
           data-testid="lane-objektif"
         >
-          <DsText variant="overline" as="p" tone="primary">Tracking A Objektif</DsText>
-          <DsCluster gap="xs" align="stretch">
+          <p class="text-overline text-primary-t">Tracking A Objektif</p>
+          <div class="flex flex-wrap gap-2">
             <UBadge color="neutral" variant="soft" data-testid="lane-badge"
               >{{ data.objectiveLane.subjects }} subjek</UBadge
             >
@@ -80,7 +68,7 @@ const { data, error, reload } = useApi((signal) => fetchTrackingAHub({ signal })
               data-testid="lane-questions"
               >{{ formatCount(data.objectiveLane.questions) }} soalan</UBadge
             >
-          </DsCluster>
+          </div>
         </DsCharacterCard>
         <DsCharacterCard
           accent="friend"
@@ -89,8 +77,8 @@ const { data, error, reload } = useApi((signal) => fetchTrackingAHub({ signal })
           description="Lane khas untuk kertas bahasa tanpa memaksa format menjadi 40 MCQ."
           data-testid="lane-bahasa"
         >
-          <DsText variant="overline" as="p" tone="primary">Tracking A Bahasa</DsText>
-          <DsCluster gap="xs" align="stretch">
+          <p class="text-overline text-primary-t">Tracking A Bahasa</p>
+          <div class="flex flex-wrap gap-2">
             <UBadge color="neutral" variant="soft" data-testid="lane-badge"
               >{{ data.bahasaLane.subjects }} subjek</UBadge
             >
@@ -104,7 +92,7 @@ const { data, error, reload } = useApi((signal) => fetchTrackingAHub({ signal })
               data-testid="lane-paper"
               >Paper-based tracking</UBadge
             >
-          </DsCluster>
+          </div>
         </DsCharacterCard>
       </div>
 
@@ -117,9 +105,9 @@ const { data, error, reload } = useApi((signal) => fetchTrackingAHub({ signal })
         accent="trial"
         data-testid="readiness"
       >
-        <DsStack>
-          <DsText variant="overline" as="p" tone="warning">Admin Readiness</DsText>
-          <DsCluster gap="xs" align="stretch" data-testid="readiness-summary">
+        <div class="flex flex-col gap-4">
+          <p class="text-overline text-warning">Admin Readiness</p>
+          <div class="flex flex-wrap gap-2" data-testid="readiness-summary">
             <UBadge color="success" variant="soft"
               >Set Bersih: {{ data.readiness.summary.bersih }} set</UBadge
             >
@@ -129,8 +117,8 @@ const { data, error, reload } = useApi((signal) => fetchTrackingAHub({ signal })
             <UBadge color="warning" variant="soft"
               >Locked: {{ data.readiness.summary.locked }} set</UBadge
             >
-          </DsCluster>
-          <DsGrid :cols="{ base: 1, lg: 2 }" gap="sm" data-testid="readiness-tiles">
+          </div>
+          <div class="grid grid-cols-1 gap-3 lg:grid-cols-2" data-testid="readiness-tiles">
             <UCard
               v-for="t in data.readiness.tiles"
               :key="t.code"
@@ -139,70 +127,52 @@ const { data, error, reload } = useApi((signal) => fetchTrackingAHub({ signal })
               :ui="{ body: 'flex flex-col gap-3 p-3' }"
               :data-testid="`tile-${t.code}`"
             >
-              <DsCluster gap="xs" align="start" justify="between" :wrap="false">
+              <div class="flex items-start justify-between gap-2">
                 <div class="min-w-0">
-                  <DsHeading :level="3" wrap="anywhere" data-testid="tile-name">
+                  <h3 class="text-subheading break-words text-highlighted" data-testid="tile-name">
                     {{ t.name }}
-                  </DsHeading>
-                  <DsText variant="caption" wrap="anywhere" data-testid="tile-target">
+                  </h3>
+                  <p class="text-caption break-words text-muted" data-testid="tile-target">
                     {{ tileTarget(t.code, t.targetSize) }}
-                  </DsText>
+                  </p>
                 </div>
                 <UBadge color="neutral" variant="subtle" class="shrink-0" data-testid="tile-badge"
                   >{{ t.bersih }}/{{ t.total }} set bersih</UBadge
                 >
-              </DsCluster>
+              </div>
               <dl class="grid grid-cols-2 gap-2 text-center sm:grid-cols-4">
                 <div class="min-w-0">
-                  <DsText variant="caption" as="dt">Set Bersih</DsText>
-                  <DsText
-                    variant="heading"
-                    as="dd"
-                    tone="success"
-                    tabular
-                    data-testid="tile-bersih"
-                  >
+                  <dt class="text-caption text-muted">Set Bersih</dt>
+                  <dd class="tabular text-heading text-success" data-testid="tile-bersih">
                     {{ t.bersih }}
-                  </DsText>
+                  </dd>
                 </div>
                 <div class="min-w-0">
-                  <DsText variant="caption" as="dt">Bank Besar</DsText>
-                  <DsText variant="heading" as="dd" tone="info" tabular data-testid="tile-bank">
+                  <dt class="text-caption text-muted">Bank Besar</dt>
+                  <dd class="tabular text-heading text-info" data-testid="tile-bank">
                     {{ t.bankBesar }}
-                  </DsText>
+                  </dd>
                 </div>
                 <div class="min-w-0">
-                  <DsText variant="caption" as="dt">Locked</DsText>
-                  <DsText
-                    variant="heading"
-                    as="dd"
-                    tone="warning"
-                    tabular
-                    data-testid="tile-locked"
-                  >
+                  <dt class="text-caption text-muted">Locked</dt>
+                  <dd class="tabular text-heading text-warning" data-testid="tile-locked">
                     {{ t.locked }}
-                  </DsText>
+                  </dd>
                 </div>
                 <div class="min-w-0">
-                  <DsText variant="caption" as="dt">Readiness</DsText>
-                  <DsText
-                    variant="heading"
-                    as="dd"
-                    tone="primary"
-                    tabular
-                    data-testid="tile-readiness"
-                  >
+                  <dt class="text-caption text-muted">Readiness</dt>
+                  <dd class="tabular text-heading text-primary-t" data-testid="tile-readiness">
                     {{ t.readiness }}%
-                  </DsText>
+                  </dd>
                 </div>
               </dl>
-              <DsText v-if="t.hasBankBesar" variant="caption" data-testid="tile-bank-note">
+              <p v-if="t.hasBankBesar" class="text-caption text-muted" data-testid="tile-bank-note">
                 Set bank besar boleh dibuka, tetapi bank sumber melebihi target set. Rujuk page
                 subjek untuk beza set bersih vs bank besar.
-              </DsText>
-              <DsStack v-if="t.locked > 0" gap="2xs" data-testid="tile-locks">
-                <DsText variant="overline" as="p">Set Masih Lock</DsText>
-                <DsCluster gap="xs" align="stretch">
+              </p>
+              <div v-if="t.locked > 0" class="flex flex-col gap-1" data-testid="tile-locks">
+                <p class="text-overline text-muted">Set Masih Lock</p>
+                <div class="flex flex-wrap gap-2">
                   <UBadge
                     v-for="s in t.lockedSets"
                     :key="s.setNo"
@@ -211,28 +181,28 @@ const { data, error, reload } = useApi((signal) => fetchTrackingAHub({ signal })
                     data-testid="tile-lock-chip"
                     >{{ lockChip(s) }}</UBadge
                   >
-                </DsCluster>
-              </DsStack>
+                </div>
+              </div>
             </UCard>
-          </DsGrid>
-        </DsStack>
+          </div>
+        </div>
       </DsPanel>
 
       <!-- Bahasa section -->
-      <DsStack as="section" gap="sm" data-testid="bahasa-section">
-        <DsStack gap="2xs">
-          <DsText variant="overline" as="p" tone="primary">Tracking A Bahasa</DsText>
-          <DsCluster gap="xs">
-            <DsHeading :level="2">BM dan BI ikut format kertas sebenar</DsHeading>
+      <section class="flex flex-col gap-3" data-testid="bahasa-section">
+        <div class="flex flex-col gap-1">
+          <p class="text-overline text-primary-t">Tracking A Bahasa</p>
+          <div class="flex flex-wrap items-center gap-2">
+            <h2 class="text-heading text-highlighted">BM dan BI ikut format kertas sebenar</h2>
             <UBadge color="secondary" variant="soft" data-testid="bahasa-paper-pill"
               >Paper-based tracking</UBadge
             >
-          </DsCluster>
-          <DsText variant="body" tone="muted">
+          </div>
+          <p class="text-body text-muted">
             Subjek bahasa tidak dipaksa menjadi 40 MCQ. Ia dibuka melalui set berstruktur dan
             komponen sebenar peperiksaan.
-          </DsText>
-        </DsStack>
+          </p>
+        </div>
         <ul class="grid grid-cols-1 gap-3 md:grid-cols-2 md:gap-4">
           <li v-for="b in data.bahasa" :key="b.code" class="min-w-0">
             <RouterLink
@@ -240,24 +210,27 @@ const { data, error, reload } = useApi((signal) => fetchTrackingAHub({ signal })
               class="block h-full"
               :data-testid="`bahasa-card-${b.code}`"
             >
-              <UCard class="h-full" :ui="{ body: 'flex h-full flex-col gap-3 p-4' }">
-                <DsCluster :wrap="false">
+              <UCard
+                class="h-full"
+                :ui="{ body: 'flex h-full flex-col gap-3 p-4' }"
+              >
+                <div class="flex items-center gap-3">
                   <DsIconChip icon="translate" accent="friend" size="lg" />
                   <div class="min-w-0">
-                    <DsHeading :level="3" wrap="anywhere" data-testid="bahasa-name">
+                    <h3 class="text-subheading break-words text-highlighted" data-testid="bahasa-name">
                       {{ b.name }}
-                    </DsHeading>
-                    <DsText variant="caption" data-testid="bahasa-name-en">
+                    </h3>
+                    <p class="text-caption text-muted" data-testid="bahasa-name-en">
                       {{ b.nameEn }}
-                    </DsText>
+                    </p>
                   </div>
-                </DsCluster>
-                <DsCluster gap="xs" align="stretch">
+                </div>
+                <div class="flex flex-wrap gap-2">
                   <UBadge color="secondary" variant="soft" data-testid="bahasa-sets"
                     >{{ formatCount(b.sets) }} set</UBadge
                   >
                   <UBadge color="neutral" variant="soft">Berstruktur / respons sebenar</UBadge>
-                </DsCluster>
+                </div>
                 <span
                   class="mt-auto inline-flex items-center gap-1 text-label text-primary-t"
                   data-testid="bahasa-cta"
@@ -269,7 +242,7 @@ const { data, error, reload } = useApi((signal) => fetchTrackingAHub({ signal })
             </RouterLink>
           </li>
         </ul>
-      </DsStack>
+      </section>
 
       <!-- Open objective subjects -->
       <section data-testid="open-section">
@@ -287,19 +260,19 @@ const { data, error, reload } = useApi((signal) => fetchTrackingAHub({ signal })
                 class="h-full"
                 :ui="{ body: 'flex h-full flex-col justify-between gap-3 p-4' }"
               >
-                <DsStack gap="sm">
-                  <DsCluster :wrap="false">
+                <div class="flex flex-col gap-3">
+                  <div class="flex items-center gap-3">
                     <DsIconChip icon="target" accent="action" size="lg" />
                     <div class="min-w-0">
-                      <DsHeading :level="3" wrap="anywhere" data-testid="open-name">
+                      <h3 class="text-subheading break-words text-highlighted" data-testid="open-name">
                         {{ c.name }}
-                      </DsHeading>
-                      <DsText variant="caption" data-testid="open-name-en">
+                      </h3>
+                      <p class="text-caption text-muted" data-testid="open-name-en">
                         {{ c.nameEn }}
-                      </DsText>
+                      </p>
                     </div>
-                  </DsCluster>
-                  <DsCluster gap="xs" align="stretch" data-testid="open-chips">
+                  </div>
+                  <div class="flex flex-wrap gap-2" data-testid="open-chips">
                     <UBadge
                       color="secondary"
                       variant="soft"
@@ -342,8 +315,8 @@ const { data, error, reload } = useApi((signal) => fetchTrackingAHub({ signal })
                     <UBadge color="neutral" variant="soft" data-testid="chip-sets"
                       >{{ c.startableSets }} set</UBadge
                     >
-                  </DsCluster>
-                </DsStack>
+                  </div>
+                </div>
                 <span
                   class="flex items-center justify-between pt-1 text-label text-primary-t"
                   data-testid="open-footer"
@@ -357,13 +330,7 @@ const { data, error, reload } = useApi((signal) => fetchTrackingAHub({ signal })
         </ul>
       </section>
     </template>
-    <DsLoadError
-      v-else-if="error"
-      :message="LOAD_ERROR"
-      testid="spm-error"
-      retry-testid="spm-retry"
-      @retry="reload()"
-    />
+    <DsLoadError v-else-if="error" :message="LOAD_ERROR" testid="spm-error" retry-testid="spm-retry" @retry="reload()" />
     <SkeletonCards v-else />
   </DsPage>
 </template>

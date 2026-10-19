@@ -5,7 +5,6 @@ import { ccPaths } from '../command-center/cc-paths'
 import { S3_COPY } from './board-copy'
 import type { LoadStatus } from './composables'
 import DailyPanel from './DailyPanel.vue'
-import { DsStack, DsText } from '@/ds'
 
 const props = defineProps<{ data: CcDailyActivity | null; status: LoadStatus; basePath: string }>()
 const paths = ccPaths(props.basePath)
@@ -20,14 +19,14 @@ const paths = ccPaths(props.basePath)
     >
       {{ S3_COPY.noActivity }}
     </p>
-    <DsStack v-else as="ul" gap="2xs" aria-live="off">
+    <ul v-else class="flex flex-col gap-1" aria-live="off">
       <li
         v-for="(r, i) in data.liveFeed"
         :key="i"
         class="flex min-h-11 flex-wrap items-center gap-x-3 gap-y-1 bg-soft px-3 py-2 text-body"
         data-testid="cc-daily-feed-row"
       >
-        <DsText variant="caption" as="span" tabular class="shrink-0">{{ r.time }}</DsText>
+        <span class="tabular shrink-0 text-caption text-muted">{{ r.time }}</span>
         <UButton
           :to="paths.student(r.studentId)"
           variant="link"
@@ -35,11 +34,11 @@ const paths = ccPaths(props.basePath)
           class="h-auto min-w-0 p-0 text-start"
           :label="r.student"
         />
-        <DsText variant="caption" as="span" tone="toned" class="shrink-0">{{ r.subject }}</DsText>
+        <span class="shrink-0 text-caption text-toned">{{ r.subject }}</span>
         <span :class="['ms-auto shrink-0', r.correct ? 'text-success' : 'text-error']">{{
           r.correct ? '✓' : '✗'
         }}</span>
       </li>
-    </DsStack>
+    </ul>
   </DailyPanel>
 </template>

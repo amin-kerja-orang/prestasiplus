@@ -10,7 +10,7 @@ import type { TableColumn } from '@nuxt/ui'
 import { computed } from 'vue'
 import { RouterLink } from 'vue-router'
 
-import { DsChart, DsDataTable, DsPanel, type CardField, DsStack, DsHeading, DsText } from '@/ds'
+import { DsChart, DsDataTable, DsPanel, type CardField } from '@/ds'
 
 import type { SchoolUsage } from '../../api/school-admin'
 import { accuracy, count, USAGE_PATH } from './usage-format'
@@ -50,10 +50,10 @@ const series = computed(() => [{ label: 'Sesi', data: props.modes.map((m) => m.s
 
 <template>
   <DsPanel v-if="modes.length > 0" data-testid="su-modes">
-    <DsStack>
-      <DsHeading :level="2" variant="subheading" data-testid="su-modes-title">
+    <div class="flex flex-col gap-4">
+      <h2 class="text-subheading text-highlighted" data-testid="su-modes-title">
         Mengikut Mod Latihan
-      </DsHeading>
+      </h2>
       <DsChart
         type="bar"
         title="Sesi mengikut mod"
@@ -73,9 +73,9 @@ const series = computed(() => [{ label: 'Sesi', data: props.modes.map((m) => m.s
           data-testid="su-modes-table"
         >
           <template #label-cell="{ row }">
-            <DsText variant="label" tone="highlighted" data-testid="su-mode-label">{{
+            <span class="text-label text-highlighted" data-testid="su-mode-label">{{
               row.original.label
-            }}</DsText>
+            }}</span>
           </template>
           <template #sessions-cell="{ row }">
             <span data-testid="su-mode-sessions">{{ row.original.sessions }}</span>
@@ -85,16 +85,16 @@ const series = computed(() => [{ label: 'Sesi', data: props.modes.map((m) => m.s
           </template>
         </DsDataTable>
       </div>
-    </DsStack>
+    </div>
   </DsPanel>
 
   <DsPanel v-else data-testid="su-empty">
     <div class="flex flex-col items-center gap-2 py-6 text-center">
       <UIcon name="i-ph-chart-bar" class="size-8 text-dimmed" aria-hidden="true" />
-      <DsText variant="subheading" data-testid="su-empty-title">
+      <p class="text-subheading text-highlighted" data-testid="su-empty-title">
         Tiada data untuk tempoh ini
-      </DsText>
-      <DsText v-if="period === 'today'" variant="body" tone="muted" data-testid="su-empty-text">
+      </p>
+      <p v-if="period === 'today'" class="text-body text-muted" data-testid="su-empty-text">
         Belum ada pelajar buat latihan hari ini. Cuba lihat
         <RouterLink
           :to="{ path: USAGE_PATH, query: { period: '7days' } }"
@@ -109,10 +109,10 @@ const series = computed(() => [{ label: 'Sesi', data: props.modes.map((m) => m.s
           data-testid="su-empty-30days"
           >30 Hari</RouterLink
         >.
-      </DsText>
-      <DsText v-else variant="body" tone="muted" data-testid="su-empty-text">
+      </p>
+      <p v-else class="text-body text-muted" data-testid="su-empty-text">
         Tiada aktiviti latihan dalam tempoh {{ label }} yang lepas.
-      </DsText>
+      </p>
     </div>
   </DsPanel>
 </template>

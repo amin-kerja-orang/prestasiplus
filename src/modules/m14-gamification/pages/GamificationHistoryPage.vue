@@ -8,7 +8,7 @@ import { computed } from 'vue'
 import { useRoute } from 'vue-router'
 
 import { useApi } from '@/composables'
-import { DsEmptyState, DsPage, DsCluster, DsStack, DsHeading, DsText } from '@/ds'
+import { DsEmptyState, DsPage } from '@/ds'
 import { formatCount } from '@/lib/number'
 import { formatDate, formatDateKey, formatDateTime } from '@/lib/time/format'
 
@@ -51,27 +51,23 @@ const groups = computed(() => {
 
 <template>
   <DsPage data-testid="gamification-history-page">
-    <DsCluster gap="md" row-gap="2xs" align="start" justify="between">
-      <DsStack gap="2xs">
-        <DsHeading :level="1">📋 Sejarah Transaksi</DsHeading>
-        <DsText v-if="tx.data.value" variant="body" tone="muted" data-testid="s17-balance">
+    <div class="flex flex-wrap items-start justify-between gap-x-4 gap-y-1">
+      <div class="flex min-w-0 flex-col gap-1">
+        <h1 class="text-title text-highlighted">📋 Sejarah Transaksi</h1>
+        <p v-if="tx.data.value" class="text-body text-muted" data-testid="s17-balance">
           Baki semasa: <strong>{{ formatCount(tx.data.value.meta.currentSyiling) }}</strong> syiling
-        </DsText>
-      </DsStack>
-      <UButton to="/gamification" variant="link" class="min-h-11" data-testid="s17-back"
+        </p>
+      </div>
+      <UButton
+        to="/gamification"
+        variant="link"
+        class="min-h-11"
+        data-testid="s17-back"
         >← Dashboard</UButton
       >
-    </DsCluster>
+    </div>
 
-    <DsCluster
-      as="nav"
-      gap="xs"
-      align="stretch"
-      :wrap="false"
-      class="overflow-x-auto"
-      data-testid="s17-pills"
-      aria-label="Jenis transaksi"
-    >
+    <nav class="flex gap-2 overflow-x-auto" data-testid="s17-pills" aria-label="Jenis transaksi">
       <UButton
         v-for="p in PILLS"
         :key="p.key || 'all'"
@@ -88,7 +84,7 @@ const groups = computed(() => {
         data-testid="s17-pill"
         >{{ p.label }}</UButton
       >
-    </DsCluster>
+    </nav>
 
     <UAlert
       v-if="tx.error.value"
@@ -97,11 +93,11 @@ const groups = computed(() => {
       title="Ralat berlaku. Sila cuba lagi."
     />
 
-    <DsStack v-else-if="!tx.data.value" gap="xs" aria-busy="true" data-testid="s17-loading">
+    <div v-else-if="!tx.data.value" class="flex flex-col gap-2" aria-busy="true" data-testid="s17-loading">
       <USkeleton class="h-16 w-full" />
       <USkeleton class="h-16 w-full" />
       <USkeleton class="h-16 w-full" />
-    </DsStack>
+    </div>
 
     <div v-else-if="tx.data.value.data.length === 0" data-testid="s17-empty">
       <DsEmptyState
@@ -111,10 +107,10 @@ const groups = computed(() => {
       />
     </div>
 
-    <DsStack v-else as="section" data-testid="s17-list">
-      <DsStack v-for="g in groups" :key="g.key" gap="xs">
-        <DsHeading :level="2" variant="overline" tone="muted">{{ g.label }}</DsHeading>
-        <DsStack as="ul" gap="xs">
+    <section v-else class="flex min-w-0 flex-col gap-4" data-testid="s17-list">
+      <div v-for="g in groups" :key="g.key" class="flex flex-col gap-2">
+        <h2 class="text-overline text-muted">{{ g.label }}</h2>
+        <ul class="flex flex-col gap-2">
           <li v-for="r in g.rows" :key="r.id">
             <UCard :ui="{ body: 'flex items-center gap-3 p-3 sm:p-3' }" data-testid="s17-row">
               <UAvatar
@@ -124,20 +120,14 @@ const groups = computed(() => {
                 data-testid="s17-row-icon"
               />
               <div class="flex min-w-0 flex-1 flex-col">
-                <DsText
-                  variant="label"
-                  as="p"
-                  tone="highlighted"
-                  wrap="anywhere"
-                  data-testid="s17-row-desc"
-                >
+                <p class="text-label break-words text-highlighted" data-testid="s17-row-desc">
                   {{ r.description }}
-                </DsText>
-                <DsText variant="caption" data-testid="s17-row-time">
+                </p>
+                <p class="text-caption text-muted" data-testid="s17-row-time">
                   {{ formatDateTime(r.createdAt) }} · {{ gamRelativeTime(r.createdAt) }}
-                </DsText>
+                </p>
               </div>
-              <DsStack gap="none" align="end" class="shrink-0">
+              <div class="flex shrink-0 flex-col items-end">
                 <p
                   class="tabular text-heading"
                   :class="r.amount < 0 ? 'text-muted' : 'text-success'"
@@ -145,14 +135,14 @@ const groups = computed(() => {
                 >
                   {{ gamSignedAmount(r.amount) }}
                 </p>
-                <DsText variant="caption" tabular data-testid="s17-row-balance">
+                <p class="tabular text-caption text-muted" data-testid="s17-row-balance">
                   Baki: {{ formatCount(r.balanceAfter) }}
-                </DsText>
-              </DsStack>
+                </p>
+              </div>
             </UCard>
           </li>
-        </DsStack>
-      </DsStack>
-    </DsStack>
+        </ul>
+      </div>
+    </section>
   </DsPage>
 </template>

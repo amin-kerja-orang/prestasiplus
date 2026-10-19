@@ -12,7 +12,7 @@ import ResultCard from '../components/solo/ResultCard.vue'
 import { susunGain, susunMatches, susunTitle } from '../components/solo/solo-lib'
 import { useGameTimers } from '../components/solo/useGameTimers'
 import { playCoins, submitResult, useSoloGame } from '../components/solo/useSoloGame'
-import { DsLoadError, DsStack, DsCluster, DsGrid, DsHeading, DsText } from '@/ds'
+import { DsLoadError } from '@/ds'
 
 const timers = useGameTimers()
 const { darjah, payload, loading, error, load } = useSoloGame('susun-jawapan')
@@ -160,14 +160,14 @@ watch(darjah, () => void start(), { immediate: true })
   <div data-testid="solo-susun-jawapan">
     <DarjahPicker v-if="darjah === null" title="Susun Jawapan" art="books" />
     <GamePanel>
-      <DsStack v-if="loading" gap="sm" aria-busy="true" data-testid="solo-loading">
+      <div v-if="loading" class="flex flex-col gap-3" aria-busy="true" data-testid="solo-loading">
         <USkeleton class="h-16 w-full" />
         <USkeleton class="h-16 w-full" />
-      </DsStack>
+      </div>
       <DsLoadError v-else-if="error" :message="error" @retry="load()" />
 
-      <DsStack v-if="phase === 'playing' && current">
-        <DsCluster gap="xs" justify="between" :wrap="false">
+      <div v-if="phase === 'playing' && current" class="flex flex-col gap-4">
+        <div class="flex items-center justify-between gap-2">
           <UButton
             to="/permainan"
             color="neutral"
@@ -177,30 +177,22 @@ watch(darjah, () => void start(), { immediate: true })
           >
             Kembali
           </UButton>
-          <DsCluster gap="xs" align="stretch" :wrap="false">
+          <div class="flex gap-2">
             <UBadge color="primary" variant="soft" size="xl" data-testid="solo-score"
               >Skor <b class="ms-1">{{ score }}</b></UBadge
             >
             <UBadge color="warning" variant="soft" size="xl" data-testid="solo-coins"
               >🪙 {{ coinsShown }}</UBadge
             >
-          </DsCluster>
-        </DsCluster>
+          </div>
+        </div>
 
-        <DsHeading :level="1" align="center">🧩 Susun Jawapan</DsHeading>
-        <DsCluster gap="xs" align="stretch" justify="center" data-testid="solo-dots">
+        <h1 class="text-center text-title text-highlighted">🧩 Susun Jawapan</h1>
+        <div class="flex flex-wrap justify-center gap-2" data-testid="solo-dots">
           <UBadge
             v-for="(dot, i) in dots"
             :key="i"
-            :color="
-              dot === 'done'
-                ? 'success'
-                : dot === 'wrong'
-                  ? 'error'
-                  : i === index
-                    ? 'primary'
-                    : 'neutral'
-            "
+            :color="dot === 'done' ? 'success' : dot === 'wrong' ? 'error' : i === index ? 'primary' : 'neutral'"
             variant="solid"
             size="sm"
             class="size-3 p-0"
@@ -208,23 +200,23 @@ watch(darjah, () => void start(), { immediate: true })
             :data-active="i === index"
             data-testid="solo-dot"
           />
-        </DsCluster>
+        </div>
 
         <UCard class="text-center" data-testid="solo-card">
-          <DsText variant="overline" as="p" tone="primary">
+          <p class="text-overline text-primary-t">
             Soalan {{ index + 1 }} daripada {{ puzzles.length }}
-          </DsText>
+          </p>
           <p class="mt-2 text-subheading break-words text-highlighted">
             {{ current.question }}
           </p>
         </UCard>
 
-        <DsStack gap="xs" class="text-center">
-          <DsText variant="caption">📥 Jawapan Kamu:</DsText>
+        <div class="flex flex-col gap-2 text-center">
+          <p class="text-caption text-muted">📥 Jawapan Kamu:</p>
           <UCard :ui="{ body: 'p-3 sm:p-3' }" data-testid="solo-drop" @click="removeLast">
-            <DsCluster gap="xs" justify="center" class="min-h-16">
-              <DsText v-if="placedTiles.length === 0" variant="body" as="span" tone="muted"
-                >Klik huruf/perkataan di bawah untuk susun</DsText
+            <div class="flex min-h-16 flex-wrap items-center justify-center gap-2">
+              <span v-if="placedTiles.length === 0" class="text-body text-muted"
+                >Klik huruf/perkataan di bawah untuk susun</span
               >
               <UButton
                 v-for="tile in placedTiles"
@@ -239,14 +231,14 @@ watch(darjah, () => void start(), { immediate: true })
               >
                 {{ tile.text }}
               </UButton>
-            </DsCluster>
+            </div>
           </UCard>
-        </DsStack>
+        </div>
 
-        <DsStack gap="xs" class="text-center">
-          <DsText variant="caption">🔤 Pilihan:</DsText>
+        <div class="flex flex-col gap-2 text-center">
+          <p class="text-caption text-muted">🔤 Pilihan:</p>
           <UCard :ui="{ body: 'p-3 sm:p-3' }" data-testid="solo-source">
-            <DsCluster gap="xs" justify="center" class="min-h-16">
+            <div class="flex min-h-16 flex-wrap items-center justify-center gap-2">
               <UButton
                 v-for="tile in sourceTiles"
                 :key="tile.i"
@@ -261,11 +253,11 @@ watch(darjah, () => void start(), { immediate: true })
               >
                 {{ tile.text }}
               </UButton>
-            </DsCluster>
+            </div>
           </UCard>
-        </DsStack>
+        </div>
 
-        <DsStack v-if="check === 'idle'" gap="sm">
+        <div v-if="check === 'idle'" class="flex flex-col gap-3">
           <UButton
             type="button"
             size="xl"
@@ -289,12 +281,12 @@ watch(darjah, () => void start(), { immediate: true })
           >
             ⏭️ Langkau Soalan Ini
           </UButton>
-        </DsStack>
+        </div>
 
-        <DsStack v-else-if="check === 'correct'" gap="sm" class="text-center">
-          <DsText variant="subheading" tone="success" data-testid="solo-feedback">
+        <div v-else-if="check === 'correct'" class="flex flex-col gap-3 text-center">
+          <p class="text-subheading text-success" data-testid="solo-feedback">
             🎉 BETUL! +{{ lastPoints }} mata
-          </DsText>
+          </p>
           <UButton
             type="button"
             size="xl"
@@ -306,13 +298,11 @@ watch(darjah, () => void start(), { immediate: true })
           >
             Seterusnya →
           </UButton>
-        </DsStack>
+        </div>
 
-        <DsStack v-else gap="sm" class="text-center">
-          <DsText variant="label" as="p" tone="error" data-testid="solo-feedback"
-            >❌ Cuba lagi atau langkau</DsText
-          >
-          <DsGrid :cols="{ sm: 2 }" gap="sm">
+        <div v-else class="flex flex-col gap-3 text-center">
+          <p class="text-label text-error" data-testid="solo-feedback">❌ Cuba lagi atau langkau</p>
+          <div class="grid gap-3 sm:grid-cols-2">
             <UButton
               type="button"
               size="xl"
@@ -335,9 +325,9 @@ watch(darjah, () => void start(), { immediate: true })
             >
               ⏭️ Langkau
             </UButton>
-          </DsGrid>
-        </DsStack>
-      </DsStack>
+          </div>
+        </div>
+      </div>
 
       <ResultCard
         v-if="phase === 'done'"

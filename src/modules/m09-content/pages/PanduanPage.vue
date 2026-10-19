@@ -13,7 +13,7 @@ import { useRoute } from 'vue-router'
 
 import { useApi } from '@/composables/useApi'
 import { useSession } from '@/composables/useSession'
-import { DsArt3D, DsIconChip, DsSurface, DsGrid, DsStack, DsCluster, DsHeading, DsText } from '@/ds'
+import { DsArt3D, DsIconChip } from '@/ds'
 import { useThemeMode } from '@/theme/color-mode'
 
 import { fetchSupportConfig } from '../api/content'
@@ -62,13 +62,9 @@ function setRole(id: string): void {
 </script>
 
 <template>
-  <DsSurface
+  <div
     :key="route.path"
-    radius="none"
-    shadow="none"
-    padding="none"
-    :clip="false"
-    class="min-h-screen overflow-x-hidden"
+    class="min-h-screen overflow-x-hidden bg-default"
     data-testid="panduan-page"
   >
     <PanduanTopBar :logged-in="isLoggedIn" />
@@ -76,13 +72,13 @@ function setRole(id: string): void {
     <main class="mx-auto flex max-w-5xl flex-col gap-4 px-4 py-6 sm:px-6 md:gap-6">
       <header class="flex flex-col items-center gap-2 py-4 text-center">
         <DsArt3D name="books" size="xl" float />
-        <DsHeading :level="1">Panduan Pengguna PRESTASIPLUS</DsHeading>
-        <DsText variant="body" tone="muted" class="max-w-prose">
+        <h1 class="text-title text-highlighted">Panduan Pengguna PRESTASIPLUS</h1>
+        <p class="max-w-prose text-body text-muted">
           Pilih peranan anda untuk mula. Semua maklumat di hujung jari!
-        </DsText>
+        </p>
       </header>
 
-      <DsGrid :cols="{ base: 2, md: 3, lg: 5 }" gap="sm" data-testid="panduan-tabs">
+      <div class="grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-5" data-testid="panduan-tabs">
         <UButton
           v-for="role in GUIDE_ROLES"
           :key="role.id"
@@ -95,21 +91,21 @@ function setRole(id: string): void {
           @click="setRole(role.id)"
         >
           <UIcon :name="ROLE_ICONS[role.id]" class="size-7" aria-hidden="true" />
-          <DsText variant="label">{{ role.label }}</DsText>
+          <span class="text-label">{{ role.label }}</span>
           <span class="text-caption">{{ role.sub }}</span>
         </UButton>
-      </DsGrid>
+      </div>
 
       <PanduanRolePanel v-if="activePanel" :key="activePanel.id" :role="activePanel" />
 
       <UCard data-testid="panduan-help">
-        <DsStack gap="sm" align="center" class="text-center">
+        <div class="flex flex-col items-center gap-3 text-center">
           <DsIconChip icon="i-ph-chats-circle-duotone" size="lg" />
-          <DsHeading :level="2">Perlukan Bantuan Lanjut?</DsHeading>
-          <DsText variant="label" as="p" tone="muted">
+          <h2 class="text-heading text-highlighted">Perlukan Bantuan Lanjut?</h2>
+          <p class="text-label text-muted">
             Hubungi pasukan sokongan kami untuk sebarang pertanyaan.
-          </DsText>
-          <DsCluster justify="center">
+          </p>
+          <div class="flex flex-wrap items-center justify-center gap-3">
             <UButton
               :to="`mailto:${config.email}`"
               icon="i-ph-envelope-simple-duotone"
@@ -126,7 +122,7 @@ function setRole(id: string): void {
             >
               <WhatsAppIcon class="size-4" />WhatsApp
             </UButton>
-          </DsCluster>
+          </div>
           <UButton
             v-if="!isLoggedIn"
             to="/register"
@@ -135,7 +131,7 @@ function setRole(id: string): void {
             data-testid="panduan-register"
             >Daftar Percuma Sekarang</UButton
           >
-        </DsStack>
+        </div>
       </UCard>
     </main>
 
@@ -146,5 +142,5 @@ function setRole(id: string): void {
       </div>
       <p class="text-caption">Platform Latih Tubi Nasional</p>
     </footer>
-  </DsSurface>
+  </div>
 </template>

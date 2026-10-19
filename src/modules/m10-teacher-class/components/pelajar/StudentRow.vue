@@ -5,7 +5,7 @@
  * the row has an add button (#16) for the class chosen in the "Tambah pelajar ke:" bar. A card at
  * every width (layers, no lines); the name links to the student's prestasi page.
  */
-import { DsIdentity, DsPanel, DsStatusBadge, DsCluster } from '@/ds'
+import { DsIdentity, DsPanel, DsStatusBadge } from '@/ds'
 
 import type { GuruStudent } from '../../api/types'
 import { PELAJAR_COPY } from './copy'
@@ -37,7 +37,7 @@ defineEmits<{ add: [studentId: number]; remove: [studentId: number, classId: num
 <template>
   <li class="min-w-0" data-testid="student-row" :data-student-id="student.id">
     <DsPanel>
-      <DsCluster justify="between">
+      <div class="flex min-w-0 flex-wrap items-center justify-between gap-3">
         <div class="flex min-w-0 flex-1 items-center gap-3">
           <div class="min-w-0 flex-1">
             <DsIdentity
@@ -91,7 +91,7 @@ defineEmits<{ add: [studentId: number]; remove: [studentId: number, classId: num
             >{{ PELAJAR_COPY.add }}</UButton
           >
         </template>
-      </DsCluster>
+      </div>
     </DsPanel>
   </li>
 </template>

@@ -4,7 +4,7 @@
  * for an accuracy below 50 (PROPOSED, OQ-M08-08) and "Peta DSKP — Standard Pembelajaran".
  * Text is 12px and up (D-26, D9: the live 11px / 10px text is unreadable).
  */
-import { DsPanel, DsScoreRing, DsStack, DsCluster, DsGrid, DsText } from '@/ds'
+import { DsPanel, DsScoreRing } from '@/ds'
 
 import type { AnalyticsSubject } from '../../api/types'
 import { STATUS_LABEL, TILE_COLOR, TREND_ICON, TREND_TEXT, accuracyText } from '../../lib/analitik'
@@ -36,7 +36,7 @@ const dots = () =>
   <div class="flex min-w-0 flex-col gap-4 md:gap-6" :data-testid="`pane-${subject.subjectId}`">
     <div class="grid grid-cols-1 gap-4 md:gap-6 lg:grid-cols-3">
       <DsPanel class="min-w-0" data-testid="ring-card">
-        <DsStack gap="sm" align="center">
+        <div class="flex flex-col items-center gap-3">
           <DsScoreRing
             :value="subject.counts.mahir"
             :max="subject.ringTotal"
@@ -46,8 +46,8 @@ const dots = () =>
             :unit="`/ ${subject.ringTotal} SP`"
             data-testid="ring-arc"
           />
-          <DsText variant="label" as="p" tone="highlighted">Standard Dikuasai</DsText>
-          <DsCluster as="ul" gap="xs" align="stretch" justify="center" data-testid="ring-legend">
+          <p class="text-label text-highlighted">Standard Dikuasai</p>
+          <ul class="flex flex-wrap justify-center gap-2" data-testid="ring-legend">
             <li v-for="d in dots()" :key="d.id">
               <UBadge
                 :color="TILE_COLOR[d.id]"
@@ -55,43 +55,42 @@ const dots = () =>
                 :label="`${STATUS_LABEL[d.id]} ${d.count}`"
               />
             </li>
-          </DsCluster>
-        </DsStack>
+          </ul>
+        </div>
       </DsPanel>
 
       <DsPanel class="min-w-0 lg:col-span-2">
-        <DsStack>
-          <DsGrid :cols="{ base: 2, sm: 4 }" as="ul" class="text-center" data-testid="kpis">
+        <div class="flex flex-col gap-4">
+          <ul class="grid grid-cols-2 gap-4 text-center sm:grid-cols-4" data-testid="kpis">
             <li class="flex flex-col gap-1">
               <span
-                :class="[accuracyText(subject.accuracy), 'tabular text-title']"
+:class="[accuracyText(subject.accuracy), 'tabular text-title']"
                 data-testid="kpi-acc"
-                >{{ subject.accuracy.toFixed(1) }}%</span
-              >
-              <DsText variant="caption" as="span">Ketepatan</DsText>
+                >{{ subject.accuracy.toFixed(1) }}%</span>
+              <span class="text-caption text-muted">Ketepatan</span>
             </li>
             <li class="flex flex-col gap-1">
-              <DsText variant="title" as="span" tabular data-testid="kpi-answered">{{
+              <span class="tabular text-title text-highlighted" data-testid="kpi-answered">{{
                 subject.answered
-              }}</DsText>
-              <DsText variant="caption" as="span">Soalan Dijawab</DsText>
+              }}</span>
+              <span class="text-caption text-muted">Soalan Dijawab</span>
             </li>
             <li class="flex flex-col items-center gap-1">
-              <DsCluster as="span" gap="2xs" :wrap="false" data-testid="kpi-trend">
+              <span class="flex items-center gap-1" data-testid="kpi-trend">
                 <span :class="[TREND_TEXT[subject.trend], 'flex items-center gap-1']">
                   <UIcon :name="icon(TREND_ICON[subject.trend])" class="size-8" />
-                  <DsText variant="label">{{ TREND_LABEL[subject.trend] }}</DsText>
+                  <span class="text-label">{{ TREND_LABEL[subject.trend] }}</span>
                 </span>
-              </DsCluster>
-              <DsText variant="caption" as="span">Trend 30 Hari</DsText>
+              </span>
+              <span class="text-caption text-muted">Trend 30 Hari</span>
             </li>
             <li class="flex flex-col gap-1">
-              <DsText variant="title" as="span" tone="primary" tabular data-testid="kpi-grade"
-                >{{ subject.projection.low }} – {{ subject.projection.high }}</DsText
+              <span class="tabular text-title text-primary-t" data-testid="kpi-grade"
+                >{{ subject.projection.low }} – {{ subject.projection.high }}</span
               >
-              <DsText variant="caption" as="span">Unjuran Gred</DsText>
+              <span class="text-caption text-muted">Unjuran Gred</span>
             </li>
-          </DsGrid>
+          </ul>
           <UAlert
             v-if="subject.accuracy < 50"
             color="error"
@@ -100,20 +99,20 @@ const dots = () =>
             title="Jangan putus asa! Latihan konsisten akan membantu. Mulakan dengan topik yang paling lemah di bawah."
             data-testid="encourage-box"
           />
-        </DsStack>
+        </div>
       </DsPanel>
     </div>
 
     <DsPanel data-testid="dskp-map">
-      <DsStack>
+      <div class="flex flex-col gap-4">
         <h3 class="flex items-center gap-2 text-subheading text-highlighted">
           <UIcon :name="icon('map-trifold')" class="size-5 text-primary-t" />Peta DSKP — Standard
           Pembelajaran
         </h3>
-        <DsText variant="overline" as="p" data-testid="map-caption">
+        <p class="text-overline text-muted" data-testid="map-caption">
           {{ subject.map.caption }}
-        </DsText>
-        <DsCluster as="ul" gap="xs" align="stretch" data-testid="map-tiles">
+        </p>
+        <ul class="flex flex-wrap gap-2" data-testid="map-tiles">
           <li v-for="t in subject.map.tiles" :key="t.spId">
             <UBadge
               :color="TILE_COLOR[t.status]"
@@ -125,16 +124,16 @@ const dots = () =>
               :data-testid="`tile-${t.spId}`"
             />
           </li>
-        </DsCluster>
-        <DsCluster as="ul" gap="md" row-gap="xs" data-testid="map-legend">
+        </ul>
+        <ul class="flex flex-wrap items-center gap-x-4 gap-y-2" data-testid="map-legend">
           <li v-for="l in LEGEND" :key="l.status">
             <UBadge :color="TILE_COLOR[l.status]" variant="subtle" :label="l.label" />
           </li>
           <li class="flex items-center gap-2 text-caption text-muted">
             <UBadge color="primary" variant="subtle" label="Fokus" />Klik untuk latihan fokus
           </li>
-        </DsCluster>
-      </DsStack>
+        </ul>
+      </div>
     </DsPanel>
   </div>
 </template>

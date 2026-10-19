@@ -14,16 +14,7 @@ import { computed, ref } from 'vue'
 import { RouterLink } from 'vue-router'
 
 import { useApi } from '@/composables'
-import {
-  DsCharacterCard,
-  DsIconChip,
-  DsLoadError,
-  DsPage,
-  DsStack,
-  DsCluster,
-  DsHeading,
-  DsText,
-} from '@/ds'
+import { DsCharacterCard, DsIconChip, DsLoadError, DsPage } from '@/ds'
 
 import { fetchRevisionOverview } from '../api/practice'
 import { subjectAccent, subjectGlyph } from '../components/quiz/subject-glyph'
@@ -50,6 +41,7 @@ const TIPS = [
     subtitle="Ulang kaji soalan yang pernah dijawab salah"
     data-testid="revision-list-page"
   >
+
     <template v-if="data">
       <DsCharacterCard
         accent="heat"
@@ -79,8 +71,8 @@ const TIPS = [
             :data-testid="`revision-subject-${s.code}`"
           >
             <UCard class="h-full">
-              <DsStack gap="sm">
-                <DsCluster :wrap="false">
+              <div class="flex flex-col gap-3">
+                <div class="flex items-center gap-3">
                   <DsIconChip
                     :icon="subjectGlyph(s.icon)"
                     :accent="subjectAccent(i)"
@@ -88,22 +80,20 @@ const TIPS = [
                     data-testid="revision-subject-icon"
                   />
                   <div class="flex min-w-0 flex-1 flex-col gap-1">
-                    <DsHeading
-                      :level="2"
-                      variant="subheading"
-                      truncate
+                    <h2
+                      class="truncate text-subheading text-highlighted"
                       data-testid="revision-subject-name"
                     >
                       {{ s.name }}
-                    </DsHeading>
-                    <DsText variant="caption">{{ s.nameEn }}</DsText>
+                    </h2>
+                    <p class="text-caption text-muted">{{ s.nameEn }}</p>
                   </div>
                   <UIcon
                     name="i-ph-caret-right-bold"
                     class="size-5 shrink-0 text-muted"
                     aria-hidden="true"
                   />
-                </DsCluster>
+                </div>
                 <UBadge
                   color="error"
                   variant="solid"
@@ -113,22 +103,22 @@ const TIPS = [
                   data-testid="revision-subject-count"
                   >{{ s.count }} soalan salah</UBadge
                 >
-              </DsStack>
+              </div>
             </UCard>
           </RouterLink>
         </li>
       </ul>
 
       <UCard data-testid="revision-tips">
-        <DsStack gap="sm">
+        <div class="flex flex-col gap-3">
           <h2 class="flex items-center gap-2 text-subheading text-highlighted">
             <UIcon name="i-ph-lightbulb-duotone" class="size-6 text-warning" aria-hidden="true" />
             Tips Ulang Kaji
           </h2>
-          <DsStack as="ul" gap="xs">
-            <DsText v-for="tip in TIPS" :key="tip" variant="body" as="li">{{ tip }}</DsText>
-          </DsStack>
-        </DsStack>
+          <ul class="flex flex-col gap-2">
+            <li v-for="tip in TIPS" :key="tip" class="text-body text-default">{{ tip }}</li>
+          </ul>
+        </div>
       </UCard>
 
       <UButton

@@ -5,7 +5,7 @@
  */
 import { computed } from 'vue'
 
-import { DsPillNav, type PillItem, DsCluster } from '@/ds'
+import { DsPillNav, type PillItem } from '@/ds'
 
 import { ACTIVITY_PATH, RANGES, type ActivityRange } from './activity-format'
 
@@ -21,7 +21,7 @@ const items = computed<PillItem<ActivityRange>[]>(() =>
 </script>
 
 <template>
-  <DsCluster gap="xs" data-testid="la-pills">
+  <div class="flex min-w-0 flex-wrap items-center gap-2" data-testid="la-pills">
     <span class="inline-flex items-center gap-1 text-label text-muted">
       <UIcon name="i-ph-calendar-dots" class="size-5" aria-hidden="true" />Tempoh:
     </span>
@@ -32,5 +32,5 @@ const items = computed<PillItem<ActivityRange>[]>(() =>
       label="Tempoh"
       data-testid="la-pills-nav"
     />
-  </DsCluster>
+  </div>
 </template>

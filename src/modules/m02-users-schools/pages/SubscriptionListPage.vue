@@ -25,9 +25,6 @@ import {
   DsStatRow,
   DsStatusBadge,
   type StatItem,
-  DsStack,
-  DsCluster,
-  DsText,
 } from '@/ds'
 import { formatNumber } from '@/lib/number'
 import { formatDate } from '@/lib/time'
@@ -275,12 +272,12 @@ const COLUMNS: TableColumn<SubRow>[] = [
       data-testid="subs-table"
     >
       <template #school-cell="{ row }">
-        <DsStack gap="2xs" data-testid="subs-row" :data-sub-id="row.original.id">
-          <DsText variant="body" as="span" tone="highlighted" class="max-w-56 whitespace-normal">{{
+        <div class="flex flex-col gap-1" data-testid="subs-row" :data-sub-id="row.original.id">
+          <span class="max-w-56 text-body whitespace-normal text-highlighted">{{
             row.original.school.name
-          }}</DsText>
-          <DsText variant="label" tone="muted">{{ row.original.school.code }}</DsText>
-        </DsStack>
+          }}</span>
+          <span class="text-label text-muted">{{ row.original.school.code }}</span>
+        </div>
       </template>
       <template #level-cell="{ row }">
         <UBadge
@@ -300,17 +297,17 @@ const COLUMNS: TableColumn<SubRow>[] = [
         />
       </template>
       <template #quota-cell="{ row }">
-        <DsCluster gap="xs" :wrap="false">
+        <div class="flex items-center gap-2">
           <UProgress
             class="w-24"
             :model-value="percent(row.original.used, row.original.studentQuota)"
             :color="barColor(percent(row.original.used, row.original.studentQuota))"
             :aria-label="`Kuota digunakan ${String(percent(row.original.used, row.original.studentQuota))}%`"
           />
-          <DsText variant="label" tone="muted" data-testid="subs-quota"
-            >{{ row.original.used }}/{{ row.original.studentQuota }}</DsText
+          <span class="text-label text-muted" data-testid="subs-quota"
+            >{{ row.original.used }}/{{ row.original.studentQuota }}</span
           >
-        </DsCluster>
+        </div>
       </template>
       <template #status-cell="{ row }">
         <DsStatusBadge
@@ -344,16 +341,16 @@ const COLUMNS: TableColumn<SubRow>[] = [
         />
       </template>
       <template #card="{ row }">
-        <DsStack gap="2xs" data-testid="subs-row" :data-sub-id="row.id">
-          <DsText variant="body" as="span" tone="highlighted">{{
+        <div class="flex flex-col gap-1" data-testid="subs-row" :data-sub-id="row.id">
+          <span class="text-body text-highlighted">{{
             (row.school as { name: string }).name
-          }}</DsText>
-          <DsText variant="label" tone="muted">
+          }}</span>
+          <span class="text-label text-muted">
             {{ levelLabel(row.formLevel as SchoolFormLevel) }} · {{ row.used }}/{{
               row.studentQuota
             }}
-          </DsText>
-        </DsStack>
+          </span>
+        </div>
         <DsStatusBadge
           class="w-fit"
           :status="STATUS_BADGE[row.status as SubscriptionStatus].status"

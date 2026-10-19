@@ -6,7 +6,7 @@
  */
 import { computed } from 'vue'
 
-import { DsArt3D, DsStack, DsText } from '@/ds'
+import { DsArt3D } from '@/ds'
 import { formatNumber } from '@/lib/number'
 
 import type { PodiumEntry } from '../../api'
@@ -27,28 +27,21 @@ const slots = computed(() => podiumSlots(props.podium))
       :data-rank="slot.entry.rank"
       data-testid="lb-podium-card"
     >
-      <DsStack gap="2xs" align="center" class="text-center">
+      <div class="flex flex-col items-center gap-1 text-center">
         <DsArt3D v-if="slot.raised" name="trophy" size="lg" float />
-        <DsText v-else variant="title" as="span" aria-hidden="true">{{ slot.medal }}</DsText>
+        <span v-else class="text-title" aria-hidden="true">{{ slot.medal }}</span>
         <UAvatar :text="slot.entry.initials" size="xl" data-testid="lb-podium-avatar" />
-        <DsText
-          variant="label"
-          as="div"
-          tone="highlighted"
-          wrap="anywhere"
-          class="w-full"
-          data-testid="lb-podium-name"
-        >
+        <div class="w-full text-label break-words text-highlighted" data-testid="lb-podium-name">
           {{ slot.entry.name }}
-        </DsText>
-        <DsText variant="caption" as="div" wrap="anywhere" data-testid="lb-podium-score">
+        </div>
+        <div class="text-caption break-words text-muted" data-testid="lb-podium-score">
           {{ formatNumber(slot.entry.totalSyilingEarned) }} {{ LEADERBOARD_COPY.syiling }}
-        </DsText>
+        </div>
         <div class="flex items-center gap-1 text-caption text-toned" data-testid="lb-podium-tier">
           <span aria-hidden="true">{{ slot.entry.tier.icon }}</span>
           <span>{{ slot.entry.tier.labelMs }}</span>
         </div>
-      </DsStack>
+      </div>
     </UCard>
   </div>
 </template>

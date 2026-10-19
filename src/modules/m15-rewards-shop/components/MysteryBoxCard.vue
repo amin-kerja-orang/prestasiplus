@@ -6,7 +6,7 @@
  */
 import { computed } from 'vue'
 
-import { DsArt3D, DsRewardChip, DsStack, DsCluster, DsHeading, DsText } from '@/ds'
+import { DsArt3D, DsRewardChip } from '@/ds'
 import type { Art3DName } from '@/ds'
 
 import type { MysteryBoxView } from '../api'
@@ -31,15 +31,12 @@ const ribbonColor = computed(() =>
 
 <template>
   <UCard class="h-full">
-    <DsStack
-      as="form"
-      gap="sm"
-      align="center"
-      class="h-full text-center"
+    <form
+      class="flex h-full flex-col items-center gap-3 text-center"
       :data-testid="`box-${String(box.id)}`"
       @submit.prevent="submit"
     >
-      <DsCluster gap="none" align="start" justify="end" :wrap="false" class="w-full">
+      <div class="flex w-full items-start justify-end">
         <UBadge
           v-if="box.rarity"
           :color="ribbonColor"
@@ -47,14 +44,14 @@ const ribbonColor = computed(() =>
           :data-testid="`box-${String(box.id)}-ribbon`"
           >{{ box.rarity }}</UBadge
         >
-      </DsCluster>
+      </div>
       <DsArt3D :name="art" size="hero" float />
-      <DsHeading :level="3" variant="heading">{{ box.name }}</DsHeading>
-      <DsText variant="body" tone="muted">{{ box.description }}</DsText>
-      <DsText variant="caption">
-        <DsText variant="title" as="span" tabular>{{ box.costTokens }}</DsText>
+      <h3 class="text-heading text-highlighted">{{ box.name }}</h3>
+      <p class="text-body text-muted">{{ box.description }}</p>
+      <p class="text-caption text-muted">
+        <span class="tabular text-title text-highlighted">{{ box.costTokens }}</span>
         {{ BOX_COPY.token }}
-      </DsText>
+      </p>
       <p class="flex flex-wrap items-center justify-center gap-2">
         <DsRewardChip :value="`${box.coinMin}-${box.coinMax}`" art="coin" />
         <DsRewardChip :value="`${box.xpMin}-${box.xpMax} XP`" art="bolt" />
@@ -83,6 +80,6 @@ const ribbonColor = computed(() =>
       >
         {{ BOX_COPY.locked }}
       </UButton>
-    </DsStack>
+    </form>
   </UCard>
 </template>

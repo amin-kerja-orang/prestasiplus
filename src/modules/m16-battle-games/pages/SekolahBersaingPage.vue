@@ -12,7 +12,7 @@ import { computed } from 'vue'
 import { useRoute } from 'vue-router'
 
 import { useApi } from '@/composables'
-import { DsDataTable, DsPage, type CardField, DsLoadError, DsStack, DsText } from '@/ds'
+import { DsDataTable, DsPage, type CardField, DsLoadError } from '@/ds'
 import { formatDateEn } from '@/lib/time'
 
 import { fetchSekolahBersaing } from '../api'
@@ -74,30 +74,25 @@ const cardFields: CardField[] = [
 
 <template>
   <DsPage :title="COPY.heading" :subtitle="COPY.sub" data-testid="m16-sekolah-bersaing-page">
-    <DsLoadError
-      v-if="view.error.value"
-      :message="LOAD_COPY.failed"
-      testid="m16-load-error"
-      retry-testid="m16-retry"
-      @retry="view.reload()"
-    />
+
+    <DsLoadError v-if="view.error.value" :message="LOAD_COPY.failed" testid="m16-load-error" retry-testid="m16-retry" @retry="view.reload()" />
     <USkeleton v-else-if="!data" class="h-48 w-full" data-testid="sb-loading" />
 
     <UCard v-else-if="data.rows.length === 0" data-testid="sb-empty">
       <div class="flex flex-col items-center gap-1 py-6 text-center">
         <UIcon name="i-ph-chart-bar-duotone" class="size-10 text-dimmed" />
-        <DsText variant="subheading">{{ COPY.emptyTitle }}</DsText>
-        <DsText variant="body" tone="muted">{{ COPY.emptyHint }}</DsText>
+        <p class="text-subheading text-highlighted">{{ COPY.emptyTitle }}</p>
+        <p class="text-body text-muted">{{ COPY.emptyHint }}</p>
       </div>
     </UCard>
 
     <template v-else>
-      <DsText variant="body" data-testid="sb-week">
+      <p class="text-body text-default" data-testid="sb-week">
         {{ COPY.weekPrefix }}
         <strong class="text-highlighted" data-testid="sb-week-date">{{ weekLabel }}</strong> ·
         <strong class="text-highlighted" data-testid="sb-count">{{ data.count }}</strong>
         {{ COPY.weekSuffix }}
-      </DsText>
+      </p>
 
       <DsDataTable
         :data="rows"
@@ -109,24 +104,22 @@ const cardFields: CardField[] = [
         data-testid="sb-table"
       >
         <template #rankText-cell="{ row }">
-          <DsText variant="label" tone="highlighted" data-testid="sb-rank">{{
+          <span class="text-label text-highlighted" data-testid="sb-rank">{{
             row.original.rankText
-          }}</DsText>
+          }}</span>
         </template>
         <template #school-cell="{ row }">
-          <DsStack gap="none" :data-rank="row.original.rank" data-testid="sb-row">
-            <DsText variant="label" tone="highlighted" truncate data-testid="sb-school">{{
+          <div class="flex min-w-0 flex-col" :data-rank="row.original.rank" data-testid="sb-row">
+            <span class="truncate text-label text-highlighted" data-testid="sb-school">{{
               row.original.school
-            }}</DsText>
-            <DsText
+            }}</span>
+            <span
               v-if="!row.original.anonymous"
-              variant="caption"
-              as="span"
-              truncate
+              class="truncate text-caption text-muted"
               data-testid="sb-state"
-              >{{ row.original.state }}</DsText
+              >{{ row.original.state }}</span
             >
-          </DsStack>
+          </div>
         </template>
       </DsDataTable>
 

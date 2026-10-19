@@ -8,16 +8,7 @@
 import { computed } from 'vue'
 
 import { useApi } from '@/composables'
-import {
-  DsEmptyState,
-  DsIconChip,
-  DsLoadError,
-  DsPage,
-  DsStack,
-  DsCluster,
-  DsText,
-  DsHeading,
-} from '@/ds'
+import { DsEmptyState, DsIconChip, DsLoadError, DsPage } from '@/ds'
 import { formatDate } from '@/lib/time'
 
 import { fetchRemedialTests } from '../api/practice'
@@ -37,7 +28,7 @@ const items = computed(() => data.value?.data ?? [])
     data-testid="remedial-page"
   >
     <template #leading>
-      <DsText variant="title" as="span" aria-hidden="true">🔬</DsText>
+      <span class="text-title" aria-hidden="true">🔬</span>
     </template>
 
     <template v-if="data">
@@ -48,40 +39,36 @@ const items = computed(() => data.value?.data ?? [])
         data-testid="remedial-empty"
       />
 
-      <DsStack v-else as="ul" gap="sm" data-testid="remedial-list">
+      <ul v-else class="flex flex-col gap-3" data-testid="remedial-list">
         <li v-for="t in items" :key="t.id" class="min-w-0">
           <UCard :data-testid="`remedial-card-${String(t.id)}`">
             <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-              <DsCluster align="start" :wrap="false">
+              <div class="flex min-w-0 items-start gap-3">
                 <DsIconChip icon="lifebuoy" accent="heat" size="lg" />
-                <DsStack gap="2xs">
-                  <DsCluster gap="xs">
-                    <DsHeading
-                      :level="2"
-                      variant="subheading"
-                      wrap="anywhere"
+                <div class="flex min-w-0 flex-col gap-1">
+                  <div class="flex flex-wrap items-center gap-2">
+                    <h2
+                      class="text-subheading break-words text-highlighted"
                       data-testid="remedial-subject"
                     >
                       {{ t.subjectName }}
-                    </DsHeading>
+                    </h2>
                     <UBadge
                       :color="remedialChip(t.status).color"
                       variant="solid"
-                      :icon="
-                        t.status === 'completed' ? 'i-ph-check-circle-bold' : 'i-ph-clock-bold'
-                      "
+                      :icon="t.status === 'completed' ? 'i-ph-check-circle-bold' : 'i-ph-clock-bold'"
                       data-testid="remedial-status"
                       >{{ remedialChip(t.status).label }}</UBadge
                     >
-                  </DsCluster>
-                  <DsText variant="body" data-testid="remedial-count">
+                  </div>
+                  <p class="text-body text-default" data-testid="remedial-count">
                     {{ t.totalQuestions }} soalan
-                  </DsText>
-                  <DsText variant="caption" data-testid="remedial-meta">
+                  </p>
+                  <p class="text-caption text-muted" data-testid="remedial-meta">
                     Daripada: {{ t.teacherName }} · {{ formatDate(t.createdAt) }}
-                  </DsText>
-                </DsStack>
-              </DsCluster>
+                  </p>
+                </div>
+              </div>
               <UButton
                 v-if="t.status === 'active'"
                 :to="`/remedial/${String(t.id)}`"
@@ -93,7 +80,7 @@ const items = computed(() => data.value?.data ?? [])
             </div>
           </UCard>
         </li>
-      </DsStack>
+      </ul>
     </template>
 
     <DsLoadError

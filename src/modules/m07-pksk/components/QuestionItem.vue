@@ -4,7 +4,7 @@
  * choices for Bahagian A / B (radio), a text area for C. Layout is PROPOSED, not observed.
  * Options reuse the quiz kit's `DsQuizOption` (toggle buttons in a labelled group).
  */
-import { DsQuizOption, DsStack, DsText } from '@/ds'
+import { DsQuizOption } from '@/ds'
 
 import type { PkskAnswer, PkskServedQuestion } from '../api/types'
 
@@ -23,15 +23,15 @@ function type(text: string): void {
 
 <template>
   <UCard data-testid="pksk-item" :data-question-id="question.id">
-    <DsStack gap="sm">
-      <DsText variant="label" as="p" tone="highlighted" wrap="anywhere">
+    <div class="flex min-w-0 flex-col gap-3">
+      <p class="text-label break-words text-highlighted">
         {{ index }}. {{ question.questionText }}
-      </DsText>
-      <DsStack
+      </p>
+      <div
         v-if="question.options.length > 0"
         role="group"
         :aria-label="question.questionText"
-        gap="xs"
+        class="flex min-w-0 flex-col gap-2"
       >
         <DsQuizOption
           v-for="(o, i) in question.options"
@@ -43,7 +43,7 @@ function type(text: string): void {
         >
           {{ o.text }}
         </DsQuizOption>
-      </DsStack>
+      </div>
       <UTextarea
         v-else
         :model-value="modelValue.text ?? ''"
@@ -53,6 +53,6 @@ function type(text: string): void {
         data-testid="pksk-essay"
         @update:model-value="type(String($event ?? ''))"
       />
-    </DsStack>
+    </div>
   </UCard>
 </template>

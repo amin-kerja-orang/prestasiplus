@@ -8,7 +8,7 @@
 import { ref } from 'vue'
 
 import { alertNative } from '@/composables'
-import { DsDialog, DsStack, DsText } from '@/ds'
+import { DsDialog } from '@/ds'
 
 import { acceptInvitation, declineInvitation, type BattleInvitation } from '../../api'
 import { BATTLE_MSG } from './battle-lib'
@@ -58,7 +58,7 @@ async function decline(inv: BattleInvitation): Promise<void> {
     @update:open="emit('update:open', false)"
   >
     <div data-testid="battle-invitations-modal">
-      <DsStack v-if="invitations.length > 0" as="ul" gap="xs">
+      <ul v-if="invitations.length > 0" class="flex flex-col gap-2">
         <li
           v-for="inv in invitations"
           :key="inv.uuid"
@@ -66,8 +66,8 @@ async function decline(inv: BattleInvitation): Promise<void> {
           data-testid="battle-invitation-row"
         >
           <span class="min-w-0 flex-1">
-            <DsText variant="label" tone="highlighted" class="block">{{ inv.sender_name }}</DsText>
-            <DsText variant="caption" as="span" class="block">{{ inv.sender_school }}</DsText>
+            <span class="block text-label text-highlighted">{{ inv.sender_name }}</span>
+            <span class="block text-caption text-muted">{{ inv.sender_school }}</span>
           </span>
           <UButton
             color="success"
@@ -89,12 +89,8 @@ async function decline(inv: BattleInvitation): Promise<void> {
             Tolak
           </UButton>
         </li>
-      </DsStack>
-      <p
-        v-else
-        class="py-3 text-center text-body text-muted"
-        data-testid="battle-invitations-empty"
-      >
+      </ul>
+      <p v-else class="py-3 text-center text-body text-muted" data-testid="battle-invitations-empty">
         Tiada cabaran buat masa ini
       </p>
     </div>

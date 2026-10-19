@@ -16,7 +16,6 @@ import {
   type KeyboardMode,
   type PanelPlacement,
 } from '../lib/arabic-keyboard'
-import { DsText } from '@/ds'
 
 const props = defineProps<{
   /** The textarea the panel is placed against. */
@@ -94,7 +93,9 @@ const MODE_BASE =
       :style="panelStyle"
       data-testid="vkb-panel"
     >
-      <div class="flex items-center justify-between gap-2 bg-elevated px-3 py-2">
+      <div
+        class="flex items-center justify-between gap-2 bg-elevated px-3 py-2"
+      >
         <button
           type="button"
           class="inline-flex size-11 items-center justify-center rounded-chip text-muted transition hover:bg-accented"
@@ -104,9 +105,9 @@ const MODE_BASE =
         >
           <UIcon name="i-ph-x" class="size-4" aria-hidden="true" />
         </button>
-        <DsText variant="caption" as="span" truncate data-testid="vkb-caption">
+        <span class="min-w-0 truncate text-caption text-muted" data-testid="vkb-caption">
           {{ KEYBOARD_CAPTIONS[mode] }}
-        </DsText>
+        </span>
         <div class="flex gap-1.5">
           <button
             type="button"

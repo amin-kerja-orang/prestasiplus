@@ -10,7 +10,7 @@ import { computed } from 'vue'
 import { useRoute } from 'vue-router'
 
 import { useApi } from '@/composables'
-import { DsEmptyState, DsPage, DsSurface, DsCluster, DsText } from '@/ds'
+import { DsEmptyState, DsPage } from '@/ds'
 
 import { fetchLearningMap } from '../api/student-curriculum'
 import MapIsland from '../components/student/MapIsland.vue'
@@ -42,7 +42,7 @@ const { data: map, error } = useApi(
         class="rounded-3xl bg-gradient-primary p-5 text-primary-on shadow-hero sm:p-8"
         data-testid="map-hero"
       >
-        <DsCluster gap="md" justify="between" :wrap="false">
+        <div class="flex items-center justify-between gap-4">
           <div class="min-w-0">
             <h1 class="font-display text-title font-extrabold break-words">🗺️ Peta Belajar</h1>
             <p class="mt-1 text-body" data-testid="map-subtitle">
@@ -63,7 +63,7 @@ const { data: map, error } = useApi(
               <div class="text-caption">Kemajuan</div>
             </div>
           </div>
-        </DsCluster>
+        </div>
         <UProgress :model-value="map.stats.progress" size="md" class="mt-4" data-testid="map-bar" />
       </section>
 
@@ -71,13 +71,7 @@ const { data: map, error } = useApi(
         class="flex flex-col gap-3 rounded-card bg-default p-4 shadow-lift sm:p-5"
         data-testid="map-selectors"
       >
-        <DsCluster
-          as="nav"
-          gap="xs"
-          align="stretch"
-          aria-label="Subjek"
-          data-testid="map-subject-pills"
-        >
+        <nav class="flex flex-wrap gap-2" aria-label="Subjek" data-testid="map-subject-pills">
           <UButton
             v-for="s in map.subjects"
             :key="s.code"
@@ -91,12 +85,8 @@ const { data: map, error } = useApi(
           >
             {{ s.emoji }} {{ s.label }}
           </UButton>
-        </DsCluster>
-        <nav
-          class="grid grid-cols-2 gap-2 sm:flex"
-          aria-label="Darjah"
-          data-testid="map-grade-chips"
-        >
+        </nav>
+        <nav class="grid grid-cols-2 gap-2 sm:flex" aria-label="Darjah" data-testid="map-grade-chips">
           <UButton
             v-for="g in MAP_GRADES"
             :key="g"
@@ -113,21 +103,18 @@ const { data: map, error } = useApi(
         </nav>
       </section>
 
-      <DsSurface
+      <div
         v-if="map.topics.length === 0"
-        radius="card"
-        shadow="lift"
-        padding="lg"
-        :clip="false"
+        class="rounded-card bg-default p-6 shadow-lift"
         data-testid="map-empty"
       >
-        <DsText variant="display" as="div" align="center" aria-hidden="true">🗺️</DsText>
+        <div class="text-center text-display" aria-hidden="true">🗺️</div>
         <DsEmptyState
           icon="map-trifold"
           title="Tiada Topik Dijumpai"
           description="Pilih subjek dan darjah yang lain untuk melihat peta belajar"
         />
-      </DsSurface>
+      </div>
 
       <div v-else class="flex flex-col gap-6 py-2" data-testid="map-container">
         <MapIsland v-for="(t, i) in map.topics" :key="t.id" :topic="t" :index="i" />

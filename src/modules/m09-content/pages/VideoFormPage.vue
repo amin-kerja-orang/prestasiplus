@@ -20,17 +20,7 @@ import { useRouter } from 'vue-router'
 
 import { setRouteOutcome } from '@/app/router/outcome'
 import { useApi, useDebounce, useFlash, usePageMeta, useSession } from '@/composables'
-import {
-  DsFormBar,
-  DsFormField,
-  DsLoadError,
-  DsPage,
-  DsPanel,
-  DsCluster,
-  DsStack,
-  DsGrid,
-  DsText,
-} from '@/ds'
+import { DsFormBar, DsFormField, DsLoadError, DsPage, DsPanel } from '@/ds'
 
 import { fetchSubjectOptions } from '../api/admin-media'
 import { createVideo, fetchVideoFormContext, updateVideo } from '../api/content'
@@ -284,7 +274,7 @@ const visibilityItems = computed(() => [
             />
           </DsFormField>
           <UCard v-if="preview" variant="soft" class="mt-3" data-testid="video-preview">
-            <DsCluster :wrap="false">
+            <div class="flex items-center gap-3">
               <div class="h-14 w-24 shrink-0 overflow-hidden">
                 <VideoThumb v-if="preview.thumbnailUrl" :thumbnail-url="preview.thumbnailUrl" />
               </div>
@@ -299,13 +289,13 @@ const visibilityItems = computed(() => [
                 />
                 {{ COPY.detected(preview.label) }}
               </p>
-            </DsCluster>
+            </div>
           </UCard>
         </DsPanel>
 
         <!-- Title and description. -->
         <DsPanel>
-          <DsStack>
+          <div class="flex flex-col gap-4">
             <DsFormField :label="COPY.titleLabel" name="title" required :error="errors.title">
               <UInput
                 id="title"
@@ -336,13 +326,13 @@ const visibilityItems = computed(() => [
                 data-testid="video-description-input"
               />
             </DsFormField>
-          </DsStack>
+          </div>
         </DsPanel>
 
         <!-- Category, subject, visibility. -->
         <DsPanel>
-          <DsStack>
-            <DsGrid :cols="{ sm: 2 }">
+          <div class="flex flex-col gap-4">
+            <div class="grid gap-4 sm:grid-cols-2">
               <DsFormField
                 :label="COPY.categoryLabel"
                 name="category"
@@ -372,7 +362,7 @@ const visibilityItems = computed(() => [
                   data-testid="video-subject-input"
                 />
               </DsFormField>
-            </DsGrid>
+            </div>
 
             <DsFormField
               :label="COPY.visibilityLabel"
@@ -389,27 +379,27 @@ const visibilityItems = computed(() => [
                 data-testid="video-visibility"
               />
             </DsFormField>
-          </DsStack>
+          </div>
         </DsPanel>
 
         <!-- Uploader strip (S20 only). -->
         <UCard v-if="!isEdit && context" variant="soft" data-testid="video-uploader-strip">
-          <DsCluster gap="xs" justify="between">
-            <DsCluster :wrap="false">
+          <div class="flex flex-wrap items-center justify-between gap-2">
+            <div class="flex min-w-0 items-center gap-3">
               <UAvatar :text="context.uploader.initial" size="md" />
-              <DsText variant="label" as="p" truncate>
+              <p class="min-w-0 truncate text-label text-default">
                 <span class="text-highlighted" data-testid="video-strip-name">{{
                   context.uploader.name
                 }}</span>
                 <span class="mx-2 text-muted" aria-hidden="true">·</span>
                 <span data-testid="video-strip-role">{{ context.uploader.roleLabel }}</span>
-              </DsText>
-            </DsCluster>
+              </p>
+            </div>
             <p class="flex items-center gap-2 text-caption text-muted">
               <UIcon name="i-ph-info-duotone" class="size-4 shrink-0" aria-hidden="true" />
               {{ COPY.uploaderNote }}
             </p>
-          </DsCluster>
+          </div>
         </UCard>
 
         <!-- Footer: one row at every width. -->

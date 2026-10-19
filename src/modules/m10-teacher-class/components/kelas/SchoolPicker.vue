@@ -4,7 +4,7 @@
  * (`GET /api/schools/search?q=&limit=15`), a progress bar while searching, results "{nama}" +
  * "{daerah}, {negeri}", "Tiada sekolah dijumpai", and a selected card with a clear button.
  */
-import { DsPanel, DsCluster, DsText } from '@/ds'
+import { DsPanel } from '@/ds'
 import { ref } from 'vue'
 
 import { useSearchPicker } from '@/composables'
@@ -38,18 +38,12 @@ function clear(): void {
     </h2>
 
     <DsPanel v-if="selected" tone="inset" data-testid="school-selected">
-      <DsCluster justify="between" :wrap="false">
+      <div class="flex items-center justify-between gap-3">
         <div class="min-w-0">
-          <DsText
-            variant="label"
-            as="p"
-            tone="highlighted"
-            wrap="anywhere"
-            data-testid="school-selected-name"
-          >
+          <p class="text-label break-words text-highlighted" data-testid="school-selected-name">
             {{ selected.name }}
-          </DsText>
-          <DsText variant="caption" wrap="anywhere">{{ schoolPlace(selected) }}</DsText>
+          </p>
+          <p class="text-caption break-words text-muted">{{ schoolPlace(selected) }}</p>
         </div>
         <UButton
           type="button"
@@ -61,7 +55,7 @@ function clear(): void {
           data-testid="school-clear"
           @click="clear"
         />
-      </DsCluster>
+      </div>
     </DsPanel>
 
     <div v-else ref="root" class="flex flex-col gap-2">
@@ -96,12 +90,12 @@ function clear(): void {
           @click="picker.select(school)"
         >
           <span class="flex min-w-0 flex-col">
-            <DsText variant="label" tone="highlighted" wrap="anywhere" class="whitespace-normal">{{
+            <span class="text-label break-words whitespace-normal text-highlighted">{{
               school.name
-            }}</DsText>
-            <DsText variant="caption" as="span" wrap="anywhere" class="whitespace-normal">{{
+            }}</span>
+            <span class="text-caption break-words whitespace-normal text-muted">{{
               schoolPlace(school)
-            }}</DsText>
+            }}</span>
           </span>
         </UButton>
         <p

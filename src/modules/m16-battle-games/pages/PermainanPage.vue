@@ -7,7 +7,7 @@
 import { computed } from 'vue'
 
 import { useApi } from '@/composables'
-import { DsArt3D, DsPage, DsStack, DsCluster, DsGrid, DsHeading, DsText } from '@/ds'
+import { DsArt3D, DsPage } from '@/ds'
 
 import { fetchGamesHub } from '../api'
 import GameCard from '../components/hub/GameCard.vue'
@@ -22,10 +22,10 @@ const loading = computed(() => hub.value === null && error.value === null)
 
 <template>
   <DsPage data-testid="hub-page">
-    <DsStack v-if="loading" aria-busy="true" data-testid="hub-loading">
+    <div v-if="loading" class="flex flex-col gap-4" aria-busy="true" data-testid="hub-loading">
       <USkeleton class="h-28 w-full" />
       <USkeleton class="h-28 w-full" />
-    </DsStack>
+    </div>
     <UAlert
       v-else-if="error"
       color="error"
@@ -35,20 +35,20 @@ const loading = computed(() => hub.value === null && error.value === null)
     />
     <template v-else-if="hub">
       <UCard>
-        <DsCluster gap="md" justify="between" :wrap="false">
-          <DsStack gap="2xs">
-            <DsHeading :level="1" data-testid="hub-h1">{{ HUB_HEADING }}</DsHeading>
-            <DsText variant="body" tone="muted" class="max-w-prose">{{ HUB_INTRO }}</DsText>
-          </DsStack>
+        <div class="flex items-center justify-between gap-4">
+          <div class="flex min-w-0 flex-col gap-1">
+            <h1 class="text-title text-highlighted" data-testid="hub-h1">{{ HUB_HEADING }}</h1>
+            <p class="max-w-prose text-body text-muted">{{ HUB_INTRO }}</p>
+          </div>
           <DsArt3D name="trophy" size="hero" float class="hidden sm:block" />
-        </DsCluster>
+        </div>
       </UCard>
 
       <OpenRoomsStrip :rooms="hub.openRooms" />
 
-      <DsGrid :cols="{ base: 1, sm: 2, lg: 3 }" data-testid="hub-grid">
+      <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3" data-testid="hub-grid">
         <GameCard v-for="card in HUB_CARDS" :key="card.id" :card="card" :chips="hub.chips" />
-      </DsGrid>
+      </div>
     </template>
   </DsPage>
 </template>

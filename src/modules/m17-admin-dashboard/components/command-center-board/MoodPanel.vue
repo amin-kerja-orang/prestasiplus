@@ -5,15 +5,14 @@ import { formatCount } from '@/lib/number'
 import type { CcMoodCounts } from '../../api/command-center-board'
 import { MOODS, S2_COPY } from './board-copy'
 import BoardPanel from './BoardPanel.vue'
-import { DsGrid, DsText } from '@/ds'
 
 defineProps<{ mood: CcMoodCounts | null }>()
 </script>
 
 <template>
   <BoardPanel icon="i-ph-smiley" title="Mood Pelajar" testid="cc-panel-mood">
-    <DsText v-if="mood === null" variant="body" tone="muted">{{ S2_COPY.loading }}</DsText>
-    <DsGrid v-else :cols="2" gap="xs" as="ul">
+    <p v-if="mood === null" class="text-body text-muted">{{ S2_COPY.loading }}</p>
+    <ul v-else class="grid grid-cols-2 gap-2">
       <li
         v-for="m in MOODS"
         :key="m.key"
@@ -22,15 +21,10 @@ defineProps<{ mood: CcMoodCounts | null }>()
       >
         <UIcon :name="m.icon" class="size-5 shrink-0" aria-hidden="true" />
         <span>{{ m.label }}</span>
-        <DsText
-          variant="label"
-          tone="highlighted"
-          tabular
-          class="ms-auto"
-          data-testid="cc-mood-count"
-          >{{ formatCount(mood[m.key]) }}</DsText
-        >
+        <span class="tabular ms-auto text-label text-highlighted" data-testid="cc-mood-count">{{
+          formatCount(mood[m.key])
+        }}</span>
       </li>
-    </DsGrid>
+    </ul>
   </BoardPanel>
 </template>

@@ -6,7 +6,7 @@
  */
 import { computed } from 'vue'
 
-import { DsChart, DsPanel, DsStack, DsHeading } from '@/ds'
+import { DsChart, DsPanel } from '@/ds'
 import { formatCount } from '@/lib/number'
 
 import type { RiskTallyView } from '../../api/amaran'
@@ -42,8 +42,8 @@ const series = computed(() => [{ label: 'Pelajar', data: segments.value.map((s) 
 
 <template>
   <DsPanel data-testid="am-distribution">
-    <DsStack>
-      <DsHeading :level="2" variant="subheading">Taburan Risiko Seluruh Sekolah</DsHeading>
+    <div class="flex flex-col gap-4">
+      <h2 class="text-subheading text-highlighted">Taburan Risiko Seluruh Sekolah</h2>
       <DsChart
         type="bar"
         horizontal
@@ -63,18 +63,12 @@ const series = computed(() => [{ label: 'Pelajar', data: segments.value.map((s) 
           <UIcon
             :name="s.icon"
             class="size-5"
-            :class="
-              s.key === 'green'
-                ? 'text-success'
-                : s.key === 'yellow'
-                  ? 'text-warning'
-                  : 'text-error'
-            "
+            :class="s.key === 'green' ? 'text-success' : s.key === 'yellow' ? 'text-warning' : 'text-error'"
             aria-hidden="true"
           />
           {{ s.label }}: {{ formatCount(s.count) }}
         </li>
       </ul>
-    </DsStack>
+    </div>
   </DsPanel>
 </template>

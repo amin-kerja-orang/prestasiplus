@@ -6,16 +6,7 @@
  */
 import { computed, onBeforeUnmount, ref } from 'vue'
 
-import {
-  DsEmptyState,
-  DsIconChip,
-  DsLoadError,
-  DsPage,
-  DsPanel,
-  DsStack,
-  DsCluster,
-  DsText,
-} from '@/ds'
+import { DsEmptyState, DsIconChip, DsLoadError, DsPage, DsPanel } from '@/ds'
 
 import { fetchTimeline } from '../api/performance'
 import PostCard from '../components/timeline/PostCard.vue'
@@ -84,46 +75,41 @@ onBeforeUnmount(() => {
         </DsEmptyState>
       </div>
 
-      <DsStack v-else as="ol" data-testid="timeline-posts">
+      <ol v-else class="flex flex-col gap-4" data-testid="timeline-posts">
         <li v-for="p in posts" :key="p.id" class="flex min-w-0 gap-3">
           <DsIconChip icon="i-ph-image-duotone" accent="heat" size="sm" class="mt-1 shrink-0" />
           <PostCard :post="p" class="grow" />
         </li>
-      </DsStack>
+      </ol>
 
       <DsPanel data-testid="public-profile-box">
-        <DsCluster :wrap="false">
-          <DsIconChip icon="i-ph-globe" accent="friend" size="sm" />
-          <div class="min-w-0 flex-1">
-            <DsText variant="label" as="p" tone="highlighted">Profil Awam Anda</DsText>
-            <ULink
-              :href="publicUrl"
-              target="_blank"
-              class="block min-h-6 text-caption break-all text-primary-t"
-              data-testid="public-url"
-              >{{ publicUrl }}</ULink
-            >
-          </div>
-          <UButton
-            type="button"
-            color="neutral"
-            variant="soft"
-            size="lg"
-            :icon="copied ? 'i-ph-check' : 'i-ph-copy'"
-            :aria-label="copied ? 'Disalin' : 'Salin pautan'"
-            data-testid="copy-url"
-            :data-copied="copied"
-            @click="copy"
-          />
-        </DsCluster>
+        <div class="flex items-center gap-3">
+        <DsIconChip icon="i-ph-globe" accent="friend" size="sm" />
+        <div class="min-w-0 flex-1">
+          <p class="text-label text-highlighted">Profil Awam Anda</p>
+          <ULink
+            :href="publicUrl"
+            target="_blank"
+            class="block min-h-6 text-caption break-all text-primary-t"
+            data-testid="public-url"
+            >{{ publicUrl }}</ULink
+          >
+        </div>
+        <UButton
+          type="button"
+          color="neutral"
+          variant="soft"
+          size="lg"
+          :icon="copied ? 'i-ph-check' : 'i-ph-copy'"
+          :aria-label="copied ? 'Disalin' : 'Salin pautan'"
+          data-testid="copy-url"
+          :data-copied="copied"
+          @click="copy"
+        />
+        </div>
       </DsPanel>
     </template>
-    <div
-      v-else-if="!error"
-      class="flex flex-col gap-4 md:gap-6"
-      aria-busy="true"
-      data-testid="page-loading"
-    >
+    <div v-else-if="!error" class="flex flex-col gap-4 md:gap-6" aria-busy="true" data-testid="page-loading">
       <USkeleton class="h-24 w-full" />
       <USkeleton class="h-64 w-full" />
     </div>

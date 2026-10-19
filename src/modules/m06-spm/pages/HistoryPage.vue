@@ -9,18 +9,7 @@ import { computed } from 'vue'
 import { useRoute } from 'vue-router'
 
 import { useApi } from '@/composables'
-import {
-  DsBackLink,
-  DsEmptyState,
-  DsPage,
-  DsPillNav,
-  DsStatTile,
-  type DsAccent,
-  type PillItem,
-  DsLoadError,
-  DsStack,
-  DsText,
-} from '@/ds'
+import { DsBackLink, DsEmptyState, DsPage, DsPillNav, DsStatTile, type DsAccent, type PillItem, DsLoadError } from '@/ds'
 import { formatCount, formatNumber } from '@/lib/number'
 import { formatDateTimeEn12, formatMinSec } from '@/lib/time'
 import { fetchSessions } from '@/modules/m05-practice'
@@ -44,42 +33,42 @@ const { data, error, reload } = useApi(
   type,
 )
 
-const stats = computed<
-  { id: string; value: string; label: string; icon: string; accent: DsAccent }[]
->(() => {
-  const s = data.value?.meta.stats
-  if (!s) return []
-  return [
-    {
-      id: 'sessions',
-      value: formatCount(s.sessions),
-      label: 'Sesi Kuiz',
-      icon: 'i-ph-game-controller-duotone',
-      accent: 'action',
-    },
-    {
-      id: 'accuracy',
-      value: `${formatNumber(s.avgAccuracyPct, { decimals: 1 })}%`,
-      label: 'Purata Ketepatan',
-      icon: 'i-ph-crosshair-duotone',
-      accent: 'win',
-    },
-    {
-      id: 'coins',
-      value: formatCount(s.coins),
-      label: 'Jumlah Syiling',
-      icon: 'i-ph-coins-duotone',
-      accent: 'heat',
-    },
-    {
-      id: 'answered',
-      value: formatCount(s.answered),
-      label: 'Soalan Dijawab',
-      icon: 'i-ph-check-circle-duotone',
-      accent: 'friend',
-    },
-  ]
-})
+const stats = computed<{ id: string; value: string; label: string; icon: string; accent: DsAccent }[]>(
+  () => {
+    const s = data.value?.meta.stats
+    if (!s) return []
+    return [
+      {
+        id: 'sessions',
+        value: formatCount(s.sessions),
+        label: 'Sesi Kuiz',
+        icon: 'i-ph-game-controller-duotone',
+        accent: 'action',
+      },
+      {
+        id: 'accuracy',
+        value: `${formatNumber(s.avgAccuracyPct, { decimals: 1 })}%`,
+        label: 'Purata Ketepatan',
+        icon: 'i-ph-crosshair-duotone',
+        accent: 'win',
+      },
+      {
+        id: 'coins',
+        value: formatCount(s.coins),
+        label: 'Jumlah Syiling',
+        icon: 'i-ph-coins-duotone',
+        accent: 'heat',
+      },
+      {
+        id: 'answered',
+        value: formatCount(s.answered),
+        label: 'Soalan Dijawab',
+        icon: 'i-ph-check-circle-duotone',
+        accent: 'friend',
+      },
+    ]
+  },
+)
 
 const rows = computed(() => (data.value?.data ?? []).filter((r) => isSpmMode(r.mode)))
 
@@ -110,7 +99,12 @@ const activeFilter = computed<string | null>(() =>
 
     <template v-if="data">
       <div class="grid grid-cols-2 gap-3 md:grid-cols-4 md:gap-4" data-testid="history-stats">
-        <div v-for="s in stats" :key="s.id" class="min-w-0" :data-testid="`history-stat-${s.id}`">
+        <div
+          v-for="s in stats"
+          :key="s.id"
+          class="min-w-0"
+          :data-testid="`history-stat-${s.id}`"
+        >
           <DsStatTile :value="s.value" :unit="s.label" :icon="s.icon" :accent="s.accent" />
         </div>
       </div>
@@ -124,7 +118,7 @@ const activeFilter = computed<string | null>(() =>
         />
       </div>
 
-      <DsStack v-if="rows.length > 0" as="ul" gap="sm" data-testid="history-rows">
+      <ul v-if="rows.length > 0" class="flex flex-col gap-3" data-testid="history-rows">
         <li v-for="r in rows" :key="r.id" class="min-w-0">
           <UCard data-testid="history-row">
             <div class="flex items-center gap-3 md:gap-4">
@@ -145,28 +139,21 @@ const activeFilter = computed<string | null>(() =>
                     >{{ TYPE_BADGES[r.mode].label }}</UBadge
                   >
                 </div>
-                <DsText variant="label" as="p" tone="highlighted" data-testid="row-correct">
+                <p class="text-label text-highlighted" data-testid="row-correct">
                   {{ `${r.correctCount}/${r.questionCount} betul` }}
-                </DsText>
-                <DsText variant="caption" data-testid="row-meta">
+                </p>
+                <p class="text-caption text-muted" data-testid="row-meta">
                   {{ r.completedAt ? formatDateTimeEn12(r.completedAt) : '' }} ·
                   {{ formatMinSec(r.timeSpent) }}
-                </DsText>
+                </p>
               </div>
-              <DsText
-                variant="label"
-                as="div"
-                tone="highlighted"
-                tabular
-                class="shrink-0"
-                data-testid="row-coins"
-              >
+              <div class="tabular shrink-0 text-label text-highlighted" data-testid="row-coins">
                 +{{ r.coinsEarned }} 🪙
-              </DsText>
+              </div>
             </div>
           </UCard>
         </li>
-      </DsStack>
+      </ul>
       <UCard v-else data-testid="history-empty">
         <DsEmptyState
           title="Belum Ada Sejarah"
@@ -186,13 +173,7 @@ const activeFilter = computed<string | null>(() =>
         </DsEmptyState>
       </UCard>
     </template>
-    <DsLoadError
-      v-else-if="error"
-      :message="LOAD_ERROR"
-      testid="spm-error"
-      retry-testid="spm-retry"
-      @retry="reload()"
-    />
+    <DsLoadError v-else-if="error" :message="LOAD_ERROR" testid="spm-error" retry-testid="spm-retry" @retry="reload()" />
     <SkeletonCards v-else :count="3" />
   </DsPage>
 </template>

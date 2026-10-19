@@ -9,16 +9,7 @@ import { computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 
 import { useApi } from '@/composables'
-import {
-  DsArt3D,
-  DsEmptyState,
-  DsPage,
-  DsLoadError,
-  DsCluster,
-  DsStack,
-  DsHeading,
-  DsText,
-} from '@/ds'
+import { DsArt3D, DsEmptyState, DsPage, DsLoadError } from '@/ds'
 
 import { fetchSchoolStandings } from '../api'
 import { BATTLE_STATES } from '../components/battle/battle-lib'
@@ -91,15 +82,13 @@ const podiumOrder = computed(() => {
 <template>
   <DsPage data-testid="battle-schools">
     <UCard>
-      <DsCluster gap="md" justify="between" :wrap="false">
+      <div class="flex items-center justify-between gap-4">
         <div class="min-w-0">
-          <DsHeading :level="2" variant="title">Papan Ranking Sekolah</DsHeading>
-          <DsText variant="body" tone="muted"
-            >Sekolah mana paling hebat? Wakili sekolah anda!</DsText
-          >
+          <h2 class="text-title text-highlighted">Papan Ranking Sekolah</h2>
+          <p class="text-body text-muted">Sekolah mana paling hebat? Wakili sekolah anda!</p>
         </div>
         <DsArt3D name="trophy" size="hero" float class="hidden sm:block" />
-      </DsCluster>
+      </div>
     </UCard>
 
     <div class="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center">
@@ -130,9 +119,9 @@ const podiumOrder = computed(() => {
       testid="battle-load-error"
       @retry="reload()"
     />
-    <DsStack v-else-if="loading && !data" gap="xs" aria-busy="true">
+    <div v-else-if="loading && !data" class="flex flex-col gap-2" aria-busy="true">
       <USkeleton v-for="n in 4" :key="n" class="h-16 w-full" />
-    </DsStack>
+    </div>
     <template v-else>
       <!-- Podium: 2nd, 1st (raised), 3rd -->
       <div
@@ -146,31 +135,27 @@ const podiumOrder = computed(() => {
           :ui="{ body: 'p-2 sm:p-4' }"
           :data-testid="`battle-podium-${p.column}`"
         >
-          <DsStack gap="2xs" align="center" class="text-center">
+          <div class="flex min-w-0 flex-col items-center gap-1 text-center">
             <DsArt3D v-if="p.column === 1" name="trophy" size="md" float />
             <UBadge v-else color="neutral" variant="soft" size="lg">{{ p.column }}</UBadge>
-            <DsText variant="label" as="p" tone="highlighted" wrap="anywhere">
+            <p class="text-label break-words text-highlighted">
               {{ p.name }}
-            </DsText>
-            <DsText variant="caption">{{ p.state }}</DsText>
+            </p>
+            <p class="text-caption text-muted">{{ p.state }}</p>
             <p
               class="tabular text-heading"
               :class="p.column === 1 ? 'text-primary-t' : 'text-highlighted'"
             >
               {{ p.skor }}
             </p>
-            <DsText variant="caption">mata</DsText>
-          </DsStack>
+            <p class="text-caption text-muted">mata</p>
+          </div>
         </UCard>
       </div>
 
       <UCard>
         <h3 class="flex items-center gap-2 text-subheading text-highlighted">
-          <UIcon
-            name="i-ph-list-numbers-duotone"
-            class="size-5 text-primary-t"
-            aria-hidden="true"
-          />
+          <UIcon name="i-ph-list-numbers-duotone" class="size-5 text-primary-t" aria-hidden="true" />
           Senarai Penuh
         </h3>
         <DsEmptyState
@@ -189,30 +174,30 @@ const podiumOrder = computed(() => {
             :to="`/battle/ranking-sekolah/${r.schoolId}`"
             data-testid="battle-school-row"
           >
-            <DsStack gap="none">
-              <DsText variant="caption" as="dt">Battle</DsText>
-              <DsText variant="label" as="dd" tone="highlighted" tabular>{{ r.battles }}</DsText>
-            </DsStack>
-            <DsStack gap="none">
-              <DsText variant="caption" as="dt">M/S/K</DsText>
-              <DsText variant="label" as="dd" tabular data-testid="battle-msk">
+            <div class="flex flex-col">
+              <dt class="text-caption text-muted">Battle</dt>
+              <dd class="tabular text-label text-highlighted">{{ r.battles }}</dd>
+            </div>
+            <div class="flex flex-col">
+              <dt class="text-caption text-muted">M/S/K</dt>
+              <dd class="tabular text-label" data-testid="battle-msk">
                 <span class="text-success">{{ r.menang }}</span
                 >/<span class="text-muted">{{ r.seri }}</span
                 >/<span class="text-error">{{ r.kalah }}</span>
-              </DsText>
-            </DsStack>
-            <DsStack gap="none">
-              <DsText variant="caption" as="dt">Ketepatan</DsText>
-              <DsText variant="label" as="dd" tone="highlighted" tabular>{{ r.ketepatan }}%</DsText>
-            </DsStack>
-            <DsStack gap="none">
-              <DsText variant="caption" as="dt">Pelajar</DsText>
-              <DsText variant="label" as="dd" tone="highlighted" tabular>{{ r.pelajar }}</DsText>
-            </DsStack>
-            <DsStack gap="none">
-              <DsText variant="caption" as="dt">Skor</DsText>
-              <DsText variant="label" as="dd" tone="primary" tabular>{{ r.skor }}</DsText>
-            </DsStack>
+              </dd>
+            </div>
+            <div class="flex flex-col">
+              <dt class="text-caption text-muted">Ketepatan</dt>
+              <dd class="tabular text-label text-highlighted">{{ r.ketepatan }}%</dd>
+            </div>
+            <div class="flex flex-col">
+              <dt class="text-caption text-muted">Pelajar</dt>
+              <dd class="tabular text-label text-highlighted">{{ r.pelajar }}</dd>
+            </div>
+            <div class="flex flex-col">
+              <dt class="text-caption text-muted">Skor</dt>
+              <dd class="tabular text-label text-primary-t">{{ r.skor }}</dd>
+            </div>
           </RankedRow>
         </ul>
       </UCard>

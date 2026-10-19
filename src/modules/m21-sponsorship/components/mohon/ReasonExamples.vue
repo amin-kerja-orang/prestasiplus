@@ -4,13 +4,12 @@
  * leading "• " included, client side only (no request). Each example is a real button (keyboard).
  */
 import { MOHON_COPY, REASON_EXAMPLES } from './mohon-copy'
-import { DsSurface } from '@/ds'
 
 const emit = defineEmits<{ pick: [text: string] }>()
 </script>
 
 <template>
-  <DsSurface level="elevated" radius="chip" padding="sm" :clip="false" data-testid="mohon-examples">
+  <div class="rounded-chip bg-elevated p-3" data-testid="mohon-examples">
     <p class="flex items-center gap-2 text-label text-highlighted">
       <UIcon name="i-ph-lightbulb-duotone" class="size-4 shrink-0 text-heat" aria-hidden="true" />
       {{ MOHON_COPY.examplesTitle }}
@@ -29,5 +28,5 @@ const emit = defineEmits<{ pick: [text: string] }>()
       </li>
     </ul>
     <p class="mt-2 text-caption text-muted italic">{{ MOHON_COPY.examplesNote }}</p>
-  </DsSurface>
+  </div>
 </template>

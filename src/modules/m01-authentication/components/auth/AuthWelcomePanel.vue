@@ -4,7 +4,7 @@
  * of `AuthLayout` (from `xl` only). Mascot bubble, the H2, the paragraph (slot) and three accent
  * tiles (lime, orange, violet) with 3D art instead of the flat emoji.
  */
-import { DsArt3D, DsStack, DsText } from '@/ds'
+import { DsArt3D } from '@/ds'
 import type { Art3DName, DsAccent } from '@/ds'
 import { accentSolid } from '@/ds/accent'
 
@@ -22,7 +22,7 @@ const TILE_LOOK: readonly { accent: DsAccent; art: Art3DName }[] = [
 </script>
 
 <template>
-  <DsStack gap="sm" class="relative">
+  <div class="relative flex flex-col gap-3">
     <div
       class="flex size-16 items-center justify-center rounded-full bg-primary-on/15 text-display"
       aria-hidden="true"
@@ -30,9 +30,9 @@ const TILE_LOOK: readonly { accent: DsAccent; art: Art3DName }[] = [
       <span data-testid="auth-mascot">{{ mascot }}</span>
     </div>
     <h2 class="font-display text-title text-primary-on">{{ heading }}</h2>
-    <DsText variant="body" class="max-w-prose"><slot /></DsText>
-  </DsStack>
-  <DsStack as="ul" gap="sm" class="relative">
+    <p class="max-w-prose text-body"><slot /></p>
+  </div>
+  <ul class="relative flex flex-col gap-3">
     <li
       v-for="(tile, i) in tiles"
       :key="tile.title"
@@ -43,8 +43,8 @@ const TILE_LOOK: readonly { accent: DsAccent; art: Art3DName }[] = [
       <DsArt3D :name="TILE_LOOK[i % TILE_LOOK.length]?.art ?? 'rocket'" size="lg" float />
       <div>
         <div class="font-display text-subheading">{{ tile.title }}</div>
-        <DsText variant="label" as="div">{{ tile.text }}</DsText>
+        <div class="text-label">{{ tile.text }}</div>
       </div>
     </li>
-  </DsStack>
+  </ul>
 </template>

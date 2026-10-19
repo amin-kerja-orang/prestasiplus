@@ -2,7 +2,7 @@
 /** FN-M11-2.3.1: "Trend Aktiviti" card with the line chart (`DsChart`, no gridlines). */
 import { computed } from 'vue'
 
-import { DsChart, DsStack, DsText } from '@/ds'
+import { DsChart } from '@/ds'
 
 import type { TeacherReport } from '../../api/types'
 import { LAPORAN_COPY, rangeAgo } from './copy'
@@ -14,8 +14,8 @@ const chart = computed(() => trendChart(props.trend))
 
 <template>
   <UCard class="min-w-0" data-testid="trend-card">
-    <DsStack>
-      <DsText variant="caption" data-testid="trend-range">{{ rangeAgo(range) }}</DsText>
+    <div class="flex flex-col gap-4">
+      <p class="text-caption text-muted" data-testid="trend-range">{{ rangeAgo(range) }}</p>
       <DsChart
         type="line"
         :title="LAPORAN_COPY.trendTitle"
@@ -25,6 +25,6 @@ const chart = computed(() => trendChart(props.trend))
         :table-label="LAPORAN_COPY.trendTitle"
         data-testid="laporan-trend-chart"
       />
-    </DsStack>
+    </div>
   </UCard>
 </template>

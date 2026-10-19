@@ -5,7 +5,7 @@
  * staff tokens (`DsPrintSheet`), no chrome, with a print button that is hidden on paper. "Cetak" lets the browser
  * save the sheet as a PDF.
  */
-import { DsLoadError, DsPrintSheet, DsStack, DsHeading, DsText } from '@/ds'
+import { DsLoadError, DsPrintSheet } from '@/ds'
 
 import { fetchKirkpatrickChain } from '../api'
 import ChainCards from '../components/kirkpatrick/chain/ChainCards.vue'
@@ -22,12 +22,12 @@ const { data, error, loading, reload } = useKirkpatrickPage((signal) =>
   <main class="p-4 md:p-6" data-testid="kirk-pdf">
     <DsPrintSheet print-label="Cetak / Simpan PDF">
       <div class="flex flex-col gap-4 p-4">
-        <DsStack as="header" gap="2xs">
-          <DsHeading :level="1">Model Kirkpatrick — Rantaian Impak</DsHeading>
-          <DsText variant="body" tone="muted">
+        <header class="flex flex-col gap-1">
+          <h1 class="text-title text-highlighted">Model Kirkpatrick — Rantaian Impak</h1>
+          <p class="text-body text-muted">
             Bukti keberkesanan Prestasi Plus berdasarkan 4 Tahap Kirkpatrick
-          </DsText>
-        </DsStack>
+          </p>
+        </header>
         <DsLoadError v-if="error" testid="kirk-error" @retry="reload" />
         <p
           v-else-if="data === null && loading"

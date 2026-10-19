@@ -7,17 +7,7 @@
 import { computed, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 
-import {
-  DsEmptyState,
-  DsHeroCard,
-  DsLoadError,
-  DsPage,
-  DsStack,
-  DsGrid,
-  DsCluster,
-  DsHeading,
-  DsText,
-} from '@/ds'
+import { DsEmptyState, DsHeroCard, DsLoadError, DsPage } from '@/ds'
 import { useApi } from '@/composables/useApi'
 
 import { shortageLine } from '../domain/blueprint'
@@ -164,14 +154,14 @@ async function generate(): Promise<void> {
     <UTabs v-model="tab" :items="tabs" :content="false" class="w-full" data-testid="bijak-tabs" />
 
     <!-- Kertas Pilihan -->
-    <DsStack
+    <section
       v-if="tab === 'pilihan'"
-      as="section"
+      class="flex flex-col gap-4"
       aria-labelledby="h-pilihan"
       data-testid="tab-pilihan"
     >
-      <DsHeading id="h-pilihan" :level="2">Kertas Pilihan</DsHeading>
-      <DsGrid :cols="{ sm: 2 }" gap="sm">
+      <h2 id="h-pilihan" class="text-heading text-highlighted">Kertas Pilihan</h2>
+      <div class="grid gap-3 sm:grid-cols-2">
         <UFormField label="Subjek">
           <USelect
             v-model="subjectFilter"
@@ -188,16 +178,16 @@ async function generate(): Promise<void> {
             data-testid="filter-kertas"
           />
         </UFormField>
-      </DsGrid>
+      </div>
 
       <DsLoadError
         v-if="papersError"
         message="Senarai kertas tidak dapat dimuatkan."
         @retry="reloadPapers"
       />
-      <DsStack v-else-if="!papers" gap="sm" aria-busy="true">
+      <div v-else-if="!papers" class="flex flex-col gap-3" aria-busy="true">
         <USkeleton v-for="n in 3" :key="n" class="h-24 w-full" />
-      </DsStack>
+      </div>
       <DsEmptyState
         v-else-if="!filtered.length"
         title="Tiada kertas tersedia buat masa ini"
@@ -206,16 +196,21 @@ async function generate(): Promise<void> {
         data-testid="empty-pilihan"
       />
       <template v-else>
-        <DsText variant="caption" role="status" data-testid="paper-count">
+        <p class="text-caption text-muted" role="status" data-testid="paper-count">
           {{ filtered.length }} kertas
-        </DsText>
-        <DsStack v-for="g in grouped" :key="g.code" as="section" gap="sm" :aria-label="g.name">
-          <DsHeading :level="3">{{ g.name }}</DsHeading>
+        </p>
+        <section
+          v-for="g in grouped"
+          :key="g.code"
+          class="flex flex-col gap-3"
+          :aria-label="g.name"
+        >
+          <h3 class="text-subheading text-highlighted">{{ g.name }}</h3>
           <UCard v-for="p in g.papers" :key="p.id" :data-testid="`paper-${p.id}`">
             <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-              <DsStack gap="xs">
+              <div class="flex min-w-0 flex-col gap-2">
                 <h4 class="text-body text-highlighted">{{ p.title }}</h4>
-                <DsCluster gap="xs">
+                <div class="flex flex-wrap items-center gap-2">
                   <UBadge color="neutral" variant="subtle">Kertas {{ p.kertas }}</UBadge>
                   <UBadge color="neutral" variant="subtle">{{ p.marks }} markah</UBadge>
                   <UBadge color="neutral" variant="subtle">{{ p.durationMin }} minit</UBadge>
@@ -228,23 +223,23 @@ async function generate(): Promise<void> {
                     data-testid="paper-status"
                     >{{ statusText(p) }}</UBadge
                   >
-                </DsCluster>
-              </DsStack>
+                </div>
+              </div>
               <UButton :data-testid="`open-${p.id}`" @click="open(p)">{{ actionText(p) }}</UButton>
             </div>
           </UCard>
-        </DsStack>
+        </section>
       </template>
-    </DsStack>
+    </section>
 
     <!-- Jana Kertas -->
-    <DsStack v-else as="section" aria-labelledby="h-jana" data-testid="tab-jana">
-      <DsHeading id="h-jana" :level="2">Jana Kertas</DsHeading>
-      <DsText variant="body" tone="toned">
+    <section v-else class="flex flex-col gap-4" aria-labelledby="h-jana" data-testid="tab-jana">
+      <h2 id="h-jana" class="text-heading text-highlighted">Jana Kertas</h2>
+      <p class="text-body text-toned">
         Pilih subjek dan kertas. Kertas baharu dibina daripada bank soalan mengikut struktur kertas
         sebenar; soalan yang berkongsi rajah sentiasa kekal bersama.
-      </DsText>
-      <DsGrid :cols="{ sm: 2 }" gap="sm">
+      </p>
+      <div class="grid gap-3 sm:grid-cols-2">
         <UFormField label="Subjek">
           <USelect
             v-model="janaSubject"
@@ -261,24 +256,24 @@ async function generate(): Promise<void> {
             data-testid="jana-kertas"
           />
         </UFormField>
-      </DsGrid>
+      </div>
 
       <UCard v-if="contract" data-testid="contract">
-        <DsStack gap="xs">
-          <DsText variant="label" as="p" tone="highlighted">
+        <div class="flex flex-col gap-2">
+          <p class="text-label text-highlighted">
             {{ contract.subjectName }} Kertas {{ contract.kertas }} · {{ contract.code }} ·
             {{ contract.durationMin }} minit
-          </DsText>
+          </p>
           <ul class="flex flex-col gap-1 text-body text-default">
             <li v-for="s in contract.sections" :key="s.label">
               {{ s.label }}: {{ s.take }} soalan
             </li>
           </ul>
-        </DsStack>
+        </div>
       </UCard>
-      <DsText v-if="!usable" variant="body" tone="muted" data-testid="no-contract">
+      <p v-if="!usable" class="text-body text-muted" data-testid="no-contract">
         Belum ada kontrak untuk subjek dan kertas ini
-      </DsText>
+      </p>
 
       <UButton
         size="lg"
@@ -301,11 +296,11 @@ async function generate(): Promise<void> {
         data-testid="shortage"
       >
         <template #description>
-          <DsStack as="ul" gap="2xs">
+          <ul class="flex flex-col gap-1">
             <li v-for="s in shortages" :key="s.section" data-testid="shortage-line">
               {{ shortageLine(s) }}
             </li>
-          </DsStack>
+          </ul>
         </template>
       </UAlert>
       <UAlert
@@ -315,6 +310,6 @@ async function generate(): Promise<void> {
         :title="generateError"
         role="alert"
       />
-    </DsStack>
+    </section>
   </DsPage>
 </template>

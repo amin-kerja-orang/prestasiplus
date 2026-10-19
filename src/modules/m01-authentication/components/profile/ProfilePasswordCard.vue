@@ -11,7 +11,6 @@ import { useFlash } from '@/composables/useFlash'
 
 import { changePassword } from '../../api'
 import { errorLines } from '../../lib/error-lines'
-import { DsCluster, DsStack } from '@/ds'
 
 const emit = defineEmits<{
   saved: [status: string]
@@ -47,7 +46,7 @@ async function submit(): Promise<void> {
 
 <template>
   <UCard>
-    <DsStack as="form" data-testid="password-form" @submit.prevent="submit">
+    <form class="flex flex-col gap-4" data-testid="password-form" @submit.prevent="submit">
       <h2 class="flex items-center gap-2 text-subheading text-highlighted">
         <UIcon name="i-ph-lock-key" class="size-5" aria-hidden="true" />
         Tukar Kata Laluan
@@ -89,7 +88,7 @@ async function submit(): Promise<void> {
         />
       </UFormField>
 
-      <DsCluster gap="none" align="stretch" justify="end" :wrap="false">
+      <div class="flex justify-end">
         <UButton
           type="submit"
           color="primary"
@@ -100,7 +99,7 @@ async function submit(): Promise<void> {
           data-testid="password-submit"
           >Tukar Kata Laluan</UButton
         >
-      </DsCluster>
-    </DsStack>
+      </div>
+    </form>
   </UCard>
 </template>

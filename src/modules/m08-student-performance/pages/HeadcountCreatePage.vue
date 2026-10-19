@@ -9,7 +9,7 @@ import { computed, reactive, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 
 import { isApiError } from '@/api'
-import { DsBackLink, DsLoadError, DsPage, DsPageHeader, DsPanel, DsStack } from '@/ds'
+import { DsBackLink, DsLoadError, DsPage, DsPageHeader, DsPanel } from '@/ds'
 
 import { createHeadcount, fetchHeadcountFormOptions } from '../api/headcount'
 import type { HeadcountMode } from '../api/headcount-types'
@@ -114,15 +114,10 @@ async function submit() {
       </template>
     </DsPageHeader>
 
-    <DsLoadError
-      v-if="isLoadError(error)"
-      :message="LOAD_ERROR"
-      testid="page-error"
-      @retry="reload()"
-    />
+    <DsLoadError v-if="isLoadError(error)" :message="LOAD_ERROR" testid="page-error" @retry="reload()" />
 
     <DsPanel v-else-if="options" class="max-w-3xl">
-      <DsStack as="form" gap="lg" data-testid="create-form" @submit.prevent="submit">
+      <form class="flex min-w-0 flex-col gap-6" data-testid="create-form" @submit.prevent="submit">
         <UAlert
           v-if="hasMessages"
           color="error"
@@ -132,9 +127,9 @@ async function submit() {
           data-testid="form-error"
         >
           <template #description>
-            <DsStack as="ul" gap="2xs">
+            <ul class="flex flex-col gap-1">
               <li v-for="m in messages" :key="m">{{ m }}</li>
-            </DsStack>
+            </ul>
           </template>
         </UAlert>
 
@@ -194,7 +189,7 @@ async function submit() {
           />
         </UFormField>
 
-        <DsStack as="fieldset" gap="lg" data-testid="otr-field">
+        <fieldset class="flex min-w-0 flex-col gap-6" data-testid="otr-field">
           <URadioGroup
             v-model="form.activeOtrs"
             legend="Bilangan OTR"
@@ -215,7 +210,7 @@ async function submit() {
             hint="Boleh ada 1 Auto + 1 Manual untuk kelas + subjek + tahun yang sama."
             data-testid="field-mode"
           />
-        </DsStack>
+        </fieldset>
 
         <UButton
           type="submit"
@@ -226,14 +221,9 @@ async function submit() {
           :loading="submitting"
           data-testid="create-submit"
         />
-      </DsStack>
+      </form>
     </DsPanel>
-    <div
-      v-else-if="!error"
-      class="flex flex-col gap-4 md:gap-6"
-      aria-busy="true"
-      data-testid="page-loading"
-    >
+    <div v-else-if="!error" class="flex flex-col gap-4 md:gap-6" aria-busy="true" data-testid="page-loading">
       <USkeleton class="h-24 w-full" />
       <USkeleton class="h-64 w-full" />
     </div>

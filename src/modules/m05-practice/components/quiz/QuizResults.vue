@@ -8,17 +8,7 @@
 import { computed, onMounted, ref } from 'vue'
 
 import { useFriend } from '@/composables/useFriend'
-import {
-  DsFloatScore,
-  DsFriendAvatar,
-  DsSpeechBubble,
-  DsWinScreen,
-  type WinSticker,
-  DsStack,
-  DsCluster,
-  DsHeading,
-  DsText,
-} from '@/ds'
+import { DsFloatScore, DsFriendAvatar, DsSpeechBubble, DsWinScreen, type WinSticker } from '@/ds'
 
 import { resultMessage, scoreBand } from './quiz-lib'
 import type { QuizAnswerRecord, QuizLabels } from './quiz-types'
@@ -70,18 +60,8 @@ const friendLine = computed(() => {
 const rewards = computed(() =>
   props.gamification
     ? [
-        {
-          id: 'mata',
-          value: props.gamification.pointsEarned || 0,
-          unit: 'Mata',
-          art: 'bolt' as const,
-        },
-        {
-          id: 'koin',
-          value: props.gamification.coinsEarned || 0,
-          unit: 'Koin',
-          art: 'coin' as const,
-        },
+        { id: 'mata', value: props.gamification.pointsEarned || 0, unit: 'Mata', art: 'bolt' as const },
+        { id: 'koin', value: props.gamification.coinsEarned || 0, unit: 'Koin', art: 'coin' as const },
       ]
     : [],
 )
@@ -96,7 +76,7 @@ onMounted(() => win.value?.focus())
 </script>
 
 <template>
-  <DsStack data-testid="quiz-results">
+  <div class="flex flex-col gap-4" data-testid="quiz-results">
     <DsWinScreen
       ref="win"
       title-testid="result-title"
@@ -141,33 +121,29 @@ onMounted(() => win.value?.focus())
     </DsWinScreen>
 
     <UCard>
-      <DsStack gap="sm">
-        <DsHeading :level="2" variant="subheading" data-testid="result-subject">
+      <div class="flex flex-col gap-3">
+        <h2 class="text-subheading text-highlighted" data-testid="result-subject">
           {{ subjectName || labels.resultTitle }}
-        </DsHeading>
-        <DsCluster align="baseline">
-          <DsText variant="title" as="span" tabular data-testid="result-score"
-            >{{ score }}/{{ total }}</DsText
+        </h2>
+        <div class="flex flex-wrap items-baseline gap-3">
+          <span class="tabular text-title text-highlighted" data-testid="result-score"
+            >{{ score }}/{{ total }}</span
           >
           <span
             class="tabular text-heading"
-            :class="
-              band === 'high' ? 'text-success' : band === 'mid' ? 'text-warning' : 'text-error'
-            "
+            :class="band === 'high' ? 'text-success' : band === 'mid' ? 'text-warning' : 'text-error'"
             :data-band="band"
             data-testid="result-percent"
             >{{ percent }}%</span
           >
-        </DsCluster>
+        </div>
         <UProgress
           :model-value="percent"
           :max="100"
           :aria-label="`Peratus betul ${percent}%`"
           data-testid="result-bar"
         />
-        <DsText variant="body" tone="highlighted" data-testid="result-message">{{
-          message
-        }}</DsText>
+        <p class="text-body text-highlighted" data-testid="result-message">{{ message }}</p>
         <p class="flex items-center gap-2 text-body text-muted" data-testid="result-time">
           <UIcon name="i-ph-clock-duotone" class="size-5" aria-hidden="true" />Masa diambil:
           {{ timeText }}
@@ -180,11 +156,11 @@ onMounted(() => win.value?.focus())
           <UIcon name="i-ph-chart-line-up-duotone" class="size-5" aria-hidden="true" />
           <span>{{ score }} soalan salah berjaya diperbetulkan!</span>
         </p>
-      </DsStack>
+      </div>
     </UCard>
 
     <UCard v-if="gamification" data-testid="result-rewards">
-      <DsStack gap="sm" class="relative">
+      <div class="relative flex flex-col gap-3">
         <div
           v-if="bonusFly && (bonusFly.coins > 0 || bonusFly.points > 0)"
           class="absolute top-0 right-0 flex flex-col items-end gap-1"
@@ -193,38 +169,38 @@ onMounted(() => win.value?.focus())
           <DsFloatScore v-if="bonusFly.coins > 0" :text="`+${bonusFly.coins} Syiling`" />
           <DsFloatScore v-if="bonusFly.points > 0" :text="`+${bonusFly.points} Mata`" />
         </div>
-        <DsHeading :level="2" variant="subheading">Ganjaran Anda</DsHeading>
+        <h2 class="text-subheading text-highlighted">Ganjaran Anda</h2>
         <dl class="grid grid-cols-1 gap-3 sm:grid-cols-3">
           <div class="flex flex-col gap-1 rounded-card bg-elevated p-3">
-            <DsText variant="caption" as="dt">Syiling Diperoleh</DsText>
-            <DsText variant="heading" as="dd" tabular data-testid="reward-coins">
+            <dt class="text-caption text-muted">Syiling Diperoleh</dt>
+            <dd class="tabular text-heading text-highlighted" data-testid="reward-coins">
               {{ gamification.coinsEarned || 0 }}
-            </DsText>
+            </dd>
           </div>
           <div class="flex flex-col gap-1 rounded-card bg-elevated p-3">
-            <DsText variant="caption" as="dt">Kombo Semasa</DsText>
-            <DsText variant="heading" as="dd" tabular data-testid="reward-streak">
+            <dt class="text-caption text-muted">Kombo Semasa</dt>
+            <dd class="tabular text-heading text-highlighted" data-testid="reward-streak">
               {{ gamification.streakCount || 0 }} hari
-            </DsText>
+            </dd>
           </div>
           <div class="flex flex-col gap-1 rounded-card bg-elevated p-3">
-            <DsText variant="caption" as="dt">Mata Diperoleh</DsText>
-            <DsText variant="heading" as="dd" tabular data-testid="reward-points">
+            <dt class="text-caption text-muted">Mata Diperoleh</dt>
+            <dd class="tabular text-heading text-highlighted" data-testid="reward-points">
               {{ gamification.pointsEarned || 0 }}
-            </DsText>
+            </dd>
           </div>
         </dl>
-        <DsText variant="body" tone="muted">
+        <p class="text-body text-muted">
           Baki syiling:
           <span class="tabular text-highlighted" data-testid="reward-balance">{{
             gamification.totalBalance || 0
           }}</span>
-        </DsText>
-      </DsStack>
+        </p>
+      </div>
     </UCard>
 
     <UCard data-testid="quiz-review">
-      <DsStack gap="sm">
+      <div class="flex flex-col gap-3">
         <UButton
           color="neutral"
           variant="ghost"
@@ -238,7 +214,7 @@ onMounted(() => win.value?.focus())
           >Semakan Semula Jawapan</UButton
         >
 
-        <DsStack v-show="expanded" gap="sm" data-testid="review-list">
+        <div v-show="expanded" class="flex flex-col gap-3" data-testid="review-list">
           <article
             v-for="(answer, i) in answers"
             :key="answer.questionId"
@@ -251,28 +227,26 @@ onMounted(() => win.value?.focus())
               :class="answer.isCorrect ? 'bg-success-soft' : 'bg-error-soft'"
               aria-hidden="true"
             />
-            <DsCluster align="start" :wrap="false" class="relative">
+            <div class="relative flex items-start gap-3">
               <span
                 class="inline-grid size-8 shrink-0 place-items-center rounded-full text-label font-extrabold text-on-sem"
                 :class="answer.isCorrect ? 'bg-success' : 'bg-error'"
                 >{{ i + 1 }}</span
               >
               <div class="flex min-w-0 flex-1 flex-col gap-1">
-                <DsText variant="body" tone="highlighted" wrap="anywhere">{{
-                  answer.questionText
-                }}</DsText>
-                <DsText variant="body">
+                <p class="text-body break-words text-highlighted">{{ answer.questionText }}</p>
+                <p class="text-body text-default">
                   <span class="text-muted">Jawapan anda:{{ ' ' }}</span>
                   <span class="break-words text-highlighted">{{ answer.selectedLabel }}</span>
                   <span class="sr-only">{{ answer.isCorrect ? ' (betul)' : ' (salah)' }}</span>
-                </DsText>
-                <DsText v-if="!answer.isCorrect" variant="body">
+                </p>
+                <p v-if="!answer.isCorrect" class="text-body text-default">
                   <span class="text-muted">Jawapan betul:{{ ' ' }}</span>
                   <span class="break-words text-highlighted">{{ answer.correctLabel }}</span>
-                </DsText>
-                <DsText v-if="answer.explanation" variant="body">
+                </p>
+                <p v-if="answer.explanation" class="text-body text-default">
                   <span class="text-muted">Penjelasan:</span> {{ answer.explanation }}
-                </DsText>
+                </p>
                 <UButton
                   color="neutral"
                   variant="ghost"
@@ -290,10 +264,10 @@ onMounted(() => win.value?.focus())
                 :class="answer.isCorrect ? 'text-success' : 'text-error'"
                 aria-hidden="true"
               />
-            </DsCluster>
+            </div>
           </article>
-        </DsStack>
-      </DsStack>
+        </div>
+      </div>
     </UCard>
-  </DsStack>
+  </div>
 </template>

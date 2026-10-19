@@ -12,17 +12,7 @@ import { RouterLink, useRouter } from 'vue-router'
 
 import { isApiError } from '@/api'
 import { useApi } from '@/composables'
-import {
-  DsFormField,
-  DsNativeSelect,
-  DsPage,
-  DsPanel,
-  DsLoadError,
-  DsStack,
-  DsGrid,
-  DsCluster,
-  DsText,
-} from '@/ds'
+import { DsFormField, DsNativeSelect, DsPage, DsPanel, DsLoadError } from '@/ds'
 import { diffForHumans } from '@/lib/time'
 
 import { createMock, fetchMocks } from '../api'
@@ -71,7 +61,12 @@ async function generate(): Promise<void> {
       text="Cikgu pakar yg dah bantu pelajar score A+ — tonton video mereka sebelum mula mock."
     />
 
-    <UAlert color="warning" variant="soft" icon="i-ph-warning-duotone" data-testid="mock-warning">
+    <UAlert
+      color="warning"
+      variant="soft"
+      icon="i-ph-warning-duotone"
+      data-testid="mock-warning"
+    >
       <template #description>
         <b>Persediaan sebelum mula:</b> Pastikan masa anda cukup. Setelah klik "Mula", timer akan
         jalan dan tak boleh stop. Kalau pause, score akan jejas.
@@ -79,7 +74,7 @@ async function generate(): Promise<void> {
     </UAlert>
 
     <DsPanel title="Jana Mock SPM" icon="i-ph-exam-duotone" accent="heat">
-      <DsStack as="form" data-testid="mock-form" @submit.prevent="generate">
+      <form class="flex flex-col gap-4" data-testid="mock-form" @submit.prevent="generate">
         <UAlert
           v-if="formError"
           color="error"
@@ -88,7 +83,7 @@ async function generate(): Promise<void> {
           :title="formError"
           data-testid="mock-form-error"
         />
-        <DsGrid :cols="{ base: 1, sm: 2 }" gap="sm">
+        <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
           <DsFormField label="Subjek" native>
             <template #default="{ id }">
               <DsNativeSelect
@@ -117,7 +112,7 @@ async function generate(): Promise<void> {
               </DsNativeSelect>
             </template>
           </DsFormField>
-        </DsGrid>
+        </div>
         <UButton
           type="submit"
           size="lg"
@@ -127,13 +122,13 @@ async function generate(): Promise<void> {
           data-testid="mock-generate"
           >🎯 Jana Mock SPM</UButton
         >
-      </DsStack>
+      </form>
     </DsPanel>
 
     <DsPanel title="📚 Mock Sebelum Ini" data-testid="mock-history">
-      <DsStack v-if="loading && !data" gap="xs" data-testid="mock-skeleton">
+      <div v-if="loading && !data" class="flex flex-col gap-2" data-testid="mock-skeleton">
         <USkeleton v-for="n in 3" :key="n" class="h-16" />
-      </DsStack>
+      </div>
       <DsLoadError
         v-else-if="error"
         :message="LOAD_ERROR"
@@ -141,27 +136,21 @@ async function generate(): Promise<void> {
         retry-testid="mock-retry"
         @retry="reload()"
       />
-      <DsStack v-else as="ul" gap="xs" data-testid="mock-list">
+      <ul v-else class="flex flex-col gap-2" data-testid="mock-list">
         <li v-for="m in mocks" :key="m.id" :data-testid="`mock-row-${String(m.id)}`">
           <UCard variant="subtle" :ui="{ body: 'p-3' }">
-            <DsCluster row-gap="xs">
+            <div class="flex flex-wrap items-center gap-x-3 gap-y-2">
               <div class="min-w-0 basis-full sm:flex-1 sm:basis-auto">
-                <DsText
-                  variant="label"
-                  as="p"
-                  tone="highlighted"
-                  wrap="anywhere"
-                  data-testid="mock-row-title"
-                >
+                <p class="text-label break-words text-highlighted" data-testid="mock-row-title">
                   {{ m.subject }} · Paper {{ m.paperNumber }}
-                </DsText>
-                <DsText variant="caption" data-testid="mock-row-meta">
+                </p>
+                <p class="text-caption text-muted" data-testid="mock-row-meta">
                   {{ diffForHumans(m.createdAt) }} ·
                   <span v-if="m.status === 'in_progress'" class="text-error">Belum submit</span>
                   <template v-else>{{
                     scoreLabel(m.score ?? 0, m.maxScore, m.percent ?? 0)
                   }}</template>
-                </DsText>
+                </p>
               </div>
               <UBadge
                 :color="GRADE_COLOR[m.status === 'in_progress' ? 'pending' : (m.grade ?? 'G')]"
@@ -180,10 +169,10 @@ async function generate(): Promise<void> {
                 data-testid="mock-row-link"
                 >{{ m.status === 'in_progress' ? 'Sambung →' : 'Lihat →' }}</RouterLink
               >
-            </DsCluster>
+            </div>
           </UCard>
         </li>
-      </DsStack>
+      </ul>
     </DsPanel>
   </DsPage>
 </template>

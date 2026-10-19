@@ -7,7 +7,6 @@
  */
 import type { BattleListRow } from '../../api'
 import { battleRelativeTime } from './battle-lib'
-import { DsStack, DsText } from '@/ds'
 
 defineProps<{
   rows: readonly BattleListRow[]
@@ -18,7 +17,7 @@ defineProps<{
 
 <template>
   <div data-testid="battle-recent-scroll">
-    <DsStack as="ul" gap="xs" data-testid="battle-recent-list">
+    <ul class="flex flex-col gap-2" data-testid="battle-recent-list">
       <li
         v-for="row in rows"
         :key="row.uuid"
@@ -38,21 +37,21 @@ defineProps<{
             data-testid="battle-score-a"
             >{{ row.scoreA }}</span
           >
-          <DsText variant="caption" as="span">vs</DsText>
+          <span class="text-caption text-muted">vs</span>
           <span
             class="tabular text-label"
             :class="row.winner === 'B' ? 'text-success' : 'text-muted'"
             data-testid="battle-score-b"
             >{{ row.scoreB }}</span
           >
-          <DsText variant="label" tone="primary" data-testid="battle-player-b">{{
+          <span class="text-label text-primary-t" data-testid="battle-player-b">{{
             row.playerB.name
-          }}</DsText>
+          }}</span>
         </span>
-        <DsText variant="caption" as="span" class="shrink-0" data-testid="battle-time">{{
+        <span class="shrink-0 text-caption text-muted" data-testid="battle-time">{{
           battleRelativeTime(row.createdAt)
-        }}</DsText>
+        }}</span>
       </li>
-    </DsStack>
+    </ul>
   </div>
 </template>

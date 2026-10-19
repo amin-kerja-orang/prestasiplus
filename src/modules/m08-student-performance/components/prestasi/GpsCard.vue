@@ -1,6 +1,6 @@
 <script setup lang="ts">
 /** S1 "📊 GPS Anggaran" (FR-M08-14). A null GPS (no graded headcount entries yet) shows "—" and no badge. */
-import { DsPanel, DsStack, DsHeading, DsText } from '@/ds'
+import { DsPanel } from '@/ds'
 import { computed } from 'vue'
 
 import type { SchoolPerformance } from '../../api/types'
@@ -13,9 +13,9 @@ const style = computed(() => (props.gps.band ? BAND_STYLE[props.gps.band] : null
 
 <template>
   <DsPanel data-testid="gps-card">
-    <DsStack gap="sm" align="center" class="text-center">
-      <DsHeading :level="2" variant="subheading">📊 GPS Anggaran</DsHeading>
-      <DsText variant="caption">Gred Purata Sekolah (lebih rendah = lebih baik)</DsText>
+    <div class="flex flex-col items-center gap-3 text-center">
+      <h2 class="text-subheading text-highlighted">📊 GPS Anggaran</h2>
+      <p class="text-caption text-muted">Gred Purata Sekolah (lebih rendah = lebih baik)</p>
       <p class="flex flex-col items-center">
         <span
           class="tabular text-display"
@@ -23,7 +23,7 @@ const style = computed(() => (props.gps.band ? BAND_STYLE[props.gps.band] : null
           data-testid="gps-value"
           >{{ gps.value === null ? DASH : dec2(gps.value) }}</span
         >
-        <DsText variant="caption" as="span">GPS</DsText>
+        <span class="text-caption text-muted">GPS</span>
       </p>
       <UBadge
         v-if="gps.band && style"
@@ -33,10 +33,10 @@ const style = computed(() => (props.gps.band ? BAND_STYLE[props.gps.band] : null
         :label="gps.band"
         data-testid="gps-band"
       />
-      <DsText variant="body">
+      <p class="text-body text-default">
         Berdasarkan <strong data-testid="gps-entries">{{ gps.entries }}</strong> entri headcount
-      </DsText>
-      <DsText variant="caption">* Anggaran dari markah OTR, bukan SPM sebenar</DsText>
-    </DsStack>
+      </p>
+      <p class="text-caption text-muted">* Anggaran dari markah OTR, bukan SPM sebenar</p>
+    </div>
   </DsPanel>
 </template>

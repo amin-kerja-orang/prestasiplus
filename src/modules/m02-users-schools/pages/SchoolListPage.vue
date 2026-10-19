@@ -26,8 +26,6 @@ import {
   DsStatRow,
   DsStatusBadge,
   type StatItem,
-  DsCluster,
-  DsText,
 } from '@/ds'
 import { formatNumber } from '@/lib/number'
 
@@ -298,18 +296,15 @@ const COLUMNS: TableColumn<SchoolRow>[] = [
       @update:page="goToPage"
     >
       <template #name-cell="{ row }">
-        <DsText
-          variant="body"
-          as="span"
-          tone="highlighted"
-          class="block max-w-72 whitespace-normal"
+        <span
+          class="block max-w-72 text-body whitespace-normal text-highlighted"
           data-testid="school-row"
           :data-school-id="row.original.id"
-          >{{ row.original.name }}</DsText
+          >{{ row.original.name }}</span
         >
       </template>
       <template #code-cell="{ row }">
-        <DsText variant="label" tone="muted" class="text-nowrap">{{ row.original.code }}</DsText>
+        <span class="text-label text-nowrap text-muted">{{ row.original.code }}</span>
       </template>
       <template #type-cell="{ row }">
         <UBadge color="neutral" variant="subtle" :label="row.original.type" />
@@ -318,7 +313,7 @@ const COLUMNS: TableColumn<SchoolRow>[] = [
         <span class="text-nowrap">{{ row.original.state }}</span>
       </template>
       <template #district-cell="{ row }">
-        <DsText variant="label" tone="muted">{{ row.original.district }}</DsText>
+        <span class="text-label text-muted">{{ row.original.district }}</span>
       </template>
       <template #studentCount-cell="{ row }">
         <span :class="row.original.studentCount > 0 ? 'text-highlighted' : 'text-dimmed'">{{
@@ -337,7 +332,7 @@ const COLUMNS: TableColumn<SchoolRow>[] = [
         />
       </template>
       <template #actions-cell="{ row }">
-        <DsCluster gap="xs" justify="end" :wrap="false">
+        <div class="flex items-center justify-end gap-2">
           <UButton
             :to="{ name: SCHOOL_ROUTES.edit, params: { id: row.original.id } }"
             color="neutral"
@@ -367,7 +362,7 @@ const COLUMNS: TableColumn<SchoolRow>[] = [
               />
             </UButton>
           </form>
-        </DsCluster>
+        </div>
       </template>
       <template #empty>
         <DsEmptyState
@@ -378,13 +373,11 @@ const COLUMNS: TableColumn<SchoolRow>[] = [
         />
       </template>
       <template #card="{ row }">
-        <DsText variant="body" tone="highlighted" data-testid="school-row" :data-school-id="row.id">
+        <p class="text-body text-highlighted" data-testid="school-row" :data-school-id="row.id">
           {{ row.name }}
-        </DsText>
-        <DsText variant="label" as="p" tone="muted"
-          >{{ row.code }} · {{ row.type }} · {{ row.state }}</DsText
-        >
-        <DsCluster gap="xs" :wrap="false">
+        </p>
+        <p class="text-label text-muted">{{ row.code }} · {{ row.type }} · {{ row.state }}</p>
+        <div class="flex items-center gap-2">
           <DsStatusBadge :status="row.isActive ? 'active' : 'inactive'" />
           <UButton
             :to="{ name: SCHOOL_ROUTES.edit, params: { id: row.id as number } }"
@@ -393,7 +386,7 @@ const COLUMNS: TableColumn<SchoolRow>[] = [
             icon="i-ph-pencil-simple"
             aria-label="Edit"
           />
-        </DsCluster>
+        </div>
       </template>
     </DsDataTable>
   </DsPage>

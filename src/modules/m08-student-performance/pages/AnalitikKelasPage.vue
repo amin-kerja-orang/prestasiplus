@@ -8,19 +8,7 @@ import { computed } from 'vue'
 import { RouterLink, useRoute, useRouter } from 'vue-router'
 import type { TableColumn } from '@nuxt/ui'
 
-import {
-  DsDataTable,
-  DsEmptyState,
-  DsFilterBar,
-  DsLoadError,
-  DsPage,
-  DsPageHeader,
-  DsStatRow,
-  DsStatusBadge,
-  type DsStatus,
-  DsStack,
-  DsHeading,
-} from '@/ds'
+import { DsDataTable, DsEmptyState, DsFilterBar, DsLoadError, DsPage, DsPageHeader, DsStatRow, DsStatusBadge, type DsStatus } from '@/ds'
 
 import { fetchClassAnalytics } from '../api/class'
 import type { RiskLevel } from '../api/types'
@@ -257,8 +245,8 @@ const cardFields = [
       <template v-else>
         <DsStatRow :items="statItems(summary)" data-testid="stat-cards" :cols="4" prefix="sum" />
 
-        <DsStack as="section" gap="sm" data-testid="list-card">
-          <DsHeading :level="2" variant="subheading">Senarai Pelajar</DsHeading>
+        <section class="flex min-w-0 flex-col gap-3" data-testid="list-card">
+          <h2 class="text-subheading text-highlighted">Senarai Pelajar</h2>
           <DsDataTable
             :data="rows"
             :columns="columns"
@@ -314,15 +302,10 @@ const cardFields = [
               />
             </template>
           </DsDataTable>
-        </DsStack>
+        </section>
       </template>
     </template>
-    <div
-      v-else-if="!error"
-      class="flex flex-col gap-4 md:gap-6"
-      aria-busy="true"
-      data-testid="page-loading"
-    >
+    <div v-else-if="!error" class="flex flex-col gap-4 md:gap-6" aria-busy="true" data-testid="page-loading">
       <USkeleton class="h-24 w-full" />
       <USkeleton class="h-64 w-full" />
     </div>

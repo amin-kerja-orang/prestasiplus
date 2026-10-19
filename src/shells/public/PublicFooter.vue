@@ -11,7 +11,6 @@ import { LOGO_URL } from '@/shells/shared/brand'
 import ShellLink from '@/shells/shared/ShellLink.vue'
 
 import { PUBLIC_COPYRIGHT, PUBLIC_FOOTER_LINKS } from './public-sections'
-import { DsCluster } from '@/ds'
 </script>
 
 <template>
@@ -23,7 +22,7 @@ import { DsCluster } from '@/ds'
         <img :src="LOGO_URL" alt="PRESTASIPLUS" class="h-8 w-auto" />
         <p class="text-sm text-slate-500">{{ PUBLIC_COPYRIGHT }}</p>
       </div>
-      <DsCluster gap="2xs" justify="center">
+      <div class="flex flex-wrap items-center justify-center gap-x-1 gap-y-1">
         <ShellLink
           v-for="link in PUBLIC_FOOTER_LINKS"
           :key="link.label"
@@ -32,7 +31,7 @@ import { DsCluster } from '@/ds'
         >
           {{ link.label }}
         </ShellLink>
-      </DsCluster>
+      </div>
     </div>
   </footer>
 </template>

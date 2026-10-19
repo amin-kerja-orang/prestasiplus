@@ -11,16 +11,7 @@ import { computed, reactive, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 
 import { useApi } from '@/composables'
-import {
-  DsEmptyState,
-  DsFilterBar,
-  DsIconChip,
-  DsLoadError,
-  DsPage,
-  DsGrid,
-  DsCluster,
-  DsText,
-} from '@/ds'
+import { DsEmptyState, DsFilterBar, DsIconChip, DsLoadError, DsPage } from '@/ds'
 
 import { fetchAudioSets } from '../api'
 import type { AudioSetListQuery } from '../api'
@@ -144,16 +135,15 @@ function reset(): void {
 
     <DsLoadError v-if="error" :message="COPY.loadFailed" testid="audio-error" @retry="reload()" />
 
-    <DsGrid
+    <div
       v-else-if="loading && !data"
-      :cols="{ base: 1, sm: 2 }"
-      gap="sm"
+      class="grid grid-cols-1 gap-3 sm:grid-cols-2"
       role="status"
       aria-busy="true"
       data-testid="audio-loading"
     >
       <USkeleton v-for="n in 4" :key="n" class="h-20 w-full" />
-    </DsGrid>
+    </div>
 
     <DsEmptyState
       v-else-if="data && data.data.length === 0"
@@ -162,26 +152,20 @@ function reset(): void {
       data-testid="audio-empty"
     />
 
-    <DsGrid v-else-if="data" :cols="{ base: 1, sm: 2 }" gap="sm" as="ul" data-testid="audio-sets">
+    <ul v-else-if="data" class="grid grid-cols-1 gap-3 sm:grid-cols-2" data-testid="audio-sets">
       <li v-for="set in data.data" :key="set.id" class="min-w-0" data-testid="audio-set">
         <UCard>
-          <DsCluster :wrap="false">
+          <div class="flex items-center gap-3">
             <DsIconChip icon="headphones" size="lg" />
             <div class="min-w-0 grow">
-              <DsText
-                variant="label"
-                as="p"
-                tone="highlighted"
-                wrap="anywhere"
-                data-testid="set-title"
-              >
+              <p class="text-label break-words text-highlighted" data-testid="set-title">
                 {{ set.title }}
-              </DsText>
-              <DsText variant="caption">
+              </p>
+              <p class="text-caption text-muted">
                 <span data-testid="set-level">{{ set.educationLevel.name }}</span>
                 ·
                 <span data-testid="set-subject">{{ set.subject.name }}</span>
-              </DsText>
+              </p>
             </div>
             <UButton
               :to="{ name: AUDIO_KBAT_ROUTES.player, params: { id: set.id } }"
@@ -191,9 +175,9 @@ function reset(): void {
               :aria-label="`Main ${set.title}`"
               data-testid="set-link"
             />
-          </DsCluster>
+          </div>
         </UCard>
       </li>
-    </DsGrid>
+    </ul>
   </DsPage>
 </template>

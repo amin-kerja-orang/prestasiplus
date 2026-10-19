@@ -28,7 +28,7 @@ import {
 } from '../components/solo/solo-lib'
 import { useGameTimers } from '../components/solo/useGameTimers'
 import { playCoins, submitResult, useSoloGame } from '../components/solo/useSoloGame'
-import { DsLoadError, DsStack, DsGrid, DsCluster, DsText } from '@/ds'
+import { DsLoadError } from '@/ds'
 
 /** The fall zone is a 4-lane grid of 14 rows; a tile's row follows its fall progress (no inline style). */
 const COL = ['col-start-1', 'col-start-2', 'col-start-3', 'col-start-4'] as const
@@ -88,13 +88,7 @@ const tiles = computed(() => {
       lane: laneOf(q.id, i, LANES),
       visible: elapsed.value >= startMs,
       col: COL[Math.min(laneOf(q.id, i, LANES), LANES - 1)] ?? COL[0],
-      row:
-        ROW[
-          Math.min(
-            ROW.length - 1,
-            Math.max(0, Math.round(fallProgress(elapsed.value, startMs, fall) * (ROW.length - 1))),
-          )
-        ] ?? ROW[0],
+      row: ROW[Math.min(ROW.length - 1, Math.max(0, Math.round(fallProgress(elapsed.value, startMs, fall) * (ROW.length - 1))))] ?? ROW[0],
     }
   })
 })
@@ -225,10 +219,10 @@ watch(darjah, () => void start(), { immediate: true })
   <div data-testid="solo-tembak-jawapan">
     <DarjahPicker v-if="darjah === null" title="Tembak Jawapan" art="rocket" />
     <GamePanel>
-      <DsStack v-if="loading" gap="sm" aria-busy="true" data-testid="solo-loading">
+      <div v-if="loading" class="flex flex-col gap-3" aria-busy="true" data-testid="solo-loading">
         <USkeleton class="h-16 w-full" />
         <USkeleton class="h-16 w-full" />
-      </DsStack>
+      </div>
       <DsLoadError v-else-if="error" :message="error" @retry="load()" />
 
       <CountdownView
@@ -238,23 +232,19 @@ watch(darjah, () => void start(), { immediate: true })
         hint="Tap jawapan yang betul sebelum jatuh!"
       />
 
-      <DsStack v-if="phase === 'playing' && current" gap="sm">
-        <DsGrid :cols="4" gap="xs" data-testid="solo-hud">
+      <div v-if="phase === 'playing' && current" class="flex flex-col gap-3">
+        <div class="grid grid-cols-4 gap-2" data-testid="solo-hud">
           <UCard :ui="{ body: 'p-3 sm:p-3' }" class="text-center">
-            <DsText variant="caption">Skor</DsText>
-            <DsText variant="heading" tone="primary" tabular data-testid="solo-score">{{
-              score
-            }}</DsText>
+            <p class="text-caption text-muted">Skor</p>
+            <p class="tabular text-heading text-primary-t" data-testid="solo-score">{{ score }}</p>
           </UCard>
           <UCard :ui="{ body: 'p-3 sm:p-3' }" class="text-center">
-            <DsText variant="caption">Level</DsText>
-            <DsText variant="heading" tone="primary" tabular data-testid="solo-level">{{
-              level
-            }}</DsText>
+            <p class="text-caption text-muted">Level</p>
+            <p class="tabular text-heading text-primary-t" data-testid="solo-level">{{ level }}</p>
           </UCard>
           <UCard :ui="{ body: 'p-3 sm:p-3' }" class="text-center">
             <p class="sr-only">Nyawa</p>
-            <DsCluster gap="2xs" justify="center" :wrap="false" data-testid="solo-lives">
+            <div class="flex items-center justify-center gap-1" data-testid="solo-lives">
               <UIcon
                 v-for="n in LIVES"
                 :key="n"
@@ -264,15 +254,15 @@ watch(darjah, () => void start(), { immediate: true })
                 :data-lost="n > lives"
                 data-testid="solo-heart"
               />
-            </DsCluster>
+            </div>
           </UCard>
           <UCard :ui="{ body: 'p-3 sm:p-3' }" class="text-center" data-testid="solo-coins">
-            <DsText variant="heading" tone="warning" tabular>🪙 {{ coinsShown }}</DsText>
+            <p class="tabular text-heading text-warning">🪙 {{ coinsShown }}</p>
           </UCard>
-        </DsGrid>
+        </div>
 
         <UCard class="text-center">
-          <DsText variant="overline" as="p">Soalan {{ index + 1 }}</DsText>
+          <p class="text-overline text-muted">Soalan {{ index + 1 }}</p>
           <p class="mt-1 text-subheading break-words text-highlighted">
             {{ current.question }}
           </p>
@@ -300,18 +290,14 @@ watch(darjah, () => void start(), { immediate: true })
               <span class="line-clamp-3 break-words">{{ tile.text }}</span>
             </UButton>
           </template>
-          <div
-            v-if="banner"
-            class="col-span-4 row-start-6 text-center"
-            data-testid="solo-level-banner"
-          >
+          <div v-if="banner" class="col-span-4 row-start-6 text-center" data-testid="solo-level-banner">
             <UBadge color="warning" variant="solid" size="xl">{{ banner }}</UBadge>
           </div>
           <div class="col-span-4 row-start-14 flex items-end justify-end">
             <UBadge color="error" variant="soft" size="lg">⚠ GARIS MAUT</UBadge>
           </div>
         </div>
-      </DsStack>
+      </div>
 
       <ResultCard
         v-if="phase === 'done'"

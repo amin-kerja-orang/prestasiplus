@@ -22,11 +22,6 @@ import {
   DsStatRow,
   type CardField,
   type StatItem,
-  DsStack,
-  DsGrid,
-  DsCluster,
-  DsText,
-  DsHeading,
 } from '@/ds'
 import { formatNumber } from '@/lib/number'
 
@@ -122,28 +117,28 @@ const kpis = computed<StatItem[]>(() =>
           label: 'Jumlah Soalan',
           value: formatNumber(data.value.total),
           icon: 'stack',
-          accent: 'action',
+    accent: 'action',
         },
         {
           key: 'average',
           label: 'Purata Skor',
           value: formatNumber(data.value.average, { decimals: 1 }),
           icon: 'gauge',
-          accent: 'friend',
+    accent: 'friend',
         },
         {
           key: 'excellent',
           label: 'Cemerlang (76-100)',
           value: formatNumber(data.value.excellentCount),
           icon: 'seal-check',
-          accent: 'win',
+    accent: 'win',
         },
         {
           key: 'action',
           label: 'Perlu Tindakan Aktif (≤ 50)',
           value: formatNumber(data.value.activeActionCount),
           icon: 'warning',
-          accent: 'trial',
+    accent: 'trial',
         },
       ]
     : [],
@@ -186,56 +181,56 @@ const actionCardFields: CardField[] = [
       @retry="reload()"
     />
 
-    <DsStack v-else-if="firstLoad" data-testid="quality-skeleton">
-      <DsGrid :cols="{ base: 2, md: 4 }">
+    <div v-else-if="firstLoad" class="flex flex-col gap-4" data-testid="quality-skeleton">
+      <div class="grid grid-cols-2 gap-4 md:grid-cols-4">
         <USkeleton v-for="n in 4" :key="n" class="h-24 w-full" />
-      </DsGrid>
+      </div>
       <USkeleton class="h-32 w-full" />
       <USkeleton class="h-64 w-full" />
-    </DsStack>
+    </div>
 
     <template v-else-if="data">
       <DsStatRow :items="kpis" :cols="4" prefix="kpi" data-testid="quality-kpis" />
 
-      <DsGrid :cols="{ base: 1, lg: 3 }" data-testid="quality-buckets">
+      <div class="grid grid-cols-1 gap-4 lg:grid-cols-3" data-testid="quality-buckets">
         <DsPanel data-testid="bucket-baik">
-          <DsText variant="overline" as="p">Skor 51-75</DsText>
+          <p class="text-overline text-muted">Skor 51-75</p>
           <p class="tabular my-1 text-display text-highlighted" data-testid="bucket-baik-value">
             {{ formatNumber(data.buckets.baik) }}
           </p>
-          <DsText variant="caption">Perlu semakan ringan atau pengayaan metadata.</DsText>
+          <p class="text-caption text-muted">Perlu semakan ringan atau pengayaan metadata.</p>
         </DsPanel>
         <DsPanel data-testid="bucket-lemah">
-          <DsText variant="overline" as="p">Skor ≤ 50</DsText>
+          <p class="text-overline text-muted">Skor ≤ 50</p>
           <p class="tabular my-1 text-display text-error" data-testid="bucket-lemah-value">
             {{ formatNumber(data.buckets.lemahKritikal) }}
           </p>
-          <DsText variant="caption">Bucket ini patut jadi fokus tindakan segera.</DsText>
+          <p class="text-caption text-muted">Bucket ini patut jadi fokus tindakan segera.</p>
         </DsPanel>
         <DsPanel data-testid="bucket-legacy">
-          <DsText variant="overline" as="p">Legacy Generic</DsText>
+          <p class="text-overline text-muted">Legacy Generic</p>
           <p class="tabular my-1 text-display text-highlighted" data-testid="bucket-legacy-value">
             {{ formatNumber(data.buckets.legacyGeneric) }}
           </p>
-          <DsText variant="caption" wrap="anywhere">
+          <p class="text-caption break-words text-muted">
             Row legacy seperti `tracking_a_feed_20260308`, `spm_tracking_auto_seed_v1`, dan
             `source_type=ai_generated` diasingkan daripada senarai tindakan aktif.
-          </DsText>
+          </p>
         </DsPanel>
-      </DsGrid>
+      </div>
 
       <DsPanel title="Taburan Kualiti" data-testid="quality-distribution">
-        <DsStack as="ul" gap="sm">
+        <ul class="flex flex-col gap-3">
           <li v-for="s in segments" :key="s.key" class="flex flex-col gap-1">
             <div class="flex items-baseline justify-between gap-3 text-body">
               <span class="text-highlighted">{{ s.label }}</span>
-              <DsText variant="label" tone="highlighted" tabular :data-testid="`dist-${s.key}`">{{
+              <span class="tabular text-label text-highlighted" :data-testid="`dist-${s.key}`">{{
                 s.text
-              }}</DsText>
+              }}</span>
             </div>
             <UProgress :model-value="s.pct" :max="100" :color="s.color" size="md" />
           </li>
-        </DsStack>
+        </ul>
       </DsPanel>
 
       <div class="grid grid-cols-1 gap-4 md:gap-6 lg:grid-cols-2">
@@ -261,8 +256,8 @@ const actionCardFields: CardField[] = [
         </div>
 
         <DsPanel title="Mengikut Tingkatan" data-testid="quality-levels">
-          <DsStack>
-            <DsStack v-for="l in data.byLevel" :key="l.levelId" gap="2xs" data-testid="level-row">
+          <div class="flex flex-col gap-4">
+            <div v-for="l in data.byLevel" :key="l.levelId" class="flex flex-col gap-1" data-testid="level-row">
               <div class="flex items-baseline justify-between gap-3 text-body">
                 <span class="text-highlighted">{{ l.name }}</span>
                 <span class="tabular text-muted"
@@ -271,29 +266,23 @@ const actionCardFields: CardField[] = [
                 >
               </div>
               <UProgress :model-value="l.average" :max="100" size="sm" data-testid="level-bar" />
-            </DsStack>
-          </DsStack>
+            </div>
+          </div>
         </DsPanel>
       </div>
 
-      <DsStack gap="sm" data-testid="quality-actions">
-        <DsCluster align="start" justify="between" :wrap="false">
+      <div class="flex flex-col gap-3" data-testid="quality-actions">
+        <div class="flex items-start justify-between gap-3">
           <div class="min-w-0">
-            <DsHeading :level="3">Soalan Untuk Semakan Aktif</DsHeading>
+            <h3 class="text-subheading text-highlighted">Soalan Untuk Semakan Aktif</h3>
             <p class="mt-1 text-caption text-muted">
               Memaparkan hanya soalan skor ≤ 50 selepas menolak sumber generic legacy.
             </p>
           </div>
-          <DsText
-            variant="body"
-            as="span"
-            tone="muted"
-            tabular
-            class="shrink-0 whitespace-nowrap"
-            data-testid="action-count"
-            >{{ formatNumber(data.actionList.length) }} soalan</DsText
+          <span class="tabular shrink-0 text-body whitespace-nowrap text-muted" data-testid="action-count"
+            >{{ formatNumber(data.actionList.length) }} soalan</span
           >
-        </DsCluster>
+        </div>
         <DsDataTable
           :data="actionRows"
           :columns="actionColumns"
@@ -303,17 +292,13 @@ const actionCardFields: CardField[] = [
           :card-fields="actionCardFields"
         >
           <template #questionText-cell="{ row }">
-            <span class="block max-w-64 break-words text-highlighted">{{
-              row.original.questionText
-            }}</span>
+            <span class="block max-w-64 break-words text-highlighted">{{ row.original.questionText }}</span>
           </template>
           <template #source-cell="{ row }">
-            <DsText variant="caption" as="span" class="block max-w-56 break-all">{{
-              row.original.source
-            }}</DsText>
+            <span class="block max-w-56 text-caption break-all text-muted">{{ row.original.source }}</span>
           </template>
           <template #score-cell="{ row }">
-            <DsCluster gap="xs" :wrap="false" class="whitespace-nowrap">
+            <div class="flex items-center gap-2 whitespace-nowrap">
               <UBadge color="warning" variant="subtle" :label="String(row.original.score)" />
               <UButton
                 :to="questionEditPath(row.original.id)"
@@ -325,7 +310,7 @@ const actionCardFields: CardField[] = [
               >
                 Edit
               </UButton>
-            </DsCluster>
+            </div>
           </template>
           <template #card-actions="{ row }">
             <UButton
@@ -338,9 +323,9 @@ const actionCardFields: CardField[] = [
             />
           </template>
         </DsDataTable>
-      </DsStack>
+      </div>
 
-      <DsCluster gap="none" align="stretch" justify="end" :wrap="false">
+      <div class="flex justify-end">
         <UButton
           type="button"
           :loading="running"
@@ -352,7 +337,7 @@ const actionCardFields: CardField[] = [
         >
           {{ running ? 'Sedang audit...' : 'Jalankan Audit Semula' }}
         </UButton>
-      </DsCluster>
+      </div>
     </template>
   </DsPage>
 </template>

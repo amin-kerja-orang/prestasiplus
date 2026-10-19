@@ -14,7 +14,6 @@ import CcTable from './CcTable.vue'
 import { useOpenTab } from './composables'
 import { accuracyTone, studentPath } from './copy'
 import type { DrillRow } from './drill-table'
-import { DsText } from '@/ds'
 
 const props = defineProps<{ badge: { id: number; name: string } }>()
 defineEmits<{ close: [] }>()
@@ -41,26 +40,25 @@ const rows = computed<DrillRow[]>(() =>
     testid="cc-holders-modal"
     @close="$emit('close')"
   >
-    <DsText v-if="error" variant="body" tone="error">Ralat: {{ error.message }}</DsText>
-    <DsText v-else-if="!data" variant="body" tone="muted" data-testid="cc-holders-loading">
+    <p v-if="error" class="text-body text-error">Ralat: {{ error.message }}</p>
+    <p v-else-if="!data" class="text-body text-muted" data-testid="cc-holders-loading">
       Memuatkan senarai pelajar...
-    </DsText>
+    </p>
     <template v-else>
-      <DsText variant="body" tone="muted" data-testid="cc-holders-desc">
+      <p class="text-body text-muted" data-testid="cc-holders-desc">
         {{ data.badge.description }}
-      </DsText>
-      <DsText
+      </p>
+      <p
         v-if="data.holders.length === 0"
-        variant="body"
-        tone="highlighted"
+        class="text-body text-highlighted"
         data-testid="cc-holders-empty"
       >
         Belum ada pelajar yang memiliki lencana ini.
-      </DsText>
+      </p>
       <template v-else>
-        <DsText variant="label" as="p" tone="toned" data-testid="cc-holders-count">
+        <p class="text-label text-toned" data-testid="cc-holders-count">
           {{ data.holders.length }} pelajar memiliki lencana ini
-        </DsText>
+        </p>
         <CcTable
           :headers="HEADERS"
           :rows="rows"

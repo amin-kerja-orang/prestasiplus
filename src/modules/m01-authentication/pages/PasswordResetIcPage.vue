@@ -10,7 +10,7 @@ import { useRouter } from 'vue-router'
 
 import AuthAlert from '../components/auth/AuthAlert.vue'
 
-import { DsFormField, DsStack } from '@/ds'
+import { DsFormField } from '@/ds'
 
 import { resetByIc } from '../api'
 import PasswordCard from '../components/auth/PasswordCard.vue'
@@ -46,9 +46,11 @@ async function submit(): Promise<void> {
     heading="Reset Melalui No IC"
     intro="Masukkan email dan No Kad Pengenalan yang didaftarkan dalam profil anda."
   >
-    <template #icon><UIcon name="i-ph-identification-card-duotone" class="size-10" /></template>
+    <template #icon
+      ><UIcon name="i-ph-identification-card-duotone" class="size-10"
+    /></template>
 
-    <DsStack data-testid="ic-form" as="form" @submit.prevent="submit">
+    <form data-testid="ic-form" class="flex flex-col gap-4" @submit.prevent="submit">
       <AuthAlert :messages="errors" data-testid="ic-alert" />
 
       <DsFormField native for="email" label="Alamat Email">
@@ -111,6 +113,6 @@ async function submit(): Promise<void> {
         class="min-h-11 justify-center"
         >Kembali ke Log Masuk</UButton
       >
-    </DsStack>
+    </form>
   </PasswordCard>
 </template>

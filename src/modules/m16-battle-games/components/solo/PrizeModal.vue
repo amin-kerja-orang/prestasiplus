@@ -4,7 +4,7 @@
  * prize "+n Syiling" and "Ditambah ke akaun kamu!" (DV-M16-23); "Jangan risau, cuba lagi esok!" for
  * a miss. A click on the scrim or "Tutup" closes it.
  */
-import { DsArt3D, DsText } from '@/ds'
+import { DsArt3D } from '@/ds'
 
 defineProps<{ icon: string; label: string; type: string; credited: number }>()
 
@@ -26,24 +26,18 @@ defineEmits<{ close: [] }>()
       >
         <DsArt3D :name="type === 'syiling' ? 'coin' : 'party'" size="hero" float />
         <div class="text-title" aria-hidden="true" data-testid="prize-icon">{{ icon }}</div>
-        <h3
-          class="font-display text-title font-extrabold text-highlighted"
-          data-testid="prize-label"
-        >
+        <h3 class="font-display text-title font-extrabold text-highlighted" data-testid="prize-label">
           {{ label }}
         </h3>
         <template v-if="type === 'syiling' && credited > 0">
-          <p
-            class="tabular font-display text-display font-extrabold text-highlighted"
-            data-testid="prize-amount"
-          >
+          <p class="tabular font-display text-display font-extrabold text-highlighted" data-testid="prize-amount">
             +{{ credited }} Syiling
           </p>
-          <DsText variant="body" tone="muted">Ditambah ke akaun kamu!</DsText>
+          <p class="text-body text-muted">Ditambah ke akaun kamu!</p>
         </template>
-        <DsText v-else-if="type === 'nothing'" variant="body" tone="muted">
+        <p v-else-if="type === 'nothing'" class="text-body text-muted">
           Jangan risau, cuba lagi esok!
-        </DsText>
+        </p>
         <UButton
           type="button"
           size="xl"

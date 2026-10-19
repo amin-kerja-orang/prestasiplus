@@ -6,7 +6,7 @@
 import { computed } from 'vue'
 import type { TableColumn } from '@nuxt/ui'
 
-import { DsDataTable, DsStack, DsHeading, DsText } from '@/ds'
+import { DsDataTable } from '@/ds'
 
 import type { SchoolPerformance } from '../../api/types'
 import { ACHIEVEMENT_COLOR, BAND_STYLE, DASH, bandOf, dec2 } from '../../lib/prestasi/format'
@@ -77,8 +77,8 @@ const cardFields = [
 </script>
 
 <template>
-  <DsStack as="section" gap="sm" data-testid="subject-card">
-    <DsHeading :level="2" variant="subheading">📚 GPS Mengikut Subjek</DsHeading>
+  <section class="flex min-w-0 flex-col gap-3" data-testid="subject-card">
+    <h2 class="text-subheading text-highlighted">📚 GPS Mengikut Subjek</h2>
     <DsDataTable
       :data="rows"
       :columns="columns"
@@ -89,16 +89,16 @@ const cardFields = [
       data-testid="subject-table"
     >
       <template #name-cell="{ row }">
-        <DsText
-          variant="label"
-          tone="highlighted"
-          class="whitespace-nowrap"
+        <span
+          class="text-label whitespace-nowrap text-highlighted"
           :data-testid="`subject-row-${row.original.subjectId}`"
-          >{{ row.original.name }}</DsText
+          >{{ row.original.name }}</span
         >
       </template>
       <template #gpsText-cell="{ row }">
-        <span :class="[bandText(row.original.gps), 'text-label']">{{ row.original.gpsText }}</span>
+        <span :class="[bandText(row.original.gps), 'text-label']">{{
+          row.original.gpsText
+        }}</span>
       </template>
       <template #gradeText-cell="{ row }">
         <span :class="[bandText(row.original.gps), 'text-label']">{{
@@ -126,5 +126,5 @@ const cardFields = [
         />
       </template>
     </DsDataTable>
-  </DsStack>
+  </section>
 </template>

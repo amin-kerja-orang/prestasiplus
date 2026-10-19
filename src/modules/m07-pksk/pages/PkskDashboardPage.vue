@@ -7,17 +7,7 @@
 import { computed, watch } from 'vue'
 
 import { usePageMeta } from '@/composables'
-import {
-  DsIconChip,
-  DsLoadError,
-  DsPage,
-  DsStatTile,
-  DsStack,
-  DsGrid,
-  DsCluster,
-  DsText,
-  DsHeading,
-} from '@/ds'
+import { DsIconChip, DsLoadError, DsPage, DsStatTile } from '@/ds'
 
 import { fetchPkskDashboard } from '../api/pksk'
 import type { PkskLevel } from '../api/types'
@@ -82,14 +72,14 @@ const shortcuts = computed(
 
     <template v-else-if="data">
       <PkskBanner data-testid="readiness">
-        <DsStack gap="xs" align="center" class="text-center">
-          <DsText variant="label" as="p">Skor Kesediaan Anda</DsText>
-          <DsText variant="display" data-testid="score">{{ data.readiness.scorePct }}%</DsText>
+        <div class="flex min-w-0 flex-col items-center gap-2 text-center">
+          <p class="text-label">Skor Kesediaan Anda</p>
+          <p class="text-display" data-testid="score">{{ data.readiness.scorePct }}%</p>
           <UBadge color="neutral" variant="solid" size="xl" data-testid="grade">{{
             data.readiness.grade
           }}</UBadge>
-          <DsText variant="label" as="p">Teruskan usaha anda!</DsText>
-        </DsStack>
+          <p class="text-label">Teruskan usaha anda!</p>
+        </div>
         <div class="grid w-full min-w-0 grid-cols-2 gap-3 text-highlighted">
           <DsStatTile
             :value="data.examCount"
@@ -108,7 +98,7 @@ const shortcuts = computed(
         </div>
       </PkskBanner>
 
-      <DsGrid :cols="{ base: 1, md: 3 }" gap="sm">
+      <div class="grid grid-cols-1 gap-3 md:grid-cols-3">
         <ULink
           v-for="s in shortcuts"
           :key="s.key"
@@ -118,36 +108,42 @@ const shortcuts = computed(
           :data-testid="`shortcut-${s.key}`"
         >
           <UCard>
-            <DsCluster :wrap="false">
+            <div class="flex min-w-0 items-center gap-3">
               <DsIconChip :icon="s.icon" :accent="s.accent" size="lg" />
               <span class="flex min-w-0 flex-col">
-                <DsText variant="subheading" as="span">{{ s.title }}</DsText>
-                <DsText variant="label" tone="muted">{{ s.text }}</DsText>
+                <span class="text-subheading text-highlighted">{{ s.title }}</span>
+                <span class="text-label text-muted">{{ s.text }}</span>
               </span>
-            </DsCluster>
+            </div>
           </UCard>
         </ULink>
-      </DsGrid>
+      </div>
 
-      <DsStack as="section" gap="sm" data-testid="mastery-section">
+      <section class="flex min-w-0 flex-col gap-3" data-testid="mastery-section">
         <h2 class="flex items-center gap-2 text-heading text-highlighted">
-          <DsIconChip icon="chart-line-up" accent="action" size="sm" /> Penguasaan Domain
+          <DsIconChip icon="chart-line-up" accent="action" size="sm" /> Penguasaan
+          Domain
         </h2>
-        <DsGrid :cols="{ base: 1, md: 2, lg: 3 }" gap="sm">
+        <div class="grid grid-cols-1 gap-3 md:grid-cols-2 lg:grid-cols-3">
           <UCard
             v-for="d in data.domains"
             :key="d.code"
             data-testid="domain-card"
             :data-code="d.code"
           >
-            <DsStack gap="sm">
-              <DsCluster :wrap="false">
-                <DsIconChip icon="target" accent="friend" size="lg" data-testid="domain-icon" />
+            <div class="flex min-w-0 flex-col gap-3">
+              <div class="flex min-w-0 items-center gap-3">
+                <DsIconChip
+                  icon="target"
+                  accent="friend"
+                  size="lg"
+                  data-testid="domain-icon"
+                />
                 <div class="min-w-0">
-                  <DsHeading :level="3" wrap="anywhere">{{ d.name }}</DsHeading>
-                  <DsText variant="caption">{{ d.code }}</DsText>
+                  <h3 class="text-subheading break-words text-highlighted">{{ d.name }}</h3>
+                  <p class="text-caption text-muted">{{ d.code }}</p>
                 </div>
-              </DsCluster>
+              </div>
               <div class="flex items-center justify-between text-label">
                 <span class="text-muted">Penguasaan</span>
                 <span class="tabular text-highlighted" data-testid="mastery-pct"
@@ -166,10 +162,10 @@ const shortcuts = computed(
                 data-testid="practice-link"
                 >Latih Sekarang</UButton
               >
-            </DsStack>
+            </div>
           </UCard>
-        </DsGrid>
-      </DsStack>
+        </div>
+      </section>
     </template>
   </DsPage>
 </template>

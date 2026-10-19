@@ -9,7 +9,7 @@ import { computed, reactive, ref, watch } from 'vue'
 
 import { setRouteOutcome } from '@/app/router/outcome'
 import { useApi } from '@/composables'
-import { DsLoadError, DsPage, DsStack, DsCluster, DsHeading, DsText } from '@/ds'
+import { DsLoadError, DsPage } from '@/ds'
 
 import { fetchAudioSet, submitAudioAttempt } from '../api'
 import type { AudioAttemptResult } from '../api'
@@ -78,15 +78,15 @@ async function submit(): Promise<void> {
       @retry="reload()"
     />
 
-    <DsStack
+    <div
       v-else-if="loading && !set"
-      gap="sm"
+      class="flex flex-col gap-3"
       role="status"
       aria-busy="true"
       data-testid="player-loading"
     >
       <USkeleton v-for="n in 3" :key="n" class="h-24 w-full" />
-    </DsStack>
+    </div>
 
     <form
       v-else-if="set"
@@ -94,21 +94,18 @@ async function submit(): Promise<void> {
       data-testid="player-form"
       @submit.prevent="submit"
     >
-      <DsStack as="header" gap="xs">
-        <DsHeading :level="1" wrap="anywhere" data-testid="player-title">
+      <header class="flex flex-col gap-2">
+        <h1 class="text-title break-words text-highlighted" data-testid="player-title">
           {{ set.title }}
-        </DsHeading>
-        <DsText
+        </h1>
+        <p
           v-if="set.instructions"
-          variant="body"
-          tone="muted"
-          wrap="anywhere"
-          class="max-w-prose"
+          class="max-w-prose text-body break-words text-muted"
           data-testid="player-instructions"
         >
           {{ set.instructions }}
-        </DsText>
-      </DsStack>
+        </p>
+      </header>
 
       <AudioKbatSectionCard
         v-for="section in set.sections"
@@ -129,14 +126,14 @@ async function submit(): Promise<void> {
       />
 
       <UCard v-if="result" role="status" data-testid="player-result">
-        <DsText variant="label" as="p" tone="muted">{{ PLAYER_COPY.resultTitle }}</DsText>
-        <DsText variant="heading" tabular>
+        <p class="text-label text-muted">{{ PLAYER_COPY.resultTitle }}</p>
+        <p class="tabular text-heading text-highlighted">
           <span data-testid="result-score">{{ result.score }}</span> /
           <span data-testid="result-total">{{ result.totalMarks }}</span>
-        </DsText>
+        </p>
       </UCard>
 
-      <DsCluster v-else gap="none" align="stretch" justify="end" :wrap="false">
+      <div v-else class="flex justify-end">
         <UButton
           type="submit"
           size="xl"
@@ -146,7 +143,7 @@ async function submit(): Promise<void> {
           data-testid="player-submit"
           >{{ PLAYER_COPY.submit }}</UButton
         >
-      </DsCluster>
+      </div>
     </form>
   </DsPage>
 </template>

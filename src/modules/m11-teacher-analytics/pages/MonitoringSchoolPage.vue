@@ -17,10 +17,6 @@ import {
   DsStatRow,
   type PillItem,
   type StatItem,
-  DsCluster,
-  DsStack,
-  DsHeading,
-  DsText,
 } from '@/ds'
 
 import { fetchSchoolDetail } from '../api'
@@ -113,38 +109,33 @@ const cards = computed<StatItem[]>(() => {
       key: 'students',
       label: 'Pelajar T4/T5',
       value: count(c.students),
-      icon: 'i-ph-graduation-cap',
-      accent: 'friend',
+      icon: 'i-ph-graduation-cap', accent: 'friend',
     },
     {
       key: 'engaged',
       label: 'Pernah Aktif',
       value: count(c.engaged),
-      icon: 'i-ph-check-circle',
-      accent: 'win',
+      icon: 'i-ph-check-circle', accent: 'win',
       valueTone: 'success',
     },
     {
       key: 'answers',
       label: 'Soalan Dijawab',
       value: count(c.answers),
-      icon: 'i-ph-pencil-simple',
-      accent: 'trial',
+      icon: 'i-ph-pencil-simple', accent: 'trial',
     },
     {
       key: 'teachers',
       label: 'Guru Berdaftar',
       value: count(c.teachers),
-      icon: 'i-ph-chalkboard-teacher',
-      accent: 'action',
+      icon: 'i-ph-chalkboard-teacher', accent: 'action',
       valueTone: 'primary',
     },
     {
       key: 'teachersLoggedIn',
       label: 'Guru Pernah Login',
       value: count(c.teachersLoggedIn),
-      icon: 'i-ph-sign-in',
-      accent: 'heat',
+      icon: 'i-ph-sign-in', accent: 'heat',
     },
   ]
 })
@@ -215,17 +206,17 @@ const FLAG_EXCLUDED_TITLE = `${FLAG_REVIEW_TITLE} Dikecualikan dari peratus peng
 
       <template v-if="data">
         <UCard data-testid="mon-school-header">
-          <DsCluster gap="md" justify="between">
-            <DsStack gap="xs">
-              <DsHeading :level="2" variant="title" wrap="anywhere" data-testid="mon-school-name">
+          <div class="flex flex-wrap items-center justify-between gap-4">
+            <div class="flex min-w-0 flex-col gap-2">
+              <h2 class="text-title break-words text-highlighted" data-testid="mon-school-name">
                 {{ data.school.name }}
-              </DsHeading>
+              </h2>
               <div class="flex flex-wrap items-center gap-x-4 gap-y-2 text-body text-muted">
-                <DsCluster as="span" gap="xs" :wrap="false" data-testid="mon-school-code"
-                  ><UIcon name="i-ph-hash" class="size-5" />{{ data.school.code ?? '-' }}</DsCluster
+                <span class="flex items-center gap-2" data-testid="mon-school-code"
+                  ><UIcon name="i-ph-hash" class="size-5" />{{ data.school.code ?? '-' }}</span
                 >
-                <DsCluster as="span" gap="xs" :wrap="false" data-testid="mon-school-state"
-                  ><UIcon name="i-ph-map-pin" class="size-5" />{{ data.school.state }}</DsCluster
+                <span class="flex items-center gap-2" data-testid="mon-school-state"
+                  ><UIcon name="i-ph-map-pin" class="size-5" />{{ data.school.state }}</span
                 >
                 <UBadge
                   v-if="data.subscription"
@@ -237,11 +228,11 @@ const FLAG_EXCLUDED_TITLE = `${FLAG_REVIEW_TITLE} Dikecualikan dari peratus peng
                   data-testid="mon-subscription"
                   :label="`${SUBSCRIPTION_LABEL[data.subscription.status]} — sehingga ${subscriptionDate(data.subscription.endsAt)}`"
                 />
-                <DsText v-else variant="body" as="span" tone="muted" data-testid="mon-subscription"
-                  >Tiada langganan</DsText
+                <span v-else class="text-body text-muted" data-testid="mon-subscription"
+                  >Tiada langganan</span
                 >
               </div>
-            </DsStack>
+            </div>
             <UBadge
               :color="TAHAP[data.tahap].color"
               variant="subtle"
@@ -249,7 +240,7 @@ const FLAG_EXCLUDED_TITLE = `${FLAG_REVIEW_TITLE} Dikecualikan dari peratus peng
               data-testid="mon-school-tahap"
               :label="`${data.tahap} — ${pct(data.pct)}`"
             />
-          </DsCluster>
+          </div>
         </UCard>
 
         <DsStatRow
@@ -270,8 +261,8 @@ const FLAG_EXCLUDED_TITLE = `${FLAG_REVIEW_TITLE} Dikecualikan dari peratus peng
           :ui="{ content: 'pt-6' }"
         >
           <template #pelajar>
-            <DsStack as="section" gap="lg" data-testid="mon-students">
-              <DsCluster gap="md" justify="between">
+            <section class="flex flex-col gap-6" data-testid="mon-students">
+              <div class="flex flex-wrap items-center justify-between gap-4">
                 <h2 class="flex items-center gap-2 text-heading text-highlighted">
                   <UIcon name="i-ph-graduation-cap" class="size-6 text-primary-t" />Senarai Pelajar
                   T4/T5
@@ -284,7 +275,7 @@ const FLAG_EXCLUDED_TITLE = `${FLAG_REVIEW_TITLE} Dikecualikan dari peratus peng
                   data-testid="mon-student-pills"
                   @select="studentFilter = $event"
                 />
-              </DsCluster>
+              </div>
 
               <UInput
                 v-model="search"
@@ -325,9 +316,7 @@ const FLAG_EXCLUDED_TITLE = `${FLAG_REVIEW_TITLE} Dikecualikan dari peratus peng
                   empty-title="Tiada pelajar"
                 >
                   <template #no-cell="{ row }">
-                    <DsText variant="body" as="span" tone="muted" tabular>{{
-                      row.original.rank
-                    }}</DsText>
+                    <span class="tabular text-body text-muted">{{ row.original.rank }}</span>
                   </template>
                   <template #name-cell="{ row }">
                     <div
@@ -353,17 +342,13 @@ const FLAG_EXCLUDED_TITLE = `${FLAG_REVIEW_TITLE} Dikecualikan dari peratus peng
                         data-testid="mon-student-link"
                         >{{ row.original.name }}</RouterLink
                       >
-                      <DsText
+                      <span
                         v-else
-                        variant="label"
-                        tone="muted"
-                        :clamp="2"
+                        class="line-clamp-2 text-label text-muted"
                         data-testid="mon-student-name"
-                        >{{ row.original.name }}</DsText
+                        >{{ row.original.name }}</span
                       >
-                      <DsText variant="body" as="span" tone="muted" truncate>{{
-                        row.original.email
-                      }}</DsText>
+                      <span class="truncate text-body text-muted">{{ row.original.email }}</span>
                       <UBadge
                         v-if="row.original.flag === 'review'"
                         color="warning"
@@ -387,7 +372,7 @@ const FLAG_EXCLUDED_TITLE = `${FLAG_REVIEW_TITLE} Dikecualikan dari peratus peng
                     </div>
                   </template>
                   <template #answers-cell="{ row }">
-                    <DsText variant="label" tabular>{{ count(row.original.answers) }}</DsText>
+                    <span class="tabular text-label">{{ count(row.original.answers) }}</span>
                   </template>
                   <template #status-cell="{ row }">
                     <UBadge
@@ -410,9 +395,9 @@ const FLAG_EXCLUDED_TITLE = `${FLAG_REVIEW_TITLE} Dikecualikan dari peratus peng
                     }}</span>
                   </template>
                   <template #card="{ row }">
-                    <DsStack gap="sm">
-                      <DsCluster align="start" justify="between" :wrap="false">
-                        <DsStack gap="2xs">
+                    <div class="flex flex-col gap-3">
+                      <div class="flex items-start justify-between gap-3">
+                        <div class="flex min-w-0 flex-col gap-1">
                           <RouterLink
                             v-if="
                               (row as StudentRow).answers > 0 ||
@@ -426,13 +411,13 @@ const FLAG_EXCLUDED_TITLE = `${FLAG_REVIEW_TITLE} Dikecualikan dari peratus peng
                             class="line-clamp-2 text-label text-primary-t"
                             >{{ (row as StudentRow).name }}</RouterLink
                           >
-                          <DsText v-else variant="label" tone="muted" :clamp="2">{{
+                          <span v-else class="line-clamp-2 text-label text-muted">{{
                             (row as StudentRow).name
-                          }}</DsText>
-                          <DsText variant="body" as="span" tone="muted" truncate>{{
+                          }}</span>
+                          <span class="truncate text-body text-muted">{{
                             (row as StudentRow).email
-                          }}</DsText>
-                        </DsStack>
+                          }}</span>
+                        </div>
                         <UBadge
                           :color="statusColor((row as StudentRow).status)"
                           variant="subtle"
@@ -440,32 +425,32 @@ const FLAG_EXCLUDED_TITLE = `${FLAG_REVIEW_TITLE} Dikecualikan dari peratus peng
                           class="whitespace-nowrap"
                           :label="statusLabel((row as StudentRow).status)"
                         />
-                      </DsCluster>
+                      </div>
                       <dl class="grid grid-cols-2 gap-3 text-body">
                         <div>
                           <dt class="text-muted">Tingkatan · Soalan</dt>
-                          <DsText variant="label" as="dd" tabular>
+                          <dd class="tabular text-label">
                             {{ (row as StudentRow).level }} ·
                             {{ count((row as StudentRow).answers) }}
-                          </DsText>
+                          </dd>
                         </div>
                         <div>
                           <dt class="text-muted">Login Terakhir</dt>
-                          <DsText variant="label" as="dd" tabular>
+                          <dd class="tabular text-label">
                             {{ dmyHm((row as StudentRow).lastLoginAt) }}
-                          </DsText>
+                          </dd>
                         </div>
                       </dl>
-                    </DsStack>
+                    </div>
                   </template>
                 </DsDataTable>
               </div>
-            </DsStack>
+            </section>
           </template>
 
           <template #guru>
-            <DsStack as="section" gap="lg" data-testid="mon-teachers">
-              <DsCluster gap="md" justify="between">
+            <section class="flex flex-col gap-6" data-testid="mon-teachers">
+              <div class="flex flex-wrap items-center justify-between gap-4">
                 <h2 class="flex items-center gap-2 text-heading text-highlighted">
                   <UIcon name="i-ph-chalkboard-teacher" class="size-6 text-primary-t" />Senarai Guru
                   ({{ count(data.teachers.length) }})
@@ -479,7 +464,7 @@ const FLAG_EXCLUDED_TITLE = `${FLAG_REVIEW_TITLE} Dikecualikan dari peratus peng
                   data-testid="mon-teacher-pills"
                   @select="teacherFilter = $event"
                 />
-              </DsCluster>
+              </div>
 
               <p
                 v-if="data.teachers.length === 0"
@@ -499,22 +484,18 @@ const FLAG_EXCLUDED_TITLE = `${FLAG_REVIEW_TITLE} Dikecualikan dari peratus peng
                   empty-title="Tiada guru"
                 >
                   <template #no-cell="{ row }">
-                    <DsText variant="body" as="span" tone="muted" tabular>{{
-                      row.original.rank
-                    }}</DsText>
+                    <span class="tabular text-body text-muted">{{ row.original.rank }}</span>
                   </template>
                   <template #name-cell="{ row }">
-                    <DsStack gap="2xs" class="min-w-48" data-testid="mon-teacher-row">
+                    <div class="flex min-w-48 flex-col gap-1" data-testid="mon-teacher-row">
                       <RouterLink
                         :to="paths.teacher(schoolId, row.original.id)"
                         class="line-clamp-2 text-label text-primary-t"
                         data-testid="mon-teacher-link"
                         >{{ row.original.name }}</RouterLink
                       >
-                      <DsText variant="body" as="span" tone="muted" truncate>{{
-                        row.original.email
-                      }}</DsText>
-                    </DsStack>
+                      <span class="truncate text-body text-muted">{{ row.original.email }}</span>
+                    </div>
                   </template>
                   <template #status-cell="{ row }">
                     <UBadge
@@ -535,18 +516,18 @@ const FLAG_EXCLUDED_TITLE = `${FLAG_REVIEW_TITLE} Dikecualikan dari peratus peng
                     <span class="tabular whitespace-nowrap">{{ dmy(row.original.createdAt) }}</span>
                   </template>
                   <template #card="{ row }">
-                    <DsStack gap="sm">
-                      <DsCluster align="start" justify="between" :wrap="false">
-                        <DsStack gap="2xs">
+                    <div class="flex flex-col gap-3">
+                      <div class="flex items-start justify-between gap-3">
+                        <div class="flex min-w-0 flex-col gap-1">
                           <RouterLink
                             :to="paths.teacher(schoolId, (row as TeacherRow).id)"
                             class="line-clamp-2 text-label text-primary-t"
                             >{{ (row as TeacherRow).name }}</RouterLink
                           >
-                          <DsText variant="body" as="span" tone="muted" truncate>{{
+                          <span class="truncate text-body text-muted">{{
                             (row as TeacherRow).email
-                          }}</DsText>
-                        </DsStack>
+                          }}</span>
+                        </div>
                         <UBadge
                           :color="(row as TeacherRow).loggedIn ? 'success' : 'neutral'"
                           variant="subtle"
@@ -554,26 +535,26 @@ const FLAG_EXCLUDED_TITLE = `${FLAG_REVIEW_TITLE} Dikecualikan dari peratus peng
                           class="whitespace-nowrap"
                           :label="(row as TeacherRow).loggedIn ? 'Pernah login' : 'Belum login'"
                         />
-                      </DsCluster>
+                      </div>
                       <dl class="grid grid-cols-2 gap-3 text-body">
                         <div>
                           <dt class="text-muted">Login Terakhir</dt>
-                          <DsText variant="label" as="dd" tabular>
+                          <dd class="tabular text-label">
                             {{ dmyHm((row as TeacherRow).lastLoginAt) }}
-                          </DsText>
+                          </dd>
                         </div>
                         <div>
                           <dt class="text-muted">Daftar</dt>
-                          <DsText variant="label" as="dd" tabular>
+                          <dd class="tabular text-label">
                             {{ dmy((row as TeacherRow).createdAt) }}
-                          </DsText>
+                          </dd>
                         </div>
                       </dl>
-                    </DsStack>
+                    </div>
                   </template>
                 </DsDataTable>
               </div>
-            </DsStack>
+            </section>
           </template>
         </UTabs>
       </template>

@@ -7,7 +7,7 @@
 import { computed, ref } from 'vue'
 import type { TableColumn } from '@nuxt/ui'
 
-import { DsDataTable, DsPanel, DsStack } from '@/ds'
+import { DsDataTable, DsPanel } from '@/ds'
 
 import { formatNumber } from '@/lib/number'
 
@@ -68,7 +68,7 @@ const pageSize = ref(20)
     icon="i-ph-chart-line-up"
     data-testid="chain-correlation"
   >
-    <DsStack>
+    <div class="flex flex-col gap-4">
       <DsDataTable
         v-model:page-size="pageSize"
         variant="bare"
@@ -102,6 +102,6 @@ const pageSize = ref(20)
           {{ correlation.r }} ({{ strength }}).
         </template>
       </UAlert>
-    </DsStack>
+    </div>
   </DsPanel>
 </template>

@@ -23,7 +23,7 @@ import {
   type LevelInputBody,
 } from '../api/admin-subjects-levels'
 import type { EducationStage } from '../api/lookups'
-import { DsFormField, DsLoadError, DsNativeSelect, DsStack } from '@/ds'
+import { DsFormField, DsLoadError, DsNativeSelect } from '@/ds'
 import FormActions from '../components/subjects-levels/FormActions.vue'
 import {
   COPY,
@@ -150,11 +150,10 @@ async function submit(): Promise<void> {
       @retry="reload()"
     />
 
-    <DsStack
+    <form
       v-else-if="ready"
       method="post"
-      as="form"
-      gap="lg"
+      class="flex min-w-0 flex-col gap-6"
       data-testid="level-form"
       @submit.prevent="submit"
     >
@@ -196,13 +195,7 @@ async function submit(): Promise<void> {
           />
         </DsFormField>
 
-        <DsFormField
-          v-slot="{ id: fid }"
-          native
-          for="level-name-en"
-          label="Nama Tahap (English)"
-          required
-        >
+        <DsFormField v-slot="{ id: fid }" native for="level-name-en" label="Nama Tahap (English)" required>
           <UInput
             :id="fid"
             v-model="form.nameEn"
@@ -295,6 +288,6 @@ async function submit(): Promise<void> {
         :submit-label="editing ? 'Kemaskini Tahap' : 'Simpan Tahap'"
         :saving="saving"
       />
-    </DsStack>
+    </form>
   </DsPage>
 </template>

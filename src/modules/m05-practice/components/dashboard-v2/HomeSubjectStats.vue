@@ -2,7 +2,7 @@
 /** "Statistik Subjek" (FR-M05-28): bank size, average difficulty (stars) and times used per subject. */
 import { computed, ref } from 'vue'
 
-import { DsIconChip, DsStack, DsGrid, DsCluster, DsHeading, DsText } from '@/ds'
+import { DsIconChip } from '@/ds'
 
 import type { DashboardSubjectStat } from '../../api/types'
 import { starStates } from '../dashboard/dashboard-lib'
@@ -17,17 +17,16 @@ const shown = computed(() => (showAll.value ? props.stats : props.stats.slice(0,
 </script>
 
 <template>
-  <DsStack
-    as="section"
-    gap="sm"
+  <section
+    class="flex flex-col gap-3"
     aria-labelledby="dash-subject-stats-h"
     data-testid="dash-subject-stats"
   >
-    <DsHeading id="dash-subject-stats-h" :level="2">📊 Statistik Subjek</DsHeading>
-    <DsGrid :cols="{ base: 1, sm: 2, xl: 3 }" gap="sm" as="ul">
+    <h2 id="dash-subject-stats-h" class="text-heading text-highlighted">📊 Statistik Subjek</h2>
+    <ul class="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3">
       <li v-for="(s, idx) in shown" :key="s.id" class="min-w-0" data-testid="dash-subject-stat">
         <UCard :ui="{ body: 'flex flex-col gap-3 p-4' }">
-          <DsCluster :wrap="false">
+          <div class="flex items-center gap-3">
             <DsIconChip
               :icon="subjectGlyph(s.icon)"
               :accent="subjectAccent(idx)"
@@ -35,25 +34,18 @@ const shown = computed(() => (showAll.value ? props.stats : props.stats.slice(0,
               data-testid="dash-stat-icon"
             />
             <div class="min-w-0">
-              <DsText variant="subheading" truncate data-testid="dash-stat-name">
+              <p class="truncate text-subheading text-highlighted" data-testid="dash-stat-name">
                 {{ s.name }}
-              </DsText>
-              <DsText variant="caption" data-testid="dash-stat-bank">
+              </p>
+              <p class="text-caption text-muted" data-testid="dash-stat-bank">
                 {{ s.bankCount }} soalan
-              </DsText>
+              </p>
             </div>
-          </DsCluster>
+          </div>
           <div class="flex items-center justify-between gap-2 text-label text-muted">
-            <DsCluster as="span" gap="xs" :wrap="false">
+            <span class="flex items-center gap-2">
               Kesukaran:
-              <DsCluster
-                as="span"
-                gap="none"
-                align="stretch"
-                :wrap="false"
-                data-testid="dash-stat-stars"
-                aria-hidden="true"
-              >
+              <span class="flex" data-testid="dash-stat-stars" aria-hidden="true">
                 <span
                   v-for="(on, i) in starStates(s.avgDifficulty)"
                   :key="i"
@@ -61,15 +53,15 @@ const shown = computed(() => (showAll.value ? props.stats : props.stats.slice(0,
                   :data-on="on ? 'true' : 'false'"
                   >★</span
                 >
-              </DsCluster>
-            </DsCluster>
+              </span>
+            </span>
             <span
               >Digunakan: <span data-testid="dash-stat-used">{{ s.usedCount }}x</span></span
             >
           </div>
         </UCard>
       </li>
-    </DsGrid>
+    </ul>
     <UButton
       v-if="stats.length > 6"
       color="neutral"
@@ -80,5 +72,5 @@ const shown = computed(() => (showAll.value ? props.stats : props.stats.slice(0,
       @click="showAll = !showAll"
       >{{ showAll ? 'Tunjuk kurang' : 'Lihat semua' }}</UButton
     >
-  </DsStack>
+  </section>
 </template>

@@ -7,7 +7,7 @@
  */
 import { computed } from 'vue'
 
-import { DsArt3D, DsStack, DsText, DsHeading } from '@/ds'
+import { DsArt3D } from '@/ds'
 
 import type { AchievementItem } from '../../api'
 import { progressPct } from '../../lib/student/achievements-lib'
@@ -30,7 +30,7 @@ function onClick(): void {
     data-testid="badge-card"
     @click="onClick"
   >
-    <DsStack gap="xs" align="center" class="text-center">
+    <div class="flex flex-col items-center gap-2 text-center">
       <DsArt3D v-if="item.unlocked" name="trophy" size="xl" />
       <span
         v-else
@@ -39,15 +39,13 @@ function onClick(): void {
       >
         <UIcon name="i-ph-lock-simple-duotone" class="size-10" />
       </span>
-      <DsText variant="title" as="span" aria-hidden="true" data-testid="badge-icon">{{
-        item.icon
-      }}</DsText>
-      <DsHeading :level="3" variant="label" wrap="anywhere" data-testid="badge-name">
+      <span class="text-title" aria-hidden="true" data-testid="badge-icon">{{ item.icon }}</span>
+      <h3 class="text-label break-words text-highlighted" data-testid="badge-name">
         {{ item.name }}
-      </DsHeading>
-      <DsText variant="caption" wrap="anywhere" data-testid="badge-desc">
+      </h3>
+      <p class="text-caption break-words text-muted" data-testid="badge-desc">
         {{ item.description }}
-      </DsText>
+      </p>
       <UBadge
         :color="item.unlocked ? 'secondary' : 'neutral'"
         variant="subtle"
@@ -56,10 +54,10 @@ function onClick(): void {
         data-testid="badge-rarity"
         >{{ item.rarityLabel }}</UBadge
       >
-      <DsText variant="caption" tone="toned" data-testid="badge-reward">
+      <p class="text-caption text-toned" data-testid="badge-reward">
         🪙 {{ item.rewardSyiling }} · ⭐ {{ item.rewardXp }} XP
-      </DsText>
-      <DsStack v-if="item.progress" gap="2xs" class="w-full" data-testid="badge-progress">
+      </p>
+      <div v-if="item.progress" class="flex w-full flex-col gap-1" data-testid="badge-progress">
         <UProgress
           :model-value="pct"
           :max="100"
@@ -67,10 +65,10 @@ function onClick(): void {
           :aria-label="`Kemajuan ${item.name}`"
           :data-value="pct"
         />
-        <DsText variant="caption" tabular data-testid="badge-progress-text">
+        <p class="tabular text-caption text-muted" data-testid="badge-progress-text">
           {{ item.progress.value }}/{{ item.progress.target }}
-        </DsText>
-      </DsStack>
-    </DsStack>
+        </p>
+      </div>
+    </div>
   </UCard>
 </template>

@@ -11,18 +11,7 @@ import { computed } from 'vue'
 import { RouterLink } from 'vue-router'
 
 import { useApi } from '@/composables'
-import {
-  DsHeroCard,
-  DsIconChip,
-  DsPage,
-  DsPanel,
-  DsStatTile,
-  type DsAccent,
-  DsLoadError,
-  DsCluster,
-  DsHeading,
-  DsText,
-} from '@/ds'
+import { DsHeroCard, DsIconChip, DsPage, DsPanel, DsStatTile, type DsAccent, DsLoadError } from '@/ds'
 import { formatCount, formatNumber } from '@/lib/number'
 
 import { fetchSpmOverview } from '../api'
@@ -217,10 +206,10 @@ const mine = computed<Tile[]>(() => {
             <UCard class="h-full" :ui="{ body: 'flex h-full flex-col gap-3 p-4' }">
               <DsIconChip :icon="m.icon" :accent="m.accent" size="lg" data-testid="module-icon" />
               <div class="flex min-w-0 flex-1 flex-col gap-1">
-                <DsHeading :level="2" variant="subheading">{{ m.title }}</DsHeading>
-                <DsText variant="body" tone="muted">{{ m.text }}</DsText>
+                <h2 class="text-subheading text-highlighted">{{ m.title }}</h2>
+                <p class="text-body text-muted">{{ m.text }}</p>
               </div>
-              <DsCluster gap="xs" justify="between">
+              <div class="flex flex-wrap items-center justify-between gap-2">
                 <UBadge
                   color="neutral"
                   variant="soft"
@@ -232,7 +221,7 @@ const mine = computed<Tile[]>(() => {
                   Mula
                   <UIcon name="i-ph-arrow-right-bold" class="size-4" aria-hidden="true" />
                 </span>
-              </DsCluster>
+              </div>
             </UCard>
           </RouterLink>
         </li>
@@ -247,7 +236,7 @@ const mine = computed<Tile[]>(() => {
         </div>
       </DsPanel>
 
-      <DsCluster gap="none" align="stretch" justify="center" :wrap="false">
+      <div class="flex justify-center">
         <UButton
           to="/spm/history"
           size="lg"
@@ -257,16 +246,10 @@ const mine = computed<Tile[]>(() => {
           data-testid="spm-history-link"
           >Sejarah Kuiz SPM</UButton
         >
-      </DsCluster>
+      </div>
     </template>
 
-    <DsLoadError
-      v-else-if="error"
-      :message="LOAD_ERROR"
-      testid="spm-error"
-      retry-testid="spm-retry"
-      @retry="reload()"
-    />
+    <DsLoadError v-else-if="error" :message="LOAD_ERROR" testid="spm-error" retry-testid="spm-retry" @retry="reload()" />
     <SkeletonCards v-else :count="4" />
   </DsPage>
 </template>

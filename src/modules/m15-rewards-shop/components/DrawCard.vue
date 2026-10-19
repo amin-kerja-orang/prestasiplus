@@ -5,7 +5,7 @@
  */
 import { computed } from 'vue'
 
-import { DsIconChip, DsRewardChip, DsStack, DsCluster, DsHeading, DsText } from '@/ds'
+import { DsIconChip, DsRewardChip } from '@/ds'
 
 import type { OpenDrawView } from '../api'
 import { DRAW_COPY } from './copy'
@@ -23,21 +23,21 @@ const canBuy = computed(
 
 <template>
   <UCard :data-testid="`draw-${String(draw.id)}`">
-    <DsStack as="article" gap="sm">
-      <DsCluster align="start" :wrap="false">
+    <article class="flex min-w-0 flex-col gap-3">
+      <div class="flex min-w-0 items-start gap-3">
         <DsIconChip icon="ticket" accent="heat" size="lg" />
-        <DsStack gap="2xs">
-          <DsHeading :level="3" variant="heading" wrap="anywhere">{{ draw.title }}</DsHeading>
-          <DsText v-if="draw.description" variant="body" tone="muted" wrap="anywhere">
+        <div class="flex min-w-0 flex-col gap-1">
+          <h3 class="text-heading break-words text-highlighted">{{ draw.title }}</h3>
+          <p v-if="draw.description" class="text-body break-words text-muted">
             {{ draw.description }}
-          </DsText>
-        </DsStack>
-      </DsCluster>
+          </p>
+        </div>
+      </div>
       <dl class="grid gap-2 text-body text-default sm:grid-cols-3">
-        <DsCluster gap="xs" :wrap="false" data-testid="draw-price">
+        <div class="flex items-center gap-2" data-testid="draw-price">
           Harga tiket:
           <DsRewardChip :value="draw.ticketCostSyiling" art="coin" />
-        </DsCluster>
+        </div>
         <div data-testid="draw-owned">
           Tiket anda: {{ draw.ticketsOwned }}/{{ draw.maxTicketsPerStudent }}
         </div>
@@ -45,11 +45,11 @@ const canBuy = computed(
           Tutup: {{ formatDate(draw.closesAt) }}
         </div>
       </dl>
-      <DsCluster v-if="draw.prizePool.length > 0" as="ul" gap="xs" align="stretch">
+      <ul v-if="draw.prizePool.length > 0" class="flex flex-wrap gap-2">
         <li v-for="(p, i) in draw.prizePool" :key="i" data-testid="draw-prize">
           <UBadge color="neutral" variant="soft" size="lg">{{ p.label }} × {{ p.qty }}</UBadge>
         </li>
-      </DsCluster>
+      </ul>
       <UButton
         size="xl"
         class="min-h-14 w-full justify-center sm:w-auto sm:self-start"
@@ -59,6 +59,6 @@ const canBuy = computed(
       >
         {{ DRAW_COPY.buy }}
       </UButton>
-    </DsStack>
+    </article>
   </UCard>
 </template>

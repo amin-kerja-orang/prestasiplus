@@ -8,7 +8,6 @@
 import { computed, ref } from 'vue'
 
 import { GRADE_ITEMS } from './lobby-config'
-import { DsCluster, DsText } from '@/ds'
 
 const props = defineProps<{
   label: string
@@ -39,13 +38,14 @@ function switchToAuto(): void {
 
 <template>
   <UFormField :label="label" data-testid="grade-field">
-    <DsCluster v-if="!manual" gap="xs" :wrap="false" data-testid="grade-auto-row">
+    <div v-if="!manual" class="flex items-center gap-2" data-testid="grade-auto-row">
       <div
         class="flex min-h-12 min-w-0 flex-1 items-center rounded-card bg-primary-soft px-4"
         data-testid="grade-auto"
       >
-        <DsText variant="label" tone="highlighted"
-          >{{ autoGradeName }} <DsText variant="caption" as="span">{{ autoHint }}</DsText></DsText
+        <span class="text-label text-highlighted"
+          >{{ autoGradeName }}
+          <span class="text-caption text-muted">{{ autoHint }}</span></span
         >
       </div>
       <UButton
@@ -58,8 +58,8 @@ function switchToAuto(): void {
       >
         Tukar
       </UButton>
-    </DsCluster>
-    <DsCluster v-else gap="xs">
+    </div>
+    <div v-else class="flex flex-wrap items-center gap-2">
       <USelect
         v-model="model"
         :items="[...GRADE_ITEMS]"
@@ -78,6 +78,6 @@ function switchToAuto(): void {
       >
         ← Guna auto
       </UButton>
-    </DsCluster>
+    </div>
   </UFormField>
 </template>

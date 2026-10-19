@@ -4,7 +4,6 @@ import { computed } from 'vue'
 
 import type { StimulusDef } from '../domain/types'
 import RichText from './RichText.vue'
-import { DsText } from '@/ds'
 
 const props = withDefaults(defineProps<{ stimulus: StimulusDef; thumb?: boolean }>(), {
   thumb: false,
@@ -40,9 +39,9 @@ const tableRows = computed(() =>
     <div v-else-if="stimulus.table" class="max-w-full overflow-x-auto rounded-xl bg-muted p-2">
       <UTable :data="tableRows" :columns="tableColumns" :aria-label="stimulus.alt" />
     </div>
-    <DsText v-if="!thumb" variant="caption" as="figcaption" align="center">
+    <figcaption v-if="!thumb" class="text-center text-caption text-muted">
       <span class="font-semibold text-toned">{{ stimulus.label }}</span>
       <template v-if="stimulus.caption"> · {{ stimulus.caption }}</template>
-    </DsText>
+    </figcaption>
   </figure>
 </template>

@@ -4,7 +4,7 @@
  * "{completed}/{active}" "Selesai" counter, then one card per active challenge in the order served.
  */
 import { useApi } from '@/composables'
-import { DsPage, DsStatTile, DsStack, DsCluster, DsGrid, DsHeading, DsText } from '@/ds'
+import { DsPage, DsStatTile } from '@/ds'
 
 import { fetchGamificationChallenges } from '../api'
 import S13ChallengeCard from '../components/student-a/S13ChallengeCard.vue'
@@ -21,21 +21,26 @@ const challenges = useApi((signal) => fetchGamificationChallenges({ signal }))
       title="Ralat berlaku. Sila cuba lagi."
     />
 
-    <DsStack v-else-if="!challenges.data.value" aria-busy="true" data-testid="s13-loading">
+    <div
+      v-else-if="!challenges.data.value"
+      class="flex flex-col gap-4"
+      aria-busy="true"
+      data-testid="s13-loading"
+    >
       <USkeleton class="h-24 w-full" />
       <USkeleton class="h-32 w-full" />
       <USkeleton class="h-32 w-full" />
-    </DsStack>
+    </div>
 
     <template v-else>
       <UCard data-testid="s13-hero">
-        <DsCluster gap="md" justify="between">
-          <DsStack gap="2xs">
-            <DsHeading :level="1">Cabaran Harian</DsHeading>
-            <DsText variant="body" tone="muted">
+        <div class="flex flex-wrap items-center justify-between gap-4">
+          <div class="flex min-w-0 flex-col gap-1">
+            <h1 class="text-title text-highlighted">Cabaran Harian</h1>
+            <p class="text-body text-muted">
               Selesaikan cabaran untuk dapatkan syiling &amp; XP bonus!
-            </DsText>
-          </DsStack>
+            </p>
+          </div>
           <div data-testid="s13-counter">
             <DsStatTile
               art="fire"
@@ -44,12 +49,12 @@ const challenges = useApi((signal) => fetchGamificationChallenges({ signal }))
               data-testid="s13-counter-value"
             />
           </div>
-        </DsCluster>
+        </div>
       </UCard>
 
-      <DsGrid :cols="1">
+      <div class="grid grid-cols-1 gap-4">
         <S13ChallengeCard v-for="c in challenges.data.value.data" :key="c.id" :challenge="c" />
-      </DsGrid>
+      </div>
     </template>
   </DsPage>
 </template>

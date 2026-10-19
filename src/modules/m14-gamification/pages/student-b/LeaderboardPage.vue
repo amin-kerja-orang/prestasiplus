@@ -8,7 +8,7 @@
 import { computed } from 'vue'
 
 import { useApi } from '@/composables'
-import { DsPage, DsLoadError, DsStack, DsHeading, DsText } from '@/ds'
+import { DsPage, DsLoadError } from '@/ds'
 
 import { fetchGamificationLeaderboard } from '../../api'
 import LeaderboardPodium from '../../components/student-b/LeaderboardPodium.vue'
@@ -23,12 +23,12 @@ const loaded = computed(() => data.value !== null)
 <template>
   <DsPage data-testid="leaderboard-page">
     <UCard data-testid="leaderboard-hero">
-      <DsStack gap="2xs">
-        <DsHeading :level="1">
+      <div class="flex flex-col gap-1">
+        <h1 class="text-title text-highlighted">
           {{ LEADERBOARD_COPY.title }}
-        </DsHeading>
-        <DsText variant="body" tone="muted">{{ LEADERBOARD_COPY.subtitle }}</DsText>
-      </DsStack>
+        </h1>
+        <p class="text-body text-muted">{{ LEADERBOARD_COPY.subtitle }}</p>
+      </div>
     </UCard>
 
     <template v-if="loaded && data">
@@ -43,9 +43,9 @@ const loaded = computed(() => data.value !== null)
       retry-testid="leaderboard-retry"
       @retry="reload()"
     />
-    <DsStack v-else gap="sm" aria-busy="true" data-testid="leaderboard-loading">
+    <div v-else class="flex flex-col gap-3" aria-busy="true" data-testid="leaderboard-loading">
       <USkeleton class="h-28 w-full" />
       <USkeleton class="h-64 w-full" />
-    </DsStack>
+    </div>
   </DsPage>
 </template>

@@ -7,7 +7,7 @@
  */
 import { ref } from 'vue'
 
-import { DsFileField, DsStack, DsCluster, DsText } from '@/ds'
+import { DsFileField } from '@/ds'
 
 import {
   dismissDiagram,
@@ -68,9 +68,7 @@ async function dismiss(): Promise<void> {
       <div class="min-w-0 flex-1">
         <div class="flex flex-wrap items-center gap-x-2 gap-y-1 text-caption">
           <span class="tabular text-muted">#{{ item.id }}</span>
-          <DsText v-if="item.subject" variant="label" tone="primary">{{
-            item.subject.name
-          }}</DsText>
+          <span v-if="item.subject" class="text-label text-primary-t">{{ item.subject.name }}</span>
           <span class="text-muted">oleh {{ item.createdBy.name ?? '—' }}</span>
         </div>
         <p
@@ -86,8 +84,8 @@ async function dismiss(): Promise<void> {
         </p>
       </div>
 
-      <DsStack gap="xs" class="sm:w-72 sm:shrink-0">
-        <DsCluster method="post" as="form" gap="xs" :wrap="false" @submit.prevent="upload">
+      <div class="flex flex-col gap-2 sm:w-72 sm:shrink-0">
+        <form method="post" class="flex items-center gap-2" @submit.prevent="upload">
           <DsFileField
             v-model="file"
             name="image"
@@ -119,10 +117,10 @@ async function dismiss(): Promise<void> {
             class="size-11 shrink-0 justify-center"
             data-testid="diagram-upload"
           />
-        </DsCluster>
-        <DsText v-if="imageError" variant="caption" tone="error" data-testid="diagram-file-error">
+        </form>
+        <p v-if="imageError" class="text-caption text-error" data-testid="diagram-file-error">
           {{ imageError }}
-        </DsText>
+        </p>
         <div>
           <UButton
             type="button"
@@ -137,7 +135,7 @@ async function dismiss(): Promise<void> {
             Dismiss
           </UButton>
         </div>
-      </DsStack>
+      </div>
     </article>
   </UCard>
 </template>

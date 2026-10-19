@@ -26,9 +26,6 @@ import {
   DsPanel,
   DsPillNav,
   type PillItem,
-  DsStack,
-  DsCluster,
-  DsText,
 } from '@/ds'
 import { formatNumber } from '@/lib/number'
 
@@ -212,9 +209,14 @@ const columns: TableColumn<Row>[] = [
     <DsLoadError v-if="error" :message="LOAD_ERROR" testid="ranking-error" @retry="reload()" />
 
     <!-- Loading -->
-    <DsStack v-else-if="firstLoad" gap="xs" aria-busy="true" data-testid="ranking-loading">
+    <div
+      v-else-if="firstLoad"
+      class="flex flex-col gap-2"
+      aria-busy="true"
+      data-testid="ranking-loading"
+    >
       <USkeleton v-for="n in 3" :key="n" class="h-12 w-full" />
-    </DsStack>
+    </div>
 
     <!-- Empty -->
     <div v-else-if="rows.length === 0" data-testid="ranking-empty">
@@ -232,7 +234,7 @@ const columns: TableColumn<Row>[] = [
     </div>
 
     <!-- List -->
-    <DsStack v-else gap="sm" data-testid="ranking-list">
+    <div v-else class="flex min-w-0 flex-col gap-3" data-testid="ranking-list">
       <DsDataTable
         :data="tableRows"
         :columns="columns"
@@ -249,7 +251,7 @@ const columns: TableColumn<Row>[] = [
               variant="solid"
               :label="MEDALS[row.original.rank]?.emoji"
             />
-            <DsText v-else variant="label" tone="muted">{{ row.original.rank }}</DsText>
+            <span v-else class="text-label text-muted">{{ row.original.rank }}</span>
           </span>
         </template>
         <template #name-cell="{ row }">
@@ -265,9 +267,9 @@ const columns: TableColumn<Row>[] = [
           >
         </template>
         <template #correct-cell="{ row }">
-          <DsText variant="label" tone="highlighted" data-testid="ranking-betul">{{
+          <span class="text-label text-highlighted" data-testid="ranking-betul">{{
             formatNumber(row.original.correct)
-          }}</DsText>
+          }}</span>
         </template>
         <template #accuracy-cell="{ row }">
           <span
@@ -278,27 +280,25 @@ const columns: TableColumn<Row>[] = [
           >
         </template>
         <template #card="{ row }">
-          <DsCluster :wrap="false">
+          <div class="flex min-w-0 items-center gap-3">
             <UBadge
               :color="MEDALS[row.rank] ? 'primary' : 'neutral'"
               :variant="MEDALS[row.rank] ? 'solid' : 'subtle'"
               :label="MEDALS[row.rank]?.emoji ?? String(row.rank)"
             />
             <DsIdentity :name="row.name" :sub="row.schoolName" />
-          </DsCluster>
+          </div>
           <dl class="grid grid-cols-3 gap-x-3">
             <div>
-              <DsText variant="caption" as="dt">Tahap</DsText>
-              <DsText variant="label" as="dd" tabular>L{{ row.tahap }}</DsText>
+              <dt class="text-caption text-muted">Tahap</dt>
+              <dd class="tabular text-label">L{{ row.tahap }}</dd>
             </div>
             <div>
-              <DsText variant="caption" as="dt">Betul</DsText>
-              <DsText variant="label" as="dd" tone="highlighted" tabular>{{
-                formatNumber(row.correct)
-              }}</DsText>
+              <dt class="text-caption text-muted">Betul</dt>
+              <dd class="tabular text-label text-highlighted">{{ formatNumber(row.correct) }}</dd>
             </div>
             <div>
-              <DsText variant="caption" as="dt">Tepat</DsText>
+              <dt class="text-caption text-muted">Tepat</dt>
               <dd
                 class="tabular text-label"
                 :class="row.accuracy >= 50 ? 'text-success' : 'text-error'"
@@ -309,9 +309,9 @@ const columns: TableColumn<Row>[] = [
           </dl>
         </template>
       </DsDataTable>
-      <DsText v-if="footer" variant="caption" align="center" data-testid="ranking-footer">
+      <p v-if="footer" class="text-center text-caption text-muted" data-testid="ranking-footer">
         Menunjukkan {{ rows.length }} dari {{ footer.total }} pelajar
-      </DsText>
-    </DsStack>
+      </p>
+    </div>
   </DsPage>
 </template>

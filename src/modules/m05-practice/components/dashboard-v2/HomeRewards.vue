@@ -3,7 +3,7 @@
 import { computed } from 'vue'
 import { useRouter } from 'vue-router'
 
-import { DsHeroCard, DsStatTile, DsStack, DsGrid } from '@/ds'
+import { DsHeroCard, DsStatTile } from '@/ds'
 
 import type { Dashboard } from '../../api/types'
 import { COUNT_RULES, QUEST_TOTAL, questPct } from '../dashboard/dashboard-lib'
@@ -21,8 +21,8 @@ const subtitle = computed(() => `${props.data.questsCompleted} daripada ${QUEST_
 </script>
 
 <template>
-  <DsStack>
-    <DsGrid :cols="3" gap="sm" as="ul" aria-label="Ganjaran awak" data-testid="dash-rewards">
+  <div class="flex flex-col gap-4">
+    <ul class="grid grid-cols-3 gap-3" aria-label="Ganjaran awak" data-testid="dash-rewards">
       <li class="min-w-0">
         <DsStatTile
           :value="streak"
@@ -37,7 +37,7 @@ const subtitle = computed(() => `${props.data.questsCompleted} daripada ${QUEST_
       <li class="min-w-0">
         <DsStatTile :value="points" unit="mata" art="bolt" data-testid="dash-reward-points" />
       </li>
-    </DsGrid>
+    </ul>
     <DsHeroCard
       overline="Sambung latihan"
       title="Teruskan Latih Tubi"
@@ -49,5 +49,5 @@ const subtitle = computed(() => `${props.data.questsCompleted} daripada ${QUEST_
       data-testid="dash-continue"
       @cta="router.push('/practice')"
     />
-  </DsStack>
+  </div>
 </template>

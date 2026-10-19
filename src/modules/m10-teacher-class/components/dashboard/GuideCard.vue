@@ -2,7 +2,7 @@
 /** FN-M10-2.1.1: dismissible "Mula Di Sini" guide and its pill (FR-M10-08). */
 import { ref } from 'vue'
 
-import { DsIconChip, DsPanel, DsCluster, DsStack, DsHeading, DsText } from '@/ds'
+import { DsIconChip, DsPanel } from '@/ds'
 
 import { DASH_COPY } from './copy'
 import { readGuideHidden, writeGuideHidden } from './lib'
@@ -28,13 +28,13 @@ function set(value: boolean): void {
       >{{ DASH_COPY.showGuide }}</UButton
     >
     <DsPanel v-else data-testid="guide-card">
-      <DsCluster align="start" justify="between" :wrap="false">
-        <DsCluster :wrap="false">
+      <div class="flex items-start justify-between gap-3">
+        <div class="flex min-w-0 items-center gap-3">
           <DsIconChip icon="rocket-launch" />
-          <DsHeading :level="2" variant="subheading" data-testid="guide-title">
+          <h2 class="text-subheading text-highlighted" data-testid="guide-title">
             {{ DASH_COPY.guideTitle }}
-          </DsHeading>
-        </DsCluster>
+          </h2>
+        </div>
         <UButton
           type="button"
           color="neutral"
@@ -45,7 +45,7 @@ function set(value: boolean): void {
           data-testid="guide-close"
           @click="set(true)"
         />
-      </DsCluster>
+      </div>
       <p class="mt-1 text-body text-muted">{{ DASH_COPY.guideIntro }}</p>
       <ol class="mt-4 grid grid-cols-1 gap-3 md:grid-cols-3">
         <li
@@ -55,14 +55,14 @@ function set(value: boolean): void {
           data-testid="guide-step"
         >
           <DsPanel tone="inset" class="h-full"
-            ><DsStack gap="2xs" align="start">
+            ><div class="flex min-w-0 flex-col items-start gap-1">
               <UBadge color="primary" variant="subtle">{{ i + 1 }}</UBadge>
-              <DsText variant="label" as="p" tone="highlighted">{{ s.title }}</DsText>
-              <DsText variant="body" tone="muted">{{ s.text }}</DsText>
+              <p class="text-label text-highlighted">{{ s.title }}</p>
+              <p class="text-body text-muted">{{ s.text }}</p>
               <UButton :to="s.to" variant="link" class="px-0" data-testid="guide-link">{{
                 s.link
               }}</UButton>
-            </DsStack></DsPanel
+            </div></DsPanel
           >
         </li>
       </ol>

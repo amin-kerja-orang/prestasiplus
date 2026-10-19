@@ -13,7 +13,7 @@ import { useRoute, useRouter } from 'vue-router'
 
 import { useApi, useFlash } from '@/composables'
 import { DsEmptyState, DsPage, DsPageHeader, DsPanel, useConfirm } from '@/ds'
-import { DsFormField, DsLoadError, DsNativeSelect, DsStack } from '@/ds'
+import { DsFormField, DsLoadError, DsNativeSelect } from '@/ds'
 
 import {
   createSubtopic,
@@ -244,7 +244,7 @@ provide(TREE_ACTIONS, actions)
       <template v-else-if="showTree && tree">
         <CurriculumStatCards :tree="tree" />
 
-        <DsStack data-testid="curriculum-tree">
+        <div class="flex flex-col gap-4" data-testid="curriculum-tree">
           <DsPanel v-if="tree.chapters.length === 0" padding="none" data-testid="tree-empty">
             <div class="p-6">
               <DsEmptyState title="Tiada bab dijumpai untuk subjek dan tahap ini." icon="tray">
@@ -263,7 +263,7 @@ provide(TREE_ACTIONS, actions)
           <template v-else>
             <ChapterBlock v-for="c in tree.chapters" :key="c.id" :chapter="c" />
           </template>
-        </DsStack>
+        </div>
       </template>
     </template>
   </DsPage>

@@ -12,7 +12,7 @@
 import { isApiError } from '@/api'
 import { setRouteOutcome } from '@/app/router'
 import { alertNative, confirmNative, useApi } from '@/composables'
-import { DsArt3D, DsPage, DsQuizOption, DsStack, DsGrid, DsCluster, DsText } from '@/ds'
+import { DsArt3D, DsPage, DsQuizOption } from '@/ds'
 import { clock } from '@/lib/time/clock'
 import { computed, nextTick, onBeforeUnmount, ref, shallowRef, watch } from 'vue'
 import { useRoute } from 'vue-router'
@@ -177,10 +177,10 @@ function optionState(id: number): 'idle' | 'selected' | 'correct' | 'wrong' | 'd
 
 <template>
   <DsPage data-testid="battle-arena">
-    <DsStack v-if="!view && !error" aria-busy="true">
+    <div v-if="!view && !error" class="flex flex-col gap-4" aria-busy="true">
       <USkeleton class="h-24 w-full" />
       <USkeleton class="h-48 w-full" />
-    </DsStack>
+    </div>
     <UAlert
       v-else-if="error && !notFound"
       color="error"
@@ -196,37 +196,31 @@ function optionState(id: number): 'idle' | 'selected' | 'correct' | 'wrong' | 'd
         title="Maaf, berlaku ralat. Sila cuba semula."
       />
       <!-- Players and scores -->
-      <DsGrid :cols="2" gap="sm" data-testid="battle-arena-players">
+      <div class="grid grid-cols-2 gap-3" data-testid="battle-arena-players">
         <UCard
           v-for="side in ['A', 'B'] as const"
           :key="side"
           :ui="{ body: 'p-3 sm:p-3' }"
           :data-testid="`battle-arena-player-${side}`"
         >
-          <DsStack gap="2xs" align="center" class="text-center">
+          <div class="flex flex-col items-center gap-1 text-center">
             <UBadge v-if="side === you" color="primary" variant="soft" size="sm">Anda</UBadge>
-            <DsText variant="label" as="p" tone="highlighted" truncate class="max-w-full">{{
-              view.players[side].name
-            }}</DsText>
-            <DsText variant="caption" truncate class="max-w-full">{{
-              view.players[side].school
-            }}</DsText>
+            <p class="max-w-full truncate text-label text-highlighted">{{ view.players[side].name }}</p>
+            <p class="max-w-full truncate text-caption text-muted">{{ view.players[side].school }}</p>
             <p class="mt-2 text-overline text-muted">Skor</p>
-            <DsText
-              variant="title"
-              tone="primary"
-              tabular
+            <p
+              class="tabular text-title text-primary-t"
               :data-testid="`battle-arena-score-${side}`"
             >
               {{ scores[side] }}
-            </DsText>
-          </DsStack>
+            </p>
+          </div>
         </UCard>
-      </DsGrid>
+      </div>
 
       <!-- Playing -->
       <UCard v-if="active && question" data-testid="battle-arena-question">
-        <DsStack gap="sm">
+        <div class="flex flex-col gap-3">
           <div class="flex items-center justify-between text-label text-toned">
             <span data-testid="battle-arena-progress">Soalan {{ index }}/{{ view.total }}</span>
             <span class="tabular" data-testid="battle-arena-seconds">{{ remaining }}s</span>
@@ -238,10 +232,10 @@ function optionState(id: number): 'idle' | 'selected' | 'correct' | 'wrong' | 'd
             :aria-label="`Masa ${remaining} saat`"
             data-testid="battle-arena-bar"
           />
-          <DsText variant="heading" wrap="anywhere" data-testid="battle-arena-text">
+          <p class="text-heading break-words text-highlighted" data-testid="battle-arena-text">
             {{ question.text }}
-          </DsText>
-          <DsGrid :cols="1" gap="xs">
+          </p>
+          <div class="grid grid-cols-1 gap-2">
             <DsQuizOption
               v-for="(o, i) in question.options"
               :key="o.id"
@@ -251,7 +245,7 @@ function optionState(id: number): 'idle' | 'selected' | 'correct' | 'wrong' | 'd
               @select="submit(o.id)"
               >{{ o.text }}</DsQuizOption
             >
-          </DsGrid>
+          </div>
           <p
             v-if="feedback"
             class="text-center text-label"
@@ -263,7 +257,7 @@ function optionState(id: number): 'idle' | 'selected' | 'correct' | 'wrong' | 'd
               Lawan: {{ feedback.opponent.correct ? 'betul' : 'salah' }}
             </span>
           </p>
-          <DsCluster gap="none" align="stretch" justify="end" :wrap="false">
+          <div class="flex justify-end">
             <UButton
               color="neutral"
               variant="soft"
@@ -275,27 +269,25 @@ function optionState(id: number): 'idle' | 'selected' | 'correct' | 'wrong' | 'd
             >
               Tamatkan
             </UButton>
-          </DsCluster>
-        </DsStack>
+          </div>
+        </div>
       </UCard>
 
       <!-- Result -->
       <UCard v-else-if="result" data-testid="battle-arena-result">
-        <DsStack gap="sm" align="center" class="text-center">
+        <div class="flex flex-col items-center gap-3 text-center">
           <DsArt3D :name="title === 'Menang' ? 'trophy' : 'fire'" size="hero" float />
           <h2
             class="text-display"
-            :class="
-              title === 'Menang' ? 'text-success' : title === 'Kalah' ? 'text-error' : 'text-toned'
-            "
+            :class="title === 'Menang' ? 'text-success' : title === 'Kalah' ? 'text-error' : 'text-toned'"
             data-testid="battle-arena-title"
           >
             {{ title }}
           </h2>
-          <DsText variant="heading" tabular data-testid="battle-arena-final">
+          <p class="tabular text-heading text-highlighted" data-testid="battle-arena-final">
             {{ result.scoreA }} vs {{ result.scoreB }}
-          </DsText>
-          <DsCluster align="stretch" justify="center">
+          </p>
+          <div class="flex flex-wrap justify-center gap-3">
             <UButton
               to="/battle"
               size="xl"
@@ -313,8 +305,8 @@ function optionState(id: number): 'idle' | 'selected' | 'correct' | 'wrong' | 'd
               data-testid="battle-arena-history"
               >Sejarah Battle</UButton
             >
-          </DsCluster>
-        </DsStack>
+          </div>
+        </div>
       </UCard>
     </template>
   </DsPage>

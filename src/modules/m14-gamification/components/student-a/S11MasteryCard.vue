@@ -1,6 +1,6 @@
 <script setup lang="ts">
 /** S11 "Tahap Penguasaan Subjek" (FN-M14-2.1.8; FR-M14-20): read-only M05 mastery rows. */
-import { DsIconChip, DsStack, DsGrid, DsCluster, DsText } from '@/ds'
+import { DsIconChip } from '@/ds'
 
 import type { DashboardMastery } from '../../api'
 import { gamClampPct, gamStageLabel, gamTrimNumber } from '../../lib/student/s11-format'
@@ -14,11 +14,11 @@ const isActive = (r: DashboardMastery) => gamStageLabel(r.stage) === 'Aktif'
 
 <template>
   <UCard class="min-w-0" data-testid="s11-mastery">
-    <DsStack gap="sm">
+    <div class="flex flex-col gap-3">
       <h2 class="flex items-center gap-2 font-display text-subheading font-bold text-highlighted">
         <DsIconChip icon="stack" accent="win" size="sm" />Tahap Penguasaan Subjek
       </h2>
-      <DsGrid :cols="{ base: 1, md: 2 }" gap="xs" as="ul">
+      <ul class="grid grid-cols-1 gap-2 md:grid-cols-2">
         <li
           v-for="(r, i) in rows"
           :key="`${r.subjectName}-${i}`"
@@ -31,9 +31,9 @@ const isActive = (r: DashboardMastery) => gamStageLabel(r.stage) === 'Aktif'
             size="sm"
           />
           <div class="flex min-w-0 flex-1 flex-col gap-1">
-            <DsCluster gap="xs" justify="between" :wrap="false">
-              <DsText variant="label" tone="highlighted" truncate
-                >L{{ r.level }} · {{ r.subjectName }}</DsText
+            <div class="flex items-center justify-between gap-2">
+              <span class="min-w-0 truncate text-label text-highlighted"
+                >L{{ r.level }} · {{ r.subjectName }}</span
               >
               <UBadge
                 :color="isActive(r) ? 'primary' : 'warning'"
@@ -42,7 +42,7 @@ const isActive = (r: DashboardMastery) => gamStageLabel(r.stage) === 'Aktif'
                 class="shrink-0"
                 >{{ gamStageLabel(r.stage) }}</UBadge
               >
-            </DsCluster>
+            </div>
             <UProgress
               :model-value="barPct(r)"
               :max="100"
@@ -50,9 +50,7 @@ const isActive = (r: DashboardMastery) => gamStageLabel(r.stage) === 'Aktif'
               :color="isActive(r) ? 'primary' : 'warning'"
               :aria-label="`Penguasaan ${r.subjectName}`"
             />
-            <div
-              class="flex flex-wrap items-center justify-between gap-x-2 text-caption text-muted"
-            >
+            <div class="flex flex-wrap items-center justify-between gap-x-2 text-caption text-muted">
               <span data-testid="s11-mastery-correct"
                 >{{ r.correct }} betul<template v-if="r.nextTarget !== null">
                   / {{ r.nextTarget }}</template
@@ -66,7 +64,7 @@ const isActive = (r: DashboardMastery) => gamStageLabel(r.stage) === 'Aktif'
             </div>
           </div>
         </li>
-      </DsGrid>
-    </DsStack>
+      </ul>
+    </div>
   </UCard>
 </template>

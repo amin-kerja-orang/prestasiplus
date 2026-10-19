@@ -6,7 +6,6 @@
  * non-parent, accepting, linked, error) is supplied by the page.
  */
 import { useThemeMode } from '@/theme/color-mode'
-import { DsSurface, DsStack, DsCluster, DsText } from '@/ds'
 
 defineProps<{
   initials: string
@@ -26,7 +25,7 @@ useThemeMode('learner')
     class="flex min-h-dvh flex-col items-center justify-center bg-muted px-3 py-6 sm:px-4"
     data-testid="invite-valid"
   >
-    <DsStack gap="xs" class="w-full max-w-lg">
+    <div class="flex w-full max-w-lg flex-col gap-2">
       <UButton
         to="/"
         variant="link"
@@ -37,9 +36,9 @@ useThemeMode('learner')
         >PRESTASIPLUS</UButton
       >
 
-      <DsSurface radius="sheet" shadow="lift" padding="none">
+      <div class="overflow-hidden rounded-sheet bg-default shadow-lift">
         <div class="bg-gradient-primary px-5 py-6 text-primary-on sm:px-6">
-          <DsCluster gap="md" :wrap="false">
+          <div class="flex items-center gap-4">
             <span
               class="flex size-16 shrink-0 items-center justify-center rounded-chip bg-primary-on/15 font-display text-heading"
               data-testid="invite-initials"
@@ -54,7 +53,7 @@ useThemeMode('learner')
                 {{ heading }}
               </h1>
             </div>
-          </DsCluster>
+          </div>
           <p
             v-if="schoolName"
             class="mt-3 flex items-center gap-2 text-label"
@@ -67,11 +66,11 @@ useThemeMode('learner')
         <div class="flex flex-col gap-4 p-5 sm:p-6">
           <slot />
         </div>
-      </DsSurface>
+      </div>
 
-      <DsText variant="label" as="p" tone="muted" align="center" data-testid="invite-caption">
+      <p class="text-center text-label text-muted" data-testid="invite-caption">
         Pautan jemputan ini dikongsi oleh {{ studentName }} melalui PRESTASIPLUS.
-      </DsText>
-    </DsStack>
+      </p>
+    </div>
   </main>
 </template>

@@ -7,7 +7,7 @@
 import { reactive, watch } from 'vue'
 import type { RouteLocationRaw } from 'vue-router'
 
-import { DsFormBar, DsFormField, DsFormSection, DsStack, DsText } from '@/ds'
+import { DsFormBar, DsFormField, DsFormSection } from '@/ds'
 
 import { orNull } from '../../lib/curriculum-paths'
 
@@ -54,15 +54,11 @@ function onSubmit(): void {
     isActive: form.isActive,
   })
 }
+
 </script>
 
 <template>
-  <form
-    method="post"
-    class="flex min-w-0 flex-col gap-4 md:gap-6"
-    data-testid="topic-form"
-    @submit.prevent="onSubmit"
-  >
+  <form method="post" class="flex min-w-0 flex-col gap-4 md:gap-6" data-testid="topic-form" @submit.prevent="onSubmit">
     <DsFormSection title="Maklumat Topik" icon="i-ph-bookmark-simple">
       <DsFormField
         v-slot="{ id }"
@@ -143,7 +139,7 @@ function onSubmit(): void {
         />
       </DsFormField>
 
-      <DsStack v-if="mode === 'edit'" gap="xs">
+      <div v-if="mode === 'edit'" class="flex min-w-0 flex-col gap-2">
         <UCheckbox
           v-model="form.isActive"
           name="is_active"
@@ -151,10 +147,10 @@ function onSubmit(): void {
           label="Aktif"
           data-testid="topic-active"
         />
-        <DsText variant="caption">
+        <p class="text-caption text-muted">
           Nyahtanda jika topik ini tidak mahu dipaparkan buat masa ini
-        </DsText>
-      </DsStack>
+        </p>
+      </div>
     </DsFormSection>
 
     <DsFormBar

@@ -10,7 +10,7 @@
  */
 import { onMounted, ref } from 'vue'
 
-import { DsIconChip, DsLiveBadge, DsPanel, DsText } from '@/ds'
+import { DsIconChip, DsLiveBadge, DsPanel } from '@/ds'
 
 import { fetchActiveTournaments, type TournamentActive } from '../../api'
 
@@ -38,35 +38,27 @@ onMounted(async () => {
           size="lg"
         />
         <span class="flex min-w-0 flex-1 flex-col">
-          <DsText variant="label" tone="highlighted" wrap="anywhere">{{ t.title }}</DsText>
-          <DsText
+          <span class="text-label break-words text-highlighted">{{ t.title }}</span>
+          <span
             v-if="t.live_match"
-            variant="caption"
-            as="span"
-            tone="error"
-            wrap="anywhere"
+            class="text-caption break-words text-error"
             data-testid="tournament-banner-line"
           >
             LIVE: {{ t.live_match.school_a }} vs {{ t.live_match.school_b }}
-          </DsText>
-          <DsText
+          </span>
+          <span
             v-else-if="t.status === 'registration'"
-            variant="caption"
-            as="span"
+            class="text-caption text-muted"
             data-testid="tournament-banner-line"
           >
             Pendaftaran dibuka
-          </DsText>
-          <DsText v-else variant="caption" as="span" data-testid="tournament-banner-line">
+          </span>
+          <span v-else class="text-caption text-muted" data-testid="tournament-banner-line">
             Sedang berlangsung
-          </DsText>
+          </span>
         </span>
         <DsLiveBadge v-if="t.live_match" label="MAIN" class="shrink-0" />
-        <UBadge
-          v-else-if="t.status === 'registration'"
-          color="primary"
-          variant="solid"
-          class="shrink-0"
+        <UBadge v-else-if="t.status === 'registration'" color="primary" variant="solid" class="shrink-0"
           >DAFTAR</UBadge
         >
       </DsPanel>

@@ -23,7 +23,7 @@ import {
   updateSubject,
   type SubjectInputBody,
 } from '../api/admin-subjects-levels'
-import { DsFormField, DsLoadError, DsStack, DsCluster, DsGrid, DsText } from '@/ds'
+import { DsFormField, DsLoadError } from '@/ds'
 import FormActions from '../components/subjects-levels/FormActions.vue'
 import { COPY, SUBJECTS_LIST_PATH, errorLines, isNotFoundError } from '../lib/subjects-levels'
 
@@ -174,11 +174,10 @@ function toggleLevel(id: number, checked: boolean | 'indeterminate'): void {
       @retry="retryLoad()"
     />
 
-    <DsStack
+    <form
       v-else-if="ready"
       method="post"
-      as="form"
-      gap="lg"
+      class="flex min-w-0 flex-col gap-6"
       data-testid="subject-form"
       @submit.prevent="submit"
     >
@@ -220,13 +219,7 @@ function toggleLevel(id: number, checked: boolean | 'indeterminate'): void {
           />
         </DsFormField>
 
-        <DsFormField
-          v-slot="{ id: fid }"
-          native
-          for="subject-name-en"
-          label="Nama Subjek (English)"
-          required
-        >
+        <DsFormField v-slot="{ id: fid }" native for="subject-name-en" label="Nama Subjek (English)" required>
           <UInput
             :id="fid"
             v-model="form.nameEn"
@@ -295,7 +288,7 @@ function toggleLevel(id: number, checked: boolean | 'indeterminate'): void {
             class="w-full"
             data-testid="subject-icon-input"
           />
-          <DsText variant="caption">
+          <p class="text-caption text-muted">
             Lihat ikon di
             <ULink
               :href="FONT_AWESOME_URL"
@@ -305,11 +298,11 @@ function toggleLevel(id: number, checked: boolean | 'indeterminate'): void {
               data-testid="subject-icon-link"
               >Font Awesome</ULink
             >
-          </DsText>
+          </p>
         </DsFormField>
 
         <DsFormField v-slot="{ id: fid }" native for="subject-color" label="Warna Tema">
-          <DsCluster :wrap="false">
+          <div class="flex items-center gap-3">
             <UInput
               :id="fid"
               v-model="form.color"
@@ -327,7 +320,7 @@ function toggleLevel(id: number, checked: boolean | 'indeterminate'): void {
               class="min-w-0 flex-1"
               data-testid="subject-color-text"
             />
-          </DsCluster>
+          </div>
         </DsFormField>
 
         <div class="min-w-0 md:col-span-2">
@@ -350,18 +343,14 @@ function toggleLevel(id: number, checked: boolean | 'indeterminate'): void {
       >
         <fieldset class="min-w-0 md:col-span-2">
           <legend class="sr-only">Tahap Pendidikan Berkaitan</legend>
-          <DsGrid
-            :cols="{ base: 1, md: 2 }"
-            gap="xs"
-            class="max-h-80 overflow-y-auto"
+          <div
+            class="grid max-h-80 grid-cols-1 gap-2 overflow-y-auto md:grid-cols-2"
             data-testid="subject-levels-box"
           >
-            <DsCluster
+            <div
               v-for="level in levels?.data ?? []"
               :key="level.id"
-              gap="none"
-              :wrap="false"
-              class="min-h-11"
+              class="flex min-h-11 items-center"
             >
               <UCheckbox
                 :model-value="form.educationLevelIds.includes(level.id)"
@@ -371,8 +360,8 @@ function toggleLevel(id: number, checked: boolean | 'indeterminate'): void {
                 data-testid="subject-level-option"
                 @update:model-value="toggleLevel(level.id, $event)"
               />
-            </DsCluster>
-          </DsGrid>
+            </div>
+          </div>
         </fieldset>
       </DsFormSection>
 
@@ -381,6 +370,6 @@ function toggleLevel(id: number, checked: boolean | 'indeterminate'): void {
         :submit-label="editing ? 'Kemaskini Subjek' : 'Simpan Subjek'"
         :saving="saving"
       />
-    </DsStack>
+    </form>
   </DsPage>
 </template>

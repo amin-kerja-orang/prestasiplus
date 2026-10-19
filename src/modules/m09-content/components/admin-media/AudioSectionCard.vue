@@ -6,7 +6,7 @@
  */
 import { computed } from 'vue'
 
-import { DsFileField, DsFormField, DsFormSection, DsText } from '@/ds'
+import { DsFileField, DsFormField, DsFormSection } from '@/ds'
 
 import { AUDIO_ACCEPT, type SectionState } from '../../lib/admin-media/audio'
 
@@ -54,9 +54,9 @@ const audio = computed<File | null>({
             label="Pilih fail"
             data-testid="section-audio"
           />
-          <DsText variant="caption" as="span" truncate data-testid="section-audio-name">
+          <span class="min-w-0 truncate text-caption text-muted" data-testid="section-audio-name">
             {{ section.audio ? section.audio.name : 'Tiada fail dipilih' }}
-          </DsText>
+          </span>
         </template>
       </DsFormField>
       <div class="sm:col-span-2">

@@ -15,15 +15,7 @@ import { nextTick, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 
 import { useApi, useFlash } from '@/composables'
-import {
-  DsFormBar,
-  DsFormField,
-  DsFormSection,
-  DsNativeSelect,
-  DsPage,
-  DsStack,
-  DsText,
-} from '@/ds'
+import { DsFormBar, DsFormField, DsFormSection, DsNativeSelect, DsPage } from '@/ds'
 
 import {
   fetchTeacherClassrooms,
@@ -115,11 +107,9 @@ async function submit(): Promise<void> {
       </template>
     </UAlert>
 
-    <DsStack
+    <form
       method="post"
-      as="form"
-      gap="lg"
-      class="w-full"
+      class="flex w-full min-w-0 flex-col gap-6"
       data-testid="comp-form"
       @submit.prevent="submit"
     >
@@ -133,9 +123,9 @@ async function submit(): Promise<void> {
           data-testid="comp-alert"
         >
           <template #description>
-            <DsStack gap="2xs">
+            <div class="flex flex-col gap-1">
               <p v-for="m in errors" :key="m">{{ m }}</p>
-            </DsStack>
+            </div>
           </template>
         </UAlert>
       </div>
@@ -169,15 +159,13 @@ async function submit(): Promise<void> {
               {{ c.name }} ({{ c.classCode }})
             </option>
           </DsNativeSelect>
-          <DsText
+          <p
             v-if="teacherId !== '' && classes.length === 0"
-            variant="label"
-            as="p"
-            tone="muted"
+            class="text-label text-muted"
             data-testid="comp-no-class"
           >
             Guru ini tiada kelas aktif.
-          </DsText>
+          </p>
         </DsFormField>
 
         <DsFormField native for="comp-expiry" label="Tarikh tamat pakej">
@@ -201,12 +189,12 @@ async function submit(): Promise<void> {
       >
         <div class="sm:col-span-2">
           <DsFormField native for="comp-students" label="Senarai pelajar">
-            <DsText variant="label" as="p" tone="muted" data-testid="comp-help">
+            <p class="text-label text-muted" data-testid="comp-help">
               Satu pelajar setiap baris, format:
               <code class="bg-elevated text-default">NAMA, NOKP</code>
               (cth:
               <code class="bg-elevated text-default">MUHAMMAD FULAN BIN FULAN, 090101101234</code>)
-            </DsText>
+            </p>
             <UTextarea
               id="comp-students"
               v-model="students"
@@ -228,6 +216,6 @@ async function submit(): Promise<void> {
         submit-icon="i-ph-user-plus"
         :saving="submitting"
       />
-    </DsStack>
+    </form>
   </DsPage>
 </template>

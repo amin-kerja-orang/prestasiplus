@@ -9,7 +9,7 @@ import { computed, watch } from 'vue'
 import { useRoute } from 'vue-router'
 
 import { setRouteOutcome } from '@/app/router'
-import { DsBackLink, DsLoadError, DsPage, DsCluster } from '@/ds'
+import { DsBackLink, DsLoadError, DsPage } from '@/ds'
 
 import { fetchHeadcountSummary } from '../api/headcount'
 import { isLoadError, useRouteData, LOAD_ERROR } from '../lib/prestasi/load'
@@ -35,15 +35,10 @@ watch(
 
 <template>
   <DsPage data-testid="headcount-shell-page">
-    <DsLoadError
-      v-if="isLoadError(error)"
-      :message="LOAD_ERROR"
-      testid="page-error"
-      @retry="reload()"
-    />
+    <DsLoadError v-if="isLoadError(error)" :message="LOAD_ERROR" testid="page-error" @retry="reload()" />
 
-    <DsCluster v-else-if="data" :wrap="false">
+    <div v-else-if="data" class="flex items-center gap-3">
       <DsBackLink :to="`/headcount/${String(id)}`" label="Kembali" data-testid="back-link" />
-    </DsCluster>
+    </div>
   </DsPage>
 </template>

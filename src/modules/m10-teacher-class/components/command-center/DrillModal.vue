@@ -7,7 +7,7 @@
 import { computed } from 'vue'
 
 import { useApi } from '@/composables'
-import { DsStatRow, DsText } from '@/ds'
+import { DsStatRow } from '@/ds'
 
 import { fetchCommandCenterDrill } from '../../api/command-center'
 import type { CcDrillType } from '../../api/command-center-types'
@@ -52,29 +52,16 @@ const errorText = computed(() => (error.value ? `Ralat: ${error.value.message}` 
 
 <template>
   <CcDialog :title="title" testid="cc-drill-modal" wide @close="$emit('close')">
-    <DsText v-if="error" variant="body" tone="error" data-testid="cc-drill-error">{{
-      errorText
-    }}</DsText>
-    <DsText v-else-if="!data" variant="body" tone="muted" data-testid="cc-drill-loading">
+    <p v-if="error" class="text-body text-error" data-testid="cc-drill-error">{{ errorText }}</p>
+    <p v-else-if="!data" class="text-body text-muted" data-testid="cc-drill-loading">
       {{ S2_COPY.loadingBody }}
-    </DsText>
+    </p>
     <template v-else>
       <template v-if="extra">
-        <DsText
-          v-if="data.vsLabel"
-          variant="label"
-          as="p"
-          tone="toned"
-          data-testid="cc-drill-vs-label"
-        >
+        <p v-if="data.vsLabel" class="text-label text-toned" data-testid="cc-drill-vs-label">
           {{ data.vsLabel }}
-        </DsText>
-        <DsStatRow
-          :items="statItems(vsCards)"
-          prefix="cc-modal-card"
-          :cols="4"
-          data-testid="cc-modal-cards"
-        />
+        </p>
+        <DsStatRow :items="statItems(vsCards)" prefix="cc-modal-card" :cols="4" data-testid="cc-modal-cards" />
       </template>
       <CcTable
         v-if="table && table.rows.length"
@@ -85,9 +72,9 @@ const errorText = computed(() => (error.value ? `Ralat: ${error.value.message}` 
         :caption="title"
         @open="openTab(studentPath($event))"
       />
-      <DsText v-else-if="!extra" variant="body" tone="highlighted" data-testid="cc-drill-empty">
+      <p v-else-if="!extra" class="text-body text-highlighted" data-testid="cc-drill-empty">
         {{ S2_COPY.noData }}
-      </DsText>
+      </p>
     </template>
   </CcDialog>
 </template>

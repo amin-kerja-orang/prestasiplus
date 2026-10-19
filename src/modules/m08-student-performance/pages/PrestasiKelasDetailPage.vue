@@ -8,21 +8,7 @@ import { computed, watchEffect } from 'vue'
 import { RouterLink, useRoute, useRouter } from 'vue-router'
 import type { TableColumn } from '@nuxt/ui'
 
-import {
-  DsBackLink,
-  DsChart,
-  DsDataTable,
-  DsEmptyState,
-  DsLoadError,
-  DsPage,
-  DsPageHeader,
-  DsPanel,
-  DsStatRow,
-  DsStack,
-  DsGrid,
-  DsHeading,
-  DsText,
-} from '@/ds'
+import { DsBackLink, DsChart, DsDataTable, DsEmptyState, DsLoadError, DsPage, DsPageHeader, DsPanel, DsStatRow } from '@/ds'
 import { usePageMeta } from '@/composables/usePageMeta'
 import { formatNumber } from '@/lib/number'
 import { diffForHumans } from '@/lib/time'
@@ -151,19 +137,13 @@ const cardFields = [
 
     <template v-else-if="data">
       <DsPageHeader
-        :show-title="true"
-        :title="data.class.name"
+        :show-title="true" :title="data.class.name"
         :subtitle="subtitle"
         title-testid="class-name"
         subtitle-testid="class-sub"
       >
         <template #breadcrumb>
-          <DsBackLink
-            to="/prestasi/kelas"
-            label="Kembali ke senarai kelas"
-            title="Kembali ke senarai kelas"
-            data-testid="back-link"
-          />
+          <DsBackLink to="/prestasi/kelas" label="Kembali ke senarai kelas" title="Kembali ke senarai kelas" data-testid="back-link" />
         </template>
         <template #subtitle>
           {{ subtitle }} · Kod: <b class="tabular text-primary-t">{{ data.class.joinCode }}</b>
@@ -187,14 +167,14 @@ const cardFields = [
 
       <div class="grid grid-cols-1 gap-4 md:gap-6 lg:grid-cols-3">
         <DsPanel class="min-w-0 lg:col-span-1" data-testid="attention">
-          <DsStack gap="sm">
-            <DsHeading :level="2" variant="subheading">
+          <div class="flex flex-col gap-3">
+            <h2 class="text-subheading text-highlighted">
               ⚠️ Perlu Perhatian
-              <DsText variant="label" tone="error" data-testid="attention-count"
-                >({{ data.attention.length }})</DsText
+              <span class="text-label text-error" data-testid="attention-count"
+                >({{ data.attention.length }})</span
               >
-            </DsHeading>
-            <DsStack gap="xs" class="max-h-96 overflow-y-auto" data-testid="attention-list">
+            </h2>
+            <div class="flex max-h-96 flex-col gap-2 overflow-y-auto" data-testid="attention-list">
               <RouterLink
                 v-for="a in data.attention"
                 :key="a.userId"
@@ -203,12 +183,12 @@ const cardFields = [
                 :data-testid="`attention-${a.userId}`"
               >
                 <span class="flex min-w-0 grow flex-col">
-                  <DsText variant="label" tone="highlighted" wrap="anywhere">{{ a.name }}</DsText>
-                  <DsText variant="caption" as="span">{{
+                  <span class="text-label break-words text-highlighted">{{ a.name }}</span>
+                  <span class="text-caption text-muted">{{
                     a.accuracy === null
                       ? 'Belum mula berlatih'
                       : `${a.sessions} sesi · ${pctTrim(a.accuracy)} ketepatan`
-                  }}</DsText>
+                  }}</span>
                 </span>
                 <UBadge
                   v-if="a.accuracy === null"
@@ -218,14 +198,14 @@ const cardFields = [
                 />
                 <UBadge v-else color="error" variant="subtle" :label="pctTrim(a.accuracy)" />
               </RouterLink>
-            </DsStack>
-          </DsStack>
+            </div>
+          </div>
         </DsPanel>
 
         <DsPanel class="min-w-0 lg:col-span-2" data-testid="trend">
-          <DsStack>
-            <DsHeading :level="2" variant="subheading">📈 Trend Aktiviti Kelas (30 Hari)</DsHeading>
-            <DsGrid v-if="data.trend.length > 0" :cols="{ base: 1, xl: 2 }">
+          <div class="flex flex-col gap-4">
+            <h2 class="text-subheading text-highlighted">📈 Trend Aktiviti Kelas (30 Hari)</h2>
+            <div v-if="data.trend.length > 0" class="grid grid-cols-1 gap-4 xl:grid-cols-2">
               <DsChart
                 title="Purata Ketepatan (%)"
                 type="line"
@@ -240,16 +220,16 @@ const cardFields = [
                 :labels="sessionChart.labels"
                 :series="sessionChart.series"
               />
-            </DsGrid>
+            </div>
             <div v-else data-testid="trend-empty">
               <DsEmptyState title="Belum ada aktiviti dalam 30 hari terakhir." icon="tray" />
             </div>
-          </DsStack>
+          </div>
         </DsPanel>
       </div>
 
-      <DsStack as="section" gap="sm" data-testid="ranking-card">
-        <DsHeading :level="2" variant="subheading">🏆 Kedudukan Murid</DsHeading>
+      <section class="flex min-w-0 flex-col gap-3" data-testid="ranking-card">
+        <h2 class="text-subheading text-highlighted">🏆 Kedudukan Murid</h2>
         <DsDataTable
           :data="rows"
           :columns="columns"
@@ -260,11 +240,10 @@ const cardFields = [
           data-testid="ranking-table"
         >
           <template #name-cell="{ row }">
-            <DsText
-              variant="label"
-              tone="highlighted"
+            <span
+              class="text-label text-highlighted"
               :data-testid="`rank-row-${row.original.userId}`"
-              >{{ row.original.name }}</DsText
+              >{{ row.original.name }}</span
             >
           </template>
           <template #accuracyText-cell="{ row }">
@@ -297,14 +276,9 @@ const cardFields = [
             />
           </template>
         </DsDataTable>
-      </DsStack>
+      </section>
     </template>
-    <div
-      v-else-if="!error"
-      class="flex flex-col gap-4 md:gap-6"
-      aria-busy="true"
-      data-testid="page-loading"
-    >
+    <div v-else-if="!error" class="flex flex-col gap-4 md:gap-6" aria-busy="true" data-testid="page-loading">
       <USkeleton class="h-24 w-full" />
       <USkeleton class="h-64 w-full" />
     </div>

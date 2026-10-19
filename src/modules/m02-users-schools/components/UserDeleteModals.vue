@@ -5,7 +5,7 @@
  */
 import { computed } from 'vue'
 
-import { DsDialog, DsStack, DsText } from '@/ds'
+import { DsDialog } from '@/ds'
 
 const props = defineProps<{
   /** The user of the single dialog, or null when closed. */
@@ -33,10 +33,10 @@ const bulkOpen = computed({
 
 <template>
   <DsDialog v-model:open="singleOpen" title="Padam Pengguna?" data-testid="users-delete-modal">
-    <DsText v-if="single" variant="body">
+    <p v-if="single" class="text-body text-default">
       Anda pasti mahu memadam pengguna ini?
       <strong class="text-highlighted" data-testid="users-delete-name">{{ single.name }}</strong>
-    </DsText>
+    </p>
     <template #footer>
       <UButton
         type="button"
@@ -59,13 +59,13 @@ const bulkOpen = computed({
   </DsDialog>
 
   <DsDialog v-model:open="bulkOpen" title="Padam Pengguna Terpilih?" data-testid="users-bulk-modal">
-    <DsStack gap="2xs">
-      <DsText variant="body">
+    <div class="flex flex-col gap-1">
+      <p class="text-body text-default">
         Anda pasti mahu memadam
         <strong data-testid="users-bulk-count">{{ bulkCount }}</strong> pengguna?
-      </DsText>
-      <DsText variant="label" as="p" tone="muted">Tindakan ini tidak boleh dibatalkan.</DsText>
-    </DsStack>
+      </p>
+      <p class="text-label text-muted">Tindakan ini tidak boleh dibatalkan.</p>
+    </div>
     <template #footer>
       <UButton
         type="button"

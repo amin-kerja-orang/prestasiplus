@@ -8,7 +8,7 @@
  */
 import { computed, onMounted, ref } from 'vue'
 import { alertNative } from '@/composables/native-dialogs'
-import { DsPage, DsLoadError, DsStack, DsCluster, DsHeading, DsText } from '@/ds'
+import { DsPage, DsLoadError } from '@/ds'
 import { useMedia } from '@/ds/useMedia'
 
 import { fetchSpinPage, spinWheel } from '../api'
@@ -65,16 +65,13 @@ async function spin(): Promise<void> {
     }
     const credited = res.body.coinsCredited ?? 0
     rotation.value = nextWheelRotation(rotation.value, result.segment_index)
-    timers.after(
-      () => {
-        prize.value = { icon: result.icon, label: result.label, type: result.type, credited }
-        spins.value += 1
-        won.value += credited
-        alreadySpun.value = true
-        spinning.value = false
-      },
-      reduced.value ? 0 : WHEEL_SPIN_MS,
-    )
+    timers.after(() => {
+      prize.value = { icon: result.icon, label: result.label, type: result.type, credited }
+      spins.value += 1
+      won.value += credited
+      alreadySpun.value = true
+      spinning.value = false
+    }, reduced.value ? 0 : WHEEL_SPIN_MS)
   } catch (e) {
     console.error('Spin error:', e)
     spinning.value = false
@@ -86,35 +83,29 @@ onMounted(() => void loadPage())
 
 <template>
   <DsPage data-testid="roda-nasib">
-    <DsStack gap="2xs" align="start">
-      <UButton
-        to="/permainan"
-        color="neutral"
-        variant="ghost"
-        icon="i-ph-arrow-left"
-        class="min-h-11"
-      >
+    <div class="flex flex-col items-start gap-1">
+      <UButton to="/permainan" color="neutral" variant="ghost" icon="i-ph-arrow-left" class="min-h-11">
         Permainan
       </UButton>
-      <DsHeading :level="1">🎯 Roda Nasib</DsHeading>
-      <DsText variant="body" tone="muted">Pusing roda sekali sehari untuk hadiah misteri!</DsText>
-    </DsStack>
+      <h1 class="text-title text-highlighted">🎯 Roda Nasib</h1>
+      <p class="text-body text-muted">Pusing roda sekali sehari untuk hadiah misteri!</p>
+    </div>
 
-    <DsStack v-if="loading" gap="sm" aria-busy="true" data-testid="solo-loading">
+    <div v-if="loading" class="flex flex-col gap-3" aria-busy="true" data-testid="solo-loading">
       <USkeleton class="h-16 w-full" />
       <USkeleton class="h-16 w-full" />
-    </DsStack>
+    </div>
     <DsLoadError v-else-if="error" :message="error" @retry="loadPage()" />
 
     <template v-if="page">
-      <DsCluster align="stretch">
+      <div class="flex flex-wrap gap-3">
         <UBadge color="neutral" variant="soft" size="xl" data-testid="spin-count"
           >🎰 {{ spins }} kali spin</UBadge
         >
         <UBadge color="neutral" variant="soft" size="xl" data-testid="spin-won"
           >🪙 {{ won }} Syiling dimenangkan</UBadge
         >
-      </DsCluster>
+      </div>
 
       <WheelCanvas :segments="page.segments" :rotation="rotation" />
 

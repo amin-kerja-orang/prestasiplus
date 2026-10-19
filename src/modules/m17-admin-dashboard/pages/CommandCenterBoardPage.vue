@@ -9,7 +9,7 @@
  */
 import { computed } from 'vue'
 
-import { DsPage, DsStack, DsGrid, DsText } from '@/ds'
+import { DsPage } from '@/ds'
 
 import AlesaPanel from '../components/command-center-board/AlesaPanel.vue'
 import { boardPaths, S2_COPY } from '../components/command-center-board/board-copy'
@@ -37,11 +37,11 @@ const { data } = useLiveBoard()
     <DsPage :data-testid="alias ? 'cc-s2-alias' : 'cc-s2'">
       <BoardHeader :paths="paths" :school="alias" />
 
-      <DsStack data-testid="cc-body">
+      <div class="flex min-w-0 flex-col gap-4" data-testid="cc-body">
         <BoardKpis :data="data" :school="alias" />
 
-        <DsGrid :cols="{ md: 2, xl: 3 }" data-testid="cc-panels">
-          <DsStack data-testid="cc-col-1">
+        <div class="grid min-w-0 gap-4 md:grid-cols-2 xl:grid-cols-3" data-testid="cc-panels">
+          <div class="flex min-w-0 flex-col gap-4" data-testid="cc-col-1">
             <TopSchoolsPanel
               v-if="!alias"
               :rows="data ? data.topSchools : null"
@@ -49,13 +49,13 @@ const { data } = useLiveBoard()
             />
             <KirkpatrickPanel :data="data" />
             <AlesaPanel :data="data" />
-          </DsStack>
-          <DsStack data-testid="cc-col-2">
+          </div>
+          <div class="flex min-w-0 flex-col gap-4" data-testid="cc-col-2">
             <TodayPanel :data="data" />
             <FeedPanel :rows="data ? data.recentFeed : null" :base-path="paths.basePath" />
             <TopPupilsPanel :rows="data ? data.topStudents : null" :base-path="paths.basePath" />
             <MoodPanel v-if="!alias" :mood="data ? data.mood : null" />
-          </DsStack>
+          </div>
           <div
             class="flex min-w-0 flex-col gap-4 md:col-span-2 xl:col-span-1"
             data-testid="cc-col-3"
@@ -63,14 +63,14 @@ const { data } = useLiveBoard()
             <CorrectionPanel :correction="data ? data.correction : null" />
             <MoodPanel v-if="alias" :mood="data ? data.mood : null" />
           </div>
-        </DsGrid>
+        </div>
 
         <EngagementPanel :data="data" :school="alias" />
-      </DsStack>
+      </div>
 
-      <DsText variant="caption" align="center" data-testid="cc-footer">
+      <p class="text-center text-caption text-muted" data-testid="cc-footer">
         {{ S2_COPY.footer }}
-      </DsText>
+      </p>
     </DsPage>
   </CcBoardFrame>
 </template>

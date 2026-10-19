@@ -6,7 +6,7 @@
  */
 import { ref, watch } from 'vue'
 
-import { DsDialog, DsStack } from '@/ds'
+import { DsDialog } from '@/ds'
 
 defineProps<{ title: string; testid: string; wide?: boolean }>()
 const emit = defineEmits<{ close: [] }>()
@@ -19,9 +19,9 @@ watch(open, (value) => {
 
 <template>
   <DsDialog v-model:open="open" :title="title" :class="wide ? 'sm:max-w-4xl' : 'sm:max-w-2xl'">
-    <DsStack :data-testid="testid">
+    <div class="flex min-w-0 flex-col gap-4" :data-testid="testid">
       <slot />
-    </DsStack>
+    </div>
     <template #footer>
       <UButton
         color="neutral"

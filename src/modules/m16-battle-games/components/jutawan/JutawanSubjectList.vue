@@ -7,17 +7,14 @@
  */
 import type { JutawanPage } from '../../api'
 import { questionCountLabel } from '../solo/solo-lib'
-import { DsGrid, DsStack, DsHeading, DsText } from '@/ds'
 
 defineProps<{ heading: string; subjects: NonNullable<JutawanPage['subjects']>; darjah: number }>()
 </script>
 
 <template>
-  <DsStack as="section" gap="sm" data-testid="jutawan-subjects">
-    <DsHeading :level="2" variant="overline" tone="muted"
-      >📚 PILIH SUBJEK ({{ heading }})</DsHeading
-    >
-    <DsGrid :cols="{ base: 1, md: 2 }" gap="sm">
+  <section class="flex flex-col gap-3" data-testid="jutawan-subjects">
+    <h2 class="text-overline text-muted">📚 PILIH SUBJEK ({{ heading }})</h2>
+    <div class="grid grid-cols-1 gap-3 md:grid-cols-2">
       <UButton
         v-for="s in subjects"
         :key="s.id"
@@ -32,15 +29,11 @@ defineProps<{ heading: string; subjects: NonNullable<JutawanPage['subjects']>; d
       >
         <UAvatar :text="s.emoji" size="xl" />
         <span class="flex min-w-0 flex-1 flex-col gap-1">
-          <DsText variant="label" tone="highlighted" truncate>{{ s.name }}</DsText>
-          <DsText variant="caption" as="span">{{ questionCountLabel(s.count) }}</DsText>
+          <span class="truncate text-label text-highlighted">{{ s.name }}</span>
+          <span class="text-caption text-muted">{{ questionCountLabel(s.count) }}</span>
         </span>
-        <UIcon
-          name="i-ph-caret-right-bold"
-          class="size-5 shrink-0 text-primary-t"
-          aria-hidden="true"
-        />
+        <UIcon name="i-ph-caret-right-bold" class="size-5 shrink-0 text-primary-t" aria-hidden="true" />
       </UButton>
-    </DsGrid>
-  </DsStack>
+    </div>
+  </section>
 </template>

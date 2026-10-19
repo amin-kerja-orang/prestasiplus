@@ -1,6 +1,6 @@
 <script setup lang="ts">
 /** The five stat cards (FR-M05-10, 11): Syiling Kamu, Mata (Lvl n), Hari Berturut, Sesi Minggu Ini, Ketepatan. */
-import { DsStatTile, DsGrid } from '@/ds'
+import { DsStatTile } from '@/ds'
 
 import type { Dashboard } from '../../api/types'
 import { COUNT_RULES } from '../dashboard/dashboard-lib'
@@ -16,10 +16,8 @@ const accuracy = useDisplayCount(() => props.week.accuracyPct, COUNT_RULES.accur
 </script>
 
 <template>
-  <DsGrid
-    :cols="{ base: 2, md: 3 }"
-    gap="sm"
-    as="ul"
+  <ul
+    class="grid grid-cols-2 gap-3 md:grid-cols-3"
     aria-label="Statistik awak"
     data-testid="dash-stats"
   >
@@ -46,10 +44,20 @@ const accuracy = useDisplayCount(() => props.week.accuracyPct, COUNT_RULES.accur
       <DsStatTile :value="streak" unit="Hari Berturut" icon="fire" accent="heat" />
     </li>
     <li class="min-w-0" data-testid="dash-stat-sessions">
-      <DsStatTile :value="sessions" unit="Sesi Minggu Ini" icon="books" accent="friend" />
+      <DsStatTile
+        :value="sessions"
+        unit="Sesi Minggu Ini"
+        icon="books"
+        accent="friend"
+      />
     </li>
     <li class="col-span-2 min-w-0 md:col-span-1" data-testid="dash-stat-accuracy">
-      <DsStatTile :value="`${accuracy}%`" unit="Ketepatan" icon="star" accent="trial" />
+      <DsStatTile
+        :value="`${accuracy}%`"
+        unit="Ketepatan"
+        icon="star"
+        accent="trial"
+      />
     </li>
-  </DsGrid>
+  </ul>
 </template>

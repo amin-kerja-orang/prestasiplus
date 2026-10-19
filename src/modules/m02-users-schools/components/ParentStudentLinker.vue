@@ -14,7 +14,7 @@ import { computed, ref } from 'vue'
 
 import { useSearchPicker } from '@/composables'
 
-import { DsFormField, DsPanel, DsCluster, DsStack, DsText } from '@/ds'
+import { DsFormField, DsPanel } from '@/ds'
 
 import { searchStudents, type StudentSearchItem } from '../api/users'
 import { SEARCH_MIN_CHARS } from '../lib/user-form-options'
@@ -132,7 +132,7 @@ function remove(id: number): void {
               data-testid="linker-result"
               @click="add(student)"
             >
-              <DsCluster as="span" gap="xs" :wrap="false" class="w-full">
+              <span class="flex w-full min-w-0 items-center gap-2">
                 <span class="min-w-0 flex-1 truncate">{{ student.name }}</span>
                 <UBadge
                   v-if="student.classLevel"
@@ -147,7 +147,7 @@ function remove(id: number): void {
                   class="max-w-40 truncate"
                   :label="student.schoolName"
                 />
-              </DsCluster>
+              </span>
             </UButton>
             <p
               v-if="showEmpty"
@@ -162,9 +162,9 @@ function remove(id: number): void {
       </div>
     </DsFormField>
 
-    <DsStack v-if="linked.length > 0 || isEdit" gap="xs" data-testid="linker-chips">
-      <DsText v-if="!isEdit" variant="overline" as="p">Anak yang dipautkan:</DsText>
-      <DsStack v-if="linked.length > 0" as="ul" gap="xs">
+    <div v-if="linked.length > 0 || isEdit" class="flex flex-col gap-2" data-testid="linker-chips">
+      <p v-if="!isEdit" class="text-overline text-muted">Anak yang dipautkan:</p>
+      <ul v-if="linked.length > 0" class="flex flex-col gap-2">
         <DsPanel
           v-for="student in linked"
           :key="student.id"
@@ -172,9 +172,9 @@ function remove(id: number): void {
           tone="inset"
           data-testid="linker-chip"
         >
-          <DsCluster gap="xs" :wrap="false" class="min-h-11">
+          <div class="flex min-h-11 items-center gap-2">
             <span class="flex min-w-0 flex-1 flex-wrap items-center gap-x-2 gap-y-1">
-              <DsText variant="label" truncate class="max-w-full">{{ student.name }}</DsText>
+              <span class="max-w-full truncate text-label text-default">{{ student.name }}</span>
               <UBadge
                 v-if="student.classLevel"
                 color="neutral"
@@ -199,14 +199,14 @@ function remove(id: number): void {
               data-testid="linker-remove"
               @click="remove(student.id)"
             />
-          </DsCluster>
+          </div>
         </DsPanel>
-      </DsStack>
+      </ul>
       <p v-else class="flex items-center gap-2 text-caption text-muted" data-testid="linker-none">
         <UIcon name="i-ph-info" class="size-4 shrink-0" aria-hidden="true" />
         Tiada pelajar dipautkan lagi
       </p>
-    </DsStack>
+    </div>
 
     <p class="flex items-start gap-2 text-caption text-muted">
       <UIcon name="i-ph-info" class="mt-1 size-4 shrink-0" aria-hidden="true" />

@@ -2,7 +2,6 @@
 /** FN-M11-5.1.3: legend dots and the discrimination note; the note wraps under the dots on narrow screens. */
 import { BAND_COLOR } from './bands'
 import { ITEM_COPY } from './copy'
-import { DsCluster } from '@/ds'
 </script>
 
 <template>
@@ -28,8 +27,8 @@ import { DsCluster } from '@/ds'
       icon="i-ph-circle-fill"
       :label="ITEM_COPY.legendSukar"
     />
-    <DsCluster as="span" gap="2xs" :wrap="false" data-testid="item-legend-note"
-      ><UIcon name="i-ph-info" class="size-4" />{{ ITEM_COPY.legendNote }}</DsCluster
+    <span class="flex items-center gap-1" data-testid="item-legend-note"
+      ><UIcon name="i-ph-info" class="size-4" />{{ ITEM_COPY.legendNote }}</span
     >
   </div>
 </template>

@@ -12,7 +12,7 @@ import { computed, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 
 import { isPrototypeRole, isPrototypeScopeOn } from '@/app/prototype-scope'
-import { DsFormField, DsNativeSelect, DsPanel, DsStack, DsGrid, DsText } from '@/ds'
+import { DsFormField, DsNativeSelect, DsPanel } from '@/ds'
 import { useSessionStore } from '@/stores/session'
 
 import { register, type RegisterRequest, type SchoolSummary } from '../api'
@@ -136,7 +136,7 @@ async function submit(): Promise<void> {
       </template>
     </div>
 
-    <DsStack data-testid="register-form" as="form" @submit.prevent="submit">
+    <form data-testid="register-form" class="flex flex-col gap-4" @submit.prevent="submit">
       <AuthAlert :messages="errors" data-testid="register-alert" />
 
       <DsFormField native for="name" label="Nama Penuh">
@@ -185,8 +185,8 @@ async function submit(): Promise<void> {
         />
       </DsFormField>
 
-      <DsStack gap="xs">
-        <DsText variant="label" as="p">Saya adalah...</DsText>
+      <div class="flex flex-col gap-2">
+        <p class="text-label text-default">Saya adalah...</p>
         <div class="grid gap-2 sm:gap-3" :class="scoped ? 'grid-cols-2' : 'grid-cols-3'">
           <!-- Click/tap only, no keyboard or ARIA semantics (FR-M01-66). -->
           <DsPanel
@@ -198,24 +198,24 @@ async function submit(): Promise<void> {
             :data-testid="`role-${card.value}`"
             @click="role = card.value"
           >
-            <DsText variant="heading" as="div">{{ card.emoji }}</DsText>
-            <DsText variant="label" as="div" tone="highlighted">{{ card.title }}</DsText>
-            <DsText variant="caption" as="div">{{ card.text }}</DsText>
+            <div class="text-heading">{{ card.emoji }}</div>
+            <div class="text-label text-highlighted">{{ card.title }}</div>
+            <div class="text-caption text-muted">{{ card.text }}</div>
           </DsPanel>
         </div>
-      </DsStack>
+      </div>
 
-      <DsStack v-if="role === 'student'" gap="sm" data-testid="register-levels">
+      <div v-if="role === 'student'" class="flex flex-col gap-3" data-testid="register-levels">
         <p class="flex items-center gap-2 text-label text-default">
           <UIcon name="i-ph-graduation-cap-duotone" class="size-4 text-primary-t" />
           Pilih Tahap Anda
         </p>
-        <DsStack gap="xs">
+        <div class="flex flex-col gap-2">
           <p class="flex items-center gap-2 text-overline text-muted">
             <UIcon name="i-ph-student-duotone" class="size-4" />
             Sekolah Rendah
           </p>
-          <DsGrid :cols="3" gap="xs">
+          <div class="grid grid-cols-3 gap-2">
             <DsPanel
               v-for="n in DARJAH_GRADES"
               :key="n"
@@ -225,17 +225,17 @@ async function submit(): Promise<void> {
               :data-testid="`grade-${String(n)}`"
               @click="grade = n"
             >
-              <DsText variant="caption" as="span">Darjah</DsText>
-              <DsText variant="subheading" as="span">{{ n }}</DsText>
+              <span class="text-caption text-muted">Darjah</span>
+              <span class="text-subheading text-highlighted">{{ n }}</span>
             </DsPanel>
-          </DsGrid>
-        </DsStack>
-        <DsStack gap="xs">
+          </div>
+        </div>
+        <div class="flex flex-col gap-2">
           <p class="flex items-center gap-2 text-overline text-muted">
             <UIcon name="i-ph-buildings-duotone" class="size-4" />
             Sekolah Menengah
           </p>
-          <DsGrid :cols="5" gap="xs">
+          <div class="grid grid-cols-5 gap-2">
             <DsPanel
               v-for="n in TINGKATAN_GRADES"
               :key="n"
@@ -245,12 +245,12 @@ async function submit(): Promise<void> {
               :data-testid="`grade-${String(n + 6)}`"
               @click="grade = n + 6"
             >
-              <DsText variant="caption" as="span">Ting.</DsText>
-              <DsText variant="subheading" as="span">{{ n }}</DsText>
+              <span class="text-caption text-muted">Ting.</span>
+              <span class="text-subheading text-highlighted">{{ n }}</span>
             </DsPanel>
-          </DsGrid>
-        </DsStack>
-      </DsStack>
+          </div>
+        </div>
+      </div>
 
       <DsFormField
         v-if="role === 'student'"
@@ -275,7 +275,7 @@ async function submit(): Promise<void> {
       </DsFormField>
 
       <div ref="pickerRoot" class="relative flex flex-col gap-2" data-testid="register-school">
-        <DsText for="school_search" variant="label" as="label">Sekolah (Pilihan)</DsText>
+        <label for="school_search" class="text-label text-default">Sekolah (Pilihan)</label>
 
         <DsPanel
           v-if="picker.selected.value"
@@ -284,12 +284,12 @@ async function submit(): Promise<void> {
           data-testid="school-chip"
         >
           <div class="min-w-0 flex-1">
-            <DsText variant="label" as="div" tone="highlighted" wrap="anywhere">
+            <div class="text-label break-words text-highlighted">
               {{ picker.selected.value.name }}
-            </DsText>
-            <DsText variant="caption" as="div">
+            </div>
+            <div class="text-caption text-muted">
               {{ schoolDetail(picker.selected.value, false) }}
-            </DsText>
+            </div>
           </div>
           <UButton
             type="button"
@@ -345,8 +345,8 @@ async function submit(): Promise<void> {
               data-testid="school-option"
               @click="picker.select(school)"
             >
-              <DsText variant="label" tone="highlighted" wrap="anywhere">{{ school.name }}</DsText>
-              <DsText variant="caption" as="span">{{ schoolDetail(school, true) }}</DsText>
+              <span class="text-label break-words text-highlighted">{{ school.name }}</span>
+              <span class="text-caption text-muted">{{ schoolDetail(school, true) }}</span>
             </UButton>
             <div
               v-if="
@@ -422,6 +422,6 @@ async function submit(): Promise<void> {
         class="min-h-11 justify-center"
         >Kembali ke Laman Utama</UButton
       >
-    </DsStack>
+    </form>
   </AuthLayout>
 </template>

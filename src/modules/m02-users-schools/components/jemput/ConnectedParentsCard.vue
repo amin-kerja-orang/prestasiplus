@@ -4,7 +4,7 @@
  * image, D22), name and email, both truncated. No relationship chip (DV-L45-02) and no remove control
  * (BR-L45-09). Empty state with plain emoji text.
  */
-import { DsIconChip, DsText } from '@/ds'
+import { DsIconChip } from '@/ds'
 
 import type { LinkedParent } from '../../api/parent-invite'
 
@@ -27,24 +27,18 @@ defineProps<{ parents: readonly LinkedParent[] }>()
       >
         <DsIconChip icon="i-ph-user-duotone" accent="friend" />
         <div class="min-w-0 flex-1">
-          <DsText
-            variant="label"
-            as="p"
-            tone="highlighted"
-            truncate
-            data-testid="jemput-parent-name"
-          >
+          <p class="truncate text-label text-highlighted" data-testid="jemput-parent-name">
             {{ parent.name }}
-          </DsText>
-          <DsText variant="caption" truncate data-testid="jemput-parent-email">
+          </p>
+          <p class="truncate text-caption text-muted" data-testid="jemput-parent-email">
             {{ parent.email }}
-          </DsText>
+          </p>
         </div>
       </li>
     </ul>
 
     <div v-else class="py-6 text-center" data-testid="jemput-empty">
-      <DsText variant="display" as="div">👨‍👩‍👧</DsText>
+      <div class="text-display">👨‍👩‍👧</div>
       <p class="mt-3 text-label text-highlighted">Belum ada ibu bapa dihubungkan</p>
       <p class="mt-1 text-caption text-muted">Hantar link jemputan di atas</p>
     </div>

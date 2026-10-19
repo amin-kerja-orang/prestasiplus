@@ -10,7 +10,7 @@ import { computed, ref } from 'vue'
 
 import { useSearchPicker } from '@/composables'
 
-import { DsFormField, DsPanel, DsCluster, DsStack, DsText } from '@/ds'
+import { DsFormField, DsPanel } from '@/ds'
 
 import { searchSchools, type SchoolSummary } from '../api/schools'
 import { generatedAdminEmail, SEARCH_MIN_CHARS } from '../lib/user-form-options'
@@ -111,7 +111,7 @@ function metaLine(s: SchoolSummary): string {
             @click="picker.select(item)"
           >
             <span class="flex w-full min-w-0 flex-col">
-              <DsText variant="label" tone="highlighted">{{ item.name }}</DsText>
+              <span class="text-label text-highlighted">{{ item.name }}</span>
               <span
                 class="flex flex-wrap items-center justify-between gap-x-3 text-caption text-muted"
               >
@@ -129,13 +129,13 @@ function metaLine(s: SchoolSummary): string {
 
     <!-- FR-M02-28: chosen school -->
     <DsPanel v-else tone="tint" data-testid="gen-chosen">
-      <DsCluster align="start" :wrap="false">
+      <div class="flex items-start gap-3">
         <div class="flex min-w-0 flex-1 flex-col gap-1">
-          <DsCluster gap="xs">
-            <DsText variant="overline" tone="primary">Sekolah Dipilih</DsText>
+          <div class="flex flex-wrap items-center gap-2">
+            <span class="text-overline text-primary-t">Sekolah Dipilih</span>
             <UBadge v-if="school.code !== ''" :label="school.code" />
-          </DsCluster>
-          <DsText variant="body" tone="highlighted" wrap="anywhere">{{ school.name }}</DsText>
+          </div>
+          <p class="text-body break-words text-highlighted">{{ school.name }}</p>
           <div class="flex flex-wrap items-center gap-x-4 gap-y-1 text-caption text-muted">
             <span class="inline-flex items-center gap-1">
               <UIcon name="i-ph-bank" class="size-4" aria-hidden="true" />
@@ -161,11 +161,11 @@ function metaLine(s: SchoolSummary): string {
           data-testid="gen-reset"
           @click="reset"
         />
-      </DsCluster>
+      </div>
     </DsPanel>
 
     <!-- FR-M02-29: the generate button -->
-    <DsStack v-if="school && !generated" gap="xs">
+    <div v-if="school && !generated" class="flex flex-col gap-2">
       <div>
         <UButton
           type="button"
@@ -185,7 +185,7 @@ function metaLine(s: SchoolSummary): string {
         <UIcon name="i-ph-warning" class="mt-1 size-4 shrink-0" aria-hidden="true" />
         Sekolah ini tiada kod KPM. Sila kemaskini kod sekolah di halaman Sekolah terlebih dahulu.
       </p>
-    </DsStack>
+    </div>
 
     <!-- FR-M02-30: generated credentials -->
     <DsPanel v-if="school && generated" tone="inset" data-testid="gen-box">
@@ -206,7 +206,7 @@ function metaLine(s: SchoolSummary): string {
           />
         </DsFormField>
         <DsFormField native for="gen-email" label="ID Login (Emel)">
-          <DsCluster gap="2xs" :wrap="false">
+          <div class="flex items-center gap-1">
             <UInput
               id="gen-email"
               type="text"
@@ -227,10 +227,10 @@ function metaLine(s: SchoolSummary): string {
               data-testid="gen-copy-email"
               @click="emit('copy', email)"
             />
-          </DsCluster>
+          </div>
         </DsFormField>
         <DsFormField native for="gen-password" label="Kata Laluan">
-          <DsCluster gap="2xs" :wrap="false">
+          <div class="flex items-center gap-1">
             <UInput
               id="gen-password"
               type="text"
@@ -249,7 +249,7 @@ function metaLine(s: SchoolSummary): string {
               data-testid="gen-copy-password"
               @click="emit('copy', props.password)"
             />
-          </DsCluster>
+          </div>
         </DsFormField>
         <DsFormField native for="gen-phone" label="Telefon (Pilihan)">
           <UInput

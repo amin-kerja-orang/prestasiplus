@@ -4,7 +4,7 @@
  * the question, options "A." … "D." (correct highlighted), "Penjelasan", footer "#{id}", source and
  * "Aktif", and the actions "Edit" (→ S24) and "Padam" (the owner confirms and deletes).
  */
-import { DsPanel, DsStack, DsCluster, DsText } from '@/ds'
+import { DsPanel } from '@/ds'
 import { ref } from 'vue'
 
 import { formatDateEn } from '@/lib/time'
@@ -31,9 +31,9 @@ const open = ref(false)
         data-testid="question-toggle"
         @click="open = !open"
       >
-        <DsText variant="label" tone="highlighted" :clamp="2" wrap="anywhere" class="block">
+        <span class="line-clamp-2 block min-w-0 text-label break-words text-highlighted">
           {{ question.questionText }}
-        </DsText>
+        </span>
         <span class="mt-2 flex flex-wrap items-center gap-2">
           <UBadge color="neutral" variant="subtle" data-testid="chip-subject">{{
             question.subjectName
@@ -68,15 +68,15 @@ const open = ref(false)
             data-testid="chip-status"
             >{{ question.statusLabel }}</UBadge
           >
-          <DsText variant="caption" as="span" data-testid="question-date">
+          <span class="text-caption text-muted" data-testid="question-date">
             {{ formatDateEn(question.createdAt) }}
-          </DsText>
+          </span>
         </span>
       </UButton>
 
       <div v-if="open" class="mt-4 flex min-w-0 flex-col gap-3" data-testid="question-body">
-        <DsText variant="body" wrap="anywhere" class="min-w-0">{{ question.questionText }}</DsText>
-        <DsStack v-if="question.options" as="ul" gap="xs">
+        <p class="min-w-0 text-body break-words text-default">{{ question.questionText }}</p>
+        <ul v-if="question.options" class="flex flex-col gap-2">
           <li
             v-for="(opt, i) in question.options"
             :key="i"
@@ -85,29 +85,33 @@ const open = ref(false)
             data-testid="question-option"
           >
             <DsPanel tone="inset">
-              <DsCluster gap="xs" align="start" :wrap="false">
-                <DsText variant="body" as="span" wrap="anywhere" class="min-w-0 grow"
-                  ><strong>{{ OPTION_LETTERS[i] }}.</strong> {{ opt }}</DsText
-                >
-                <UBadge
-                  v-if="question.correctAnswer === i"
-                  color="success"
-                  variant="subtle"
-                  icon="i-ph-check-circle-duotone"
-                  >Betul</UBadge
-                >
-              </DsCluster>
-            </DsPanel>
+<div class="flex min-w-0 items-start gap-2">
+              <span class="min-w-0 grow text-body break-words text-default"
+                ><strong>{{ OPTION_LETTERS[i] }}.</strong> {{ opt }}</span
+              >
+              <UBadge
+                v-if="question.correctAnswer === i"
+                color="success"
+                variant="subtle"
+                icon="i-ph-check-circle-duotone"
+                >Betul</UBadge
+              >
+            </div>
+</DsPanel>
           </li>
-        </DsStack>
-        <DsPanel v-if="question.explanation" tone="inset" data-testid="question-explanation">
+        </ul>
+        <DsPanel
+          v-if="question.explanation"
+          tone="inset"
+          data-testid="question-explanation"
+        >
           <p class="mb-1 flex items-center gap-2 text-label text-highlighted">
             <UIcon name="i-ph-lightbulb-duotone" class="size-4 text-primary-t" />
             Penjelasan
           </p>
-          <DsText variant="body" wrap="anywhere">{{ question.explanation }}</DsText>
+          <p class="text-body break-words text-default">{{ question.explanation }}</p>
         </DsPanel>
-        <DsCluster justify="between">
+        <div class="flex flex-wrap items-center justify-between gap-3">
           <div class="flex flex-wrap items-center gap-3 text-caption text-muted">
             <span class="inline-flex items-center gap-1" data-testid="question-id">
               <UIcon name="i-ph-hash" class="size-4" />{{ question.id }}
@@ -123,7 +127,7 @@ const open = ref(false)
               {{ question.isActive ? 'Aktif' : 'Tidak Aktif' }}
             </span>
           </div>
-          <DsCluster gap="xs" align="stretch" :wrap="false">
+          <div class="flex gap-2">
             <UButton
               :to="`/guru/soalan/${String(question.id)}/edit`"
               color="neutral"
@@ -144,8 +148,8 @@ const open = ref(false)
               @click="emit('remove', question.id)"
               >Padam</UButton
             >
-          </DsCluster>
-        </DsCluster>
+          </div>
+        </div>
       </div>
     </DsPanel>
   </li>

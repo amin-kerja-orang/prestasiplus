@@ -11,7 +11,7 @@ import { useRouter } from 'vue-router'
 import { isApiError } from '@/api'
 import { setRouteOutcome } from '@/app/router'
 import { useApi, useFlash } from '@/composables'
-import { DsBackLink, DsLoadError, DsPage, DsStack } from '@/ds'
+import { DsBackLink, DsLoadError, DsPage } from '@/ds'
 
 import { fetchEducationLevels, fetchSubjects } from '../api/lookups'
 import { fetchQuestion, updateQuestion, type QuestionInputBody } from '../api/questions'
@@ -76,7 +76,10 @@ async function save(body: QuestionInputBody): Promise<void> {
 </script>
 
 <template>
-  <DsPage :subtitle="`Kemaskini maklumat soalan #${String(id)}`" data-testid="question-edit-page">
+  <DsPage
+    :subtitle="`Kemaskini maklumat soalan #${String(id)}`"
+    data-testid="question-edit-page"
+  >
     <template #breadcrumb>
       <DsBackLink :to="questionDetailPath(id)" data-testid="question-back" />
     </template>
@@ -88,10 +91,10 @@ async function save(body: QuestionInputBody): Promise<void> {
       @retry="retry"
     />
 
-    <DsStack v-else-if="!ready" data-testid="question-form-skeleton">
+    <div v-else-if="!ready" class="flex flex-col gap-4" data-testid="question-form-skeleton">
       <USkeleton class="h-64 w-full" />
       <USkeleton class="h-48 w-full" />
-    </DsStack>
+    </div>
 
     <QuestionForm
       v-else

@@ -9,7 +9,7 @@
  */
 import { computed } from 'vue'
 
-import { DsHeatGrid, DsPanel, type HeatRow, DsStack, DsText } from '@/ds'
+import { DsHeatGrid, DsPanel, type HeatRow } from '@/ds'
 
 import type { HeatmapBidang, HeatmapSp } from '../../api/school-admin'
 import { LEGEND, tileTitle } from './dskp-status'
@@ -53,22 +53,19 @@ function titleOf(rowId: string, column: number): string {
 
 <template>
   <DsPanel data-testid="dh-card">
-    <DsStack>
+    <div class="flex min-w-0 flex-col gap-4">
       <h2 class="flex items-center gap-2 text-subheading text-highlighted" data-testid="dh-heading">
-        <UIcon
-          name="i-ph-map-trifold"
-          class="size-5 shrink-0 text-primary-t"
-          aria-hidden="true"
-        />Peta DSKP — Standard Pembelajaran
+        <UIcon name="i-ph-map-trifold" class="size-5 shrink-0 text-primary-t" aria-hidden="true" />Peta
+        DSKP — Standard Pembelajaran
       </h2>
 
       <p v-if="empty" class="py-6 text-center text-body text-muted" data-testid="dh-empty">
         Tiada Standard Pembelajaran untuk subjek dan tingkatan ini.
       </p>
       <template v-else>
-        <DsText v-if="caption" variant="overline" as="p" data-testid="dh-caption">
+        <p v-if="caption" class="text-overline text-muted" data-testid="dh-caption">
           {{ caption }}
-        </DsText>
+        </p>
 
         <DsHeatGrid
           :columns="columns"
@@ -85,12 +82,9 @@ function titleOf(rowId: string, column: number): string {
         </DsHeatGrid>
       </template>
 
-      <ul
-        class="flex flex-wrap items-center gap-x-4 gap-y-1 text-caption text-muted"
-        data-testid="dh-legend"
-      >
+      <ul class="flex flex-wrap items-center gap-x-4 gap-y-1 text-caption text-muted" data-testid="dh-legend">
         <li v-for="l in LEGEND" :key="l.status">{{ l.label }}</li>
       </ul>
-    </DsStack>
+    </div>
   </DsPanel>
 </template>

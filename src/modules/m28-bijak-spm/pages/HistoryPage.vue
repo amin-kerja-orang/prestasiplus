@@ -2,17 +2,7 @@
 /** Sejarah Bijak SPM (US-18): every sitting, newest first, with a link to its Semakan or to resume it. */
 import { computed } from 'vue'
 
-import {
-  DsEmptyState,
-  DsStatTile,
-  DsLoadError,
-  DsPage,
-  DsPanel,
-  DsStack,
-  DsGrid,
-  DsCluster,
-  DsText,
-} from '@/ds'
+import { DsEmptyState, DsStatTile, DsLoadError, DsPage, DsPanel } from '@/ds'
 import { useApi } from '@/composables/useApi'
 
 import { formatClock } from '../domain/paper-model'
@@ -51,10 +41,11 @@ const coins = computed(() => done.value.reduce((n, r) => n + (r.score ?? 0) * 2,
     back-label="Bijak SPM"
     data-testid="bijak-history"
   >
+
     <DsLoadError v-if="error" message="Sejarah tidak dapat dimuatkan." @retry="reload" />
-    <DsStack v-else-if="!rows" gap="sm" aria-busy="true">
+    <div v-else-if="!rows" class="flex flex-col gap-3" aria-busy="true">
       <USkeleton v-for="n in 3" :key="n" class="h-20 w-full" />
-    </DsStack>
+    </div>
     <DsEmptyState
       v-else-if="!rows.length"
       title="Belum ada percubaan"
@@ -63,25 +54,28 @@ const coins = computed(() => done.value.reduce((n, r) => n + (r.score ?? 0) * 2,
       data-testid="history-empty"
     />
     <template v-else>
-      <DsGrid :cols="3" gap="sm" as="ul" aria-label="Ringkasan" data-testid="history-summary">
+      <ul class="grid grid-cols-3 gap-3" aria-label="Ringkasan" data-testid="history-summary">
+        <li><DsStatTile :value="rows.length" unit="Percubaan" icon="i-ph-files" accent="action" /></li>
         <li>
-          <DsStatTile :value="rows.length" unit="Percubaan" icon="i-ph-files" accent="action" />
-        </li>
-        <li>
-          <DsStatTile :value="`${average}%`" unit="Purata" icon="chart-line-up" accent="win" />
+          <DsStatTile
+            :value="`${average}%`"
+            unit="Purata"
+            icon="chart-line-up"
+            accent="win"
+          />
         </li>
         <li><DsStatTile :value="coins" unit="Koin" art="coin" /></li>
-      </DsGrid>
-      <DsStack as="ul" gap="sm" data-testid="history-list">
+      </ul>
+      <ul class="flex flex-col gap-3" data-testid="history-list">
         <li v-for="r in rows" :key="r.attemptId">
           <DsPanel :data-testid="`history-${r.attemptId}`">
             <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-              <DsStack gap="xs">
-                <DsText variant="body" tone="highlighted">{{ r.title }}</DsText>
-                <DsText variant="caption">
+              <div class="flex min-w-0 flex-col gap-2">
+                <p class="text-body text-highlighted">{{ r.title }}</p>
+                <p class="text-caption text-muted">
                   {{ formatDateTime(r.startedAt) }} · {{ formatClock(r.durationSeconds) }}
-                </DsText>
-                <DsCluster gap="xs" align="stretch">
+                </p>
+                <div class="flex flex-wrap gap-2">
                   <UBadge color="neutral" variant="subtle">Bijak SPM</UBadge>
                   <UBadge color="neutral" variant="subtle"
                     >{{ r.subjectName }} Kertas {{ r.kertas }}</UBadge
@@ -98,16 +92,14 @@ const coins = computed(() => done.value.reduce((n, r) => n + (r.score ?? 0) * 2,
                     data-testid="history-status"
                     >{{ STATUS[r.status] }}</UBadge
                   >
-                </DsCluster>
-              </DsStack>
-              <DsCluster :wrap="false">
-                <DsText
+                </div>
+              </div>
+              <div class="flex items-center gap-3">
+                <span
                   v-if="r.max !== undefined"
-                  variant="heading"
-                  as="span"
-                  tabular
+                  class="tabular text-heading text-highlighted"
                   data-testid="history-score"
-                  >{{ r.score }} / {{ r.max }}</DsText
+                  >{{ r.score }} / {{ r.max }}</span
                 >
                 <UButton
                   v-if="r.status === 'in_progress'"
@@ -120,11 +112,11 @@ const coins = computed(() => done.value.reduce((n, r) => n + (r.score ?? 0) * 2,
                   :to="{ name: 'm28.bijak.result', params: { attemptId: r.attemptId } }"
                   >Semakan</UButton
                 >
-              </DsCluster>
+              </div>
             </div>
           </DsPanel>
         </li>
-      </DsStack>
+      </ul>
     </template>
   </DsPage>
 </template>

@@ -18,7 +18,7 @@ import { useRouter } from 'vue-router'
 
 import { setRouteOutcome } from '@/app/router/outcome'
 import { useFlash, useSession } from '@/composables'
-import { DsArt3D, DsLeaderRow, DsPage, DsStack, DsCluster, DsHeading, DsText } from '@/ds'
+import { DsArt3D, DsLeaderRow, DsPage } from '@/ds'
 
 import { fetchRoom, joinRoom, roomAction, startRoom, type RoomGame, type RoomView } from '../api'
 import {
@@ -267,10 +267,10 @@ const meters = computed(() => {
 
 <template>
   <DsPage data-testid="room-page">
-    <DsStack v-if="phase === 'loading'" aria-busy="true" data-testid="room-loading">
+    <div v-if="phase === 'loading'" class="flex flex-col gap-4" aria-busy="true" data-testid="room-loading">
       <USkeleton class="h-28 w-full" />
       <USkeleton class="h-40 w-full" />
-    </DsStack>
+    </div>
     <UAlert
       v-else-if="phase === 'error'"
       color="error"
@@ -280,18 +280,17 @@ const meters = computed(() => {
     />
     <template v-else-if="room">
       <UCard>
-        <DsCluster gap="md" justify="between" :wrap="false">
-          <DsStack gap="2xs">
-            <DsHeading :level="1" data-testid="room-h1">
+        <div class="flex items-center justify-between gap-4">
+          <div class="flex min-w-0 flex-col gap-1">
+            <h1 class="text-title text-highlighted" data-testid="room-h1">
               {{ meta.emoji }} {{ meta.title }}
-            </DsHeading>
-            <DsText variant="body" tone="muted" data-testid="room-code">
-              Kod Bilik:
-              <DsText variant="heading" as="span" tone="primary" tabular>{{ room.code }}</DsText>
-            </DsText>
-          </DsStack>
+            </h1>
+            <p class="text-body text-muted" data-testid="room-code">
+              Kod Bilik: <span class="tabular text-heading text-primary-t">{{ room.code }}</span>
+            </p>
+          </div>
           <DsArt3D :name="theme.art" size="hero" float class="hidden sm:block" />
-        </DsCluster>
+        </div>
       </UCard>
 
       <UAlert
@@ -302,9 +301,9 @@ const meters = computed(() => {
         data-testid="room-action-errors"
       >
         <template #description>
-          <DsStack as="ul" gap="2xs">
+          <ul class="flex flex-col gap-1">
             <li v-for="line in actionErrors" :key="line">{{ line }}</li>
-          </DsStack>
+          </ul>
         </template>
       </UAlert>
 
@@ -317,11 +316,11 @@ const meters = computed(() => {
 
         <UCard class="md:order-1 md:col-span-2">
           <!-- waiting -->
-          <DsStack v-if="room.status === 'waiting'" gap="sm" data-testid="room-waiting">
-            <DsText variant="body" tone="muted" data-testid="room-waiting-count">
+          <div v-if="room.status === 'waiting'" class="flex flex-col gap-3" data-testid="room-waiting">
+            <p class="text-body text-muted" data-testid="room-waiting-count">
               Menunggu pemain... {{ room.players.length }}/{{ room.settings.maxPlayers }} (minimum
               {{ room.settings.minPlayers }})
-            </DsText>
+            </p>
             <UButton
               v-if="isHost"
               size="xl"
@@ -333,28 +332,25 @@ const meters = computed(() => {
             >
               Mula
             </UButton>
-            <DsText v-else variant="label" as="p" tone="muted" data-testid="room-wait-host">
+            <p v-else class="text-label text-muted" data-testid="room-wait-host">
               Menunggu hos memulakan permainan
-            </DsText>
-          </DsStack>
+            </p>
+          </div>
 
           <!-- playing -->
-          <DsStack v-else-if="room.status === 'playing'" data-testid="room-playing">
-            <DsCluster gap="xs" justify="between">
-              <DsText v-if="round" variant="label" as="p" tone="primary" data-testid="room-round">
+          <div v-else-if="room.status === 'playing'" class="flex flex-col gap-4" data-testid="room-playing">
+            <div class="flex flex-wrap items-center justify-between gap-2">
+              <p v-if="round" class="text-label text-primary-t" data-testid="room-round">
                 {{ round }}
-              </DsText>
-              <DsText
+              </p>
+              <p
                 v-if="crosswordLeft !== null"
-                variant="label"
-                as="p"
-                tone="toned"
-                tabular
+                class="tabular text-label text-toned"
                 data-testid="room-clock"
               >
                 ⏱️ {{ clock(crosswordLeft) }}
-              </DsText>
-            </DsCluster>
+              </p>
+            </div>
 
             <RoomBoard
               v-if="game === 'papan-bijak' && room.state?.board"
@@ -362,7 +358,7 @@ const meters = computed(() => {
               :room="room"
             />
 
-            <DsStack v-if="meters.length > 0" gap="sm" data-testid="room-meters">
+            <div v-if="meters.length > 0" class="flex flex-col gap-3" data-testid="room-meters">
               <div v-for="m in meters" :key="m.id" data-testid="room-meter">
                 <div class="flex justify-between gap-2 text-caption text-toned">
                   <span class="min-w-0 break-words">{{ m.name }}</span>
@@ -370,22 +366,20 @@ const meters = computed(() => {
                 </div>
                 <UProgress :model-value="m.percent" :color="m.color" size="md" class="mt-1" />
               </div>
-            </DsStack>
+            </div>
 
-            <DsText
+            <p
               v-if="game === 'kuiz-relay' && room.state?.teamScores"
-              variant="label"
-              as="p"
-              tone="toned"
+              class="text-label text-toned"
               data-testid="room-team-scores"
             >
               <span v-for="(score, team) in room.state.teamScores" :key="team" class="me-4"
                 >Pasukan {{ teamLabel(Number(team)) }}: {{ score }}</span
               >
-            </DsText>
+            </p>
 
             <template v-if="acts">
-              <DsStack v-if="awaiting === 'roll'" gap="xs">
+              <div v-if="awaiting === 'roll'" class="flex flex-col gap-2">
                 <UButton
                   size="xl"
                   color="primary"
@@ -396,10 +390,10 @@ const meters = computed(() => {
                 >
                   🎲 Gulung Dadu
                 </UButton>
-                <DsText v-if="dice !== null" variant="body" tone="muted" data-testid="room-dice">
+                <p v-if="dice !== null" class="text-body text-muted" data-testid="room-dice">
                   🎲 Dadu: {{ dice }}
-                </DsText>
-              </DsStack>
+                </p>
+              </div>
               <RoomQuestionCard
                 v-else-if="awaiting === 'answer' && room.question"
                 :question="room.question"
@@ -410,29 +404,23 @@ const meters = computed(() => {
                 @answer="onAnswer"
               />
             </template>
-            <DsText v-else variant="label" as="p" tone="muted" data-testid="room-watching">
+            <p v-else class="text-label text-muted" data-testid="room-watching">
               Menunggu pemain lain
-            </DsText>
-          </DsStack>
+            </p>
+          </div>
 
           <!-- finished -->
-          <DsStack v-else-if="room.status === 'finished'" data-testid="room-result">
-            <DsCluster :wrap="false">
+          <div v-else-if="room.status === 'finished'" class="flex flex-col gap-4" data-testid="room-result">
+            <div class="flex items-center gap-3">
               <DsArt3D name="trophy" size="xl" float />
-              <DsText variant="title" data-testid="room-result-title">
+              <p class="text-title text-highlighted" data-testid="room-result-title">
                 {{ headline?.title }}
-              </DsText>
-            </DsCluster>
-            <DsText
-              v-if="headline?.mvp"
-              variant="label"
-              as="p"
-              tone="primary"
-              data-testid="room-mvp"
-            >
+              </p>
+            </div>
+            <p v-if="headline?.mvp" class="text-label text-primary-t" data-testid="room-mvp">
               {{ headline.mvp }}
-            </DsText>
-            <DsStack v-if="room.result" as="ul" gap="xs" data-testid="room-scores">
+            </p>
+            <ul v-if="room.result" class="flex flex-col gap-2" data-testid="room-scores">
               <DsLeaderRow
                 v-for="(s, i) in room.result.scores"
                 :key="s.userId"
@@ -442,7 +430,7 @@ const meters = computed(() => {
                 unit="mata"
                 medal="trophy"
               />
-            </DsStack>
+            </ul>
             <UButton
               to="/permainan"
               size="xl"
@@ -452,19 +440,15 @@ const meters = computed(() => {
             >
               🎮 Hub
             </UButton>
-          </DsStack>
+          </div>
 
           <!-- closed (seed rooms) -->
-          <DsStack v-else gap="sm" data-testid="room-closed">
-            <DsText variant="label" as="p" tone="toned">Bilik ini telah ditutup.</DsText>
-            <UButton
-              to="/permainan"
-              size="xl"
-              color="primary"
-              class="min-h-12 justify-center sm:self-start"
+          <div v-else class="flex flex-col gap-3" data-testid="room-closed">
+            <p class="text-label text-toned">Bilik ini telah ditutup.</p>
+            <UButton to="/permainan" size="xl" color="primary" class="min-h-12 justify-center sm:self-start"
               >🎮 Hub</UButton
             >
-          </DsStack>
+          </div>
         </UCard>
       </div>
     </template>

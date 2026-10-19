@@ -7,7 +7,7 @@
 import { computed, ref } from 'vue'
 import type { TableColumn } from '@nuxt/ui'
 
-import { DsDataTable, DsEmptyState, DsPanel, DsText } from '@/ds'
+import { DsDataTable, DsEmptyState, DsPanel } from '@/ds'
 
 import type { InterventionRow } from '../../../api/types'
 import { dateEn, pct } from '../common/kirkpatrick-format'
@@ -98,9 +98,9 @@ const pageSize = ref(20)
       <template #studentId-cell="{ row }">
         <span class="flex flex-col" data-testid="int-row-student">
           <span>{{ row.original.studentId }}</span>
-          <DsText v-if="row.original.studentName" variant="body" as="span" tone="muted">{{
+          <span v-if="row.original.studentName" class="text-body text-muted">{{
             row.original.studentName
-          }}</DsText>
+          }}</span>
         </span>
       </template>
       <template #description-cell="{ row }">

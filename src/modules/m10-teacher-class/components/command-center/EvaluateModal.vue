@@ -7,7 +7,7 @@ import type { TableColumn } from '@nuxt/ui'
 import { computed } from 'vue'
 
 import { useApi } from '@/composables'
-import { DsDrillTable, DsStatRow, DsStatusBadge, DsText } from '@/ds'
+import { DsDrillTable, DsStatRow, DsStatusBadge } from '@/ds'
 
 import { fetchCommandCenterEvaluation } from '../../api/command-center'
 import type { CcEvaluation } from '../../api/command-center-types'
@@ -47,25 +47,19 @@ const columns: TableColumn<Row>[] = [
     wide
     @close="$emit('close')"
   >
-    <DsText v-if="error" variant="body" tone="error">Ralat: {{ error.message }}</DsText>
-    <DsText v-else-if="!data" variant="body" tone="muted" data-testid="cc-modal-loading">
+    <p v-if="error" class="text-body text-error">Ralat: {{ error.message }}</p>
+    <p v-else-if="!data" class="text-body text-muted" data-testid="cc-modal-loading">
       Menilai semua pelajar...
-    </DsText>
+    </p>
     <template v-else>
-      <DsStatRow
-        :items="statItems(cards)"
-        prefix="cc-modal-card"
-        :cols="5"
-        data-testid="cc-modal-cards"
-      />
-      <DsText
+      <DsStatRow :items="statItems(cards)" prefix="cc-modal-card" :cols="5" data-testid="cc-modal-cards" />
+      <p
         v-if="data.alerts.length === 0"
-        variant="body"
-        tone="highlighted"
+        class="text-body text-highlighted"
         data-testid="cc-evaluate-empty"
       >
         Semua pelajar dalam keadaan baik! Tiada risiko dikesan.
-      </DsText>
+      </p>
       <div v-else data-testid="cc-evaluate-table">
         <DsDrillTable
           :data="data.alerts"
@@ -91,14 +85,14 @@ const columns: TableColumn<Row>[] = [
             />
           </template>
           <template #warn-cell="{ row }">
-            <DsText v-for="(al, i) in row.original.alerts" :key="i" variant="body" as="div">
+            <div v-for="(al, i) in row.original.alerts" :key="i" class="text-body">
               {{ al.message }}
-            </DsText>
+            </div>
           </template>
           <template #todo-cell="{ row }">
-            <DsText v-for="(al, i) in row.original.alerts" :key="i" variant="body" as="div">
+            <div v-for="(al, i) in row.original.alerts" :key="i" class="text-body">
               {{ al.suggestion }}
-            </DsText>
+            </div>
           </template>
         </DsDrillTable>
       </div>

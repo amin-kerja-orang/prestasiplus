@@ -27,10 +27,6 @@ import {
   DsPage,
   DsPanel,
   DsStatusBadge,
-  DsStack,
-  DsCluster,
-  DsHeading,
-  DsText,
 } from '@/ds'
 
 import {
@@ -41,13 +37,7 @@ import {
   type SchoolUserDetail,
   type SchoolUserInput,
 } from '../../api/school-admin'
-import {
-  errorLines,
-  formatDate,
-  formatDateTime,
-  ROLE_CONFIG,
-  type SchoolUserRole,
-} from './users-format'
+import { errorLines, formatDate, formatDateTime, ROLE_CONFIG, type SchoolUserRole } from './users-format'
 
 const props = defineProps<{ role: SchoolUserRole; id: number }>()
 
@@ -57,11 +47,7 @@ const flash = useFlash()
 const listPath = computed(() => ROLE_CONFIG[props.role].listPath)
 const isPupil = computed(() => props.role === 'student')
 
-const {
-  data: loaded,
-  error: loadError,
-  reload,
-} = useApi(
+const { data: loaded, error: loadError, reload } = useApi(
   (signal) =>
     props.role === 'student'
       ? fetchSchoolPupil(props.id, { signal })
@@ -83,13 +69,7 @@ const shownError = computed(() =>
   loadError.value && status.value !== 404 && status.value !== 403 ? loadError.value : null,
 )
 
-const form = reactive({
-  name: '',
-  email: '',
-  phone: '',
-  newPassword: '',
-  newPasswordConfirmation: '',
-})
+const form = reactive({ name: '', email: '', phone: '', newPassword: '', newPasswordConfirmation: '' })
 const passwordOpen = ref(false)
 
 function fill(user: SchoolUserDetail): void {
@@ -145,30 +125,29 @@ async function submit(): Promise<void> {
 <template>
   <DsPage class="max-w-4xl" :data-testid="isPupil ? 'sp-edit-page' : 'sg-edit-page'">
     <!-- A failed load other than 404 / 403: the server message and the way back (no M27 copy, FR-M27-48). -->
-    <DsStack v-if="shownError" gap="sm" data-testid="user-load-error">
+    <div v-if="shownError" class="flex flex-col gap-3" data-testid="user-load-error">
       <DsLoadError :message="errorLines(shownError).join(' ')" @retry="reload" />
       <DsBackLink :to="listPath" label="Batal" data-testid="user-back" />
-    </DsStack>
+    </div>
 
     <DsPanel v-else-if="loaded === null" data-testid="user-form-skeleton">
-      <DsStack gap="lg">
+      <div class="flex flex-col gap-6">
         <USkeleton class="h-14 w-full" />
         <USkeleton v-for="n in 3" :key="n" class="h-11 w-full" />
-      </DsStack>
+      </div>
     </DsPanel>
 
-    <DsStack
+    <form
       v-else
       method="post"
       novalidate
-      as="form"
-      gap="lg"
+      class="flex min-w-0 flex-col gap-6"
       data-testid="user-form"
       @submit.prevent="submit"
     >
       <!-- FR-M27-94: profile card -->
       <DsPanel data-testid="user-profile">
-        <DsCluster gap="md" :wrap="false">
+        <div class="flex items-center gap-4">
           <UAvatar
             :alt="loaded.name"
             size="3xl"
@@ -176,12 +155,12 @@ async function submit(): Promise<void> {
             data-testid="user-profile-avatar"
           />
           <div class="min-w-0">
-            <DsHeading :level="2" variant="subheading" truncate data-testid="user-profile-name">
+            <h2 class="truncate text-subheading text-highlighted" data-testid="user-profile-name">
               {{ loaded.name }}
-            </DsHeading>
-            <DsText variant="body" tone="muted" truncate data-testid="user-profile-email">
+            </h2>
+            <p class="truncate text-body text-muted" data-testid="user-profile-email">
               {{ loaded.email }}
-            </DsText>
+            </p>
             <p class="mt-1 flex flex-wrap gap-x-4 gap-y-1 text-caption text-muted">
               <span class="inline-flex items-center gap-2" data-testid="user-profile-created">
                 <UIcon name="i-ph-calendar-blank" class="size-4" aria-hidden="true" />
@@ -193,7 +172,7 @@ async function submit(): Promise<void> {
               </span>
             </p>
           </div>
-        </DsCluster>
+        </div>
       </DsPanel>
 
       <div ref="alertBox" class="empty:hidden">
@@ -206,9 +185,9 @@ async function submit(): Promise<void> {
           data-testid="user-form-alert"
         >
           <template #description>
-            <DsStack as="ul" gap="2xs">
+            <ul class="flex flex-col gap-1">
               <li v-for="line in errors" :key="line">{{ line }}</li>
-            </DsStack>
+            </ul>
           </template>
         </UAlert>
       </div>
@@ -321,6 +300,6 @@ async function submit(): Promise<void> {
       </DsFormSection>
 
       <DsFormBar :cancel-to="listPath" submit-label="Kemaskini" :saving="saving" />
-    </DsStack>
+    </form>
   </DsPage>
 </template>

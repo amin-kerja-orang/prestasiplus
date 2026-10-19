@@ -6,7 +6,7 @@
 import { computed } from 'vue'
 
 import { useApi } from '@/composables'
-import { DsStatRow, DsText } from '@/ds'
+import { DsStatRow } from '@/ds'
 
 import { fetchCommandCenterLiveData } from '../../api/command-center'
 import CcDialog from './CcDialog.vue'
@@ -45,17 +45,12 @@ const rows = computed<DrillRow[]>(() =>
 
 <template>
   <CcDialog title="Kelas Saya — Ringkasan Prestasi" testid="cc-kelas-modal" @close="$emit('close')">
-    <DsText v-if="error" variant="body" tone="error">Ralat: {{ error.message }}</DsText>
-    <DsText v-else-if="!data" variant="body" tone="muted" data-testid="cc-modal-loading">
+    <p v-if="error" class="text-body text-error">Ralat: {{ error.message }}</p>
+    <p v-else-if="!data" class="text-body text-muted" data-testid="cc-modal-loading">
       Menganalisis prestasi guru...
-    </DsText>
+    </p>
     <template v-else>
-      <DsStatRow
-        :items="statItems(cards)"
-        prefix="cc-modal-card"
-        :cols="3"
-        data-testid="cc-modal-cards"
-      />
+      <DsStatRow :items="statItems(cards)" prefix="cc-modal-card" :cols="3" data-testid="cc-modal-cards" />
       <CcTable
         :headers="HEADERS"
         :rows="rows"

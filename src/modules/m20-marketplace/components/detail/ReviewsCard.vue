@@ -2,7 +2,6 @@
 /** Reviews card of S7: the title with the count, the empty line or the review list. */
 import type { ProductReview } from '../../api'
 import { DETAIL_COPY } from './copy'
-import { DsStack, DsText } from '@/ds'
 
 defineProps<{ reviews: readonly ProductReview[]; count: number }>()
 
@@ -14,7 +13,7 @@ function stars(rating: number): string {
 
 <template>
   <UCard class="min-w-0" data-testid="reviews-card">
-    <DsStack gap="sm">
+    <div class="flex flex-col gap-3">
       <h2 class="flex items-center gap-2 text-heading text-highlighted">
         <UIcon name="i-ph-star-duotone" class="size-5 text-warning" aria-hidden="true" />
         <span data-testid="reviews-title">{{ DETAIL_COPY.reviews }} ({{ count }})</span>
@@ -26,19 +25,12 @@ function stars(rating: number): string {
       >
         {{ DETAIL_COPY.noReviews }}
       </p>
-      <DsStack v-else as="ul" gap="sm">
-        <DsText
-          v-for="r in reviews"
-          :key="r.id"
-          variant="body"
-          as="li"
-          tone="toned"
-          data-testid="review-item"
-        >
+      <ul v-else class="flex flex-col gap-3">
+        <li v-for="r in reviews" :key="r.id" class="text-body text-toned" data-testid="review-item">
           <span class="text-warning">{{ stars(r.rating) }}</span>
           <p class="break-words">{{ r.text }}</p>
-        </DsText>
-      </DsStack>
-    </DsStack>
+        </li>
+      </ul>
+    </div>
   </UCard>
 </template>

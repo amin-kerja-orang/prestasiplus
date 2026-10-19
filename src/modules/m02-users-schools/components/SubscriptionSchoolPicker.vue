@@ -10,7 +10,7 @@ import { computed, ref } from 'vue'
 
 import { useSearchPicker } from '@/composables'
 
-import { DsFormField, DsPanel, DsCluster, DsText } from '@/ds'
+import { DsFormField, DsPanel } from '@/ds'
 
 import { searchSchools, type SchoolSummary } from '../api/schools'
 
@@ -69,19 +69,14 @@ function clear(): void {
   <div ref="root" data-testid="sub-school">
     <DsFormField native for="sub-school-search" label="Sekolah" required>
       <DsPanel v-if="school" tone="tint" data-testid="sub-school-chip">
-        <DsCluster :wrap="false" class="min-h-14">
+        <div class="flex min-h-14 items-center gap-3">
           <span class="min-w-0 flex-1">
-            <DsText
-              variant="label"
-              tone="highlighted"
-              wrap="anywhere"
-              class="block"
+            <span
+              class="block text-label break-words text-highlighted"
               data-testid="sub-school-name"
-              >{{ school.name }}</DsText
+              >{{ school.name }}</span
             >
-            <DsText variant="caption" as="span" wrap="anywhere" class="block">{{
-              meta(school)
-            }}</DsText>
+            <span class="block text-caption break-words text-muted">{{ meta(school) }}</span>
           </span>
           <UButton
             type="button"
@@ -92,7 +87,7 @@ function clear(): void {
             data-testid="sub-school-clear"
             @click="clear"
           />
-        </DsCluster>
+        </div>
       </DsPanel>
 
       <div v-else class="relative">
@@ -109,12 +104,7 @@ function clear(): void {
           @focus="picker.onFocus()"
         />
         <span v-if="searching" class="sr-only" data-testid="sub-school-loading">Mencari...</span>
-        <DsPanel
-          v-if="showDropdown"
-          behavior="float"
-          padding="none"
-          data-testid="sub-school-dropdown"
-        >
+        <DsPanel v-if="showDropdown" behavior="float" padding="none" data-testid="sub-school-dropdown">
           <UButton
             v-for="item in results"
             :key="item.id"
@@ -127,8 +117,8 @@ function clear(): void {
             @click="picker.select(item)"
           >
             <span class="flex min-w-0 flex-col">
-              <DsText variant="label" tone="highlighted">{{ item.name }}</DsText>
-              <DsText variant="caption" as="span">{{ meta(item) }}</DsText>
+              <span class="text-label text-highlighted">{{ item.name }}</span>
+              <span class="text-caption text-muted">{{ meta(item) }}</span>
             </span>
           </UButton>
           <p

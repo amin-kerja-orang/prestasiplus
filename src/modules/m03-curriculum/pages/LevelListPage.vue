@@ -12,7 +12,14 @@ import type { TableColumn } from '@nuxt/ui'
 import { computed, ref, watch } from 'vue'
 
 import { alertNative, useApi, useFlash } from '@/composables'
-import { type CardField, DsDataTable, DsPage, DsPageHeader, DsStatRow, type StatItem } from '@/ds'
+import {
+  type CardField,
+  DsDataTable,
+  DsPage,
+  DsPageHeader,
+  DsStatRow,
+  type StatItem,
+} from '@/ds'
 
 import {
   deleteLevel,
@@ -20,7 +27,7 @@ import {
   setLevelActive,
   type AdminEducationLevelListItem,
 } from '../api/admin-subjects-levels'
-import { DsLoadError, DsRowActions, type RowAction, DsCluster, DsHeading, DsText } from '@/ds'
+import { DsLoadError, DsRowActions, type RowAction } from '@/ds'
 import {
   COPY,
   LEVEL_ROUTES,
@@ -142,16 +149,21 @@ async function remove(row: AdminEducationLevelListItem): Promise<void> {
 
 <template>
   <DsPage data-testid="levels-page">
-    <DsLoadError v-if="error" :message="COPY.loadFailed" testid="levels-error" @retry="reload()" />
+    <DsLoadError
+      v-if="error"
+      :message="COPY.loadFailed"
+      testid="levels-error"
+      @retry="reload()"
+    />
 
     <template v-else-if="data">
       <DsPageHeader>
         <template #subtitle>
           <div>
-            <DsHeading :level="2" variant="subheading">Senarai Tahap Pendidikan</DsHeading>
-            <DsText variant="body" tone="muted" data-testid="levels-count">
+            <h2 class="text-subheading text-highlighted">Senarai Tahap Pendidikan</h2>
+            <p class="text-body text-muted" data-testid="levels-count">
               Jumlah: {{ rows.length }} tahap
-            </DsText>
+            </p>
           </div>
         </template>
         <template #actions>
@@ -216,7 +228,7 @@ async function remove(row: AdminEducationLevelListItem): Promise<void> {
           <DsRowActions :actions="rowActions(row.original)" :inline="1" testid="level-more" />
         </template>
         <template #card-actions="{ row }">
-          <DsCluster gap="2xs" :wrap="false">
+          <div class="flex items-center gap-1">
             <span class="inline-flex min-h-11 min-w-11 items-center justify-center">
               <USwitch
                 :model-value="row.isActive as boolean"
@@ -230,7 +242,7 @@ async function remove(row: AdminEducationLevelListItem): Promise<void> {
               :inline="1"
               testid="level-more"
             />
-          </DsCluster>
+          </div>
         </template>
       </DsDataTable>
     </template>

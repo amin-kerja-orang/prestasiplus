@@ -8,7 +8,7 @@
 import type { TableColumn } from '@nuxt/ui'
 import { computed } from 'vue'
 
-import { DsDataTable, DsStatusBadge, type CardField, DsStack, DsHeading, DsText } from '@/ds'
+import { DsDataTable, DsStatusBadge, type CardField } from '@/ds'
 
 import type { PupilRiskView, RiskStatus } from '../../api/amaran'
 import { STATUS_LABEL } from './amaran-format'
@@ -64,10 +64,10 @@ const cardFields: CardField[] = [
 </script>
 
 <template>
-  <DsStack as="section" gap="sm" data-testid="am-pupils">
+  <section class="flex min-w-0 flex-col gap-3" data-testid="am-pupils">
     <div>
-      <DsHeading :level="2" variant="subheading">Senarai Pelajar Berisiko</DsHeading>
-      <DsText variant="caption">Disusun mengikut skor risiko tertinggi</DsText>
+      <h2 class="text-subheading text-highlighted">Senarai Pelajar Berisiko</h2>
+      <p class="text-caption text-muted">Disusun mengikut skor risiko tertinggi</p>
     </div>
     <DsDataTable
       :data="data"
@@ -82,15 +82,15 @@ const cardFields: CardField[] = [
         <span data-testid="am-rank">{{ row.original.rank }}</span>
       </template>
       <template #name-cell="{ row }">
-        <DsText variant="label" tone="highlighted" data-testid="am-name">{{
+        <span class="text-label text-highlighted" data-testid="am-name">{{
           row.original.name
-        }}</DsText>
+        }}</span>
       </template>
       <template #classLabel-cell="{ row }">
         <span data-testid="am-class">{{ row.original.classLabel }}</span>
       </template>
       <template #score-cell="{ row }">
-        <DsText variant="label" data-testid="am-score">{{ row.original.score }}</DsText>
+        <span class="text-label" data-testid="am-score">{{ row.original.score }}</span>
       </template>
       <template #status-cell="{ row }">
         <DsStatusBadge
@@ -116,5 +116,5 @@ const cardFields: CardField[] = [
         <span data-testid="am-mastery">{{ row.original.mastery }}</span>
       </template>
     </DsDataTable>
-  </DsStack>
+  </section>
 </template>

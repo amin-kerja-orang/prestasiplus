@@ -6,7 +6,7 @@
  */
 import { computed } from 'vue'
 
-import { DsChart, DsStack, DsText } from '@/ds'
+import { DsChart } from '@/ds'
 
 import type { ResultsDistribution } from './results-types'
 import { pct, plain } from '../common/kirkpatrick-format'
@@ -21,7 +21,7 @@ const series = computed(() => [
 
 <template>
   <UCard as="section" class="min-w-0" data-testid="res-grades">
-    <DsStack gap="sm">
+    <div class="flex flex-col gap-3">
       <DsChart
         type="bar"
         horizontal
@@ -31,9 +31,9 @@ const series = computed(() => [
         :series="series"
         table-label="Taburan gred calon"
       />
-      <DsText variant="body" tone="muted">
+      <p class="text-body text-muted">
         Berdasarkan {{ plain(distribution.candidates) }} calon — sumber: Headcount OTR
-      </DsText>
-    </DsStack>
+      </p>
+    </div>
   </UCard>
 </template>

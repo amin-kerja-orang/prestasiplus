@@ -5,7 +5,7 @@
  * empty on the elevated surface. The URL is also kept in `data-thumbnail-url`. The image is the
  * DS plain art (no raw `<img>`).
  */
-import { DsArt3D, DsSurface } from '@/ds'
+import { DsArt3D } from '@/ds'
 
 defineProps<{ thumbnailUrl: string | null }>()
 
@@ -13,14 +13,11 @@ const isHttps = (url: string | null): url is string => url !== null && /^https:\
 </script>
 
 <template>
-  <DsSurface
-    level="elevated"
-    radius="none"
-    padding="none"
-    class="size-full"
+  <div
+    class="size-full overflow-hidden bg-elevated"
     :data-thumbnail-url="thumbnailUrl ?? undefined"
     data-testid="video-thumb"
   >
     <DsArt3D v-if="isHttps(thumbnailUrl)" variant="plain" :src="thumbnailUrl" class="size-full" />
-  </DsSurface>
+  </div>
 </template>

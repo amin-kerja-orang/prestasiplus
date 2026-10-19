@@ -8,7 +8,6 @@ import { computed, ref } from 'vue'
 
 import type { MonitoringOverview, Signal } from '../../api/types'
 import { count, pct } from './monitoring-format'
-import { DsGrid, DsStack } from '@/ds'
 
 const props = defineProps<{
   signals: MonitoringOverview['signals']
@@ -60,9 +59,9 @@ const H = 'flex items-center gap-2 text-heading text-highlighted'
         Tiada pemerhatian yang perlu diberi perhatian buat masa ini.
       </p>
     </UCard>
-    <DsGrid v-else-if="part === 'perhatian'" :cols="{ base: 1, lg: 2 }" gap="lg">
+    <div v-else-if="part === 'perhatian'" class="grid grid-cols-1 gap-6 lg:grid-cols-2">
       <UCard v-if="signals.best.length > 0" class="min-w-0" data-testid="mon-best">
-        <DsStack>
+        <div class="flex flex-col gap-4">
           <h2 :class="H">
             <UIcon name="i-ph-trophy" class="size-6 text-success" />Sekolah Terbaik
             <UBadge
@@ -99,10 +98,10 @@ const H = 'flex items-center gap-2 text-heading text-highlighted'
             :label="open.best ? 'Tunjuk kurang' : `Tunjuk semua (${count(signals.best.length)})`"
             @click="open.best = !open.best"
           />
-        </DsStack>
+        </div>
       </UCard>
       <UCard v-if="signals.attention.length > 0" class="min-w-0" data-testid="mon-attention">
-        <DsStack>
+        <div class="flex flex-col gap-4">
           <h2 :class="H">
             <UIcon name="i-ph-warning" class="size-6 text-error" />Perhatian Segera
             <UBadge
@@ -136,11 +135,11 @@ const H = 'flex items-center gap-2 text-heading text-highlighted'
             "
             @click="open.attention = !open.attention"
           />
-        </DsStack>
+        </div>
       </UCard>
-    </DsGrid>
+    </div>
     <UCard v-else data-testid="mon-suggestions">
-      <DsStack>
+      <div class="flex flex-col gap-4">
         <h2 :class="H">
           <UIcon name="i-ph-lightbulb" class="size-6 text-info" />Cadangan Tindakan
           <UBadge
@@ -151,7 +150,7 @@ const H = 'flex items-center gap-2 text-heading text-highlighted'
             :label="count(signals.suggestions.length)"
           />
         </h2>
-        <DsGrid :cols="{ base: 1, lg: 2 }" gap="sm" as="ul">
+        <ul class="grid grid-cols-1 gap-3 lg:grid-cols-2">
           <li
             v-for="s in shown(signals.suggestions, 'suggestions')"
             :key="s.schoolId"
@@ -161,7 +160,7 @@ const H = 'flex items-center gap-2 text-heading text-highlighted'
             <UIcon name="i-ph-arrow-right" class="mt-1 size-5 shrink-0 text-info" />
             <span class="min-w-0 break-words">{{ suggestion(s) }}</span>
           </li>
-        </DsGrid>
+        </ul>
         <UButton
           v-if="signals.suggestions.length > LIMIT"
           type="button"
@@ -176,7 +175,7 @@ const H = 'flex items-center gap-2 text-heading text-highlighted'
           "
           @click="open.suggestions = !open.suggestions"
         />
-      </DsStack>
+      </div>
     </UCard>
   </section>
 </template>

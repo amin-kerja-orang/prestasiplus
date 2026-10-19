@@ -22,8 +22,6 @@ import {
   DsNativeSelect,
   DsPage,
   DsPanel,
-  DsStack,
-  DsGrid,
 } from '@/ds'
 
 import {
@@ -178,16 +176,15 @@ async function submit(): Promise<void> {
     />
 
     <DsPanel v-else-if="!ready" data-testid="admin-note-form-skeleton">
-      <DsStack gap="lg">
+      <div class="flex flex-col gap-6">
         <USkeleton v-for="n in 4" :key="n" class="h-11 w-full" />
-      </DsStack>
+      </div>
     </DsPanel>
 
-    <DsStack
+    <form
       v-else
       method="post"
-      as="form"
-      gap="lg"
+      class="flex min-w-0 flex-col gap-6"
       data-testid="admin-note-form"
       @submit.prevent="submit"
     >
@@ -254,7 +251,7 @@ async function submit(): Promise<void> {
       </DsFormSection>
 
       <DsFormSection title="Klasifikasi" icon="i-ph-tag" accent="friend">
-        <DsGrid :cols="{ base: 1, md: 3 }" gap="lg">
+        <div class="grid grid-cols-1 gap-6 md:grid-cols-3">
           <DsFormField
             native
             for="note-subject"
@@ -314,7 +311,7 @@ async function submit(): Promise<void> {
               </option>
             </DsNativeSelect>
           </DsFormField>
-        </DsGrid>
+        </div>
       </DsFormSection>
 
       <DsFormSection title="Penerbitan" icon="rocket-launch" accent="win">
@@ -332,6 +329,6 @@ async function submit(): Promise<void> {
         :submit-label="editing ? 'Kemaskini Nota' : 'Simpan Nota'"
         :saving="saving"
       />
-    </DsStack>
+    </form>
   </DsPage>
 </template>

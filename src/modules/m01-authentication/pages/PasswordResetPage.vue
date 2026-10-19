@@ -11,7 +11,7 @@ import { useRoute, useRouter } from 'vue-router'
 
 import AuthAlert from '../components/auth/AuthAlert.vue'
 import { useFlash } from '@/composables'
-import { DsFormField, DsStack } from '@/ds'
+import { DsFormField } from '@/ds'
 import { useSessionStore } from '@/stores/session'
 
 import { resetPassword } from '../api'
@@ -60,7 +60,7 @@ async function submit(): Promise<void> {
   <PasswordCard heading="Reset Kata Laluan" intro="Masukkan kata laluan baru anda.">
     <template #icon>🔒</template>
 
-    <DsStack data-testid="reset-form" as="form" @submit.prevent="submit">
+    <form data-testid="reset-form" class="flex flex-col gap-4" @submit.prevent="submit">
       <AuthAlert :messages="errors" data-testid="reset-alert" />
       <UInput type="hidden" name="token" :model-value="token" class="hidden" />
 
@@ -123,6 +123,6 @@ async function submit(): Promise<void> {
         class="min-h-11 justify-center"
         >Kembali ke Log Masuk</UButton
       >
-    </DsStack>
+    </form>
   </PasswordCard>
 </template>

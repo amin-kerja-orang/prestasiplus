@@ -7,19 +7,7 @@
 import { computed, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 
-import {
-  DsBackLink,
-  DsLoadError,
-  DsPage,
-  DsPageHeader,
-  DsPanel,
-  DsStatRow,
-  DsStatTile,
-  DsStack,
-  DsGrid,
-  DsCluster,
-  DsText,
-} from '@/ds'
+import { DsBackLink, DsLoadError, DsPage, DsPageHeader, DsPanel, DsStatRow, DsStatTile } from '@/ds'
 import { usePageMeta } from '@/composables/usePageMeta'
 
 import { fetchStudentPerformance } from '../api/performance'
@@ -109,18 +97,12 @@ const activity = computed(() => {
     <template v-else-if="data">
       <div data-testid="hero">
         <DsPageHeader
-          :show-title="true"
-          :title="data.user.name"
+          :show-title="true" :title="data.user.name"
           subtitle="Prestasi 360 — Dashboard Individu"
           title-testid="hero-name"
         >
           <template #breadcrumb>
-            <DsBackLink
-              to="/prestasi/kelas"
-              label="Kembali"
-              data-testid="back"
-              @click.prevent="back"
-            />
+            <DsBackLink to="/prestasi/kelas" label="Kembali" data-testid="back" @click.prevent="back" />
           </template>
           <template #leading>
             <UAvatar :text="data.user.initial" size="xl" data-testid="avatar" />
@@ -128,16 +110,16 @@ const activity = computed(() => {
           <template #actions>
             <div class="hidden gap-3 lg:flex" data-testid="hero-mini">
               <p class="flex flex-col items-center bg-elevated px-4 py-2">
-                <DsText variant="heading" as="span" tabular data-testid="hero-accuracy"
-                  >{{ data.heroAccuracy }}%</DsText
+                <span class="tabular text-heading text-highlighted" data-testid="hero-accuracy"
+                  >{{ data.heroAccuracy }}%</span
                 >
-                <DsText variant="caption" as="span">Ketepatan</DsText>
+                <span class="text-caption text-muted">Ketepatan</span>
               </p>
               <p class="flex flex-col items-center bg-elevated px-4 py-2">
-                <DsText variant="heading" as="span" tabular data-testid="hero-streak">{{
+                <span class="tabular text-heading text-highlighted" data-testid="hero-streak">{{
                   data.streak
-                }}</DsText>
-                <DsText variant="caption" as="span">Hari Kombo</DsText>
+                }}</span>
+                <span class="text-caption text-muted">Hari Kombo</span>
               </p>
             </div>
           </template>
@@ -156,11 +138,11 @@ const activity = computed(() => {
         <MasteryCard :mastery="data.mastery" />
         <div class="flex min-w-0 flex-col gap-4 md:gap-6">
           <DsPanel class="min-w-0" data-testid="activity-card">
-            <DsStack>
+            <div class="flex flex-col gap-4">
               <h2 class="flex items-center gap-2 text-subheading text-highlighted">
                 <UIcon :name="icon('fire')" class="size-5 text-primary-t" />Aktiviti
               </h2>
-              <DsGrid :cols="2" gap="sm" as="ul">
+              <ul class="grid grid-cols-2 gap-3">
                 <li v-for="a in activity" :key="a.id" class="min-w-0">
                   <DsStatTile
                     :value="a.value"
@@ -171,17 +153,17 @@ const activity = computed(() => {
                     :data-testid="`activity-${a.id}`"
                   />
                 </li>
-              </DsGrid>
-            </DsStack>
+              </ul>
+            </div>
           </DsPanel>
           <DsPanel v-if="data.badges.length > 0" class="min-w-0" data-testid="badges-card">
-            <DsStack>
+            <div class="flex flex-col gap-4">
               <h2 class="flex items-center gap-2 text-subheading text-highlighted">
                 <UIcon :name="icon('medal')" class="size-5 text-primary-t" />Lencana ({{
                   data.badges.length
                 }})
               </h2>
-              <DsCluster gap="xs" align="stretch">
+              <div class="flex flex-wrap gap-2">
                 <UBadge
                   v-for="b in data.badges"
                   :key="b.name"
@@ -193,8 +175,8 @@ const activity = computed(() => {
                   :title="b.name"
                   data-testid="badge"
                 />
-              </DsCluster>
-            </DsStack>
+              </div>
+            </div>
           </DsPanel>
         </div>
       </div>
@@ -206,12 +188,7 @@ const activity = computed(() => {
         <SuggestionsCard :items="data.suggestions" />
       </div>
     </template>
-    <div
-      v-else-if="!error"
-      class="flex flex-col gap-4 md:gap-6"
-      aria-busy="true"
-      data-testid="page-loading"
-    >
+    <div v-else-if="!error" class="flex flex-col gap-4 md:gap-6" aria-busy="true" data-testid="page-loading">
       <USkeleton class="h-24 w-full" />
       <USkeleton class="h-64 w-full" />
     </div>

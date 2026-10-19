@@ -5,7 +5,7 @@
  * quiz `/set-soalan-saya/:id/jawab`.
  */
 import { useApi } from '@/composables'
-import { DsEmptyState, DsPage, DsPanel, DsLoadError, DsGrid } from '@/ds'
+import { DsEmptyState, DsPage, DsPanel, DsLoadError } from '@/ds'
 
 import { fetchMyQuestionSets } from '../api/guru'
 import { SET_COPY } from '../components/set-soalan-saya/copy'
@@ -41,8 +41,8 @@ const { data, error, loading, reload } = useApi((signal) => fetchMyQuestionSets(
       />
     </DsPanel>
 
-    <DsGrid v-else-if="data" :cols="1" gap="sm" as="ul" data-testid="sets-list">
+    <ul v-else-if="data" class="grid min-w-0 grid-cols-1 gap-3" data-testid="sets-list">
       <QuestionSetRow v-for="item in data.data" :key="item.id" :item="item" />
-    </DsGrid>
+    </ul>
   </DsPage>
 </template>

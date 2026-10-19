@@ -27,9 +27,6 @@ import {
   DsStatRow,
   DsStatusBadge,
   useConfirm,
-  DsStack,
-  DsCluster,
-  DsText,
 } from '@/ds'
 import type { CardField, RowAction, StatItem } from '@/ds'
 
@@ -388,10 +385,10 @@ const cardFields: CardField[] = [
       </DsEmptyState>
     </DsPanel>
 
-    <DsStack v-else>
+    <div v-else class="flex flex-col gap-4">
       <!-- Bulk bar: only while at least one row is ticked. -->
       <DsPanel v-if="selectedIds.length > 0" behavior="bulk" data-testid="pksk-bulk-bar">
-        <DsCluster>
+        <div class="flex flex-wrap items-center gap-3">
           <span class="inline-flex items-center gap-2 text-label text-highlighted">
             <UIcon name="i-ph-check-square" class="size-5 text-primary-t" aria-hidden="true" />
             <span class="tabular" data-testid="bulk-count">{{ selectedIds.length }} dipilih</span>
@@ -429,7 +426,7 @@ const cardFields: CardField[] = [
             data-testid="bulk-delete"
             @click="bulk('delete')"
           />
-        </DsCluster>
+        </div>
       </DsPanel>
 
       <DsDataTable
@@ -453,16 +450,13 @@ const cardFields: CardField[] = [
         @update:page="goToPage"
       >
         <template #text-cell="{ row }">
-          <DsText
-            variant="body"
-            tone="highlighted"
-            :clamp="2"
-            class="min-w-40"
+          <p
+            class="line-clamp-2 min-w-40 text-body text-highlighted"
             data-testid="pksk-question-row"
             :data-question-id="row.original.id"
           >
             <span data-testid="q-text">{{ row.original.text }}</span>
-          </DsText>
+          </p>
         </template>
         <template #bahagian-cell="{ row }">
           <UBadge
@@ -500,6 +494,6 @@ const cardFields: CardField[] = [
           <DsRowActions :actions="actionsOf((row as unknown as TableRow).raw)" />
         </template>
       </DsDataTable>
-    </DsStack>
+    </div>
   </DsPage>
 </template>

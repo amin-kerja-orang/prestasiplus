@@ -10,7 +10,6 @@ import { computed, onMounted } from 'vue'
 
 import { formatDateLong } from '@/lib/time'
 import { useSessionStore } from '@/stores/session'
-import { DsHeading, DsText } from '@/ds'
 
 const session = useSessionStore()
 const user = computed(() => session.user)
@@ -43,17 +42,15 @@ onMounted(() => {
         </div>
 
         <div class="flex min-w-0 flex-1 flex-col items-center gap-1 sm:items-start">
-          <DsHeading :level="2" wrap="anywhere" class="max-w-full" data-testid="profile-name">
-            {{ user.name }}
-          </DsHeading>
-          <DsText
-            variant="body"
-            tone="muted"
-            class="max-w-full break-all"
-            data-testid="profile-email"
+          <h2
+            class="max-w-full text-heading break-words text-highlighted"
+            data-testid="profile-name"
           >
+            {{ user.name }}
+          </h2>
+          <p class="max-w-full text-body break-all text-muted" data-testid="profile-email">
             {{ user.email }}
-          </DsText>
+          </p>
           <p
             class="flex items-center gap-2 text-caption text-muted"
             data-testid="profile-member-since"

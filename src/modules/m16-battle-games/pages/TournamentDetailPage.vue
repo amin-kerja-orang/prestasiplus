@@ -10,7 +10,7 @@ import { computed, watch } from 'vue'
 import { isApiError } from '@/api'
 import { setRouteOutcome, useRouteOutcome } from '@/app/router/outcome'
 import { useApi, usePageMeta } from '@/composables'
-import { DsArt3D, DsPage, DsLoadError, DsStack, DsCluster, DsHeading, DsText } from '@/ds'
+import { DsArt3D, DsPage, DsLoadError } from '@/ds'
 import { formatDateTime } from '@/lib/time'
 
 import { fetchBattleLobby, fetchTournament } from '../api'
@@ -131,44 +131,36 @@ const rows = computed<Row[]>(() => {
     </UButton>
 
     <template v-if="notFound" />
-    <DsLoadError
-      v-else-if="view.error.value"
-      :message="LOAD_COPY.failed"
-      testid="m16-load-error"
-      retry-testid="m16-retry"
-      @retry="view.reload()"
-    />
-    <DsStack v-else-if="!t" gap="sm" aria-busy="true" data-testid="tournament-detail-loading">
+    <DsLoadError v-else-if="view.error.value" :message="LOAD_COPY.failed" testid="m16-load-error" retry-testid="m16-retry" @retry="view.reload()" />
+    <div
+      v-else-if="!t"
+      class="flex flex-col gap-3"
+      aria-busy="true"
+      data-testid="tournament-detail-loading"
+    >
       <USkeleton class="h-24 w-full" />
       <USkeleton class="h-40 w-full" />
-    </DsStack>
+    </div>
     <template v-else>
       <UCard data-testid="tournament-detail-hero">
-        <DsCluster gap="md" justify="between" :wrap="false">
+        <div class="flex items-center justify-between gap-4">
           <div class="min-w-0">
-            <DsHeading :level="1" wrap="anywhere" data-testid="tournament-detail-title">
+            <h1 class="text-title break-words text-highlighted" data-testid="tournament-detail-title">
               {{ t.title }}
-            </DsHeading>
-            <UBadge
-              color="primary"
-              variant="soft"
-              size="lg"
-              class="mt-2"
-              data-testid="tournament-detail-line"
-              >{{ line }}</UBadge
-            >
+            </h1>
+            <UBadge color="primary" variant="soft" size="lg" class="mt-2" data-testid="tournament-detail-line">{{
+              line
+            }}</UBadge>
           </div>
           <DsArt3D name="trophy" size="hero" float class="hidden sm:block" />
-        </DsCluster>
+        </div>
       </UCard>
 
       <UCard>
         <dl class="grid gap-x-6 gap-y-4 sm:grid-cols-2" data-testid="tournament-detail-fields">
           <div v-for="row in rows" :key="row.key" class="min-w-0" :data-field="row.key">
-            <DsText variant="caption" as="dt">{{ row.label }}</DsText>
-            <DsText variant="body" as="dd" tone="highlighted" wrap="anywhere">{{
-              row.value
-            }}</DsText>
+            <dt class="text-caption text-muted">{{ row.label }}</dt>
+            <dd class="text-body break-words text-highlighted">{{ row.value }}</dd>
           </div>
         </dl>
       </UCard>

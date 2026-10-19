@@ -4,7 +4,7 @@
  * "💰 +n Syiling", "⭐ +n XP", "Progres: p/t", bar and "{pct}%". A completed card keeps the layout:
  * full bar, "✅" before the title (SRS §8.2, PROPOSED), done state in the success colour.
  */
-import { DsIconChip, DsRewardChip, DsCluster, DsText } from '@/ds'
+import { DsIconChip, DsRewardChip } from '@/ds'
 
 import type { ChallengeProgress } from '../../api'
 import { gamClampPct, gamDifficultyLabel } from '../../lib/student/s11-format'
@@ -26,11 +26,8 @@ defineProps<{ challenge: ChallengeProgress }>()
         size="lg"
       />
       <div class="flex min-w-0 flex-1 flex-col gap-2">
-        <DsCluster gap="xs">
-          <h3
-            class="font-display text-subheading font-bold text-highlighted"
-            data-testid="s13-title"
-          >
+        <div class="flex flex-wrap items-center gap-2">
+          <h3 class="font-display text-subheading font-bold text-highlighted" data-testid="s13-title">
             <template v-if="challenge.completed">✅ </template>{{ challenge.title }}
           </h3>
           <UBadge
@@ -41,9 +38,9 @@ defineProps<{ challenge: ChallengeProgress }>()
             data-testid="s13-difficulty"
             >{{ gamDifficultyLabel(challenge.difficulty) }}</UBadge
           >
-        </DsCluster>
-        <DsText variant="label" as="p" tone="muted">{{ challenge.description }}</DsText>
-        <DsCluster gap="xs" align="stretch">
+        </div>
+        <p class="text-label text-muted">{{ challenge.description }}</p>
+        <div class="flex flex-wrap gap-2">
           <DsRewardChip
             art="coin"
             :value="`+${challenge.rewardSyiling}`"
@@ -56,15 +53,15 @@ defineProps<{ challenge: ChallengeProgress }>()
             label="XP"
             data-testid="s13-reward-xp"
           />
-        </DsCluster>
-        <DsCluster justify="between" :wrap="false">
-          <DsText variant="label" tone="toned" tabular data-testid="s13-progress"
-            >Progres: {{ challenge.progress }}/{{ challenge.target }}</DsText
+        </div>
+        <div class="flex items-center justify-between gap-3">
+          <span class="tabular text-label text-toned" data-testid="s13-progress"
+            >Progres: {{ challenge.progress }}/{{ challenge.target }}</span
           >
-          <DsText variant="label" tone="success" tabular data-testid="s13-pct"
-            >{{ Math.round(gamClampPct(challenge.pct)) }}%</DsText
+          <span class="tabular text-label text-success" data-testid="s13-pct"
+            >{{ Math.round(gamClampPct(challenge.pct)) }}%</span
           >
-        </DsCluster>
+        </div>
         <UProgress
           :model-value="challenge.completed ? 100 : gamClampPct(challenge.pct)"
           :max="100"

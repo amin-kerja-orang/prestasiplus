@@ -7,16 +7,7 @@
  */
 import { computed } from 'vue'
 
-import {
-  DsLoadError,
-  DsPage,
-  DsPageHeader,
-  DsPanel,
-  DsStatRow,
-  DsStack,
-  DsGrid,
-  DsHeading,
-} from '@/ds'
+import { DsLoadError, DsPage, DsPageHeader, DsPanel, DsStatRow } from '@/ds'
 
 import { fetchSchoolPerformance } from '../api/performance'
 import GpsCard from '../components/prestasi/GpsCard.vue'
@@ -105,9 +96,9 @@ const quickNav = computed(() => [
       <LevelAndTeachers :levels="data.levels" :teachers="data.teachers" />
 
       <DsPanel data-testid="quick-nav">
-        <DsStack>
-          <DsHeading :level="2" variant="subheading">🔗 Navigasi Pantas</DsHeading>
-          <DsGrid :cols="{ base: 1, sm: 2, xl: 4 }" gap="sm">
+        <div class="flex flex-col gap-4">
+          <h2 class="text-subheading text-highlighted">🔗 Navigasi Pantas</h2>
+          <div class="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
             <UButton
               v-for="n in quickNav"
               :key="n.to"
@@ -119,16 +110,11 @@ const quickNav = computed(() => [
               :icon="n.icon"
               :label="n.label"
             />
-          </DsGrid>
-        </DsStack>
+          </div>
+        </div>
       </DsPanel>
     </template>
-    <div
-      v-else-if="!error"
-      class="flex flex-col gap-4 md:gap-6"
-      aria-busy="true"
-      data-testid="page-loading"
-    >
+    <div v-else-if="!error" class="flex flex-col gap-4 md:gap-6" aria-busy="true" data-testid="page-loading">
       <USkeleton class="h-24 w-full" />
       <USkeleton class="h-64 w-full" />
     </div>

@@ -1,22 +1,23 @@
 <script setup lang="ts">
 /** S4/S5 chapter context card (FR-M03-32): tile, label "Bab", heading "Bab {n}: {name}", subject and level chips. */
-import { DsIconChip, DsCluster, DsText, DsHeading } from '@/ds'
+import { DsIconChip } from '@/ds'
 
 import type { ChapterDetail } from '../../api/admin-curriculum'
 import { chapterHeading } from '../../lib/curriculum-paths'
 
 defineProps<{ chapter: ChapterDetail }>()
+
 </script>
 
 <template>
   <UCard data-testid="chapter-context">
-    <DsCluster align="start" :wrap="false">
+    <div class="flex items-start gap-3">
       <DsIconChip icon="book-open" size="lg" />
       <div class="min-w-0 flex-1">
-        <DsText variant="overline" as="p">Bab</DsText>
-        <DsHeading :level="2" variant="subheading" wrap="anywhere">
+        <p class="text-overline text-muted">Bab</p>
+        <h2 class="text-subheading break-words text-highlighted">
           {{ chapterHeading(chapter) }}
-        </DsHeading>
+        </h2>
         <div class="mt-2 flex flex-wrap gap-2">
           <UBadge
             color="neutral"
@@ -34,6 +35,6 @@ defineProps<{ chapter: ChapterDetail }>()
           />
         </div>
       </div>
-    </DsCluster>
+    </div>
   </UCard>
 </template>

@@ -10,16 +10,7 @@ import { computed, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 
 import { useApi } from '@/composables'
-import {
-  DsDataTable,
-  DsNativeSelect,
-  DsPage,
-  DsPanel,
-  type CardField,
-  DsLoadError,
-  DsCluster,
-  DsStack,
-} from '@/ds'
+import { DsDataTable, DsNativeSelect, DsPage, DsPanel, type CardField, DsLoadError } from '@/ds'
 import { saveBlob } from '@/lib/save-blob'
 
 import { bulkApprovePbd, downloadPbdCsv, fetchCikguClasses, fetchPbdQueue, rollupPbd } from '../api'
@@ -144,8 +135,12 @@ async function onExport(event: MouseEvent): Promise<void> {
 <template>
   <DsPage :title="C.title" :subtitle="C.sub" data-testid="pbd-page">
     <template #actions>
-      <DsCluster gap="xs" data-testid="pbd-toolbar">
-        <DsCluster id="rollup-form" as="form" gap="xs" @submit.prevent="onRollup">
+      <div class="flex min-w-0 flex-wrap items-center gap-2" data-testid="pbd-toolbar">
+        <form
+          id="rollup-form"
+          class="flex min-w-0 flex-wrap items-center gap-2"
+          @submit.prevent="onRollup"
+        >
           <DsNativeSelect
             v-model="classId"
             name="classroom_id"
@@ -166,7 +161,7 @@ async function onExport(event: MouseEvent): Promise<void> {
             data-testid="pbd-rollup"
             >{{ C.rollup }}</UButton
           >
-        </DsCluster>
+        </form>
         <UButton
           :href="C.exportHref"
           color="success"
@@ -177,7 +172,7 @@ async function onExport(event: MouseEvent): Promise<void> {
           @click="onExport"
           >{{ C.exportCsv }}</UButton
         >
-      </DsCluster>
+      </div>
     </template>
 
     <UAlert
@@ -197,11 +192,16 @@ async function onExport(event: MouseEvent): Promise<void> {
       retry-testid="page-retry"
       @retry="reload"
     />
-    <DsStack v-else-if="!(data !== null)" gap="sm" aria-busy="true" data-testid="page-loading">
+    <div
+      v-else-if="!(data !== null)"
+      class="flex flex-col gap-3"
+      aria-busy="true"
+      data-testid="page-loading"
+    >
       <USkeleton v-for="n in 3" :key="n" class="h-16 w-full" />
-    </DsStack>
+    </div>
     <template v-else>
-      <DsStack v-if="data" id="bulk-form" as="form" @submit.prevent="onBulk">
+      <form v-if="data" id="bulk-form" class="flex min-w-0 flex-col gap-4" @submit.prevent="onBulk">
         <DsPanel class="flex flex-wrap items-center justify-between gap-3">
           <UCheckbox
             id="select-all"
@@ -249,7 +249,7 @@ async function onExport(event: MouseEvent): Promise<void> {
             />
           </template>
         </DsDataTable>
-      </DsStack>
+      </form>
     </template>
   </DsPage>
 </template>

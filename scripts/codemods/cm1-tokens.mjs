@@ -135,8 +135,7 @@ export function rewriteClassList(text, opts = {}) {
     ws = ''
   }
   const lastTok = toks[toks.length - 1]
-  const trailing =
-    parts.length % 2 === 0 && lastTok && byIdx.get(lastTok.i) !== null ? parts.at(-1) : ''
+  const trailing = parts.length % 2 === 0 && lastTok && byIdx.get(lastTok.i) !== null ? parts.at(-1) : ''
   res += trailing
   return { text: res, counts }
 }

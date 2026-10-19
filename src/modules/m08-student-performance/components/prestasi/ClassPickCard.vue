@@ -3,7 +3,7 @@
  * Class card of S10 (FR-M08-63) and the populated S4 picker (FR-M08-30, PROPOSED: the S10 pattern):
  * AR-HUB choice card with an icon chip, the name, the muted counts and the action text.
  */
-import { DsIconChip, DsPanel, DsStatusBadge, DsCluster, DsStack, DsText } from '@/ds'
+import { DsIconChip, DsPanel, DsStatusBadge } from '@/ds'
 import { RouterLink } from 'vue-router'
 
 import type { ClassCard } from '../../api/types'
@@ -17,23 +17,23 @@ const icon = usePhIcon()
 <template>
   <RouterLink :to="to" class="block min-w-0" :data-testid="`class-card-${item.id}`">
     <DsPanel class="h-full">
-      <DsCluster :wrap="false">
+      <div class="flex items-center gap-3">
         <DsIconChip :icon="icon('chalkboard')" />
-        <DsStack gap="2xs" class="grow">
+        <div class="flex min-w-0 grow flex-col gap-1">
           <span class="flex flex-wrap items-center gap-2 text-label text-highlighted">
             <span class="min-w-0 break-words">{{ item.name }}</span>
             <DsStatusBadge v-if="item.isActive" status="active" size="sm" label="Aktif" />
           </span>
-          <DsText v-if="item.subjectName" variant="caption" as="span">{{
+          <span v-if="item.subjectName" class="text-caption text-muted">{{
             item.subjectName
-          }}</DsText>
-          <DsText variant="caption" as="span" tabular
-            >{{ item.students }} pelajar · {{ item.year }} · {{ item.joinCode }}</DsText
+          }}</span>
+          <span class="tabular text-caption text-muted"
+            >{{ item.students }} pelajar · {{ item.year }} · {{ item.joinCode }}</span
           >
-          <DsText variant="label" tone="primary">{{ action }}</DsText>
-        </DsStack>
+          <span class="text-label text-primary-t">{{ action }}</span>
+        </div>
         <UIcon :name="icon('caret-right')" class="size-5 shrink-0 text-dimmed" />
-      </DsCluster>
+      </div>
     </DsPanel>
   </RouterLink>
 </template>

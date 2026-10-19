@@ -14,7 +14,6 @@ import { clock, formatMyt } from '@/lib/time'
 import { createKirkpatrickIntervention } from '../../../api'
 import type { AlertType, Mood } from '../../../api/types'
 import { ALERT_TYPES, MOODS } from './intervention-format'
-import { DsGrid } from '@/ds'
 
 const emit = defineEmits<{ saved: [] }>()
 
@@ -115,7 +114,7 @@ async function submit() {
       data-testid="int-form"
       @submit.prevent="submit"
     >
-      <DsGrid :cols="{ base: 1, md: 3 }" gap="sm">
+      <div class="grid grid-cols-1 gap-3 md:grid-cols-3">
         <UFormField label="Pelajar (ID)" name="student_id" class="min-w-0" required>
           <UInput
             v-model="form.studentId"
@@ -151,7 +150,7 @@ async function submit() {
             data-testid="int-date"
           />
         </UFormField>
-      </DsGrid>
+      </div>
       <UFormField label="Penerangan Amaran" name="alert_description" required>
         <UTextarea
           v-model="form.alertDescription"
@@ -174,7 +173,7 @@ async function submit() {
           data-testid="int-action"
         />
       </UFormField>
-      <DsGrid :cols="{ base: 2, md: 4 }" gap="sm">
+      <div class="grid grid-cols-2 gap-3 md:grid-cols-4">
         <UFormField label="Ketepatan Sebelum (%)" name="before_accuracy" class="min-w-0">
           <UInput
             v-model="form.beforeAccuracy"
@@ -215,7 +214,7 @@ async function submit() {
             data-testid="int-after-mood"
           />
         </UFormField>
-      </DsGrid>
+      </div>
       <div>
         <UButton
           type="submit"

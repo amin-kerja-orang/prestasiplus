@@ -5,7 +5,7 @@
  */
 import { computed } from 'vue'
 
-import { DsAudioPlayer, DsStack, DsHeading, DsText } from '@/ds'
+import { DsAudioPlayer } from '@/ds'
 
 import type { AudioSection } from '../../api'
 import { CHOICES, PLAYER_COPY, sectionRange, type Choice } from '../../lib/audio-kbat'
@@ -42,19 +42,17 @@ function choose(no: number, value: unknown): void {
     data-testid="audio-section"
     :data-section-no="section.no"
   >
-    <DsStack>
-      <DsHeading
+    <div class="flex flex-col gap-4">
+      <h2
         :id="`section-${String(section.no)}-title`"
-        :level="2"
-        variant="subheading"
-        wrap="anywhere"
+        class="text-subheading break-words text-highlighted"
       >
         {{ PLAYER_COPY.sectionPrefix }} {{ section.no }} · {{ PLAYER_COPY.questionPrefix }}
         {{ sectionRange(section.questions) }}
-        <DsText variant="label" tone="muted" class="block" data-testid="section-title">{{
+        <span class="block text-label text-muted" data-testid="section-title">{{
           section.title
-        }}</DsText>
-      </DsHeading>
+        }}</span>
+      </h2>
 
       <DsAudioPlayer
         v-if="section.audioUrl"
@@ -62,9 +60,9 @@ function choose(no: number, value: unknown): void {
         :title="section.title"
         data-testid="section-audio"
       />
-      <DsText v-else variant="label" as="p" tone="muted" data-testid="section-no-audio">
+      <p v-else class="text-label text-muted" data-testid="section-no-audio">
         {{ PLAYER_COPY.noAudio }}
-      </DsText>
+      </p>
 
       <ol class="flex flex-col gap-5">
         <li v-for="q in questions" :key="q.no" class="min-w-0" data-testid="audio-question">
@@ -80,6 +78,6 @@ function choose(no: number, value: unknown): void {
           />
         </li>
       </ol>
-    </DsStack>
+    </div>
   </UCard>
 </template>

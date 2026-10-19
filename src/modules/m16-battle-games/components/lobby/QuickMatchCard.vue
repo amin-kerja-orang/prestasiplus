@@ -7,7 +7,7 @@
  */
 import { onBeforeUnmount, ref } from 'vue'
 
-import { DsArt3D, DsCluster, DsGrid, DsHeading, DsText } from '@/ds'
+import { DsArt3D } from '@/ds'
 
 import {
   cancelPbQuickMatch,
@@ -109,16 +109,16 @@ onBeforeUnmount(() => {
 
 <template>
   <UCard data-testid="quick-match">
-    <DsCluster :wrap="false">
+    <div class="flex items-center gap-3">
       <DsArt3D name="bolt" size="lg" />
       <div class="min-w-0">
-        <DsHeading :level="2" variant="subheading">Cari Lawan Auto</DsHeading>
-        <DsText variant="caption">Sistem cari pemain sepadan secara automatik</DsText>
+        <h2 class="text-subheading text-highlighted">Cari Lawan Auto</h2>
+        <p class="text-caption text-muted">Sistem cari pemain sepadan secara automatik</p>
       </div>
-    </DsCluster>
+    </div>
 
     <div v-if="!searching" class="mt-4 flex flex-col gap-4" data-testid="quick-match-form">
-      <DsGrid :cols="{ sm: 2 }" gap="sm">
+      <div class="grid gap-3 sm:grid-cols-2">
         <UFormField label="Subjek">
           <USelect
             v-model="subject"
@@ -137,7 +137,7 @@ onBeforeUnmount(() => {
             data-testid="qm-mode"
           />
         </UFormField>
-      </DsGrid>
+      </div>
       <UButton
         size="xl"
         color="primary"
@@ -149,25 +149,17 @@ onBeforeUnmount(() => {
       >
         🔍 Cari Lawan Sekarang
       </UButton>
-      <DsText v-if="error" variant="label" as="p" tone="error" role="alert" data-testid="qm-error">
+      <p v-if="error" class="text-label text-error" role="alert" data-testid="qm-error">
         {{ error }}
-      </DsText>
+      </p>
     </div>
 
-    <div
-      v-else
-      class="mt-4 flex flex-col items-center gap-3 text-center"
-      data-testid="qm-searching"
-    >
+    <div v-else class="mt-4 flex flex-col items-center gap-3 text-center" data-testid="qm-searching">
       <div class="flex items-center justify-center gap-2 text-primary-t">
-        <UIcon
-          name="i-ph-spinner-gap-bold"
-          class="size-5 animate-spin motion-reduce:animate-none"
-          aria-hidden="true"
-        />
-        <DsText variant="label" data-testid="qm-elapsed">Mencari lawan... {{ elapsed }}s</DsText>
+        <UIcon name="i-ph-spinner-gap-bold" class="size-5 animate-spin motion-reduce:animate-none" aria-hidden="true" />
+        <span class="text-label" data-testid="qm-elapsed">Mencari lawan... {{ elapsed }}s</span>
       </div>
-      <DsText variant="body" tone="muted">Sila tunggu, sistem sedang mencari pemain sepadan</DsText>
+      <p class="text-body text-muted">Sila tunggu, sistem sedang mencari pemain sepadan</p>
       <UButton
         color="neutral"
         variant="soft"

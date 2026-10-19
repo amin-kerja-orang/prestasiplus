@@ -1,6 +1,6 @@
 <script setup lang="ts">
 /** S14 rows #4–#50 (FR-M14-41, FN-M14-5.1.3): rank, avatar, name, "{title} · Level {n}", score, tier emoji. */
-import { DsLeaderRow, DsStack } from '@/ds'
+import { DsLeaderRow } from '@/ds'
 import { formatNumber } from '@/lib/number'
 
 import type { LeaderboardRow } from '../../api'
@@ -10,7 +10,7 @@ defineProps<{ rows: readonly LeaderboardRow[] }>()
 </script>
 
 <template>
-  <DsStack as="ul" gap="xs" data-testid="lb-rows">
+  <ul class="flex flex-col gap-2" data-testid="lb-rows">
     <DsLeaderRow
       v-for="row in rows"
       :key="row.rank"
@@ -21,5 +21,5 @@ defineProps<{ rows: readonly LeaderboardRow[] }>()
       :unit="`${LEADERBOARD_COPY.syiling} ${row.tierIcon}`"
       data-testid="lb-row"
     />
-  </DsStack>
+  </ul>
 </template>

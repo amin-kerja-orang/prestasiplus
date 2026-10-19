@@ -3,7 +3,7 @@
  * A card of S3 with a tinted icon chip and the heading. While the period loads the body shows the
  * spinner and a failed load shows "Gagal memuatkan" (FR-M17-36); the default slot renders when `state` is `ok`.
  */
-import { DsIconChip, DsCluster, DsHeading } from '@/ds'
+import { DsIconChip } from '@/ds'
 
 import { accentFor } from '../command-center/cc-format'
 import { S3_COPY } from './board-copy'
@@ -24,12 +24,12 @@ withDefaults(
 <template>
   <UCard class="min-w-0" :data-testid="testid">
     <template #header>
-      <DsCluster gap="xs" :wrap="false">
+      <div class="flex min-w-0 items-center gap-2">
         <DsIconChip :icon="icon" :accent="accentFor(icon)" size="sm" />
-        <DsHeading :level="2" variant="subheading" class="min-w-0" data-testid="daily-panel-title">
+        <h2 class="min-w-0 text-subheading text-highlighted" data-testid="daily-panel-title">
           {{ heading ?? title }}
-        </DsHeading>
-      </DsCluster>
+        </h2>
+      </div>
     </template>
     <p
       v-if="state === 'loading'"

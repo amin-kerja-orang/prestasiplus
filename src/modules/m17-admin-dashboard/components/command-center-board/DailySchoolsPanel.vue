@@ -12,7 +12,6 @@ import { shortSchool } from '../command-center/cc-format'
 import { S3_COPY } from './board-copy'
 import type { DrillState, LoadStatus } from './composables'
 import DailyPanel from './DailyPanel.vue'
-import { DsStack, DsText } from '@/ds'
 
 const props = defineProps<{
   data: CcDailyActivity | null
@@ -51,7 +50,7 @@ const pct1 = (n: number) => `${formatNumber(n, { decimals: 1 })}%`
     >
       {{ S3_COPY.noSchools }}
     </p>
-    <DsStack v-else as="ul" gap="xs">
+    <ul v-else class="flex flex-col gap-2">
       <li v-for="(s, i) in data.schools" :key="s.schoolId" data-testid="cc-school-item">
         <UButton
           color="neutral"
@@ -77,17 +76,17 @@ const pct1 = (n: number) => `${formatNumber(n, { decimals: 1 })}%`
               <b class="block text-label text-highlighted">{{
                 hasAnswers(s) ? formatCount(s.activeTeachers) : formatCount(s.loginCount)
               }}</b>
-              <DsText variant="caption" as="span" class="block">{{
+              <span class="block text-caption text-muted">{{
                 hasAnswers(s) ? 'GURU' : 'LOGIN'
-              }}</DsText>
+              }}</span>
             </span>
             <span data-testid="cc-school-pupils">
               <b class="block text-label text-highlighted">{{ formatCount(s.activeStudents) }}</b>
-              <DsText variant="caption" as="span" class="block">PELAJAR</DsText>
+              <span class="block text-caption text-muted">PELAJAR</span>
             </span>
             <span data-testid="cc-school-answers">
               <b class="block text-label text-highlighted">{{ formatCount(s.totalAnswers) }}</b>
-              <DsText variant="caption" as="span" class="block">SOALAN</DsText>
+              <span class="block text-caption text-muted">SOALAN</span>
             </span>
             <span
               :class="['w-16 text-label', toneOf(s.accuracy)]"
@@ -124,7 +123,7 @@ const pct1 = (n: number) => `${formatNumber(n, { decimals: 1 })}%`
             >
               {{ S3_COPY.noDrill }}
             </p>
-            <DsStack v-else>
+            <div v-else class="flex flex-col gap-4">
               <section v-if="drill.data.teachers.length > 0" data-testid="cc-drill-teachers">
                 <h3 class="mb-1 text-overline text-muted">
                   Guru Aktif ({{ drill.data.teachers.length }})
@@ -190,11 +189,11 @@ const pct1 = (n: number) => `${formatNumber(n, { decimals: 1 })}%`
                       l.name
                     }}</span>
                     <UBadge color="primary" variant="soft" size="sm">{{ l.role }}</UBadge>
-                    <DsText variant="caption" as="span">{{ l.timeAgo }}</DsText>
+                    <span class="text-caption text-muted">{{ l.timeAgo }}</span>
                   </li>
                 </ul>
               </section>
-            </DsStack>
+            </div>
             <UButton
               :to="paths.school(s.schoolId)"
               variant="link"
@@ -206,6 +205,6 @@ const pct1 = (n: number) => `${formatNumber(n, { decimals: 1 })}%`
           </template>
         </div>
       </li>
-    </DsStack>
+    </ul>
   </DailyPanel>
 </template>

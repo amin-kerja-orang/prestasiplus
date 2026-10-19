@@ -5,7 +5,7 @@
  */
 import { computed, ref, watch } from 'vue'
 
-import { DsQuizOption, DsLoadError, DsStack, DsCluster, DsText } from '@/ds'
+import { DsQuizOption, DsLoadError } from '@/ds'
 import type { QuizOptionState } from '@/ds'
 
 import CountdownView from '../components/solo/CountdownView.vue'
@@ -147,16 +147,16 @@ watch(darjah, () => void start(), { immediate: true })
   <div data-testid="solo-cabaran-kilat">
     <DarjahPicker v-if="darjah === null" title="Cabaran Kilat" art="bolt" />
     <GamePanel>
-      <DsStack v-if="loading" gap="sm" aria-busy="true" data-testid="solo-loading">
+      <div v-if="loading" class="flex flex-col gap-3" aria-busy="true" data-testid="solo-loading">
         <USkeleton class="h-16 w-full" />
         <USkeleton class="h-16 w-full" />
-      </DsStack>
+      </div>
       <DsLoadError v-else-if="error" :message="error" @retry="load()" />
 
       <CountdownView v-if="phase === 'countdown'" title="⚡ CABARAN KILAT" :count="count" />
 
-      <DsStack v-if="phase === 'playing' && current">
-        <DsCluster v-if="combo >= 2" gap="none" align="stretch" justify="center" :wrap="false">
+      <div v-if="phase === 'playing' && current" class="flex flex-col gap-4">
+        <div v-if="combo >= 2" class="flex justify-center">
           <UBadge
             color="warning"
             variant="solid"
@@ -165,10 +165,10 @@ watch(darjah, () => void start(), { immediate: true })
             data-testid="solo-combo"
             >🔥 {{ combo }}x COMBO</UBadge
           >
-        </DsCluster>
+        </div>
         <GameHud :score="score" :time-left="timeLeft" :max="GAME_SECONDS" :correct="correct" caps />
         <div class="flex items-center justify-between gap-2 pt-2">
-          <DsText variant="caption">Soalan {{ index + 1 }}</DsText>
+          <p class="text-caption text-muted">Soalan {{ index + 1 }}</p>
           <UBadge
             v-if="chip"
             :color="CHIP_COLOR[chip.tone]"
@@ -179,9 +179,9 @@ watch(darjah, () => void start(), { immediate: true })
           >
         </div>
         <UCard data-testid="solo-card">
-          <DsText variant="subheading" wrap="anywhere">
+          <p class="text-subheading break-words text-highlighted">
             {{ current.question_text }}
-          </DsText>
+          </p>
         </UCard>
         <div class="grid gap-3">
           <DsQuizOption
@@ -195,7 +195,7 @@ watch(darjah, () => void start(), { immediate: true })
             {{ option.text }}
           </DsQuizOption>
         </div>
-      </DsStack>
+      </div>
 
       <ResultCard
         v-if="phase === 'done'"

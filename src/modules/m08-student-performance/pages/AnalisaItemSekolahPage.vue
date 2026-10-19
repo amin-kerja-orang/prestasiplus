@@ -9,24 +9,7 @@ import { computed, watchEffect } from 'vue'
 import { useRoute } from 'vue-router'
 import type { TableColumn } from '@nuxt/ui'
 
-import {
-  DsBreadcrumb,
-  DsChart,
-  DsDataTable,
-  DsEmptyState,
-  DsLoadError,
-  DsPage,
-  DsPageHeader,
-  DsPanel,
-  DsStatRow,
-  DsPillNav,
-  type PillItem,
-  DsCluster,
-  DsStack,
-  DsGrid,
-  DsHeading,
-  DsText,
-} from '@/ds'
+import { DsBreadcrumb, DsChart, DsDataTable, DsEmptyState, DsLoadError, DsPage, DsPageHeader, DsPanel, DsStatRow, DsPillNav, type PillItem } from '@/ds'
 import { usePrototypeScope } from '@/composables'
 import { usePageMeta } from '@/composables/usePageMeta'
 
@@ -193,11 +176,11 @@ const cardFields = [
       <DsPageHeader title="Analisa Item — Sekolah" :subtitle="subtitle" />
 
       <DsPanel v-if="data.school.name" data-testid="school-card">
-        <DsCluster gap="md">
-          <DsStack gap="xs" class="grow">
-            <DsHeading :level="2" wrap="anywhere" data-testid="school-name">
+        <div class="flex flex-wrap items-center gap-4">
+          <div class="flex min-w-0 grow flex-col gap-2">
+            <h2 class="text-heading break-words text-highlighted" data-testid="school-name">
               {{ data.school.name }}
-            </DsHeading>
+            </h2>
             <div class="flex flex-wrap items-center gap-2 text-caption text-muted">
               <UBadge color="neutral" variant="subtle" :label="data.school.type" />
               <span v-if="data.school.code" class="tabular">{{ data.school.code }}</span>
@@ -206,30 +189,25 @@ const cardFields = [
               >
               <span v-else>{{ data.school.state }}</span>
             </div>
-          </DsStack>
+          </div>
           <dl class="flex gap-6 text-center">
             <div class="flex flex-col-reverse gap-1">
-              <DsText variant="caption" as="dt">Pelajar</DsText>
-              <DsText variant="title" as="dd" tabular data-testid="school-students">
+              <dt class="text-caption text-muted">Pelajar</dt>
+              <dd class="tabular text-title text-highlighted" data-testid="school-students">
                 {{ grouped(data.students) }}
-              </DsText>
+              </dd>
             </div>
             <div class="flex flex-col-reverse gap-1">
-              <DsText variant="caption" as="dt">Jawapan</DsText>
-              <DsText variant="title" as="dd" tabular data-testid="school-answers">
+              <dt class="text-caption text-muted">Jawapan</dt>
+              <dd class="tabular text-title text-highlighted" data-testid="school-answers">
                 {{ data.answers === null ? DASH : grouped(data.answers) }}
-              </DsText>
+              </dd>
             </div>
           </dl>
-        </DsCluster>
+        </div>
       </DsPanel>
 
-      <DsPillNav
-        :items="chips"
-        :active="activeChip"
-        label="Tingkatan"
-        data-testid="tingkatan-chips"
-      />
+      <DsPillNav :items="chips" :active="activeChip" label="Tingkatan" data-testid="tingkatan-chips" />
 
       <div v-if="data.students === 0" data-testid="school-empty">
         <DsEmptyState title="Tiada Data Pelajar" :description="emptyCopy" icon="i-ph-user-minus" />
@@ -242,12 +220,12 @@ const cardFields = [
 
         <div class="grid grid-cols-1 gap-4 md:gap-6 lg:grid-cols-2">
           <DsPanel class="min-w-0" data-testid="difficulty-card">
-            <DsStack>
-              <DsHeading :level="2" variant="subheading">Profil Kesukaran</DsHeading>
-              <DsText v-if="!difficulty || difficulty.total === 0" variant="body" tone="muted">
+            <div class="flex flex-col gap-4">
+              <h2 class="text-subheading text-highlighted">Profil Kesukaran</h2>
+              <p v-if="!difficulty || difficulty.total === 0" class="text-body text-muted">
                 Tiada data
-              </DsText>
-              <DsGrid v-else :cols="3" gap="sm" as="ul">
+              </p>
+              <ul v-else class="grid grid-cols-3 gap-3">
                 <li
                   v-for="p in difficulty.parts"
                   :key="p.id"
@@ -260,7 +238,7 @@ const cardFields = [
                     :icon="icon(LEVEL_ICON[p.level])"
                     :label="p.label"
                   />
-                  <DsText variant="title" as="span" tabular>{{ p.count }}</DsText>
+                  <span class="tabular text-title text-highlighted">{{ p.count }}</span>
                   <UProgress
                     class="w-full"
                     :model-value="ratioPct(p.count, difficulty.total)"
@@ -270,22 +248,18 @@ const cardFields = [
                     :aria-label="`${p.label}: ${p.count}`"
                   />
                 </li>
-              </DsGrid>
-            </DsStack>
+              </ul>
+            </div>
           </DsPanel>
 
           <DsPanel class="min-w-0" data-testid="school-gps-card">
-            <DsStack gap="sm">
-              <DsHeading :level="2" variant="subheading">GPS Anggaran Sekolah</DsHeading>
-              <DsCluster>
+            <div class="flex flex-col gap-3">
+              <h2 class="text-subheading text-highlighted">GPS Anggaran Sekolah</h2>
+              <div class="flex flex-wrap items-center gap-3">
                 <span
-                  :class="[
-                    data.gps.band ? BAND_STYLE[data.gps.band].text : 'text-dimmed',
-                    'tabular text-display',
-                  ]"
+:class="[data.gps.band ? BAND_STYLE[data.gps.band].text : 'text-dimmed', 'tabular text-display']"
                   data-testid="school-gps-value"
-                  >{{ data.gps.value === null ? DASH : dec2(data.gps.value) }}</span
-                >
+                  >{{ data.gps.value === null ? DASH : dec2(data.gps.value) }}</span>
                 <UBadge
                   v-if="data.gps.band"
                   :color="BAND_STYLE[data.gps.band].badge"
@@ -293,10 +267,10 @@ const cardFields = [
                   size="lg"
                   :label="data.gps.band"
                 />
-              </DsCluster>
-              <DsText variant="caption">
+              </div>
+              <p class="text-caption text-muted">
                 Berdasarkan {{ data.gps.entries }} entri headcount • Lebih rendah = lebih baik
-              </DsText>
+              </p>
               <DsChart
                 v-if="spark"
                 title="Trend GPS"
@@ -314,17 +288,17 @@ const cardFields = [
                 :icon="icon('chart-pie')"
                 label="Prestasi 360"
               />
-            </DsStack>
+            </div>
           </DsPanel>
         </div>
 
-        <DsStack as="section" gap="sm" data-testid="school-subjects">
-          <DsStack gap="2xs">
-            <DsHeading :level="2" variant="subheading">Prestasi Mengikut Subjek</DsHeading>
-            <DsText variant="body" tone="muted">
+        <section class="flex min-w-0 flex-col gap-3" data-testid="school-subjects">
+          <div class="flex flex-col gap-1">
+            <h2 class="text-subheading text-highlighted">Prestasi Mengikut Subjek</h2>
+            <p class="text-body text-muted">
               Ringkasan ketepatan dan jawapan salah bagi setiap subjek
-            </DsText>
-          </DsStack>
+            </p>
+          </div>
           <DsDataTable
             :data="rows"
             :columns="columns"
@@ -334,17 +308,12 @@ const cardFields = [
             :page-size="100"
             data-testid="subject-table"
           />
-        </DsStack>
+        </section>
 
         <SchoolQuestionList v-if="data.questions.length > 0" :questions="data.questions" />
       </template>
     </template>
-    <div
-      v-else-if="!error"
-      class="flex flex-col gap-4 md:gap-6"
-      aria-busy="true"
-      data-testid="page-loading"
-    >
+    <div v-else-if="!error" class="flex flex-col gap-4 md:gap-6" aria-busy="true" data-testid="page-loading">
       <USkeleton class="h-24 w-full" />
       <USkeleton class="h-64 w-full" />
     </div>

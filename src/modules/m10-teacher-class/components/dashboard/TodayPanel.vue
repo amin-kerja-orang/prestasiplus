@@ -4,7 +4,7 @@
  * so the counters are 0, the empty texts and the single live action card always show (FR-M10-11;
  * populated rows UNVERIFIED, L-M10-01).
  */
-import { DsIconChip, DsPanel, DsGrid, DsCluster, DsStack, DsText, DsHeading } from '@/ds'
+import { DsIconChip, DsPanel } from '@/ds'
 
 import type { GuruDashboard } from '../../api/types'
 import { DASH_COPY } from './copy'
@@ -16,11 +16,11 @@ defineProps<{ today: GuruDashboard['today'] }>()
   <DsPanel data-testid="today-panel">
     <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
       <div class="min-w-0">
-        <DsText variant="overline" as="p">{{ DASH_COPY.todayLabel }}</DsText>
-        <DsHeading :level="2" variant="subheading">{{ DASH_COPY.todayTitle }}</DsHeading>
+        <p class="text-overline text-muted">{{ DASH_COPY.todayLabel }}</p>
+        <h2 class="text-subheading text-highlighted">{{ DASH_COPY.todayTitle }}</h2>
         <p class="mt-1 text-body text-muted">{{ DASH_COPY.todayText }}</p>
       </div>
-      <DsGrid :cols="3" gap="xs" class="shrink-0" data-testid="today-counters">
+      <div class="grid shrink-0 grid-cols-3 gap-2" data-testid="today-counters">
         <DsPanel
           v-for="[label, n] in [
             [DASH_COPY.counterStudents, today.students.length],
@@ -32,24 +32,24 @@ defineProps<{ today: GuruDashboard['today'] }>()
           class="sm:min-w-20"
         >
           <div class="text-center">
-            <DsText variant="overline" as="p">{{ label }}</DsText>
-            <DsText variant="heading" tabular>{{ n }}</DsText>
+            <p class="text-overline text-muted">{{ label }}</p>
+            <p class="tabular text-heading text-highlighted">{{ n }}</p>
           </div>
         </DsPanel>
-      </DsGrid>
+      </div>
     </div>
 
     <div class="mt-4 grid grid-cols-1 gap-3 lg:grid-cols-3">
       <DsPanel tone="inset" data-testid="today-students">
-        <DsCluster gap="xs" justify="between" :wrap="false">
-          <DsHeading :level="3" variant="label">{{ DASH_COPY.colStudents }}</DsHeading>
-          <DsText variant="caption" as="span">{{ DASH_COPY.top3 }}</DsText>
-        </DsCluster>
+        <div class="flex items-center justify-between gap-2">
+          <h3 class="text-label text-highlighted">{{ DASH_COPY.colStudents }}</h3>
+          <span class="text-caption text-muted">{{ DASH_COPY.top3 }}</span>
+        </div>
         <p class="mt-3 text-body text-muted">{{ DASH_COPY.emptyStudents }}</p>
       </DsPanel>
       <DsPanel tone="inset" data-testid="today-topics">
-        <DsCluster gap="xs" justify="between" :wrap="false">
-          <DsHeading :level="3" variant="label">{{ DASH_COPY.colTopics }}</DsHeading>
+        <div class="flex items-center justify-between gap-2">
+          <h3 class="text-label text-highlighted">{{ DASH_COPY.colTopics }}</h3>
           <UButton
             to="/analitik/kelas"
             variant="link"
@@ -58,24 +58,24 @@ defineProps<{ today: GuruDashboard['today'] }>()
             data-testid="today-analytics"
             >{{ DASH_COPY.analytics }}</UButton
           >
-        </DsCluster>
+        </div>
         <p class="mt-3 text-body text-muted">{{ DASH_COPY.emptyTopics }}</p>
       </DsPanel>
       <DsPanel tone="inset" data-testid="today-actions">
-        <DsCluster gap="xs" justify="between" :wrap="false">
-          <DsHeading :level="3" variant="label">{{ DASH_COPY.colActions }}</DsHeading>
-          <DsText variant="caption" as="span">{{ DASH_COPY.ruleBased }}</DsText>
-        </DsCluster>
+        <div class="flex items-center justify-between gap-2">
+          <h3 class="text-label text-highlighted">{{ DASH_COPY.colActions }}</h3>
+          <span class="text-caption text-muted">{{ DASH_COPY.ruleBased }}</span>
+        </div>
         <div class="mt-3 flex gap-3" data-testid="today-action">
           <DsIconChip icon="laptop" accent="win" />
-          <DsStack gap="2xs" align="start">
-            <DsText variant="label" as="p" tone="highlighted">{{ DASH_COPY.actionTitle }}</DsText>
+          <div class="flex min-w-0 flex-col items-start gap-1">
+            <p class="text-label text-highlighted">{{ DASH_COPY.actionTitle }}</p>
             <UBadge color="neutral" variant="subtle">{{ DASH_COPY.actionBadge }}</UBadge>
-            <DsText variant="body" tone="muted">{{ DASH_COPY.actionText }}</DsText>
+            <p class="text-body text-muted">{{ DASH_COPY.actionText }}</p>
             <UButton to="/guru/kelas" variant="link" class="px-0" data-testid="today-action-link">{{
               DASH_COPY.actionLink
             }}</UButton>
-          </DsStack>
+          </div>
         </div>
       </DsPanel>
     </div>

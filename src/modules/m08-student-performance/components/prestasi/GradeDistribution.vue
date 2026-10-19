@@ -6,7 +6,7 @@
 import { computed } from 'vue'
 
 import { formatNumber } from '@/lib/number'
-import { DsChart, DsPanel, DsStack, DsText } from '@/ds'
+import { DsChart, DsPanel } from '@/ds'
 
 import type { SchoolPerformance } from '../../api/types'
 import { grouped } from '../../lib/prestasi/format'
@@ -22,7 +22,7 @@ const series = computed(() => [
 
 <template>
   <DsPanel class="lg:col-span-2" data-testid="grade-card">
-    <DsStack>
+    <div class="flex flex-col gap-4">
       <DsChart
         title="📈 Taburan Gred (Anggaran)"
         :heading-level="2"
@@ -37,15 +37,15 @@ const series = computed(() => [
           class="flex items-baseline justify-between gap-2 text-caption"
           :data-testid="`grade-row-${d.grade}`"
         >
-          <DsText variant="label" tone="highlighted">{{ d.grade }}</DsText>
+          <span class="text-label text-highlighted">{{ d.grade }}</span>
           <span class="tabular text-muted"
             >{{ grouped(d.count) }} · {{ formatNumber(d.pct, { decimals: 1 }) }}%</span
           >
         </li>
       </ul>
-      <DsText variant="caption" align="end" data-testid="grade-total">
+      <p class="text-end text-caption text-muted" data-testid="grade-total">
         Jumlah: {{ grouped(total) }} rekod
-      </DsText>
-    </DsStack>
+      </p>
+    </div>
   </DsPanel>
 </template>

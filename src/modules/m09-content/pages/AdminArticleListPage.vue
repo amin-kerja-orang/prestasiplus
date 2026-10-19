@@ -25,8 +25,6 @@ import {
   DsStatRow,
   DsStatusBadge,
   useConfirm,
-  DsStack,
-  DsText,
 } from '@/ds'
 import type { CardField, RowAction, StatItem } from '@/ds'
 
@@ -268,7 +266,7 @@ const cardFields: CardField[] = [
 
     <DsStatRow :items="statItems" prefix="stat" :cols="3" />
 
-    <DsStack gap="sm">
+    <div class="flex flex-col gap-3">
       <DsFilterBar
         :chips="chips"
         data-testid="admin-articles-filter"
@@ -313,7 +311,7 @@ const cardFields: CardField[] = [
           </option>
         </DsNativeSelect>
       </DsFilterBar>
-    </DsStack>
+    </div>
 
     <DsLoadError
       v-if="error"
@@ -344,13 +342,12 @@ const cardFields: CardField[] = [
       @update:page="goToPage"
     >
       <template #title-cell="{ row }">
-        <DsStack
-          gap="2xs"
-          class="min-w-40"
+        <div
+          class="flex min-w-40 flex-col gap-1"
           data-testid="admin-article-row"
           :data-article-id="row.original.id"
         >
-          <DsText variant="label" as="p" tone="highlighted" :clamp="2">
+          <p class="line-clamp-2 text-label text-highlighted">
             <UIcon
               v-if="row.original.raw.isFeatured"
               name="i-ph-star-fill"
@@ -359,11 +356,11 @@ const cardFields: CardField[] = [
               data-testid="article-featured"
             />
             <span data-testid="article-title">{{ row.original.title }}</span>
-          </DsText>
-          <DsText variant="caption" data-testid="article-author">
+          </p>
+          <p class="text-caption text-muted" data-testid="article-author">
             Oleh: {{ row.original.raw.author.name }}
-          </DsText>
-        </DsStack>
+          </p>
+        </div>
       </template>
       <template #categoryLabel-cell="{ row }">
         <UBadge

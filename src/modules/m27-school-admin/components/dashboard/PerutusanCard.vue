@@ -5,7 +5,7 @@
  * "{role label} · {relative time}"). No rows: the list is hidden and no sentence is shown (FR-M27-16).
  */
 
-import { DsPanel, DsCluster, DsText } from '@/ds'
+import { DsPanel } from '@/ds'
 import { usePrototypeScope } from '@/composables'
 import { diffForHumans } from '@/lib/time'
 
@@ -20,7 +20,7 @@ const { allows } = usePrototypeScope()
 
 <template>
   <DsPanel data-testid="sd-perutusan">
-    <DsCluster justify="between" :wrap="false">
+    <div class="flex items-center justify-between gap-3">
       <h2 class="flex min-w-0 items-center gap-2 text-subheading text-highlighted">
         <UIcon name="i-ph-megaphone-duotone" class="size-5 shrink-0 text-info" aria-hidden="true" />
         Perutusan Terkini
@@ -33,7 +33,7 @@ const { allows } = usePrototypeScope()
         label="Lihat semua →"
         data-testid="sd-perutusan-all"
       />
-    </DsCluster>
+    </div>
     <ul v-if="rows.length > 0" class="mt-2 flex flex-col gap-3" data-testid="sd-perutusan-rows">
       <li
         v-for="row in rows"
@@ -48,18 +48,12 @@ const { allows } = usePrototypeScope()
           data-testid="sd-perutusan-initials"
         />
         <div class="min-w-0">
-          <DsText
-            variant="label"
-            as="p"
-            tone="highlighted"
-            wrap="anywhere"
-            data-testid="sd-perutusan-title"
-          >
+          <p class="text-label break-words text-highlighted" data-testid="sd-perutusan-title">
             {{ row.title }}
-          </DsText>
-          <DsText variant="caption" data-testid="sd-perutusan-meta">
+          </p>
+          <p class="text-caption text-muted" data-testid="sd-perutusan-meta">
             {{ row.author.roleLabel }} · {{ diffForHumans(row.createdAt) }}
-          </DsText>
+          </p>
         </div>
       </li>
     </ul>

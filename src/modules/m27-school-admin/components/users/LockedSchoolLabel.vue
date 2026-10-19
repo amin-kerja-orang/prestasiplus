@@ -4,7 +4,7 @@
  * "{code} · {district} · {state}" without empty parts. No search, no input: the school is the session school.
  * Locked-field treatment: muted surface, lock icon, no focus ring.
  */
-import { DsFormField, DsPanel, DsCluster, DsText } from '@/ds'
+import { DsFormField, DsPanel } from '@/ds'
 
 import type { SchoolInfo } from '../../api/school-admin'
 import { schoolMeta } from './users-format'
@@ -15,24 +15,18 @@ defineProps<{ school: Pick<SchoolInfo, 'name' | 'code' | 'district' | 'state'> }
 <template>
   <DsFormField label="Sekolah" data-testid="user-school">
     <DsPanel tone="inset">
-      <DsCluster :wrap="false" class="min-h-11">
-        <UIcon name="i-ph-buildings" class="size-5 shrink-0 text-muted" aria-hidden="true" />
-        <div class="min-w-0 flex-1">
-          <DsText
-            variant="label"
-            as="p"
-            tone="highlighted"
-            wrap="anywhere"
-            data-testid="user-school-name"
-          >
-            {{ school.name }}
-          </DsText>
-          <DsText variant="caption" wrap="anywhere" data-testid="user-school-meta">
-            {{ schoolMeta(school) }}
-          </DsText>
-        </div>
-        <UIcon name="i-ph-lock-simple" class="size-5 shrink-0 text-dimmed" aria-hidden="true" />
-      </DsCluster>
-    </DsPanel>
+<div class="flex min-h-11 items-center gap-3">
+      <UIcon name="i-ph-buildings" class="size-5 shrink-0 text-muted" aria-hidden="true" />
+      <div class="min-w-0 flex-1">
+        <p class="break-words text-label text-highlighted" data-testid="user-school-name">
+          {{ school.name }}
+        </p>
+        <p class="break-words text-caption text-muted" data-testid="user-school-meta">
+          {{ schoolMeta(school) }}
+        </p>
+      </div>
+      <UIcon name="i-ph-lock-simple" class="size-5 shrink-0 text-dimmed" aria-hidden="true" />
+    </div>
+</DsPanel>
   </DsFormField>
 </template>

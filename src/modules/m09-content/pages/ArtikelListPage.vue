@@ -15,16 +15,7 @@ import { computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 
 import { useApi, useSession } from '@/composables'
-import {
-  DsArt3D,
-  DsEmptyState,
-  DsLoadError,
-  DsPage,
-  DsStack,
-  DsCluster,
-  DsHeading,
-  DsText,
-} from '@/ds'
+import { DsArt3D, DsEmptyState, DsLoadError, DsPage } from '@/ds'
 
 import {
   fetchArticles,
@@ -111,38 +102,35 @@ function goToPage(page: number): void {
     data-testid="artikel-list-page"
   >
     <!-- Guest hero (FN-M09-2.2.2). -->
-    <DsStack
+    <header
       v-if="guest"
-      as="header"
-      gap="sm"
-      align="center"
-      class="text-center"
+      class="flex flex-col items-center gap-3 text-center"
       data-testid="artikel-hero"
     >
       <DsArt3D name="books" size="xl" float />
       <UBadge color="primary" variant="solid" :label="ARTIKEL_COPY.heroChip" />
-      <DsHeading :level="1">
+      <h1 class="text-title text-highlighted">
         {{ ARTIKEL_COPY.heroTitle }}
-      </DsHeading>
-      <DsText variant="body" tone="muted" class="max-w-prose" data-testid="artikel-hero-line">
+      </h1>
+      <p class="max-w-prose text-body text-muted" data-testid="artikel-hero-line">
         <strong class="text-highlighted">{{ HERO_TOPICS[0] }}</strong
         >, <strong class="text-highlighted">{{ HERO_TOPICS[1] }}</strong
         >, <strong class="text-highlighted">{{ HERO_TOPICS[2] }}</strong> dan
         <strong class="text-highlighted">{{ HERO_TOPICS[3] }}</strong> untuk pelajar Malaysia!
-      </DsText>
-    </DsStack>
+      </p>
+    </header>
 
     <DsLoadError v-if="error" :message="ARTIKEL_COPY.loadFailed" @retry="reload()" />
 
     <!-- Hot section (FR-M09-28): only without search or category. -->
-    <DsStack v-if="hot.length > 0" as="section" data-testid="artikel-hot">
-      <DsHeading :level="2" data-testid="artikel-hot-heading">
+    <section v-if="hot.length > 0" class="flex flex-col gap-4" data-testid="artikel-hot">
+      <h2 class="text-heading text-highlighted" data-testid="artikel-hot-heading">
         {{ ARTIKEL_COPY.hotHeading }}
-      </DsHeading>
+      </h2>
       <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 md:gap-6 lg:grid-cols-3">
         <ArtikelHotCardView v-for="item in hot" :key="item.id" :article="item" />
       </div>
-    </DsStack>
+    </section>
 
     <ArtikelSearchPills
       :search="applied.search"
@@ -174,12 +162,9 @@ function goToPage(page: number): void {
         >
           <ArtikelCardView v-for="item in rows" :key="item.id" :article="item" :guest="guest" />
         </div>
-        <DsCluster
+        <div
           v-if="total > ARTIKEL_PAGE_SIZE"
-          gap="none"
-          align="stretch"
-          justify="center"
-          :wrap="false"
+          class="flex justify-center"
           data-testid="artikel-pager"
         >
           <UPagination
@@ -192,7 +177,7 @@ function goToPage(page: number): void {
             :next="{ 'aria-label': 'Seterusnya' }"
             @update:page="goToPage"
           />
-        </DsCluster>
+        </div>
       </template>
     </template>
   </DsPage>

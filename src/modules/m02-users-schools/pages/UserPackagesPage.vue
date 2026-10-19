@@ -11,19 +11,7 @@ import { nextTick, reactive, ref, watch } from 'vue'
 
 import { setRouteOutcome } from '@/app/router/outcome'
 import { useApi, useFlash, usePageMeta } from '@/composables'
-import {
-  DsBackLink,
-  DsFormField,
-  DsIconChip,
-  DsLoadError,
-  DsPage,
-  DsPanel,
-  DsStack,
-  DsGrid,
-  DsCluster,
-  DsHeading,
-  DsText,
-} from '@/ds'
+import { DsBackLink, DsFormField, DsIconChip, DsLoadError, DsPage, DsPanel } from '@/ds'
 
 import { assignUserPackage, fetchUserPackages, type AdminPackageCard } from '../api/users'
 import { schoolMeta } from '../lib/user-form-options'
@@ -100,21 +88,25 @@ async function assign(card: AdminPackageCard): Promise<void> {
 
 <template>
   <DsPage data-testid="packages-page">
-    <DsStack v-if="error && !isNotFound(error)" gap="sm" data-testid="packages-error">
+    <div
+      v-if="error && !isNotFound(error)"
+      class="flex flex-col gap-3"
+      data-testid="packages-error"
+    >
       <DsLoadError
         message="Tidak dapat memuatkan pakej pengguna. Sila cuba semula."
         @retry="reload()"
       />
       <DsBackLink to="/admin/users?role=school_admin" label="Kembali ke Senarai" />
-    </DsStack>
+    </div>
 
-    <DsStack v-else-if="!data" data-testid="packages-skeleton">
+    <div v-else-if="!data" class="flex flex-col gap-4" data-testid="packages-skeleton">
       <USkeleton class="h-28 w-full" />
-      <DsGrid :cols="{ base: 1, lg: 2 }">
+      <div class="grid grid-cols-1 gap-4 lg:grid-cols-2">
         <USkeleton class="h-56 w-full" />
         <USkeleton class="h-56 w-full" />
-      </DsGrid>
-    </DsStack>
+      </div>
+    </div>
 
     <template v-else>
       <div ref="alertBox">
@@ -127,35 +119,27 @@ async function assign(card: AdminPackageCard): Promise<void> {
           data-testid="packages-alert"
         >
           <template #description>
-            <DsStack gap="2xs">
+            <div class="flex flex-col gap-1">
               <p v-for="m in errors" :key="m">{{ m }}</p>
-            </DsStack>
+            </div>
           </template>
         </UAlert>
       </div>
 
       <DsPanel data-testid="packages-school">
-        <DsCluster gap="md" :wrap="false">
+        <div class="flex items-center gap-4">
           <DsIconChip icon="buildings" />
-          <DsStack gap="2xs">
-            <DsHeading
-              :level="3"
-              variant="heading"
-              wrap="anywhere"
+          <div class="flex min-w-0 flex-col gap-1">
+            <h3
+              class="text-heading break-words text-highlighted"
               data-testid="packages-school-name"
             >
               {{ data.school?.name }}
-            </DsHeading>
-            <DsText
-              v-if="data.school"
-              variant="label"
-              as="p"
-              tone="muted"
-              data-testid="packages-school-meta"
-            >
+            </h3>
+            <p v-if="data.school" class="text-label text-muted" data-testid="packages-school-meta">
               {{ schoolMeta(data.school) }}
-            </DsText>
-            <DsCluster gap="xs" align="stretch">
+            </p>
+            <div class="flex flex-wrap gap-2">
               <UBadge color="neutral" variant="subtle" icon="i-ph-user" :label="data.user.name" />
               <UBadge
                 color="neutral"
@@ -170,26 +154,26 @@ async function assign(card: AdminPackageCard): Promise<void> {
                 icon="i-ph-barcode"
                 :label="data.school.code"
               />
-            </DsCluster>
-          </DsStack>
-        </DsCluster>
+            </div>
+          </div>
+        </div>
       </DsPanel>
 
-      <DsGrid :cols="{ base: 1, lg: 2 }" align="start">
+      <div class="grid grid-cols-1 items-start gap-4 lg:grid-cols-2">
         <DsPanel v-for="card in data.packages" :key="card.formLevel">
-          <DsStack
+          <form
             method="post"
-            as="form"
+            class="flex flex-col gap-4"
             :data-testid="`package-card-${card.formLevel}`"
             @submit.prevent="assign(card)"
           >
-            <DsCluster align="start" :wrap="false">
+            <div class="flex items-start gap-3">
               <UBadge :label="card.code" />
               <div class="min-w-0 flex-1">
-                <DsHeading :level="3">
+                <h3 class="text-subheading text-highlighted">
                   {{ card.name.replace('SPM ', '') }}
-                </DsHeading>
-                <DsText variant="caption">{{ card.priceLabel }}</DsText>
+                </h3>
+                <p class="text-caption text-muted">{{ card.priceLabel }}</p>
               </div>
               <UBadge
                 :color="card.assigned ? 'success' : 'neutral'"
@@ -197,7 +181,7 @@ async function assign(card: AdminPackageCard): Promise<void> {
                 :label="card.assigned ? 'Ditetapkan' : 'Belum Ditetapkan'"
                 data-testid="package-status"
               />
-            </DsCluster>
+            </div>
 
             <DsFormField
               native
@@ -235,11 +219,11 @@ async function assign(card: AdminPackageCard): Promise<void> {
               :loading="saving === card.formLevel"
               data-testid="package-submit"
             />
-          </DsStack>
+          </form>
         </DsPanel>
-      </DsGrid>
+      </div>
 
-      <DsCluster justify="between">
+      <div class="flex flex-wrap items-center justify-between gap-3">
         <UButton
           to="/admin/users?role=school_admin"
           color="neutral"
@@ -256,7 +240,7 @@ async function assign(card: AdminPackageCard): Promise<void> {
           label="Edit Pengguna"
           data-testid="packages-edit"
         />
-      </DsCluster>
+      </div>
     </template>
   </DsPage>
 </template>

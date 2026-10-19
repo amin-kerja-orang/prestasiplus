@@ -24,8 +24,6 @@ import {
   DsNativeSelect,
   DsPage,
   DsPanel,
-  DsStack,
-  DsGrid,
 } from '@/ds'
 
 import {
@@ -195,16 +193,15 @@ async function submit(): Promise<void> {
     />
 
     <DsPanel v-else-if="!ready" data-testid="admin-article-form-skeleton">
-      <DsStack gap="lg">
+      <div class="flex flex-col gap-6">
         <USkeleton v-for="n in 4" :key="n" class="h-11 w-full" />
-      </DsStack>
+      </div>
     </DsPanel>
 
-    <DsStack
+    <form
       v-else
       method="post"
-      as="form"
-      gap="lg"
+      class="flex min-w-0 flex-col gap-6"
       data-testid="admin-article-form"
       @submit.prevent="submit"
     >
@@ -280,7 +277,7 @@ async function submit(): Promise<void> {
       </DsFormSection>
 
       <DsFormSection title="Klasifikasi & Media" icon="i-ph-tag" accent="friend">
-        <DsGrid :cols="{ base: 1, md: 2 }" gap="lg">
+        <div class="grid grid-cols-1 gap-6 md:grid-cols-2">
           <DsFormField
             native
             for="article-category"
@@ -341,11 +338,11 @@ async function submit(): Promise<void> {
               />
             </DsFormField>
           </div>
-        </DsGrid>
+        </div>
       </DsFormSection>
 
       <DsFormSection title="Penerbitan" icon="rocket-launch" accent="win">
-        <DsGrid :cols="{ base: 1, md: 2 }" gap="xs">
+        <div class="grid grid-cols-1 gap-2 md:grid-cols-2">
           <USwitch
             v-model="form.isPublished"
             name="is_published"
@@ -360,7 +357,7 @@ async function submit(): Promise<void> {
             class="min-h-11"
             data-testid="article-featured"
           />
-        </DsGrid>
+        </div>
       </DsFormSection>
 
       <DsFormBar
@@ -368,6 +365,6 @@ async function submit(): Promise<void> {
         :submit-label="editing ? 'Kemaskini Artikel' : 'Simpan Artikel'"
         :saving="saving"
       />
-    </DsStack>
+    </form>
   </DsPage>
 </template>

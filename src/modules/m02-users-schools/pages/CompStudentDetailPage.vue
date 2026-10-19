@@ -13,17 +13,7 @@ import { computed, ref, watch } from 'vue'
 import { setRouteOutcome } from '@/app/router'
 import { isApiError } from '@/api'
 import { useApi, useFlash, usePageMeta } from '@/composables'
-import {
-  DsDataTable,
-  DsIdentity,
-  DsLoadError,
-  DsPage,
-  DsPanel,
-  DsStatusBadge,
-  DsStack,
-  DsCluster,
-  DsText,
-} from '@/ds'
+import { DsDataTable, DsIdentity, DsLoadError, DsPage, DsPanel, DsStatusBadge } from '@/ds'
 
 import {
   fetchCompStudent,
@@ -110,10 +100,10 @@ const classRows = computed(() => (student.value?.classes ?? []) as ClassRow[])
       @retry="reload()"
     />
 
-    <DsStack v-else-if="!student && !notFound" gap="lg" data-testid="comp-skeleton">
+    <div v-else-if="!student && !notFound" class="flex flex-col gap-6" data-testid="comp-skeleton">
       <USkeleton class="h-64 w-full" />
       <USkeleton class="h-40 w-full" />
-    </DsStack>
+    </div>
 
     <template v-else-if="student">
       <DsPanel padding="none" data-testid="comp-card">
@@ -126,7 +116,7 @@ const classRows = computed(() => (student.value?.classes ?? []) as ClassRow[])
 
           <dl class="grid grid-cols-1 gap-x-8 gap-y-4 sm:grid-cols-2 xl:grid-cols-4">
             <div class="min-w-0">
-              <DsText variant="label" as="dt" tone="muted">Username</DsText>
+              <dt class="text-label text-muted">Username</dt>
               <dd
                 class="mt-1 min-w-0 text-body break-all text-highlighted"
                 data-testid="comp-username"
@@ -135,13 +125,13 @@ const classRows = computed(() => (student.value?.classes ?? []) as ClassRow[])
               </dd>
             </div>
             <div class="min-w-0">
-              <DsText variant="label" as="dt" tone="muted">No. KP</DsText>
+              <dt class="text-label text-muted">No. KP</dt>
               <dd class="mt-1 min-w-0 text-body break-words text-highlighted" data-testid="comp-ic">
                 {{ student.icNumber ?? '—' }}
               </dd>
             </div>
             <div class="min-w-0">
-              <DsText variant="label" as="dt" tone="muted">Sekolah asal</DsText>
+              <dt class="text-label text-muted">Sekolah asal</dt>
               <dd
                 class="mt-1 min-w-0 text-body break-words text-highlighted"
                 data-testid="comp-school"
@@ -150,7 +140,7 @@ const classRows = computed(() => (student.value?.classes ?? []) as ClassRow[])
               </dd>
             </div>
             <div class="min-w-0">
-              <DsText variant="label" as="dt" tone="muted">Tingkatan</DsText>
+              <dt class="text-label text-muted">Tingkatan</dt>
               <dd
                 class="mt-1 min-w-0 text-body break-words text-highlighted"
                 data-testid="comp-level"
@@ -159,13 +149,13 @@ const classRows = computed(() => (student.value?.classes ?? []) as ClassRow[])
               </dd>
             </div>
             <div class="min-w-0">
-              <DsText variant="label" as="dt" tone="muted">Status akaun</DsText>
+              <dt class="text-label text-muted">Status akaun</dt>
               <dd class="mt-1" data-testid="comp-status">
                 <DsStatusBadge :status="student.isActive ? 'active' : 'inactive'" />
               </dd>
             </div>
             <div class="min-w-0">
-              <DsText variant="label" as="dt" tone="muted">Syiling</DsText>
+              <dt class="text-label text-muted">Syiling</dt>
               <dd class="mt-1" data-testid="comp-coins">
                 <UBadge
                   :color="coinsColor(student.coinsEnabled)"
@@ -176,20 +166,20 @@ const classRows = computed(() => (student.value?.classes ?? []) as ClassRow[])
               </dd>
             </div>
             <div class="min-w-0">
-              <DsText variant="label" as="dt" tone="muted">Pakej tamat</DsText>
+              <dt class="text-label text-muted">Pakej tamat</dt>
               <dd class="mt-1 min-w-0 text-body text-highlighted" data-testid="comp-expiry">
                 {{ formatUserDate(student.packageExpiresAt) }}
               </dd>
             </div>
             <div class="min-w-0">
-              <DsText variant="label" as="dt" tone="muted">Baki syiling / coins</DsText>
+              <dt class="text-label text-muted">Baki syiling / coins</dt>
               <dd class="mt-1 min-w-0 text-body text-highlighted" data-testid="comp-balance">
                 {{ student.syilingBalance }} syiling · {{ student.coinBalance }} coins
               </dd>
             </div>
           </dl>
 
-          <DsCluster align="stretch">
+          <div class="flex flex-wrap gap-3">
             <form method="post" @submit.prevent="run('coins')">
               <UButton
                 type="submit"
@@ -214,7 +204,7 @@ const classRows = computed(() => (student.value?.classes ?? []) as ClassRow[])
                 data-testid="comp-toggle-active"
               />
             </form>
-          </DsCluster>
+          </div>
         </div>
       </DsPanel>
 
@@ -235,9 +225,9 @@ const classRows = computed(() => (student.value?.classes ?? []) as ClassRow[])
           data-testid="comp-classes"
         >
           <template #class-cell="{ row }">
-            <DsText variant="body" as="span" tone="highlighted" data-testid="comp-class-row"
+            <span class="text-body text-highlighted" data-testid="comp-class-row"
               >{{ row.original.name }}
-              <DsText variant="label" tone="muted">{{ row.original.classCode }}</DsText></DsText
+              <span class="text-label text-muted">{{ row.original.classCode }}</span></span
             >
           </template>
           <template #subject-cell="{ row }">{{ row.original.subjectName ?? '—' }}</template>
@@ -248,12 +238,12 @@ const classRows = computed(() => (student.value?.classes ?? []) as ClassRow[])
             />
           </template>
           <template #card="{ row }">
-            <DsText variant="body" tone="highlighted" data-testid="comp-class-row">
-              {{ row.name }} <DsText variant="label" tone="muted">{{ row.classCode }}</DsText>
-            </DsText>
-            <DsText variant="label" as="p" tone="muted">
+            <p class="text-body text-highlighted" data-testid="comp-class-row">
+              {{ row.name }} <span class="text-label text-muted">{{ row.classCode }}</span>
+            </p>
+            <p class="text-label text-muted">
               {{ row.subjectName ?? '—' }} · {{ row.teacherName }}
-            </DsText>
+            </p>
             <DsStatusBadge
               class="w-fit"
               :status="row.status === 'active' ? 'active' : 'inactive'"

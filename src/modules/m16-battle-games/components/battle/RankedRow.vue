@@ -1,6 +1,4 @@
 <script setup lang="ts">
-import { DsText } from '@/ds'
-
 /**
  * Ranked row with a stats grid (v2 learner look; a domain composite in the style of `DsLeaderRow`, which has
  * no room for the extra figures of the Top 10, the student ranking and the school ranking). Rank chip
@@ -25,7 +23,7 @@ withDefaults(
 
 <template>
   <li
-    class="flex flex-col gap-3 rounded-card bg-default p-3 sm:flex-row sm:items-center learner:shadow-lift"
+    class="flex flex-col gap-3 rounded-card bg-default p-3 learner:shadow-lift sm:flex-row sm:items-center"
     data-ds="ranked-row"
   >
     <div class="flex min-w-0 flex-1 items-center gap-3">
@@ -44,10 +42,10 @@ withDefaults(
           data-testid="row-title"
           >{{ title }}</ULink
         >
-        <DsText v-else variant="label" tone="highlighted" truncate data-testid="row-title">{{
+        <span v-else class="truncate text-label text-highlighted" data-testid="row-title">{{
           title
-        }}</DsText>
-        <DsText v-if="subtitle" variant="caption" as="span">{{ subtitle }}</DsText>
+        }}</span>
+        <span v-if="subtitle" class="text-caption text-muted">{{ subtitle }}</span>
       </span>
     </div>
     <dl class="grid grid-cols-3 items-center gap-2 sm:flex sm:gap-6">

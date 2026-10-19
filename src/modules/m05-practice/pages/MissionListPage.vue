@@ -16,10 +16,6 @@ import {
   DsPanel,
   DsStatusBadge,
   type DsAccent,
-  DsStack,
-  DsCluster,
-  DsHeading,
-  DsText,
 } from '@/ds'
 
 import { fetchTodayMissions } from '../api/practice'
@@ -43,20 +39,17 @@ const items = computed(() => data.value?.data ?? [])
         />
       </DsPanel>
 
-      <DsStack v-else as="ul" gap="sm" data-testid="missions-list">
+      <ul v-else class="flex flex-col gap-3" data-testid="missions-list">
         <li v-for="(m, i) in items" :key="m.id" class="min-w-0">
           <DsPanel class="flex flex-col gap-2" :data-testid="`mission-card-${String(m.id)}`">
-            <DsCluster>
+            <div class="flex flex-wrap items-center gap-3">
               <DsIconChip icon="target" :accent="ACCENTS[i % ACCENTS.length]" />
-              <DsHeading
-                :level="2"
-                variant="subheading"
-                wrap="anywhere"
-                class="min-w-0"
+              <h2
+                class="min-w-0 text-subheading break-words text-highlighted"
                 data-testid="mission-title"
               >
                 {{ m.title }}
-              </DsHeading>
+              </h2>
               <UBadge
                 v-if="m.typeLabel"
                 color="neutral"
@@ -64,14 +57,14 @@ const items = computed(() => data.value?.data ?? [])
                 data-testid="mission-type"
                 >{{ m.typeLabel }}</UBadge
               >
-            </DsCluster>
-            <DsText variant="body" tone="muted" data-testid="mission-info">
+            </div>
+            <p class="text-body text-muted" data-testid="mission-info">
               <span v-if="m.subjectName">{{ m.subjectName }} · </span>{{ m.questionCount }} soalan ·
               {{ m.coinsPerCorrect }} syiling per jawapan betul
-            </DsText>
-            <DsText
+            </p>
+            <p
               v-if="m.resourceUrl || m.resourceTitle"
-              variant="body"
+              class="text-body"
               data-testid="mission-resource"
             >
               <ULink
@@ -84,15 +77,14 @@ const items = computed(() => data.value?.data ?? [])
                 >{{ m.resourceTitle || m.resourceUrl }}</ULink
               >
               <span v-else class="text-muted">{{ m.resourceTitle }}</span>
-            </DsText>
-            <DsText
+            </p>
+            <p
               v-if="m.resourceNote"
-              variant="caption"
-              wrap="anywhere"
+              class="text-caption break-words text-muted"
               data-testid="mission-note"
             >
               {{ m.resourceNote }}
-            </DsText>
+            </p>
             <div>
               <DsStatusBadge
                 v-if="missionDone(m)"
@@ -111,7 +103,7 @@ const items = computed(() => data.value?.data ?? [])
             </div>
           </DsPanel>
         </li>
-      </DsStack>
+      </ul>
     </template>
 
     <DsLoadError

@@ -9,7 +9,6 @@ import { useRouter } from 'vue-router'
 import type { ProductDetail } from '../../api'
 import { formatPrice } from '../product/copy'
 import { DETAIL_COPY } from './copy'
-import { DsCluster, DsStack, DsHeading, DsText } from '@/ds'
 
 const props = defineProps<{ product: ProductDetail }>()
 const router = useRouter()
@@ -22,8 +21,8 @@ const inStock = computed(() => props.product.stockStatus === 'available')
 
 <template>
   <UCard class="min-w-0" data-testid="product-info">
-    <DsStack>
-      <DsCluster gap="xs">
+    <div class="flex flex-col gap-4">
+      <div class="flex flex-wrap items-center gap-2">
         <UBadge
           :color="product.condition === 'used' ? 'warning' : 'success'"
           variant="soft"
@@ -33,16 +32,16 @@ const inStock = computed(() => props.product.stockStatus === 'available')
         <UBadge color="primary" variant="soft" data-testid="product-category">
           {{ product.category.name }}
         </UBadge>
-      </DsCluster>
+      </div>
 
-      <DsHeading :level="1" wrap="anywhere" data-testid="product-name">
+      <h1 class="text-title break-words text-highlighted" data-testid="product-name">
         {{ product.name }}
-      </DsHeading>
+      </h1>
 
-      <DsCluster row-gap="2xs" align="baseline">
-        <DsText variant="title" as="span" tabular data-testid="product-price">{{
+      <div class="flex flex-wrap items-baseline gap-x-3 gap-y-1">
+        <span class="tabular text-title text-highlighted" data-testid="product-price">{{
           formatPrice(product.price)
-        }}</DsText>
+        }}</span>
         <template v-if="product.originalPrice !== null">
           <s class="text-body text-muted" data-testid="product-original">{{
             formatPrice(product.originalPrice)
@@ -55,18 +54,15 @@ const inStock = computed(() => props.product.stockStatus === 'available')
             >-{{ product.discountPct }}%</UBadge
           >
         </template>
-      </DsCluster>
+      </div>
 
-      <DsText
+      <p
         v-if="product.description"
-        variant="body"
-        tone="toned"
-        wrap="anywhere"
-        class="whitespace-pre-line"
+        class="text-body break-words whitespace-pre-line text-toned"
         data-testid="product-description"
       >
         {{ product.description }}
-      </DsText>
+      </p>
 
       <div class="flex flex-wrap items-center gap-x-4 gap-y-1 text-label">
         <span class="inline-flex items-center gap-1 text-muted" data-testid="product-views">
@@ -88,10 +84,7 @@ const inStock = computed(() => props.product.stockStatus === 'available')
       </div>
 
       <div class="flex flex-col gap-1 bg-muted p-3" data-testid="product-shipping">
-        <p
-          class="flex items-center gap-2 text-label break-words"
-          data-testid="product-shipping-line"
-        >
+        <p class="flex items-center gap-2 text-label break-words" data-testid="product-shipping-line">
           <UIcon
             name="i-ph-truck-duotone"
             class="size-4 shrink-0 text-primary-t"
@@ -104,9 +97,11 @@ const inStock = computed(() => props.product.stockStatus === 'available')
           class="flex items-center gap-2 text-label break-words"
           data-testid="product-location"
         >
-          <UIcon name="i-ph-map-pin-duotone" class="size-4 shrink-0" aria-hidden="true" />{{
-            product.location
-          }}
+          <UIcon
+            name="i-ph-map-pin-duotone"
+            class="size-4 shrink-0"
+            aria-hidden="true"
+          />{{ product.location }}
         </p>
       </div>
 
@@ -122,6 +117,6 @@ const inStock = computed(() => props.product.stockStatus === 'available')
       >
         {{ DETAIL_COPY.whatsapp }}
       </UButton>
-    </DsStack>
+    </div>
   </UCard>
 </template>

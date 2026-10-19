@@ -6,7 +6,7 @@
  */
 import { computed } from 'vue'
 
-import { DsChart, DsText } from '@/ds'
+import { DsChart } from '@/ds'
 
 import type { CcLiveData } from '../../api/command-center-board'
 import { S2_COPY } from './board-copy'
@@ -34,7 +34,7 @@ const daySeries = computed(() => [
 
 <template>
   <BoardPanel icon="i-ph-users-three" title="Engagement" testid="cc-panel-engagement">
-    <DsText v-if="!data" variant="body" tone="muted">{{ S2_COPY.loading }}</DsText>
+    <p v-if="!data" class="text-body text-muted">{{ S2_COPY.loading }}</p>
     <div v-else-if="!school" data-testid="cc-engagement-bands">
       <DsChart
         title="Engagement"

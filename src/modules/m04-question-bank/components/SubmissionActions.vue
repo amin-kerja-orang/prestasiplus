@@ -6,7 +6,7 @@
  */
 import { ref } from 'vue'
 
-import { DsNativeSelect, DsText } from '@/ds'
+import { DsNativeSelect } from '@/ds'
 
 import {
   updateSubmissionStatus,
@@ -88,14 +88,9 @@ async function save(): Promise<void> {
           {{ o.label }}
         </option>
       </DsNativeSelect>
-      <DsText
-        v-if="errors.status"
-        variant="caption"
-        tone="error"
-        data-testid="submission-status-error"
-      >
+      <p v-if="errors.status" class="text-caption text-error" data-testid="submission-status-error">
         {{ errors.status }}
-      </DsText>
+      </p>
       <UTextarea
         v-model="notes"
         name="admin_notes"
@@ -107,14 +102,9 @@ async function save(): Promise<void> {
         class="w-full"
         data-testid="submission-panel-notes"
       />
-      <DsText
-        v-if="errors.adminNotes"
-        variant="caption"
-        tone="error"
-        data-testid="submission-notes-error"
-      >
+      <p v-if="errors.adminNotes" class="text-caption text-error" data-testid="submission-notes-error">
         {{ errors.adminNotes }}
-      </DsText>
+      </p>
       <UButton
         type="submit"
         block

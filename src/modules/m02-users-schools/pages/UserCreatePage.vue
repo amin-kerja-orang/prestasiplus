@@ -18,15 +18,7 @@ import { useRouter } from 'vue-router'
 import type { Role } from '@/modules/m01-authentication'
 
 import { useFlash } from '@/composables'
-import {
-  DsFormBar,
-  DsFormField,
-  DsFormSection,
-  DsNativeSelect,
-  DsPage,
-  DsStack,
-  DsText,
-} from '@/ds'
+import { DsFormBar, DsFormField, DsFormSection, DsNativeSelect, DsPage } from '@/ds'
 
 import { fetchJpnList, type Jpn, type SchoolSummary } from '../api/schools'
 import {
@@ -232,11 +224,9 @@ async function submit(): Promise<void> {
     subtitle="Isi maklumat untuk mendaftarkan pengguna baru"
     data-testid="user-create-page"
   >
-    <DsStack
+    <form
       method="post"
-      as="form"
-      gap="lg"
-      class="w-full"
+      class="flex w-full min-w-0 flex-col gap-6"
       data-testid="user-form"
       @submit.prevent="submit"
     >
@@ -250,9 +240,9 @@ async function submit(): Promise<void> {
           data-testid="user-form-alert"
         >
           <template #description>
-            <DsStack gap="2xs">
+            <div class="flex flex-col gap-1">
               <p v-for="m in errors" :key="m">{{ m }}</p>
-            </DsStack>
+            </div>
           </template>
         </UAlert>
       </div>
@@ -337,7 +327,7 @@ async function submit(): Promise<void> {
         <template v-if="isStandard">
           <DsFormField native for="user-phone" label="No. Telefon">
             <template #label-extra>
-              <DsText variant="caption" as="span">(Pilihan)</DsText></template
+              <span class="text-caption text-muted">(Pilihan)</span></template
             >
             <UInput
               id="user-phone"
@@ -368,7 +358,7 @@ async function submit(): Promise<void> {
                 hint="12 digit MyKad. Dilindungi PDPA."
               >
                 <template #label-extra>
-                  <DsText variant="caption" as="span">(Pilihan)</DsText></template
+                  <span class="text-caption text-muted">(Pilihan)</span></template
                 >
                 <UInput
                   id="user-ic"
@@ -446,7 +436,7 @@ async function submit(): Promise<void> {
         :disabled="isSchoolAdmin && !generated"
         data-testid="user-form-footer"
       />
-    </DsStack>
+    </form>
 
     <UBadge
       v-if="copied"

@@ -4,7 +4,7 @@ import { computed } from 'vue'
 import { useRouter } from 'vue-router'
 
 import { usePrototypeScope } from '@/composables/usePrototypeScope'
-import { DsCharacterCard, DsText } from '@/ds'
+import { DsCharacterCard } from '@/ds'
 
 import type { TrialStatus } from '../../api/types'
 
@@ -23,8 +23,8 @@ const cta = computed(() => (allows('/pricing') ? '🚀 Langgan Sekarang' : undef
     data-testid="dash-trial"
     @cta="router.push('/pricing')"
   >
-    <DsText variant="subheading" data-testid="dash-trial-remaining">
+    <p class="text-subheading text-highlighted" data-testid="dash-trial-remaining">
       Baki {{ trial.remaining }} / {{ trial.limit }} soalan
-    </DsText>
+    </p>
   </DsCharacterCard>
 </template>

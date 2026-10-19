@@ -8,16 +8,7 @@
 import { computed, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 
-import {
-  DsEmptyState,
-  DsFriendAvatar,
-  DsSpeechBubble,
-  DsWinScreen,
-  DsStack,
-  DsCluster,
-  DsHeading,
-  DsText,
-} from '@/ds'
+import { DsEmptyState, DsFriendAvatar, DsSpeechBubble, DsWinScreen } from '@/ds'
 import { useApi } from '@/composables/useApi'
 import { useFriend } from '@/composables/useFriend'
 import { useSession } from '@/composables/useSession'
@@ -149,10 +140,10 @@ const home = computed(() => landingPath.value || '/dashboard')
       icon="i-ph-lock-key"
       data-testid="result-locked"
     />
-    <DsStack v-else-if="!data || !result" gap="sm" aria-busy="true">
+    <div v-else-if="!data || !result" class="flex flex-col gap-3" aria-busy="true">
       <USkeleton class="h-40 w-full" />
       <USkeleton class="h-24 w-full" />
-    </DsStack>
+    </div>
 
     <template v-else>
       <DsWinScreen
@@ -220,22 +211,22 @@ const home = computed(() => landingPath.value || '/dashboard')
         data-testid="provisional"
       />
 
-      <DsStack as="section" gap="sm" aria-labelledby="h-sections">
-        <DsHeading id="h-sections" :level="2">Markah mengikut bahagian</DsHeading>
+      <section class="flex flex-col gap-3" aria-labelledby="h-sections">
+        <h2 id="h-sections" class="text-heading text-highlighted">Markah mengikut bahagian</h2>
         <UCard
           v-for="s in result.sections"
           :key="s.sectionId"
           :data-testid="`section-${s.sectionId}`"
         >
-          <DsStack gap="2xs">
-            <DsCluster align="baseline" justify="between" :wrap="false">
+          <div class="flex flex-col gap-1">
+            <div class="flex items-baseline justify-between gap-3">
               <h3 class="text-body text-highlighted">{{ s.label }}</h3>
-              <DsText variant="label" tone="highlighted" tabular data-testid="section-score"
-                >{{ s.awarded }} / {{ s.marks }}</DsText
+              <span class="tabular text-label text-highlighted" data-testid="section-score"
+                >{{ s.awarded }} / {{ s.marks }}</span
               >
-            </DsCluster>
-            <DsText variant="caption">{{ sectionLine(s.sectionId) }}</DsText>
-            <DsText v-if="s.chooseN" variant="caption" tone="toned" data-testid="counted-note">
+            </div>
+            <p class="text-caption text-muted">{{ sectionLine(s.sectionId) }}</p>
+            <p v-if="s.chooseN" class="text-caption text-toned" data-testid="counted-note">
               Soalan yang dikira:
               {{
                 s.counted
@@ -243,30 +234,27 @@ const home = computed(() => landingPath.value || '/dashboard')
                   .filter(Boolean)
                   .join(', ') || 'tiada'
               }}
-            </DsText>
-          </DsStack>
+            </p>
+          </div>
         </UCard>
-      </DsStack>
+      </section>
 
-      <DsStack
+      <section
         v-if="weakTopics.length"
-        as="section"
-        gap="xs"
+        class="flex flex-col gap-2"
         aria-labelledby="h-weak"
         data-testid="weak-topics"
       >
-        <DsHeading id="h-weak" :level="2">Topik untuk disemak</DsHeading>
+        <h2 id="h-weak" class="text-heading text-highlighted">Topik untuk disemak</h2>
         <ul class="flex flex-col gap-1 text-body text-default">
           <li v-for="[t, n] in weakTopics" :key="t">{{ t }} — {{ n }} markah hilang</li>
         </ul>
-      </DsStack>
+      </section>
 
-      <DsStack as="section" gap="sm" aria-labelledby="h-questions">
-        <DsHeading id="h-questions" :level="2">Semakan soalan</DsHeading>
+      <section class="flex flex-col gap-3" aria-labelledby="h-questions">
+        <h2 id="h-questions" class="text-heading text-highlighted">Semakan soalan</h2>
         <UTabs v-model="filter" :items="filterItems" :content="false" />
-        <DsText v-if="!shown.length" variant="body" tone="muted"
-          >Tiada soalan dalam paparan ini.</DsText
-        >
+        <p v-if="!shown.length" class="text-body text-muted">Tiada soalan dalam paparan ini.</p>
         <UCard v-for="q in shown" :key="q.questionId" :data-testid="`result-q-${q.number}`">
           <details>
             <summary
@@ -281,9 +269,9 @@ const home = computed(() => landingPath.value || '/dashboard')
               <span class="tabular" data-testid="q-score">{{ q.awarded }} / {{ q.marks }}</span>
             </summary>
             <div class="mt-3 flex flex-col gap-3">
-              <DsText v-if="questionMap.get(q.questionId)?.stem" variant="body">
+              <p v-if="questionMap.get(q.questionId)?.stem" class="text-body text-default">
                 <RichText :text="questionMap.get(q.questionId)!.stem" />
-              </DsText>
+              </p>
               <PartResultCard
                 v-for="p in q.parts"
                 :key="p.partId"
@@ -293,7 +281,7 @@ const home = computed(() => landingPath.value || '/dashboard')
             </div>
           </details>
         </UCard>
-      </DsStack>
+      </section>
     </template>
   </main>
 </template>

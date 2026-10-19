@@ -2,7 +2,7 @@
 /** "Subjek Tersedia" (FR-M05-23, 24): one card per subject with its question count and a start link. */
 import { computed, ref } from 'vue'
 
-import { DsArt3D, DsIconChip, DsStack, DsCluster, DsGrid, DsHeading, DsText } from '@/ds'
+import { DsArt3D, DsIconChip } from '@/ds'
 
 import type { PracticeSubject } from '../../api/types'
 import { subjectAccent, subjectGlyph } from '../quiz/subject-glyph'
@@ -16,25 +16,24 @@ const shown = computed(() => (showAll.value ? props.subjects : props.subjects.sl
 </script>
 
 <template>
-  <DsStack as="section" gap="sm" aria-labelledby="dash-subjects-h" data-testid="dash-subjects">
-    <DsCluster justify="between" :wrap="false">
-      <DsHeading id="dash-subjects-h" :level="2">📖 Subjek Tersedia</DsHeading>
-      <DsCluster as="span" gap="xs" :wrap="false">
+  <section
+    class="flex flex-col gap-3"
+    aria-labelledby="dash-subjects-h"
+    data-testid="dash-subjects"
+  >
+    <div class="flex items-center justify-between gap-3">
+      <h2 id="dash-subjects-h" class="text-heading text-highlighted">📖 Subjek Tersedia</h2>
+      <span class="flex items-center gap-2">
         <DsArt3D name="books" size="sm" />
-        <DsText variant="label" tone="muted" data-testid="dash-subjects-count"
-          >{{ subjects.length }} subjek</DsText
+        <span class="text-label text-muted" data-testid="dash-subjects-count"
+          >{{ subjects.length }} subjek</span
         >
-      </DsCluster>
-    </DsCluster>
-    <DsGrid :cols="{ base: 1, sm: 2, xl: 3 }" gap="sm" as="ul">
-      <li
-        v-for="(s, i) in shown"
-        :key="s.code"
-        class="min-w-0"
-        :data-testid="`dash-subject-${s.code}`"
-      >
+      </span>
+    </div>
+    <ul class="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3">
+      <li v-for="(s, i) in shown" :key="s.code" class="min-w-0" :data-testid="`dash-subject-${s.code}`">
         <UCard :ui="{ body: 'flex h-full flex-col gap-2 p-4' }">
-          <DsCluster gap="xs" justify="between" :wrap="false">
+          <div class="flex items-center justify-between gap-2">
             <DsIconChip
               :icon="subjectGlyph(s.icon)"
               :accent="subjectAccent(i)"
@@ -44,14 +43,14 @@ const shown = computed(() => (showAll.value ? props.subjects : props.subjects.sl
             <UBadge color="neutral" variant="subtle" data-testid="dash-subject-count"
               >{{ s.approvedCount }} soalan</UBadge
             >
-          </DsCluster>
-          <DsHeading :level="3" data-testid="dash-subject-name">
+          </div>
+          <h3 class="text-subheading text-highlighted" data-testid="dash-subject-name">
             {{ s.name }}
-          </DsHeading>
-          <DsText variant="caption">{{ s.nameEn }}</DsText>
-          <DsText v-if="s.isCore" variant="caption" tone="warning" data-testid="dash-subject-core">
+          </h3>
+          <p class="text-caption text-muted">{{ s.nameEn }}</p>
+          <p v-if="s.isCore" class="text-caption text-warning" data-testid="dash-subject-core">
             ⭐ Subjek Teras
-          </DsText>
+          </p>
           <UButton
             :to="`/practice?subject=${s.code}`"
             block
@@ -61,7 +60,7 @@ const shown = computed(() => (showAll.value ? props.subjects : props.subjects.sl
           >
         </UCard>
       </li>
-    </DsGrid>
+    </ul>
     <UButton
       v-if="subjects.length > 6"
       color="neutral"
@@ -72,5 +71,5 @@ const shown = computed(() => (showAll.value ? props.subjects : props.subjects.sl
       @click="showAll = !showAll"
       >{{ showAll ? 'Tunjuk kurang' : 'Lihat semua' }}</UButton
     >
-  </DsStack>
+  </section>
 </template>

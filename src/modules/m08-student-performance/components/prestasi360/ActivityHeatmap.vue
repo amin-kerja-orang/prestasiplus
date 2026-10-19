@@ -4,7 +4,7 @@
  * ramp from `bg-elevated` to `bg-primary`). `mouseenter` sets and a mouse leaving clears the active day,
  * `click` toggles it; the active day shows the tooltip "{dd/mm} ({hari}) — Tiada aktiviti | {n} sesi".
  */
-import { DsPanel, DsStack, DsCluster } from '@/ds'
+import { DsPanel } from '@/ds'
 import { computed, ref } from 'vue'
 
 import type { StudentPerformance } from '../../api/types'
@@ -47,11 +47,11 @@ const LEGEND = ['0', '1-1', '2-2', '3-3', '4+']
 
 <template>
   <DsPanel data-testid="heatmap-card">
-    <DsStack>
+    <div class="flex flex-col gap-4">
       <h2 class="flex items-center gap-2 text-subheading text-highlighted">
         <UIcon :name="icon('calendar-dots')" class="size-5 text-primary-t" />Peta Aktiviti (90 Hari)
       </h2>
-      <DsCluster gap="2xs" align="stretch" data-testid="heatmap">
+      <div class="flex flex-wrap gap-1" data-testid="heatmap">
         <UButton
           v-for="d in days"
           :key="d.date"
@@ -70,7 +70,7 @@ const LEGEND = ['0', '1-1', '2-2', '3-3', '4+']
           @pointerleave="leave"
           @click="toggle(d.date)"
         />
-      </DsCluster>
+      </div>
       <p
         v-if="tooltip"
         class="inline-flex items-center gap-2 self-start bg-elevated p-3 text-caption text-highlighted"
@@ -82,12 +82,12 @@ const LEGEND = ['0', '1-1', '2-2', '3-3', '4+']
         <template v-for="(label, i) in LEGEND" :key="label">
           <span>{{ label }}</span>
           <span
-            :class="[HEAT_RAMP[i] ?? 'bg-elevated', 'inline-block size-4']"
+:class="[HEAT_RAMP[i] ?? 'bg-elevated', 'inline-block size-4']"
             aria-hidden="true"
           />
         </template>
         <span class="text-dimmed">sesi/hari</span>
       </div>
-    </DsStack>
+    </div>
   </DsPanel>
 </template>

@@ -18,11 +18,6 @@ import {
   DsStatRow,
   type PillItem,
   type StatItem,
-  DsStack,
-  DsGrid,
-  DsCluster,
-  DsText,
-  DsHeading,
 } from '@/ds'
 
 import { fetchProgress } from '../api/practice'
@@ -59,34 +54,10 @@ const accuracy = computed(() =>
 const minutes = computed(() => `${data.value?.minutes ?? 0}m`)
 
 const stats = computed<StatItem[]>(() => [
-  {
-    key: 'answered',
-    label: 'Soalan Dijawab',
-    value: data.value?.answered ?? 0,
-    icon: 'i-ph-note-pencil',
-    accent: 'action',
-  },
-  {
-    key: 'accuracy',
-    label: 'Ketepatan Keseluruhan',
-    value: accuracy.value,
-    icon: 'i-ph-target',
-    accent: 'win',
-  },
-  {
-    key: 'sessions',
-    label: 'Sesi Latihan',
-    value: data.value?.sessions ?? 0,
-    icon: 'i-ph-clipboard-text',
-    accent: 'heat',
-  },
-  {
-    key: 'minutes',
-    label: 'Masa Berlatih',
-    value: minutes.value,
-    icon: 'i-ph-timer',
-    accent: 'friend',
-  },
+  { key: 'answered', label: 'Soalan Dijawab', value: data.value?.answered ?? 0, icon: 'i-ph-note-pencil', accent: 'action' },
+  { key: 'accuracy', label: 'Ketepatan Keseluruhan', value: accuracy.value, icon: 'i-ph-target', accent: 'win' },
+  { key: 'sessions', label: 'Sesi Latihan', value: data.value?.sessions ?? 0, icon: 'i-ph-clipboard-text', accent: 'heat' },
+  { key: 'minutes', label: 'Masa Berlatih', value: minutes.value, icon: 'i-ph-timer', accent: 'friend' },
 ])
 
 /** Red below 50, amber 50-69, green from 70 (INFERRED bands, as live). */
@@ -157,7 +128,7 @@ const trendUp = (values: number[]): boolean => values[values.length - 1]! >= val
           accent="heat"
           data-testid="progress-weak"
         >
-          <DsStack as="ul" gap="xs">
+          <ul class="flex flex-col gap-2">
             <li v-for="w in data.weakSubjects" :key="w.code" class="min-w-0">
               <DsPanel
                 tone="inset"
@@ -166,33 +137,33 @@ const trendUp = (values: number[]): boolean => values[values.length - 1]! >= val
               >
                 <UAvatar :text="w.name.slice(0, 2).toUpperCase()" size="lg" aria-hidden="true" />
                 <div class="min-w-0 flex-1">
-                  <DsText variant="label" as="p" tone="highlighted" truncate>{{ w.name }}</DsText>
-                  <DsText variant="caption">{{ w.answered }} soalan</DsText>
+                  <p class="truncate text-label text-highlighted">{{ w.name }}</p>
+                  <p class="text-caption text-muted">{{ w.answered }} soalan</p>
                 </div>
-                <DsText variant="label" tone="error" tabular>{{ w.accuracyPct }}%</DsText>
+                <span class="tabular text-label text-error">{{ w.accuracyPct }}%</span>
                 <UButton :to="`/practice/${w.code}`" size="md" class="min-h-11" variant="soft"
                   >Ulang Kaji</UButton
                 >
               </DsPanel>
             </li>
-          </DsStack>
+          </ul>
         </DsPanel>
 
-        <DsStack as="section" gap="sm" data-testid="progress-subjects">
-          <DsHeading :level="2" variant="subheading">Prestasi Mengikut Subjek</DsHeading>
-          <DsGrid :cols="{ base: 1, md: 2, lg: 3 }" gap="sm" as="ul">
+        <section class="flex flex-col gap-3" data-testid="progress-subjects">
+          <h2 class="text-subheading text-highlighted">Prestasi Mengikut Subjek</h2>
+          <ul class="grid grid-cols-1 gap-3 md:grid-cols-2 lg:grid-cols-3">
             <li v-for="s in data.subjects" :key="s.code" class="min-w-0">
               <DsPanel class="h-full" data-testid="progress-subject">
-                <DsCluster :wrap="false">
+                <div class="flex items-center gap-3">
                   <UAvatar :text="s.name.slice(0, 2).toUpperCase()" size="lg" aria-hidden="true" />
                   <div class="min-w-0 flex-1">
-                    <DsText variant="label" as="p" tone="highlighted" truncate>{{ s.name }}</DsText>
-                    <DsText variant="caption">{{ s.answered }} soalan dijawab</DsText>
+                    <p class="truncate text-label text-highlighted">{{ s.name }}</p>
+                    <p class="text-caption text-muted">{{ s.answered }} soalan dijawab</p>
                   </div>
                   <span class="tabular text-label" :class="tone(s.accuracyPct)"
                     >{{ s.accuracyPct }}%</span
                   >
-                </DsCluster>
+                </div>
                 <UProgress class="mt-3" :model-value="s.accuracyPct" :max="100" />
                 <div class="mt-3 flex items-center gap-2 text-caption text-muted">
                   <span>Trend:</span>
@@ -218,8 +189,8 @@ const trendUp = (values: number[]): boolean => values[values.length - 1]! >= val
                 </p>
               </DsPanel>
             </li>
-          </DsGrid>
-        </DsStack>
+          </ul>
+        </section>
       </template>
     </template>
 
@@ -230,11 +201,17 @@ const trendUp = (values: number[]): boolean => values[values.length - 1]! >= val
       @retry="reload"
     />
 
-    <DsStack v-else role="status" aria-label="Memuatkan kemajuan" data-testid="progress-loading">
-      <DsGrid :cols="{ base: 2, lg: 4 }" gap="sm">
+    <div
+      v-else
+      class="flex flex-col gap-4"
+      role="status"
+      aria-label="Memuatkan kemajuan"
+      data-testid="progress-loading"
+    >
+      <div class="grid grid-cols-2 gap-3 lg:grid-cols-4">
         <USkeleton v-for="i in 4" :key="i" class="h-24" />
-      </DsGrid>
+      </div>
       <USkeleton class="h-64" />
-    </DsStack>
+    </div>
   </DsPage>
 </template>

@@ -6,7 +6,6 @@
  * Tile titles are in-page anchors: the page switches to the tab that holds the section and scrolls to it.
  */
 import { ref } from 'vue'
-import { DsCluster, DsGrid, DsStack } from '@/ds'
 
 const KEY = 'hideMonitoringGuide'
 
@@ -49,8 +48,8 @@ function scrollTo(event: MouseEvent, id: string) {
 <template>
   <div data-testid="mon-guide-area">
     <UCard v-if="!hidden" data-testid="mon-guide">
-      <DsStack gap="lg">
-        <DsCluster gap="xs" align="start" justify="between" :wrap="false">
+      <div class="flex flex-col gap-6">
+        <div class="flex items-start justify-between gap-2">
           <h2 class="flex items-center gap-2 text-heading text-highlighted">
             <UIcon name="i-ph-book-open" class="size-6 text-primary-t" />Panduan Monitoring
             Penglibatan
@@ -64,8 +63,8 @@ function scrollTo(event: MouseEvent, id: string) {
             data-testid="mon-guide-close"
             @click="hide"
           />
-        </DsCluster>
-        <DsGrid :cols="{ base: 1, sm: 2, lg: 3 }">
+        </div>
+        <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
           <div
             class="flex flex-col gap-2 bg-soft p-4 text-body text-muted"
             data-testid="mon-guide-tile"
@@ -172,7 +171,7 @@ function scrollTo(event: MouseEvent, id: string) {
               soalan, jawapan salah, subjek kuat/lemah.
             </p>
           </div>
-        </DsGrid>
+        </div>
         <p class="flex items-start gap-2 text-body text-muted" data-testid="mon-guide-tip">
           <UIcon name="i-ph-lightbulb" class="mt-1 size-4 shrink-0 text-primary-t" />
           <span
@@ -180,7 +179,7 @@ function scrollTo(event: MouseEvent, id: string) {
             negeri/tempoh/tahap. Export PDF/CSV untuk pembentangan.</span
           >
         </p>
-      </DsStack>
+      </div>
     </UCard>
     <UButton
       v-else

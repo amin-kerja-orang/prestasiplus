@@ -7,7 +7,7 @@
  */
 import { ref, watch } from 'vue'
 
-import { DsQuizOption, DsStack, DsCluster, DsGrid, DsText } from '@/ds'
+import { DsQuizOption } from '@/ds'
 
 import type { RoomQuestion } from '../../api'
 
@@ -44,11 +44,11 @@ function submitWord(): void {
 </script>
 
 <template>
-  <DsStack data-testid="room-question">
-    <DsCluster align="start" justify="between" :wrap="false">
-      <DsText variant="heading" wrap="anywhere" data-testid="room-question-text">
+  <div class="flex flex-col gap-4" data-testid="room-question">
+    <div class="flex items-start justify-between gap-3">
+      <p class="text-heading break-words text-highlighted" data-testid="room-question-text">
         {{ question.text }}
-      </DsText>
+      </p>
       <UBadge
         v-if="countdown"
         color="primary"
@@ -58,9 +58,9 @@ function submitWord(): void {
         data-testid="room-countdown"
         >{{ countdown }}</UBadge
       >
-    </DsCluster>
+    </div>
 
-    <DsGrid v-if="mode === 'mcq'" :cols="{ sm: 2 }" gap="xs">
+    <div v-if="mode === 'mcq'" class="grid gap-2 sm:grid-cols-2">
       <DsQuizOption
         v-for="o in question.options"
         :key="o.id"
@@ -70,9 +70,9 @@ function submitWord(): void {
         @select="pick(o.id)"
         >{{ o.text }}</DsQuizOption
       >
-    </DsGrid>
+    </div>
 
-    <DsStack v-else as="form" gap="sm" data-testid="room-word-form" @submit.prevent="submitWord">
+    <form v-else class="flex flex-col gap-3" data-testid="room-word-form" @submit.prevent="submitWord">
       <UFormField label="Jawapan">
         <UInput
           v-model="word"
@@ -94,6 +94,6 @@ function submitWord(): void {
       >
         Hantar
       </UButton>
-    </DsStack>
-  </DsStack>
+    </form>
+  </div>
 </template>

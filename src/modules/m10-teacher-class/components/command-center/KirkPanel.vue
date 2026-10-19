@@ -8,7 +8,6 @@ import { computed } from 'vue'
 import type { CcLiveData } from '../../api/command-center-types'
 import BoardPanel from './BoardPanel.vue'
 import { type DrillRequest, plain, stars } from './copy'
-import { DsStack, DsText } from '@/ds'
 
 const props = defineProps<{ d: CcLiveData }>()
 const emit = defineEmits<{ drill: [req: DrillRequest] }>()
@@ -35,7 +34,7 @@ const rows = computed(() => {
 
 <template>
   <BoardPanel icon="flask" accent="heat" title="Kirkpatrick" testid="cc-panel-kirk">
-    <DsStack as="ul" gap="2xs">
+    <ul class="flex flex-col gap-1">
       <li v-for="r in rows" :key="r.id" class="min-w-0">
         <UButton
           color="neutral"
@@ -51,22 +50,13 @@ const rows = computed(() => {
             })
           "
         >
-          <DsText variant="label" tone="primary" class="w-7 shrink-0">{{
-            r.id.toUpperCase()
-          }}</DsText>
+          <span class="w-7 shrink-0 text-label text-primary-t">{{ r.id.toUpperCase() }}</span>
           <UProgress class="min-w-6 flex-1" :model-value="r.width" :max="100" aria-hidden="true" />
-          <DsText
-            variant="body"
-            as="span"
-            tone="toned"
-            align="end"
-            tabular
-            class="shrink-0"
-            data-testid="cc-kirk-text"
-            >{{ r.text }}</DsText
-          >
+          <span class="tabular shrink-0 text-end text-body text-toned" data-testid="cc-kirk-text">{{
+            r.text
+          }}</span>
         </UButton>
       </li>
-    </DsStack>
+    </ul>
   </BoardPanel>
 </template>

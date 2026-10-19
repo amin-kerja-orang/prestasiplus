@@ -6,7 +6,7 @@
  */
 import { computed } from 'vue'
 
-import { DsChart, DsPanel, DsStack, DsGrid, DsHeading, DsText } from '@/ds'
+import { DsChart, DsPanel } from '@/ds'
 
 import type { MonthlyReport } from '../../api/school-admin'
 import { count, dec1 } from './monthly-format'
@@ -21,21 +21,26 @@ const series = computed(() => [
 
 <template>
   <DsPanel data-testid="lb-subjects">
-    <DsStack>
-      <DsHeading :level="2" variant="subheading" data-testid="lb-subjects-title">
+    <div class="flex flex-col gap-4">
+      <h2 class="text-subheading text-highlighted" data-testid="lb-subjects-title">
         Prestasi Mengikut Subjek
-      </DsHeading>
+      </h2>
 
-      <DsGrid :cols="{ base: 1, sm: 2 }" gap="sm">
+      <div class="grid min-w-0 grid-cols-1 gap-3 sm:grid-cols-2">
         <DsPanel v-if="subjects.strongest" tone="inset" data-testid="lb-strongest">
-          <UBadge color="success" variant="soft" icon="i-ph-trend-up" label="SUBJEK TERKUAT" />
+          <UBadge
+            color="success"
+            variant="soft"
+            icon="i-ph-trend-up"
+            label="SUBJEK TERKUAT"
+          />
           <p class="mt-2 text-label break-words text-highlighted" data-testid="lb-strongest-name">
             {{ subjects.strongest.name }}
           </p>
-          <DsText variant="body" tone="muted" tabular data-testid="lb-strongest-figure">
+          <p class="tabular text-body text-muted" data-testid="lb-strongest-figure">
             {{ dec1(subjects.strongest.accuracy) }}% ({{ count(subjects.strongest.answers) }}
             soalan)
-          </DsText>
+          </p>
         </DsPanel>
         <DsPanel v-if="subjects.weakest" tone="inset" data-testid="lb-weakest">
           <UBadge
@@ -47,11 +52,11 @@ const series = computed(() => [
           <p class="mt-2 text-label break-words text-highlighted" data-testid="lb-weakest-name">
             {{ subjects.weakest.name }}
           </p>
-          <DsText variant="body" tone="muted" tabular data-testid="lb-weakest-figure">
+          <p class="tabular text-body text-muted" data-testid="lb-weakest-figure">
             {{ dec1(subjects.weakest.accuracy) }}% ({{ count(subjects.weakest.answers) }} soalan)
-          </DsText>
+          </p>
         </DsPanel>
-      </DsGrid>
+      </div>
 
       <DsChart
         type="bar"
@@ -64,27 +69,22 @@ const series = computed(() => [
         data-testid="lb-subjects-chart"
       />
 
-      <DsStack as="ul" gap="none" data-testid="lb-subject-rows">
+      <ul class="flex flex-col" data-testid="lb-subject-rows">
         <li
           v-for="r in subjects.rows"
           :key="r.name"
           class="flex min-w-0 flex-col gap-1 py-2 even:bg-soft sm:flex-row sm:items-center sm:justify-between sm:gap-3"
           data-testid="lb-subject-row"
         >
-          <DsText
-            variant="label"
-            tone="highlighted"
-            wrap="anywhere"
-            class="min-w-0"
-            data-testid="lb-subject-name"
-            >{{ r.name }}</DsText
-          >
-          <DsText variant="caption" as="span" tabular data-testid="lb-subject-figure"
+          <span class="min-w-0 text-label break-words text-highlighted" data-testid="lb-subject-name">{{
+            r.name
+          }}</span>
+          <span class="tabular text-caption text-muted" data-testid="lb-subject-figure"
             >{{ dec1(r.accuracy) }}% · {{ count(r.answers) }} soalan ·
-            {{ count(r.pupils) }} pelajar</DsText
+            {{ count(r.pupils) }} pelajar</span
           >
         </li>
-      </DsStack>
-    </DsStack>
+      </ul>
+    </div>
   </DsPanel>
 </template>

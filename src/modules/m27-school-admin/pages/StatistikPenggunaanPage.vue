@@ -15,7 +15,7 @@ import { isApiError } from '@/api'
 import { setRouteOutcome } from '@/app/router/outcome'
 import { useApi } from '@/composables'
 import { usePageMeta } from '@/composables/usePageMeta'
-import { DsBreadcrumb, DsLoadError, DsPage, DsStack, DsText } from '@/ds'
+import { DsBreadcrumb, DsLoadError, DsPage } from '@/ds'
 
 import { fetchSchoolUsage } from '../api/school-admin'
 import UsageModeCard from '../components/usage/UsageModeCard.vue'
@@ -64,9 +64,13 @@ watch(
       <UsagePeriodPills :active="period" />
       <UsageTiles :tiles="data.tiles" />
       <UsageModeCard :modes="data.modes" :period="data.period" :label="data.label" />
-      <DsText v-if="data.tiles.accuracy === null" variant="caption" data-testid="su-footnote">
+      <p
+        v-if="data.tiles.accuracy === null"
+        class="text-caption text-muted"
+        data-testid="su-footnote"
+      >
         Ketepatan dipaparkan sebagai “—” kerana belum ada sesi latihan direkodkan dalam skop ini.
-      </DsText>
+      </p>
     </template>
     <DsLoadError
       v-else-if="error && !refused"
@@ -74,9 +78,9 @@ watch(
       testid="su-error"
       @retry="reload"
     />
-    <DsStack v-else-if="loading" aria-busy="true" data-testid="su-loading">
+    <div v-else-if="loading" class="flex flex-col gap-4" aria-busy="true" data-testid="su-loading">
       <USkeleton class="h-24 w-full" />
       <USkeleton class="h-64 w-full" />
-    </DsStack>
+    </div>
   </DsPage>
 </template>

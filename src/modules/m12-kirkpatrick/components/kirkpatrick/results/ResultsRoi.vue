@@ -1,6 +1,6 @@
 <script setup lang="ts">
 /** "ROI Platform (Anggaran)" (FN-M12-6.8.1; FR-M12-58; BR-M12-23): four figures and the static note. */
-import { DsPanel, DsStack, DsGrid, DsText } from '@/ds'
+import { DsPanel } from '@/ds'
 
 import type { Results } from '../../../api/types'
 import { gps, mean, pct, plain } from '../common/kirkpatrick-format'
@@ -16,33 +16,33 @@ const STEPS = [
 
 <template>
   <DsPanel title="ROI Platform (Anggaran)" icon="i-ph-coins" data-testid="res-roi">
-    <DsStack>
-      <DsGrid :cols="{ base: 2, sm: 4 }" gap="sm" class="text-center">
+    <div class="flex flex-col gap-4">
+      <div class="grid grid-cols-2 gap-3 text-center sm:grid-cols-4">
         <div>
-          <DsText variant="body" tone="muted">Pelajar Aktif</DsText>
-          <DsText variant="subheading" tabular data-testid="roi-active">
+          <p class="text-body text-muted">Pelajar Aktif</p>
+          <p class="tabular text-subheading text-highlighted" data-testid="roi-active">
             {{ plain(roi.active) }}
-          </DsText>
+          </p>
         </div>
         <div>
-          <DsText variant="body" tone="muted">Purata Soalan/Pelajar</DsText>
-          <DsText variant="subheading" tabular data-testid="roi-per-student">
+          <p class="text-body text-muted">Purata Soalan/Pelajar</p>
+          <p class="tabular text-subheading text-highlighted" data-testid="roi-per-student">
             {{ mean(roi.perStudent) }}
-          </DsText>
+          </p>
         </div>
         <div>
-          <DsText variant="body" tone="muted">Ketepatan Aktif</DsText>
-          <DsText variant="subheading" tabular data-testid="roi-accuracy">
+          <p class="text-body text-muted">Ketepatan Aktif</p>
+          <p class="tabular text-subheading text-highlighted" data-testid="roi-accuracy">
             {{ pct(roi.accuracy) }}
-          </DsText>
+          </p>
         </div>
         <div>
-          <DsText variant="body" tone="muted">GPS Headcount</DsText>
-          <DsText variant="subheading" tabular data-testid="roi-gps">
+          <p class="text-body text-muted">GPS Headcount</p>
+          <p class="tabular text-subheading text-highlighted" data-testid="roi-gps">
             {{ roi.gps === null ? '-' : gps(roi.gps) }}
-          </DsText>
+          </p>
         </div>
-      </DsGrid>
+      </div>
       <UAlert
         color="warning"
         variant="soft"
@@ -50,11 +50,11 @@ const STEPS = [
         title="ROI penuh akan dapat dikira apabila:"
       >
         <template #description>
-          <DsStack as="ol" gap="2xs">
+          <ol class="flex flex-col gap-1">
             <li v-for="(s, i) in STEPS" :key="s">{{ i + 1 }}. {{ s }}</li>
-          </DsStack>
+          </ol>
         </template>
       </UAlert>
-    </DsStack>
+    </div>
   </DsPanel>
 </template>

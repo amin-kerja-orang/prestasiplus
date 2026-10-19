@@ -10,7 +10,7 @@ import { useRoute } from 'vue-router'
 
 import { useApi } from '@/composables'
 import { useSession } from '@/composables/useSession'
-import { DsArt3D, DsPage, DsLoadError, DsGrid, DsStack, DsCluster, DsHeading, DsText } from '@/ds'
+import { DsArt3D, DsPage, DsLoadError } from '@/ds'
 
 import { fetchGamificationAchievements, type AchievementItem } from '../../api'
 import AchievementBadgeCard from '../../components/student-b/AchievementBadgeCard.vue'
@@ -47,61 +47,55 @@ const progressWidth = computed(() =>
 <template>
   <DsPage data-testid="achievements-page">
     <template v-if="data">
-      <DsGrid :cols="{ base: 1, md: 2 }">
+      <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
         <UCard data-testid="achievements-hero">
-          <DsStack gap="sm">
-            <DsCluster :wrap="false">
+          <div class="flex flex-col gap-3">
+            <div class="flex items-center gap-3">
               <DsArt3D name="trophy" size="lg" float />
-              <DsStack gap="2xs">
-                <DsHeading :level="1">
+              <div class="flex min-w-0 flex-col gap-1">
+                <h1 class="text-title text-highlighted">
                   {{ ACHIEVEMENTS_COPY.title }}
-                </DsHeading>
-                <DsText variant="label" as="p" tone="muted" data-testid="achievements-subtitle">
+                </h1>
+                <p class="text-label text-muted" data-testid="achievements-subtitle">
                   {{ achievementsSubtitle(data.unlocked, data.total) }}
-                </DsText>
-              </DsStack>
-            </DsCluster>
+                </p>
+              </div>
+            </div>
             <UProgress
               :model-value="progressWidth"
               :max="100"
               aria-label="Pencapaian dicapai"
               :data-value="progressWidth"
             />
-          </DsStack>
+          </div>
         </UCard>
 
         <UCard data-testid="achievements-streak">
-          <DsCluster gap="md" justify="between" :wrap="false">
-            <DsCluster :wrap="false">
+          <div class="flex items-center justify-between gap-4">
+            <div class="flex min-w-0 items-center gap-3">
               <DsArt3D name="fire" size="lg" float />
-              <DsStack gap="none">
-                <DsText variant="display" as="span" tabular data-testid="streak-current">{{
-                  data.streak.current
-                }}</DsText>
-                <DsText variant="label" tone="muted">{{ ACHIEVEMENTS_COPY.streakLabel }}</DsText>
-              </DsStack>
-            </DsCluster>
-            <DsStack gap="2xs" align="end" class="shrink-0">
+              <div class="flex min-w-0 flex-col">
+                <span
+                  class="tabular text-display text-highlighted"
+                  data-testid="streak-current"
+                  >{{ data.streak.current }}</span
+                >
+                <span class="text-label text-muted">{{ ACHIEVEMENTS_COPY.streakLabel }}</span>
+              </div>
+            </div>
+            <div class="flex shrink-0 flex-col items-end gap-1">
               <UBadge color="warning" variant="solid" data-testid="streak-bonus">{{
                 streakBonusLabel(data.streak.multiplier)
               }}</UBadge>
-              <DsText variant="caption" as="span" data-testid="streak-best">{{
+              <span class="text-caption text-muted" data-testid="streak-best">{{
                 streakBestLabel(data.streak.best)
-              }}</DsText>
-            </DsStack>
-          </DsCluster>
+              }}</span>
+            </div>
+          </div>
         </UCard>
-      </DsGrid>
+      </div>
 
-      <DsCluster
-        as="nav"
-        gap="xs"
-        align="stretch"
-        :wrap="false"
-        class="overflow-x-auto"
-        data-testid="achievements-pills"
-        aria-label="Kelangkaan"
-      >
+      <nav class="flex gap-2 overflow-x-auto" data-testid="achievements-pills" aria-label="Kelangkaan">
         <UButton
           v-for="pill in RARITY_PILLS"
           :key="pill.label"
@@ -118,7 +112,7 @@ const progressWidth = computed(() =>
           data-testid="achievements-pill"
           >{{ pill.label }}</UButton
         >
-      </DsCluster>
+      </nav>
 
       <div
         class="grid grid-cols-2 gap-3 md:grid-cols-3 md:gap-4 xl:grid-cols-5"
@@ -148,9 +142,9 @@ const progressWidth = computed(() =>
       retry-testid="achievements-retry"
       @retry="reload()"
     />
-    <DsStack v-else gap="sm" aria-busy="true" data-testid="achievements-loading">
+    <div v-else class="flex flex-col gap-3" aria-busy="true" data-testid="achievements-loading">
       <USkeleton class="h-28 w-full" />
       <USkeleton class="h-64 w-full" />
-    </DsStack>
+    </div>
   </DsPage>
 </template>

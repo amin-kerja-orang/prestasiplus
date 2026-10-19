@@ -11,7 +11,7 @@ import { useRouter } from 'vue-router'
 import { useToast } from '@nuxt/ui/composables'
 
 import { isApiError } from '@/api'
-import { DsBackLink, DsIconChip, DsPage, DsPanel, DsStack, DsGrid, DsCluster, DsText } from '@/ds'
+import { DsBackLink, DsIconChip, DsPage, DsPanel } from '@/ds'
 
 import PhotoPreview from '../components/timeline/PhotoPreview.vue'
 
@@ -118,7 +118,7 @@ const fieldError = (name: string): string | undefined => errors.value[name]
     <DsBackLink to="/timeline" label="Kembali ke Timeline" data-testid="back-link" />
 
     <DsPanel>
-      <DsStack as="form" gap="lg" data-testid="timeline-form" @submit.prevent="submit">
+      <form class="flex flex-col gap-6" data-testid="timeline-form" @submit.prevent="submit">
         <UAlert
           v-if="messages.length"
           color="error"
@@ -145,7 +145,7 @@ const fieldError = (name: string): string | undefined => errors.value[name]
           />
         </UFormField>
 
-        <DsGrid :cols="{ base: 1, sm: 2 }" gap="lg">
+        <div class="grid grid-cols-1 gap-6 sm:grid-cols-2">
           <UFormField label="Kategori" for="tl-category" required :error="fieldError('category')">
             <USelect
               id="tl-category"
@@ -167,7 +167,7 @@ const fieldError = (name: string): string | undefined => errors.value[name]
               class="w-full"
             />
           </UFormField>
-        </DsGrid>
+        </div>
 
         <UFormField
           label="Cerita / Keterangan"
@@ -187,11 +187,11 @@ const fieldError = (name: string): string | undefined => errors.value[name]
           />
         </UFormField>
 
-        <DsStack gap="sm">
-          <DsText variant="label" as="p" tone="highlighted">
+        <div class="flex flex-col gap-3">
+          <p class="text-label text-highlighted">
             Gambar <span class="text-error">*</span>
-            <DsText variant="caption" as="span">(Maks 5 gambar, 2MB setiap satu)</DsText>
-          </DsText>
+            <span class="text-caption text-muted">(Maks 5 gambar, 2MB setiap satu)</span>
+          </p>
           <label
             id="dropZone"
             for="photoInput"
@@ -201,13 +201,9 @@ const fieldError = (name: string): string | undefined => errors.value[name]
             @dragleave.prevent="dragging = false"
             @drop.prevent="onDrop"
           >
-            <DsIconChip
-              :icon="dragging ? 'i-ph-download-simple' : 'i-ph-cloud-arrow-up'"
-              accent="action"
-              size="lg"
-            />
-            <DsText variant="label" tone="highlighted">Klik atau seret gambar ke sini</DsText>
-            <DsText variant="caption" as="span">JPG, PNG, WEBP • Maks 2MB • 1-5 gambar</DsText>
+            <DsIconChip :icon="dragging ? 'i-ph-download-simple' : 'i-ph-cloud-arrow-up'" accent="action" size="lg" />
+            <span class="text-label text-highlighted">Klik atau seret gambar ke sini</span>
+            <span class="text-caption text-muted">JPG, PNG, WEBP • Maks 2MB • 1-5 gambar</span>
           </label>
           <UInput
             id="photoInput"
@@ -219,12 +215,11 @@ const fieldError = (name: string): string | undefined => errors.value[name]
             data-testid="photo-input"
             @change="onPick"
           />
-          <DsText v-if="errors.photos" variant="caption" tone="error">{{ errors.photos }}</DsText>
+          <p v-if="errors.photos" class="text-caption text-error">{{ errors.photos }}</p>
 
-          <DsGrid
+          <div
             v-if="items.length"
-            :cols="{ base: 2, sm: 3, md: 5 }"
-            gap="sm"
+            class="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-5"
             data-testid="photo-previews"
           >
             <PhotoPreview
@@ -233,9 +228,9 @@ const fieldError = (name: string): string | undefined => errors.value[name]
               :src="it.preview"
               @remove="remove(i)"
             />
-          </DsGrid>
+          </div>
 
-          <DsStack v-if="items.length" gap="xs" data-testid="caption-fields">
+          <div v-if="items.length" class="flex flex-col gap-2" data-testid="caption-fields">
             <p class="flex items-center gap-2 text-label text-highlighted">
               <UIcon name="i-ph-tag" class="size-4" aria-hidden="true" /> Keterangan Gambar
               (opsional)
@@ -252,10 +247,10 @@ const fieldError = (name: string): string | undefined => errors.value[name]
               class="w-full"
               data-testid="caption-input"
             />
-          </DsStack>
-        </DsStack>
+          </div>
+        </div>
 
-        <DsCluster justify="end" :wrap="false">
+        <div class="flex items-center justify-end gap-3">
           <UButton
             to="/timeline"
             color="neutral"
@@ -273,8 +268,8 @@ const fieldError = (name: string): string | undefined => errors.value[name]
             label="Terbitkan"
             data-testid="submit"
           />
-        </DsCluster>
-      </DsStack>
+        </div>
+      </form>
     </DsPanel>
   </DsPage>
 </template>

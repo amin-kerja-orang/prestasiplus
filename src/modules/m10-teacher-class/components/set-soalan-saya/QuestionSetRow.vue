@@ -5,7 +5,7 @@
  */
 import { computed } from 'vue'
 
-import { DsIconChip, DsPanel, DsCluster, DsStack, DsHeading } from '@/ds'
+import { DsIconChip, DsPanel } from '@/ds'
 
 import type { StudentQuestionSet } from '../../api/types'
 import { SET_COPY } from './copy'
@@ -20,12 +20,12 @@ const time = computed(() => timeLimitLabel(props.item.timeLimitMinutes))
   <li class="min-w-0" data-testid="set-row">
     <DsPanel>
       <div class="flex min-w-0 flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <DsCluster align="start" :wrap="false">
+        <div class="flex min-w-0 items-start gap-3">
           <DsIconChip icon="clipboard-text" accent="action" size="lg" />
-          <DsStack gap="xs">
-            <DsHeading :level="3" wrap="anywhere" data-testid="set-title">
+          <div class="flex min-w-0 flex-col gap-2">
+            <h3 class="text-subheading break-words text-highlighted" data-testid="set-title">
               {{ item.title }}
-            </DsHeading>
+            </h3>
             <ul class="flex flex-wrap gap-x-4 gap-y-1 text-label text-muted">
               <li
                 v-if="item.teacherName"
@@ -56,8 +56,8 @@ const time = computed(() => timeLimitLabel(props.item.timeLimitMinutes))
                 {{ attemptsLabel(item.attemptsLeft) }}
               </li>
             </ul>
-          </DsStack>
-        </DsCluster>
+          </div>
+        </div>
         <UButton
           :to="quizPath(item.id)"
           size="xl"

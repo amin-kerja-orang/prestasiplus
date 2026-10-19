@@ -8,7 +8,7 @@
 import { computed, watch } from 'vue'
 
 import { usePageMeta } from '@/composables'
-import { DsBackLink, DsLoadError, DsPage, DsGrid } from '@/ds'
+import { DsBackLink, DsLoadError, DsPage } from '@/ds'
 
 import { fetchKirkpatrickStudent } from '../api'
 import {
@@ -85,10 +85,10 @@ watch(
     </p>
     <template v-if="data">
       <PelajarAlesa :data="data" />
-      <DsGrid :cols="{ base: 1, md: 2 }">
+      <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
         <PelajarHeadcount :headcount="data.headcount" />
         <PelajarPlatform :platform="data.platform" />
-      </DsGrid>
+      </div>
     </template>
   </DsPage>
 </template>

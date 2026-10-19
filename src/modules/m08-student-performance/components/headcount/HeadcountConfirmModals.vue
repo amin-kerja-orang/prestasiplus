@@ -4,7 +4,7 @@
  * calling the API; "Ya, Reset" / "Ya, Padam" emit `confirm-reset` / `confirm-delete` (effects INFERRED,
  * FR-M08-137).
  */
-import { DsDialog, DsPanel, DsStack, DsText } from '@/ds'
+import { DsDialog, DsPanel } from '@/ds'
 
 defineProps<{
   subject: string
@@ -19,13 +19,13 @@ defineEmits<{ 'confirm-reset': []; 'confirm-delete': [] }>()
 
 <template>
   <DsDialog v-model:open="resetOpen" title="Reset Semua Data?">
-    <DsStack data-testid="reset-modal">
-      <DsText variant="body">
+    <div class="flex flex-col gap-4" data-testid="reset-modal">
+      <p class="text-body text-default">
         Semua markah murid akan dikosongkan — <strong>TOV, ETR, OTR, AR &amp; RS</strong>.
-      </DsText>
+      </p>
       <DsPanel tone="inset">
-        <DsStack gap="xs">
-          <DsText variant="label" as="p" tone="highlighted">Yang kekal selamat:</DsText>
+        <div class="flex flex-col gap-2">
+          <p class="text-label text-highlighted">Yang kekal selamat:</p>
           <ul class="flex flex-col gap-2 text-body text-default">
             <li class="flex items-start gap-2">
               <UIcon name="i-ph-check-circle" class="mt-1 size-5 shrink-0 text-success" />Senarai
@@ -36,9 +36,9 @@ defineEmits<{ 'confirm-reset': []; 'confirm-delete': [] }>()
               headcount (subjek, kelas, tahun)
             </li>
           </ul>
-        </DsStack>
+        </div>
       </DsPanel>
-    </DsStack>
+    </div>
     <template #footer>
       <UButton
         type="button"
@@ -61,15 +61,15 @@ defineEmits<{ 'confirm-reset': []; 'confirm-delete': [] }>()
   </DsDialog>
 
   <DsDialog v-model:open="deleteOpen" title="Padam Headcount?">
-    <DsStack gap="sm" data-testid="delete-modal">
-      <DsText variant="body" wrap="anywhere">
+    <div class="flex flex-col gap-3" data-testid="delete-modal">
+      <p class="text-body break-words text-default">
         Anda pasti mahu padam headcount <strong>{{ subject }}</strong> ({{ className }},
         {{ year }})?
-      </DsText>
-      <DsText variant="body">
+      </p>
+      <p class="text-body text-default">
         Semua data murid, TOV, ETR, OTR, AR &amp; RS akan dipadam secara kekal.
-      </DsText>
-    </DsStack>
+      </p>
+    </div>
     <template #footer>
       <UButton
         type="button"

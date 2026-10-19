@@ -6,7 +6,6 @@
  * least 44px.
  */
 import { useThemeMode } from '@/theme/color-mode'
-import { DsSurface } from '@/ds'
 
 useThemeMode('learner')
 </script>
@@ -16,7 +15,7 @@ useThemeMode('learner')
     class="flex min-h-dvh flex-col items-center justify-center bg-muted px-3 py-8 sm:px-4"
     data-testid="invite-invalid"
   >
-    <DsSurface radius="sheet" shadow="lift" padding="none" class="w-full max-w-md">
+    <div class="w-full max-w-md overflow-hidden rounded-sheet bg-default shadow-lift">
       <div class="bg-elevated px-5 py-6 text-center">
         <UIcon
           name="i-ph-link-break-duotone"
@@ -55,7 +54,7 @@ useThemeMode('learner')
           >Laman Utama</UButton
         >
       </div>
-    </DsSurface>
+    </div>
     <UButton
       to="/"
       variant="link"

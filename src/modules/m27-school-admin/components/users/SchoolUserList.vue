@@ -34,10 +34,6 @@ import {
   DsStatusBadge,
   useConfirm,
   type CardField,
-  DsGrid,
-  DsCluster,
-  DsStack,
-  DsText,
 } from '@/ds'
 import { formatDateKey } from '@/lib/time'
 import { clock } from '@/lib/time/clock'
@@ -297,31 +293,29 @@ const sized = (cols: TableColumn<Item>[]): TableColumn<Item>[] =>
   })
 
 const columns = computed<TableColumn<Item>[]>(() =>
-  sized(
-    isPupil.value
-      ? [
-          { accessorKey: 'index', header: '#' },
-          { accessorKey: 'name', header: 'Nama' },
-          { accessorKey: 'email', header: 'Emel' },
-          { accessorKey: 'phone', header: 'Telefon' },
-          { accessorKey: 'grade', header: 'Tingkatan' },
-          { accessorKey: 'kelas', header: 'Kelas' },
-          { accessorKey: 'isActive', header: 'Aktif?' },
-          { accessorKey: 'date', header: 'Tarikh' },
-          { id: 'actions', header: 'Tindakan' },
-        ]
-      : [
-          { accessorKey: 'index', header: '#' },
-          { accessorKey: 'name', header: 'Nama' },
-          { accessorKey: 'email', header: 'Emel' },
-          { accessorKey: 'phone', header: 'Telefon' },
-          { accessorKey: 'kelas', header: 'Kelas' },
-          { accessorKey: 'lastLogin', header: 'Login Terakhir' },
-          { accessorKey: 'isActive', header: 'Aktif?' },
-          { accessorKey: 'date', header: 'Tarikh' },
-          { id: 'actions', header: 'Tindakan' },
-        ],
-  ),
+  sized(isPupil.value
+    ? [
+        { accessorKey: 'index', header: '#' },
+        { accessorKey: 'name', header: 'Nama' },
+        { accessorKey: 'email', header: 'Emel' },
+        { accessorKey: 'phone', header: 'Telefon' },
+        { accessorKey: 'grade', header: 'Tingkatan' },
+        { accessorKey: 'kelas', header: 'Kelas' },
+        { accessorKey: 'isActive', header: 'Aktif?' },
+        { accessorKey: 'date', header: 'Tarikh' },
+        { id: 'actions', header: 'Tindakan' },
+      ]
+    : [
+        { accessorKey: 'index', header: '#' },
+        { accessorKey: 'name', header: 'Nama' },
+        { accessorKey: 'email', header: 'Emel' },
+        { accessorKey: 'phone', header: 'Telefon' },
+        { accessorKey: 'kelas', header: 'Kelas' },
+        { accessorKey: 'lastLogin', header: 'Login Terakhir' },
+        { accessorKey: 'isActive', header: 'Aktif?' },
+        { accessorKey: 'date', header: 'Tarikh' },
+        { id: 'actions', header: 'Tindakan' },
+      ]),
 )
 
 const cardFields = computed<CardField[]>(() =>
@@ -350,7 +344,7 @@ function openRow(row: Item): void {
     <DsBackLink :to="DASHBOARD_PATH" label="Dashboard Sekolah" data-testid="user-crumb-back" />
 
     <!-- FR-M27-88 / 99: one count tile, unaffected by the filters. -->
-    <DsGrid :cols="{ base: 1, sm: 2, lg: 4 }" gap="none" as="section" data-testid="user-count-card">
+    <section class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4" data-testid="user-count-card">
       <USkeleton v-if="!data" class="h-24 w-full" />
       <DsStatTile
         v-else
@@ -359,17 +353,17 @@ function openRow(row: Item): void {
         :icon="isPupil ? 'graduation-cap' : 'chalkboard-teacher'"
         :accent="isPupil ? 'action' : 'friend'"
       />
-    </DsGrid>
+    </section>
 
     <!-- FR-M27-88: text left, buttons right; at 375 the buttons wrap below the text. -->
     <div
       class="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between"
       data-testid="user-actions-row"
     >
-      <DsText variant="body" tone="muted" data-testid="user-found">
+      <p class="text-body text-muted" data-testid="user-found">
         <template v-if="data">{{ formatCount(data.meta.totalItems) }} pengguna dijumpai</template>
-      </DsText>
-      <DsCluster gap="xs" stack-below="sm" align="stretch">
+      </p>
+      <div class="flex flex-col gap-2 sm:flex-row">
         <UButton
           type="button"
           color="neutral"
@@ -392,7 +386,7 @@ function openRow(row: Item): void {
           data-testid="user-add"
           >{{ isPupil ? 'Tambah Pelajar' : 'Cipta Pengguna' }}</UButton
         >
-      </DsCluster>
+      </div>
     </div>
 
     <!-- FR-M27-89: Status, Cari, submit "Cari"; no role, school or class control. -->
@@ -536,7 +530,7 @@ function openRow(row: Item): void {
           </UserRowActions>
         </template>
         <template #card-actions="{ row }">
-          <DsStack gap="xs" align="end">
+          <div class="flex flex-col items-end gap-2">
             <DsStatusBadge
               v-if="isPupil"
               :status="row.isActive ? 'active' : 'inactive'"
@@ -561,7 +555,7 @@ function openRow(row: Item): void {
                 :role="role"
               />
             </UserRowActions>
-          </DsStack>
+          </div>
         </template>
       </DsDataTable>
     </template>

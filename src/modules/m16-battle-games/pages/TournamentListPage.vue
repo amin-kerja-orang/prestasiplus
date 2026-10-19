@@ -13,16 +13,7 @@
 import { computed } from 'vue'
 
 import { useApi, useSession } from '@/composables'
-import {
-  DsArt3D,
-  DsEmptyState,
-  DsPage,
-  DsLoadError,
-  DsCluster,
-  DsStack,
-  DsHeading,
-  DsText,
-} from '@/ds'
+import { DsArt3D, DsEmptyState, DsPage, DsLoadError } from '@/ds'
 
 import { fetchTournaments } from '../api'
 import { LIST_COPY as COPY } from '../components/tournament/copy'
@@ -37,13 +28,13 @@ const view = useApi((signal) => fetchTournaments({ signal }))
 <template>
   <DsPage data-testid="m16-tournament-page">
     <UCard data-testid="tournament-hero">
-      <DsCluster gap="md" justify="between" :wrap="false">
-        <DsStack gap="2xs">
-          <DsHeading :level="2" variant="title">{{ COPY.heading }}</DsHeading>
-          <DsText variant="body" tone="muted" class="max-w-prose">{{ COPY.sub }}</DsText>
-        </DsStack>
+      <div class="flex items-center justify-between gap-4">
+        <div class="flex min-w-0 flex-col gap-1">
+          <h2 class="text-title text-highlighted">{{ COPY.heading }}</h2>
+          <p class="max-w-prose text-body text-muted">{{ COPY.sub }}</p>
+        </div>
         <DsArt3D name="trophy" size="hero" float class="hidden sm:block" />
-      </DsCluster>
+      </div>
     </UCard>
 
     <!--
@@ -63,30 +54,24 @@ const view = useApi((signal) => fetchTournaments({ signal }))
       {{ COPY.create }}
     </UButton>
 
-    <DsLoadError
-      v-if="view.error.value"
-      :message="LOAD_COPY.failed"
-      testid="m16-load-error"
-      retry-testid="m16-retry"
-      @retry="view.reload()"
-    />
-    <DsStack
+    <DsLoadError v-if="view.error.value" :message="LOAD_COPY.failed" testid="m16-load-error" retry-testid="m16-retry" @retry="view.reload()" />
+    <div
       v-else-if="!view.data.value"
-      gap="sm"
+      class="flex flex-col gap-3"
       aria-busy="true"
       data-testid="tournament-loading"
     >
       <USkeleton class="h-16 w-full" />
       <USkeleton class="h-16 w-full" />
-    </DsStack>
+    </div>
     <DsEmptyState
       v-else-if="view.data.value.length === 0"
       :title="COPY.empty"
       icon="trophy"
       data-testid="tournament-empty"
     />
-    <DsStack v-else gap="sm" data-testid="tournament-list">
+    <div v-else class="flex flex-col gap-3" data-testid="tournament-list">
       <TournamentCard v-for="t in view.data.value" :key="t.uuid" :item="t" />
-    </DsStack>
+    </div>
   </DsPage>
 </template>

@@ -6,7 +6,6 @@
 import { computed } from 'vue'
 
 import type { QuestionView, SectionView } from '../domain/types'
-import { DsCluster, DsStack, DsText, DsHeading } from '@/ds'
 
 export type NavState = 'answered' | 'flagged' | 'none'
 
@@ -32,21 +31,21 @@ const label: Record<NavState, string> = { answered: 'Dijawab', flagged: 'Ditanda
 </script>
 
 <template>
-  <DsStack as="nav" aria-label="Peta soalan" data-testid="navigator">
-    <DsText variant="caption" data-testid="nav-counts">
+  <nav class="flex flex-col gap-4" aria-label="Peta soalan" data-testid="navigator">
+    <p class="text-caption text-muted" data-testid="nav-counts">
       Dijawab {{ counts.answered }} · Ditanda {{ counts.flagged }} · Belum {{ counts.none }}
-    </DsText>
-    <DsStack v-for="s in sections" :key="s.id" as="section" gap="xs">
-      <DsHeading :level="3" variant="label">
+    </p>
+    <section v-for="s in sections" :key="s.id" class="flex flex-col gap-2">
+      <h3 class="text-label text-highlighted">
         {{ s.label }}
-        <DsText v-if="s.rule.type === 'choose'" variant="caption" as="span">
-          · pilih {{ s.rule.n }}</DsText
+        <span v-if="s.rule.type === 'choose'" class="text-caption text-muted">
+          · pilih {{ s.rule.n }}</span
         >
-      </DsHeading>
-      <DsText v-if="counters?.[s.id]" variant="caption" role="status">
+      </h3>
+      <p v-if="counters?.[s.id]" class="text-caption text-muted" role="status">
         {{ counters[s.id] }}
-      </DsText>
-      <DsCluster gap="xs" align="stretch">
+      </p>
+      <div class="flex flex-wrap gap-2">
         <UButton
           v-for="q in questions.filter((x) => x.sectionId === s.id)"
           :key="q.id"
@@ -73,12 +72,12 @@ const label: Record<NavState, string> = { answered: 'Dijawab', flagged: 'Ditanda
           @click="emit('go', q.id)"
           >{{ q.number }}</UButton
         >
-      </DsCluster>
-    </DsStack>
+      </div>
+    </section>
     <ul class="flex flex-wrap gap-x-4 gap-y-1 text-caption text-muted" aria-hidden="true">
       <li>Dijawab</li>
       <li>Ditanda</li>
       <li>Belum</li>
     </ul>
-  </DsStack>
+  </nav>
 </template>

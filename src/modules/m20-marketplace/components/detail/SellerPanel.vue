@@ -4,15 +4,14 @@ import { RouterLink } from 'vue-router'
 
 import type { SellerCard } from '../../api'
 import { DETAIL_COPY } from './copy'
-import { DsCluster, DsStack, DsHeading, DsText } from '@/ds'
 
 defineProps<{ seller: SellerCard | null }>()
 </script>
 
 <template>
   <UCard class="min-w-0" data-testid="seller-panel">
-    <DsStack gap="sm">
-      <DsHeading :level="2" variant="overline" tone="muted">{{ DETAIL_COPY.seller }}</DsHeading>
+    <div class="flex flex-col gap-3">
+      <h2 class="text-overline text-muted">{{ DETAIL_COPY.seller }}</h2>
       <RouterLink
         v-if="seller"
         :to="`/marketplace/penjual/${seller.id}`"
@@ -31,20 +30,20 @@ defineProps<{ seller: SellerCard | null }>()
               data-testid="seller-verified"
             />
           </span>
-          <DsText variant="caption" as="span" data-testid="seller-rating">{{
+          <span class="text-caption text-muted" data-testid="seller-rating">{{
             seller.ratingStars
-          }}</DsText>
-          <DsText variant="caption" as="span" data-testid="seller-products">
+          }}</span>
+          <span class="text-caption text-muted" data-testid="seller-products">
             {{ seller.activeProductCount }} {{ DETAIL_COPY.products }}
-          </DsText>
+          </span>
         </span>
       </RouterLink>
-      <DsCluster v-else :wrap="false" class="min-h-11" data-testid="seller-platform">
+      <div v-else class="flex min-h-11 min-w-0 items-center gap-3" data-testid="seller-platform">
         <UAvatar text="P" size="xl" />
-        <DsText variant="label" tone="highlighted" wrap="anywhere" class="min-w-0">{{
+        <span class="min-w-0 text-label break-words text-highlighted">{{
           DETAIL_COPY.platformSeller
-        }}</DsText>
-      </DsCluster>
-    </DsStack>
+        }}</span>
+      </div>
+    </div>
   </UCard>
 </template>

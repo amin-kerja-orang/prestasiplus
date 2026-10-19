@@ -21,8 +21,6 @@ import {
   DsStatRow,
   type PillItem,
   type StatItem,
-  DsStack,
-  DsText,
 } from '@/ds'
 
 import { fetchMasterNotes, type MasterNoteTab } from '../api/master-notes'
@@ -48,11 +46,7 @@ const activeTab = computed<MasterNoteTab>(() => data.value?.meta.activeTab ?? 'f
 const firstLoad = computed(() => data.value === null && error.value === null)
 
 const TABS: PillItem<MasterNoteTab>[] = [
-  {
-    key: 'flagged',
-    label: 'Flagged Review',
-    to: { path: MASTER_NOTES_PATH, query: { tab: 'flagged' } },
-  },
+  { key: 'flagged', label: 'Flagged Review', to: { path: MASTER_NOTES_PATH, query: { tab: 'flagged' } } },
   {
     key: 'approved',
     label: 'Teacher Approved',
@@ -91,20 +85,21 @@ function goToPage(next: number): void {
   query.page = String(next)
   void router.push({ path: MASTER_NOTES_PATH, query })
 }
+
 </script>
 
 <template>
   <DsPage data-testid="notes-page">
     <DsStatRow v-if="summary" :items="kpis" :cols="3" data-testid="notes-kpis" />
     <div data-testid="notes-header" class="sr-only">
-      <DsText variant="body" data-testid="notes-summary">
+      <p class="text-body text-default" data-testid="notes-summary">
         <template v-if="summary">
           Self-healing nota AI: {{ summary.flagged }} flagged ·
           {{ summary.teacherApproved }} teacher-approved · {{ summary.total }} total. Review yang
           flagged untuk improve quality.
         </template>
         <USkeleton v-else class="h-4 w-72 max-w-full" />
-      </DsText>
+      </p>
     </div>
 
     <DsPillNav
@@ -123,9 +118,9 @@ function goToPage(next: number): void {
       @retry="reload()"
     />
 
-    <DsStack v-else-if="firstLoad" gap="sm" data-testid="notes-skeleton">
+    <div v-else-if="firstLoad" class="flex flex-col gap-3" data-testid="notes-skeleton">
       <USkeleton v-for="n in 3" :key="n" class="h-44 w-full" />
-    </DsStack>
+    </div>
 
     <DsPanel v-else-if="rows.length === 0" data-testid="notes-empty">
       <DsEmptyState size="sm" title="Tiada nota dalam tab ini." icon="notebook" />

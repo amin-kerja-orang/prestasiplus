@@ -9,7 +9,7 @@ import type { TableColumn } from '@nuxt/ui'
 import { computed } from 'vue'
 
 import { useApi } from '@/composables'
-import { DsDialog, DsDrillTable, DsLoadError, DsStatRow, DsStack, DsText } from '@/ds'
+import { DsDialog, DsDrillTable, DsLoadError, DsStatRow } from '@/ds'
 import { formatMyt } from '@/lib/time'
 
 import {
@@ -88,7 +88,7 @@ const sessions = computed(() => data.value?.sessions ?? [])
 
 <template>
   <DsDialog v-model:open="open" :title="title" class="sm:max-w-2xl">
-    <DsStack data-testid="cc-sessions-modal">
+    <div class="flex min-w-0 flex-col gap-4" data-testid="cc-sessions-modal">
       <DsLoadError
         v-if="error"
         variant="inline"
@@ -96,19 +96,18 @@ const sessions = computed(() => data.value?.sessions ?? [])
         testid="cc-modal-error"
         @retry="reload"
       />
-      <DsText v-else-if="!data" variant="body" tone="muted" data-testid="cc-modal-loading">
+      <p v-else-if="!data" class="text-body text-muted" data-testid="cc-modal-loading">
         Memuatkan...
-      </DsText>
+      </p>
       <template v-else>
         <DsStatRow :items="statItems(stats)" data-testid="cc-modal-stats" />
-        <DsText
+        <p
           v-if="data.sessions.length === 0"
-          variant="body"
-          tone="muted"
+          class="text-body text-muted"
           data-testid="cc-modal-empty"
         >
           {{ emptyCopy }}
-        </DsText>
+        </p>
         <div v-else data-testid="cc-sessions-scroller">
           <DsDrillTable
             :data="sessions"
@@ -154,7 +153,7 @@ const sessions = computed(() => data.value?.sessions ?? [])
           </DsDrillTable>
         </div>
       </template>
-    </DsStack>
+    </div>
     <template #footer>
       <UButton
         color="neutral"

@@ -8,7 +8,7 @@
 import { computed } from 'vue'
 import { RouterLink } from 'vue-router'
 
-import { DsArt3D, DsCluster, DsHeading, DsText } from '@/ds'
+import { DsArt3D } from '@/ds'
 
 import type { ProductCard } from '../../api'
 import { MARKETPLACE_COPY, formatPrice, shippingKindOf, type ShippingKind } from './copy'
@@ -72,9 +72,12 @@ const shipping = computed(() => SHIPPING_ICONS[shippingKindOf(props.product.ship
         </div>
       </div>
       <div class="flex min-w-0 flex-1 flex-col gap-2">
-        <DsHeading :level="4" :clamp="2" wrap="anywhere" data-testid="product-card-name">
+        <h4
+          class="line-clamp-2 text-label break-words text-highlighted"
+          data-testid="product-card-name"
+        >
           {{ product.name }}
-        </DsHeading>
+        </h4>
         <p
           v-if="variant === 'full' && product.seller"
           class="flex min-w-0 items-center gap-1 text-caption text-muted"
@@ -90,17 +93,17 @@ const shipping = computed(() => SHIPPING_ICONS[shippingKindOf(props.product.ship
             data-testid="product-card-verified"
           />
         </p>
-        <DsCluster gap="xs" row-gap="none" align="baseline" data-testid="product-card-prices">
-          <DsText variant="subheading" as="span" tabular data-testid="product-card-price">{{
+        <div class="flex flex-wrap items-baseline gap-x-2" data-testid="product-card-prices">
+          <span class="tabular text-subheading text-highlighted" data-testid="product-card-price">{{
             formatPrice(product.price)
-          }}</DsText>
+          }}</span>
           <s
             v-if="product.originalPrice !== null && variant !== 'related'"
             class="text-caption text-muted"
             data-testid="product-card-original"
             >{{ formatPrice(product.originalPrice) }}</s
           >
-        </DsCluster>
+        </div>
         <p
           v-if="variant === 'full'"
           class="mt-auto flex items-start gap-1 text-caption break-words text-muted"

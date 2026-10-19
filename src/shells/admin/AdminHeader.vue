@@ -18,7 +18,6 @@ import ShellLink from '@/shells/shared/ShellLink.vue'
 
 import AdminServerStatus from './AdminServerStatus.vue'
 import { LG_QUERY, useMediaQuery } from './useMinWidth'
-import { DsCluster } from '@/ds'
 
 const props = defineProps<{
   header: PageHeader
@@ -37,7 +36,7 @@ const showPill = computed(() => props.serverStatus && wide.value)
     class="topbar sticky top-0 z-30 border-b border-indigo-500/10 px-3 py-2 sm:px-6 sm:py-4"
     data-testid="shell-admin-header"
   >
-    <DsCluster justify="between" :wrap="false">
+    <div class="flex items-center justify-between gap-3">
       <div class="min-w-0 flex-1">
         <h1
           class="truncate font-heading text-base font-bold text-slate-800 sm:text-2xl"
@@ -81,6 +80,6 @@ const showPill = computed(() => props.serverStatus && wide.value)
       >
         <img :src="LOGO_URL" alt="PRESTASIPLUS" class="h-8 w-auto sm:h-10" />
       </ShellLink>
-    </DsCluster>
+    </div>
   </header>
 </template>

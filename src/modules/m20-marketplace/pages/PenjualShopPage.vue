@@ -9,7 +9,7 @@ import { computed, watch } from 'vue'
 import { isApiError } from '@/api'
 import { setRouteOutcome, useRouteOutcome } from '@/app/router/outcome'
 import { useApi, usePageMeta } from '@/composables'
-import { DsPage, DsLoadError, DsBackLink, DsStack } from '@/ds'
+import { DsPage, DsLoadError, DsBackLink } from '@/ds'
 
 import { fetchMarketplaceShop } from '../api'
 import { MARKETPLACE_COPY, SHOP_COPY } from '../components/product/copy'
@@ -59,17 +59,11 @@ watch(
   <div v-if="notFound" />
   <DsPage v-else data-testid="shop-page">
     <DsBackLink to="/marketplace" :label="MARKETPLACE_COPY.back" data-testid="marketplace-back" />
-    <DsLoadError
-      v-if="failed"
-      :message="MARKETPLACE_COPY.loadFailed"
-      testid="m20-load-error"
-      retry-testid="m20-retry"
-      @retry="shop.reload"
-    />
-    <DsStack v-else-if="!shop.data.value" gap="sm" aria-busy="true" data-testid="shop-loading">
+    <DsLoadError v-if="failed" :message="MARKETPLACE_COPY.loadFailed" testid="m20-load-error" retry-testid="m20-retry" @retry="shop.reload" />
+    <div v-else-if="!shop.data.value" class="flex flex-col gap-3" aria-busy="true" data-testid="shop-loading">
       <USkeleton class="h-28 w-full" />
       <USkeleton class="h-40 w-full" />
-    </DsStack>
+    </div>
     <template v-else>
       <ShopCard :shop="shop.data.value.shop" />
       <ProductGrid :products="shop.data.value.products" variant="simple" />

@@ -6,7 +6,6 @@
  * embed (TikTok, Facebook, other) show a plain link to the stored http(s) address.
  */
 import { computed } from 'vue'
-import { DsSurface } from '@/ds'
 
 const props = defineProps<{ embedUrl: string | null; videoUrl: string; title: string }>()
 
@@ -38,7 +37,7 @@ const safeLink = computed(() => {
     :data-embed-url="embedSrc ?? undefined"
     data-testid="video-player"
   >
-    <DsSurface level="elevated" radius="card" padding="none" class="relative aspect-video w-full">
+    <div class="relative aspect-video w-full overflow-hidden rounded-card bg-elevated">
       <iframe
         v-if="embedSrc"
         :src="embedSrc"
@@ -70,6 +69,6 @@ const safeLink = computed(() => {
           >{{ safeLink }}</UButton
         >
       </div>
-    </DsSurface>
+    </div>
   </UCard>
 </template>

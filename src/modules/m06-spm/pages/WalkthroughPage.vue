@@ -14,7 +14,7 @@
 import { nextTick, ref } from 'vue'
 
 import { alertNative } from '@/composables'
-import { DsFormField, DsNativeSelect, DsPage, DsPanel, DsStack, DsGrid } from '@/ds'
+import { DsFormField, DsNativeSelect, DsPage, DsPanel } from '@/ds'
 
 import { solveWalkthrough } from '../api'
 import DutaBlock from '../components/DutaBlock.vue'
@@ -71,8 +71,8 @@ async function solve(): Promise<void> {
     data-testid="walk-page"
   >
     <DsPanel title="Soalan SPM" icon="i-ph-camera-duotone" accent="friend">
-      <DsStack id="spmForm" as="form" data-testid="walk-form" @submit.prevent="solve">
-        <DsGrid :cols="{ base: 1, sm: 2 }" gap="sm">
+      <form id="spmForm" class="flex flex-col gap-4" data-testid="walk-form" @submit.prevent="solve">
+        <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
           <DsFormField label="Subjek" native>
             <template #default="{ id }">
               <DsNativeSelect
@@ -83,9 +83,7 @@ async function solve(): Promise<void> {
                 placeholder="Pilih"
                 data-testid="walk-subject"
               >
-                <option v-for="s in WALKTHROUGH_SUBJECT_OPTIONS" :key="s" :value="s">
-                  {{ s }}
-                </option>
+                <option v-for="s in WALKTHROUGH_SUBJECT_OPTIONS" :key="s" :value="s">{{ s }}</option>
               </DsNativeSelect>
             </template>
           </DsFormField>
@@ -102,7 +100,7 @@ async function solve(): Promise<void> {
               />
             </template>
           </DsFormField>
-        </DsGrid>
+        </div>
 
         <DsFormField label="Soalan (taip atau snap)" native>
           <template #default="{ id }">
@@ -148,7 +146,7 @@ async function solve(): Promise<void> {
           data-testid="walk-submit"
           >{{ busy ? 'AI sedang fikir... (mungkin 15-30s)' : 'Bagi Walkthrough' }}</UButton
         >
-      </DsStack>
+      </form>
     </DsPanel>
 
     <div v-if="result !== null" ref="resultEl" class="min-w-0">

@@ -6,7 +6,6 @@
 import type { StudentAnswerRow, StudentDetail } from '../../api/types'
 import { dmyHm } from './monitoring-format'
 import { safeHtml } from './safe-html'
-import { DsCluster, DsStack, DsText } from '@/ds'
 
 defineProps<{ wrong: StudentDetail['wrong'] }>()
 
@@ -16,7 +15,7 @@ const optionText = (row: StudentAnswerRow, label: string | null) =>
 
 <template>
   <UCard data-testid="mon-panel-wrong">
-    <DsStack>
+    <div class="flex flex-col gap-4">
       <h2
         class="flex items-center gap-2 text-label text-highlighted"
         data-testid="mon-wrong-heading"
@@ -26,7 +25,7 @@ const optionText = (row: StudentAnswerRow, label: string | null) =>
         }}
         jawapan, {{ wrong.unique }} soalan unik)
       </h2>
-      <DsStack gap="sm">
+      <div class="flex flex-col gap-3">
         <article
           v-for="(r, i) in wrong.rows"
           :key="`${String(r.questionId)}-${String(i)}`"
@@ -43,26 +42,22 @@ const optionText = (row: StudentAnswerRow, label: string | null) =>
           <!-- eslint-disable-next-line vue/no-v-html -->
           <div class="text-body break-words text-highlighted" v-html="safeHtml(r.html)" />
           <div class="flex items-center justify-between gap-2 bg-default p-3 text-body">
-            <DsCluster as="span" gap="xs" :wrap="false"
+            <span class="flex min-w-0 items-center gap-2"
               ><UBadge color="success" variant="solid" :label="r.correctLabel ?? ''" /><span
                 class="min-w-0 break-words text-default"
                 >{{ optionText(r, r.correctLabel) }}</span
-              ></DsCluster
+              ></span
             >
-            <DsText variant="caption" as="span" tone="success" class="shrink-0"
-              >Jawapan betul</DsText
-            >
+            <span class="shrink-0 text-caption text-success">Jawapan betul</span>
           </div>
           <div class="flex items-center justify-between gap-2 bg-default p-3 text-body">
-            <DsCluster as="span" gap="xs" :wrap="false"
+            <span class="flex min-w-0 items-center gap-2"
               ><UBadge color="error" variant="solid" :label="r.selectedLabel ?? ''" /><span
                 class="min-w-0 break-words text-default"
                 >{{ optionText(r, r.selectedLabel) }}</span
-              ></DsCluster
+              ></span
             >
-            <DsText variant="caption" as="span" tone="error" class="shrink-0"
-              >Jawapan pelajar</DsText
-            >
+            <span class="shrink-0 text-caption text-error">Jawapan pelajar</span>
           </div>
           <p v-if="r.explanation" class="flex items-start gap-2 text-body text-default">
             <UIcon name="i-ph-lightbulb" class="mt-1 size-4 shrink-0 text-info" /><span
@@ -74,7 +69,7 @@ const optionText = (row: StudentAnswerRow, label: string | null) =>
             <UIcon name="i-ph-bookmark-simple" class="size-4" />Sumber: {{ r.source }}
           </p>
         </article>
-      </DsStack>
-    </DsStack>
+      </div>
+    </div>
   </UCard>
 </template>

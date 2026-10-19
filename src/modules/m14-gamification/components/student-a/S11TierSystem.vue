@@ -1,6 +1,6 @@
 <script setup lang="ts">
 /** S11 "Sistem Tier" (FN-M14-2.1.9; FR-M14-21): active tiers in sort order, the viewer's tier marked. */
-import { DsIconChip, DsStack, DsGrid, DsText } from '@/ds'
+import { DsIconChip } from '@/ds'
 import { formatCount } from '@/lib/number'
 
 import type { TierGridItem } from '../../api'
@@ -10,11 +10,11 @@ defineProps<{ tiers: readonly TierGridItem[]; currentKey: string }>()
 
 <template>
   <UCard class="min-w-0" data-testid="s11-tiers">
-    <DsStack gap="sm">
+    <div class="flex flex-col gap-3">
       <h2 class="flex items-center gap-2 font-display text-subheading font-bold text-highlighted">
         <DsIconChip icon="crown" accent="trial" size="sm" />Sistem Tier
       </h2>
-      <DsGrid :cols="{ base: 2, lg: 4 }" gap="sm">
+      <div class="grid grid-cols-2 gap-3 lg:grid-cols-4">
         <div
           v-for="t in tiers"
           :key="t.key"
@@ -23,10 +23,10 @@ defineProps<{ tiers: readonly TierGridItem[]; currentKey: string }>()
           :aria-current="t.key === currentKey ? 'true' : undefined"
           data-testid="s11-tier"
         >
-          <DsText variant="title" as="span" aria-hidden="true">{{ t.icon }}</DsText>
-          <DsText variant="label" as="p" tone="highlighted">{{ t.labelMs }}</DsText>
-          <DsText variant="caption">{{ formatCount(t.minSyiling) }}+ syiling</DsText>
-          <DsText variant="caption">{{ t.conversionRate }} syiling = 1 token</DsText>
+          <span class="text-title" aria-hidden="true">{{ t.icon }}</span>
+          <p class="text-label text-highlighted">{{ t.labelMs }}</p>
+          <p class="text-caption text-muted">{{ formatCount(t.minSyiling) }}+ syiling</p>
+          <p class="text-caption text-muted">{{ t.conversionRate }} syiling = 1 token</p>
           <UBadge
             v-if="t.key === currentKey"
             color="secondary"
@@ -36,7 +36,7 @@ defineProps<{ tiers: readonly TierGridItem[]; currentKey: string }>()
             >✨ ANDA DI SINI</UBadge
           >
         </div>
-      </DsGrid>
-    </DsStack>
+      </div>
+    </div>
   </UCard>
 </template>

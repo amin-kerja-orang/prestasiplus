@@ -23,7 +23,7 @@ import { fetchStructuredDetail, submitStructuredAttempt } from '../api/practice'
 import type { StructuredAttemptResult } from '../api/types'
 import StimulusImage from '../components/structured/StimulusImage.vue'
 import { marksLabel, parseVariant, safeImageSrc } from '../components/structured/structured-lib'
-import { DsLoadError, DsStack, DsCluster, DsText } from '@/ds'
+import { DsLoadError } from '@/ds'
 
 const LOAD_ERROR = 'Maaf, berlaku ralat. Sila cuba semula.'
 const SUBMIT_ERROR = 'Maaf, berlaku ralat. Sila cuba semula.'
@@ -115,36 +115,33 @@ async function submit(): Promise<void> {
       <h1 class="sr-only">Soalan Berstruktur</h1>
 
       <UCard>
-        <DsStack gap="sm">
-          <DsCluster gap="xs">
+        <div class="flex flex-col gap-3">
+          <div class="flex flex-wrap items-center gap-2">
             <UBadge color="neutral" variant="soft">{{ data.subjectName }}</UBadge>
             <UBadge color="primary" variant="solid">{{ data.levelName }}</UBadge>
-          </DsCluster>
-          <DsText
-            variant="body"
-            tone="highlighted"
-            wrap="anywhere"
-            class="max-w-prose whitespace-pre-line"
+          </div>
+          <p
+            class="max-w-prose text-body break-words whitespace-pre-line text-highlighted"
             data-testid="answer-stimulus"
           >
             {{ data.stimulus }}
-          </DsText>
+          </p>
           <StimulusImage v-if="image" :src="image" data-testid="answer-image" />
-        </DsStack>
+        </div>
       </UCard>
 
-      <DsStack as="form" @submit.prevent="submit">
+      <form class="flex flex-col gap-4" @submit.prevent="submit">
         <UCard v-for="s in data.subQuestions" :key="s.id" :data-testid="`sub-${String(s.id)}`">
-          <DsStack gap="sm">
-            <DsCluster gap="xs" align="baseline" justify="between">
-              <DsText variant="body" tone="highlighted" wrap="anywhere">
-                <DsText variant="label" data-testid="sub-label">{{ s.label }}</DsText>
+          <div class="flex flex-col gap-3">
+            <div class="flex flex-wrap items-baseline justify-between gap-2">
+              <p class="text-body break-words text-highlighted">
+                <span class="text-label" data-testid="sub-label">{{ s.label }}</span>
                 <span class="ms-1 whitespace-pre-line">{{ s.text }}</span>
-              </DsText>
-              <DsText variant="caption" as="span" data-testid="sub-marks">{{
+              </p>
+              <span class="text-caption text-muted" data-testid="sub-marks">{{
                 marksLabel(s.marks)
-              }}</DsText>
-            </DsCluster>
+              }}</span>
+            </div>
             <UTextarea
               v-model="answers[s.id]"
               :rows="6"
@@ -154,13 +151,15 @@ async function submit(): Promise<void> {
               data-testid="sub-answer"
             />
 
-            <UAlert v-if="result" color="neutral" variant="soft" data-testid="sub-result">
+            <UAlert
+              v-if="result"
+              color="neutral"
+              variant="soft"
+              data-testid="sub-result"
+            >
               <template #title>
                 <span data-testid="sub-awarded"
-                  >{{ marksOf(s.id)?.awarded ?? 0 }}/{{
-                    marksOf(s.id)?.max ?? s.marks
-                  }}
-                  markah</span
+                  >{{ marksOf(s.id)?.awarded ?? 0 }}/{{ marksOf(s.id)?.max ?? s.marks }} markah</span
                 >
               </template>
               <template #description>
@@ -170,13 +169,13 @@ async function submit(): Promise<void> {
                 }}</span>
               </template>
             </UAlert>
-          </DsStack>
+          </div>
         </UCard>
 
         <UCard v-if="result" data-testid="answer-total-card">
-          <DsText variant="heading" align="center" data-testid="answer-total">
+          <p class="text-center text-heading text-highlighted" data-testid="answer-total">
             Jumlah: {{ result.totalAwarded }}/{{ result.totalMax }} markah
-          </DsText>
+          </p>
         </UCard>
 
         <UAlert
@@ -187,9 +186,9 @@ async function submit(): Promise<void> {
           data-testid="answer-errors"
         >
           <template #description>
-            <DsStack as="ul" gap="2xs">
+            <ul class="flex flex-col gap-1">
               <li v-for="m in errors" :key="m">{{ m }}</li>
-            </DsStack>
+            </ul>
           </template>
         </UAlert>
 
@@ -227,7 +226,7 @@ async function submit(): Promise<void> {
             >Hantar</UButton
           >
         </div>
-      </DsStack>
+      </form>
 
       <ReportQuestionModal
         v-model:open="reportOpen"

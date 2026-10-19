@@ -2,7 +2,7 @@
 /** "Subjek" of S3 (FR-M17-43, FN-M17-4.4.1): one bar per subject of the period's answers; "-" when none. */
 import { computed } from 'vue'
 
-import { DsChart, DsText } from '@/ds'
+import { DsChart } from '@/ds'
 
 import type { CcDailyActivity } from '../../api/command-center-board'
 import { S3_COPY } from './board-copy'
@@ -18,15 +18,9 @@ const series = computed(() => [{ label: 'Jawapan', data: rows.value.map((r) => r
 
 <template>
   <DailyPanel title="Subjek" icon="i-ph-books" testid="cc-panel-subjects" :state="status">
-    <DsText
-      v-if="rows.length === 0"
-      variant="body"
-      tone="muted"
-      align="center"
-      data-testid="cc-empty"
-    >
+    <p v-if="rows.length === 0" class="text-center text-body text-muted" data-testid="cc-empty">
       {{ S3_COPY.empty }}
-    </DsText>
+    </p>
     <div v-else data-testid="cc-subjects-chart">
       <DsChart
         title="Jawapan mengikut subjek"

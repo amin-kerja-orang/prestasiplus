@@ -13,7 +13,7 @@ import { useRoute, useRouter } from 'vue-router'
 
 import { isApiError } from '@/api'
 import { useApi } from '@/composables'
-import { DsDialog, DsEmptyState, DsStack, DsCluster, DsText, DsHeading } from '@/ds'
+import { DsDialog, DsEmptyState } from '@/ds'
 import { diffForHumans } from '@/lib/time'
 
 import { createTicket, fetchTickets } from '../api/tickets'
@@ -126,9 +126,9 @@ watch(
     />
 
     <div class="flex flex-col items-start justify-between gap-3 sm:flex-row sm:items-center">
-      <DsText variant="body" tone="muted" data-testid="tk-total">
-        Jumlah tiket: <DsText variant="label" tone="highlighted">{{ total }}</DsText>
-      </DsText>
+      <p class="text-body text-muted" data-testid="tk-total">
+        Jumlah tiket: <span class="text-label text-highlighted">{{ total }}</span>
+      </p>
       <UButton
         type="button"
         color="primary"
@@ -150,7 +150,12 @@ watch(
         class="mb-4"
         data-testid="tk-form-error"
       />
-      <DsStack id="tiket-baru" as="form" data-testid="tk-form" @submit.prevent="submit">
+      <form
+        id="tiket-baru"
+        class="flex flex-col gap-4"
+        data-testid="tk-form"
+        @submit.prevent="submit"
+      >
         <UFormField label="Subjek">
           <UInput
             v-model="subject"
@@ -177,7 +182,7 @@ watch(
             data-testid="tk-body-input"
           />
         </UFormField>
-      </DsStack>
+      </form>
       <template #footer>
         <UButton
           type="button"
@@ -201,14 +206,7 @@ watch(
       </template>
     </DsDialog>
 
-    <DsCluster
-      as="nav"
-      gap="xs"
-      align="stretch"
-      :wrap="false"
-      class="max-w-full overflow-x-auto"
-      data-testid="tk-tabs"
-    >
+    <nav class="flex max-w-full gap-2 overflow-x-auto" data-testid="tk-tabs">
       <UButton
         v-for="t in tabs"
         :key="t.label"
@@ -220,7 +218,7 @@ watch(
         :data-active="status === t.key"
         >{{ t.label }}</UButton
       >
-    </DsCluster>
+    </nav>
 
     <template v-if="data">
       <div v-if="tickets.length === 0" data-testid="tk-empty">
@@ -239,25 +237,21 @@ watch(
           </template>
         </DsEmptyState>
       </div>
-      <DsStack v-else as="ul" gap="sm" data-testid="tk-list">
+      <ul v-else class="flex flex-col gap-3" data-testid="tk-list">
         <li v-for="t in tickets" :key="t.id">
           <UCard data-testid="tk-card">
-            <DsCluster align="start" justify="between" :wrap="false">
-              <DsStack gap="2xs">
-                <DsHeading :level="3" wrap="anywhere"> #{{ t.id }} — {{ t.subject }} </DsHeading>
-                <DsText
-                  variant="body"
-                  tone="muted"
-                  :clamp="2"
-                  wrap="anywhere"
-                  data-testid="tk-body"
-                >
+            <div class="flex items-start justify-between gap-3">
+              <div class="flex min-w-0 flex-col gap-1">
+                <h3 class="text-subheading break-words text-highlighted">
+                  #{{ t.id }} — {{ t.subject }}
+                </h3>
+                <p class="line-clamp-2 text-body break-words text-muted" data-testid="tk-body">
                   {{ t.body }}
-                </DsText>
+                </p>
                 <p class="flex items-center gap-1 text-caption text-muted" data-testid="tk-time">
                   <UIcon name="i-ph-clock" class="size-4" />{{ diffForHumans(t.createdAt) }}
                 </p>
-              </DsStack>
+              </div>
               <UBadge
                 :color="BADGE[t.status].color"
                 variant="subtle"
@@ -266,20 +260,20 @@ watch(
                 data-testid="tk-badge"
                 >{{ t.statusLabel }}</UBadge
               >
-            </DsCluster>
+            </div>
             <div v-if="t.adminReply" class="mt-3 bg-elevated p-3" data-testid="tk-reply">
               <p class="mb-1 flex items-center gap-1 text-label text-highlighted">
                 <UIcon name="i-ph-chat-circle-text" class="size-4" />Balasan Sokongan
               </p>
-              <DsText variant="body" wrap="anywhere" class="whitespace-pre-line">
+              <p class="text-body break-words whitespace-pre-line text-default">
                 {{ t.adminReply }}
-              </DsText>
+              </p>
             </div>
           </UCard>
         </li>
-      </DsStack>
+      </ul>
     </template>
-    <DsStack v-else-if="error" gap="sm" data-testid="tk-error">
+    <div v-else-if="error" class="flex flex-col gap-3" data-testid="tk-error">
       <UAlert color="error" variant="subtle" icon="i-ph-warning-circle" :title="error.message" />
       <div class="text-center">
         <UButton
@@ -292,10 +286,10 @@ watch(
           >Cuba lagi</UButton
         >
       </div>
-    </DsStack>
-    <DsStack v-else-if="loading" gap="sm" data-testid="tk-loading">
+    </div>
+    <div v-else-if="loading" class="flex flex-col gap-3" data-testid="tk-loading">
       <USkeleton class="h-24 w-full" />
       <USkeleton class="h-24 w-full" />
-    </DsStack>
+    </div>
   </div>
 </template>

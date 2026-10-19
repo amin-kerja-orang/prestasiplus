@@ -1,6 +1,4 @@
 <script setup lang="ts">
-import { DsText } from '@/ds'
-
 /**
  * The 3 → 2 → 1 countdown of S13-S15 (800 ms per step, URS FN-M16-6.2.1, 6.3.1, 6.4.1): the shell is
  * covered by a scrim with the game title and a big number on an A1 gradient disc (pop-in, switched
@@ -25,7 +23,7 @@ defineProps<{ title: string; count: number; hint?: string }>()
       >
         {{ count }}
       </div>
-      <DsText v-if="hint" variant="body" tone="muted">{{ hint }}</DsText>
+      <p v-if="hint" class="text-body text-muted">{{ hint }}</p>
     </section>
   </Teleport>
 </template>

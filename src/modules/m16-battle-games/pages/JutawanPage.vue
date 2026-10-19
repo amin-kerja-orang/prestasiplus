@@ -13,7 +13,7 @@ import JutawanSubjectList from '../components/jutawan/JutawanSubjectList.vue'
 import DarjahPicker from '../components/solo/DarjahPicker.vue'
 import GamePanel from '../components/solo/GamePanel.vue'
 import { jutawanHeading, parseDarjah } from '../components/solo/solo-lib'
-import { DsLoadError, DsStack, DsGrid, DsHeading, DsText } from '@/ds'
+import { DsLoadError } from '@/ds'
 
 const route = useRoute()
 const darjah = computed(() => parseDarjah(route.query.darjah))
@@ -44,47 +44,41 @@ watch(darjah, () => void load(), { immediate: true })
   <div data-testid="jutawan-page">
     <DarjahPicker v-if="darjah === null" title="Jutawan Ilmu" art="coin" />
     <GamePanel>
-      <DsStack gap="2xs" align="start">
-        <UButton
-          to="/permainan"
-          color="neutral"
-          variant="ghost"
-          icon="i-ph-arrow-left"
-          class="min-h-11"
-        >
+      <div class="flex flex-col items-start gap-1">
+        <UButton to="/permainan" color="neutral" variant="ghost" icon="i-ph-arrow-left" class="min-h-11">
           Permainan
         </UButton>
-        <DsHeading :level="1">💰 Jutawan Ilmu</DsHeading>
-        <DsText variant="body" tone="muted">
+        <h1 class="text-title text-highlighted">💰 Jutawan Ilmu</h1>
+        <p class="text-body text-muted">
           Pilih subjek, jawab 15 soalan — menang sampai 1,000 Syiling!
-        </DsText>
-      </DsStack>
+        </p>
+      </div>
 
-      <DsStack v-if="loading" gap="sm" aria-busy="true" data-testid="solo-loading">
+      <div v-if="loading" class="flex flex-col gap-3" aria-busy="true" data-testid="solo-loading">
         <USkeleton class="h-16 w-full" />
         <USkeleton class="h-16 w-full" />
-      </DsStack>
+      </div>
       <DsLoadError v-else-if="error" :message="error" @retry="load()" />
 
       <template v-if="page">
-        <DsGrid :cols="3" gap="sm" class="text-center" data-testid="jutawan-stats">
+        <div class="grid grid-cols-3 gap-3 text-center" data-testid="jutawan-stats">
           <UCard :ui="{ body: 'p-3 sm:p-3' }">
-            <DsText variant="heading" tone="warning" tabular data-testid="jutawan-best">
+            <p class="tabular text-heading text-warning" data-testid="jutawan-best">
               L{{ page.bestLevel }}
-            </DsText>
-            <DsText variant="caption">Rekod Tertinggi</DsText>
+            </p>
+            <p class="text-caption text-muted">Rekod Tertinggi</p>
           </UCard>
           <UCard :ui="{ body: 'p-3 sm:p-3' }">
-            <DsText variant="heading" tone="info" tabular data-testid="jutawan-games">
+            <p class="tabular text-heading text-info" data-testid="jutawan-games">
               {{ page.games }}
-            </DsText>
-            <DsText variant="caption">Permainan</DsText>
+            </p>
+            <p class="text-caption text-muted">Permainan</p>
           </UCard>
           <UCard :ui="{ body: 'p-3 sm:p-3' }">
-            <DsText variant="heading" tone="success" tabular>1,000🪙</DsText>
-            <DsText variant="caption">Hadiah Utama</DsText>
+            <p class="tabular text-heading text-success">1,000🪙</p>
+            <p class="text-caption text-muted">Hadiah Utama</p>
           </UCard>
-        </DsGrid>
+        </div>
 
         <JutawanSubjectList
           v-if="darjah !== null && page.subjects"
@@ -93,7 +87,7 @@ watch(darjah, () => void load(), { immediate: true })
           :darjah="darjah"
         />
         <UCard v-else class="text-center" data-testid="jutawan-hint">
-          <DsText variant="title" as="div" aria-hidden="true">👆</DsText>
+          <div class="text-title" aria-hidden="true">👆</div>
           <p class="mt-2 text-body text-muted">Pilih darjah atau tingkatan di atas untuk mula.</p>
         </UCard>
       </template>

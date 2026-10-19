@@ -5,7 +5,7 @@
  * links download a file (contract #63; live answers 200 with the file) and "Cipta Set" / "Senarai Set"
  * go to S26 / S25.
  */
-import { DsIconChip, DsPanel, DsStack, DsCluster, DsHeading, DsText } from '@/ds'
+import { DsIconChip, DsPanel } from '@/ds'
 import { saveBlob } from '@/lib/save-blob'
 
 import { downloadAudioKbatTemplate } from '../../api/guru'
@@ -21,25 +21,25 @@ async function download(format: 'xlsx' | 'word', fallback: string): Promise<void
 </script>
 
 <template>
-  <DsStack>
+  <div class="flex min-w-0 flex-col gap-4">
     <DsPanel data-testid="audio-kbat-card">
-      <DsCluster justify="between">
-        <DsCluster align="start" :wrap="false">
+      <div class="flex flex-wrap items-center justify-between gap-3">
+        <div class="flex min-w-0 items-start gap-3">
           <DsIconChip icon="headphones" size="lg" />
           <div class="min-w-0">
-            <DsHeading :level="2" variant="subheading">
+            <h2 class="text-subheading text-highlighted">
               Sumbang Set Audio KBAT / Ujian Mendengar
-            </DsHeading>
-            <DsText variant="body" tone="muted">
+            </h2>
+            <p class="text-body text-muted">
               Format khas fixed sequence: 4 audio section, 30 soalan MCQ, skema A-D, dan transkrip
               untuk semakan admin.
-            </DsText>
-            <DsText variant="body" tone="muted">
+            </p>
+            <p class="text-body text-muted">
               Sesuai untuk bahan cikgu seperti audio soalan 1-8, 9-16, 17-24 dan 25-30.
-            </DsText>
+            </p>
           </div>
-        </DsCluster>
-        <DsCluster gap="xs" align="stretch">
+        </div>
+        <div class="flex flex-wrap gap-2">
           <UButton
             href="/guru/audio-kbat/template"
             color="neutral"
@@ -76,20 +76,18 @@ async function download(format: 'xlsx' | 'word', fallback: string): Promise<void
             data-testid="audio-list"
             >Senarai Set</UButton
           >
-        </DsCluster>
-      </DsCluster>
+        </div>
+      </div>
     </DsPanel>
 
     <DsPanel data-testid="ai-card">
-      <DsCluster :wrap="false">
+      <div class="flex min-w-0 items-center gap-3">
         <DsIconChip icon="sparkle" size="lg" />
         <div class="min-w-0">
-          <DsHeading :level="2" variant="subheading">AI Auto-Generate Soalan</DsHeading>
-          <DsText variant="body" tone="muted"
-            >Upload dokumen DOCX/PDF, AI extract soalan automatik</DsText
-          >
+          <h2 class="text-subheading text-highlighted">AI Auto-Generate Soalan</h2>
+          <p class="text-body text-muted">Upload dokumen DOCX/PDF, AI extract soalan automatik</p>
         </div>
-      </DsCluster>
+      </div>
     </DsPanel>
-  </DsStack>
+  </div>
 </template>

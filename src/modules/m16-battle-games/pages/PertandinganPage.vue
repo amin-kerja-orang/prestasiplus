@@ -11,7 +11,7 @@
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 
 import { useApi } from '@/composables'
-import { DsPage, DsLoadError, DsBackLink, DsStack, DsCluster, DsHeading, DsText } from '@/ds'
+import { DsPage, DsLoadError, DsBackLink } from '@/ds'
 import { clock } from '@/lib/time'
 
 import { fetchWeeklyCompetition } from '../api'
@@ -56,48 +56,39 @@ function medalOf(rank: number): string | null {
 
 <template>
   <DsPage data-testid="m16-pertandingan-page">
-    <DsStack gap="2xs" align="start">
+    <div class="flex flex-col items-start gap-1">
       <DsBackLink :to="BACK_LINK.to" :label="BACK_LINK.label" data-testid="m16-back-link" />
       <header data-testid="pertandingan-hero">
-        <DsHeading :level="1">{{ COPY.heading }}</DsHeading>
+        <h1 class="text-title text-highlighted">{{ COPY.heading }}</h1>
         <p class="mt-1 text-body text-muted">{{ COPY.sub }}</p>
       </header>
-    </DsStack>
+    </div>
 
-    <DsLoadError
-      v-if="view.error.value"
-      :message="LOAD_COPY.failed"
-      testid="m16-load-error"
-      retry-testid="m16-retry"
-      @retry="view.reload()"
-    />
-    <DsStack v-else-if="!data" gap="sm" aria-busy="true" data-testid="pertandingan-loading">
+    <DsLoadError v-if="view.error.value" :message="LOAD_COPY.failed" testid="m16-load-error" retry-testid="m16-retry" @retry="view.reload()" />
+    <div
+      v-else-if="!data"
+      class="flex flex-col gap-3"
+      aria-busy="true"
+      data-testid="pertandingan-loading"
+    >
       <USkeleton class="h-16 w-full" />
       <USkeleton class="h-16 w-full" />
-    </DsStack>
+    </div>
 
     <template v-else>
       <UCard data-testid="pertandingan-week">
-        <DsCluster justify="between">
+        <div class="flex flex-wrap items-center justify-between gap-3">
           <div class="min-w-0">
-            <DsText variant="caption">{{ COPY.weekLabel }}</DsText>
-            <DsText variant="label" as="p" tone="highlighted" data-testid="pertandingan-range">{{
-              weekRange
-            }}</DsText>
+            <p class="text-caption text-muted">{{ COPY.weekLabel }}</p>
+            <p class="text-label text-highlighted" data-testid="pertandingan-range">{{ weekRange }}</p>
           </div>
           <div class="text-end">
-            <DsText variant="caption">{{ COPY.countdownLabel }}</DsText>
-            <DsText
-              variant="label"
-              as="p"
-              tone="primary"
-              tabular
-              data-testid="pertandingan-countdown"
-            >
+            <p class="text-caption text-muted">{{ COPY.countdownLabel }}</p>
+            <p class="tabular text-label text-primary-t" data-testid="pertandingan-countdown">
               {{ countdown }}
-            </DsText>
+            </p>
           </div>
-        </DsCluster>
+        </div>
       </UCard>
 
       <section class="grid grid-cols-3 gap-2 sm:gap-4" data-testid="pertandingan-prizes">
@@ -108,22 +99,22 @@ function medalOf(rank: number): string | null {
           class="text-center"
           data-testid="pertandingan-prize"
         >
-          <DsText variant="title" as="div">{{ prize.medal }}</DsText>
+          <div class="text-title">{{ prize.medal }}</div>
           <p class="mt-1 text-caption text-highlighted">{{ prize.label }}</p>
-          <DsText variant="label" as="p" tone="warning" tabular>+{{ data.prizes[i] }} 🪙</DsText>
+          <p class="tabular text-label text-warning">+{{ data.prizes[i] }} 🪙</p>
         </UCard>
       </section>
 
       <UCard class="text-center" data-testid="pertandingan-status">
         <template v-if="data.me">
-          <DsText variant="label" as="p" tone="highlighted" data-testid="pertandingan-my-rank">
+          <p class="text-label text-highlighted" data-testid="pertandingan-my-rank">
             {{ COPY.myRank(data.me.rank, data.me.betul) }}
-          </DsText>
+          </p>
         </template>
-        <DsStack v-else gap="2xs" align="center">
-          <DsText variant="title" as="div">📝</DsText>
-          <DsText variant="label" as="p" tone="highlighted">{{ COPY.notStarted }}</DsText>
-          <DsText variant="body" tone="muted">{{ COPY.notStartedHint }}</DsText>
+        <div v-else class="flex flex-col items-center gap-1">
+          <div class="text-title">📝</div>
+          <p class="text-label text-highlighted">{{ COPY.notStarted }}</p>
+          <p class="text-body text-muted">{{ COPY.notStartedHint }}</p>
           <UButton
             :to="COPY.startPracticeTo"
             size="xl"
@@ -134,12 +125,12 @@ function medalOf(rank: number): string | null {
           >
             {{ COPY.startPractice }}
           </UButton>
-        </DsStack>
+        </div>
       </UCard>
 
       <UCard :ui="{ body: 'p-3 sm:p-4' }" data-testid="pertandingan-board">
         <h2 class="mb-3 px-1 text-subheading text-highlighted">{{ COPY.boardHeading }}</h2>
-        <DsStack as="ol" gap="xs">
+        <ol class="flex flex-col gap-2">
           <li
             v-for="row in data.rows"
             :key="row.userId"
@@ -153,25 +144,19 @@ function medalOf(rank: number): string | null {
               {{ medalOf(row.rank) ?? row.rank }}
             </span>
             <span class="min-w-0 flex-1">
-              <DsText variant="label" tone="highlighted" truncate class="block">{{
-                row.name
-              }}</DsText>
-              <DsText variant="caption" as="span" class="block"
-                >{{ row.sesi }} {{ COPY.sessions }}</DsText
-              >
+              <span class="block truncate text-label text-highlighted">{{ row.name }}</span>
+              <span class="block text-caption text-muted">{{ row.sesi }} {{ COPY.sessions }}</span>
             </span>
             <span class="shrink-0 text-end">
-              <DsText variant="label" tone="success" tabular class="block">{{ row.betul }}</DsText>
-              <DsText variant="caption" as="span" class="block">{{ COPY.correct }}</DsText>
+              <span class="tabular block text-label text-success">{{ row.betul }}</span>
+              <span class="block text-caption text-muted">{{ COPY.correct }}</span>
             </span>
             <span class="w-16 shrink-0 text-end">
-              <DsText variant="label" tone="highlighted" tabular class="block">{{
-                formatPct(row.tepat)
-              }}</DsText>
-              <DsText variant="caption" as="span" class="block">{{ COPY.accuracy }}</DsText>
+              <span class="tabular block text-label text-highlighted">{{ formatPct(row.tepat) }}</span>
+              <span class="block text-caption text-muted">{{ COPY.accuracy }}</span>
             </span>
           </li>
-        </DsStack>
+        </ol>
       </UCard>
     </template>
   </DsPage>

@@ -14,7 +14,7 @@ import { setRouteOutcome } from '@/app/router/outcome'
 import { useApi } from '@/composables'
 
 import { fetchRemedialPreview } from '../../api/practice'
-import { DsLoadError, DsStack, DsHeading, DsText } from '@/ds'
+import { DsLoadError } from '@/ds'
 
 const props = defineProps<{ id: number }>()
 
@@ -36,7 +36,7 @@ watch(
 </script>
 
 <template>
-  <DsStack class="mx-auto w-full max-w-2xl" data-testid="remedial-preview">
+  <div class="mx-auto flex w-full max-w-2xl min-w-0 flex-col gap-4" data-testid="remedial-preview">
     <template v-if="data">
       <UButton
         to="/remedial/saya"
@@ -49,14 +49,14 @@ watch(
       >
 
       <UCard data-testid="preview-header">
-        <DsStack gap="2xs">
-          <DsHeading :level="1" variant="heading" wrap="anywhere" data-testid="preview-title">
+        <div class="flex flex-col gap-1">
+          <h1 class="text-heading break-words text-highlighted" data-testid="preview-title">
             Ujian Remedial — {{ data.subjectName }}
-          </DsHeading>
-          <DsText variant="body" tone="muted" data-testid="preview-meta">
+          </h1>
+          <p class="text-body text-muted" data-testid="preview-meta">
             {{ data.studentName }} · {{ data.totalQuestions }} soalan
-          </DsText>
-        </DsStack>
+          </p>
+        </div>
       </UCard>
 
       <UAlert
@@ -72,19 +72,16 @@ watch(
         :key="q.id"
         :data-testid="`preview-q-${String(i + 1)}`"
       >
-        <DsStack as="article" gap="sm">
-          <DsText variant="caption">Soalan {{ i + 1 }}</DsText>
-          <DsText
-            variant="body"
-            tone="highlighted"
-            wrap="anywhere"
-            class="whitespace-pre-line"
+        <article class="flex flex-col gap-3">
+          <p class="text-caption text-muted">Soalan {{ i + 1 }}</p>
+          <p
+            class="text-body break-words whitespace-pre-line text-highlighted"
             :dir="q.textDirection"
             data-testid="preview-text"
           >
             {{ q.questionText }}
-          </DsText>
-          <DsStack as="ul" gap="xs">
+          </p>
+          <ul class="flex flex-col gap-2">
             <li
               v-for="o in q.options"
               :key="o.id"
@@ -107,8 +104,8 @@ watch(
                 <span class="sr-only">(jawapan betul)</span>
               </template>
             </li>
-          </DsStack>
-        </DsStack>
+          </ul>
+        </article>
       </UCard>
     </template>
 
@@ -119,5 +116,5 @@ watch(
       testid="preview-error"
       @retry="reload()"
     />
-  </DsStack>
+  </div>
 </template>

@@ -17,7 +17,7 @@ import { computed, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 
 import { useApi } from '@/composables'
-import { DsArt3D, DsEmptyState, DsLoadError, DsPage, DsCluster, DsHeading, DsText } from '@/ds'
+import { DsArt3D, DsEmptyState, DsLoadError, DsPage } from '@/ds'
 import { useSessionStore } from '@/stores/session'
 
 import { fetchVideos } from '../api/content'
@@ -147,10 +147,10 @@ function goToPage(page: number): void {
     >
       <DsArt3D name="rocket" size="xl" float />
       <UBadge color="primary" variant="solid" :label="COPY.guestChip" />
-      <DsHeading :level="1">
+      <h1 class="text-title text-highlighted">
         {{ COPY.guestHeading }}
-      </DsHeading>
-      <DsText variant="body" tone="muted" class="max-w-prose">{{ COPY.guestBody }}</DsText>
+      </h1>
+      <p class="max-w-prose text-body text-muted">{{ COPY.guestBody }}</p>
     </header>
 
     <form
@@ -183,10 +183,8 @@ function goToPage(page: number): void {
 
     <template v-else-if="data && facets">
       <!-- Category pills (BR-M09-18). -->
-      <DsCluster
-        as="nav"
-        gap="xs"
-        align="stretch"
+      <nav
+        class="flex flex-wrap gap-2"
         aria-label="Kategori video"
         data-testid="video-category-pills"
       >
@@ -210,14 +208,12 @@ function goToPage(page: number): void {
           :data-code="c.code"
           >{{ c.label }} <span class="tabular">({{ c.count }})</span></UButton
         >
-      </DsCluster>
+      </nav>
 
       <!-- Subject pills: counts ignore the active subject (OBSERVED). -->
-      <DsCluster
+      <nav
         v-if="facets.subjects.length > 0 || applied.subject !== undefined"
-        as="nav"
-        gap="xs"
-        align="stretch"
+        class="flex flex-wrap gap-2"
         aria-label="Subjek video"
         data-testid="video-subject-pills"
       >
@@ -244,13 +240,13 @@ function goToPage(page: number): void {
           data-testid="video-reset-subject"
           >{{ COPY.resetSubject }}</UButton
         >
-      </DsCluster>
+      </nav>
 
-      <DsCluster v-if="session.isLoggedIn" gap="none" align="stretch" justify="end" :wrap="false">
+      <div v-if="session.isLoggedIn" class="flex justify-end">
         <UButton :to="VIDEO_ADD_PATH" icon="i-ph-plus-bold" data-testid="video-add">{{
           COPY.add
         }}</UButton>
-      </DsCluster>
+      </div>
 
       <DsEmptyState
         v-if="videos.length === 0"
@@ -276,13 +272,9 @@ function goToPage(page: number): void {
         </li>
       </ul>
 
-      <DsCluster
+      <div
         v-if="total > data.meta.pageSize"
-        gap="none"
-        align="stretch"
-        justify="center"
-        :wrap="false"
-        class="max-w-full overflow-x-auto"
+        class="flex max-w-full justify-center overflow-x-auto"
         data-testid="video-pager"
       >
         <UPagination
@@ -295,7 +287,7 @@ function goToPage(page: number): void {
           :next="{ 'aria-label': 'Seterusnya' }"
           @update:page="goToPage"
         />
-      </DsCluster>
+      </div>
     </template>
   </DsPage>
 </template>

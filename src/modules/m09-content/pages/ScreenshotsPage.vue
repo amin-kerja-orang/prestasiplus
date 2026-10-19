@@ -13,7 +13,7 @@
 import { ref, watch } from 'vue'
 
 import { useApi, useFlash } from '@/composables'
-import { DsEmptyState, DsFileField, DsFormSection, DsLoadError, DsPage, DsGrid, DsText } from '@/ds'
+import { DsEmptyState, DsFileField, DsFormSection, DsLoadError, DsPage } from '@/ds'
 
 import { fetchScreenshots, uploadScreenshots } from '../api/admin-media'
 import { COPY, errorLines } from '../lib/admin-media/common'
@@ -58,7 +58,7 @@ async function send(list: File[]): Promise<void> {
 
 <template>
   <DsPage data-testid="screenshots-page">
-    <DsGrid :cols="{ base: 1, lg: 3 }" gap="lg">
+    <div class="grid grid-cols-1 gap-6 lg:grid-cols-3">
       <div class="flex min-w-0 flex-col gap-6 lg:col-span-1">
         <DsFormSection
           title="Upload Gambar"
@@ -78,9 +78,9 @@ async function send(list: File[]): Promise<void> {
               data-testid="drop-zone"
             />
           </form>
-          <DsText variant="caption">
+          <p class="text-caption text-muted">
             Tip: guna nama fail yang ringkas. Sistem akan auto-sanitize nama fail.
-          </DsText>
+          </p>
         </DsFormSection>
       </div>
 
@@ -93,16 +93,20 @@ async function send(list: File[]): Promise<void> {
             @retry="reload()"
           />
           <template v-else-if="files">
-            <DsText variant="body" tone="muted" data-testid="files-count">
+            <p class="text-body text-muted" data-testid="files-count">
               Jumlah: {{ files.length }} fail
-            </DsText>
+            </p>
             <DsEmptyState
               v-if="files.length === 0"
               title="Tiada fail lagi."
               icon="tray"
               data-testid="files-empty"
             />
-            <DsGrid v-else :cols="{ base: 2, sm: 3, xl: 4 }" as="ul" data-testid="files-list">
+            <ul
+              v-else
+              class="grid grid-cols-2 gap-4 sm:grid-cols-3 xl:grid-cols-4"
+              data-testid="files-list"
+            >
               <li
                 v-for="file in files"
                 :key="file.id"
@@ -115,14 +119,14 @@ async function send(list: File[]): Promise<void> {
                 >
                   <UIcon name="i-ph-image" class="size-8" />
                 </div>
-                <DsText variant="caption" as="span" tone="default" :clamp="2" class="break-all">{{
+                <span class="line-clamp-2 text-caption break-all text-default">{{
                   file.fileName
-                }}</DsText>
+                }}</span>
               </li>
-            </DsGrid>
+            </ul>
           </template>
         </DsFormSection>
       </div>
-    </DsGrid>
+    </div>
   </DsPage>
 </template>

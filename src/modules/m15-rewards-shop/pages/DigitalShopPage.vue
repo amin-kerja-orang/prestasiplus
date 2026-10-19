@@ -10,16 +10,7 @@ import { computed } from 'vue'
 import { useRoute } from 'vue-router'
 
 import { useApi } from '@/composables'
-import {
-  DsEmptyState,
-  DsPage,
-  DsRewardChip,
-  DsLoadError,
-  DsStack,
-  DsCluster,
-  DsHeading,
-  DsText,
-} from '@/ds'
+import { DsEmptyState, DsPage, DsRewardChip, DsLoadError } from '@/ds'
 import { fetchGamificationWallet } from '@/modules/m14-gamification'
 
 import { fetchDigitalItems } from '../api'
@@ -51,38 +42,38 @@ function retry(): void {
 <template>
   <DsPage data-testid="m15-digital-page">
     <section class="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-      <DsStack gap="2xs">
-        <DsHeading :level="1" data-testid="digital-title">
+      <div class="flex min-w-0 flex-col gap-1">
+        <h1 class="text-title text-highlighted" data-testid="digital-title">
           {{ DIGITAL_COPY.heading }}
-        </DsHeading>
-        <DsText variant="body" tone="muted">{{ DIGITAL_COPY.sub }}</DsText>
-      </DsStack>
+        </h1>
+        <p class="text-body text-muted">{{ DIGITAL_COPY.sub }}</p>
+      </div>
 
       <UCard class="w-full sm:w-fit" data-testid="digital-card">
-        <DsCluster gap="md">
-          <DsStack gap="2xs" align="start">
-            <DsText variant="caption" as="span" data-testid="digital-token-label">{{
+        <div class="flex flex-wrap items-center gap-4">
+          <div class="flex flex-col items-start gap-1">
+            <span class="text-caption text-muted" data-testid="digital-token-label">{{
               DIGITAL_COPY.tokenLabel
-            }}</DsText>
+            }}</span>
             <DsRewardChip
               :value="wallet.data.value?.tokenBalance ?? '…'"
               art="bolt"
               data-testid="digital-token"
             />
-          </DsStack>
-          <DsStack gap="2xs" align="start">
-            <DsText variant="caption" as="span" data-testid="digital-syiling-label">{{
+          </div>
+          <div class="flex min-w-0 flex-col items-start gap-1">
+            <span class="text-caption text-muted" data-testid="digital-syiling-label">{{
               DIGITAL_COPY.syilingLabel
-            }}</DsText>
+            }}</span>
             <DsRewardChip
               :value="wallet.data.value?.currentSyiling ?? '…'"
               art="coin"
               data-testid="digital-syiling"
             />
-            <DsText variant="caption" as="span" data-testid="digital-caption">{{
+            <span class="text-caption text-muted" data-testid="digital-caption">{{
               wallet.data.value ? `${wallet.data.value.tier.conversionRate} syiling = 1 token` : ''
-            }}</DsText>
-          </DsStack>
+            }}</span>
+          </div>
           <UButton
             to="/cikgu/hadiah/saya"
             size="lg"
@@ -94,7 +85,7 @@ function retry(): void {
           >
             {{ DIGITAL_COPY.myRedemptions }}
           </UButton>
-        </DsCluster>
+        </div>
       </UCard>
     </section>
 
@@ -114,13 +105,7 @@ function retry(): void {
       </UButton>
     </nav>
 
-    <DsLoadError
-      v-if="failed"
-      :message="COMMON_COPY.loadFailed"
-      testid="m15-load-error"
-      retry-testid="m15-retry"
-      @retry="retry"
-    />
+    <DsLoadError v-if="failed" :message="COMMON_COPY.loadFailed" testid="m15-load-error" retry-testid="m15-retry" @retry="retry" />
     <LoadSkeleton v-else-if="!ready" testid="digital-loading" />
     <div v-else data-testid="digital-empty">
       <DsEmptyState :title="DIGITAL_COPY.empty" icon="gift" />
