@@ -117,8 +117,11 @@ export class ParentsRepository {
     return row ? toDetail(row) : null
   }
 
-  async removeLink(id: string): Promise<boolean> {
-    return (await this.prisma.client.parentLink.deleteMany({ where: { id: idFromString(id) } })).count === 1
+  /** Deletes the link only while it is still inside the scope (the statement re-checks it); false = 0 rows. */
+  async removeLink(id: string, scope: LinkScope): Promise<boolean> {
+    const where = this.linkWhere(scope)
+    if (where === null || !isIdString(id)) return false
+    return (await this.prisma.client.parentLink.deleteMany({ where: { AND: [{ id: idFromString(id) }, where] } })).count === 1
   }
 
   /** Links of a student, oldest first (the service joins and sorts the parents). */

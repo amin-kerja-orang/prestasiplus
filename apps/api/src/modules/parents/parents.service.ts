@@ -226,7 +226,7 @@ export class ParentsService {
   private async remove(who: Actor, linkId: string, scope: LinkScope, by: string): Promise<void> {
     await this.write(async (tx) => {
       const link = await this.repo.findLink(linkId, scope)
-      if (!link || !(await this.repo.removeLink(link.id))) throw notFound()
+      if (!link || !(await this.repo.removeLink(link.id, scope))) throw notFound()
       await this.audit.record({
         tx,
         ...this.auditBase(who, PARENT_AUDIT.LINK_REMOVED),

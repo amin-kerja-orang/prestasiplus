@@ -22,7 +22,7 @@ export { expectError, schoolIdOf, userIdOf, type LoggedIn } from '../auth/helper
 export type { Api, UsersTestApp }
 
 /** Nest app with the auth, users and parents modules on a private migrated + seeded database. */
-export async function bootParentsApp(env: Record<string, string | undefined> = {}): Promise<UsersTestApp> {
+export async function bootParentsApp(env: Record<string, string | undefined> = {}, logStream?: NodeJS.WritableStream): Promise<UsersTestApp> {
   const db = await createTestDatabase()
   await runSeeds([identitySeed, schoolsSeed], { prisma: db.prisma })
   const all: Record<string, string | undefined> = {
@@ -50,7 +50,7 @@ export async function bootParentsApp(env: Record<string, string | undefined> = {
     else process.env[k] = v
   }
   const clock = new FixedClock(START)
-  const moduleRef = await Test.createTestingModule({ imports: [defineAppModule([AuthModule, UsersModule, ParentsModule])] })
+  const moduleRef = await Test.createTestingModule({ imports: [defineAppModule([AuthModule, UsersModule, ParentsModule], logStream ? { logStream } : {})] })
     .overrideProvider(CLOCK)
     .useValue(clock)
     .compile()
