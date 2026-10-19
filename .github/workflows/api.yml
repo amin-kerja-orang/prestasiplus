@@ -61,9 +61,20 @@ jobs:
         with:
           node-version-file: .nvmrc
           cache: npm
+      - name: Guard - no dumps, no .migration-out, no large migration fixtures (BE-NFR-13)
+        run: |
+          bad="$(git ls-files -- '*.dump' '*.sql.gz' '.migration-out/*' '*/.migration-out/*')"
+          big="$(git ls-files -z -- apps/api/test/migration | xargs -0 -r stat -c '%s %n' | awk '$1 > 1048576')"
+          if [ -n "$bad" ] || [ -n "$big" ]; then
+            echo "Forbidden files are tracked (dumps, .migration-out/, or a file over 1 MB under apps/api/test/migration/):"
+            echo "$bad"
+            echo "$big"
+            exit 1
+          fi
       - run: npm ci --no-audit --no-fund
       - run: npm run contract:check
       - run: npm run be:lint
+      - run: npm run be:lint:migration
       - run: npm run be:typecheck
       - run: npm run be:test
       - run: npm run be:build
