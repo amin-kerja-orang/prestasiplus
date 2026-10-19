@@ -29,8 +29,6 @@ export const SCHOOL_ADMIN_VISIBLE_ROLES: readonly RoleCode[] = ['student', 'teac
 export const PASSWORD_ALPHABET = 'ABCDEFGHJKMNPQRSTUVWXYZabcdefghijkmnpqrstuvwxyz23456789'
 export const PASSWORD_LENGTH = 14
 
-/** Concurrent argon2id hashes while preparing an import (each one needs about 19 MiB). */
-export const IMPORT_HASH_CONCURRENCY = 4
 
 /** Limits of the import transaction (hashing happens before it, so it only inserts). */
 export const IMPORT_TX = { maxWait: 20_000, timeout: 60_000 } as const

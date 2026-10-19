@@ -147,6 +147,11 @@ describe('headers, rate limits and body limits', () => {
     expect((await imp(1)).status).toBe(200)
     expect((await imp(2)).status).toBe(200)
     expectError(await imp(3), 'RATE_LIMITED', 'Too Many Attempts.')
+    // Still limited after a minute; free again once the hour window has passed.
+    t.clock.advance(61_000)
+    expectError(await imp(4), 'RATE_LIMITED', 'Too Many Attempts.')
+    t.clock.advance(3_600_000)
+    expect((await imp(5)).status).toBe(200)
   })
 
   it('a refused request (403, CSRF, 401) is not counted against the user', async () => {
@@ -213,7 +218,7 @@ describe('audit keeps the credential-reset marker', () => {
   })
 })
 
-describe('body limit (configureApp, JSON_BODY_LIMIT)', () => {
+describe('body limit (configureApp, IMPORT_JSON_LIMIT)', () => {
   let t: UsersTestApp
   let who: Api
   let s1: string
@@ -243,6 +248,13 @@ describe('body limit (configureApp, JSON_BODY_LIMIT)', () => {
       .field('pasteContent', `A,a@b.my\n${'x'.repeat(1_048_576)}`)
     expect(res.status).toBe(413)
     expect(res.body.error).toMatchObject({ code: 'PAYLOAD_TOO_LARGE' })
+  })
+
+  it('the default JSON limit stays 100kb elsewhere: a 200 KB login body is 413 PAYLOAD_TOO_LARGE', async () => {
+    const res = await t.http().post('/api/auth/login').send({ identifier: 'x'.repeat(200_000), password: 'x' })
+    expect(res.status).toBe(413)
+    expect(res.body.error).toMatchObject({ code: 'PAYLOAD_TOO_LARGE' })
+    expect(res.body.error.requestId).toBeTruthy()
   })
 
   it('a body over the limit is 413 PAYLOAD_TOO_LARGE, never 500', async () => {

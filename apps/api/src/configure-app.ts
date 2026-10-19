@@ -1,5 +1,6 @@
 import type { INestApplication } from '@nestjs/common'
 import { ConfigService } from '@nestjs/config'
+import { json, type NextFunction, type Request, type Response } from 'express'
 import { Logger } from 'nestjs-pino'
 
 import { requestIdMiddleware } from './common/request/request-id'
@@ -11,11 +12,11 @@ export function trustProxyHops(raw: unknown): number {
 }
 
 /**
- * JSON body limit. The bulk-import contract allows 1,048,576 characters of text plus the JSON
- * envelope, so 1100kb. Express applies one JSON parser before routing, so the limit is global (a
- * per-route limit is not possible); the rest of the API stays small by schema (strict bodies).
+ * JSON limit of the bulk user import only. The contract allows 1,048,576 characters of text plus the
+ * JSON envelope, so 1100kb. Every other route keeps Nest's default JSON limit (100kb).
  */
-export const JSON_BODY_LIMIT = '1100kb'
+export const IMPORT_JSON_LIMIT = '1100kb'
+export const IMPORT_JSON_PATH = '/api/admin/users/bulk-import'
 
 /** Cross-cutting setup shared by `main.ts` and the tests: prefix, request id, logger, proxy trust. */
 export function configureApp(app: INestApplication): void {
@@ -25,6 +26,9 @@ export function configureApp(app: INestApplication): void {
   ;(app.getHttpAdapter().getInstance() as { set(key: string, value: unknown): void }).set('trust proxy', hops)
   app.setGlobalPrefix('api')
   app.use(requestIdMiddleware) // before pino-http, so `req.id` is set when it logs
-  ;(app as unknown as { useBodyParser(type: string, options: object): void }).useBodyParser('json', { limit: JSON_BODY_LIMIT })
+  // A larger JSON parser for the import route ONLY. `app.use` runs now, before Nest registers its own
+  // parsers at init; a parser that has read the body sets `req._body`, so the later (100kb) parser skips it.
+  const largeJson = json({ limit: IMPORT_JSON_LIMIT })
+  app.use(IMPORT_JSON_PATH, (req: Request, res: Response, next: NextFunction) => (req.method === 'POST' ? largeJson(req, res, next) : next()))
   app.useLogger(app.get(Logger))
 }

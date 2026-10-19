@@ -49,7 +49,7 @@ export class AllExceptionsFilter implements ExceptionFilter {
       const mapped = raw === 400 ? 422 : raw
       const code = mapped ? CODE_BY_STATUS[mapped] : undefined
       if (mapped === 413) {
-        // A body over the parser limit (JSON_BODY_LIMIT) or an upload over its size limit.
+        // A body over the parser limit (100kb, or 1100kb on the user import) or an upload over its size limit.
         status = 413
         payload = { code: 'PAYLOAD_TOO_LARGE', message: 'Payload Too Large.' }
       } else if (code) {

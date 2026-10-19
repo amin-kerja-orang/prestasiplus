@@ -17,7 +17,7 @@ import { SchoolsRepository } from '../../schools'
 import type { Caller } from '../caller'
 import { generatePassword } from '../credentials'
 import { FIELD_MESSAGES, forbidden, invalid } from '../users.errors'
-import { IMPORT_HASH_CONCURRENCY, IMPORT_TX, USER_AUDIT } from '../users.constants'
+import { IMPORT_TX, USER_AUDIT } from '../users.constants'
 import { UsersRepository, uniqueField, type NewUserRow } from '../users.repository'
 import type { BulkImportBody } from '../users.types'
 import { ImportJobsRepository } from './import-jobs.repository'
@@ -29,25 +29,10 @@ export interface ImportOutcome {
   jobId: string
 }
 
-/** Runs `fn` over `items` with at most `limit` in flight; results keep the input order. */
-async function mapLimit<T, R>(items: readonly T[], limit: number, fn: (item: T) => Promise<R>): Promise<R[]> {
-  const out = new Array<R>(items.length)
-  let next = 0
-  const worker = async (): Promise<void> => {
-    for (;;) {
-      const i = next++
-      if (i >= items.length) return
-      out[i] = await fn(items[i] as T)
-    }
-  }
-  await Promise.all(Array.from({ length: Math.min(limit, items.length) }, worker))
-  return out
-}
-
 /**
  * Bulk user import (mock BR-14, v2 caps and D58/D59). The whole import is one transaction with its
  * `import_jobs` row and its audit row: a failure rolls everything back. Passwords are hashed BEFORE
- * the transaction (argon2id is slow), so the transaction only inserts.
+ * the transaction (argon2id is slow; `PasswordService` allows 2 hashes at once process-wide), so the transaction only inserts.
  */
 @Injectable()
 export class UserImportService {
@@ -89,7 +74,7 @@ export class UserImportService {
 
     // One random password per created account, hashed before the transaction opens.
     const passwords = plan.planned.map(() => generatePassword())
-    const hashes = await mapLimit(passwords, IMPORT_HASH_CONCURRENCY, (p) => this.passwords.hash(p))
+    const hashes = await Promise.all(passwords.map((p) => this.passwords.hash(p)))
 
     const now = this.clock.now()
     const rows: NewUserRow[] = plan.planned.map((p, i) => ({

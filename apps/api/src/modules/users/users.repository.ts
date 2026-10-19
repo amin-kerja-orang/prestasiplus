@@ -6,7 +6,7 @@ import type { Prisma } from '../../db/generated/client'
 import { idFromString, idToString, isIdString } from '../../db/ids'
 import { PrismaService } from '../../db/prisma.service'
 import { ROLE_PRIORITY } from '../auth/auth.constants'
-import { SessionStore } from '../auth/session.store'
+import { SessionStore } from '../auth'
 import type { Caller } from './caller'
 import { gradeOfClassLevel } from './class-level'
 import { SCHOOL_ADMIN_VISIBLE_ROLES } from './users.constants'
@@ -146,8 +146,14 @@ function toStudent(r: StudentDb): StudentRow {
 /** Newest first: the list order (mock BR-02). */
 const NEWEST_FIRST: Prisma.UserOrderByWithRelationInput[] = [{ createdAt: 'desc' }, { id: 'desc' }]
 
+/**
+ * Prisma `contains` does not escape LIKE wildcards, so `%` and `_` in a search term would match
+ * anything. Escape them (Postgres' default LIKE escape is the backslash) so they match literally.
+ */
+export const likeEscape = (term: string): string => term.replace(/[\\%_]/g, (c) => `\\${c}`)
+
 const textSearch = (term: string): Prisma.UserWhereInput => ({
-  OR: [{ name: { contains: term, mode: 'insensitive' } }, { email: { contains: term, mode: 'insensitive' } }],
+  OR: [{ name: { contains: likeEscape(term), mode: 'insensitive' } }, { email: { contains: likeEscape(term), mode: 'insensitive' } }],
 })
 
 /** Maps a unique-index violation (a race past the pre-check) to the field it belongs to. */
@@ -319,9 +325,9 @@ export class UsersRepository {
     if (search !== '') {
       and.push({
         OR: [
-          { name: { contains: search, mode: 'insensitive' } },
-          { email: { contains: search, mode: 'insensitive' } },
-          { idDelima: { contains: search, mode: 'insensitive' } },
+          { name: { contains: likeEscape(search), mode: 'insensitive' } },
+          { email: { contains: likeEscape(search), mode: 'insensitive' } },
+          { idDelima: { contains: likeEscape(search), mode: 'insensitive' } },
         ],
       })
     }
@@ -333,7 +339,7 @@ export class UsersRepository {
   async searchStudentsByName(caller: Caller, q: string, limit: number): Promise<StudentRow[]> {
     const rows = await this.prisma.client.user.findMany({
       where: {
-        AND: [this.scopeWhere(caller), { roles: { some: { role: 'student' } } }, { name: { contains: q, mode: 'insensitive' } }],
+        AND: [this.scopeWhere(caller), { roles: { some: { role: 'student' } } }, { name: { contains: likeEscape(q), mode: 'insensitive' } }],
       },
       select: STUDENT_SELECT,
       orderBy: [{ name: 'asc' }, { id: 'asc' }],
@@ -387,11 +393,11 @@ export class UsersRepository {
     await this.prisma.client.$executeRaw`SELECT pg_advisory_xact_lock(hashtext('users.admin-changes'))`
   }
 
-  /** Active admins other than `exceptIds` (the last-admin guard). */
+  /** Active, unsuspended admins (a suspended admin cannot log in) other than `exceptIds` (the last-admin guard). */
   async countActiveAdmins(exceptIds: readonly string[] = []): Promise<number> {
     const except = exceptIds.filter(isIdString).map(idFromString)
     return this.prisma.client.user.count({
-      where: { isActive: true, roles: { some: { role: 'admin' } }, ...(except.length > 0 ? { id: { notIn: except } } : {}) },
+      where: { isActive: true, isSuspended: false, roles: { some: { role: 'admin' } }, ...(except.length > 0 ? { id: { notIn: except } } : {}) },
     })
   }
 

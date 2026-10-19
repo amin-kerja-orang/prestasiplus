@@ -1,5 +1,6 @@
 import 'reflect-metadata'
 
+import type { INestApplication } from '@nestjs/common'
 import { Test } from '@nestjs/testing'
 import {
   AdminUserDetailSchema,
@@ -26,6 +27,7 @@ import { DEMO_PASSWORD, loginAs, START, type LoggedIn } from '../auth/helpers'
 export { DEMO_PASSWORD, START, expectError, schoolIdOf, userIdOf, type LoggedIn } from '../auth/helpers'
 
 export interface UsersTestApp {
+  app: INestApplication
   db: TestDatabase
   clock: FixedClock
   http(): TestAgent
@@ -79,6 +81,7 @@ export async function bootUsersApp(opts: BootOptions = {}): Promise<UsersTestApp
   await app.init()
 
   return {
+    app,
     db,
     clock,
     http: () => request(app.getHttpServer()) as unknown as TestAgent,
