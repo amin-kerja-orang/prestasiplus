@@ -7,6 +7,7 @@ import { type RequestWithAuth, ScopeContext } from '../../common/scope'
 import { ZodValidationPipe } from '../../common/validation/zod-validation.pipe'
 import { CurriculumLearnerService } from './learner.service'
 import type { LearningMapQuery, TopicsQuery } from './types'
+import { BoundedQueryPipe } from './validation'
 
 const unpaged = <T>(items: T[]) => okList(items, listMeta(1, Math.max(1, items.length), items.length))
 
@@ -24,12 +25,13 @@ export class CurriculumLearnerController {
   }
 
   @Get('subjects')
-  async subjects(@Query('educationLevelId') educationLevelId?: unknown) {
+  async subjects(@Query(new BoundedQueryPipe()) query: Record<string, unknown>) {
+    const educationLevelId = query.educationLevelId
     return unpaged(await this.learner.subjects(typeof educationLevelId === 'string' ? educationLevelId : undefined))
   }
 
   @Get('topics')
-  async topics(@Query(new ZodValidationPipe(CurriculumTopicsQuerySchema)) query: TopicsQuery) {
+  async topics(@Query(new BoundedQueryPipe(), new ZodValidationPipe(CurriculumTopicsQuerySchema)) query: TopicsQuery) {
     return unpaged(await this.learner.topics(query))
   }
 
@@ -40,7 +42,7 @@ export class CurriculumLearnerController {
 
   @Get('learning-map')
   async learningMap(
-    @Query(new ZodValidationPipe(CurriculumLearningMapQuerySchema)) query: LearningMapQuery,
+    @Query(new BoundedQueryPipe(), new ZodValidationPipe(CurriculumLearningMapQuerySchema)) query: LearningMapQuery,
     @Req() req: Request & RequestWithAuth,
   ) {
     return ok(await this.learner.learningMap(query, ScopeContext.fromRequest(req).userId))

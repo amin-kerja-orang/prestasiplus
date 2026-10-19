@@ -240,21 +240,33 @@ export class CurriculumRepository {
 
   // --- chapters, topics, subtopics --------------------------------------------------------------
 
-  /** Chapters of a subject and level in BR-08 order, active and inactive (BR-06); in-tree only. */
-  async chapters(subjectId: bigint, educationLevelId: bigint): Promise<Chapter[]> {
-    const rows = await this.db.chapter.findMany({ where: { subjectId, educationLevelId, inTree: true } })
+  /**
+   * Chapters of a subject and level in BR-08 order; in-tree only. Without `active` both active and
+   * inactive chapters are returned (the admin tree, BR-06); a learner-facing caller passes
+   * `{ active: true }`, like `levels()` and `subjects()`.
+   */
+  async chapters(subjectId: bigint, educationLevelId: bigint, filter: { active?: boolean } = {}): Promise<Chapter[]> {
+    const rows = await this.db.chapter.findMany({
+      where: { subjectId, educationLevelId, inTree: true, ...(filter.active === undefined ? {} : { isActive: filter.active }) },
+    })
     return rows.sort(chapterOrder)
   }
 
-  /** A tree chapter; `null` for an unknown or out-of-tree id ("Bab tidak dijumpai."). */
-  async chapter(id: bigint): Promise<Chapter | null> {
+  /** A tree chapter; `null` for an unknown, out-of-tree or (with `{ active: true }`) inactive id ("Bab tidak dijumpai."). */
+  async chapter(id: bigint, filter: { active?: boolean } = {}): Promise<Chapter | null> {
     const row = await this.db.chapter.findUnique({ where: { id } })
-    return row?.inTree ? row : null
+    if (!row?.inTree) return null
+    return filter.active !== undefined && row.isActive !== filter.active ? null : row
   }
 
-  /** `{ id, name, subjectId }` of the tree chapters among `ids`, in the order given (M25). */
-  async chaptersByIds(ids: readonly bigint[]): Promise<{ id: bigint; name: string; subjectId: bigint }[]> {
-    const rows = await this.db.chapter.findMany({ where: { id: { in: [...new Set(ids)] }, inTree: true } })
+  /** `{ id, name, subjectId }` of the tree chapters among `ids`, in the order given (M25); `{ active: true }` skips inactive ones. */
+  async chaptersByIds(
+    ids: readonly bigint[],
+    filter: { active?: boolean } = {},
+  ): Promise<{ id: bigint; name: string; subjectId: bigint }[]> {
+    const rows = await this.db.chapter.findMany({
+      where: { id: { in: [...new Set(ids)] }, inTree: true, ...(filter.active === undefined ? {} : { isActive: filter.active }) },
+    })
     const byId = new Map(rows.map((r) => [r.id, r]))
     const out: { id: bigint; name: string; subjectId: bigint }[] = []
     for (const id of new Set(ids)) {
@@ -284,8 +296,8 @@ export class CurriculumRepository {
   }
 
   /** SRS #13: the full tree of a subject and level (in-tree chapters), BR-06 stats counted by the caller. */
-  async tree(subjectId: bigint, educationLevelId: bigint): Promise<TreeChapter[]> {
-    const chapters = await this.chapters(subjectId, educationLevelId)
+  async tree(subjectId: bigint, educationLevelId: bigint, filter: { active?: boolean } = {}): Promise<TreeChapter[]> {
+    const chapters = await this.chapters(subjectId, educationLevelId, filter)
     if (chapters.length === 0) return []
     const topics = await this.db.topic.findMany({ where: { chapterId: { in: chapters.map((c) => c.id) } } })
     const subtopics =

@@ -4,11 +4,10 @@
  * Until those cards merge, the defaults below answer "nothing yet", which is the mock's initial
  * state (first two topics open, every count 0).
  */
+import { Injectable } from '@nestjs/common'
+
 import type { TopicProgress } from './rules'
 import { NO_PROGRESS } from './rules'
-
-/** DI token for the topic progress provider (BE-13 provides its own with `useClass`/`useExisting`). */
-export const TOPIC_PROGRESS_PROVIDER = Symbol('TOPIC_PROGRESS_PROVIDER')
 
 export interface TopicProgressProvider {
   /**
@@ -29,9 +28,6 @@ export function progressOf(map: ReadonlyMap<string, TopicProgress>, topicId: str
   return map.get(topicId) ?? NO_PROGRESS
 }
 
-/** DI token for the active question counts shown on the admin level and subject lists. */
-export const QUESTION_COUNT_PROVIDER = Symbol('QUESTION_COUNT_PROVIDER')
-
 export interface QuestionCountProvider {
   /** Active (published) questions per education level id (decimal string); missing = 0. */
   activeByLevel(): Promise<ReadonlyMap<string, number>>
@@ -46,5 +42,52 @@ export class NoQuestionCounts implements QuestionCountProvider {
   }
   async activeBySubject(): Promise<ReadonlyMap<string, number>> {
     return new Map()
+  }
+}
+
+/**
+ * The two ports as one injectable holder, so a later module can plug in its implementation without
+ * editing `curriculum.module.ts` and without a circular import (M03 never imports M04 or M05).
+ *
+ * How a later card uses it (BE-09 for question counts, BE-13 for topic progress):
+ *
+ * ```ts
+ * @Module({ imports: [CurriculumModule], providers: [QuestionCountsAdapter] })
+ * export class QuestionBankModule implements OnModuleInit {
+ *   constructor(private readonly ports: CurriculumPorts, private readonly counts: QuestionCountsAdapter) {}
+ *   onModuleInit() { this.ports.provideQuestionCounts(this.counts) }
+ * }
+ * ```
+ *
+ * The curriculum services read `ports.questionCounts` and `ports.topicProgress` on every request, so
+ * the swap needs no restart order. Registering twice is a wiring error and throws.
+ */
+@Injectable()
+export class CurriculumPorts {
+  private progress: TopicProgressProvider = new NoTopicProgress()
+  private counts: QuestionCountProvider = new NoQuestionCounts()
+  private progressSet = false
+  private countsSet = false
+
+  get topicProgress(): TopicProgressProvider {
+    return this.progress
+  }
+
+  get questionCounts(): QuestionCountProvider {
+    return this.counts
+  }
+
+  /** BE-13: replace the "no progress yet" default. */
+  provideTopicProgress(provider: TopicProgressProvider): void {
+    if (this.progressSet) throw new Error('CurriculumPorts: the topic progress provider is already set')
+    this.progress = provider
+    this.progressSet = true
+  }
+
+  /** BE-09: replace the "no questions yet" default. */
+  provideQuestionCounts(provider: QuestionCountProvider): void {
+    if (this.countsSet) throw new Error('CurriculumPorts: the question count provider is already set')
+    this.counts = provider
+    this.countsSet = true
   }
 }

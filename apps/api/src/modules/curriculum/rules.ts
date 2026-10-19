@@ -116,9 +116,10 @@ export interface PivotSource {
 /**
  * `subject_levels` has no .cloud source. Rule: the distinct (subject, level) pairs of the chapters
  * that belong to the tree (a chapter without a level cannot form a pair). The seed and the ETL
- * (BE-28) add these pairs next to the links an admin ticks on the subject form; a pair derived from
- * a chapter always exists in the pivot, so a subject never has chapters at a level it is not linked
- * to. Returned in first-seen order.
+ * (BE-28) add these pairs next to the links an admin ticks on the subject form. "Every chapter's
+ * pair exists in the pivot" holds for the seed only: an admin can later untick a level on a subject
+ * that still has chapters there, or move a chapter to another pair, and no rule repairs the pivot.
+ * Returned in first-seen order.
  */
 export function deriveSubjectLevelPairs(chapters: readonly PivotSource[]): [bigint, bigint][] {
   const seen = new Set<string>()

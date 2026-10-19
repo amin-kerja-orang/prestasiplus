@@ -2,8 +2,7 @@ export { CurriculumModule } from './curriculum.module'
 export { CurriculumRepository } from './curriculum.repository'
 export type { SubjectWithLevels } from './curriculum.repository'
 export {
-  QUESTION_COUNT_PROVIDER,
-  TOPIC_PROGRESS_PROVIDER,
+  CurriculumPorts,
   type QuestionCountProvider,
   type TopicProgressProvider,
 } from './providers'

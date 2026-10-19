@@ -8,7 +8,9 @@
  *
  * Idempotent and safe next to loaded rows (plan 14.9 item 4): rows are matched by natural key and
  * only the missing ones are inserted; existing rows are never updated or deleted, so an admin edit
- * survives a re-run. `legacy_*` is never set. Ids come from the identity columns.
+ * of a non-key column survives a re-run. Editing a natural key (a level or subject code, a chapter
+ * or topic number or name) is not protected: the next run inserts the original row again beside the
+ * edited one. `legacy_*` is never set. Ids come from the identity columns.
  */
 import { readFileSync } from 'node:fs'
 

@@ -2,7 +2,9 @@ import { Body, Controller, Delete, Get, Inject, Param, Patch, Post, Put, Query }
 
 import { listMeta, ok, okList } from '../../common/http/respond'
 import { Roles } from '../../common/guards'
+import { Actor, type AuditActor } from './actor'
 import { CurriculumAdminService } from './admin.service'
+import { BoundedQueryPipe } from './validation'
 
 const unpaged = <T>(items: T[]) => okList(items, listMeta(1, Math.max(1, items.length), items.length))
 
@@ -27,23 +29,23 @@ export class AdminEducationLevelsController {
   }
 
   @Post()
-  create(@Body() body: unknown) {
-    return this.admin.createLevel(body)
+  create(@Actor() actor: AuditActor, @Body() body: unknown) {
+    return this.admin.createLevel(actor, body)
   }
 
   @Put(':id')
-  update(@Param('id') id: string, @Body() body: unknown) {
-    return this.admin.updateLevel(id, body)
+  update(@Actor() actor: AuditActor, @Param('id') id: string, @Body() body: unknown) {
+    return this.admin.updateLevel(actor, id, body)
   }
 
   @Patch(':id/active')
-  async setActive(@Param('id') id: string, @Body() body: unknown) {
-    return ok(await this.admin.setLevelActive(id, body))
+  async setActive(@Actor() actor: AuditActor, @Param('id') id: string, @Body() body: unknown) {
+    return ok(await this.admin.setLevelActive(actor, id, body))
   }
 
   @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.admin.deleteLevel(id)
+  remove(@Actor() actor: AuditActor, @Param('id') id: string) {
+    return this.admin.deleteLevel(actor, id)
   }
 }
 
@@ -63,23 +65,23 @@ export class AdminSubjectsController {
   }
 
   @Post()
-  create(@Body() body: unknown) {
-    return this.admin.createSubject(body)
+  create(@Actor() actor: AuditActor, @Body() body: unknown) {
+    return this.admin.createSubject(actor, body)
   }
 
   @Put(':id')
-  update(@Param('id') id: string, @Body() body: unknown) {
-    return this.admin.updateSubject(id, body)
+  update(@Actor() actor: AuditActor, @Param('id') id: string, @Body() body: unknown) {
+    return this.admin.updateSubject(actor, id, body)
   }
 
   @Patch(':id/active')
-  async setActive(@Param('id') id: string, @Body() body: unknown) {
-    return ok(await this.admin.setSubjectActive(id, body))
+  async setActive(@Actor() actor: AuditActor, @Param('id') id: string, @Body() body: unknown) {
+    return ok(await this.admin.setSubjectActive(actor, id, body))
   }
 
   @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.admin.deleteSubject(id)
+  remove(@Actor() actor: AuditActor, @Param('id') id: string) {
+    return this.admin.deleteSubject(actor, id)
   }
 }
 
@@ -89,7 +91,7 @@ export class AdminCurriculumController {
   constructor(@Inject(CurriculumAdminService) private readonly admin: CurriculumAdminService) {}
 
   @Get()
-  async tree(@Query() query: unknown) {
+  async tree(@Query(new BoundedQueryPipe()) query: unknown) {
     return ok(await this.admin.tree(query))
   }
 
@@ -99,18 +101,18 @@ export class AdminCurriculumController {
   }
 
   @Post('chapters')
-  createChapter(@Body() body: unknown) {
-    return this.admin.createChapter(body)
+  createChapter(@Actor() actor: AuditActor, @Body() body: unknown) {
+    return this.admin.createChapter(actor, body)
   }
 
   @Put('chapters/:id')
-  updateChapter(@Param('id') id: string, @Body() body: unknown) {
-    return this.admin.updateChapter(id, body)
+  updateChapter(@Actor() actor: AuditActor, @Param('id') id: string, @Body() body: unknown) {
+    return this.admin.updateChapter(actor, id, body)
   }
 
   @Delete('chapters/:id')
-  deleteChapter(@Param('id') id: string) {
-    return this.admin.deleteChapter(id)
+  deleteChapter(@Actor() actor: AuditActor, @Param('id') id: string) {
+    return this.admin.deleteChapter(actor, id)
   }
 
   @Get('topics/:id')
@@ -119,32 +121,32 @@ export class AdminCurriculumController {
   }
 
   @Post('topics')
-  createTopic(@Body() body: unknown) {
-    return this.admin.createTopic(body)
+  createTopic(@Actor() actor: AuditActor, @Body() body: unknown) {
+    return this.admin.createTopic(actor, body)
   }
 
   @Put('topics/:id')
-  updateTopic(@Param('id') id: string, @Body() body: unknown) {
-    return this.admin.updateTopic(id, body)
+  updateTopic(@Actor() actor: AuditActor, @Param('id') id: string, @Body() body: unknown) {
+    return this.admin.updateTopic(actor, id, body)
   }
 
   @Delete('topics/:id')
-  deleteTopic(@Param('id') id: string) {
-    return this.admin.deleteTopic(id)
+  deleteTopic(@Actor() actor: AuditActor, @Param('id') id: string) {
+    return this.admin.deleteTopic(actor, id)
   }
 
   @Post('subtopics')
-  createSubtopic(@Body() body: unknown) {
-    return this.admin.createSubtopic(body)
+  createSubtopic(@Actor() actor: AuditActor, @Body() body: unknown) {
+    return this.admin.createSubtopic(actor, body)
   }
 
   @Put('subtopics/:id')
-  updateSubtopic(@Param('id') id: string, @Body() body: unknown) {
-    return this.admin.updateSubtopic(id, body)
+  updateSubtopic(@Actor() actor: AuditActor, @Param('id') id: string, @Body() body: unknown) {
+    return this.admin.updateSubtopic(actor, id, body)
   }
 
   @Delete('subtopics/:id')
-  deleteSubtopic(@Param('id') id: string) {
-    return this.admin.deleteSubtopic(id)
+  deleteSubtopic(@Actor() actor: AuditActor, @Param('id') id: string) {
+    return this.admin.deleteSubtopic(actor, id)
   }
 }

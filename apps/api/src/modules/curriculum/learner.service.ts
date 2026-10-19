@@ -4,7 +4,7 @@ import { CURRICULUM_NOT_FOUND_MESSAGES as NF, type CurriculumLearningMap } from 
 import { idToString } from '../../db/ids'
 import { CurriculumRepository, type LegacyTopic } from './curriculum.repository'
 import { notFound } from './errors'
-import { TOPIC_PROGRESS_PROVIDER, type TopicProgressProvider, progressOf } from './providers'
+import { CurriculumPorts, progressOf } from './providers'
 import {
   DEFAULT_MAP_GRADE,
   DEFAULT_MAP_SUBJECT,
@@ -25,7 +25,7 @@ const PREVIEW_MAX = 3
 export class CurriculumLearnerService {
   constructor(
     @Inject(CurriculumRepository) private readonly repo: CurriculumRepository,
-    @Inject(TOPIC_PROGRESS_PROVIDER) private readonly progress: TopicProgressProvider,
+    @Inject(CurriculumPorts) private readonly ports: CurriculumPorts,
   ) {}
 
   async educationLevels(): Promise<EducationLevelLookup[]> {
@@ -79,7 +79,7 @@ export class CurriculumLearnerService {
     const id = parseId(rawId)
     const topic = id === null ? null : await this.repo.legacyTopic(id)
     if (!topic) throw notFound(NF.topic)
-    const [subs, map] = await Promise.all([this.repo.legacySubtopicsByTopic([topic.id]), this.progress.topicProgress(userId)])
+    const [subs, map] = await Promise.all([this.repo.legacySubtopicsByTopic([topic.id]), this.ports.topicProgress.topicProgress(userId)])
     const p = progressOf(map, idToString(topic.id))
     return {
       id: idToString(topic.id),
@@ -108,7 +108,7 @@ export class CurriculumLearnerService {
     const grade = (MAP_GRADES as readonly (string | undefined)[]).includes(query.grade) ? (query.grade as string) : DEFAULT_MAP_GRADE
     const [found, map] = await Promise.all([
       this.repo.legacyTopics({ gradeLevel: grade, subject }),
-      this.progress.topicProgress(userId),
+      this.ports.topicProgress.topicProgress(userId),
     ])
     // The filter is case-insensitive (BR-13); S14 keeps exact codes (a typed lower-case code is unknown).
     const rows = found.filter((t) => t.subject === subject)
