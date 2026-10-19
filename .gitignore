@@ -62,3 +62,6 @@ apps/api/src/db/generated/
 .migration-out/
 *.dump
 *.sql.gz
+
+# Local git worktrees created by agent sessions (never tracked)
+.claude/worktrees/
