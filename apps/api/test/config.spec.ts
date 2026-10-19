@@ -11,7 +11,7 @@ const VALID = { NODE_ENV: 'test', PORT: '3000', LOG_LEVEL: 'info', DATABASE_URL:
 describe('env validation', () => {
   it('accepts a valid environment and applies defaults', () => {
     expect(
-      loadEnv({ NODE_ENV: 'production', DATABASE_URL: DB_URL, SESSION_SECRET: 'x'.repeat(32), IC_HASH_KEY: 'i'.repeat(32) }),
+      loadEnv({ NODE_ENV: 'production', DATABASE_URL: DB_URL, SESSION_SECRET: 'x'.repeat(32), IC_HASH_KEY: 'i'.repeat(32), FILE_STORAGE_DIR: '/var/lib/pretasiplus/files' }),
     ).toEqual({
       NODE_ENV: 'production',
       PORT: 3000,
@@ -19,6 +19,7 @@ describe('env validation', () => {
       DATABASE_URL: DB_URL,
       SESSION_SECRET: 'x'.repeat(32),
       IC_HASH_KEY: 'i'.repeat(32),
+      FILE_STORAGE_DIR: '/var/lib/pretasiplus/files',
       TRUST_PROXY_HOPS: 0,
       SESSION_REMEMBER_DAYS: 30,
       SESSION_REMEMBER_DAYS_STAFF: 1,
@@ -76,7 +77,7 @@ describe('env validation', () => {
     expect(() => loadEnv(prod)).toThrow(/IC_HASH_KEY/)
     expect(() => loadEnv({ ...prod, IC_HASH_KEY: 'k'.repeat(31) })).toThrow(/IC_HASH_KEY/)
     expect(() => loadEnv({ ...prod, IC_HASH_KEY: prod.SESSION_SECRET })).toThrow(/IC_HASH_KEY/)
-    expect(loadEnv({ ...prod, IC_HASH_KEY: 'k'.repeat(32) }).IC_HASH_KEY).toBe('k'.repeat(32))
+    expect(loadEnv({ ...prod, FILE_STORAGE_DIR: '/data/files', IC_HASH_KEY: 'k'.repeat(32) }).IC_HASH_KEY).toBe('k'.repeat(32))
     expect(loadEnv({ ...VALID }).IC_HASH_KEY).toBeUndefined()
     expect(loadEnv({ ...VALID, IC_HASH_KEY: '' }).IC_HASH_KEY).toBeUndefined()
     expect(() => loadEnv({ ...VALID, IC_HASH_KEY: 'short' })).toThrow(/IC_HASH_KEY/)
@@ -113,6 +114,10 @@ describe('env validation', () => {
       // Active keys only; keys of later cards live in commented lane blocks as `# KEY=...`.
       const m = /^([A-Z][A-Z0-9_]*)=/.exec(line)
       if (m?.[1]) keys.add(m[1])
+      // Keys that have no safe default and are required in production stay commented out in the example
+      // (a copied file must not point production at a placeholder path) but are still part of the schema.
+      const c = /^# (FILE_STORAGE_DIR)=/.exec(line)
+      if (c?.[1]) keys.add(c[1])
     }
     expect([...keys].sort()).toEqual(Object.keys(EnvSchema.shape).sort())
   })
