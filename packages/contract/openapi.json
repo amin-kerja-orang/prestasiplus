@@ -10462,6 +10462,1472 @@
           "error"
         ]
       },
+      "BijakAttemptMode": {
+        "type": "string",
+        "enum": [
+          "exam",
+          "latihan"
+        ],
+        "description": "exam = timed (deadline), latihan = untimed practice."
+      },
+      "BijakAttemptStatus": {
+        "type": "string",
+        "enum": [
+          "in_progress",
+          "submitted",
+          "auto_submitted",
+          "abandoned"
+        ],
+        "description": "in_progress = open; submitted = handed in by the student; auto_submitted = closed by the client at zero time or by the server sweeper after deadline + grace (\"Dihantar automatik\"); abandoned = discarded or replaced by a restart (\"Ditinggalkan\")."
+      },
+      "BijakAttemptPhoto": {
+        "type": "object",
+        "properties": {
+          "key": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 256,
+            "description": "Opaque photo key issued by the upload route (the mock used a device-local IndexedDB key). The server only accepts keys it issued for this attempt and part."
+          },
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Original file name.",
+            "example": "jalan-kerja.jpg"
+          },
+          "size": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 5242880,
+            "description": "Bytes."
+          }
+        },
+        "required": [
+          "key",
+          "name",
+          "size"
+        ],
+        "additionalProperties": false
+      },
+      "BijakAttemptPartAnswer": {
+        "type": "object",
+        "properties": {
+          "choice": {
+            "type": "string",
+            "description": "MCQ option id, or a letter for match_letter."
+          },
+          "steps": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Working lines (LaTeX)."
+          },
+          "final": {
+            "type": "string",
+            "description": "Final answer (LaTeX)."
+          },
+          "unit": {
+            "type": "string"
+          },
+          "text": {
+            "type": "string",
+            "description": "Short text or essay."
+          },
+          "photos": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/BijakAttemptPhoto"
+            }
+          },
+          "plain": {
+            "type": "object",
+            "properties": {
+              "steps": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "final": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "steps",
+              "final"
+            ],
+            "additionalProperties": false,
+            "description": "Plain-text forms of steps and final."
+          }
+        },
+        "additionalProperties": false
+      },
+      "BijakAttemptStoredAnswer": {
+        "type": "object",
+        "properties": {
+          "answer": {
+            "$ref": "#/components/schemas/BijakAttemptPartAnswer"
+          },
+          "rev": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Per-part revision: a save with a revision not above the stored one never overwrites."
+          },
+          "savedAt": {
+            "$ref": "#/components/schemas/Timestamp"
+          }
+        },
+        "required": [
+          "answer",
+          "rev",
+          "savedAt"
+        ],
+        "additionalProperties": false
+      },
+      "BijakAttemptSaveChange": {
+        "type": "object",
+        "properties": {
+          "partId": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 64,
+            "description": "Leaf part id (for an MCQ question the question id). A part that is not on the attempt, or is locked (latihan after the check cap), is ignored.",
+            "example": "1042"
+          },
+          "answer": {
+            "$ref": "#/components/schemas/BijakAttemptPartAnswer"
+          },
+          "rev": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "savedAt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Device time of the last edit. Never trusted: the server stores min(savedAt, server now), and for a late sync a change counts only when that value is at or before the deadline."
+          }
+        },
+        "required": [
+          "partId",
+          "answer",
+          "rev",
+          "savedAt"
+        ],
+        "additionalProperties": false
+      },
+      "BijakAttemptSavePayload": {
+        "type": "object",
+        "properties": {
+          "changes": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/BijakAttemptSaveChange"
+            }
+          },
+          "flags": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Id"
+            },
+            "description": "Flagged question ids; replaces the stored list when present."
+          },
+          "picks": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "array",
+              "items": {
+                "$ref": "#/components/schemas/Id"
+              }
+            },
+            "description": "Choose-N picks per section id (ticked question ids); replaces the stored map when present."
+          },
+          "position": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Last viewed question position; replaces the stored value when present."
+          }
+        },
+        "required": [
+          "changes"
+        ],
+        "additionalProperties": false
+      },
+      "BijakAttemptCarriedAnswer": {
+        "type": "object",
+        "properties": {
+          "answer": {
+            "$ref": "#/components/schemas/BijakAttemptPartAnswer"
+          },
+          "rev": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "savedAt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Device time of the last edit. Never trusted: the server stores min(savedAt, server now), and for a late sync a change counts only when that value is at or before the deadline."
+          }
+        },
+        "required": [
+          "answer",
+          "rev",
+          "savedAt"
+        ],
+        "additionalProperties": false
+      },
+      "BijakAttemptSubmitPayload": {
+        "type": "object",
+        "properties": {
+          "idempotencyKey": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 64,
+            "description": "Client key of this submit; a replay with the same key returns the same result. The mock page sends \"<attemptId>-hantar\".",
+            "example": "att-1-hantar"
+          },
+          "changes": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/BijakAttemptSaveChange"
+            }
+          },
+          "answers": {
+            "type": "object",
+            "additionalProperties": {
+              "$ref": "#/components/schemas/BijakAttemptCarriedAnswer"
+            },
+            "description": "The device full answer set per part id (AC-13.2); merged with `changes`, and the server grades the union of what it saved and what the request carries."
+          },
+          "auto": {
+            "type": "boolean",
+            "description": "True when the client submits at zero time (status auto_submitted)."
+          },
+          "flags": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Id"
+            },
+            "description": "Flagged question ids; replaces the stored list when present."
+          },
+          "picks": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "array",
+              "items": {
+                "$ref": "#/components/schemas/Id"
+              }
+            },
+            "description": "Choose-N picks per section id (ticked question ids); replaces the stored map when present."
+          },
+          "position": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Last viewed question position; replaces the stored value when present."
+          }
+        },
+        "required": [
+          "idempotencyKey",
+          "changes"
+        ],
+        "additionalProperties": false
+      },
+      "BijakAttemptStartRequest": {
+        "type": "object",
+        "properties": {
+          "paperId": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "mode": {
+            "$ref": "#/components/schemas/BijakAttemptMode"
+          },
+          "restart": {
+            "type": "boolean",
+            "description": "True: every open attempt of the caller on this paper becomes abandoned and a new one starts (AC-12.2). Absent or false: the most recent open attempt is returned."
+          }
+        },
+        "required": [
+          "paperId",
+          "mode"
+        ],
+        "additionalProperties": false
+      },
+      "BijakAttemptStartResult": {
+        "type": "object",
+        "properties": {
+          "attemptId": {
+            "$ref": "#/components/schemas/Id"
+          }
+        },
+        "required": [
+          "attemptId"
+        ],
+        "additionalProperties": false
+      },
+      "BijakAttemptInProgress": {
+        "type": "object",
+        "properties": {
+          "attemptId": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "title": {
+            "type": "string",
+            "minLength": 1
+          },
+          "mode": {
+            "$ref": "#/components/schemas/BijakAttemptMode"
+          },
+          "elapsedSeconds": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Server now minus startedAt, in whole seconds."
+          },
+          "fresh": {
+            "type": "boolean",
+            "description": "elapsedSeconds <= 60: resume silently (AC-12.5)."
+          }
+        },
+        "required": [
+          "attemptId",
+          "title",
+          "mode",
+          "elapsedSeconds",
+          "fresh"
+        ],
+        "additionalProperties": false
+      },
+      "BijakAttemptMeta": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "paperId": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "paperKind": {
+            "type": "string",
+            "enum": [
+              "pilihan",
+              "jana"
+            ],
+            "description": "pilihan = curated paper, jana = paper generated for the caller."
+          },
+          "title": {
+            "type": "string",
+            "minLength": 1
+          },
+          "subject": {
+            "type": "string",
+            "minLength": 1,
+            "example": "MAT"
+          },
+          "kertas": {
+            "type": "integer",
+            "minimum": 1,
+            "description": "Kertas number.",
+            "example": 2
+          },
+          "code": {
+            "type": "string",
+            "minLength": 1,
+            "example": "1449/2"
+          },
+          "mode": {
+            "$ref": "#/components/schemas/BijakAttemptMode"
+          },
+          "status": {
+            "$ref": "#/components/schemas/BijakAttemptStatus"
+          },
+          "startedAt": {
+            "type": "string",
+            "format": "date-time",
+            "pattern": "\\+08:00$",
+            "description": "Server time of the start.",
+            "example": "2026-10-16T09:30:00+08:00"
+          },
+          "deadline": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time",
+            "pattern": "\\+08:00$",
+            "description": "startedAt + durationMin, computed from the server clock at start (AC-05.1); null in latihan. The client clock never moves it.",
+            "example": "2026-10-16T09:30:00+08:00"
+          },
+          "durationMin": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "answers": {
+            "type": "object",
+            "additionalProperties": {
+              "$ref": "#/components/schemas/BijakAttemptStoredAnswer"
+            },
+            "description": "The caller own saved answers per part id."
+          },
+          "flags": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Id"
+            }
+          },
+          "picks": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "array",
+              "items": {
+                "$ref": "#/components/schemas/Id"
+              }
+            }
+          },
+          "position": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "checked": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Id"
+            },
+            "description": "Latihan: question ids already checked with \"Semak\"."
+          },
+          "checkCounts": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "description": "Latihan: \"Semak\" count per question id, capped at 3."
+          },
+          "submittedAt": {
+            "$ref": "#/components/schemas/Timestamp"
+          },
+          "lateBySeconds": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Seconds past the deadline at submit (a sweep close is capped at 300). Absent when on time."
+          },
+          "idempotencyKey": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "paperId",
+          "paperKind",
+          "title",
+          "subject",
+          "kertas",
+          "code",
+          "mode",
+          "status",
+          "startedAt",
+          "deadline",
+          "durationMin",
+          "answers",
+          "flags",
+          "picks",
+          "position",
+          "checked"
+        ],
+        "additionalProperties": false
+      },
+      "BijakAttemptSectionRule": {
+        "oneOf": [
+          {
+            "type": "object",
+            "properties": {
+              "type": {
+                "type": "string",
+                "enum": [
+                  "all"
+                ]
+              }
+            },
+            "required": [
+              "type"
+            ],
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "properties": {
+              "type": {
+                "type": "string",
+                "enum": [
+                  "choose"
+                ]
+              },
+              "n": {
+                "type": "integer",
+                "minimum": 1
+              }
+            },
+            "required": [
+              "type",
+              "n"
+            ],
+            "additionalProperties": false
+          }
+        ],
+        "description": "all = answer every question; choose = answer n questions."
+      },
+      "BijakAttemptSection": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "label": {
+            "type": "string",
+            "minLength": 1,
+            "example": "Bahagian C"
+          },
+          "compulsory": {
+            "type": "boolean",
+            "description": "\"Soalan ini mesti dijawab\"; present only when true."
+          },
+          "instruction": {
+            "type": "string",
+            "description": "Authored instruction; absent means derived from the rule."
+          },
+          "rule": {
+            "$ref": "#/components/schemas/BijakAttemptSectionRule"
+          },
+          "questionIds": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Id"
+            },
+            "description": "Question ids in the frozen order of this attempt."
+          },
+          "marks": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Sum of the question marks."
+          },
+          "effectiveMarks": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Marks after choose-N (the N largest)."
+          }
+        },
+        "required": [
+          "id",
+          "label",
+          "rule",
+          "questionIds",
+          "marks",
+          "effectiveMarks"
+        ],
+        "additionalProperties": false
+      },
+      "BijakAttemptLeafKind": {
+        "type": "string",
+        "enum": [
+          "working",
+          "numeric",
+          "short_text",
+          "match_letter",
+          "essay",
+          "drawing",
+          "table_fill"
+        ],
+        "description": "Answer mode of a leaf part (exam schema D2). A photo can only be attached to working or drawing."
+      },
+      "BijakAttemptPartView": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "label": {
+            "type": "string",
+            "example": "(a)"
+          },
+          "prompt": {
+            "type": "string"
+          },
+          "marks": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Marks of a leaf part; 0 on a part that only holds children."
+          },
+          "answer": {
+            "type": "object",
+            "properties": {
+              "kind": {
+                "$ref": "#/components/schemas/BijakAttemptLeafKind"
+              },
+              "unit": {
+                "type": "string"
+              },
+              "wordRange": {
+                "type": "object",
+                "properties": {
+                  "min": {
+                    "type": "integer",
+                    "minimum": 0
+                  },
+                  "max": {
+                    "type": "integer",
+                    "minimum": 0
+                  }
+                },
+                "required": [
+                  "min",
+                  "max"
+                ],
+                "additionalProperties": false
+              }
+            },
+            "required": [
+              "kind"
+            ],
+            "additionalProperties": false,
+            "description": "Answer mode of a leaf; absent on a part that only holds children."
+          },
+          "children": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/BijakAttemptPartView"
+            }
+          }
+        },
+        "required": [
+          "id",
+          "label",
+          "prompt",
+          "marks"
+        ],
+        "additionalProperties": false
+      },
+      "BijakAttemptOption": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "text": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "text"
+        ],
+        "additionalProperties": false
+      },
+      "BijakAttemptQuestion": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "number": {
+            "type": "integer",
+            "minimum": 1,
+            "description": "Question number 1..n across the sections in order."
+          },
+          "sectionId": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "topic": {
+            "type": "string",
+            "description": "Display name of the curriculum unit."
+          },
+          "formOrigin": {
+            "type": "string",
+            "enum": [
+              "T1-T3",
+              "T4",
+              "T5"
+            ]
+          },
+          "optionBank": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/BijakAttemptOption"
+            },
+            "description": "Shared lettered bank of the question group (match_letter items)."
+          },
+          "groupId": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "stem": {
+            "type": "string"
+          },
+          "marks": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "mcq": {
+            "type": "object",
+            "properties": {
+              "options": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/BijakAttemptOption"
+                },
+                "minItems": 2
+              }
+            },
+            "required": [
+              "options"
+            ],
+            "additionalProperties": false
+          },
+          "parts": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/BijakAttemptPartView"
+            }
+          }
+        },
+        "required": [
+          "id",
+          "number",
+          "sectionId",
+          "topic",
+          "formOrigin",
+          "stem",
+          "marks"
+        ],
+        "additionalProperties": false
+      },
+      "BijakAttemptStimulus": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "diagram",
+              "passage",
+              "table"
+            ]
+          },
+          "label": {
+            "type": "string",
+            "example": "Rajah 2"
+          },
+          "caption": {
+            "type": "string"
+          },
+          "alt": {
+            "type": "string",
+            "description": "Accessible description of the diagram."
+          },
+          "svg": {
+            "type": "string",
+            "description": "Inline SVG markup (trusted, bundled)."
+          },
+          "text": {
+            "type": "string"
+          },
+          "table": {
+            "type": "object",
+            "properties": {
+              "head": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "rows": {
+                "type": "array",
+                "items": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                }
+              }
+            },
+            "required": [
+              "head",
+              "rows"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "required": [
+          "id",
+          "kind",
+          "label",
+          "alt"
+        ],
+        "additionalProperties": false
+      },
+      "BijakAttemptGroup": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "stimulus": {
+            "$ref": "#/components/schemas/BijakAttemptStimulus"
+          },
+          "from": {
+            "type": "integer",
+            "minimum": 1,
+            "description": "First question number covered."
+          },
+          "to": {
+            "type": "integer",
+            "minimum": 1,
+            "description": "Last question number covered."
+          },
+          "questionIds": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Id"
+            }
+          }
+        },
+        "required": [
+          "id",
+          "stimulus",
+          "from",
+          "to",
+          "questionIds"
+        ],
+        "additionalProperties": false
+      },
+      "BijakAttemptPartStatus": {
+        "type": "string",
+        "enum": [
+          "betul",
+          "separa",
+          "salah",
+          "kosong",
+          "belum_dimarkah"
+        ],
+        "description": "betul = full marks, separa = partial, salah = wrong, kosong = blank, belum_dimarkah = waiting for a human (manual point, drawing)."
+      },
+      "BijakAttemptPointResult": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "code": {
+            "type": "string",
+            "enum": [
+              "K",
+              "N",
+              "P",
+              "B",
+              "M",
+              "F",
+              "C"
+            ]
+          },
+          "tag": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Letter plus sequence in the part.",
+            "example": "K1"
+          },
+          "manual": {
+            "type": "boolean",
+            "description": "A teacher still has to check this point."
+          },
+          "label": {
+            "type": "string"
+          },
+          "marks": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "awarded": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "hit": {
+            "type": "boolean"
+          },
+          "reason": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "code",
+          "tag",
+          "label",
+          "marks",
+          "awarded",
+          "hit",
+          "reason"
+        ],
+        "additionalProperties": false
+      },
+      "BijakAttemptRubricBand": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "range": {
+            "type": "array",
+            "prefixItems": [
+              {
+                "type": "integer",
+                "minimum": 0
+              },
+              {
+                "type": "integer",
+                "minimum": 0
+              }
+            ],
+            "description": "Inclusive [from, to] marks."
+          },
+          "descriptor": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "name",
+          "range",
+          "descriptor"
+        ],
+        "additionalProperties": false
+      },
+      "BijakAttemptScheme": {
+        "type": "object",
+        "properties": {
+          "marks": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "correctOption": {
+            "type": "string",
+            "description": "MCQ: the correct option id."
+          },
+          "correctLetter": {
+            "type": "string",
+            "description": "match_letter: the correct letter."
+          },
+          "acceptedText": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "accepted: the accepted answers as text."
+          },
+          "rubric": {
+            "type": "object",
+            "properties": {
+              "criteria": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "bands": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/BijakAttemptRubricBand"
+                }
+              },
+              "notes": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              }
+            },
+            "required": [
+              "criteria",
+              "bands"
+            ],
+            "additionalProperties": false
+          },
+          "explanation": {
+            "type": "string"
+          },
+          "finalDisplay": {
+            "type": "string",
+            "description": "LaTeX of the model final answer."
+          },
+          "unit": {
+            "type": "string"
+          },
+          "model": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "marks"
+        ],
+        "additionalProperties": false
+      },
+      "BijakAttemptPartResult": {
+        "type": "object",
+        "properties": {
+          "partId": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "label": {
+            "type": "string"
+          },
+          "prompt": {
+            "type": "string"
+          },
+          "marks": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "awarded": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "status": {
+            "$ref": "#/components/schemas/BijakAttemptPartStatus"
+          },
+          "confidence": {
+            "type": "string",
+            "enum": [
+              "high",
+              "low"
+            ]
+          },
+          "points": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/BijakAttemptPointResult"
+            }
+          },
+          "ecf": {
+            "type": "string",
+            "description": "Set when an own-figure-carried-forward mark was given."
+          },
+          "answer": {
+            "$ref": "#/components/schemas/BijakAttemptPartAnswer"
+          },
+          "scheme": {
+            "$ref": "#/components/schemas/BijakAttemptScheme"
+          }
+        },
+        "required": [
+          "partId",
+          "label",
+          "prompt",
+          "marks",
+          "awarded",
+          "status",
+          "confidence",
+          "points",
+          "answer",
+          "scheme"
+        ],
+        "additionalProperties": false
+      },
+      "BijakAttemptQuestionResult": {
+        "type": "object",
+        "properties": {
+          "questionId": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "number": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "sectionId": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "marks": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "awarded": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "counted": {
+            "type": "boolean",
+            "description": "False when a choose-N section dropped this question from the total."
+          },
+          "attempted": {
+            "type": "boolean"
+          },
+          "parts": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/BijakAttemptPartResult"
+            }
+          }
+        },
+        "required": [
+          "questionId",
+          "number",
+          "sectionId",
+          "marks",
+          "awarded",
+          "counted",
+          "attempted",
+          "parts"
+        ],
+        "additionalProperties": false
+      },
+      "BijakAttemptSectionResult": {
+        "type": "object",
+        "properties": {
+          "sectionId": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "label": {
+            "type": "string"
+          },
+          "marks": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Effective marks after choose-N."
+          },
+          "awarded": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "chooseN": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "counted": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Id"
+            },
+            "description": "Question ids that count toward the section."
+          }
+        },
+        "required": [
+          "sectionId",
+          "label",
+          "marks",
+          "awarded",
+          "counted"
+        ],
+        "additionalProperties": false
+      },
+      "BijakAttemptResult": {
+        "type": "object",
+        "properties": {
+          "score": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "max": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "percent": {
+            "type": "number",
+            "minimum": 0,
+            "description": "score / max in percent, one decimal place; 0 when max is 0."
+          },
+          "provisional": {
+            "type": "boolean",
+            "description": "True while any part waits for a human (the total is provisional)."
+          },
+          "pendingReview": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "sections": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/BijakAttemptSectionResult"
+            }
+          },
+          "questions": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/BijakAttemptQuestionResult"
+            }
+          },
+          "coins": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Display value score * 2 of the mock. The mock does not credit the wallet (open question 2)."
+          },
+          "points": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Display value score * 10 of the mock. The mock does not credit the wallet (open question 2)."
+          }
+        },
+        "required": [
+          "score",
+          "max",
+          "percent",
+          "provisional",
+          "pendingReview",
+          "sections",
+          "questions",
+          "coins",
+          "points"
+        ],
+        "additionalProperties": false
+      },
+      "BijakAttemptPaperView": {
+        "type": "object",
+        "properties": {
+          "serverNow": {
+            "type": "string",
+            "format": "date-time",
+            "pattern": "\\+08:00$",
+            "description": "Server clock at the time of the response, so the UI can correct the offset of the exam countdown (AC-05.1).",
+            "example": "2026-10-16T09:30:00+08:00"
+          },
+          "attempt": {
+            "$ref": "#/components/schemas/BijakAttemptMeta"
+          },
+          "sections": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/BijakAttemptSection"
+            },
+            "minItems": 1
+          },
+          "questions": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/BijakAttemptQuestion"
+            }
+          },
+          "groups": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/BijakAttemptGroup"
+            }
+          },
+          "checks": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/BijakAttemptQuestionResult"
+            },
+            "description": "Latihan, in progress: the per-question results (scheme revealed) of the questions already checked. Always empty in exam mode and for a closed attempt."
+          }
+        },
+        "required": [
+          "serverNow",
+          "attempt",
+          "sections",
+          "questions",
+          "groups",
+          "checks"
+        ],
+        "additionalProperties": false
+      },
+      "BijakAttemptSaveResult": {
+        "type": "object",
+        "properties": {
+          "savedAt": {
+            "type": "string",
+            "format": "date-time",
+            "pattern": "\\+08:00$",
+            "description": "Server time of the save.",
+            "example": "2026-10-16T09:30:00+08:00"
+          },
+          "closed": {
+            "type": "boolean",
+            "enum": [
+              true
+            ],
+            "description": "The attempt is already closed; the device keeps its local copy and nothing was stored (unless regraded)."
+          },
+          "regraded": {
+            "type": "boolean",
+            "enum": [
+              true
+            ],
+            "description": "Late-synced changes (savedAt at or before the deadline, within 24 h) were accepted and the attempt was graded again."
+          }
+        },
+        "required": [
+          "savedAt"
+        ],
+        "additionalProperties": false
+      },
+      "BijakAttemptSubmitResult": {
+        "type": "object",
+        "properties": {
+          "attemptId": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "late": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Seconds past the deadline; 0 when none; a sweep close is capped at 300."
+          },
+          "closed": {
+            "type": "boolean",
+            "enum": [
+              true
+            ],
+            "description": "The attempt was already closed (a replay or a later submit); the stored result is not recomputed."
+          },
+          "regraded": {
+            "type": "boolean",
+            "enum": [
+              true
+            ]
+          }
+        },
+        "required": [
+          "attemptId",
+          "late"
+        ],
+        "additionalProperties": false
+      },
+      "BijakAttemptResultView": {
+        "type": "object",
+        "properties": {
+          "attempt": {
+            "$ref": "#/components/schemas/BijakAttemptMeta"
+          },
+          "result": {
+            "$ref": "#/components/schemas/BijakAttemptResult"
+          },
+          "paper": {
+            "$ref": "#/components/schemas/BijakAttemptPaperView"
+          }
+        },
+        "required": [
+          "attempt",
+          "result",
+          "paper"
+        ],
+        "additionalProperties": false
+      },
+      "BijakAttemptHistoryRow": {
+        "type": "object",
+        "properties": {
+          "attemptId": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "title": {
+            "type": "string",
+            "minLength": 1
+          },
+          "subject": {
+            "type": "string",
+            "minLength": 1
+          },
+          "subjectName": {
+            "type": "string",
+            "minLength": 1
+          },
+          "kertas": {
+            "type": "integer",
+            "minimum": 1,
+            "description": "Kertas number.",
+            "example": 2
+          },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "pilihan",
+              "jana"
+            ],
+            "description": "pilihan = curated paper, jana = paper generated for the caller."
+          },
+          "mode": {
+            "$ref": "#/components/schemas/BijakAttemptMode"
+          },
+          "status": {
+            "$ref": "#/components/schemas/BijakAttemptStatus"
+          },
+          "startedAt": {
+            "$ref": "#/components/schemas/Timestamp"
+          },
+          "durationSeconds": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "max(0, round((submittedAt ?? server now) - startedAt)) in seconds."
+          },
+          "score": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Present when the attempt has a result."
+          },
+          "max": {
+            "type": "integer",
+            "minimum": 0
+          }
+        },
+        "required": [
+          "attemptId",
+          "title",
+          "subject",
+          "subjectName",
+          "kertas",
+          "kind",
+          "mode",
+          "status",
+          "startedAt",
+          "durationSeconds"
+        ],
+        "additionalProperties": false
+      },
+      "BijakAttemptNotSubmittedError": {
+        "type": "object",
+        "properties": {
+          "error": {
+            "type": "object",
+            "properties": {
+              "code": {
+                "type": "string",
+                "enum": [
+                  "NOT_SUBMITTED"
+                ]
+              },
+              "message": {
+                "type": "string",
+                "enum": [
+                  "Skema hanya didedahkan selepas Hantar"
+                ]
+              },
+              "requestId": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "code",
+              "message"
+            ]
+          }
+        },
+        "required": [
+          "error"
+        ]
+      },
+      "BijakAttemptPhotoUpload": {
+        "type": "object",
+        "properties": {
+          "partId": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 64,
+            "description": "A part of the attempt that accepts working or drawing.",
+            "example": "1042"
+          },
+          "file": {
+            "type": "string",
+            "format": "binary",
+            "description": "JPEG or PNG, up to 5 MB (MAX_PHOTO_BYTES)."
+          }
+        },
+        "required": [
+          "partId",
+          "file"
+        ]
+      },
       "SpmErrorCode": {
         "type": "string",
         "enum": [
@@ -33007,6 +34473,933 @@
                       "$ref": "#/components/schemas/ErrorBody"
                     }
                   ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/bijak/papers/{paperId}/in-progress": {
+      "get": {
+        "tags": [
+          "bijak-attempts"
+        ],
+        "summary": "Resume prompt: the caller open attempt on a paper",
+        "description": "Mock method findInProgress(userId, paperId). The caller most recent open attempt on the paper, or data null. An attempt with elapsedSeconds <= 60 resumes silently (fresh). Expired exam attempts are closed first (sweep). Student role. The attempt view carries no answer key, mark scheme, accepted equivalent or explanation (US-15); a scheme is revealed only after submit (exam) or per question after \"Semak\" (latihan). The deadline and every timestamp come from the server clock.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 64,
+              "description": "Paper id (a curated paper or one the caller generated).",
+              "example": "1042"
+            },
+            "required": true,
+            "description": "Paper id (a curated paper or one the caller generated).",
+            "name": "paperId",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The open attempt, or { data: null } when there is none.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "allOf": [
+                        {
+                          "$ref": "#/components/schemas/BijakAttemptInProgress"
+                        },
+                        {
+                          "type": [
+                            "object",
+                            "null"
+                          ]
+                        }
+                      ]
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED (no valid session).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN (the active role may not use Bijak SPM). Allowed: student, and admin or school_admin inside Mod Pelajar (working assumption of BE-15).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/bijak/attempts": {
+      "post": {
+        "tags": [
+          "bijak-attempts"
+        ],
+        "summary": "Start or resume a sitting",
+        "description": "Mock method startAttempt(userId, paperId, mode, { restart }). The paper must resolve for the caller (as GET /bijak/papers/{id}). Without restart and with an open attempt on the paper: 200 with the id of the most recent one, nothing is created. Otherwise: 201; with restart every open attempt of the caller on the paper becomes abandoned (\"Ditinggalkan\", AC-12.2), then a new attempt is stored with status in_progress, startedAt = server now, deadline = startedAt + durationMin for exam and null for latihan, and the frozen composition of the paper (later paper or pool edits never change it). Student role. The attempt view carries no answer key, mark scheme, accepted equivalent or explanation (US-15); a scheme is revealed only after submit (exam) or per question after \"Semak\" (latihan). The deadline and every timestamp come from the server clock.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Value of Session.csrf; required on mutating requests."
+            },
+            "required": true,
+            "description": "Value of Session.csrf; required on mutating requests.",
+            "name": "X-CSRF-Token",
+            "in": "header"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BijakAttemptStartRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The caller existing open attempt (no restart).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/BijakAttemptStartResult"
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "201": {
+            "description": "A new attempt was created.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/BijakAttemptStartResult"
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED (no valid session).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN (the active role may not use Bijak SPM) or CSRF_INVALID (missing or wrong X-CSRF-Token).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "NOT_FOUND \"Kertas tidak ditemui\" (unknown, unpublished or another user generated paper).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "VALIDATION_ERROR with fields for an invalid body.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/bijak/attempts/{id}": {
+      "get": {
+        "tags": [
+          "bijak-attempts"
+        ],
+        "summary": "The paper as served to an attempt, with saved answers, flags and server time",
+        "description": "Mock method getAttemptView(userId, attemptId); the response also carries serverNow (the mock serverNow()). Sections, questions (stem, marks, MCQ options, part tree, answer modes), stimulus groups, the caller saved answers, flags, picks, position, and the server deadline. In latihan, checks lists the questions already checked with \"Semak\" (their scheme revealed); it is always empty otherwise. An exam attempt past deadline + 300 s is closed by the sweep before the view is built. Student role, attempt owner only. The attempt view carries no answer key, mark scheme, accepted equivalent or explanation (US-15); a scheme is revealed only after submit (exam) or per question after \"Semak\" (latihan). The deadline and every timestamp come from the server clock.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 64,
+              "description": "Attempt id (opaque; a UUID on the backend).",
+              "example": "1042"
+            },
+            "required": true,
+            "description": "Attempt id (opaque; a UUID on the backend).",
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The attempt view (no keys, no schemes outside checks).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/BijakAttemptPaperView"
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED (no valid session).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN \"Akses ditolak\" when the attempt belongs to another user (D54b: 403, not 404; an unknown id is 404), or FORBIDDEN when the active role may not use Bijak SPM (student; admin and school_admin only inside Mod Pelajar, working assumption of BE-15).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "NOT_FOUND \"Percubaan tidak ditemui\" (unknown attempt id).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/bijak/attempts/{id}/answers": {
+      "put": {
+        "tags": [
+          "bijak-attempts"
+        ],
+        "summary": "Idempotent autosave with per-part revisions",
+        "description": "Mock method saveAnswers(userId, attemptId, payload). For an in_progress attempt: each change is ignored when its part is not on the attempt, is locked (latihan after 3 checks of its question), or the stored rev is >= change.rev; otherwise it is stored as { answer, rev, savedAt: min(change.savedAt, server now) }, so the device clock never extends or moves anything. Then flags, picks and position replace the stored values when present. For a closed attempt nothing is stored and the answer is 200 { savedAt, closed: true }; late sync: an auto_submitted exam attempt still accepts changes whose capped savedAt is at or before the deadline, within 24 h after the deadline; when they change the stored answers the attempt is graded again and regraded true is returned. The response never carries a key or scheme. Student role, attempt owner only.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 64,
+              "description": "Attempt id (opaque; a UUID on the backend).",
+              "example": "1042"
+            },
+            "required": true,
+            "description": "Attempt id (opaque; a UUID on the backend).",
+            "name": "id",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Value of Session.csrf; required on mutating requests."
+            },
+            "required": true,
+            "description": "Value of Session.csrf; required on mutating requests.",
+            "name": "X-CSRF-Token",
+            "in": "header"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BijakAttemptSavePayload"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Saved (or closed / regraded).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/BijakAttemptSaveResult"
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED (no valid session).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN \"Akses ditolak\" (another user attempt, D54b), FORBIDDEN (the active role may not use Bijak SPM), or CSRF_INVALID (missing or wrong X-CSRF-Token).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "NOT_FOUND \"Percubaan tidak ditemui\" (unknown attempt id).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "VALIDATION_ERROR with fields for an invalid body.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/bijak/attempts/{id}/submit": {
+      "post": {
+        "tags": [
+          "bijak-attempts"
+        ],
+        "summary": "Submit and grade (idempotent)",
+        "description": "Mock method submit(userId, attemptId, payload). The changes and the device answers map are merged as for the autosave, then the attempt becomes submitted (auto_submitted when auto is true), submittedAt = server now, lateBySeconds is recorded when past the deadline, and the stored result is graded from the union of saved and carried answers (marking with @pp/exam-core). A repeat submit on an already closed attempt, with the same or another idempotencyKey, answers 200 with closed true and the stored late value; the stored result is not recomputed (a late sync may re-grade: regraded true). Two simultaneous submits with the same key produce one stored result. No wallet write (the mock does not credit coins). Student role, attempt owner only.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 64,
+              "description": "Attempt id (opaque; a UUID on the backend).",
+              "example": "1042"
+            },
+            "required": true,
+            "description": "Attempt id (opaque; a UUID on the backend).",
+            "name": "id",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Value of Session.csrf; required on mutating requests."
+            },
+            "required": true,
+            "description": "Value of Session.csrf; required on mutating requests.",
+            "name": "X-CSRF-Token",
+            "in": "header"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BijakAttemptSubmitPayload"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Submitted, or already closed (closed: true).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/BijakAttemptSubmitResult"
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED (no valid session).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN \"Akses ditolak\" (another user attempt, D54b), FORBIDDEN (the active role may not use Bijak SPM), or CSRF_INVALID (missing or wrong X-CSRF-Token).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "NOT_FOUND \"Percubaan tidak ditemui\" (unknown attempt id).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "VALIDATION_ERROR with fields for an invalid body.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/bijak/attempts/{id}/abandon": {
+      "post": {
+        "tags": [
+          "bijak-attempts"
+        ],
+        "summary": "Discard an open sitting",
+        "description": "Mock method abandon(userId, attemptId). in_progress becomes abandoned (\"Ditinggalkan\"); on any other status nothing changes. Always 204 without a body. Student role, attempt owner only.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 64,
+              "description": "Attempt id (opaque; a UUID on the backend).",
+              "example": "1042"
+            },
+            "required": true,
+            "description": "Attempt id (opaque; a UUID on the backend).",
+            "name": "id",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Value of Session.csrf; required on mutating requests."
+            },
+            "required": true,
+            "description": "Value of Session.csrf; required on mutating requests.",
+            "name": "X-CSRF-Token",
+            "in": "header"
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Abandoned, or nothing to do (the attempt was not in progress)."
+          },
+          "401": {
+            "description": "UNAUTHORIZED (no valid session).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN \"Akses ditolak\" (another user attempt, D54b), FORBIDDEN (the active role may not use Bijak SPM), or CSRF_INVALID (missing or wrong X-CSRF-Token).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "NOT_FOUND \"Percubaan tidak ditemui\" (unknown attempt id).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/bijak/attempts/{id}/questions/{questionId}/check": {
+      "post": {
+        "tags": [
+          "bijak-attempts"
+        ],
+        "summary": "Latihan \"Semak\": grade one question and reveal only its scheme",
+        "description": "Mock method checkQuestion(userId, attemptId, questionId, payload?). The optional body is an autosave payload merged first while the question has fewer than 3 checks. Each call below the cap increments the question count (3 = MAX_CHECKS_PER_QUESTION) and adds the question to checked; after the 3rd check the answer of that question is locked, and a further check still returns the question result but ignores any payload and changes neither the saved answer nor the count. Only latihan: in exam mode 403 \"Skema hanya didedahkan selepas Hantar\". An attempt that is not in progress answers 409 CONFLICT \"Percubaan sudah tamat\". A question that is not on the attempt answers 404 \"Soalan tidak ditemui\". The scheme of this question only is returned (US-15, AC-15.3). Student role, attempt owner only.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 64,
+              "description": "Attempt id.",
+              "example": "1042"
+            },
+            "required": true,
+            "description": "Attempt id.",
+            "name": "id",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 64,
+              "description": "A question of the attempt.",
+              "example": "1042"
+            },
+            "required": true,
+            "description": "A question of the attempt.",
+            "name": "questionId",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Value of Session.csrf; required on mutating requests."
+            },
+            "required": true,
+            "description": "Value of Session.csrf; required on mutating requests.",
+            "name": "X-CSRF-Token",
+            "in": "header"
+          }
+        ],
+        "requestBody": {
+          "required": false,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BijakAttemptSavePayload"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The graded question with its revealed scheme.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/BijakAttemptQuestionResult"
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED (no valid session).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN \"Skema hanya didedahkan selepas Hantar\" (exam mode), FORBIDDEN \"Akses ditolak\" (another user attempt, D54b), FORBIDDEN (role), or CSRF_INVALID (missing or wrong X-CSRF-Token).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "NOT_FOUND \"Percubaan tidak ditemui\" (unknown attempt) or \"Soalan tidak ditemui\" (question not on the attempt).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "CONFLICT \"Percubaan sudah tamat\" (the attempt is no longer in progress).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "VALIDATION_ERROR with fields for an invalid body.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "RATE_LIMITED: check requests are rate-limited (NFR-05); the threshold is an open question of BE-16. Not in the mock.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/bijak/attempts/{id}/result": {
+      "get": {
+        "tags": [
+          "bijak-attempts"
+        ],
+        "summary": "The result page with full schemes (after submit only)",
+        "description": "Mock method getResult(userId, attemptId). Returns the attempt record, the stored result (score, max, percent, provisional, pendingReview, sections, questions with parts, points and revealed schemes, display coins and points) and the paper view with checks always empty. An exam attempt past deadline + 300 s is closed by the sweep first, so a result exists. Before submit: 409 NOT_SUBMITTED \"Skema hanya didedahkan selepas Hantar\". Student role, attempt owner only.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 64,
+              "description": "Attempt id (opaque; a UUID on the backend).",
+              "example": "1042"
+            },
+            "required": true,
+            "description": "Attempt id (opaque; a UUID on the backend).",
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The result view.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/BijakAttemptResultView"
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED (no valid session).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN \"Akses ditolak\" when the attempt belongs to another user (D54b: 403, not 404; an unknown id is 404), or FORBIDDEN when the active role may not use Bijak SPM (student; admin and school_admin only inside Mod Pelajar, working assumption of BE-15).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "NOT_FOUND \"Percubaan tidak ditemui\" (unknown attempt id).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "NOT_SUBMITTED \"Skema hanya didedahkan selepas Hantar\" (the attempt has no result yet).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BijakAttemptNotSubmittedError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/bijak/history": {
+      "get": {
+        "tags": [
+          "bijak-attempts"
+        ],
+        "summary": "The caller attempts, newest first",
+        "description": "Mock method history(userId). Every attempt of the caller (all statuses, both modes), ordered by startedAt descending, with score and max when a result exists. No pagination in the mock (unbounded list). Expired exam attempts are closed first (sweep). Writes made under Mod Pelajar are marked is_test and excluded from other users aggregates. Student role.",
+        "responses": {
+          "200": {
+            "description": "The caller history.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/BijakAttemptHistoryRow"
+                      }
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED (no valid session).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN (the active role may not use Bijak SPM). Allowed: student, and admin or school_admin inside Mod Pelajar (working assumption of BE-15).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/bijak/attempts/{id}/photos": {
+      "post": {
+        "tags": [
+          "bijak-attempts"
+        ],
+        "summary": "Upload a photo of the working for one part",
+        "description": "Card-only route (the mock keeps photos on the device). multipart/form-data: partId and file (JPEG or PNG, at most 5 MB = MAX_PHOTO_BYTES). At most 3 photos per part (MAX_PHOTOS_PER_PART). The part must belong to the caller attempt and accept working or drawing. The file is stored privately through the BE-04 files service (purpose bijak_photo); only the attempt owner can read it. The returned metadata is then placed in PartAnswer.photos by the autosave. 422 VALIDATION_ERROR: fields.file \"Gambar mesti JPG atau PNG, maksimum 5 MB.\" (type or size) or \"Maksimum 3 gambar bagi setiap bahagian.\" (a 4th photo), fields.partId for a part that is not on the attempt or does not accept photos. An attempt that is not in progress answers 409 CONFLICT \"Percubaan sudah tamat\". Student role, attempt owner only.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 64,
+              "description": "Attempt id (opaque; a UUID on the backend).",
+              "example": "1042"
+            },
+            "required": true,
+            "description": "Attempt id (opaque; a UUID on the backend).",
+            "name": "id",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Value of Session.csrf; required on mutating requests."
+            },
+            "required": true,
+            "description": "Value of Session.csrf; required on mutating requests.",
+            "name": "X-CSRF-Token",
+            "in": "header"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "$ref": "#/components/schemas/BijakAttemptPhotoUpload"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "The stored photo metadata.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/BijakAttemptPhoto"
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED (no valid session).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN \"Akses ditolak\" (another user attempt, D54b), FORBIDDEN (the active role may not use Bijak SPM), or CSRF_INVALID (missing or wrong X-CSRF-Token).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "NOT_FOUND \"Percubaan tidak ditemui\" (unknown attempt id).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "CONFLICT \"Percubaan sudah tamat\" (the attempt is no longer in progress).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "VALIDATION_ERROR with fields.file \"Gambar mesti JPG atau PNG, maksimum 5 MB.\" or \"Maksimum 3 gambar bagi setiap bahagian.\", or fields.partId.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
                 }
               }
             }
