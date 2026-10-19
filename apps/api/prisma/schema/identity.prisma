@@ -51,6 +51,10 @@ model User {
   acceptedParentInvites ParentInvite[] @relation("ParentInviteAcceptedBy")
   compStudent           CompStudent?
   files        File[]
+  // BE-06 back-relations.
+  passwordResets PasswordReset[]
+  settings       UserSettings?
+  notifications  Notification[]
 
   @@unique([legacySource, legacyId], map: "uq_users_legacy")
   @@index([schoolId], map: "ix_users_school_id")
@@ -202,4 +206,71 @@ model AuditEvent {
   @@index([targetType, targetId], map: "ix_audit_events_target")
   @@index([scopeSchoolId], map: "ix_audit_events_scope_school_id")
   @@map("audit_events")
+}
+
+/// Password reset token (mock BR-10, BR-11; D55). Only the hash of the token is stored; the raw token is
+/// logged by the MailPort in dev and never persisted. Not migrated. The "one request per 60 s per e-mail"
+/// throttle reads the newest `created_at` of the user (ix_password_resets_user_id_created_at); the D55
+/// attempt limit (5 per 15 min per account and per IP) reuses `login_attempts` rows with a `reset:` key
+/// prefix, so no counter column lives here.
+model PasswordReset {
+  id        BigInt    @id @default(autoincrement())
+  userId    BigInt    @map("user_id")
+  /// Hash of the random token. Unique. There is no raw token column.
+  tokenHash String    @unique(map: "uq_password_resets_token_hash") @map("token_hash")
+  /// email | ic (check).
+  channel   String
+  expiresAt DateTime  @map("expires_at") @db.Timestamptz(6)
+  /// Single use: set when the token is spent.
+  usedAt    DateTime? @map("used_at") @db.Timestamptz(6)
+  createdAt DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade, map: "fk_password_resets_user_id")
+
+  @@index([userId, createdAt], map: "ix_password_resets_user_id_created_at")
+  @@index([expiresAt], map: "ix_password_resets_expires_at")
+  @@map("password_resets")
+}
+
+/// Personal settings (mock BR-17), 1:1 with the user. A user without a row gets the defaults.
+/// `faith` is sensitive (OQ-DM-13): nullable and never migrated, so there is no legacy pair.
+model UserSettings {
+  id                  BigInt   @id @default(autoincrement())
+  userId              BigInt   @unique(map: "uq_user_settings_user_id") @map("user_id")
+  spiritualMode       Boolean  @default(false) @map("spiritual_mode")
+  showBismillahSplash Boolean  @default(false) @map("show_bismillah_splash")
+  subuhPushEnabled    Boolean  @default(false) @map("subuh_push_enabled")
+  subuhPushTime       DateTime @default(dbgenerated("'05:30:00'::time")) @map("subuh_push_time") @db.Time(0)
+  ramadanModeEnabled  Boolean  @default(false) @map("ramadan_mode_enabled")
+  sahurPushTime       DateTime @default(dbgenerated("'04:30:00'::time")) @map("sahur_push_time") @db.Time(0)
+  /// muslim | hindu | buddhist | christian | none (check), or null.
+  faith               String?
+  createdAt           DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt           DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade, map: "fk_user_settings_user_id")
+
+  @@map("user_settings")
+}
+
+/// Per-user notification inbox (visible only to the owner). `type` is an open lower-case code;
+/// `category` is system | reminder | milestone (check) or null (admin live items).
+model Notification {
+  id           BigInt    @id @default(autoincrement())
+  userId       BigInt    @map("user_id")
+  type         String
+  category     String?
+  title        String
+  body         String
+  /// null = unread.
+  readAt       DateTime? @map("read_at") @db.Timestamptz(6)
+  createdAt    DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  legacySource String?   @map("legacy_source")
+  legacyId     String?   @map("legacy_id")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade, map: "fk_notifications_user_id")
+
+  @@unique([legacySource, legacyId], map: "uq_notifications_legacy")
+  @@index([userId, createdAt(sort: Desc), id(sort: Desc)], map: "ix_notifications_user_id_created_at_id")
+  @@map("notifications")
 }
