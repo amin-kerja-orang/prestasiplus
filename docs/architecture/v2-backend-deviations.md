@@ -25,3 +25,10 @@ Append-only. One dated row for every place where the API differs from what the m
 | 2026-10-19 | BE-21 mass assignment | BE-NFR-05 wants a strict schema that rejects unknown fields with 422. The mock ignores `role`, `schoolId`, `isActive`, `grade`, `icNumber` and other keys. | Waiver recorded: unknown and protected keys are ignored, never bound and never an error. The implementation must prove it (a body with `role=admin` creates a student; a `classId` of another school is 422 and never enrols). | Mock fidelity; the frontend sends no such keys anyway. | LEAD review BE-21 ("acceptable, the card must note the waiver") |
 | 2026-10-19 | BE-21 default password | Empty `password` = the configured shared default password, echoed once in the 201. | Kept, and the account is flagged `mustChangePassword: true` (D55c / D57c). RISK ACCEPTED PENDING LEAD. Alternative: the server generates a random initial password per account and returns it in the same `credential.password` field; the wire shape does not change. | A shared predictable default is a risk for minors; the flag limits the exposure to the first login. | Risk accepted pending LEAD (decision open) |
 | 2026-10-19 | BE-21 no-store + Pragma (round 2) | Round 1 declared `Cache-Control: no-store` on the pupil 201 and the user CSVs only. | `Cache-Control: no-store` and `Pragma: no-cache` are declared on the pupil 201, both user CSVs, the Amaran CSV and both reset-password 200 responses (the request body carries a password). Tested. | D57b; LEAD review BE-21 round 2. | D57; LEAD review BE-21 round 2 |
+# Backend deviations log
+
+Append-only. One row per deviation: date, card, contract/mock deviation, why, who agreed. Never reformat existing rows.
+
+| Date | Card | Deviation | Why | Agreed by |
+|---|---|---|---|---|
+| 2026-10-19 | BE-18 | `POST /guru/command-center/remedial/cancel`: a repeat cancel answers 409 CONFLICT "Ujian remedial ini tidak aktif." (as the mock). This overrides card AC2 "cancel is idempotent". | The mock and its test assert 409; the card wording is the deviation. | LEAD (BE-18 review) |

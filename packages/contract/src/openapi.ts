@@ -38,6 +38,8 @@ import { MARKETPLACE_COMPONENT_SCHEMAS, registerMarketplacePaths } from './marke
 import { SPONSORSHIP_COMPONENT_SCHEMAS, registerSponsorshipPaths } from './sponsorship/paths'
 import { ACCOUNT_COMPONENT_SCHEMAS, registerAccountPaths } from './account/paths'
 import { NOTIFICATIONS_COMPONENT_SCHEMAS, registerNotificationsPaths } from './notifications/paths'
+import { MISSIONS_COMPONENT_SCHEMAS, registerMissionsPaths } from './classes/missions/paths'
+import { QUESTION_SETS_COMPONENT_SCHEMAS, registerQuestionSetsPaths } from './classes/question-sets/paths'
 
 /** Every shared schema that becomes a component. Domain tasks (T07, T08, T24...) append here. */
 export const COMPONENT_SCHEMAS = {
@@ -78,6 +80,8 @@ export const COMPONENT_SCHEMAS = {
   ...NOTIFICATIONS_COMPONENT_SCHEMAS, // BE-06 (M01 notifications)
   ...SCHOOL_ADMIN_COMPONENT_SCHEMAS, // BE-21 (M27 + M18 Amaran)
   ...QUESTIONS_COMPONENT_SCHEMAS, // BE-09
+  ...MISSIONS_COMPONENT_SCHEMAS, // BE-18 (M10 missions, remedial)
+  ...QUESTION_SETS_COMPONENT_SCHEMAS, // BE-18 (M10 question sets, DSKP)
   // V2-T08 access matrix
   AccessGroupId: AccessGroupIdSchema,
   AccessGroup: AccessGroupSchema,
@@ -120,6 +124,8 @@ export function buildOpenApiDocument(): Record<string, unknown> {
   registerNotificationsPaths(registry) // BE-06 (M01 notifications)
   registerSchoolAdminPaths(registry) // BE-21 (M27 + M18 Amaran)
   registerQuestionsPaths(registry) // BE-09
+  registerMissionsPaths(registry) // BE-18 (M10 missions, remedial)
+  registerQuestionSetsPaths(registry) // BE-18 (M10 question sets, DSKP)
   const generator = new OpenApiGeneratorV31(registry.definitions)
   return generator.generateDocument({
     openapi: '3.1.0',

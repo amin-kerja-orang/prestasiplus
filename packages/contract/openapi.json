@@ -33871,6 +33871,1417 @@
           "pointsValue"
         ]
       },
+      "MissionType": {
+        "type": "string",
+        "enum": [
+          "latih_tubi",
+          "tracking_a",
+          "youtube"
+        ]
+      },
+      "MissionStatus": {
+        "type": "string",
+        "enum": [
+          "new",
+          "in_progress",
+          "completed"
+        ]
+      },
+      "MissionToday": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "title": {
+            "type": "string"
+          },
+          "typeLabel": {
+            "type": "string",
+            "description": "Label of the mission type, \"\" for an unknown type."
+          },
+          "subjectName": {
+            "type": "string",
+            "description": "\"\" when the subject is unknown."
+          },
+          "questionCount": {
+            "type": "integer"
+          },
+          "coinsPerCorrect": {
+            "type": "integer",
+            "description": "Reward text of the form, 3 for every mission (BR-M10-17)."
+          },
+          "resourceTitle": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "resourceUrl": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "resourceNote": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "status": {
+            "$ref": "#/components/schemas/MissionStatus"
+          }
+        },
+        "required": [
+          "id",
+          "title",
+          "typeLabel",
+          "subjectName",
+          "questionCount",
+          "coinsPerCorrect",
+          "resourceTitle",
+          "resourceUrl",
+          "resourceNote",
+          "status"
+        ]
+      },
+      "MissionTodayResponse": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/MissionToday"
+            }
+          },
+          "meta": {
+            "$ref": "#/components/schemas/ListMeta"
+          }
+        },
+        "required": [
+          "data",
+          "meta"
+        ]
+      },
+      "RemedialStatus": {
+        "type": "string",
+        "enum": [
+          "active",
+          "completed",
+          "cancelled"
+        ]
+      },
+      "RemedialMineItem": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "subjectName": {
+            "type": "string"
+          },
+          "totalQuestions": {
+            "type": "integer"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "active",
+              "completed"
+            ]
+          },
+          "createdAt": {
+            "$ref": "#/components/schemas/Timestamp"
+          },
+          "teacherName": {
+            "type": "string",
+            "description": "\"\" when the teacher is unknown."
+          }
+        },
+        "required": [
+          "id",
+          "subjectName",
+          "totalQuestions",
+          "status",
+          "createdAt",
+          "teacherName"
+        ]
+      },
+      "RemedialMineResponse": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/RemedialMineItem"
+            }
+          },
+          "meta": {
+            "$ref": "#/components/schemas/ListMeta"
+          }
+        },
+        "required": [
+          "data",
+          "meta"
+        ]
+      },
+      "RemedialPreviewQuestion": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "questionText": {
+            "type": "string"
+          },
+          "textDirection": {
+            "type": "string",
+            "enum": [
+              "ltr",
+              "rtl"
+            ]
+          },
+          "scriptType": {
+            "type": "string",
+            "enum": [
+              "rumi",
+              "arab",
+              "jawi",
+              "mixed"
+            ]
+          },
+          "options": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/RemedialPreviewOption"
+            }
+          },
+          "correctOptionId": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "description": "Position of the correct option; ANSWER KEY, teacher and admin only."
+          }
+        },
+        "required": [
+          "id",
+          "questionText",
+          "textDirection",
+          "scriptType",
+          "options",
+          "correctOptionId"
+        ]
+      },
+      "RemedialPreviewOption": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "description": "Option position (0 to 3), not an entity id."
+          },
+          "label": {
+            "type": "string"
+          },
+          "text": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "label",
+          "text"
+        ]
+      },
+      "RemedialPreview": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "subjectName": {
+            "type": "string"
+          },
+          "status": {
+            "$ref": "#/components/schemas/RemedialStatus"
+          },
+          "totalQuestions": {
+            "type": "integer"
+          },
+          "createdAt": {
+            "$ref": "#/components/schemas/Timestamp"
+          },
+          "teacherName": {
+            "type": "string"
+          },
+          "studentName": {
+            "type": "string"
+          },
+          "questions": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/RemedialPreviewQuestion"
+            },
+            "description": "In stored order (`remedial_test_items.position`); a question the bank no longer has is skipped."
+          }
+        },
+        "required": [
+          "id",
+          "subjectName",
+          "status",
+          "totalQuestions",
+          "createdAt",
+          "teacherName",
+          "studentName",
+          "questions"
+        ]
+      },
+      "RemedialProgress": {
+        "type": "object",
+        "properties": {
+          "stats": {
+            "type": "object",
+            "properties": {
+              "total": {
+                "type": "integer",
+                "description": "Tests of the caller that are not cancelled."
+              },
+              "completed": {
+                "type": "integer"
+              },
+              "students": {
+                "type": "integer",
+                "description": "Distinct students of the counted tests."
+              },
+              "avgImprovement": {
+                "type": "integer",
+                "description": "Rounded mean of (after - before) over completed tests; 0 when none. May be negative."
+              }
+            },
+            "required": [
+              "total",
+              "completed",
+              "students",
+              "avgImprovement"
+            ]
+          },
+          "rows": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "$ref": "#/components/schemas/Id"
+                },
+                "studentName": {
+                  "type": "string"
+                },
+                "subjectName": {
+                  "type": "string"
+                },
+                "status": {
+                  "$ref": "#/components/schemas/RemedialStatus"
+                },
+                "beforeAccuracy": {
+                  "type": "number",
+                  "description": "Percent with 1 decimal; not bounded by the contract."
+                },
+                "afterAccuracy": {
+                  "type": [
+                    "number",
+                    "null"
+                  ],
+                  "description": "Percent with 1 decimal; not bounded by the contract."
+                }
+              },
+              "required": [
+                "id",
+                "studentName",
+                "subjectName",
+                "status",
+                "beforeAccuracy",
+                "afterAccuracy"
+              ]
+            },
+            "description": "Every test of the caller, cancelled ones included, newest first."
+          }
+        },
+        "required": [
+          "stats",
+          "rows"
+        ]
+      },
+      "RemedialScan": {
+        "type": "object",
+        "properties": {
+          "weakStudents": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "studentId": {
+                  "$ref": "#/components/schemas/Id"
+                },
+                "name": {
+                  "type": "string"
+                },
+                "weakTopics": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "subject": {
+                        "type": "string",
+                        "description": "Subject name; `generate` accepts it back as `subject`."
+                      },
+                      "topicName": {
+                        "type": "string"
+                      },
+                      "accuracy": {
+                        "type": "number",
+                        "description": "Percent with 1 decimal; not bounded by the contract."
+                      }
+                    },
+                    "required": [
+                      "subject",
+                      "topicName",
+                      "accuracy"
+                    ]
+                  }
+                },
+                "weakestAccuracy": {
+                  "type": "number",
+                  "description": "Percent with 1 decimal; not bounded by the contract."
+                }
+              },
+              "required": [
+                "studentId",
+                "name",
+                "weakTopics",
+                "weakestAccuracy"
+              ]
+            }
+          },
+          "existingRemedials": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "$ref": "#/components/schemas/Id"
+                },
+                "studentId": {
+                  "$ref": "#/components/schemas/Id"
+                },
+                "status": {
+                  "type": "string",
+                  "enum": [
+                    "active",
+                    "completed"
+                  ],
+                  "description": "Cancelled tests are not listed."
+                },
+                "totalQuestions": {
+                  "type": "integer"
+                },
+                "afterAccuracy": {
+                  "type": [
+                    "number",
+                    "null"
+                  ],
+                  "description": "Percent with 1 decimal; not bounded by the contract."
+                }
+              },
+              "required": [
+                "id",
+                "studentId",
+                "status",
+                "totalQuestions",
+                "afterAccuracy"
+              ]
+            }
+          }
+        },
+        "required": [
+          "weakStudents",
+          "existingRemedials"
+        ]
+      },
+      "RemedialGenerateRequest": {
+        "type": "object",
+        "properties": {
+          "studentId": {
+            "anyOf": [
+              {
+                "type": "string",
+                "minLength": 1
+              },
+              {
+                "type": "integer",
+                "minimum": 1
+              }
+            ]
+          },
+          "subject": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "required": [
+          "studentId",
+          "subject"
+        ]
+      },
+      "RemedialGenerateResponse": {
+        "type": "object",
+        "properties": {
+          "quizId": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "totalQuestions": {
+            "type": "integer"
+          }
+        },
+        "required": [
+          "quizId",
+          "totalQuestions"
+        ]
+      },
+      "RemedialCancelRequest": {
+        "type": "object",
+        "properties": {
+          "quizId": {
+            "anyOf": [
+              {
+                "type": "string",
+                "minLength": 1
+              },
+              {
+                "type": "integer",
+                "minimum": 1
+              }
+            ]
+          }
+        },
+        "required": [
+          "quizId"
+        ]
+      },
+      "RemedialCancelResponse": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "enum": [
+              true
+            ]
+          }
+        },
+        "required": [
+          "success"
+        ]
+      },
+      "RemedialGenerateFieldError": {
+        "type": "object",
+        "properties": {
+          "error": {
+            "type": "object",
+            "properties": {
+              "code": {
+                "type": "string",
+                "enum": [
+                  "VALIDATION_ERROR"
+                ]
+              },
+              "message": {
+                "type": "string"
+              },
+              "fields": {
+                "type": "object",
+                "properties": {
+                  "studentId": {
+                    "type": "string",
+                    "enum": [
+                      "ID pelajar tidak sah."
+                    ]
+                  },
+                  "subject": {
+                    "type": "string",
+                    "enum": [
+                      "Sila pilih subjek.",
+                      "Subjek tidak sah."
+                    ]
+                  }
+                }
+              }
+            },
+            "required": [
+              "code",
+              "message",
+              "fields"
+            ]
+          }
+        },
+        "required": [
+          "error"
+        ]
+      },
+      "RemedialGenerateRefused": {
+        "type": "object",
+        "properties": {
+          "error": {
+            "type": "object",
+            "properties": {
+              "code": {
+                "type": "string",
+                "enum": [
+                  "VALIDATION_ERROR"
+                ]
+              },
+              "message": {
+                "type": "string",
+                "enum": [
+                  "Ujian remedial aktif sudah wujud untuk pelajar ini. Batalkan dahulu.",
+                  "Tiada soalan untuk topik lemah"
+                ]
+              }
+            },
+            "required": [
+              "code",
+              "message"
+            ]
+          }
+        },
+        "required": [
+          "error"
+        ]
+      },
+      "RemedialNotYourStudent": {
+        "type": "object",
+        "properties": {
+          "error": {
+            "type": "object",
+            "properties": {
+              "code": {
+                "type": "string",
+                "enum": [
+                  "FORBIDDEN"
+                ]
+              },
+              "message": {
+                "type": "string",
+                "enum": [
+                  "Pelajar ini bukan murid anda."
+                ]
+              }
+            },
+            "required": [
+              "code",
+              "message"
+            ]
+          }
+        },
+        "required": [
+          "error"
+        ]
+      },
+      "RemedialCancelFieldError": {
+        "type": "object",
+        "properties": {
+          "error": {
+            "type": "object",
+            "properties": {
+              "code": {
+                "type": "string",
+                "enum": [
+                  "VALIDATION_ERROR"
+                ]
+              },
+              "message": {
+                "type": "string",
+                "enum": [
+                  "ID ujian tidak sah."
+                ]
+              },
+              "fields": {
+                "type": "object",
+                "properties": {
+                  "quizId": {
+                    "type": "string",
+                    "enum": [
+                      "ID ujian tidak sah."
+                    ]
+                  }
+                },
+                "required": [
+                  "quizId"
+                ]
+              }
+            },
+            "required": [
+              "code",
+              "message",
+              "fields"
+            ]
+          }
+        },
+        "required": [
+          "error"
+        ]
+      },
+      "RemedialTestNotFound": {
+        "type": "object",
+        "properties": {
+          "error": {
+            "type": "object",
+            "properties": {
+              "code": {
+                "type": "string",
+                "enum": [
+                  "NOT_FOUND"
+                ]
+              },
+              "message": {
+                "type": "string",
+                "enum": [
+                  "Ujian remedial tidak dijumpai."
+                ]
+              }
+            },
+            "required": [
+              "code",
+              "message"
+            ]
+          }
+        },
+        "required": [
+          "error"
+        ]
+      },
+      "RemedialTestNotActive": {
+        "type": "object",
+        "properties": {
+          "error": {
+            "type": "object",
+            "properties": {
+              "code": {
+                "type": "string",
+                "enum": [
+                  "CONFLICT"
+                ]
+              },
+              "message": {
+                "type": "string",
+                "enum": [
+                  "Ujian remedial ini tidak aktif."
+                ]
+              }
+            },
+            "required": [
+              "code",
+              "message"
+            ]
+          }
+        },
+        "required": [
+          "error"
+        ]
+      },
+      "QuestionSetStudentItem": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "title": {
+            "type": "string"
+          },
+          "teacherName": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "questionCount": {
+            "type": "integer",
+            "description": "Number of questions in the set."
+          },
+          "timeLimitMinutes": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "description": "null = no limit."
+          },
+          "attemptsLeft": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "description": "maxAttempts minus the caller's completed question_set sessions of the set, floored at 0; null when attempts are unlimited (maxAttempts 0)."
+          }
+        },
+        "required": [
+          "id",
+          "title",
+          "teacherName",
+          "questionCount",
+          "timeLimitMinutes",
+          "attemptsLeft"
+        ]
+      },
+      "QuestionSetStudentList": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/QuestionSetStudentItem"
+            }
+          },
+          "meta": {
+            "$ref": "#/components/schemas/ListMeta"
+          }
+        },
+        "required": [
+          "data",
+          "meta"
+        ]
+      },
+      "QuestionSetPaperFields": {
+        "type": "object",
+        "properties": {
+          "jenisSoalan": {
+            "type": "string",
+            "enum": [
+              "Soalan Umum",
+              "Trial Paper",
+              "Soalan DSKP",
+              "Buku Teks",
+              "Buku Latihan",
+              "Soalan Peperiksaan",
+              "Lain-lain"
+            ],
+            "description": "One of the 7 labels (value = label), trimmed."
+          },
+          "subject": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 100,
+            "description": "Matapelajaran, trimmed, at most 100 characters."
+          },
+          "tingkatan": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "1 to 5, or \"T1\" to \"T5\" (a leading T is dropped), or empty. The server stores levelCode \"T{n}\" or null."
+          },
+          "tahun": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "2000 to 2099, or empty; empty is stored as the current year (the field is optional on the form, the question bank needs a year)."
+          },
+          "disediakanOleh": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "maxLength": 150,
+            "description": "At most 150 characters; absent or null is \"\"."
+          },
+          "catatan": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "maxLength": 1000,
+            "description": "At most 1000 characters; absent or null is stored as null."
+          }
+        },
+        "required": [
+          "jenisSoalan",
+          "subject"
+        ]
+      },
+      "QuestionSetPaperFile": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "size": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "type": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "name",
+          "size",
+          "type"
+        ]
+      },
+      "QuestionSetPaperFiles": {
+        "type": "array",
+        "items": {
+          "$ref": "#/components/schemas/QuestionSetPaperFile"
+        }
+      },
+      "QuestionSetPaperRequest": {
+        "type": "object",
+        "properties": {
+          "jenisSoalan": {
+            "type": "string",
+            "enum": [
+              "Soalan Umum",
+              "Trial Paper",
+              "Soalan DSKP",
+              "Buku Teks",
+              "Buku Latihan",
+              "Soalan Peperiksaan",
+              "Lain-lain"
+            ],
+            "description": "One of the 7 labels (value = label), trimmed."
+          },
+          "subject": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 100,
+            "description": "Matapelajaran, trimmed, at most 100 characters."
+          },
+          "tingkatan": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "1 to 5, or \"T1\" to \"T5\" (a leading T is dropped), or empty. The server stores levelCode \"T{n}\" or null."
+          },
+          "tahun": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "2000 to 2099, or empty; empty is stored as the current year (the field is optional on the form, the question bank needs a year)."
+          },
+          "disediakanOleh": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "maxLength": 150,
+            "description": "At most 150 characters; absent or null is \"\"."
+          },
+          "catatan": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "maxLength": 1000,
+            "description": "At most 1000 characters; absent or null is stored as null."
+          },
+          "files": {
+            "$ref": "#/components/schemas/QuestionSetPaperFiles"
+          }
+        },
+        "required": [
+          "jenisSoalan",
+          "subject",
+          "files"
+        ]
+      },
+      "QuestionSetPaperUpload": {
+        "type": "object",
+        "properties": {
+          "jenisSoalan": {
+            "type": "string",
+            "enum": [
+              "Soalan Umum",
+              "Trial Paper",
+              "Soalan DSKP",
+              "Buku Teks",
+              "Buku Latihan",
+              "Soalan Peperiksaan",
+              "Lain-lain"
+            ],
+            "description": "One of the 7 labels (value = label), trimmed."
+          },
+          "subject": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 100,
+            "description": "Matapelajaran, trimmed, at most 100 characters."
+          },
+          "tingkatan": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "1 to 5, or \"T1\" to \"T5\" (a leading T is dropped), or empty. The server stores levelCode \"T{n}\" or null."
+          },
+          "tahun": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "2000 to 2099, or empty; empty is stored as the current year (the field is optional on the form, the question bank needs a year)."
+          },
+          "disediakanOleh": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "maxLength": 150,
+            "description": "At most 150 characters; absent or null is \"\"."
+          },
+          "catatan": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "maxLength": 1000,
+            "description": "At most 1000 characters; absent or null is stored as null."
+          },
+          "files": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "binary"
+            },
+            "minItems": 1,
+            "maxItems": 5,
+            "description": "1 to 5 files (.pdf .doc .docx .xls .xlsx), each at most 20 MB. The mock also reads the key \"files[]\"."
+          }
+        },
+        "required": [
+          "jenisSoalan",
+          "subject",
+          "files"
+        ]
+      },
+      "QuestionSetPaper": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "teacherId": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "subjectText": {
+            "type": "string"
+          },
+          "levelCode": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "\"T1\" to \"T5\" or null."
+          },
+          "year": {
+            "type": "integer"
+          },
+          "paperType": {
+            "type": "string"
+          },
+          "authorCredit": {
+            "type": "string"
+          },
+          "note": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "files": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "index": {
+                  "type": "integer"
+                },
+                "name": {
+                  "type": "string"
+                },
+                "size": {
+                  "type": "integer"
+                },
+                "mime": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "index",
+                "name",
+                "size",
+                "mime"
+              ]
+            }
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "pending",
+              "processing",
+              "done",
+              "rejected"
+            ]
+          },
+          "adminNotes": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "createdAt": {
+            "$ref": "#/components/schemas/Timestamp"
+          }
+        },
+        "required": [
+          "id",
+          "teacherId",
+          "subjectText",
+          "levelCode",
+          "year",
+          "paperType",
+          "authorCredit",
+          "note",
+          "files",
+          "status",
+          "adminNotes",
+          "createdAt"
+        ]
+      },
+      "QuestionSetPaperFieldError": {
+        "type": "object",
+        "properties": {
+          "error": {
+            "type": "object",
+            "properties": {
+              "code": {
+                "type": "string",
+                "enum": [
+                  "VALIDATION_ERROR"
+                ]
+              },
+              "message": {
+                "type": "string"
+              },
+              "fields": {
+                "type": "object",
+                "properties": {
+                  "jenisSoalan": {
+                    "type": "string",
+                    "enum": [
+                      "Sila pilih jenis soalan."
+                    ]
+                  },
+                  "subject": {
+                    "type": "string",
+                    "enum": [
+                      "Sila isi matapelajaran.",
+                      "Matapelajaran tidak boleh melebihi 100 aksara."
+                    ]
+                  },
+                  "tingkatan": {
+                    "type": "string",
+                    "enum": [
+                      "Tingkatan tidak sah."
+                    ]
+                  },
+                  "tahun": {
+                    "type": "string",
+                    "enum": [
+                      "Tahun mesti antara 2000 dan 2099."
+                    ]
+                  },
+                  "disediakanOleh": {
+                    "type": "string",
+                    "enum": [
+                      "Disediakan oleh tidak boleh melebihi 150 aksara."
+                    ]
+                  },
+                  "catatan": {
+                    "type": "string",
+                    "enum": [
+                      "Catatan tidak boleh melebihi 1000 aksara."
+                    ]
+                  },
+                  "files": {
+                    "type": "string",
+                    "description": "Sila pilih sekurang-kurangnya satu fail. | Maksimum 5 fail. | \"{file name}: format atau saiz tidak dibenarkan.\""
+                  }
+                }
+              }
+            },
+            "required": [
+              "code",
+              "message",
+              "fields"
+            ]
+          }
+        },
+        "required": [
+          "error"
+        ]
+      },
+      "DskpBidangCreateRequest": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "minLength": 1
+          },
+          "subjectId": {
+            "anyOf": [
+              {
+                "type": "string",
+                "minLength": 1
+              },
+              {
+                "type": "integer",
+                "minimum": 1
+              }
+            ]
+          },
+          "educationLevelId": {
+            "anyOf": [
+              {
+                "type": "string",
+                "minLength": 1
+              },
+              {
+                "type": "integer",
+                "minimum": 1
+              }
+            ]
+          },
+          "code": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "name",
+          "subjectId",
+          "educationLevelId"
+        ]
+      },
+      "DskpSkCreateRequest": {
+        "type": "object",
+        "properties": {
+          "bidangId": {
+            "anyOf": [
+              {
+                "type": "string",
+                "minLength": 1
+              },
+              {
+                "type": "integer",
+                "minimum": 1
+              }
+            ]
+          },
+          "code": {
+            "type": "string",
+            "minLength": 1
+          },
+          "description": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "required": [
+          "bidangId",
+          "code",
+          "description"
+        ]
+      },
+      "DskpSpCreateRequest": {
+        "type": "object",
+        "properties": {
+          "skId": {
+            "anyOf": [
+              {
+                "type": "string",
+                "minLength": 1
+              },
+              {
+                "type": "integer",
+                "minimum": 1
+              }
+            ]
+          },
+          "code": {
+            "type": "string",
+            "minLength": 1
+          },
+          "description": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "required": [
+          "skId",
+          "code",
+          "description"
+        ]
+      },
+      "DskpBidang": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "code": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "name": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "code",
+          "name"
+        ]
+      },
+      "DskpSk": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "code": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "code",
+          "description"
+        ]
+      },
+      "DskpSp": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "code": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "code",
+          "description"
+        ]
+      },
+      "DskpBidangInlineError": {
+        "type": "object",
+        "properties": {
+          "error": {
+            "type": "string",
+            "enum": [
+              "Nama bidang diperlukan.",
+              "Subjek atau tahap tidak sah."
+            ]
+          }
+        },
+        "required": [
+          "error"
+        ]
+      },
+      "DskpSkInlineError": {
+        "type": "object",
+        "properties": {
+          "error": {
+            "type": "string",
+            "enum": [
+              "Kod dan keterangan SK diperlukan.",
+              "Bidang tidak sah."
+            ]
+          }
+        },
+        "required": [
+          "error"
+        ]
+      },
+      "DskpSpInlineError": {
+        "type": "object",
+        "properties": {
+          "error": {
+            "type": "string",
+            "enum": [
+              "Kod dan keterangan SP diperlukan.",
+              "SK tidak sah."
+            ]
+          }
+        },
+        "required": [
+          "error"
+        ]
+      },
       "AccessGroupId": {
         "type": "string",
         "enum": [
@@ -44516,6 +45927,96 @@
             }
           }
         }
+      },
+      "post": {
+        "tags": [
+          "dskp"
+        ],
+        "summary": "Inline \"Bidang Baru\" (teacher DSKP pick)",
+        "description": "Teacher or admin. Inline create (as live): 201 with the new row; a refusal is HTTP 200 with a bare { error } string. Stored with createdBy = the caller.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Value of Session.csrf; required on mutating requests."
+            },
+            "required": true,
+            "description": "Value of Session.csrf; required on mutating requests.",
+            "name": "X-CSRF-Token",
+            "in": "header"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DskpBidangCreateRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Refusal: { error } with the BM text.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DskpBidangInlineError"
+                }
+              }
+            }
+          },
+          "201": {
+            "description": "Bare { id, code, name }.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DskpBidang"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED (\"Unauthenticated.\"): no valid session.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN (\"This action is unauthorized.\"): role is not teacher or admin; or CSRF_INVALID on a mutation.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "RATE_LIMITED (D57): too many writes. Body error.code RATE_LIMITED with retryAfter (seconds); Retry-After header carries the same value.",
+            "headers": {
+              "Retry-After": {
+                "description": "Seconds until a retry is allowed.",
+                "schema": {
+                  "type": "integer"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
       }
     },
     "/guru/dskp/sk": {
@@ -44569,6 +46070,96 @@
             }
           }
         }
+      },
+      "post": {
+        "tags": [
+          "dskp"
+        ],
+        "summary": "Inline \"SK Baru\" (teacher DSKP pick)",
+        "description": "Teacher or admin. Inline create (as live): 201 with the new row; a refusal is HTTP 200 with a bare { error } string. The code and description check comes before the parent check.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Value of Session.csrf; required on mutating requests."
+            },
+            "required": true,
+            "description": "Value of Session.csrf; required on mutating requests.",
+            "name": "X-CSRF-Token",
+            "in": "header"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DskpSkCreateRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Refusal: { error } with the BM text.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DskpSkInlineError"
+                }
+              }
+            }
+          },
+          "201": {
+            "description": "Bare { id, code, description }.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DskpSk"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED (\"Unauthenticated.\"): no valid session.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN (\"This action is unauthorized.\"): role is not teacher or admin; or CSRF_INVALID on a mutation.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "RATE_LIMITED (D57): too many writes. Body error.code RATE_LIMITED with retryAfter (seconds); Retry-After header carries the same value.",
+            "headers": {
+              "Retry-After": {
+                "description": "Seconds until a retry is allowed.",
+                "schema": {
+                  "type": "integer"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
       }
     },
     "/guru/dskp/sp": {
@@ -44613,6 +46204,96 @@
           },
           "403": {
             "description": "FORBIDDEN \"This action is unauthorized.\" (role is not teacher or admin).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "dskp"
+        ],
+        "summary": "Inline \"SP Baru\" (teacher DSKP pick)",
+        "description": "Teacher or admin. Inline create (as live): 201 with the new row; a refusal is HTTP 200 with a bare { error } string. The code and description check comes before the parent check.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Value of Session.csrf; required on mutating requests."
+            },
+            "required": true,
+            "description": "Value of Session.csrf; required on mutating requests.",
+            "name": "X-CSRF-Token",
+            "in": "header"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DskpSpCreateRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Refusal: { error } with the BM text.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DskpSpInlineError"
+                }
+              }
+            }
+          },
+          "201": {
+            "description": "Bare { id, code, description }.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DskpSp"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED (\"Unauthenticated.\"): no valid session.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN (\"This action is unauthorized.\"): role is not teacher or admin; or CSRF_INVALID on a mutation.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "RATE_LIMITED (D57): too many writes. Body error.code RATE_LIMITED with retryAfter (seconds); Retry-After header carries the same value.",
+            "headers": {
+              "Retry-After": {
+                "description": "Seconds until a retry is allowed.",
+                "schema": {
+                  "type": "integer"
+                }
+              }
+            },
             "content": {
               "application/json": {
                 "schema": {
@@ -60591,6 +62272,659 @@
           },
           "404": {
             "description": "NOT_FOUND: unknown id (for Guru routes also another teacher's question; ids cannot be probed).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/missions/today": {
+      "get": {
+        "tags": [
+          "missions"
+        ],
+        "summary": "Missions of today for the signed-in user (M05 #21)",
+        "description": "Any signed-in user (no role check). The M10 missions whose mission date is today (Malaysia day) and whose stored recipients include the caller, oldest first, with the caller's status from practice sessions linked by missionId (completed beats in progress, none gives new). Empty list when none. Single page.",
+        "responses": {
+          "200": {
+            "description": "Missions of today.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MissionTodayResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED (\"Unauthenticated.\"): no valid session.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/remedial-tests/mine": {
+      "get": {
+        "tags": [
+          "remedial"
+        ],
+        "summary": "Own remedial tests (M05 #20)",
+        "description": "Any signed-in user. Only the caller's tests with status active or completed (cancelled never, BR-32), newest first. Single page.",
+        "responses": {
+          "200": {
+            "description": "Remedial tests of the caller.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RemedialMineResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED (\"Unauthenticated.\"): no valid session.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/remedial-tests/{id}": {
+      "get": {
+        "tags": [
+          "remedial"
+        ],
+        "summary": "Read-only preview of a remedial test (M05 #20b, provisional in the SRS)",
+        "description": "SECURITY: the response carries the answer key (correctOptionId). Allowed only for the test's own teacher and for an admin; every other caller, including the assigned student, and an unknown id get 404 with the generic text. Writes nothing.",
+        "parameters": [
+          {
+            "schema": {
+              "$ref": "#/components/schemas/Id"
+            },
+            "required": true,
+            "description": "Opaque entity id (string). Never parse or construct on the client.",
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The test with its questions in stored order.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/RemedialPreview"
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED (\"Unauthenticated.\"): no valid session.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "NOT_FOUND (\"Not Found.\"): unknown id, or the caller is not the owner teacher or an admin.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/guru/remedial-progress": {
+      "get": {
+        "tags": [
+          "remedial"
+        ],
+        "summary": "Remedial progress of the signed-in teacher (S3, BR-M10-13)",
+        "description": "Teacher or admin. Bare body (no data envelope). Own tests only.",
+        "responses": {
+          "200": {
+            "description": "Stats and one row per test, newest first.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RemedialProgress"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED (\"Unauthenticated.\"): no valid session.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN (\"This action is unauthorized.\"): role is not teacher or admin; or CSRF_INVALID on a mutation.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/guru/command-center/remedial/scan": {
+      "get": {
+        "tags": [
+          "remedial"
+        ],
+        "summary": "Weak-topic scan of the caller's students (BR-M10-11)",
+        "description": "Teacher or admin. Bare body. Scope: the distinct students of the caller's active classes. A topic (DSKP SP, else the chapter) is weak with at least 2 answers and accuracy below 50; topics ascend by accuracy, students by weakest accuracy then id. existingRemedials lists the caller's active and completed tests.",
+        "responses": {
+          "200": {
+            "description": "Weak students and existing tests.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RemedialScan"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED (\"Unauthenticated.\"): no valid session.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN (\"This action is unauthorized.\"): role is not teacher or admin; or CSRF_INVALID on a mutation.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/guru/command-center/remedial/generate": {
+      "post": {
+        "tags": [
+          "remedial"
+        ],
+        "summary": "Generate an active remedial test for one of the caller's students (BR-M10-12)",
+        "description": "Teacher or admin. Up to 10 questions (answered wrongly in the weak topics, then top-up per weak topic, then the subject pool at the student's level). 422 with fields: studentId and subject are reported together; the unknown subject is a second 422 with fields.subject. 422 without fields: the refusals RemedialGenerateRefused. 403 \"Pelajar ini bukan murid anda.\" when the student is not one of the caller's students (checked before the subject).",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Value of Session.csrf; required on mutating requests."
+            },
+            "required": true,
+            "description": "Value of Session.csrf; required on mutating requests.",
+            "name": "X-CSRF-Token",
+            "in": "header"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RemedialGenerateRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Bare { quizId, totalQuestions }.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RemedialGenerateResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED (\"Unauthenticated.\"): no valid session.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN \"Pelajar ini bukan murid anda.\"; or the generic role text; or CSRF_INVALID.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "anyOf": [
+                    {
+                      "$ref": "#/components/schemas/RemedialNotYourStudent"
+                    },
+                    {
+                      "$ref": "#/components/schemas/ErrorBody"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "VALIDATION_ERROR with fields, or without fields (typed refusal).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "anyOf": [
+                    {
+                      "$ref": "#/components/schemas/RemedialGenerateFieldError"
+                    },
+                    {
+                      "$ref": "#/components/schemas/RemedialGenerateRefused"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "RATE_LIMITED (D57): too many writes. Body error.code RATE_LIMITED with retryAfter (seconds); Retry-After header carries the same value.",
+            "headers": {
+              "Retry-After": {
+                "description": "Seconds until a retry is allowed.",
+                "schema": {
+                  "type": "integer"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/guru/command-center/remedial/cancel": {
+      "post": {
+        "tags": [
+          "remedial"
+        ],
+        "summary": "Cancel an active remedial test of the caller",
+        "description": "Teacher or admin. Deliberate deviation from card AC2 (\"cancel is idempotent\") in favour of the mock: a repeat cancel answers 409 \"Ujian remedial ini tidak aktif.\", not 200. A test of another teacher answers 404 like an unknown id, also for an admin.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Value of Session.csrf; required on mutating requests."
+            },
+            "required": true,
+            "description": "Value of Session.csrf; required on mutating requests.",
+            "name": "X-CSRF-Token",
+            "in": "header"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RemedialCancelRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Bare { success: true }.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RemedialCancelResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED (\"Unauthenticated.\"): no valid session.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN (\"This action is unauthorized.\"): role is not teacher or admin; or CSRF_INVALID on a mutation.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "NOT_FOUND \"Ujian remedial tidak dijumpai.\".",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RemedialTestNotFound"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "CONFLICT \"Ujian remedial ini tidak aktif.\".",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RemedialTestNotActive"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "VALIDATION_ERROR fields.quizId \"ID ujian tidak sah.\".",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RemedialCancelFieldError"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "RATE_LIMITED (D57): too many writes. Body error.code RATE_LIMITED with retryAfter (seconds); Retry-After header carries the same value.",
+            "headers": {
+              "Retry-After": {
+                "description": "Seconds until a retry is allowed.",
+                "schema": {
+                  "type": "integer"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/set-soalan-saya": {
+      "get": {
+        "tags": [
+          "question-sets"
+        ],
+        "summary": "Teacher question sets the caller may start (S34, BR-M10-18)",
+        "description": "Any signed-in user (no role check). Sets of the classes the caller is actively enrolled in: draft never, scheduled once due, published always; oldest created first. Single page. A migrated set keeps its header only (Q4): its empty state is an open question.",
+        "responses": {
+          "200": {
+            "description": "Sets with attemptsLeft.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/QuestionSetStudentList"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED (\"Unauthenticated.\"): no valid session.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/guru/question-papers": {
+      "post": {
+        "tags": [
+          "question-sets"
+        ],
+        "summary": "Upload a question paper (S22, BR-M10-25, FR-M10-98)",
+        "description": "SCOPE: BE-18 owns only this submission request and its validation; storing and processing the uploaded files belongs to BE-37 (intake). Teacher or admin. Multipart. Creates a question bank submission with status pending for the admin to review. 422 lists every failing field at once (first message per field); the message is the Laravel summary. The file checks (1 to 5 files, .pdf .doc .docx .xls .xlsx, each at most 20 MB) are on the uploaded parts.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Value of Session.csrf; required on mutating requests."
+            },
+            "required": true,
+            "description": "Value of Session.csrf; required on mutating requests.",
+            "name": "X-CSRF-Token",
+            "in": "header"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "$ref": "#/components/schemas/QuestionSetPaperUpload"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "The pending submission.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/QuestionSetPaper"
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED (\"Unauthenticated.\"): no valid session.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN (\"This action is unauthorized.\"): role is not teacher or admin; or CSRF_INVALID on a mutation.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "VALIDATION_ERROR with fields.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/QuestionSetPaperFieldError"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "RATE_LIMITED (D57): too many writes. Body error.code RATE_LIMITED with retryAfter (seconds); Retry-After header carries the same value.",
+            "headers": {
+              "Retry-After": {
+                "description": "Seconds until a retry is allowed.",
+                "schema": {
+                  "type": "integer"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/guru/audio-kbat/template": {
+      "get": {
+        "tags": [
+          "question-sets"
+        ],
+        "summary": "Audio KBAT bulk-import template (CSV)",
+        "description": "Teacher or admin. A CSV with a UTF-8 BOM, the heading row tajuk, kod_subjek, kod_tingkatan, nama_fail_audio and one example row. The screen labels the link XLSX, the mock serves CSV.",
+        "responses": {
+          "200": {
+            "description": "The CSV file (Content-Type text/csv; charset=UTF-8).",
+            "headers": {
+              "Content-Disposition": {
+                "description": "attachment; filename=\"template-audio-kbat.csv\"",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "text/csv": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED (\"Unauthenticated.\"): no valid session.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN (\"This action is unauthorized.\"): role is not teacher or admin; or CSRF_INVALID on a mutation.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/guru/audio-kbat/template-word": {
+      "get": {
+        "tags": [
+          "question-sets"
+        ],
+        "summary": "Audio KBAT bulk-import template (Word)",
+        "description": "Teacher or admin. A .docx with the title, an intro line and a table of the four columns with one example row.",
+        "responses": {
+          "200": {
+            "description": "The DOCX file.",
+            "headers": {
+              "Content-Disposition": {
+                "description": "attachment; filename=\"template-audio-kbat.docx\"",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/vnd.openxmlformats-officedocument.wordprocessingml.document": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED (\"Unauthenticated.\"): no valid session.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN (\"This action is unauthorized.\"): role is not teacher or admin; or CSRF_INVALID on a mutation.",
             "content": {
               "application/json": {
                 "schema": {
