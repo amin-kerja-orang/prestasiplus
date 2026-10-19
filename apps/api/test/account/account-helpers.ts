@@ -1,6 +1,10 @@
 import 'reflect-metadata'
 
+import { tmpdir } from 'node:os'
+import { join } from 'node:path'
+
 import type { INestApplication } from '@nestjs/common'
+import { ConfigService } from '@nestjs/config'
 import { Test } from '@nestjs/testing'
 import { ErrorBodySchema, SessionSchema, type Session } from '@pp/contract'
 import request from 'supertest'
@@ -15,6 +19,7 @@ import { configureApp } from '../../src/configure-app'
 import { CLOCK, FixedClock } from '../../src/db/clock'
 import { AccountModule } from '../../src/modules/account'
 import {
+  LoggingMailPort,
   MAIL_PORT,
   NOTIFICATION_PORT,
   type AccountNotice,
@@ -39,6 +44,17 @@ export class MailSpy implements MailPort {
     const m = this.sent.at(-1)
     if (!m) throw new Error('No mail was sent.')
     return m
+  }
+}
+
+/** Records every mail AND hands it to the real logging port, so a test can look for the token in the log. */
+export class TeeMail extends MailSpy {
+  constructor(private readonly real: MailPort) {
+    super()
+  }
+  override async sendPasswordReset(mail: PasswordResetMail): Promise<void> {
+    await super.sendPasswordReset(mail)
+    await this.real.sendPasswordReset(mail)
   }
 }
 
@@ -68,6 +84,8 @@ export interface BootOptions {
   logStream?: NodeJS.WritableStream
   /** Keep the real logging MailPort instead of the spy. */
   realMail?: boolean
+  /** Spy that also calls the real logging MailPort (log-leak tests). */
+  teeMail?: boolean
   db?: TestDatabase
 }
 
@@ -100,7 +118,7 @@ export async function bootAccountApp(opts: BootOptions = {}): Promise<AccountTes
   }
 
   const clock = new FixedClock(START)
-  const mail = new MailSpy()
+  let mail: MailSpy = new MailSpy()
   const notices = new NoticeSpy()
   let builder = Test.createTestingModule({
     imports: [defineAppModule([AccountModule], opts.logStream ? { logStream: opts.logStream } : {})],
@@ -109,7 +127,12 @@ export async function bootAccountApp(opts: BootOptions = {}): Promise<AccountTes
     .useValue(clock)
     .overrideProvider(NOTIFICATION_PORT)
     .useValue(notices)
-  if (!opts.realMail) builder = builder.overrideProvider(MAIL_PORT).useValue(mail)
+  if (opts.teeMail) {
+    builder = builder.overrideProvider(MAIL_PORT).useFactory({
+      factory: (config: ConfigService) => (mail = new TeeMail(new LoggingMailPort(config))),
+      inject: [ConfigService],
+    })
+  } else if (!opts.realMail) builder = builder.overrideProvider(MAIL_PORT).useValue(mail)
   const moduleRef = await builder.compile()
   const app = moduleRef.createNestApplication({ bufferLogs: false })
   configureApp(app)
@@ -119,7 +142,9 @@ export async function bootAccountApp(opts: BootOptions = {}): Promise<AccountTes
     app,
     db,
     clock,
-    mail,
+    get mail() {
+      return mail
+    },
     notices,
     http: () => request(app.getHttpServer()) as unknown as TestAgent,
     agent: () => request.agent(app.getHttpServer()),
@@ -171,6 +196,29 @@ export async function userRow(db: TestDatabase, email: string) {
   )
   return rows[0]
 }
+
+/** Requests a link, redeems it, signs in and changes the password. Returns every secret the logs must not hold. */
+export async function runResetFlow(t: AccountTestApp, email = 'pelajar@demo.test'): Promise<string[]> {
+  const res = await t.http().post('/api/auth/password/email').send({ email })
+  expect(res.status).toBe(200)
+  const mail = t.mail.last()
+  const redeemed = await t
+    .http()
+    .post('/api/auth/password/reset')
+    .send({ token: mail.token, email, password: 'Rahsia-Baharu-77', passwordConfirmation: 'Rahsia-Baharu-77' })
+  expect(redeemed.status, JSON.stringify(redeemed.body)).toBe(200)
+  const who = await login(t, email, 'Rahsia-Baharu-77')
+  await put(who, '/me/password', { currentPassword: 'Rahsia-Baharu-77', password: 'Tukar-Lagi-88', passwordConfirmation: 'Tukar-Lagi-88' })
+  return [mail.token, 'Rahsia-Baharu-77', 'Tukar-Lagi-88']
+}
+
+/** Environment of a production start (the env loader demands these). */
+export const PROD_ENV = {
+  NODE_ENV: 'production',
+  SESSION_SECRET: 'prod-secret-0123456789abcdef0123456789',
+  IC_HASH_KEY: 'prod-ic-key-0123456789abcdef0123456789ab',
+  FILE_STORAGE_DIR: join(tmpdir(), 'pp-account-test-files'),
+} as const
 
 export const REGISTER_STUDENT = {
   name: 'Murid Baharu',
