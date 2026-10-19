@@ -6,7 +6,5 @@ export const AUDIT_ACTIONS = {
   ROLE_SWITCHED: 'session.role.switched',
   MODE_ENTERED: 'session.mode.entered',
   MODE_EXITED: 'session.mode.exited',
-  FILE_UPLOADED: 'file.uploaded',
-  FILE_DELETED: 'file.deleted',
 } as const
 export type AuditAction = (typeof AUDIT_ACTIONS)[keyof typeof AUDIT_ACTIONS]

@@ -89,7 +89,7 @@ describe('PNG', () => {
   it('refuses a bad CRC, a missing IEND, a missing IHDR and a pixel bomb', () => {
     const good = makePng()
     const badCrc = Buffer.from(good)
-    badCrc[badCrc.length - 20] ^= 0xff
+    badCrc[badCrc.length - 20] = (badCrc[badCrc.length - 20] ?? 0) ^ 0xff
     expect(inspectUpload(badCrc)).toBeNull()
     expect(inspectUpload(good.subarray(0, good.length - 12))).toBeNull()
     expect(inspectUpload(Buffer.concat([good.subarray(0, 8), good.subarray(33)]))).toBeNull()
@@ -105,7 +105,7 @@ describe('WebP', () => {
     const bytes = out?.bytes as Buffer
     expect(has(bytes, 'GPS-LAT')).toBe(false)
     expect(has(bytes, 'EXIF')).toBe(false)
-    expect(bytes[20] & 0x08).toBe(0)
+    expect((bytes[20] ?? 0) & 0x08).toBe(0)
     expect(bytes.readUInt32LE(4) + 8).toBe(bytes.length)
     expect(inspectUpload(bytes)?.bytes.equals(bytes)).toBe(true)
   })

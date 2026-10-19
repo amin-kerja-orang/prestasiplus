@@ -46,14 +46,14 @@ export const EnvSchema = z.object({
   LOGIN_FAILURE_FLOOR_MS: z.coerce.number().int().min(0).max(10_000).default(1500),
   /** Failed logins per 15 minutes for one identifier across all addresses, before 429. */
   LOGIN_IDENTIFIER_FAIL_LIMIT: z.coerce.number().int().min(5).default(100),
-  // BE-04 (files). Required in production (see loadEnv); outside production a temp-folder default applies.
+  // BE-04 (files). Optional here; FilesConfig applies the defaults (10, 20, 30) and, in production, refuses to start without FILE_STORAGE_DIR.
   FILE_STORAGE_DIR: z.string().min(1).optional(),
   /** Global ceiling of one upload in MB; each purpose has its own, lower limit. */
-  MAX_UPLOAD_MB: z.coerce.number().int().min(1).max(100).default(10),
+  MAX_UPLOAD_MB: z.coerce.number().int().min(1).max(100).optional(),
   /** Ceiling of a derived intake file (page image, figure crop, original) in MB. */
-  INTAKE_MAX_FILE_MB: z.coerce.number().int().min(1).max(200).default(20),
+  INTAKE_MAX_FILE_MB: z.coerce.number().int().min(1).max(200).optional(),
   /** Uploads and file deletes per user per minute before 429. */
-  UPLOAD_RATE_PER_MINUTE: z.coerce.number().int().min(1).max(1000).default(30),
+  UPLOAD_RATE_PER_MINUTE: z.coerce.number().int().min(1).max(1000).optional(),
 })
 export type Env = z.infer<typeof EnvSchema>
 
@@ -72,9 +72,6 @@ const MIN_IC_KEY_LENGTH = 32
 /** SESSION_SECRET and IC_HASH_KEY: strong values are mandatory in production (boot fails; no fallback between them); other environments get a dev default. */
 function withSessionSecret(env: Env): Env {
   if (env.NODE_ENV !== 'production') return { ...env, SESSION_SECRET: env.SESSION_SECRET || DEV_SESSION_SECRET }
-  if (!env.FILE_STORAGE_DIR) {
-    throw new Error('Invalid environment configuration. FILE_STORAGE_DIR: required in production')
-  }
   const secret = env.SESSION_SECRET
   if (!secret || secret.length < MIN_SECRET_LENGTH || secret === 'change-me') {
     throw new Error(

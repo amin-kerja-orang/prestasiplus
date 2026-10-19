@@ -88,4 +88,11 @@ describe('LocalDiskStorage', () => {
     await s.put('avatar/one.png', Buffer.from('x'))
     expect(await readdir(join(dir, 'avatar'))).toEqual(['one.png'])
   })
+
+  it('a new instance on the same folder sees the files (what a restart with the apifiles volume relies on)', async () => {
+    const dir = await mkdtemp(join(tmpdir(), 'pp-storage-'))
+    dirs.push(dir)
+    await new LocalDiskStorage(dir).put('avatar/keep.png', Buffer.from('still here'))
+    expect((await new LocalDiskStorage(dir).get('avatar/keep.png'))?.toString()).toBe('still here')
+  })
 })

@@ -11,7 +11,6 @@ import {
   type RoleCode,
 } from '@pp/contract'
 
-import { AUDIT_ACTIONS } from '../../common/audit/audit-actions'
 import { AuditService } from '../../common/audit/audit.service'
 import { ApiError } from '../../common/errors/api-error'
 import type { AuthContext } from '../../common/scope/auth-context'
@@ -20,6 +19,9 @@ import { PrismaService } from '../../db/prisma.service'
 import { EXTENSION_OF, inspectUpload, type DetectedMime } from './content-inspect'
 import { FILE_STORAGE, type FileStorage } from './file-storage'
 import { FilesConfig } from './files.config'
+
+/** Action names written to `audit_events.action` by the files module. */
+export const FILE_AUDIT_ACTIONS = { UPLOADED: 'file.uploaded', DELETED: 'file.deleted' } as const
 
 /** Purposes written only by other services (BE-37 intake); they have no public upload route. */
 export const DERIVED_PURPOSES = ['intake_original', 'intake_page', 'intake_figure'] as const
@@ -109,7 +111,7 @@ export class FilesService {
       bytes: inspected.bytes,
       isTest: auth.mode !== null,
     })
-    await this.record(AUDIT_ACTIONS.FILE_UPLOADED, auth, stored, who)
+    await this.record(FILE_AUDIT_ACTIONS.UPLOADED, auth, stored, who)
     return {
       id: stored.id,
       url: `/api/files/${stored.id}`,
@@ -180,7 +182,7 @@ export class FilesService {
       this.logger.error(`Could not remove the object of file ${idToString(row.id)}`)
     }
     await this.record(
-      AUDIT_ACTIONS.FILE_DELETED,
+      FILE_AUDIT_ACTIONS.DELETED,
       auth,
       { id: idToString(row.id), purpose: row.purpose, mime: row.mime, size: Number(row.sizeBytes) },
       who,

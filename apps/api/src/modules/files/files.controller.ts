@@ -65,8 +65,8 @@ export class UploadGuard implements CanActivate {
     const req = ctx.switchToHttp().getRequest<AuthedRequest>()
     const auth = authOf(req)
     const purpose = req.query.purpose
-    if (isFilePurpose(purpose) && !mayUpload(purpose, auth.active.role)) throw ApiError.of('FORBIDDEN')
     this.throttle.hit(auth.userId)
+    if (isFilePurpose(purpose) && !mayUpload(purpose, auth.active.role)) throw ApiError.of('FORBIDDEN')
     return true
   }
 }
