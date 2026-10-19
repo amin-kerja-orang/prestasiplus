@@ -12986,6 +12986,79 @@
         ],
         "description": "201; `message` is \"Berjaya menyertai kelas {name}.\""
       },
+      "KeluargaAngkatCategory": {
+        "type": "string",
+        "enum": [
+          "B40",
+          "Asnaf",
+          "Yatim",
+          "OKU",
+          "Lain-lain"
+        ]
+      },
+      "KeluargaAngkatIncomeRange": {
+        "type": "string",
+        "enum": [
+          "< RM1,000",
+          "RM1,000 - RM2,500",
+          "RM2,500 - RM4,000",
+          "> RM4,000"
+        ]
+      },
+      "KeluargaAngkatApplicationInput": {
+        "type": "object",
+        "properties": {
+          "studentEmail": {
+            "type": "string",
+            "minLength": 1
+          },
+          "studentCategory": {
+            "type": "string",
+            "enum": [
+              "B40",
+              "Asnaf",
+              "Yatim",
+              "OKU",
+              "Lain-lain"
+            ]
+          },
+          "familyIncomeRange": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "enum": [
+              "< RM1,000",
+              "RM1,000 - RM2,500",
+              "RM2,500 - RM4,000",
+              "> RM4,000",
+              null
+            ],
+            "description": "One of the four ranges, or \"\" / null / missing for \"not given\" (stored null). A non-string value is also treated as not given."
+          },
+          "reason": {
+            "type": "string",
+            "description": "Required, non-blank after trim. Stored as typed (not trimmed), cut to 5000 characters (longer input is accepted, not rejected)."
+          }
+        },
+        "required": [
+          "studentEmail",
+          "studentCategory",
+          "reason"
+        ]
+      },
+      "KeluargaAngkatApplicationCreated": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "$ref": "#/components/schemas/Id"
+          }
+        },
+        "required": [
+          "id"
+        ],
+        "additionalProperties": false
+      },
       "AccessGroupId": {
         "type": "string",
         "enum": [
@@ -28860,6 +28933,108 @@
           },
           "422": {
             "description": "VALIDATION_ERROR fields.classCode \"Sila masukkan kod kelas.\"",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/mohon-keluarga-angkat": {
+      "post": {
+        "tags": [
+          "sponsorship"
+        ],
+        "summary": "Apply for a foster family (Mohon Keluarga Angkat)",
+        "description": "Any signed-in role (student, parent, teacher, admin). The applicant user id and role come from the session; applicantUserId or applicantRole in the body are ignored. The studentEmail must be the e-mail of an existing user with role student (surrounding spaces trimmed; letter case as the user lookup treats it). Inserts one application with status `pending` and createdAt = now. No duplicate check (the same student and applicant may apply again), no notification, no e-mail. Write-only: the category, income range and reason of a minor are never returned by any route and never logged. The success text \"Permohonan anda telah dihantar. Admin akan menyemak permohonan dalam 1-3 hari bekerja.\" is shown by the client, not returned. Security note (OQ-API-B4-20): the studentEmail 422 tells a signed-in caller whether an e-mail belongs to a student, so the route is to be rate limited (RATE_LIMITED 429, BE-33).",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Value of Session.csrf; required on mutating requests."
+            },
+            "required": true,
+            "description": "Value of Session.csrf; required on mutating requests.",
+            "name": "X-CSRF-Token",
+            "in": "header"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/KeluargaAngkatApplicationInput"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Application stored as pending. Only the new id is returned.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/KeluargaAngkatApplicationCreated"
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED \"Unauthenticated.\" (no valid session).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "CSRF_INVALID (missing or wrong X-CSRF-Token).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "VALIDATION_ERROR with `fields`, collected for all fields and returned together, inserted in the order studentEmail, studentCategory, familyIncomeRange, reason. studentEmail: \"Sila isi ruangan ini.\" (blank or not a string), \"Format e-mel tidak sah.\", \"Email pelajar tidak dijumpai dalam PrestasiPlus.\" (no existing user with that e-mail and role student; the same text for a teacher, a parent or an unknown e-mail). studentCategory: \"Sila isi ruangan ini.\" (empty or not a string), \"Pilihan tidak sah.\" (not one of the five values). familyIncomeRange: \"Pilihan tidak sah.\" (a non-empty string outside the four values; missing, null, \"\" or a non-string is \"not given\", no error). reason: \"Sila isi ruangan ini.\" (blank after trim or not a string). Top-level message = the first field message plus \" (and N more error(s))\" when several fields fail.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "RATE_LIMITED, with retryAfter (planned, BE-33; the mock has no limit).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "SERVER_ERROR. The client shows its own line \"Ralat berlaku. Sila cuba lagi.\" for any non-field failure.",
             "content": {
               "application/json": {
                 "schema": {
