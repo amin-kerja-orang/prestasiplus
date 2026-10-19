@@ -14,7 +14,8 @@
  */
 import { hash } from '@node-rs/argon2'
 
-import { assertSeedAllowed, type SeedModule } from '../index'
+import type { SeedModule } from '../index'
+import { assertSeedAllowed } from '../guard'
 import { CLASS_NAMES, NAME_WORDS, ROLE_LABELS } from './fixtures/names'
 import { DEMO_PASSWORD } from './identity'
 
@@ -139,6 +140,8 @@ export function buildPopulation(prng: { int(min: number, max: number): number })
 
 export const populationSeed: SeedModule = {
   name: 'core-population',
+  // Explicit for BE-25's kind gating: demo seeds are refused in production unless ALLOW_DEMO_SEED.
+  kind: 'demo',
   async run(ctx) {
     // Defence in depth: the runner already refuses demo modules in production without the flag.
     assertSeedAllowed()
@@ -151,12 +154,18 @@ export const populationSeed: SeedModule = {
       if (s.code) schoolIds.set(s.code, s.id)
     }
 
+    let skippedMigrated = 0
     for (const a of accounts) {
       const schoolId = a.schoolCode ? (schoolIds.get(a.schoolCode) ?? null) : null
       if (a.schoolCode && schoolId === null) {
         throw new Error(`Population seed needs school ${a.schoolCode}; run the identity and schools seeds first.`)
       }
       const existing = await prisma.user.findFirst({ where: { email: { equals: a.email, mode: 'insensitive' } } })
+      // A migrated (legacy_source set) user is never modified: skip the whole account, roles and scope too.
+      if (existing?.legacySource != null) {
+        skippedMigrated += 1
+        continue
+      }
       const data = {
         name: a.name,
         email: a.email,
@@ -199,6 +208,10 @@ export const populationSeed: SeedModule = {
           update: scopeData,
         })
       }
+    }
+    if (skippedMigrated > 0) {
+      // Count only: no e-mail, name or id is logged. A skip (not a throw) keeps seeding usable on a migrated database.
+      console.warn(`seed core-population: skipped ${skippedMigrated} account(s) whose e-mail belongs to a migrated user (legacy_source set); they were not modified.`)
     }
   },
 }

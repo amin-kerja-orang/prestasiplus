@@ -24,19 +24,25 @@ const MODULES = [identitySeed, schoolsSeed, populationSeed]
 const SEED_DIR = fileURLToPath(new URL('../../prisma/seed/', import.meta.url))
 const TABLES = ['schools', 'users', 'user_roles', 'user_scopes'] as const
 
-/** Stable content of the seeded tables: ids, names, e-mails, class labels. Salted hashes are excluded. */
-async function fingerprint(db: TestDatabase): Promise<{ hash: string; counts: Record<string, number> }> {
+/**
+ * Stable content of the seeded tables: ids, names, e-mails, class labels. `updated_at` is excluded (an idempotent
+ * re-run may touch it). Password hashes are salted, so they are compared only on the same database (`withHashes`).
+ */
+async function fingerprint(db: TestDatabase, withHashes = false): Promise<{ hash: string; counts: Record<string, number> }> {
   const h = createHash('sha256')
   const counts: Record<string, number> = {}
   const cols: Record<string, string> = {
     schools: `id, code, name, state, district, type, city, join_code, is_active, jpn_id, ppd_id`,
-    users: `id, name, email, username, school_id, grade, class_label, is_active, is_suspended, (password_hash is not null) as has_hash, created_at`,
+    users: `id, name, email, username, school_id, grade, class_label, is_active, is_suspended, created_at`,
     user_roles: `id, user_id, role`,
     user_scopes: `id, user_id, role, level, state_code, district_code, school_id`,
   }
   for (const t of TABLES) {
     const rows = await db.query(`select ${cols[t]} from ${t} order by id`)
     counts[t] = rows.length
+    if (t === 'users' && withHashes) {
+      h.update(JSON.stringify(await db.query(`select id::text, md5(password_hash) as hash_md5 from users order by id`)))
+    }
     h.update(JSON.stringify(rows, (_k, v: unknown) => (typeof v === 'bigint' ? v.toString() : v)))
   }
   return { hash: h.digest('hex'), counts }
@@ -57,8 +63,9 @@ describe('core population seed (BE-07)', () => {
     expect(names.indexOf('core-population')).toBeGreaterThan(names.indexOf('core-schools'))
   })
 
-  it('AC1: two fresh runs give identical rows, and a second run changes nothing', async () => {
+  it('AC1: two fresh runs give identical rows (ids, names, e-mails, labels); a re-run keeps rows, ids and password hashes', async () => {
     const first = await fingerprint(db)
+    const firstWithHashes = await fingerprint(db, true)
     const other = await createTestDatabase()
     try {
       await runSeeds(MODULES, { prisma: other.prisma })
@@ -68,6 +75,7 @@ describe('core population seed (BE-07)', () => {
     }
     await runSeeds(MODULES, { prisma: db.prisma })
     expect(await fingerprint(db)).toEqual(first)
+    expect(await fingerprint(db, true)).toEqual(firstWithHashes)
   })
 
   it('AC2: counts by query', async () => {
@@ -100,6 +108,13 @@ describe('core population seed (BE-07)', () => {
         `select count(*)::int n from users u where (select count(*) from user_roles r where r.user_id = u.id and r.role in ('teacher','school_admin')) = 2`,
       ),
     ).toBe(1)
+    const rolesOf = async (email: string) =>
+      (await db.query<{ r: string }>(`select string_agg(role, ',' order by role) r from user_roles x join users u on u.id = x.user_id where u.email = $1`, [email]))[0]!.r
+    expect(await rolesOf('guruadmin@demo.test')).toBe('school_admin,teacher')
+    expect(await rolesOf('digantung@demo.test')).toBe('student')
+    expect(
+      (await db.query<{ is_suspended: boolean }>(`select is_suspended from users where email = 'digantung@demo.test'`))[0]!.is_suspended,
+    ).toBe(true)
     const emails = await db.query<{ email: string }>(`select email from users where email is not null`)
     for (const e of ['pelajar', 'pelajarmaju', 'pelajar2', 'guru', 'adminsekolah', 'admin', 'tidakaktif', 'ibubapa', 'penaja', 'ppd', 'jpn']) {
       expect(emails.map((r) => r.email)).toContain(`${e}@demo.test`)
@@ -165,15 +180,32 @@ describe('core population seed (BE-07)', () => {
     const hashN = await db.query<{ n: number }>(`select count(*)::int n from users where legacy_hash is not null`)
     expect(hashN[0]!.n).toBe(0)
 
+    // A migrated user that collides with a seeded e-mail, with its own role, is left completely alone.
+    await db.query(`delete from users where email = 'murid.demo003.01@example.test'`)
     await db.query(
-      `insert into users (name, email, legacy_source, legacy_id, is_active) values ('Murid Warisan', 'warisan@example.test', 'cloud', 'u-1', true)`,
+      `insert into users (name, email, legacy_source, legacy_id, is_active, is_suspended, grade) values ('Murid Warisan', 'murid.demo003.01@example.test', 'cloud', 'u-1', false, true, 3)`,
     )
-    const before = await db.query(`select * from users where legacy_source = 'cloud' order by id`)
+    await db.query(`insert into user_roles (user_id, role) select id, 'parent' from users where legacy_source = 'cloud'`)
+    const snap = () =>
+      db.query(
+        `select u.*, (select string_agg(role, ',' order by role) from user_roles r where r.user_id = u.id) as roles,
+                (select count(*)::int from user_scopes x where x.user_id = u.id) as scopes
+           from users u where legacy_source = 'cloud'`,
+      )
+    const before = await snap()
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined)
     await runSeeds(MODULES, { prisma: db.prisma })
-    expect(await db.query(`select * from users where legacy_source = 'cloud' order by id`)).toEqual(before)
+    const warned = warn.mock.calls.map((c) => String(c[0])).join(' ')
+    warn.mockRestore()
+    expect(await snap()).toEqual(before)
+    expect(before[0]).toMatchObject({ name: 'Murid Warisan', is_active: false, is_suspended: true, roles: 'parent', scopes: 0 })
+    expect(warned).toMatch(/skipped 1 account/)
+    expect(warned).not.toContain('example.test')
     const n = await db.query<{ n: number }>(`select count(*)::int n from users where legacy_source is not null`)
     expect(n[0]!.n).toBe(1)
     await db.query(`delete from users where legacy_source = 'cloud'`)
+    // Restore the seeded account for the tests that follow.
+    await runSeeds(MODULES, { prisma: db.prisma })
   })
 
   it('the plan fits the name fixture and every plan school exists', async () => {
@@ -181,9 +213,9 @@ describe('core population seed (BE-07)', () => {
     for (const p of SCHOOL_PLANS) expect(codes).toContain(p.code)
   })
 
-  it('AC6: no seeded name matches the deny-list when SEED_NAME_DENYLIST is set', async () => {
-    const path = process.env.SEED_NAME_DENYLIST
-    if (!path) return // skipped: the list is kept outside the repo
+  // The list is kept outside the repo; without the variable the test shows as skipped.
+  it.skipIf(!process.env.SEED_NAME_DENYLIST)('AC6: no seeded name matches the deny-list in SEED_NAME_DENYLIST', async () => {
+    const path = process.env.SEED_NAME_DENYLIST as string
     const patterns = readFileSync(path, 'utf8')
       .split(/\r?\n/)
       .map((l) => l.trim())

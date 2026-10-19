@@ -13,12 +13,12 @@ import { FixedClock, SEED_NOW, type Clock } from '../../src/db/clock'
 import { createPrismaClient, type PrismaClient } from '../../src/db/client'
 import { DEFAULT_SEED_BASE, type Prng, prngStream } from '../../src/db/prng'
 import { identitySeed } from './core/identity'
-<<<<<<< HEAD
-import { schoolPackagesSeed } from './core/school-packages'
-=======
 import { populationSeed } from './core/population'
->>>>>>> c78f6827 (feat(BE-07): core population demo seed (students, teachers, school admins, parent, sponsor, PPD, JPN))
+import { schoolPackagesSeed } from './core/school-packages'
 import { schoolsSeed } from './core/schools'
+import { assertSeedAllowed } from './guard'
+
+export { assertSeedAllowed }
 
 export const DEFAULT_PROFILE = 'poc'
 
@@ -46,7 +46,6 @@ export interface SeedModule {
   run(ctx: SeedContext): Promise<void>
 }
 
-<<<<<<< HEAD
 /**
  * THE REFERENCE SET. Modules with `kind: 'reference'` run in EVERY environment, production included.
  * The set is minimal and explicit: today it contains the school_packages catalogue only
@@ -56,22 +55,7 @@ export interface SeedModule {
  * personal data. Everything else is demo (the default kind) and is refused in production unless
  * ALLOW_DEMO_SEED.
  */
-export const seedModules: SeedModule[] = [identitySeed, schoolsSeed, schoolPackagesSeed]
-=======
-export const seedModules: SeedModule[] = [identitySeed, schoolsSeed, populationSeed]
->>>>>>> c78f6827 (feat(BE-07): core population demo seed (students, teachers, school admins, parent, sponsor, PPD, JPN))
-
-/**
- * Demo seeds create demo accounts with a published password. They must never run against production
- * unless the operator says so explicitly with `ALLOW_DEMO_SEED=true` (or `1`).
- */
-export function assertSeedAllowed(env: Record<string, string | undefined> = process.env): void {
-  if (env.NODE_ENV === 'production' && env.ALLOW_DEMO_SEED !== '1' && env.ALLOW_DEMO_SEED !== 'true') {
-    throw new Error(
-      'Refusing to seed demo data: NODE_ENV=production. Set ALLOW_DEMO_SEED=true (or 1) only if you really mean it. The database was not touched.',
-    )
-  }
-}
+export const seedModules: SeedModule[] = [identitySeed, schoolsSeed, schoolPackagesSeed, populationSeed]
 
 export interface RunSeedsOptions {
   /** Environment read by the demo guard (default `process.env`). */
