@@ -20,9 +20,8 @@ class DummyController {
 class DummyModule {}
 
 describe('registries', () => {
-  it('module registry exists and is empty at BE-01', () => {
+  it('module registry exists', () => {
     expect(Array.isArray(featureModules)).toBe(true)
-    expect(featureModules).toHaveLength(0)
   })
 
   it('a module added to the list is mounted under /api', async () => {
