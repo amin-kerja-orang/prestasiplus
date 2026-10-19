@@ -12,10 +12,10 @@ Single source of truth for the **state of every backend card**. The lead's proje
 
 | Priority | Cards | Of which done |
 |---|---|---|
-| P0 | 13 | 8 |
+| P0 | 13 | 9 |
 | P1 | 23 | 2 |
 | P2 | 12 | 0 |
-| **Total** | **48** | **10** |
+| **Total** | **48** | **11** |
 
 (Done = implementation squash-merged into feature/v2-backend: BE-01, BE-02, BE-03. "Contract merged" rows are contract-only, not yet done.)
 
@@ -55,7 +55,7 @@ Single source of truth for the **state of every backend card**. The lead's proje
 | BE-28 | .cloud migration: ETL for reference data, identity and classes | PC-4 | P1 | BE-27, BE-05, BE-08, BE-17, BE-25 | L | todo | - | `be/BE-28-migration-etl-core` | - | Needs OD-10. Security review. |
 | BE-29 | .cloud migration: ETL for activity, wallet, content and operations | PC-4 | P2 | BE-28, BE-11, BE-12, BE-16, BE-23, BE-24 | L | todo | - | `be/BE-29-migration-etl-activity` | - | Needs OD-10. |
 | BE-30 | .cloud migration: reconciliation, rehearsal and cutover scripts | PC-4 | P2 | BE-29, BE-35 | M | todo | - | `be/BE-30-migration-reconcile-rehearsal` | - | Go/no-go gate for rehearsal. |
-| BE-31 | Contract conformance suite and OpenAPI breaking-change gate | PC-6 | P0 | BE-03 | M | todo | - | `be/BE-31-conformance-suite` | - | Harness merged 2026-10-19 (runner, known-mismatch list, coverage gate, oasdiff job; mock run via npm run conformance: 121 scenarios, 0 failing, 19 known). Remaining: API target (Nest supertest) and auth scenarios after BE-03. |
+| BE-31 | Contract conformance suite and OpenAPI breaking-change gate | PC-6 | P0 | BE-03 | M | done | s-aminfaudzi-e3m2 (reassigned from s-aminfaudzi-mlcq by LEAD) | `be/BE-31-conformance-suite` | - (LEAD merges by git) | **Merged 2026-10-20 (squash), base a6c16790.** LEAD independent verify: NEW be:verify green end-to-end (now runs `npm test -w @pp/contract-tests` 22/22 inside the chain; be:test 1303 passed, build 0); conformance:api 167/167 (/session + /auth/login validate the required mustChangePassword); conformance mock 134 scenarios 0 failing. be:verify gate now includes contract-tests (closes the earlier gate gap). NON_CONTRACT_ROUTES: /me/parent-invite/generate (mock-compat alias, BE-25). LEAD follow-ups: BE-25 conformance coverage debt (24 ops, raise CONFORMANCE_MIN_COVERAGE later); x-roles contract extension (future); DoD command typo fix across kickoffs; users/crud.spec.ts:243 flake (BE-33). |
 | BE-32 | Compose stack, nginx proxy, Vite dev proxy and Playwright e2e against the real API | PC-1 + LEAD | P1 | BE-03, BE-07, BE-31 | M | todo | - | `be/BE-32-http-switch-e2e` | - | Joint with LEAD (V2-T31 hybrid transport). Raise nginx body size for uploads. |
 | BE-33 | Security hardening, observability and release readiness | PC-1 | P2 | BE-32, BE-16, BE-38, BE-39 | M | todo | - | `be/BE-33-hardening-release` | - | Final security pass: uploads, AI keys, SSRF, migration data handling. Release gate. |
 | BE-34 | Migration kit: legacy-column convention, ETL control tables, upsert helper, dry-run runner | PC-4 | P0 | BE-02 | M | done | s-aminfaudzi-e3m2 (taken over from s-aminfaudzi-mlcq on LEAD instruction) | `be/BE-34-migration-kit` | - (LEAD merges by git) | **Merged 2026-10-19 (squash), base af5946f7.** LEAD independent verify: contract:check + be:lint:migration (3 expected warnings: BE-03 auth tables non-migratable) + be:verify PASS (30 files/243 passed, real Testcontainers). Migration 0003_etl_control_tables. security re-review PASS, code review Approve. Added .github/workflows/no-dumps.yml. LEAD follow-ups: Runner-level apply guard is a HARD condition on BE-27; doc "model names"→"table names" sweep; no-dumps .zip/.7z/.gz+size cap. Blocks BE-27/28 (now unblocked). |

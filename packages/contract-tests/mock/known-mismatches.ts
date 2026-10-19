@@ -17,7 +17,41 @@ const NO_BIJAK =
 const NO_PARENT_LINKS =
   'Mock side: no GET /api/me/parent-links route (404); the contract defines it.'
 
+const NO_FILES =
+  'Mock side: no /api/files route (404); file storage is a backend service (BE-04) and the mock keeps pictures inline.'
+const NO_BUILDER =
+  'Mock side: no Bijak paper builder / blueprint admin routes (404); the contract routes come from BE-37 to BE-39.'
+
+/**
+ * A route the mock does not serve answers 404, which the runner sees as two violations: an
+ * undocumented status and the failed status assertion. Two entries, each with its own kind, so no
+ * other kind of violation of the scenario is absorbed.
+ */
+const notServed = (scenario: string, reason: string): KnownMismatch[] => [
+  { scenario, kind: 'undocumented_status', reason },
+  { scenario, kind: 'assertion', reason },
+]
+
 export const KNOWN_MISMATCHES: KnownMismatch[] = [
+  ...notServed('files/POST /files anonymous -> 401', NO_FILES),
+  {
+    scenario: 'schools/GET /admin/schools -> 200',
+    kind: 'schema',
+    reason:
+      'Mock side: the admin school rows carry no joinCode; the contract (BE-05) requires the key (string or null).',
+  },
+  {
+    scenario: 'users/GET /admin/users -> 200',
+    kind: 'schema',
+    reason:
+      'Mock side: the user rows carry no username, no roles[] and no isSuspended; the contract (BE-05, v2-frontend section 6) requires them.',
+  },
+  ...notServed('bijak-builder/GET /admin/papers -> 200', NO_BUILDER),
+  ...notServed('bijak-builder/GET /admin/papers anonymous -> 401', NO_BUILDER),
+  ...notServed('bijak-builder/GET /admin/papers as student -> 403', NO_BUILDER),
+  ...notServed('bijak-blueprint-admin/GET /admin/blueprints -> 200', NO_BUILDER),
+  ...notServed('bijak-blueprint-admin/GET /admin/blueprints anonymous -> 401', NO_BUILDER),
+  ...notServed('bijak-blueprint-admin/GET /admin/blueprints as student -> 403', NO_BUILDER),
   {
     scenario: 'auth/POST /auth/login -> 200',
     reason:
@@ -55,7 +89,7 @@ export const KNOWN_MISMATCHES: KnownMismatch[] = [
   },
   { scenario: 'parent-links/GET /me/parent-links -> 200', reason: NO_PARENT_LINKS },
   { scenario: 'parent-links/GET /me/parent-links anonymous -> 401', reason: NO_PARENT_LINKS },
-  { scenario: 'parent-links/GET /me/parent-links as student -> 403', reason: NO_PARENT_LINKS },
+  { scenario: 'parent-links/GET /me/parent-links as teacher -> 403', reason: NO_PARENT_LINKS },
   {
     scenario: 'comp-students/GET /admin/comp-students -> 200',
     reason:
