@@ -1,17 +1,18 @@
 import { z } from '../../zod'
 import { listEnvelopeOf } from '../../common/envelope'
 import { IdSchema } from '../../common/ids'
-import { DateOnlySchema, TimestampSchema } from '../../common/time'
+import { TimestampSchema } from '../../common/time'
 
 /**
  * M10 part B wire contract (BE-18, contract-only), missions and remedial half: the student reads
  * (`/missions/today`, `/remedial-tests/mine`, `/remedial-tests/:id`), the teacher remedial progress
- * and the Command Center remedial trio (scan, generate, cancel), plus the PROVISIONAL mission
- * create and list. Source: m10 mock handlers `command-center`, `command-center-remedial`,
- * `dashboard`, repositories `missions` and `remedial`, M05 `assigned.ts`, and the typed clients
- * `api/types.ts`, `api/command-center-types.ts`. Realigned per `v2-data-migration.md` 4.8:
- * ids are opaque strings, timestamps are `+08:00`, `legacy_*` never appears.
- * The question set / DSKP / question paper half is in `../question-sets`.
+ * and the Command Center remedial trio (scan, generate, cancel). Source: m10 mock handlers
+ * `command-center`, `command-center-remedial`, `dashboard`, repository `remedial`, M05 `assigned.ts`,
+ * and the typed clients `api/types.ts`, `api/command-center-types.ts`. Ids are opaque strings,
+ * timestamps are `+08:00`, `legacy_*` never appears.
+ * The teacher mission create and list (SRS FR-M10-52, FR-M10-58) are NOT in this contract: the mock
+ * has no route (card open question 1). Question sets and DSKP picks are in `../question-sets`.
+ * `POST /guru/question-papers` is BE-37 (source document upload for intake).
  */
 
 // --- Copy (exact BM text of the mock, `REMEDIAL_MSG` in command-center-rules.ts) ------------------
@@ -85,53 +86,6 @@ export type MissionToday = z.infer<typeof MissionTodaySchema>
 
 /** `{ data, meta }`; single page (the mock `unpaged`): the missions of today for the caller, oldest first. */
 export const MissionTodayResponseSchema = listEnvelopeOf(MissionTodaySchema).meta({ id: 'MissionTodayResponse' })
-
-// --- Missions (teacher, PROVISIONAL: SRS FR-M10-52, FR-M10-58; the mock registers no route) -----
-
-/**
- * `POST /guru/missions` body, PROVISIONAL (card open question 1). Fields follow the S12 form and
- * `MissionInput` of the mock repository. Recipients are not sent: they are the caller's students at
- * launch time (BR-M10-17). The server limits (for example `questionCount` 5 to 50, FR-M10-55) and the
- * 422 copy are not defined by the mock or the SRS, so none are fixed here.
- */
-export const MissionCreateRequestSchema = z
-  .object({
-    title: z.string().trim().min(1).meta({ description: 'Nama Misi (the form pre-fills "Misi Harian dd/mm/yyyy").' }),
-    missionType: MissionTypeSchema,
-    missionDate: DateOnlySchema.meta({ description: 'Tarikh Misi, Malaysia calendar day.' }),
-    subjectId: IdSchema,
-    chapterId: IdSchema.nullish().meta({ description: 'null or absent = "Semua Bab".' }),
-    questionCount: z.number().int().meta({ description: 'Bilangan Soalan; form range 5 to 50, default 10 (FR-M10-55).' }),
-    resourceTitle: z.string().nullish(),
-    resourceUrl: z.string().nullish(),
-    resourceNote: z.string().nullish(),
-  })
-  .meta({ id: 'MissionCreateRequest' })
-export type MissionCreateRequest = z.infer<typeof MissionCreateRequestSchema>
-
-/** `MissionRow` of the mock, without the internal source column; `recipientIds` are stored at launch. */
-export const MissionSchema = z
-  .object({
-    id: IdSchema,
-    teacherId: IdSchema,
-    title: z.string(),
-    missionType: MissionTypeSchema,
-    missionSource: z.literal('bank_soalan').meta({ description: 'bank_soalan for every type (DV-M10-02).' }),
-    missionDate: DateOnlySchema,
-    subjectId: IdSchema,
-    chapterId: IdSchema.nullable(),
-    questionCount: z.number().int(),
-    coinsPerCorrect: z.number().int(),
-    resourceTitle: z.string().nullable(),
-    resourceUrl: z.string().nullable(),
-    resourceNote: z.string().nullable(),
-    recipientIds: z.array(IdSchema).meta({ description: 'The caller\'s students at launch time (BR-M10-17).' }),
-    createdAt: TimestampSchema,
-  })
-  .meta({ id: 'Mission' })
-export type Mission = z.infer<typeof MissionSchema>
-
-export const MissionListResponseSchema = listEnvelopeOf(MissionSchema).meta({ id: 'MissionListResponse' })
 
 // --- Remedial: shared -----------------------------------------------------------------------------
 

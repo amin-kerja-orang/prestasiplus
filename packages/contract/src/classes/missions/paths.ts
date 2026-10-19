@@ -5,9 +5,6 @@ import { envelopeOf } from '../../common/envelope'
 import { ErrorBodySchema } from '../../common/error'
 import { IdSchema } from '../../common/ids'
 import {
-  MissionCreateRequestSchema,
-  MissionListResponseSchema,
-  MissionSchema,
   MissionStatusSchema,
   MissionTodayResponseSchema,
   MissionTodaySchema,
@@ -37,9 +34,6 @@ export const MISSIONS_COMPONENT_SCHEMAS = {
   MissionStatus: MissionStatusSchema,
   MissionToday: MissionTodaySchema,
   MissionTodayResponse: MissionTodayResponseSchema,
-  MissionCreateRequest: MissionCreateRequestSchema,
-  Mission: MissionSchema,
-  MissionListResponse: MissionListResponseSchema,
   RemedialStatus: RemedialStatusSchema,
   RemedialMineItem: RemedialMineItemSchema,
   RemedialMineResponse: RemedialMineResponseSchema,
@@ -157,7 +151,7 @@ export function registerMissionsPaths(registry: OpenAPIRegistry): void {
     tags: ['remedial'],
     summary: 'Cancel an active remedial test of the caller',
     description:
-      'Teacher or admin. NOT idempotent in the mock: a second cancel answers 409. A test of another teacher answers 404 like an unknown id, also for an admin.',
+      'Teacher or admin. Deliberate deviation from card AC2 ("cancel is idempotent") in favour of the mock: a repeat cancel answers 409 "Ujian remedial ini tidak aktif.", not 200. A test of another teacher answers 404 like an unknown id, also for an admin.',
     request: { headers: [csrf], body: body(RemedialCancelRequestSchema) },
     responses: {
       200: json(RemedialCancelResponseSchema, 'Bare { success: true }.'),
@@ -169,29 +163,4 @@ export function registerMissionsPaths(registry: OpenAPIRegistry): void {
     },
   })
 
-  registry.registerPath({
-    method: 'get',
-    path: '/guru/missions',
-    tags: ['missions'],
-    summary: 'PROVISIONAL: missions of the signed-in teacher (FR-M10-52)',
-    description:
-      'PROVISIONAL (card open question 1): defined by the SRS, no route in the mock. Teacher or admin. Own missions, newest mission date first. Per-mission student progress (Q-SESS-LINK) is not specified and not part of this shape.',
-    responses: { 200: json(MissionListResponseSchema, 'Own missions.'), 401: unauthorized, 403: teacherOnly },
-  })
-
-  registry.registerPath({
-    method: 'post',
-    path: '/guru/missions',
-    tags: ['missions'],
-    summary: 'PROVISIONAL: launch a mission (FR-M10-58)',
-    description:
-      'PROVISIONAL (card open question 1): defined by the SRS, no route in the mock. Teacher or admin. Recipients are the caller\'s students at launch time and are stored (BR-M10-17). Validation limits and copy are undefined, so the 422 text is not fixed.',
-    request: { headers: [csrf], body: body(MissionCreateRequestSchema) },
-    responses: {
-      201: json(envelopeOf(MissionSchema), 'The launched mission.'),
-      401: unauthorized,
-      403: teacherOnly,
-      422: err('VALIDATION_ERROR (provisional: fields and copy undefined).'),
-    },
-  })
 }

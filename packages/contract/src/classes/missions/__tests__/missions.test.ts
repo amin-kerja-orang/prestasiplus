@@ -4,7 +4,6 @@ import { buildOpenApiDocument } from '../../../openapi'
 import { MISSIONS_COMPONENT_SCHEMAS } from '../paths'
 import {
   MISSION_TYPE_LABELS,
-  MissionCreateRequestSchema,
   MissionTodayResponseSchema,
   REMEDIAL_MESSAGES,
   RemedialCancelRequestSchema,
@@ -69,19 +68,6 @@ describe('missions today (student read)', () => {
 
   it('has the three observed type labels', () => {
     expect(MISSION_TYPE_LABELS).toEqual({ latih_tubi: 'Latih Tubi SPM', tracking_a: 'Tracking A', youtube: 'Soalan & Rujukan' })
-  })
-
-  it('provisional create takes the form fields and no recipients', () => {
-    const ok = MissionCreateRequestSchema.safeParse({
-      title: 'Misi Harian 19/10/2026',
-      missionType: 'latih_tubi',
-      missionDate: '2026-10-19',
-      subjectId: '12',
-      chapterId: null,
-      questionCount: 10,
-    })
-    expect(ok.success).toBe(true)
-    expect(MissionCreateRequestSchema.safeParse({ missionType: 'quiz' }).success).toBe(false)
   })
 })
 
@@ -237,8 +223,6 @@ describe('OpenAPI registration', () => {
     expect(Object.keys(generate?.responses ?? {}).sort()).toEqual(['201', '401', '403', '422'])
     const cancel = doc.paths['/guru/command-center/remedial/cancel']?.post
     expect(Object.keys(cancel?.responses ?? {}).sort()).toEqual(['200', '401', '403', '404', '409', '422'])
-    // provisional routes
-    expect(Object.keys(doc.paths['/guru/missions'] ?? {}).sort()).toEqual(['get', 'post'])
   })
 
   it('registers every component and no legacy column', () => {
