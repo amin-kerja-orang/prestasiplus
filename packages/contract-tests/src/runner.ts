@@ -1,6 +1,7 @@
 import type { ContractIndex } from './contract-index'
 import { findLegacyKeys } from './guards'
 import type {
+  ActorOptions,
   ActorRole,
   HttpClient,
   HttpMethod,
@@ -29,7 +30,7 @@ export interface ScenarioContext {
   /** A client with no credentials; every response is checked against the contract. */
   anonymous(): HttpClient
   /** A client logged in as a seeded account of this role; every response is checked. */
-  as(role: ActorRole): Promise<HttpClient>
+  as(role: ActorRole, opts?: ActorOptions): Promise<HttpClient>
   /** Credentials of the seeded account of this role on this target. */
   credentials(role: ActorRole): { identifier: string; password: string }
   /** Records an `assertion` violation unless the response has the expected status. */
@@ -43,6 +44,12 @@ export interface Scenario {
   id: string
   /** Route group / domain, for the report. */
   domain: string
+  /**
+   * Target names this scenario applies to (default: all). A scenario that needs something only
+   * one target has (cookie session with CSRF, multipart upload) lists it here; the report counts
+   * the others as "not for this target", never silently.
+   */
+  targets?: readonly string[]
   run(ctx: ScenarioContext): Promise<void>
 }
 
@@ -61,6 +68,10 @@ export interface ScenarioResult {
   violations: Violation[]
   known: Violation[]
   failures: Violation[]
+  /** Operations the scenario needed that the target does not serve yet (the scenario stopped there). */
+  notImplemented: string[]
+  /** True when the scenario does not apply to this target (`Scenario.targets`). */
+  notForTarget: boolean
 }
 
 export interface RunReport {
@@ -68,6 +79,10 @@ export interface RunReport {
   results: ScenarioResult[]
   /** `METHOD path` of every operation some scenario sent a request to, with the statuses seen. */
   touched: Map<string, Set<number>>
+  /** Number of requests actually sent to the target (not counting those stopped as not yet implemented). */
+  requests: number
+  /** `METHOD path` of every operation a scenario needed that the target does not serve yet. */
+  notImplemented: Set<string>
   /** Known-mismatch entries that no longer match any violation (the mismatch was fixed). */
   stale: KnownMismatch[]
   ok: boolean
@@ -79,25 +94,66 @@ export interface RunOptions {
   knownMismatches?: KnownMismatch[]
 }
 
+/**
+ * Thrown to stop a scenario at a request the target cannot serve yet. A scenario (or a helper it
+ * calls) must NEVER catch it: swallowing it would let the scenario go on and hide real failures. A
+ * helper that has to catch errors calls `rethrowNotImplemented(err)` first. The runner records the
+ * operation when it throws, so even a swallowed signal is still reported as "not yet implemented".
+ */
+export class NotImplementedSignal extends Error {
+  constructor(readonly operation: string) {
+    super(`not yet implemented: ${operation}`)
+  }
+}
+
+/** Call first in any `catch` of a scenario helper: rethrows the not-yet-implemented signal. */
+export function rethrowNotImplemented(err: unknown): void {
+  if (err instanceof NotImplementedSignal) throw err
+}
+
 /** Runs every scenario against the target and checks every response against the contract. */
 export async function runScenarios(
   scenarios: Scenario[],
   { target, contract, knownMismatches = [] }: RunOptions,
 ): Promise<RunReport> {
   const touched = new Map<string, Set<number>>()
+  const notImplemented = new Set<string>()
+  let requests = 0
   const results: ScenarioResult[] = []
 
   for (const scenario of scenarios) {
     const violations: Violation[] = []
+    const missing: string[] = []
+    if (scenario.targets && !scenario.targets.includes(target.name)) {
+      results.push({
+        id: scenario.id,
+        domain: scenario.domain,
+        violations,
+        known: [],
+        failures: [],
+        notImplemented: missing,
+        notForTarget: true,
+      })
+      continue
+    }
+    target.beginScenario?.(scenario.id)
     const wrap = (client: HttpClient): HttpClient => ({
       async request(method: HttpMethod, path: string, init?: HttpRequestInit) {
+        const wanted = contract.match(method, path)
+        if (wanted && target.implements && !target.implements(wanted)) {
+          missing.push(wanted.key)
+          notImplemented.add(wanted.key)
+          throw new NotImplementedSignal(wanted.key)
+        }
+        requests++
         const res = await client.request(method, path, init)
         return checkResponse(contract, violations, touched, method, path, res)
       },
     })
     const ctx: ScenarioContext = {
       anonymous: () => wrap(target.anonymous),
-      as: async (role) => wrap(await target.actor(role)),
+      // The login of the actor goes through the checked client too, so its response is contract-checked.
+      as: async (role, opts) => wrap(await target.actor(role, { ...opts, via: wrap(target.anonymous) })),
       credentials: (role) => target.credentials(role),
       expectStatus(res, status) {
         if (res.status !== status) {
@@ -116,13 +172,24 @@ export async function runScenarios(
     try {
       await scenario.run(ctx)
     } catch (err) {
-      violations.push({
-        kind: 'error',
-        operation: null,
-        message: err instanceof Error ? err.message : String(err),
-      })
+      // Not a failure: the target has no such route yet. What ran before it is still checked.
+      if (!(err instanceof NotImplementedSignal)) {
+        violations.push({
+          kind: 'error',
+          operation: null,
+          message: err instanceof Error ? err.message : String(err),
+        })
+      }
     }
-    results.push({ id: scenario.id, domain: scenario.domain, violations, known: [], failures: [] })
+    results.push({
+      id: scenario.id,
+      domain: scenario.domain,
+      violations,
+      known: [],
+      failures: [],
+      notImplemented: missing,
+      notForTarget: false,
+    })
   }
 
   const used = new Set<KnownMismatch>()
@@ -142,6 +209,8 @@ export async function runScenarios(
     target: target.name,
     results,
     touched,
+    requests,
+    notImplemented,
     stale,
     ok: results.every((r) => r.failures.length === 0) && stale.length === 0,
   }

@@ -1,11 +1,11 @@
 import { describe, expect, it } from 'vitest'
 
-import { computeCoverage, coverageFailure, formatCoverage } from '../coverage'
+import { computeCoverage, coverageFailure, formatCoverage, notImplementedFailure } from '../coverage'
 import { ContractIndex, fixNullableRefs } from '../contract-index'
 import { findLegacyKeys } from '../guards'
 import type { HttpClient, HttpResponse, Target } from '../http-client'
 import { formatRun } from '../report'
-import { runScenarios, type Scenario } from '../runner'
+import { NotImplementedSignal, rethrowNotImplemented, runScenarios, type Scenario } from '../runner'
 import { parseSetCookie, sessionLogin } from '../session'
 
 const contract = ContractIndex.load()
@@ -224,5 +224,112 @@ describe('session helper', () => {
     expect(seen.map((s) => s.headers?.['x-csrf-token'])).toEqual([undefined, 'tok', undefined])
     expect(seen[0]?.headers?.cookie).toBe('sid=abc; other=1')
     expect(parseSetCookie(undefined)).toEqual({})
+  })
+})
+
+describe('session helper follows rotation', () => {
+  it('takes the new cookie and csrf token the server sends after a role switch', async () => {
+    const seen: Record<string, string>[] = []
+    const base: HttpClient = {
+      request(_method, path, init) {
+        if (path === '/auth/login') {
+          return Promise.resolve({
+            status: 200,
+            headers: { 'set-cookie': 'sid=one; Path=/' },
+            body: { data: { csrf: 'tok1' } },
+          })
+        }
+        seen.push(init?.headers ?? {})
+        return Promise.resolve({
+          status: 200,
+          headers: { 'set-cookie': 'sid=two; Path=/' },
+          body: { data: { csrf: 'tok2' } },
+        })
+      },
+    }
+    const session = await sessionLogin(base, { identifier: 'a', password: 'b' })
+    await session.request('POST', '/session/role', { body: { role: 'x' } })
+    await session.request('POST', '/session/role', { body: { role: 'y' } })
+    expect(seen[0]).toMatchObject({ cookie: 'sid=one', 'x-csrf-token': 'tok1' })
+    expect(seen[1]).toMatchObject({ cookie: 'sid=two', 'x-csrf-token': 'tok2' })
+    expect(session.csrf).toBe('tok2')
+  })
+})
+
+describe('target support for later cards', () => {
+  const served = (key: string) => ({ ...fakeTarget(() => ({ status: 401, body: { error: { code: 'UNAUTHORIZED', message: 'x' } } })), implements: (op: { key: string }) => op.key === key })
+
+  it('stops a scenario at an operation the target does not serve and reports it, not a failure', async () => {
+    const target = served('GET /session')
+    const report = await runScenarios([call('GET', '/session'), call('GET', '/me')], { target, contract })
+    expect(report.ok).toBe(true)
+    expect(report.results[0]?.notImplemented).toEqual([])
+    expect(report.results[1]?.notImplemented).toEqual(['GET /me'])
+    expect([...report.notImplemented]).toEqual(['GET /me'])
+    expect(report.touched.has('GET /me')).toBe(false)
+    expect(formatRun(report)).toContain('1 not yet implemented')
+  })
+
+  it('lists unserved operations apart in the coverage report and leaves them out of the percentage', async () => {
+    const target = served('GET /session')
+    const report = await runScenarios([call('GET', '/session')], { target, contract })
+    const cov = computeCoverage(contract, report, target)
+    expect(cov.total).toBe(1)
+    expect(cov.percent).toBe(100)
+    expect(cov.notImplemented.length).toBe(contract.operations.length - 1)
+    expect(cov.uncovered).toEqual([])
+    expect(formatCoverage(cov, { list: true })).toContain('Not yet implemented:')
+  })
+
+  it('skips a scenario that is not for this target and counts it', async () => {
+    const only: Scenario = { ...call('GET', '/session'), targets: ['api'] }
+    const report = await runScenarios([only], { target: fakeTarget(() => ({})), contract })
+    expect(report.results[0]?.notForTarget).toBe(true)
+    expect(report.touched.size).toBe(0)
+    expect(formatRun(report)).toContain('1 not for this target')
+  })
+
+  it('calls beginScenario before each scenario', async () => {
+    const ids: string[] = []
+    const target = { ...fakeTarget(() => ({})), beginScenario: (id: string) => void ids.push(id) }
+    await runScenarios([call('GET', '/session'), call('GET', '/me')], { target, contract })
+    expect(ids).toEqual(['GET /session', 'GET /me'])
+  })
+})
+
+describe('unserved-operations gate', () => {
+  const target = { implements: (op: { key: string }) => op.key === 'GET /session' }
+  const mk = async () => {
+    const t = { ...fakeTarget(() => ({ status: 401, body: { error: { code: 'UNAUTHORIZED', message: 'x' } } })), ...target }
+    const report = await runScenarios([call('GET', '/session')], { target: t, contract })
+    return computeCoverage(contract, report, t)
+  }
+
+  it('is off by default, and CONFORMANCE_MAX_NOT_IMPLEMENTED / CONFORMANCE_REQUIRE_ALL fail above the count', async () => {
+    const cov = await mk()
+    const n = cov.notImplemented.length
+    expect(n).toBeGreaterThan(0)
+    expect(notImplementedFailure(cov, {})).toBeNull()
+    expect(notImplementedFailure(cov, { CONFORMANCE_MAX_NOT_IMPLEMENTED: String(n) })).toBeNull()
+    expect(notImplementedFailure(cov, { CONFORMANCE_MAX_NOT_IMPLEMENTED: String(n - 1) })).toMatch(/not yet implemented/)
+    expect(notImplementedFailure(cov, { CONFORMANCE_REQUIRE_ALL: '1' })).toMatch(/not yet implemented/)
+    expect(notImplementedFailure(cov, { CONFORMANCE_MAX_NOT_IMPLEMENTED: 'x' })).toMatch(/not a count/)
+    // The percentage ignores unserved operations: 1 of 1 served is 100%.
+    expect(cov.percent).toBe(100)
+  })
+
+  it('an empty route lookup is a failure, never 100%', async () => {
+    const t = { ...fakeTarget(() => ({})), implements: () => false }
+    const report = await runScenarios([], { target: t, contract })
+    const cov = computeCoverage(contract, report, t)
+    expect(cov.total).toBe(0)
+    expect(cov.percent).toBe(0)
+    expect(coverageFailure(cov, {})).toMatch(/serves no contract operation/)
+  })
+
+  it('a not-yet-implemented signal is not swallowed by helpers that call rethrowNotImplemented', () => {
+    const signal = new NotImplementedSignal('GET /x')
+    expect(() => rethrowNotImplemented(signal)).toThrow(signal)
+    expect(() => rethrowNotImplemented(new Error('other'))).not.toThrow()
   })
 })
