@@ -12,6 +12,8 @@ import {
   MAIL_INTERVAL_MS,
   MAIL_IP_LIMIT,
   MAIL_IP_WINDOW_MS,
+  PASSWORD_CHANGE_CEILING,
+  PASSWORD_CHANGE_CEILING_WINDOW_MS,
   PASSWORD_CHANGE_LIMIT,
   PASSWORD_CHANGE_WINDOW_MS,
   REDEEM_IP_LIMIT,
@@ -142,8 +144,16 @@ export class AccountThrottle {
    */
   async passwordChangeBegin(userId: string): Promise<void> {
     const now = this.clock.now()
+    const ceiling = await this.peek(this.id(RESET_KEYS.passwordChangeCeiling, userId), ANY, now)
+    if (ceiling.attempts >= PASSWORD_CHANGE_CEILING) throw tooMany(this.retryAfter(ceiling, now), AUTH_ERROR_MESSAGES.RATE_LIMITED)
     const c = await this.hit(this.id(RESET_KEYS.passwordChange, userId), ANY, PASSWORD_CHANGE_WINDOW_MS, now)
     if (c.attempts > PASSWORD_CHANGE_LIMIT) throw tooMany(this.retryAfter(c, now), AUTH_ERROR_MESSAGES.RATE_LIMITED)
+  }
+
+  /** A wrong current password: counts toward the 15-minute ceiling and returns the failures so far. */
+  async passwordChangeFailed(userId: string): Promise<number> {
+    const c = await this.hit(this.id(RESET_KEYS.passwordChangeCeiling, userId), ANY, PASSWORD_CHANGE_CEILING_WINDOW_MS, this.clock.now())
+    return c.attempts
   }
 
   async passwordChangeSucceeded(userId: string): Promise<void> {

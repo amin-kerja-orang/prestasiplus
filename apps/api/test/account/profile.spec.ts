@@ -169,6 +169,29 @@ describe('GET/PUT /api/me, password, picture, settings, stats (AC1, AC5, AC8, AC
       expect(AccountUserMeSchema.parse(cleared.body.data).schoolId).toBe(before.schoolId)
     })
 
+    it('school membership is an ALLOW-list: a student sets it, any other role (even a new one) ignores it', async () => {
+      const hash = (await t.db.query<{ h: string }>("select password_hash as h from users where email = 'pelajar@demo.test'"))[0]?.h
+      const sponsor = (
+        await t.db.query<{ id: string }>("insert into users (name, email, password_hash, school_id) values ('Penaja Ujian', 'penaja@ujian.test', $1, $2::bigint) returning id::text", [hash, school2])
+      )[0]?.id
+      await t.db.query("insert into user_roles (user_id, role) values ($1::bigint, 'sponsor')", [sponsor])
+      const who = await login(t, 'penaja@ujian.test')
+      const other = await schoolIdOf(t.db, 'DEMO001')
+      const res = await put(who, '/me', { name: 'Penaja Ujian', schoolId: other })
+      expect(res.status, JSON.stringify(res.body)).toBe(200)
+      expect(AccountUserMeSchema.parse(res.body.data).schoolId).toBe(school2)
+      const student = await login(t, 'pelajar2@demo.test')
+      const set = await put(student, '/me', { name: 'Nama Baharu', schoolId: school2 })
+      expect(set.status, JSON.stringify(set.body)).toBe(200)
+      expect(AccountUserMeSchema.parse(set.body.data).schoolId).toBe(school2)
+    })
+
+    it('a student whose username already exists in the target school gets 422, not 500', async () => {
+      const who = await login(t, 'pelajar@demo.test') // username murid01; DEMO002 already has a murid01
+      const res = await put(who, '/me', { name: 'Murid Demo', schoolId: school2 })
+      expect(fieldsOf(res)).toEqual({ schoolId: 'The username has already been taken.' })
+    })
+
     it('a teacher cannot change or clear the school: schoolId is ignored (membership is managed by school_admin/admin)', async () => {
       const who = await login(t, 'guru@demo.test')
       const before = AccountUserMeSchema.parse((await get(who, '/me')).body.data)
@@ -229,6 +252,26 @@ describe('GET/PUT /api/me, password, picture, settings, stats (AC1, AC5, AC8, AC
       const statuses = guesses.map((g) => g.status)
       expect(statuses.filter((s) => s === 422)).toHaveLength(5)
       expect(statuses.filter((s) => s === 429)).toHaveLength(7)
+    })
+
+    it('a per-user ceiling of 20 failed changes per 15 minutes holds across minutes, and the lock is audited with counts only', async () => {
+      const who = await login(t, 'adminsekolah@demo.test')
+      const wrong = () => put(who, '/me/password', { currentPassword: 'salah-sungguh', password: 'baharu2', passwordConfirmation: 'baharu2' })
+      for (let round = 0; round < 4; round++) {
+        t.clock.advance(61_000) // the per-minute budget (5) is fresh each round; 4 x 5 = 20 failures in 4 minutes
+        for (let i = 0; i < 5; i++) { const r = await wrong(); expect(r.status, `round ${round} try ${i} ${JSON.stringify(r.body)}`).toBe(422) }
+      }
+      t.clock.advance(61_000)
+      const blocked = await put(who, '/me/password', { currentPassword: DEMO_PASSWORD, password: 'baharu2', passwordConfirmation: 'baharu2' })
+      const err = errorOf(blocked, 429, 'RATE_LIMITED')
+      expect(err.retryAfter).toBeGreaterThan(0)
+      expect(err.retryAfter).toBeLessThanOrEqual(900)
+      const rows = await t.db.query<{ detail: unknown }>("select detail from audit_events where action = 'account.password.change_locked'")
+      expect(rows).toHaveLength(1)
+      expect(rows[0]?.detail).toEqual({ failures: 20, windowMinutes: 15 })
+      expect(JSON.stringify(rows)).not.toContain('salah-sungguh')
+      t.clock.advance(15 * 60_000)
+      expect((await put(who, '/me/password', { currentPassword: DEMO_PASSWORD, password: DEMO_PASSWORD, passwordConfirmation: DEMO_PASSWORD })).status).toBe(200)
     })
 
     it('clears must_reset_password (and rotates the session, as every change does)', async () => {

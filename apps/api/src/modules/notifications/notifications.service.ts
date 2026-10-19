@@ -50,7 +50,14 @@ const toItem = (r: NotificationRow): NotificationItem => ({
 })
 
 /** Cuts `text` to at most `max` characters, the last one being an ellipsis. */
-const truncate = (text: string, max: number): string => (text.length <= max ? text : `${text.slice(0, max - 1)}…`)
+/** Cuts to `max` UTF-16 units including the ellipsis, never between the two halves of a surrogate pair. */
+const truncate = (text: string, max: number): string => {
+  if (text.length <= max) return text
+  let end = max - 1
+  const last = text.charCodeAt(end - 1)
+  if (last >= 0xd800 && last <= 0xdbff) end -= 1 // the high half of a pair would be left alone
+  return `${text.slice(0, end)}…`
+}
 
 /** Valid, de-duplicated ids; anything that cannot be an id matches nothing, as a foreign id does. */
 const idsOf = (ids: readonly string[]): string[] => [...new Set(ids.filter(isIdString))]

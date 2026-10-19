@@ -232,7 +232,7 @@ export class PasswordResetService {
       await this.notices.push(user.id, { type: owner.type, title: owner.title, body: owner.body })
       if (user.schoolId) {
         for (const adminId of await this.users.schoolAdminIds(user.schoolId)) {
-          await this.notices.push(adminId, { type: school.type, title: school.title, body: school.body.replace('{name}', user.name) })
+          await this.notices.push(adminId, { type: school.type, title: school.title, body: school.body.replace('{name}', () => user.name) })
         }
       }
     } catch {

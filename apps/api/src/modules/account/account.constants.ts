@@ -15,6 +15,7 @@ export const ACCOUNT_AUDIT = {
   RESET_IC_ISSUED: 'account.password.reset_ic_issued',
   RESET_DONE: 'account.password.reset_done',
   PASSWORD_CHANGED: 'account.password.changed',
+  PASSWORD_CHANGE_LOCKED: 'account.password.change_locked',
   PROFILE_UPDATED: 'account.profile.updated',
   PICTURE_UPDATED: 'account.picture.updated',
 } as const
@@ -43,6 +44,8 @@ export const RESET_KEYS = {
   redeemIp: 'reset:redeem-ip',
   /** Wrong current password on `PUT /me/password`, per user. */
   passwordChange: 'pwchange',
+  /** Failed password changes per user over 15 minutes. */
+  passwordChangeCeiling: 'pwchange-15',
 } as const
 
 export const ANY = 'any'
@@ -57,9 +60,12 @@ export const REDEEM_IP_LIMIT = ACCOUNT_THROTTLE.ipCeilingPerWindow
 export const REDEEM_WINDOW_MS = ACCOUNT_THROTTLE.windowSeconds * 1000
 export const PASSWORD_CHANGE_LIMIT = ACCOUNT_THROTTLE.failedAttemptsPerWindow
 export const PASSWORD_CHANGE_WINDOW_MS = ACCOUNT_THROTTLE.windowSeconds * 1000
+/** On top of the per-minute limit: 20 failed password changes per user per 15 minutes (security review L2). */
+export const PASSWORD_CHANGE_CEILING = 20
+export const PASSWORD_CHANGE_CEILING_WINDOW_MS = 15 * 60_000
 
-/** Roles whose `schoolId` is an admin-assigned scope: the profile never changes it. */
-export const STAFF_ROLES: readonly string[] = ['school_admin', 'ppd_officer', 'admin']
+/** The only roles that may set their own school on `PUT /me`; every other role (and any new one) ignores it. */
+export const SELF_SCHOOL_ROLES: readonly string[] = ['student', 'parent']
 
 /** Interactive transaction room of the writes that hash nothing but touch several tables. */
 export const ACCOUNT_TX = { maxWait: 10_000, timeout: 15_000 } as const

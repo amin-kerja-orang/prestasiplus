@@ -254,6 +254,19 @@ describe('password reset by e-mail link and by IC (AC2, AC3, D55a, D55b)', () =>
       }
     })
 
+    it('the display name goes into the school notice literally (dollar sequences are not replacement patterns)', async () => {
+      const name = 'Murid $& $1 $$ $`'
+      await t.db.query('update users set name = $1 where email = $2', [name, STUDENT])
+      try {
+        const token = await issue(STUDENT)
+        expect((await redeem(token, STUDENT, DEMO_PASSWORD)).status).toBe(200)
+        const schoolNotice = t.notices.pushed.find((p) => p.notice.type === 'student_password_reset')
+        expect(schoolNotice?.notice.body).toBe(ACCOUNT_SECURITY_NOTIFICATIONS.schoolNotice.body.split('{name}').join(name))
+      } finally {
+        await t.db.query('update users set name = $1 where email = $2', ['Murid Demo', STUDENT])
+      }
+    })
+
     it('a failing NotificationPort does not fail the reset', async () => {
       t.notices.fail = true
       const token = await issue(STUDENT)

@@ -6,6 +6,7 @@ import {
   ACCOUNT_PICTURE_MIME_TYPES,
   AccountPasswordChangeRequestSchema,
   AccountProfileUpdateRequestSchema,
+  V,
   type AccountUserMe,
 } from '@pp/contract'
 
@@ -20,15 +21,21 @@ import { PasswordService } from '../auth/password.service'
 import { LANDING_PATHS } from '../auth/session-view'
 import { FilesService } from '../files'
 import { SchoolsRepository } from '../schools'
-import { UsersRepository, type UserRecord } from '../users'
-import { ACCOUNT_AUDIT, ACCOUNT_TX, STAFF_ROLES } from './account.constants'
+import { UsersRepository, uniqueField, type UserRecord } from '../users'
+import {
+  ACCOUNT_AUDIT,
+  ACCOUNT_TX,
+  PASSWORD_CHANGE_CEILING,
+  SELF_SCHOOL_ROLES,
+} from './account.constants'
 import { fieldsOf, invalid } from './account.errors'
 import { AccountDataRepository } from './account-data.repository'
 import { AccountThrottle } from './account-throttle.service'
 import { overloadTo429 } from './helpers'
 import { SessionIssuer } from './session-issuer.service'
 
-const blankToNull = (v: string | null | undefined): string | null => (v === undefined || v === null || v.trim() === '' ? null : v.trim())
+const blankToNull = (v: string | null | undefined): string | null =>
+  v === undefined || v === null || v.trim() === '' ? null : v.trim()
 
 /** The uploaded part as multer hands it over. */
 export interface PictureUpload {
@@ -108,11 +115,22 @@ export class ProfileService {
       const body = typeof raw === 'object' && raw !== null ? (raw as Record<string, unknown>) : {}
       const user = await this.users.get(auth.userId)
       if (!user) throw ApiError.of('UNAUTHORIZED')
-      // School membership is managed by school_admin/admin: the body value is ignored for staff AND for teachers (a self-assigned school would give a teacher scope over children's data).
-      const staff = user.roles.some((r) => STAFF_ROLES.includes(r) || r === 'teacher')
-      const schoolId = typeof body.schoolId === 'string' ? body.schoolId : body.schoolId === null ? null : undefined
+      // ALLOW-list (security review L1): only a student or a parent may set their own school; every other role, and any
+      // role added later, ignores the body value (school membership is managed by school_admin/admin). Fail closed.
+      const mayChooseSchool =
+        user.roles.length > 0 && user.roles.every((r) => SELF_SCHOOL_ROLES.includes(r))
+      const schoolId =
+        typeof body.schoolId === 'string'
+          ? body.schoolId
+          : body.schoolId === null
+            ? null
+            : undefined
 
-      if (fields.schoolId === undefined && typeof schoolId === 'string' && !(await this.schools.exists(schoolId))) {
+      if (
+        fields.schoolId === undefined &&
+        typeof schoolId === 'string' &&
+        !(await this.schools.exists(schoolId))
+      ) {
         fields.schoolId = ACCOUNT_AUTH_MESSAGES.schoolInvalid
       }
       if (Object.keys(fields).length > 0 || !parsed.success) {
@@ -127,31 +145,39 @@ export class ProfileService {
 
       // BR-13: `email` (and any other key) in the body is not part of the schema and never reaches this patch.
       const now = this.clock.now()
-      await this.prisma.transaction(async () => {
-        await this.users.update(
-          user.id,
-          {
+      try {
+        await this.prisma.transaction(async () => {
+          await this.users.update(user.id, {
             name: data.name,
             ...(data.phone !== undefined ? { phone: blankToNull(data.phone) } : {}),
             ...(data.bio !== undefined ? { bio: blankToNull(data.bio) } : {}),
             ...(data.grade !== undefined ? { grade: data.grade } : {}),
-            ...(data.schoolId !== undefined && !staff ? { schoolId: data.schoolId } : {}),
+            ...(data.schoolId !== undefined && mayChooseSchool ? { schoolId: data.schoolId } : {}),
             now,
-          },
-        )
-        await this.audit.record({
-          action: ACCOUNT_AUDIT.PROFILE_UPDATED,
-          actorUserId: auth.userId,
-          actorRole: auth.active.role,
-          targetType: 'user',
-          targetId: auth.userId,
-          requestId: info.requestId,
-          ip: info.ip,
-          isTest: auth.mode !== null,
-          // Field names only, never the values.
-          details: { fields: Object.keys(data).filter((k) => (data as Record<string, unknown>)[k] !== undefined) },
-        })
-      }, ACCOUNT_TX)
+          })
+          await this.audit.record({
+            action: ACCOUNT_AUDIT.PROFILE_UPDATED,
+            actorUserId: auth.userId,
+            actorRole: auth.active.role,
+            targetType: 'user',
+            targetId: auth.userId,
+            requestId: info.requestId,
+            ip: info.ip,
+            isTest: auth.mode !== null,
+            // Field names only, never the values.
+            details: {
+              fields: Object.keys(data).filter(
+                (k) => (data as Record<string, unknown>)[k] !== undefined,
+              ),
+            },
+          })
+        }, ACCOUNT_TX)
+      } catch (err) {
+        // The school change collided with an existing username of the target school (unique per school).
+        if (!(err instanceof ApiError) && uniqueField(err) === 'username')
+          throw invalid({ schoolId: V.taken('username') })
+        throw err
+      }
       return this.me(auth)
     })
   }
@@ -175,6 +201,8 @@ export class ProfileService {
       if (!credentials) throw ApiError.of('UNAUTHORIZED')
       const check = await this.passwords.check(data.currentPassword, credentials.passwordHash)
       if (!check.ok) {
+        const failures = await this.throttle.passwordChangeFailed(auth.userId)
+        if (failures === PASSWORD_CHANGE_CEILING) await this.auditLocked(auth, failures, info)
         throw invalid({ currentPassword: ACCOUNT_AUTH_MESSAGES.currentPasswordWrong })
       }
 
@@ -202,15 +230,39 @@ export class ProfileService {
     })
   }
 
+  /** Ids and counts only. */
+  private async auditLocked(auth: AuthContext, failures: number, info: RequestInfo): Promise<void> {
+    await this.audit
+      .record({
+        action: ACCOUNT_AUDIT.PASSWORD_CHANGE_LOCKED,
+        actorUserId: auth.userId,
+        actorRole: auth.active.role,
+        targetType: 'user',
+        targetId: auth.userId,
+        requestId: info.requestId,
+        ip: info.ip,
+        details: { failures, windowMinutes: 15 },
+      })
+      .catch(() =>
+        this.logger.warn(`password change lock audit failed (requestId=${info.requestId ?? '-'})`),
+      )
+  }
+
   // --- POST /me/picture --------------------------------------------------------------------------------
 
   /** The picture goes through the BE-04 files service (type decided from the bytes, metadata stripped). */
-  async setPicture(auth: AuthContext, file: PictureUpload | undefined, info: RequestInfo): Promise<{ avatarUrl: string }> {
-    if (!file || file.buffer.length === 0) throw invalid({ profilePicture: ACCOUNT_PICTURE_MESSAGES.required })
+  async setPicture(
+    auth: AuthContext,
+    file: PictureUpload | undefined,
+    info: RequestInfo,
+  ): Promise<{ avatarUrl: string }> {
+    if (!file || file.buffer.length === 0)
+      throw invalid({ profilePicture: ACCOUNT_PICTURE_MESSAGES.required })
     if (!(ACCOUNT_PICTURE_MIME_TYPES as readonly string[]).includes(file.mimetype)) {
       throw invalid({ profilePicture: ACCOUNT_PICTURE_MESSAGES.type })
     }
-    if (file.buffer.length > ACCOUNT_PICTURE_MAX_KB * 1024) throw invalid({ profilePicture: ACCOUNT_PICTURE_MESSAGES.size })
+    if (file.buffer.length > ACCOUNT_PICTURE_MAX_KB * 1024)
+      throw invalid({ profilePicture: ACCOUNT_PICTURE_MESSAGES.size })
 
     const who = { ip: info.ip, requestId: info.requestId }
     const before = await this.data.avatarTokens(auth.userId)
@@ -219,9 +271,15 @@ export class ProfileService {
       ref = await this.files.upload(auth, 'avatar', { buffer: file.buffer }, who)
     } catch (err) {
       // The files service words its 422 for `fields.file`; this route answers on `profilePicture` with the contract copy.
-      if (err instanceof ApiError && err.code === 'VALIDATION_ERROR' && err.fields?.file !== undefined) {
+      if (
+        err instanceof ApiError &&
+        err.code === 'VALIDATION_ERROR' &&
+        err.fields?.file !== undefined
+      ) {
         const tooBig = /greater than/.test(err.fields.file)
-        throw invalid({ profilePicture: tooBig ? ACCOUNT_PICTURE_MESSAGES.size : ACCOUNT_PICTURE_MESSAGES.type })
+        throw invalid({
+          profilePicture: tooBig ? ACCOUNT_PICTURE_MESSAGES.size : ACCOUNT_PICTURE_MESSAGES.type,
+        })
       }
       throw err
     }
@@ -244,7 +302,9 @@ export class ProfileService {
         ip: info.ip,
         isTest: auth.mode !== null,
       })
-      .catch(() => this.logger.warn(`picture audit write failed (requestId=${info.requestId ?? '-'})`))
+      .catch(() =>
+        this.logger.warn(`picture audit write failed (requestId=${info.requestId ?? '-'})`),
+      )
     return { avatarUrl: ref.url }
   }
 }
