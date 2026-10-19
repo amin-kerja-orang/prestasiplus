@@ -1,0 +1,6 @@
+{"id":1,"user_id":1,"type":"earn","source":"practice","amount":5,"balance_after":5,"created_at":"2026-01-01T00:00:00Z"}
+{"id":2,"user_id":2,"type":"earn","source":"practice","amount":5,"balance_after":10,"created_at":"2026-01-01T00:00:00Z"}
+{"id":3,"user_id":3,"type":"spend","source":"practice","amount":5,"balance_after":15,"created_at":"2026-01-01T00:00:00Z"}
+{"id":4,"user_id":4,"type":"bonus","source":"practice","amount":5,"balance_after":20,"created_at":"2026-01-01T00:00:00Z"}
+{"id":5,"user_id":1,"type":"earn","source":"practice","amount":5,"balance_after":25,"created_at":"2026-01-01T00:00:00Z"}
+{"id":6,"user_id":2,"type":"mystery","source":"practice","amount":5,"balance_after":30,"created_at":"2026-01-01T00:00:00Z"}
