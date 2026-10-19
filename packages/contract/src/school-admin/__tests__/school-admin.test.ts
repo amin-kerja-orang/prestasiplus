@@ -14,7 +14,7 @@ import {
   AmaranSummarySchema,
   amaranCsvFilename,
 } from '../amaran'
-import { SCHOOL_ADMIN_FLASH, SCHOOL_ADMIN_MESSAGES } from '../common'
+import { SCHOOL_ADMIN_FLASH, SCHOOL_ADMIN_MESSAGES, SchoolAdminInitialCredentialSchema } from '../common'
 import { SCHOOL_ADMIN_COMPONENT_SCHEMAS } from '../paths'
 import { SchoolAdminPupilCreateRequestSchema, SchoolAdminPupilCreatedResultSchema, SchoolAdminPupilFormOptionsSchema, SchoolAdminPupilListResponseSchema } from '../pupils'
 import {
@@ -27,6 +27,7 @@ import {
 } from '../reports'
 import {
   SchoolAdminTeacherCreateRequestSchema,
+  SchoolAdminTeacherCreatedResultSchema,
   SchoolAdminTeacherListResponseSchema,
   SchoolAdminToggleActiveResultSchema,
 } from '../teachers'
@@ -320,42 +321,61 @@ describe('school-admin contract: teachers and pupils', () => {
     expect(Object.keys(SchoolAdminUserDetailSchema.shape)).not.toContain('icNumber')
   })
 
-  it('create teacher: valid and invalid bodies; unmanaged keys are stripped', () => {
-    const valid = { name: 'Cikgu Baharu', email: 'baharu@example.test', password: 'rahsia12', passwordConfirmation: 'rahsia12' }
+  it('create teacher: no password field (D59b); unmanaged keys, a password included, are stripped', () => {
+    const valid = { name: 'Cikgu Baharu', email: 'baharu@example.test' }
     expect(ok(SchoolAdminTeacherCreateRequestSchema, valid)).toBe(true)
     expect(ok(SchoolAdminTeacherCreateRequestSchema, { ...valid, phone: '0123456789' })).toBe(true)
-    expect(ok(SchoolAdminTeacherCreateRequestSchema, { ...valid, password: '1234567' })).toBe(false)
-    expect(ok(SchoolAdminTeacherCreateRequestSchema, { ...valid, password: 'x'.repeat(256), passwordConfirmation: 'x'.repeat(256) })).toBe(false)
-    expect(ok(SchoolAdminTeacherCreateRequestSchema, { ...valid, password: 'x'.repeat(255), passwordConfirmation: 'x'.repeat(255) })).toBe(true)
     expect(ok(SchoolAdminTeacherCreateRequestSchema, { ...valid, phone: '012345678901234' })).toBe(false)
     expect(ok(SchoolAdminTeacherCreateRequestSchema, { ...valid, name: '   ' })).toBe(false)
     expect(ok(SchoolAdminTeacherCreateRequestSchema, { ...valid, email: 'bukan-emel' })).toBe(false)
-    expect(ok(SchoolAdminTeacherCreateRequestSchema, { name: 'Tanpa Kata Laluan', email: 'x@example.test' })).toBe(false)
-    const parsed = SchoolAdminTeacherCreateRequestSchema.parse({ ...valid, role: 'admin', schoolId: '1', isActive: false })
-    expect(parsed).not.toHaveProperty('role')
-    expect(parsed).not.toHaveProperty('schoolId')
-    expect(parsed).not.toHaveProperty('isActive')
+    expect(Object.keys(SchoolAdminTeacherCreateRequestSchema.shape)).toEqual(['name', 'email', 'phone'])
+    const parsed = SchoolAdminTeacherCreateRequestSchema.parse({
+      ...valid,
+      password: 'rahsia12',
+      passwordConfirmation: 'rahsia12',
+      role: 'admin',
+      schoolId: '1',
+      isActive: false,
+    })
+    expect(parsed).toEqual(valid)
   })
 
-  it('create pupil: default password, class id, name minimum 3', () => {
+  it('create teacher result carries the one-time credential and must-change flag (D59b)', () => {
+    const result = {
+      data: { ...detail, role: 'teacher' },
+      credential: { name: 'Cikgu Baharu', school: 'SMK DEMO', email: 'baharu@example.test', password: 'aaaa-bbbb-cccc-1' },
+      mustChangePassword: true,
+      status: SCHOOL_ADMIN_FLASH.created,
+    }
+    expect(ok(SchoolAdminTeacherCreatedResultSchema, result)).toBe(true)
+    expect(ok(SchoolAdminTeacherCreatedResultSchema, { ...result, credential: undefined })).toBe(false)
+    expect(ok(SchoolAdminTeacherCreatedResultSchema, { ...result, mustChangePassword: false })).toBe(false)
+    expect(ok(SchoolAdminTeacherCreatedResultSchema, { ...result, mustChangePassword: undefined })).toBe(false)
+  })
+
+  it('initial credential: server-generated password of at least 12 characters', () => {
+    const cred = { name: 'Aisyah Demo', school: 'SMK DEMO', email: 'aisyah.demo@example.test', password: 'aaaa-bbbb-cccc-1' }
+    expect(ok(SchoolAdminInitialCredentialSchema, cred)).toBe(true)
+    expect(ok(SchoolAdminInitialCredentialSchema, { ...cred, password: 'short-11-chr' })).toBe(true)
+    expect(ok(SchoolAdminInitialCredentialSchema, { ...cred, password: 'DemoPass-01' })).toBe(false)
+  })
+
+  it('create pupil: no password field and no default password (D59b), class id, name minimum 3', () => {
     const valid = { name: 'Murid Baharu', email: 'murid@example.test' }
     expect(ok(SchoolAdminPupilCreateRequestSchema, valid)).toBe(true)
-    expect(ok(SchoolAdminPupilCreateRequestSchema, { ...valid, password: '', classId: '' })).toBe(true)
-    expect(ok(SchoolAdminPupilCreateRequestSchema, { ...valid, password: 'abcdefgh', classId: '7' })).toBe(true)
-    expect(ok(SchoolAdminPupilCreateRequestSchema, { ...valid, password: 'abcdefg' })).toBe(false)
-    expect(ok(SchoolAdminPupilCreateRequestSchema, { ...valid, password: 'x'.repeat(256) })).toBe(false)
+    expect(ok(SchoolAdminPupilCreateRequestSchema, { ...valid, classId: '' })).toBe(true)
+    expect(ok(SchoolAdminPupilCreateRequestSchema, { ...valid, classId: '7' })).toBe(true)
     expect(ok(SchoolAdminPupilCreateRequestSchema, { ...valid, name: 'Al' })).toBe(false)
     expect(ok(SchoolAdminPupilCreateRequestSchema, { ...valid, classId: 7 })).toBe(false)
-    const parsed = SchoolAdminPupilCreateRequestSchema.parse({ ...valid, role: 'teacher', grade: 9, icNumber: '000000000000' })
-    expect(parsed).not.toHaveProperty('role')
-    expect(parsed).not.toHaveProperty('grade')
-    expect(parsed).not.toHaveProperty('icNumber')
+    expect(Object.keys(SchoolAdminPupilCreateRequestSchema.shape)).toEqual(['name', 'email', 'classId'])
+    const parsed = SchoolAdminPupilCreateRequestSchema.parse({ ...valid, password: 'abcdefgh', role: 'teacher', grade: 9, icNumber: '000000000000' })
+    expect(parsed).toEqual(valid)
   })
 
   it('create pupil result carries the one-time credential', () => {
     const result = {
       data: detail,
-      credential: { name: 'Aisyah Demo', school: 'SMK DEMO', email: 'aisyah.demo@example.test', password: 'DemoPass-01' },
+      credential: { name: 'Aisyah Demo', school: 'SMK DEMO', email: 'aisyah.demo@example.test', password: 'aaaa-bbbb-cccc-1' },
       mustChangePassword: true,
       status: SCHOOL_ADMIN_FLASH.pupilCreated('Aisyah Demo'),
     }
@@ -367,7 +387,7 @@ describe('school-admin contract: teachers and pupils', () => {
   it('create pupil result requires the must-change-password flag (D55c)', () => {
     const result = {
       data: detail,
-      credential: { name: 'Aisyah Demo', school: 'SMK DEMO', email: 'aisyah.demo@example.test', password: 'DemoPass-01' },
+      credential: { name: 'Aisyah Demo', school: 'SMK DEMO', email: 'aisyah.demo@example.test', password: 'aaaa-bbbb-cccc-1' },
       mustChangePassword: true,
       status: SCHOOL_ADMIN_FLASH.pupilCreated('Aisyah Demo'),
     }
@@ -377,17 +397,11 @@ describe('school-admin contract: teachers and pupils', () => {
     expect(ok(SchoolAdminPupilCreatedResultSchema, { ...result, mustChangePassword: 'true' })).toBe(false)
   })
 
-  it('form options: 8 bullets, fixed hint and minimum', () => {
-    const opts = {
-      school,
-      classes: [{ id: '7', name: '4 Amanah' }],
-      passwordPlaceholder: '••••••••',
-      passwordHint: SCHOOL_ADMIN_MESSAGES.passwordHint,
-      passwordMinLength: 8,
-    }
+  it('form options: school and classes only, no password hints (D59b)', () => {
+    const opts = { school, classes: [{ id: '7', name: '4 Amanah' }] }
     expect(ok(SchoolAdminPupilFormOptionsSchema, opts)).toBe(true)
-    expect(ok(SchoolAdminPupilFormOptionsSchema, { ...opts, passwordMinLength: 6 })).toBe(false)
-    expect(ok(SchoolAdminPupilFormOptionsSchema, { ...opts, passwordPlaceholder: 'DemoPass-01' })).toBe(false)
+    expect(Object.keys(SchoolAdminPupilFormOptionsSchema.shape)).toEqual(['school', 'classes'])
+    expect(SchoolAdminPupilFormOptionsSchema.parse({ ...opts, passwordMinLength: 8 })).toEqual(opts)
   })
 
   it('update: phone null clears, password pair optional, unmanaged keys stripped', () => {
@@ -506,9 +520,9 @@ describe('school-admin contract: OpenAPI document', () => {
     required: string[]
     properties: {
       mustChangePassword: { description: string }
-      credential: { properties: { password: { description: string } } }
     }
   }
+  type CredentialDoc = { properties: { password: { description: string; minLength: number } } }
 
   const ROUTES: readonly [string, string][] = [
     ['get', '/admin-sekolah/dashboard'], ['get', '/admin-sekolah/usage'], ['get', '/admin-sekolah/laporan-aktiviti'],
@@ -600,6 +614,7 @@ describe('school-admin contract: OpenAPI document', () => {
   it('credential 201, both user CSVs and both reset-password 200s declare Cache-Control no-store and Pragma no-cache (D57b)', () => {
     const targets: readonly [string, string, string][] = [
       ['post', '/admin-sekolah/pelajar', '201'],
+      ['post', '/admin-sekolah/guru', '201'],
       ['get', '/admin-sekolah/pelajar/export.csv', '200'],
       ['get', '/admin-sekolah/guru/export.csv', '200'],
       ['post', '/admin-sekolah/pelajar/{id}/reset-password', '200'],
@@ -642,7 +657,7 @@ describe('school-admin contract: OpenAPI document', () => {
     expect(op.description).toMatch(/Idempotency-Key/)
     expect(op.description).toMatch(/enumeration/i)
     expect(op.description).toMatch(/mass assignment/i)
-    expect(op.description).toMatch(/risk accepted pending LEAD/i)
+    expect(op.description).toMatch(/no shared default password/i)
     const key = op.parameters?.find((p) => p.name === 'Idempotency-Key') as { required?: boolean } | undefined
     expect(key).toBeDefined()
     expect(key?.required ?? false).toBe(false)
@@ -672,21 +687,18 @@ describe('school-admin contract: OpenAPI document', () => {
     expect(JSON.stringify(doc.components.schemas.AmaranPupilRisk)).toBeDefined()
   })
 
-  it('passwords are write-only in every request schema', () => {
+  it('create requests carry no password field; update and reset passwords are write-only (D59b)', () => {
     const req = doc.components.schemas
     const props = (name: string) => (req[name]!.properties ?? {}) as Record<string, { writeOnly?: boolean }>
-    expect(props('SchoolAdminTeacherCreateRequest').password!.writeOnly).toBe(true)
-    expect(props('SchoolAdminTeacherCreateRequest').passwordConfirmation!.writeOnly).toBe(true)
-    expect(props('SchoolAdminPupilCreateRequest').password!.writeOnly).toBe(true)
+    expect(Object.keys(props('SchoolAdminTeacherCreateRequest'))).toEqual(['name', 'email', 'phone'])
+    expect(Object.keys(props('SchoolAdminPupilCreateRequest'))).toEqual(['name', 'email', 'classId'])
     expect(props('SchoolAdminUserUpdateRequest').newPassword!.writeOnly).toBe(true)
     expect(props('SchoolAdminResetPasswordRequest').newPassword!.writeOnly).toBe(true)
   })
 
-  it('every password field is 8 to 255 characters in the OpenAPI schema', () => {
+  it('every admin-chosen password field (update, reset) is 8 to 255 characters in the OpenAPI schema', () => {
     const req = doc.components.schemas
     const fields: readonly [string, string][] = [
-      ['SchoolAdminTeacherCreateRequest', 'password'],
-      ['SchoolAdminTeacherCreateRequest', 'passwordConfirmation'],
       ['SchoolAdminUserUpdateRequest', 'newPassword'],
       ['SchoolAdminUserUpdateRequest', 'newPasswordConfirmation'],
       ['SchoolAdminResetPasswordRequest', 'newPassword'],
@@ -697,9 +709,17 @@ describe('school-admin contract: OpenAPI document', () => {
       expect(prop.maxLength, `${name}.${field}`).toBe(255)
       if (!field.endsWith('Confirmation')) expect(prop.minLength, `${name}.${field}`).toBe(8)
     }
-    const pupil = JSON.stringify(req.SchoolAdminPupilCreateRequest!.properties)
-    expect(pupil).toContain('"minLength":8')
-    expect(pupil).toContain('"maxLength":255')
+  })
+
+  it('no admin-sekolah route offers a shared default password (D59b)', () => {
+    for (const path of ['/admin-sekolah/pelajar', '/admin-sekolah/guru']) {
+      const op = doc.paths[path]!.post!
+      expect(op.description, path).toMatch(/D59b/)
+      expect(op.description, path).toMatch(/CSPRNG/)
+      expect(op.description, path).toMatch(/at least 12 characters/)
+      expect(op.description, path).not.toMatch(/empty password means/i)
+    }
+    expect(JSON.stringify(doc.components.schemas.SchoolAdminPupilFormOptions)).not.toMatch(/password/i)
   })
 
   it('no response schema other than the one-time credential carries a password', () => {
@@ -707,8 +727,8 @@ describe('school-admin contract: OpenAPI document', () => {
     for (const [name, schema] of responseSchemas) {
       if (!/^(SchoolAdmin|Amaran)/.test(name)) continue
       const text = JSON.stringify(schema)
-      if (name === 'SchoolAdminPupilCreatedResult') continue
-      expect(/password/i.test(text.replace(/passwordPlaceholder|passwordHint|passwordMinLength/g, '')), name).toBe(false)
+      if (['SchoolAdminPupilCreatedResult', 'SchoolAdminTeacherCreatedResult', 'SchoolAdminInitialCredential'].includes(name)) continue
+      expect(/password/i.test(text), name).toBe(false)
     }
   })
 
@@ -717,7 +737,10 @@ describe('school-admin contract: OpenAPI document', () => {
     expect(schema.required).toContain('mustChangePassword')
     expect(schema.properties.mustChangePassword.description).toMatch(/first login/i)
     expect(schema.properties.mustChangePassword.description).toMatch(/BE-03/)
-    const pw = schema.properties.credential.properties.password.description as string
+    const cred = doc.components.schemas.SchoolAdminInitialCredential as unknown as CredentialDoc
+    expect(cred.properties.password.minLength).toBe(12)
+    const pw = cred.properties.password.description
+    expect(pw).toMatch(/CSPRNG/)
     expect(pw).toMatch(/once/i)
     expect(pw).toMatch(/only to the creating school admin/i)
     expect(pw).toMatch(/never logged/i)

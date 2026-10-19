@@ -624,6 +624,13 @@ describe('openapi registration', () => {
     }
   })
 
+  it('states the D59c scope of the opponent search (all schools, display fields only, rate-limited)', () => {
+    const op = get('get', '/battle/search-opponent') as { description?: string; responses: Record<string, unknown> }
+    expect(op.description).toContain('D59c')
+    expect(op.description).toContain('all schools')
+    expect(op.responses['429']).toBeDefined()
+  })
+
   it('every operation declares 401, and admin routes declare 403', () => {
     for (const { path, method, op } of own) expect(op.responses['401'], `${method} ${path}`).toBeDefined()
     expect(get('get', '/tournaments/form-options')?.responses['403']).toBeDefined()

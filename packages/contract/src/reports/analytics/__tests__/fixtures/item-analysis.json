@@ -1,0 +1,235 @@
+{
+  "options": {
+    "subjects": [
+      {
+        "id": 18,
+        "name": "Bahasa Arab"
+      },
+      {
+        "id": 19,
+        "name": "Bahasa Cina"
+      },
+      {
+        "id": 2,
+        "name": "Bahasa Inggeris"
+      },
+      {
+        "id": 1,
+        "name": "Bahasa Melayu"
+      },
+      {
+        "id": 20,
+        "name": "Bahasa Tamil"
+      },
+      {
+        "id": 11,
+        "name": "Biologi"
+      },
+      {
+        "id": 22,
+        "name": "Ekonomi"
+      },
+      {
+        "id": 9,
+        "name": "Fizik"
+      },
+      {
+        "id": 12,
+        "name": "Geografi"
+      },
+      {
+        "id": 26,
+        "name": "Jawi"
+      },
+      {
+        "id": 10,
+        "name": "Kimia"
+      },
+      {
+        "id": 3,
+        "name": "Matematik"
+      },
+      {
+        "id": 8,
+        "name": "Matematik Tambahan"
+      },
+      {
+        "id": 29,
+        "name": "Pembuatan Pakaian Wanita"
+      },
+      {
+        "id": 24,
+        "name": "Pendidikan Al-Quran & As-Sunnah"
+      },
+      {
+        "id": 6,
+        "name": "Pendidikan Islam"
+      },
+      {
+        "id": 15,
+        "name": "Pendidikan Jasmani & Kesihatan"
+      },
+      {
+        "id": 7,
+        "name": "Pendidikan Moral"
+      },
+      {
+        "id": 14,
+        "name": "Pendidikan Muzik"
+      },
+      {
+        "id": 13,
+        "name": "Pendidikan Seni Visual"
+      },
+      {
+        "id": 27,
+        "name": "Pendidikan Syariah Islamiah"
+      },
+      {
+        "id": 23,
+        "name": "Perniagaan"
+      },
+      {
+        "id": 30,
+        "name": "Pertanian"
+      },
+      {
+        "id": 21,
+        "name": "Prinsip Perakaunan"
+      },
+      {
+        "id": 16,
+        "name": "Reka Bentuk & Teknologi"
+      }
+    ],
+    "classes": [
+      {
+        "id": 2001,
+        "name": "5 MARIKH - Kimia"
+      },
+      {
+        "id": 2002,
+        "name": "5 MARIKH - Sejarah"
+      }
+    ]
+  },
+  "rows": [
+    {
+      "questionId": 700205,
+      "textPlain": "Sejarah Tingkatan 4 no. 5: pilih jawapan yang betul.",
+      "subjectName": "Sejarah",
+      "attempts": 3,
+      "pct": 0,
+      "band": "sukar",
+      "discrimination": null
+    },
+    {
+      "questionId": 700005,
+      "textPlain": "Kimia Tingkatan 5 (siri homolog) no. 5: pilih jawapan yang betul.",
+      "subjectName": "Kimia",
+      "attempts": 8,
+      "pct": 12.5,
+      "band": "sukar",
+      "discrimination": -0.5
+    },
+    {
+      "questionId": 700006,
+      "textPlain": "Kimia Tingkatan 5 (siri homolog) no. 6: pilih jawapan yang betul.",
+      "subjectName": "Kimia",
+      "attempts": 8,
+      "pct": 12.5,
+      "band": "sukar",
+      "discrimination": 0.5
+    },
+    {
+      "questionId": 700004,
+      "textPlain": "Kimia Tingkatan 5 (polimer) no. 4: pilih jawapan yang betul.",
+      "subjectName": "Kimia",
+      "attempts": 8,
+      "pct": 25,
+      "band": "sukar",
+      "discrimination": 0
+    },
+    {
+      "questionId": 700204,
+      "textPlain": "Sejarah Tingkatan 4 no. 4: pilih jawapan yang betul.",
+      "subjectName": "Sejarah",
+      "attempts": 3,
+      "pct": 33.3,
+      "band": "sukar",
+      "discrimination": null
+    },
+    {
+      "questionId": 700002,
+      "textPlain": "Kimia Tingkatan 5 (sel elektrolisis) no. 2: pilih jawapan yang betul.",
+      "subjectName": "Kimia",
+      "attempts": 10,
+      "pct": 50,
+      "band": "sederhana",
+      "discrimination": 0.333
+    },
+    {
+      "questionId": 700007,
+      "textPlain": "Kimia Tingkatan 5 (getah asli) no. 7: pilih jawapan yang betul.",
+      "subjectName": "Kimia",
+      "attempts": 8,
+      "pct": 50,
+      "band": "sederhana",
+      "discrimination": 1
+    },
+    {
+      "questionId": 700008,
+      "textPlain": "Kimia Tingkatan 5 (getah asli) no. 8: pilih jawapan yang betul.",
+      "subjectName": "Kimia",
+      "attempts": 8,
+      "pct": 50,
+      "band": "sederhana",
+      "discrimination": 1
+    },
+    {
+      "questionId": 700003,
+      "textPlain": "Kimia Tingkatan 5 (polimer) no. 3: pilih jawapan yang betul.",
+      "subjectName": "Kimia",
+      "attempts": 10,
+      "pct": 60,
+      "band": "sederhana",
+      "discrimination": 0.25
+    },
+    {
+      "questionId": 700203,
+      "textPlain": "Sejarah Tingkatan 4 no. 3: pilih jawapan yang betul.",
+      "subjectName": "Sejarah",
+      "attempts": 3,
+      "pct": 66.7,
+      "band": "sederhana",
+      "discrimination": null
+    },
+    {
+      "questionId": 700001,
+      "textPlain": "Kimia Tingkatan 5 (sel elektrolisis) no. 1: pilih jawapan yang betul.",
+      "subjectName": "Kimia",
+      "attempts": 8,
+      "pct": 75,
+      "band": "mudah",
+      "discrimination": 1
+    },
+    {
+      "questionId": 700201,
+      "textPlain": "Sejarah Tingkatan 4 no. 1: pilih jawapan yang betul.",
+      "subjectName": "Sejarah",
+      "attempts": 3,
+      "pct": 100,
+      "band": "mudah",
+      "discrimination": null
+    },
+    {
+      "questionId": 700202,
+      "textPlain": "Sejarah Tingkatan 4 no. 2: pilih jawapan yang betul.",
+      "subjectName": "Sejarah",
+      "attempts": 3,
+      "pct": 100,
+      "band": "mudah",
+      "discrimination": null
+    }
+  ]
+}
