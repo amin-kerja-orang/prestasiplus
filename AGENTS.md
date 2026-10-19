@@ -128,6 +128,12 @@ The NestJS + PostgreSQL backend is built by several PCs and Claude Code sessions
 - Lanes, order, sync points, Gantt, file-ownership map and the GitHub flow: [docs/plan/sessions.md](docs/plan/sessions.md).
 - Paste-ready agent prompts per lane and how to start a PC: [docs/plan/agent-kickoff/](docs/plan/agent-kickoff/README.md). Task cards: [docs/plan/backend-tasks/](docs/plan/backend-tasks/README.md).
 - Backend requirements (functional, non-functional, migration, ops, traceability to cards): [docs/requirements/v2-backend-urs.md](docs/requirements/v2-backend-urs.md). Developer handbook (layout, module anatomy, errors and BM copy, Prisma, testing, Definition of Done): [docs/plan/backend-dev-guide.md](docs/plan/backend-dev-guide.md). Read both before working on a card.
+- New PC: [docs/plan/onboarding.md](docs/plan/onboarding.md) (setup from zero, env names, Docker, common errors).
+- API catalogue (every mock endpoint with roles, shapes, errors and exact BM messages, card, contract status): [docs/architecture/v2-api-catalogue.md](docs/architecture/v2-api-catalogue.md).
+- Data model (ERD per domain, store owners, legacy columns, mapping gaps): [docs/architecture/v2-data-model.md](docs/architecture/v2-data-model.md).
+- Frontend/backend switch (contract, mock, hybrid/http, cookies, CSRF, compose e2e): [docs/plan/fullstack-integration-guide.md](docs/plan/fullstack-integration-guide.md).
+- Frontend handbook (design system, ratchets, responsive, testids): [docs/plan/frontend-dev-guide.md](docs/plan/frontend-dev-guide.md).
+- Test strategy and gate evidence: [docs/qa/v2-test-strategy.md](docs/qa/v2-test-strategy.md).
 - Backend agents: branch `be/<card-id>-<slug>` from `feature/v2-backend`, PR into it, contract first, work only in your lane's folders, never `src/**`, `e2e/**` or `docs/TRACKER.md`, no secrets and no access to the old systems' databases (the lead supplies anonymised dumps out-of-band).
 
 ## 9. How to pick up a task
