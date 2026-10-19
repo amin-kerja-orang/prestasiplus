@@ -102,6 +102,7 @@ Newest first. The lead appends a line when a card merges, a decision is made or 
 
 | Date | Entry |
 |---|---|
+| 2026-10-19 | LEAD merged contract-only PRs: BE-22(-) BE-44(#12) BE-45(#13) BE-46(#14) BE-47(#15) BE-16(#10) after code review (Approve). Append-only conflicts resolved; openapi.json regenerated; contract:check, contract tests and tsc green. Cards back to `todo` for their full implementation. |
 | 2026-10-19 | LEAD merged contract-only PRs: BE-08(-) BE-12(-) BE-17(-) after code review (Approve). Append-only conflicts resolved; openapi.json regenerated; contract:check, contract tests and tsc green. Cards back to `todo` for their full implementation. |
 | 2026-10-19 | LEAD merged contract-only PRs: BE-10(#7) BE-15(#8) BE-41(#9) BE-48(#5) after code review (Approve). Append-only conflicts resolved; openapi.json regenerated; contract:check, contract tests and tsc green. Cards back to `todo` for their full implementation. |
 | 2026-10-19 | LEAD merged contract-only PRs #1 BE-11 (wallet), #2 BE-24 (content, support), #3 BE-23 (gamification, rewards) after code review (Approve, no Blocker/Major). openapi.ts/index.ts conflicts resolved append-only; openapi.json regenerated; contract:check ok, packages/contract 182 tests pass. Cards back to `todo` for their full implementation. |
