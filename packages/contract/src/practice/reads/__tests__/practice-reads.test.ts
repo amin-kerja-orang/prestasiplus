@@ -336,9 +336,11 @@ describe('OpenAPI document', () => {
     expect(op?.responses['401']).toBeDefined()
   })
 
-  it('does not register the BE-18 routes', () => {
-    expect(doc.paths['/missions/today']).toBeUndefined()
-    expect(doc.paths['/remedial-tests/mine']).toBeUndefined()
+  it('leaves the BE-18 routes (missions, remedial tests) to BE-18', () => {
+    // Other cards may register these paths; BE-13 only checks that none of them is tagged practice-reads.
+    for (const path of ['/missions/today', '/remedial-tests/mine']) {
+      expect(mine(path, 'get')?.tags ?? [], path).not.toContain('practice-reads')
+    }
   })
 
   it('registers every PracticeRead component, none colliding with BE-12 names', () => {
