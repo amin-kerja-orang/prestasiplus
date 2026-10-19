@@ -60,6 +60,25 @@ Rules for `contract-only`:
 - **Lanes are file-ownership groups, not people.** The lane of a card (tracker column `Lane`) tells you which lane prompt to read and which folders you may edit while you hold that card.
 - More PCs help only while there are ready cards. When none is ready, a PC does the "blocked" work of [sessions.md](sessions.md) section 2 or stops and reports `idle`.
 
+## 0c. Understand the system first (every new session, before picking a card)
+
+Skim these in order. They take about 15 minutes, and without them a card is easy to misread.
+
+| # | Read | Why |
+|---|---|---|
+| 1 | `AGENTS.md` | What PrestasiPlus is, and the repo rules (privacy, English docs, no secrets). |
+| 2 | [docs/README.md](../README.md) | Docs index: where everything lives. |
+| 3 | `docs/TRACKER.md`, decision rows **D28 to D52** only | v2 direction: a new system, two portals, one question bank, the intake pipeline, migration from .cloud. |
+| 4 | [docs/requirements/role-access-matrix.md](../requirements/role-access-matrix.md) | **Top priority.** Roles, and who may do what. Every auth and scope check follows it. |
+| 5 | [docs/requirements/v2-portals.md](../requirements/v2-portals.md) | Portal Pentadbiran and Portal Pembelajaran, Mod Pelajar. |
+| 6 | [docs/architecture/v2-backend-plan.md](../architecture/v2-backend-plan.md) sections 1 to 7, 14 and 15 | What we are building, the stack, the layout, the data model, contract-first, the frontend switch, migration-first, SPM intake. |
+| 7 | [docs/requirements/v2-backend-urs.md](../requirements/v2-backend-urs.md) and [backend-dev-guide.md](backend-dev-guide.md) | Testable backend requirements, and the coding conventions every PC uses. |
+
+Then, for the card you take, read its domain sources:
+- the module URS and SRS: `docs/requirements/urs/Mxx-*.md`, `docs/requirements/srs/Mxx-*.md`;
+- the module's mock handlers, tables and seeds in `src/modules/<module>/mock/`. The mock is the behavioural spec;
+- the v2 domain docs the card names, for example `docs/requirements/v2-question-bank.md`, `v2-exam-schema.md`, `v2-bijak-spm.md` and `docs/architecture/v2-data-migration.md`.
+
 ## 1. Start of session: find your task
 
 ```

@@ -3,6 +3,8 @@
 | Field | Value |
 |---|---|
 | Size | M |
+| Lane | PC-4 (folders: sessions.md section 5) |
+| Priority | P1 |
 | Wave | M (migration stream) |
 | Depends on | BE-27 (needs `staging_cloud.sql`) |
 | Parallel with | every API card, BE-28 |
@@ -58,7 +60,7 @@ npm run be:verify
 ```text
 You are the backend developer for PrestasiPlus v2 working on task BE-35 (anonymiser-fixtures). Work in this repo clone on branch be/BE-35-anonymiser-fixtures, created from the latest origin/feature/v2-backend.
 Read first, in order: AGENTS.md; docs/architecture/v2-backend-plan.md (sections 9, 10 and 14); docs/architecture/v2-data-migration.md (sections 1, 4, 5); docs/plan/backend-tasks/BE-35-anonymiser-fixtures.md (this card, all of it).
-Rules: Never commit secrets, keys, real personal names or any real data. You have NO access to the real .cloud database and must not ask for it; build and test only against synthetic data. Do not edit src/**, e2e/**, docs/TRACKER.md or contract folders. Keep the diff inside the card Outputs.
+Rules: Never commit secrets, keys, real personal names or any real data. You have NO access to the real .cloud database and must not ask for it; build and test only against synthetic data. Do not edit src/**, e2e/**, docs/TRACKER.md or contract folders. Keep the diff inside the card Outputs and its "Files touched" list; commit after every green step and push at least hourly and before the session ends (AGENT-SYNC.md).
 Task: implement the anonymiser (default-deny column rules, deterministic HMAC pseudonyms, leak scan) and the seeded synthetic fixture generator that emit the staging_cloud shape defined by BE-27. Needs a security review.
 When finished run npm run be:verify and report: files changed, real test output, deviations, open questions. Update docs/plan/backend-tracker.md (your card row) in the same PR.
 ```

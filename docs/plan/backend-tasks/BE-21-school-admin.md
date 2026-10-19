@@ -3,6 +3,8 @@
 | Field | Value |
 |---|---|
 | Size | L |
+| Lane | PC-6 (folders: sessions.md section 5) |
+| Priority | P1 |
 | Wave | 4 |
 | Depends on | BE-05, BE-17, BE-19 |
 | Parallel with | BE-20, BE-22, BE-26 |
@@ -60,8 +62,8 @@ npm run be:verify
 
 ```text
 You are the backend developer for PrestasiPlus v2 working on task BE-21 (school-admin). Work in this repo clone on branch be/BE-21-school-admin, created from the latest origin/feature/v2-backend.
-Read first, in order: AGENTS.md; docs/architecture/v2-backend-plan.md (sections 3, 6, 9, 10); docs/plan/backend-tasks/BE-21-school-admin.md (this card, all of it).
-Rules: contract first (zod schemas in packages/contract/src/<domain>/, import z from ../zod, register in src/openapi.ts, run npm run contract:emit and commit openapi.json before the implementation). The frontend mock handlers, the typed client and the SRS listed in the card are the behavioural spec: do not invent business rules; write every unknown under "Open questions" in the PR description. Never commit secrets or real personal names. Do not edit src/**, e2e/**, docs/TRACKER.md or the contract common/session/auth/access folders (BE-14 and BE-32 have the explicit exceptions stated in their cards). Keep the diff inside the card Outputs.
+Read first, in order: docs/plan/AGENT-SYNC.md (how to claim, commit and push); AGENTS.md; docs/architecture/v2-backend-plan.md (sections 3, 6, 9, 10, 14; section 15 for intake and builder cards); docs/plan/sessions.md section 5 (folder ownership); docs/plan/backend-tasks/BE-21-school-admin.md (this card, all of it).
+Rules: contract first (zod schemas in packages/contract/src/<domain>/, import z from ../zod, register in src/openapi.ts, run npm run contract:emit and commit openapi.json before the implementation). The frontend mock handlers, the typed client and the SRS listed in the card are the behavioural spec: do not invent business rules; write every unknown under "Open questions" in the PR description. Never commit secrets or real personal names. Do not edit src/**, e2e/**, docs/TRACKER.md or the contract common/session/auth/access folders (BE-14 and BE-32 have the explicit exceptions stated in their cards). Keep the diff inside the card Outputs and its "Files touched" list; commit after every green step and push at least hourly and before the session ends (AGENT-SYNC.md).
 When finished run npm run be:verify (and the card test commands) and report: files changed, endpoints done, tables, real test output, deviations from the mock/contract, open questions.
 Task: implement BE-21 by composing the owner repositories (users, classes, performance); do not duplicate their SQL. Confirm the literal route strings in the m27 mock handlers before writing the contract. Impersonation must reuse the BE-03 Mod Pelajar session mode, not a parallel mechanism. Needs a security review.
 ```

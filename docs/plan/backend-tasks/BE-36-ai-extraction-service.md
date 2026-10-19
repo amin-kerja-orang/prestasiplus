@@ -3,6 +3,8 @@
 | Field | Value |
 |---|---|
 | Size | M |
+| Lane | PC-5 (folders: sessions.md section 5) |
+| Priority | P1 |
 | Wave | 1/2 (starts after BE-03) |
 | Depends on | BE-03 |
 | Parallel with | BE-04, BE-05, BE-08, BE-37 |
@@ -74,7 +76,7 @@ npm run be:verify
 ```text
 You are the backend developer for PrestasiPlus v2 working on task BE-36 (ai-extraction-service). Work in this repo clone on branch be/BE-36-ai-extraction-service, created from the latest origin/feature/v2-backend.
 Read first, in order: AGENTS.md; docs/architecture/v2-backend-plan.md (sections 3, 6, 9, 10, 14, 15); docs/plan/backend-tasks/BE-36-ai-extraction-service.md (this card, all of it).
-Rules: contract first (zod schemas in packages/contract/src/ai/, import z from ../zod, register in src/openapi.ts, run npm run contract:emit and commit openapi.json before the implementation). The frontend mock extractor (paths from the lead) and docs/requirements/v2-question-bank.md are the behavioural spec: do not invent business rules; write every unknown under "Open questions" in the PR. Never commit secrets or real personal names; API keys exist only in server environment variables; tests use recorded fixtures and the mock provider, never the network. Do not edit src/**, e2e/**, docs/TRACKER.md or the contract common/session/auth/access folders. Keep the diff inside the card Outputs.
+Rules: contract first (zod schemas in packages/contract/src/ai/, import z from ../zod, register in src/openapi.ts, run npm run contract:emit and commit openapi.json before the implementation). The frontend mock extractor (paths from the lead) and docs/requirements/v2-question-bank.md are the behavioural spec: do not invent business rules; write every unknown under "Open questions" in the PR. Never commit secrets or real personal names; API keys exist only in server environment variables; tests use recorded fixtures and the mock provider, never the network. Do not edit src/**, e2e/**, docs/TRACKER.md or the contract common/session/auth/access folders. Keep the diff inside the card Outputs and its "Files touched" list; commit after every green step and push at least hourly and before the session ends (AGENT-SYNC.md).
 Task: implement BE-36 exactly as the card says: provider adapter interface, mock + anthropic + openai + gemini + openai-compatible adapters, redaction, rate limit, cost log, budget cap, admin status/usage/settings endpoints. Needs a security review.
 When finished run npm run be:verify and report: files changed, endpoints, tables, real test output, deviations, open questions. Update docs/plan/backend-tracker.md (your card row) in the same PR.
 ```

@@ -3,6 +3,8 @@
 | Field | Value |
 |---|---|
 | Size | L |
+| Lane | PC-3 (folders: sessions.md section 5) |
+| Priority | P1 |
 | Wave | 3 |
 | Depends on | BE-15, BE-14, BE-04, BE-11 |
 | Parallel with | BE-17, BE-18, BE-23 |
@@ -78,8 +80,8 @@ npm run be:verify
 
 ```text
 You are the backend developer for PrestasiPlus v2 working on task BE-16 (bijak-attempts). Work in this repo clone on branch be/BE-16-bijak-attempts, created from the latest origin/feature/v2-backend.
-Read first, in order: AGENTS.md; docs/architecture/v2-backend-plan.md (sections 3, 6, 9, 10); docs/plan/backend-tasks/BE-16-bijak-attempts.md (this card, all of it).
-Rules: contract first (zod schemas in packages/contract/src/<domain>/, import z from ../zod, register in src/openapi.ts, run npm run contract:emit and commit openapi.json before the implementation). The frontend mock handlers, the typed client and the SRS listed in the card are the behavioural spec: do not invent business rules; write every unknown under "Open questions" in the PR description. Never commit secrets or real personal names. Do not edit src/**, e2e/**, docs/TRACKER.md or the contract common/session/auth/access folders (BE-14 and BE-32 have the explicit exceptions stated in their cards). Keep the diff inside the card Outputs.
+Read first, in order: docs/plan/AGENT-SYNC.md (how to claim, commit and push); AGENTS.md; docs/architecture/v2-backend-plan.md (sections 3, 6, 9, 10, 14; section 15 for intake and builder cards); docs/plan/sessions.md section 5 (folder ownership); docs/plan/backend-tasks/BE-16-bijak-attempts.md (this card, all of it).
+Rules: contract first (zod schemas in packages/contract/src/<domain>/, import z from ../zod, register in src/openapi.ts, run npm run contract:emit and commit openapi.json before the implementation). The frontend mock handlers, the typed client and the SRS listed in the card are the behavioural spec: do not invent business rules; write every unknown under "Open questions" in the PR description. Never commit secrets or real personal names. Do not edit src/**, e2e/**, docs/TRACKER.md or the contract common/session/auth/access folders (BE-14 and BE-32 have the explicit exceptions stated in their cards). Keep the diff inside the card Outputs and its "Files touched" list; commit after every green step and push at least hourly and before the session ends (AGENT-SYNC.md).
 When finished run npm run be:verify (and the card test commands) and report: files changed, endpoints done, tables, real test output, deviations from the mock/contract, open questions.
 Task: implement BE-16 by porting the behaviour of BijakServer (src/modules/m28-bijak-spm/server/store.ts) and its tests to HTTP endpoints backed by Postgres, marking with @pp/exam-core. The server clock decides the deadline. Add a recursive scan test proving no key/scheme leaks before reveal. Use the BE-04 files service for working photos. Needs a security review: list the reveal-rule and ownership tests in the PR.
 ```

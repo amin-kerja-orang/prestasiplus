@@ -3,6 +3,8 @@
 | Field | Value |
 |---|---|
 | Size | S |
+| Lane | PC-5 (folders: sessions.md section 5) |
+| Priority | P2 |
 | Wave | 4 |
 | Depends on | BE-36, BE-38 |
 | Parallel with | BE-20, BE-21, BE-22, BE-26 |
@@ -56,7 +58,7 @@ npm run be:verify
 ```text
 You are the backend developer for PrestasiPlus v2 working on task BE-40 (intake-dashboard-ai-usage). Work in this repo clone on branch be/BE-40-intake-dashboard-ai-usage, created from the latest origin/feature/v2-backend.
 Read first, in order: AGENTS.md; docs/architecture/v2-backend-plan.md (sections 3, 6, 9, 10, 15); docs/plan/backend-tasks/BE-40-intake-dashboard-ai-usage.md (this card, all of it).
-Rules: contract first (zod schemas in packages/contract/src/intake/, import z from ../zod, register in src/openapi.ts, run npm run contract:emit and commit openapi.json before the implementation). The frontend dashboard mock (paths from the lead) and docs/requirements/v2-question-bank.md US-29 are the spec: do not invent business rules; unknowns go under "Open questions" in the PR. Never commit secrets or real personal names. Do not edit src/**, e2e/**, docs/TRACKER.md or the contract common/session/auth/access folders. Keep the diff inside the card Outputs.
+Rules: contract first (zod schemas in packages/contract/src/intake/, import z from ../zod, register in src/openapi.ts, run npm run contract:emit and commit openapi.json before the implementation). The frontend dashboard mock (paths from the lead) and docs/requirements/v2-question-bank.md US-29 are the spec: do not invent business rules; unknowns go under "Open questions" in the PR. Never commit secrets or real personal names. Do not edit src/**, e2e/**, docs/TRACKER.md or the contract common/session/auth/access folders. Keep the diff inside the card Outputs and its "Files touched" list; commit after every green step and push at least hourly and before the session ends (AGENT-SYNC.md).
 Task: implement BE-40 read models for the intake dashboard and AI cost view.
 When finished run npm run be:verify and report: files changed, endpoints, real test output, deviations, open questions. Update docs/plan/backend-tracker.md (your card row) in the same PR.
 ```

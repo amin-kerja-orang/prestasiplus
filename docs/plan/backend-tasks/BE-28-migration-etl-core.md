@@ -3,6 +3,8 @@
 | Field | Value |
 |---|---|
 | Size | L |
+| Lane | PC-4 (folders: sessions.md section 5) |
+| Priority | P1 |
 | Wave | M |
 | Depends on | BE-27, BE-05, BE-08, BE-17, BE-25; **open decision OD-10** (Q1 to Q3, Q6) |
 | Parallel with | API cards after BE-17 |
@@ -64,8 +66,8 @@ npm run migrate:core -- --dry-run     # against fixtures only
 
 ```text
 You are the backend developer for PrestasiPlus v2 working on task BE-28 (migration-etl-core). Work in this repo clone on branch be/BE-28-migration-etl-core, created from the latest origin/feature/v2-backend.
-Read first, in order: AGENTS.md; docs/architecture/v2-backend-plan.md (sections 3, 6, 9, 10); docs/plan/backend-tasks/BE-28-migration-etl-core.md (this card, all of it).
-Rules: contract first (zod schemas in packages/contract/src/<domain>/, import z from ../zod, register in src/openapi.ts, run npm run contract:emit and commit openapi.json before the implementation). The frontend mock handlers, the typed client and the SRS listed in the card are the behavioural spec: do not invent business rules; write every unknown under "Open questions" in the PR description. Never commit secrets or real personal names. Do not edit src/**, e2e/**, docs/TRACKER.md or the contract common/session/auth/access folders (BE-14 and BE-32 have the explicit exceptions stated in their cards). Keep the diff inside the card Outputs.
+Read first, in order: docs/plan/AGENT-SYNC.md (how to claim, commit and push); AGENTS.md; docs/architecture/v2-backend-plan.md (sections 3, 6, 9, 10, 14; section 15 for intake and builder cards); docs/plan/sessions.md section 5 (folder ownership); docs/plan/backend-tasks/BE-28-migration-etl-core.md (this card, all of it).
+Rules: contract first (zod schemas in packages/contract/src/<domain>/, import z from ../zod, register in src/openapi.ts, run npm run contract:emit and commit openapi.json before the implementation). The frontend mock handlers, the typed client and the SRS listed in the card are the behavioural spec: do not invent business rules; write every unknown under "Open questions" in the PR description. Never commit secrets or real personal names. Do not edit src/**, e2e/**, docs/TRACKER.md or the contract common/session/auth/access folders (BE-14 and BE-32 have the explicit exceptions stated in their cards). Keep the diff inside the card Outputs and its "Files touched" list; commit after every green step and push at least hourly and before the session ends (AGENT-SYNC.md).
 When finished run npm run be:verify (and the card test commands) and report: files changed, endpoints done, tables, real test output, deviations from the mock/contract, open questions.
 Task: implement BE-28 following docs/architecture/v2-data-migration.md exactly (do not redesign). Use the open-question defaults of its section 7 only where noted and list each default you relied on in the PR. Never write to the source, never log personal data, never store plaintext passwords or IC. Everything is tested with synthetic fixtures. Needs a security review.
 ```

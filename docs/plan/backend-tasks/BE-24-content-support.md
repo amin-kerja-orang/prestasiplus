@@ -3,6 +3,8 @@
 | Field | Value |
 |---|---|
 | Size | M |
+| Lane | PC-1 (folders: sessions.md section 5) |
+| Priority | P1 |
 | Wave | 1 |
 | Depends on | BE-03, BE-04 (BE-05 for school scoping) |
 | Parallel with | BE-08, BE-11, BE-25 |
@@ -67,8 +69,8 @@ npm run be:verify
 
 ```text
 You are the backend developer for PrestasiPlus v2 working on task BE-24 (content-support). Work in this repo clone on branch be/BE-24-content-support, created from the latest origin/feature/v2-backend.
-Read first, in order: AGENTS.md; docs/architecture/v2-backend-plan.md (sections 3, 6, 9, 10); docs/plan/backend-tasks/BE-24-content-support.md (this card, all of it).
-Rules: contract first (zod schemas in packages/contract/src/<domain>/, import z from ../zod, register in src/openapi.ts, run npm run contract:emit and commit openapi.json before the implementation). The frontend mock handlers, the typed client and the SRS listed in the card are the behavioural spec: do not invent business rules; write every unknown under "Open questions" in the PR description. Never commit secrets or real personal names. Do not edit src/**, e2e/**, docs/TRACKER.md or the contract common/session/auth/access folders (BE-14 and BE-32 have the explicit exceptions stated in their cards). Keep the diff inside the card Outputs.
+Read first, in order: docs/plan/AGENT-SYNC.md (how to claim, commit and push); AGENTS.md; docs/architecture/v2-backend-plan.md (sections 3, 6, 9, 10, 14; section 15 for intake and builder cards); docs/plan/sessions.md section 5 (folder ownership); docs/plan/backend-tasks/BE-24-content-support.md (this card, all of it).
+Rules: contract first (zod schemas in packages/contract/src/<domain>/, import z from ../zod, register in src/openapi.ts, run npm run contract:emit and commit openapi.json before the implementation). The frontend mock handlers, the typed client and the SRS listed in the card are the behavioural spec: do not invent business rules; write every unknown under "Open questions" in the PR description. Never commit secrets or real personal names. Do not edit src/**, e2e/**, docs/TRACKER.md or the contract common/session/auth/access folders (BE-14 and BE-32 have the explicit exceptions stated in their cards). Keep the diff inside the card Outputs and its "Files touched" list; commit after every green step and push at least hourly and before the session ends (AGENT-SYNC.md).
 When finished run npm run be:verify (and the card test commands) and report: files changed, endpoints done, tables, real test output, deviations from the mock/contract, open questions.
 Task: implement BE-24. Port content and ticket behaviour from the m09 and m22 mock handlers. Sanitise all HTML on write, never trust a client-sent userId, and notify admins through NotificationsService (BE-06). Cover audio KBAT only for the routes listed; student audio play is backlog.
 ```

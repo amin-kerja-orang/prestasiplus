@@ -3,6 +3,8 @@
 | Field | Value |
 |---|---|
 | Size | L |
+| Lane | PC-5 (folders: sessions.md section 5) |
+| Priority | P1 |
 | Wave | 2 (starts after BE-04) |
 | Depends on | BE-04 (and BE-03) |
 | Parallel with | BE-36, BE-08, BE-09, BE-05 |
@@ -73,7 +75,7 @@ npm run be:verify
 ```text
 You are the backend developer for PrestasiPlus v2 working on task BE-37 (intake-files-ocr). Work in this repo clone on branch be/BE-37-intake-files-ocr, created from the latest origin/feature/v2-backend.
 Read first, in order: AGENTS.md; docs/architecture/v2-backend-plan.md (sections 3, 6, 9, 10, 15); docs/plan/backend-tasks/BE-37-intake-files-ocr.md (this card, all of it).
-Rules: contract first (zod schemas in packages/contract/src/intake/, import z from ../zod, register in src/openapi.ts, run npm run contract:emit and commit openapi.json before the implementation). The frontend intake code (paths from the lead) and docs/requirements/v2-question-bank.md are the behavioural spec: do not invent business rules; unknowns go under "Open questions" in the PR. Never commit secrets, real papers or real personal names; generate test PDFs inside the tests. Do not edit src/**, e2e/**, docs/TRACKER.md or the contract common/session/auth/access folders. Keep the diff inside the card Outputs. Use BE-04 FileStorage; do not write files to disk any other way.
+Rules: contract first (zod schemas in packages/contract/src/intake/, import z from ../zod, register in src/openapi.ts, run npm run contract:emit and commit openapi.json before the implementation). The frontend intake code (paths from the lead) and docs/requirements/v2-question-bank.md are the behavioural spec: do not invent business rules; unknowns go under "Open questions" in the PR. Never commit secrets, real papers or real personal names; generate test PDFs inside the tests. Do not edit src/**, e2e/**, docs/TRACKER.md or the contract common/session/auth/access folders. Keep the diff inside the card Outputs and its "Files touched" list; commit after every green step and push at least hourly and before the session ends (AGENT-SYNC.md). Use BE-04 FileStorage; do not write files to disk any other way.
 Task: implement BE-37: batches and file upload, DB-backed job runner, pdfjs-dist text extraction, page rendering, tesseract.js OCR in a bounded worker pool, figure crops, authenticated image serving. Needs a security review.
 When finished run npm run be:verify and report: files changed, endpoints, tables, real test output, deviations, open questions. Update docs/plan/backend-tracker.md (your card row) in the same PR.
 ```

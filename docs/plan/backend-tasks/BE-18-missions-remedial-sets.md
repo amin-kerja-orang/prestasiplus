@@ -3,6 +3,8 @@
 | Field | Value |
 |---|---|
 | Size | M |
+| Lane | PC-6 (folders: sessions.md section 5) |
+| Priority | P1 |
 | Wave | 3 |
 | Depends on | BE-17, BE-09, BE-12 |
 | Parallel with | BE-16, BE-19, BE-23 |
@@ -66,8 +68,8 @@ npm run be:verify
 
 ```text
 You are the backend developer for PrestasiPlus v2 working on task BE-18 (missions-remedial-sets). Work in this repo clone on branch be/BE-18-missions-remedial-sets, created from the latest origin/feature/v2-backend.
-Read first, in order: AGENTS.md; docs/architecture/v2-backend-plan.md (sections 3, 6, 9, 10); docs/plan/backend-tasks/BE-18-missions-remedial-sets.md (this card, all of it).
-Rules: contract first (zod schemas in packages/contract/src/<domain>/, import z from ../zod, register in src/openapi.ts, run npm run contract:emit and commit openapi.json before the implementation). The frontend mock handlers, the typed client and the SRS listed in the card are the behavioural spec: do not invent business rules; write every unknown under "Open questions" in the PR description. Never commit secrets or real personal names. Do not edit src/**, e2e/**, docs/TRACKER.md or the contract common/session/auth/access folders (BE-14 and BE-32 have the explicit exceptions stated in their cards). Keep the diff inside the card Outputs.
+Read first, in order: docs/plan/AGENT-SYNC.md (how to claim, commit and push); AGENTS.md; docs/architecture/v2-backend-plan.md (sections 3, 6, 9, 10, 14; section 15 for intake and builder cards); docs/plan/sessions.md section 5 (folder ownership); docs/plan/backend-tasks/BE-18-missions-remedial-sets.md (this card, all of it).
+Rules: contract first (zod schemas in packages/contract/src/<domain>/, import z from ../zod, register in src/openapi.ts, run npm run contract:emit and commit openapi.json before the implementation). The frontend mock handlers, the typed client and the SRS listed in the card are the behavioural spec: do not invent business rules; write every unknown under "Open questions" in the PR description. Never commit secrets or real personal names. Do not edit src/**, e2e/**, docs/TRACKER.md or the contract common/session/auth/access folders (BE-14 and BE-32 have the explicit exceptions stated in their cards). Keep the diff inside the card Outputs and its "Files touched" list; commit after every green step and push at least hourly and before the session ends (AGENT-SYNC.md).
 When finished run npm run be:verify (and the card test commands) and report: files changed, endpoints done, tables, real test output, deviations from the mock/contract, open questions.
 Task: implement BE-18. Find the exact Command Center base path used by remedial scan/generate/cancel in src/modules/m10-teacher-class/mock/handlers before writing the contract. Reuse the BE-17 ClassesRepository, the BE-09 QuestionsRepository and the BE-12 PracticeRepository; never read their tables directly. Teachers act only on own classes.
 ```
