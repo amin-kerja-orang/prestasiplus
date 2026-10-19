@@ -28,6 +28,8 @@ import { BIJAK_PAPERS_COMPONENT_SCHEMAS, registerBijakPapersPaths } from './bija
 import { SPM_COMPONENT_SCHEMAS, registerSpmPaths } from './spm/paths'
 import { HEATMAP_COMPONENT_SCHEMAS, registerHeatmapPaths } from './heatmap/paths'
 import { CURRICULUM_COMPONENT_SCHEMAS, registerCurriculumPaths } from './curriculum/paths'
+import { MISSIONS_COMPONENT_SCHEMAS, registerMissionsPaths } from './classes/missions/paths'
+import { QUESTION_SETS_COMPONENT_SCHEMAS, registerQuestionSetsPaths } from './classes/question-sets/paths'
 
 /** Every shared schema that becomes a component. Domain tasks (T07, T08, T24...) append here. */
 export const COMPONENT_SCHEMAS = {
@@ -58,6 +60,8 @@ export const COMPONENT_SCHEMAS = {
   ...SPM_COMPONENT_SCHEMAS, // BE-41
   ...HEATMAP_COMPONENT_SCHEMAS, // BE-48 (M25)
   ...CLASSES_COMPONENT_SCHEMAS, // BE-17
+  ...MISSIONS_COMPONENT_SCHEMAS, // BE-18 (M10 missions, remedial)
+  ...QUESTION_SETS_COMPONENT_SCHEMAS, // BE-18 (M10 question sets, DSKP)
   // V2-T08 access matrix
   AccessGroupId: AccessGroupIdSchema,
   AccessGroup: AccessGroupSchema,
@@ -90,6 +94,8 @@ export function buildOpenApiDocument(): Record<string, unknown> {
   registerCurriculumPaths(registry) // BE-08
   registerPracticePaths(registry) // BE-12
   registerClassesPaths(registry) // BE-17
+  registerMissionsPaths(registry) // BE-18 (M10 missions, remedial)
+  registerQuestionSetsPaths(registry) // BE-18 (M10 question sets, DSKP)
   const generator = new OpenApiGeneratorV31(registry.definitions)
   return generator.generateDocument({
     openapi: '3.1.0',
