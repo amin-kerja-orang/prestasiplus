@@ -3,7 +3,7 @@ import { ListMetaSchema } from '../common/envelope'
 import { ROLE_CODES } from '../common/enums'
 import { IdSchema } from '../common/ids'
 import { TimestampSchema } from '../common/time'
-import { ClassLevelSchema, SchoolSummarySchema, V, enumField, optionalText, requiredText } from '../schools/schema'
+import { ClassLevelSchema, SchoolSummarySchema, V, enumField, mockOptionalText, mockRequiredText } from '../schools/schema'
 
 /**
  * M02 users wire contract (BE-05, contract-only). Source: the M02 mock handlers (`users-admin.ts`,
@@ -164,7 +164,7 @@ const gradeField = z
 const looseBool = z.union([z.boolean(), z.number(), z.string()]).optional().meta({ description: 'Coerced like Laravel boolean(); never rejected.' })
 
 const fields = {
-  name: requiredText('name', 255),
+  name: mockRequiredText('name', 255),
   email: z
     .string({ error: V.string('email') })
     .trim()
@@ -172,17 +172,17 @@ const fields = {
     .max(255, { error: V.max('email', 255) })
     .nullish()
     .meta({ description: 'Unique, case-insensitive (server: 422 "The email has already been taken.").' }),
-  username: optionalText('username', 255).meta({ description: 'Unique per school (server).' }),
-  phone: optionalText('phone', 14),
+  username: mockOptionalText('username', 255).meta({ description: 'Unique per school (server).' }),
+  phone: mockOptionalText('phone', 14),
   grade: gradeField,
-  icNumber: optionalText('ic number', 14).meta({ description: 'Accepted on input only; stored as hash + mask.' }),
+  icNumber: mockOptionalText('ic number', 14).meta({ description: 'Accepted on input only; stored as hash + mask.' }),
   schoolId: bodyId.meta({ description: 'Must exist (server: 422 "The selected school id is invalid.").' }),
   linkedStudentIds: z
     .array(z.string().max(64), { error: V.invalid('linked student ids') })
     .optional()
     .meta({ description: 'Parents only; every id must be a student (server).' }),
-  ppdState: optionalText('ppd state', 255).meta({ description: 'A JPN name (server: "The selected ppd state is invalid.").' }),
-  ppdDistrict: optionalText('ppd district', 255).meta({ description: 'A PPD code of the chosen JPN (server: "The selected ppd district is invalid.").' }),
+  ppdState: mockOptionalText('ppd state', 255).meta({ description: 'A JPN name (server: "The selected ppd state is invalid.").' }),
+  ppdDistrict: mockOptionalText('ppd district', 255).meta({ description: 'A PPD code of the chosen JPN (server: "The selected ppd district is invalid.").' }),
   isActive: looseBool,
 }
 

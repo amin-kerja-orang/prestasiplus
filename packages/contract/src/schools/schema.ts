@@ -34,7 +34,7 @@ export const V = {
 const blank = (input: unknown) => input === undefined || input === null || input === ''
 
 /** Required trimmed text (a blank string counts as missing, as the mock turns it into null). */
-export const requiredText = (attr: string, max: number) =>
+export const mockRequiredText = (attr: string, max: number) =>
   z
     .string({ error: (i) => (blank(i.input) ? V.required(attr) : V.string(attr)) })
     .trim()
@@ -42,7 +42,7 @@ export const requiredText = (attr: string, max: number) =>
     .max(max, { error: V.max(attr, max) })
 
 /** Optional trimmed text; blank means null. */
-export const optionalText = (attr: string, max: number) =>
+export const mockOptionalText = (attr: string, max: number) =>
   z.string({ error: V.string(attr) }).trim().max(max, { error: V.max(attr, max) }).nullish()
 
 /** Enum with the mock required / invalid copy. */
@@ -114,12 +114,12 @@ export const SchoolListQuerySchema = z
 /** Body of POST/PUT /admin/schools. Strings are trimmed by the server; `district`/`city` may be empty. `joinCode` is never accepted. */
 export const SchoolInputSchema = z
   .object({
-    name: requiredText('name', 255),
-    code: requiredText('code', 20).meta({ description: 'Unique, case-insensitive (server: 422 "The code has already been taken.").' }),
+    name: mockRequiredText('name', 255),
+    code: mockRequiredText('code', 20).meta({ description: 'Unique, case-insensitive (server: 422 "The code has already been taken.").' }),
     type: enumField(SCHOOL_TYPES, 'type'),
-    state: requiredText('state', 255).meta({ description: 'A known state name (server: 422 "The selected state is invalid.").' }),
-    district: optionalText('district', 255),
-    city: optionalText('city', 255),
+    state: mockRequiredText('state', 255).meta({ description: 'A known state name (server: 422 "The selected state is invalid.").' }),
+    district: mockOptionalText('district', 255),
+    city: mockOptionalText('city', 255),
     isActive: z
       .union([z.boolean(), z.literal(0), z.literal(1), z.literal('0'), z.literal('1')], { error: V.boolean('is active') })
       .optional()
