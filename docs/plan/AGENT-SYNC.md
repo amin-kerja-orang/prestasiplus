@@ -37,10 +37,11 @@ Many sessions work at the same time, on one PC or on many. Each session is an in
    cd ../pp-<card-id>
    npm ci
    ```
-5. **Claim by pushing the branch** right away (section 2). The push is the claim:
+5. **Check `docs/plan/reviews/`** for a file named after any card you hold: fix those first.
+6. **Claim by pushing the branch** right away (section 2). The push is the claim:
    - If the push is rejected because the branch exists, another session won. Remove your worktree and take the next free card.
    - Add the draft PR when `gh` works.
-6. **Nothing free?** Report `idle` in one line and stop. The LEAD opens more cards.
+7. **Nothing free?** Report `idle` in one line and stop. The LEAD opens more cards.
 
 **Resume** a card only when the user's prompt says so ("Continue BE-xx"). Then work in that card's existing branch.
 
@@ -90,6 +91,7 @@ A PC may claim **only** cards listed here. A card that is not listed is closed, 
 | BE-36 | contract-only | 2026-10-19 | AI adapter wire types: `packages/contract/src/ai/**`. |
 | BE-41 | contract-only | 2026-10-19 | SPM hub (M06): `packages/contract/src/spm/**`. |
 | BE-48 | contract-only | 2026-10-19 | Heatmap: `packages/contract/src/heatmap/**`. |
+| BE-13 | contract-only | 2026-10-19 | Practice read models (Group B): `packages/contract/src/practice/reads/**` only; do not edit BE-12's files in `practice/`. |
 | BE-16 | contract-only | 2026-10-19 | Bijak attempts: `packages/contract/src/bijak/attempts/**` only (BE-15 owns `bijak/papers`). Foreign attempt = 403 (D54b). |
 | BE-18 | contract-only | 2026-10-19 | Missions and question sets: `packages/contract/src/classes/{missions,question-sets}/**` only (BE-17 owns the rest of `classes/`). |
 | BE-20 | contract-only | 2026-10-19 | Analytics and Kirkpatrick: `packages/contract/src/reports/{analytics,kirkpatrick}/**` only (BE-19 owns `reports/performance`). |
@@ -115,6 +117,7 @@ Rules for `contract-only`:
 
 ### Lead notices (current instructions; newest first)
 
+- 2026-10-19 15:45: **Review feedback now lives in `docs/plan/reviews/<card>.md`** on this branch. Changes are requested for BE-05, BE-09, BE-19 and BE-25 (Group A) and for BE-06 and BE-21 (Group B). The holder fixes the branch, rebases on origin/feature/v2-backend, and sets the row back to `review`. **D57 security defaults** (TRACKER) apply to every contract: 429 on writes and public lookups, no-store on credentials and tokens, role and scope limits, and parent-invite PDPA rules. **Opened for Group B:** BE-13 contract-only (`packages/contract/src/practice/reads/**` only; BE-12 is merged). Merged so far: BE-08, 10, 11, 12, 15, 17, 23, 24, 41, 48.
 - 2026-10-19: **Decisions D55 (security):** BE-06 reset-ic has an attempt limit (5 per 15 min per account and IP, 429 RATE_LIMITED, BM message); unknown e-mail answers with the invalid-token message (no enumeration); BE-21 student-create returns the password once to the creating admin only, never logged, and the account must change its password at first login. Contracts and cards BE-03, BE-06, BE-21 and BE-33 follow D55.
 - 2026-10-19 14:40: **12 more contract-only cards opened:** BE-16, 18, 20, 22, 38, 39, 42, 43, 44, 45, 46, 47. Only BE-19 and BE-36 were left before. Same rules: one branch `be/<card>-contract` per card, push = claim.
 - 2026-10-19: **Reserved for an external collaborator: BE-11 and BE-24 (contract-only), branches `be/BE-11-contract` and `be/BE-24-contract`.** Every session skips these two cards even before their branches appear on GitHub. BE-08 contract stays with the session that pushed `be/BE-08-contract` first.

@@ -15,17 +15,20 @@ import { envelopeOf, listEnvelopeOf, ListMetaSchema, PageQuerySchema } from './c
 import { AccessModeSchema, PortalIdSchema, RoleCodeSchema, ScopeLevelSchema } from './common/enums'
 import { ErrorBodySchema, ErrorCodeSchema, ErrorPayloadSchema } from './common/error'
 import { ClientUuidSchema, IdSchema } from './common/ids'
+import { PRACTICE_COMPONENT_SCHEMAS, registerPracticePaths } from './practice/paths'
 import { SESSION_COMPONENT_SCHEMAS, registerSessionPaths } from './session/paths'
 import { CONTENT_COMPONENT_SCHEMAS, registerContentPaths } from './content/paths'
 import { SUPPORT_COMPONENT_SCHEMAS, registerSupportPaths } from './support/paths'
 import { GAMIFICATION_COMPONENT_SCHEMAS, registerGamificationPaths } from './gamification/paths'
 import { QUESTION_WORKFLOW_COMPONENT_SCHEMAS, registerQuestionWorkflowPaths } from './question-workflow/paths'
+import { CLASSES_COMPONENT_SCHEMAS, registerClassesPaths } from './classes/paths'
 import { DateOnlySchema, TimestampInputSchema, TimestampSchema } from './common/time'
 import { WALLET_COMPONENT_SCHEMAS, registerWalletPaths } from './wallet/paths'
 import { BIJAK_PAPERS_COMPONENT_SCHEMAS, registerBijakPapersPaths } from './bijak/papers/paths'
 import { SPM_COMPONENT_SCHEMAS, registerSpmPaths } from './spm/paths'
 import { HEATMAP_COMPONENT_SCHEMAS, registerHeatmapPaths } from './heatmap/paths'
 import { COMMAND_CENTER_COMPONENT_SCHEMAS, registerCommandCenterPaths } from './admin/command-center/paths'
+import { CURRICULUM_COMPONENT_SCHEMAS, registerCurriculumPaths } from './curriculum/paths'
 
 /** Every shared schema that becomes a component. Domain tasks (T07, T08, T24...) append here. */
 export const COMPONENT_SCHEMAS = {
@@ -56,6 +59,7 @@ export const COMPONENT_SCHEMAS = {
   ...SPM_COMPONENT_SCHEMAS, // BE-41
   ...HEATMAP_COMPONENT_SCHEMAS, // BE-48 (M25)
   ...COMMAND_CENTER_COMPONENT_SCHEMAS, // BE-22
+  ...CLASSES_COMPONENT_SCHEMAS, // BE-17
   // V2-T08 access matrix
   AccessGroupId: AccessGroupIdSchema,
   AccessGroup: AccessGroupSchema,
@@ -66,6 +70,8 @@ export const COMPONENT_SCHEMAS = {
   LearningRole: LearningRoleSchema,
   LearningMenuGroup: LearningMenuGroupSchema,
   PrototypeItem: PrototypeItemSchema,
+  ...CURRICULUM_COMPONENT_SCHEMAS, // BE-08
+  ...PRACTICE_COMPONENT_SCHEMAS, // BE-12
 } as const
 
 export const CONTRACT_VERSION = '0.1.0'
@@ -84,6 +90,9 @@ export function buildOpenApiDocument(): Record<string, unknown> {
   registerSpmPaths(registry) // BE-41
   registerHeatmapPaths(registry) // BE-48 (M25)
   registerCommandCenterPaths(registry) // BE-22
+  registerCurriculumPaths(registry) // BE-08
+  registerPracticePaths(registry) // BE-12
+  registerClassesPaths(registry) // BE-17
   const generator = new OpenApiGeneratorV31(registry.definitions)
   return generator.generateDocument({
     openapi: '3.1.0',
