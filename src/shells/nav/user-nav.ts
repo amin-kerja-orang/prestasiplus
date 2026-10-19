@@ -217,6 +217,8 @@ export const USER_NAV: readonly NavEntry[] = [
   // ── SPM ──
   { kind: 'section', id: 'sec-spm', label: 'SPM', text: 'text-amber-700', rule: 'from-amber-300', roles: SA_ },
   { kind: 'item', id: 'spm', label: 'SPM', to: '/spm', fa: 'fa-graduation-cap', color: 'text-amber-500', badge: { text: 'SPM', cls: B_SPM }, roles: SA_ },
+  // Bijak SPM has its own sidebar entry on .cloud ("Simulasi Peperiksaan", badge "BARU"); v2 keeps the one name "Bijak SPM" (v2-bijak-spm AC-01.1).
+  { kind: 'item', id: 'bijak-spm', label: 'Bijak SPM', to: '/spm/bijak', fa: 'fa-file-pen', color: 'text-indigo-500', badge: { text: 'BARU', cls: B_BARU }, roles: S },
   { kind: 'item', id: 'headcount', label: 'Headcount', to: '/headcount', fa: 'fa-chart-line', color: 'text-blue-500', roles: SA_ },
   { kind: 'item', id: 'prestasi', label: 'Prestasi', to: '/prestasi', fa: 'fa-chart-bar', color: 'text-emerald-500', roles: SA_ },
   { kind: 'item', id: 'analitik-adaptif', label: 'Analitik Adaptif', to: '/analitik/pelajar', fa: 'fa-brain', color: 'text-violet-500', roles: SA_ },

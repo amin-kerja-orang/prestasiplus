@@ -185,13 +185,14 @@ describe('USER_NAV data', () => {
 describe('navFor (role filter: hidden, not disabled)', () => {
   it('student: the live murid menu order at the top, no admin/teacher entries', () => {
     const menu = labels(navFor('student', 'sidebar', USER_NAV, FULL))
-    expect(menu.slice(0, 13)).toEqual([
+    expect(menu.slice(0, 14)).toEqual([
       'Dashboard',
       'Target SPM',
       'Misi Harian',
       'Remedial',
       'SPM',
       'SPM',
+      'Bijak SPM',
       'Headcount',
       'Prestasi',
       'Analitik Adaptif',
