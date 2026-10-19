@@ -593,6 +593,37 @@ describe('openapi registration', () => {
     }
   })
 
+  it('documents 429 RATE_LIMITED with retryAfter and a Retry-After header on every write route and on the student lookup (D57a)', () => {
+    type R429 = {
+      description: string
+      headers: Record<string, { schema: { type: string } }>
+      content: Record<string, { schema: { $ref: string } }>
+    }
+    const limited = own.filter(
+      ({ method, path }) => method !== 'get' || path === '/battle/search-opponent',
+    )
+    expect(limited).toHaveLength(12)
+    for (const { path, method, op } of limited) {
+      const r = op.responses['429'] as R429 | undefined
+      expect(r, `${method} ${path}`).toBeDefined()
+      expect(r!.description, `${method} ${path}`).toContain('RATE_LIMITED')
+      expect(r!.description, `${method} ${path}`).toContain('retryAfter')
+      expect(r!.headers['Retry-After'], `${method} ${path}`).toBeDefined()
+      expect(r!.headers['Retry-After']!.schema.type).toBe('integer')
+      expect(r!.content['application/json']!.schema.$ref).toBe('#/components/schemas/ErrorBody')
+    }
+    // the other reads (polls, standings, lobby) are not limited by the contract
+    expect(get('get', '/battle/standings/students')?.responses['429']).toBeUndefined()
+  })
+
+  it('sends no credential or token on any route of the card, so none needs Cache-Control: no-store (D57b)', () => {
+    for (const { path, method, op } of own) {
+      for (const [status, r] of Object.entries(op.responses as Record<string, { headers?: object }>)) {
+        expect(Object.keys(r.headers ?? {}), `${method} ${path} ${status}`).not.toContain('Cache-Control')
+      }
+    }
+  })
+
   it('every operation declares 401, and admin routes declare 403', () => {
     for (const { path, method, op } of own) expect(op.responses['401'], `${method} ${path}`).toBeDefined()
     expect(get('get', '/tournaments/form-options')?.responses['403']).toBeDefined()
