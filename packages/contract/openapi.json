@@ -7776,6 +7776,1629 @@
           "meta"
         ]
       },
+      "SpmErrorCode": {
+        "type": "string",
+        "enum": [
+          "NOT_SUBMITTED"
+        ],
+        "description": "Module error code carried by a 409 next to the generic CONFLICT."
+      },
+      "SpmTargetType": {
+        "type": "string",
+        "enum": [
+          "spm",
+          "custom",
+          "latihan"
+        ]
+      },
+      "SpmSetStatus": {
+        "type": "string",
+        "enum": [
+          "bersih",
+          "bank_besar",
+          "belum_cukup"
+        ]
+      },
+      "SpmSubjectGroup": {
+        "type": "string",
+        "enum": [
+          "teras",
+          "elektif"
+        ]
+      },
+      "SpmMockStatus": {
+        "type": "string",
+        "enum": [
+          "in_progress",
+          "submitted"
+        ]
+      },
+      "SpmMockGrade": {
+        "type": "string",
+        "enum": [
+          "A+",
+          "A",
+          "B+",
+          "B",
+          "C",
+          "D",
+          "E",
+          "G"
+        ]
+      },
+      "SpmHeroClass": {
+        "type": "string",
+        "enum": [
+          "good",
+          "mid",
+          "bad"
+        ]
+      },
+      "SpmMockPaperNumber": {
+        "anyOf": [
+          {
+            "type": "number",
+            "enum": [
+              1
+            ]
+          },
+          {
+            "type": "number",
+            "enum": [
+              2
+            ]
+          }
+        ],
+        "description": "1 = objective (30 items), 2 = structured (6 items of 10 marks)."
+      },
+      "SpmMockSubject": {
+        "type": "string",
+        "enum": [
+          "Bahasa Melayu",
+          "English",
+          "Matematik",
+          "Matematik Tambahan",
+          "Fizik",
+          "Kimia",
+          "Biologi",
+          "Sains",
+          "Sejarah",
+          "Pendidikan Islam"
+        ]
+      },
+      "SpmWalkthroughSubject": {
+        "type": "string",
+        "enum": [
+          "Bahasa Melayu",
+          "English",
+          "Matematik",
+          "Matematik Tambahan",
+          "Fizik",
+          "Kimia",
+          "Biologi",
+          "Sains",
+          "Sejarah",
+          "Pendidikan Islam",
+          "Pendidikan Moral",
+          "Geografi",
+          "Ekonomi",
+          "Perdagangan",
+          "Prinsip Akaun"
+        ]
+      },
+      "SpmOverview": {
+        "type": "object",
+        "properties": {
+          "stats": {
+            "type": "object",
+            "properties": {
+              "totalQuestions": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "subjectCount": {
+                "type": "integer",
+                "minimum": 0,
+                "description": "Distinct active subjects at the two SPM levels (Tingkatan 4 and 5)."
+              },
+              "yearsAvailable": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "trackingAQuestions": {
+                "type": "integer",
+                "minimum": 0,
+                "description": "Sum of the ready counts of all Tracking A sets."
+              }
+            },
+            "required": [
+              "totalQuestions",
+              "subjectCount",
+              "yearsAvailable",
+              "trackingAQuestions"
+            ],
+            "additionalProperties": false
+          },
+          "modules": {
+            "type": "object",
+            "properties": {
+              "databank": {
+                "type": "integer",
+                "minimum": 0,
+                "description": "Databank chip."
+              },
+              "latihTubi": {
+                "type": "integer",
+                "minimum": 0,
+                "description": "Latih Tubi chip."
+              },
+              "trackingA": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "subjektifSets": {
+                "type": "integer",
+                "minimum": 0,
+                "description": "Visible structured sets across the Subjektif subjects."
+              }
+            },
+            "required": [
+              "databank",
+              "latihTubi",
+              "trackingA",
+              "subjektifSets"
+            ],
+            "additionalProperties": false
+          },
+          "me": {
+            "type": "object",
+            "properties": {
+              "sessions": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "avgAccuracy": {
+                "type": "number",
+                "minimum": 0,
+                "maximum": 100
+              },
+              "coins": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "answered": {
+                "type": "integer",
+                "minimum": 0
+              }
+            },
+            "required": [
+              "sessions",
+              "avgAccuracy",
+              "coins",
+              "answered"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "required": [
+          "stats",
+          "modules",
+          "me"
+        ],
+        "additionalProperties": false
+      },
+      "SpmDatabankSubject": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Curriculum subject code (BM, BI, MATH, ...). Case-insensitive in the path."
+          },
+          "name": {
+            "type": "string"
+          },
+          "nameEn": {
+            "type": "string"
+          },
+          "icon": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Subject icon (emoji or icon name) from the curriculum, or null."
+          },
+          "color": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Subject colour (hex) from the curriculum; \"#64748B\" when unknown."
+          },
+          "databankCount": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Size of the SPM pool of the subject."
+          }
+        },
+        "required": [
+          "code",
+          "name",
+          "nameEn",
+          "icon",
+          "color",
+          "databankCount"
+        ],
+        "additionalProperties": false
+      },
+      "SpmLatihTubiCard": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Curriculum subject code (BM, BI, MATH, ...). Case-insensitive in the path."
+          },
+          "name": {
+            "type": "string"
+          },
+          "nameEn": {
+            "type": "string"
+          },
+          "icon": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Subject icon (emoji or icon name) from the curriculum, or null."
+          },
+          "color": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Subject colour (hex) from the curriculum; \"#64748B\" when unknown."
+          },
+          "total": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "SPM pool size of the subject."
+          },
+          "targetType": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/SpmTargetType"
+              },
+              {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              }
+            ]
+          },
+          "targetSize": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "minimum": 1
+          },
+          "locked": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "code",
+          "name",
+          "nameEn",
+          "icon",
+          "color",
+          "total",
+          "targetType",
+          "targetSize",
+          "locked"
+        ],
+        "additionalProperties": false
+      },
+      "SpmLatihTubiList": {
+        "type": "object",
+        "properties": {
+          "teras": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SpmLatihTubiCard"
+            }
+          },
+          "elektif": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SpmLatihTubiCard"
+            }
+          }
+        },
+        "required": [
+          "teras",
+          "elektif"
+        ],
+        "additionalProperties": false
+      },
+      "SpmDifficultyCounts": {
+        "type": "object",
+        "properties": {
+          "1": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "2": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "3": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "4": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "5": {
+            "type": "integer",
+            "minimum": 0
+          }
+        },
+        "required": [
+          "1",
+          "2",
+          "3",
+          "4",
+          "5"
+        ],
+        "additionalProperties": false,
+        "description": "Question counts by difficulty 1 to 5."
+      },
+      "SpmCountOption": {
+        "type": "object",
+        "properties": {
+          "value": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "label": {
+            "type": "string",
+            "minLength": 1
+          },
+          "isTarget": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "value",
+          "label",
+          "isTarget"
+        ],
+        "additionalProperties": false
+      },
+      "SpmLatihTubiConfig": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Curriculum subject code (BM, BI, MATH, ...). Case-insensitive in the path."
+          },
+          "name": {
+            "type": "string"
+          },
+          "icon": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Subject icon (emoji or icon name) from the curriculum, or null."
+          },
+          "color": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Subject colour (hex) from the curriculum; \"#64748B\" when unknown."
+          },
+          "total": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "targetType": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/SpmTargetType"
+              },
+              {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              }
+            ]
+          },
+          "targetSize": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "minimum": 1
+          },
+          "levelCounts": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "description": "Pool size per level id (Tingkatan 4 and 5)."
+          },
+          "difficultyStats": {
+            "$ref": "#/components/schemas/SpmDifficultyCounts"
+          },
+          "difficultyByLevel": {
+            "type": "object",
+            "additionalProperties": {
+              "$ref": "#/components/schemas/SpmDifficultyCounts"
+            }
+          },
+          "countOptions": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SpmCountOption"
+            },
+            "minItems": 1
+          },
+          "defaultCount": {
+            "type": "integer",
+            "minimum": 1
+          }
+        },
+        "required": [
+          "code",
+          "name",
+          "icon",
+          "color",
+          "total",
+          "targetType",
+          "targetSize",
+          "levelCounts",
+          "difficultyStats",
+          "difficultyByLevel",
+          "countOptions",
+          "defaultCount"
+        ],
+        "additionalProperties": false
+      },
+      "SpmOpenSubjectCard": {
+        "type": "object",
+        "properties": {
+          "subjectId": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "code": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Curriculum subject code (BM, BI, MATH, ...). Case-insensitive in the path."
+          },
+          "name": {
+            "type": "string"
+          },
+          "nameEn": {
+            "type": "string"
+          },
+          "icon": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Subject icon (emoji or icon name) from the curriculum, or null."
+          },
+          "color": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Subject colour (hex) from the curriculum; \"#64748B\" when unknown."
+          },
+          "readyQuestions": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "bankBesarSets": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "bersihSets": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "targetType": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/SpmTargetType"
+              },
+              {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              }
+            ]
+          },
+          "targetSize": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "minimum": 1
+          },
+          "bankSource": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "minimum": 0,
+            "description": "Sum of bankSource of the bank_besar sets, or null."
+          },
+          "startableSets": {
+            "type": "integer",
+            "minimum": 0
+          }
+        },
+        "required": [
+          "subjectId",
+          "code",
+          "name",
+          "nameEn",
+          "icon",
+          "color",
+          "readyQuestions",
+          "bankBesarSets",
+          "bersihSets",
+          "targetType",
+          "targetSize",
+          "bankSource",
+          "startableSets"
+        ],
+        "additionalProperties": false
+      },
+      "SpmBahasaSubject": {
+        "type": "object",
+        "properties": {
+          "subjectId": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "code": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Curriculum subject code (BM, BI, MATH, ...). Case-insensitive in the path."
+          },
+          "name": {
+            "type": "string"
+          },
+          "nameEn": {
+            "type": "string"
+          },
+          "sets": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Visible structured sets of the subject."
+          },
+          "icon": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Sent by the mock although its TypeScript type omits it."
+          },
+          "color": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Sent by the mock although its TypeScript type omits it."
+          }
+        },
+        "required": [
+          "subjectId",
+          "code",
+          "name",
+          "nameEn",
+          "sets"
+        ],
+        "additionalProperties": false
+      },
+      "SpmLockedSet": {
+        "type": "object",
+        "properties": {
+          "setNo": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "readyCount": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "target": {
+            "type": "integer",
+            "minimum": 0
+          }
+        },
+        "required": [
+          "setNo",
+          "readyCount",
+          "target"
+        ],
+        "additionalProperties": false
+      },
+      "SpmReadinessTile": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Curriculum subject code (BM, BI, MATH, ...). Case-insensitive in the path."
+          },
+          "name": {
+            "type": "string"
+          },
+          "targetSize": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "bersih": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "bankBesar": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "locked": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "total": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "readiness": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 100,
+            "description": "round((bersih + bankBesar) / total x 100); 0 without sets."
+          },
+          "lockedSets": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SpmLockedSet"
+            },
+            "maxItems": 6,
+            "description": "The first 6 locked sets."
+          },
+          "hasBankBesar": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "code",
+          "name",
+          "targetSize",
+          "bersih",
+          "bankBesar",
+          "locked",
+          "total",
+          "readiness",
+          "lockedSets",
+          "hasBankBesar"
+        ],
+        "additionalProperties": false
+      },
+      "SpmReadiness": {
+        "type": "object",
+        "properties": {
+          "summary": {
+            "type": "object",
+            "properties": {
+              "bersih": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "bankBesar": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "locked": {
+                "type": "integer",
+                "minimum": 0
+              }
+            },
+            "required": [
+              "bersih",
+              "bankBesar",
+              "locked"
+            ],
+            "additionalProperties": false
+          },
+          "tiles": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SpmReadinessTile"
+            }
+          }
+        },
+        "required": [
+          "summary",
+          "tiles"
+        ],
+        "additionalProperties": false
+      },
+      "SpmTrackingAHub": {
+        "type": "object",
+        "properties": {
+          "objectiveLane": {
+            "type": "object",
+            "properties": {
+              "subjects": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "sets": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "questions": {
+                "type": "integer",
+                "minimum": 0,
+                "description": "Sum over the startable sets of (bankSource ?? readyCount)."
+              }
+            },
+            "required": [
+              "subjects",
+              "sets",
+              "questions"
+            ],
+            "additionalProperties": false
+          },
+          "bahasaLane": {
+            "type": "object",
+            "properties": {
+              "subjects": {
+                "type": "number",
+                "enum": [
+                  2
+                ]
+              },
+              "sets": {
+                "type": "integer",
+                "minimum": 0
+              }
+            },
+            "required": [
+              "subjects",
+              "sets"
+            ],
+            "additionalProperties": false
+          },
+          "readiness": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/SpmReadiness"
+              },
+              {
+                "type": [
+                  "object",
+                  "null"
+                ]
+              }
+            ]
+          },
+          "bahasa": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SpmBahasaSubject"
+            }
+          },
+          "openSubjects": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SpmOpenSubjectCard"
+            }
+          }
+        },
+        "required": [
+          "objectiveLane",
+          "bahasaLane",
+          "readiness",
+          "bahasa",
+          "openSubjects"
+        ],
+        "additionalProperties": false
+      },
+      "SpmTrackingASet": {
+        "type": "object",
+        "properties": {
+          "setNo": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "status": {
+            "$ref": "#/components/schemas/SpmSetStatus"
+          },
+          "readyCount": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "bankSource": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "minimum": 0
+          },
+          "dskpTagged": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "dskpTotal": {
+            "type": "integer",
+            "minimum": 0
+          }
+        },
+        "required": [
+          "setNo",
+          "status",
+          "readyCount",
+          "bankSource",
+          "dskpTagged",
+          "dskpTotal"
+        ],
+        "additionalProperties": false
+      },
+      "SpmTrackingASubject": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Curriculum subject code (BM, BI, MATH, ...). Case-insensitive in the path."
+          },
+          "name": {
+            "type": "string"
+          },
+          "icon": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Subject icon (emoji or icon name) from the curriculum, or null."
+          },
+          "color": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Subject colour (hex) from the curriculum; \"#64748B\" when unknown."
+          },
+          "targetType": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/SpmTargetType"
+              },
+              {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              }
+            ]
+          },
+          "targetSize": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "minimum": 1
+          },
+          "summary": {
+            "type": "object",
+            "properties": {
+              "bersih": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "bankBesar": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "readyQuestions": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "belumCukup": {
+                "type": "integer",
+                "minimum": 0
+              }
+            },
+            "required": [
+              "bersih",
+              "bankBesar",
+              "readyQuestions",
+              "belumCukup"
+            ],
+            "additionalProperties": false
+          },
+          "sets": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SpmTrackingASet"
+            }
+          }
+        },
+        "required": [
+          "code",
+          "name",
+          "icon",
+          "color",
+          "targetType",
+          "targetSize",
+          "summary",
+          "sets"
+        ],
+        "additionalProperties": false
+      },
+      "SpmTrackingARedirect": {
+        "type": "object",
+        "properties": {
+          "redirect": {
+            "type": "string",
+            "pattern": "^\\/latihan-berstruktur\\?subject_id=.+&scope=spm&track=bahasa$",
+            "description": "\"/latihan-berstruktur?subject_id=<id of BM or BI>&scope=spm&track=bahasa\"."
+          }
+        },
+        "required": [
+          "redirect"
+        ],
+        "additionalProperties": false
+      },
+      "SpmTrackingASubjectResult": {
+        "anyOf": [
+          {
+            "$ref": "#/components/schemas/SpmTrackingASubject"
+          },
+          {
+            "$ref": "#/components/schemas/SpmTrackingARedirect"
+          }
+        ]
+      },
+      "SpmSubjektifSubject": {
+        "type": "object",
+        "properties": {
+          "subjectId": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "name": {
+            "type": "string"
+          },
+          "nameEn": {
+            "type": "string"
+          },
+          "group": {
+            "$ref": "#/components/schemas/SpmSubjectGroup"
+          },
+          "icon": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Subject icon (emoji or icon name) from the curriculum, or null."
+          },
+          "color": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Subject colour (hex) from the curriculum; \"#64748B\" when unknown."
+          },
+          "sets": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Student-visible structured questions of the subject."
+          }
+        },
+        "required": [
+          "subjectId",
+          "name",
+          "nameEn",
+          "group",
+          "icon",
+          "color",
+          "sets"
+        ],
+        "additionalProperties": false
+      },
+      "SpmSubjektifOverview": {
+        "type": "object",
+        "properties": {
+          "stats": {
+            "type": "object",
+            "properties": {
+              "setsAnswered": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "subjectsTried": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "bestScore": {
+                "type": [
+                  "integer",
+                  "null"
+                ],
+                "minimum": 0,
+                "maximum": 100
+              },
+              "bestSetsSaved": {
+                "type": "integer",
+                "minimum": 0,
+                "description": "Distinct questions attempted."
+              }
+            },
+            "required": [
+              "setsAnswered",
+              "subjectsTried",
+              "bestScore",
+              "bestSetsSaved"
+            ],
+            "additionalProperties": false
+          },
+          "subjects": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SpmSubjektifSubject"
+            }
+          }
+        },
+        "required": [
+          "stats",
+          "subjects"
+        ],
+        "additionalProperties": false
+      },
+      "SpmMockListItem": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 64,
+            "description": "Mock exam id; only its owner may use it, any other caller gets 404.",
+            "example": "1042"
+          },
+          "subject": {
+            "type": "string",
+            "minLength": 1,
+            "description": "The subject label chosen at creation (one of SpmMockSubject)."
+          },
+          "paperNumber": {
+            "$ref": "#/components/schemas/SpmMockPaperNumber"
+          },
+          "status": {
+            "$ref": "#/components/schemas/SpmMockStatus"
+          },
+          "createdAt": {
+            "$ref": "#/components/schemas/Timestamp"
+          },
+          "score": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "minimum": 0
+          },
+          "maxScore": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "percent": {
+            "type": [
+              "number",
+              "null"
+            ],
+            "minimum": 0,
+            "maximum": 100,
+            "description": "2 decimals."
+          },
+          "grade": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/SpmMockGrade"
+              },
+              {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              }
+            ]
+          }
+        },
+        "required": [
+          "id",
+          "subject",
+          "paperNumber",
+          "status",
+          "createdAt",
+          "score",
+          "maxScore",
+          "percent",
+          "grade"
+        ],
+        "additionalProperties": false
+      },
+      "SpmMockCreateRequest": {
+        "type": "object",
+        "properties": {
+          "subject": {
+            "$ref": "#/components/schemas/SpmMockSubject"
+          },
+          "paperNumber": {
+            "$ref": "#/components/schemas/SpmMockPaperNumber"
+          }
+        },
+        "required": [
+          "subject"
+        ]
+      },
+      "SpmMockCreated": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 64,
+            "description": "Mock exam id; only its owner may use it, any other caller gets 404.",
+            "example": "1042"
+          }
+        },
+        "required": [
+          "id"
+        ],
+        "additionalProperties": false
+      },
+      "SpmMockExamItem": {
+        "type": "object",
+        "properties": {
+          "no": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "text": {
+            "type": "string"
+          },
+          "options": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Paper 1 only."
+          },
+          "maxMarks": {
+            "type": "integer",
+            "minimum": 1
+          }
+        },
+        "required": [
+          "no",
+          "text",
+          "maxMarks"
+        ],
+        "additionalProperties": false
+      },
+      "SpmMockExamView": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 64,
+            "description": "Mock exam id; only its owner may use it, any other caller gets 404.",
+            "example": "1042"
+          },
+          "subject": {
+            "type": "string",
+            "minLength": 1
+          },
+          "paperNumber": {
+            "$ref": "#/components/schemas/SpmMockPaperNumber"
+          },
+          "status": {
+            "$ref": "#/components/schemas/SpmMockStatus"
+          },
+          "createdAt": {
+            "$ref": "#/components/schemas/Timestamp"
+          },
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SpmMockExamItem"
+            },
+            "minItems": 1
+          }
+        },
+        "required": [
+          "id",
+          "subject",
+          "paperNumber",
+          "status",
+          "createdAt",
+          "items"
+        ],
+        "additionalProperties": false
+      },
+      "SpmMockAnswerInput": {
+        "type": "object",
+        "properties": {
+          "no": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "answer": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "no"
+        ]
+      },
+      "SpmMockSubmitRequest": {
+        "type": "object",
+        "properties": {
+          "answers": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SpmMockAnswerInput"
+            }
+          }
+        },
+        "required": [
+          "answers"
+        ]
+      },
+      "SpmMockItem": {
+        "type": "object",
+        "properties": {
+          "no": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "questionId": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "text": {
+            "type": "string"
+          },
+          "options": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Paper 1 only."
+          },
+          "modelAnswer": {
+            "type": "string"
+          },
+          "studentAnswer": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "marks": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "minimum": 0
+          },
+          "maxMarks": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "feedback": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "topic": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "no",
+          "questionId",
+          "text",
+          "modelAnswer",
+          "studentAnswer",
+          "marks",
+          "maxMarks",
+          "feedback",
+          "topic"
+        ],
+        "additionalProperties": false
+      },
+      "SpmMockWeakTopic": {
+        "type": "object",
+        "properties": {
+          "topic": {
+            "type": "string"
+          },
+          "wrongCount": {
+            "type": "integer",
+            "minimum": 1
+          }
+        },
+        "required": [
+          "topic",
+          "wrongCount"
+        ],
+        "additionalProperties": false
+      },
+      "SpmMockResult": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 64,
+            "description": "Mock exam id; only its owner may use it, any other caller gets 404.",
+            "example": "1042"
+          },
+          "subject": {
+            "type": "string",
+            "minLength": 1
+          },
+          "paperNumber": {
+            "$ref": "#/components/schemas/SpmMockPaperNumber"
+          },
+          "score": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "maxScore": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "percent": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 100
+          },
+          "grade": {
+            "$ref": "#/components/schemas/SpmMockGrade"
+          },
+          "heroClass": {
+            "$ref": "#/components/schemas/SpmHeroClass"
+          },
+          "weakTopics": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SpmMockWeakTopic"
+            }
+          },
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SpmMockItem"
+            }
+          }
+        },
+        "required": [
+          "id",
+          "subject",
+          "paperNumber",
+          "score",
+          "maxScore",
+          "percent",
+          "grade",
+          "heroClass",
+          "weakTopics",
+          "items"
+        ],
+        "additionalProperties": false
+      },
+      "SpmWalkthroughRequest": {
+        "type": "object",
+        "properties": {
+          "subject": {
+            "$ref": "#/components/schemas/SpmWalkthroughSubject"
+          },
+          "question_text": {
+            "type": "string",
+            "description": "Trimmed by the server; may be empty when an image is sent."
+          },
+          "image": {
+            "type": "string",
+            "format": "binary",
+            "description": "Optional question photo, image/* and at most 5 MB; otherwise 200 { ok: false, error: \"Gambar tidak sah.\" }. Never stored."
+          }
+        },
+        "required": [
+          "subject"
+        ]
+      },
+      "SpmWalkthroughSolved": {
+        "type": "object",
+        "properties": {
+          "ok": {
+            "type": "boolean",
+            "enum": [
+              true
+            ]
+          },
+          "walkthrough": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "required": [
+          "ok",
+          "walkthrough"
+        ],
+        "additionalProperties": false
+      },
+      "SpmWalkthroughRefused": {
+        "type": "object",
+        "properties": {
+          "ok": {
+            "type": "boolean",
+            "enum": [
+              false
+            ]
+          },
+          "error": {
+            "type": "string",
+            "enum": [
+              "Gambar tidak sah.",
+              "Sila masukkan soalan atau muat naik gambar soalan."
+            ]
+          }
+        },
+        "required": [
+          "ok",
+          "error"
+        ],
+        "additionalProperties": false
+      },
+      "SpmWalkthroughResponse": {
+        "anyOf": [
+          {
+            "$ref": "#/components/schemas/SpmWalkthroughSolved"
+          },
+          {
+            "$ref": "#/components/schemas/SpmWalkthroughRefused"
+          }
+        ]
+      },
+      "DutaTier": {
+        "type": "string",
+        "enum": [
+          "bintang",
+          "inspirasi",
+          "tetamu"
+        ]
+      },
+      "DutaRecommendationQuery": {
+        "type": "object",
+        "properties": {
+          "subject": {
+            "type": "string",
+            "description": "Subject name as on the card (e.g. \"Matematik\"); trimmed."
+          },
+          "seed": {
+            "type": [
+              "integer",
+              "null"
+            ]
+          }
+        }
+      },
+      "DutaCard": {
+        "type": "object",
+        "properties": {
+          "slug": {
+            "type": "string",
+            "minLength": 1
+          },
+          "name": {
+            "type": "string",
+            "minLength": 1
+          },
+          "initials": {
+            "type": "string",
+            "minLength": 1
+          },
+          "tier": {
+            "$ref": "#/components/schemas/DutaTier"
+          },
+          "tagline": {
+            "type": "string"
+          },
+          "subject": {
+            "type": "string"
+          },
+          "state": {
+            "type": "string"
+          },
+          "rating": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 5
+          },
+          "active": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "slug",
+          "name",
+          "initials",
+          "tier",
+          "tagline",
+          "subject",
+          "state",
+          "rating",
+          "active"
+        ],
+        "additionalProperties": false
+      },
+      "DutaRecommendation": {
+        "type": [
+          "object",
+          "null"
+        ],
+        "properties": {
+          "slug": {
+            "type": "string",
+            "minLength": 1
+          },
+          "name": {
+            "type": "string",
+            "minLength": 1
+          },
+          "initials": {
+            "type": "string",
+            "minLength": 1
+          },
+          "tier": {
+            "$ref": "#/components/schemas/DutaTier"
+          },
+          "tagline": {
+            "type": "string"
+          },
+          "subject": {
+            "type": "string"
+          },
+          "state": {
+            "type": "string"
+          },
+          "rating": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 5
+          },
+          "active": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "slug",
+          "name",
+          "initials",
+          "tier",
+          "tagline",
+          "subject",
+          "state",
+          "rating",
+          "active"
+        ],
+        "additionalProperties": false
+      },
       "AccessGroupId": {
         "type": "string",
         "enum": [
@@ -14873,6 +16496,839 @@
           },
           "422": {
             "description": "VALIDATION_ERROR with fields (name -> Laravel-style English message, see REWARD_VALIDATION_MESSAGES); the top-level message is the first field message plus \" (and N more error(s))\" when several.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/spm/overview": {
+      "get": {
+        "tags": [
+          "spm"
+        ],
+        "summary": "SPM hub (M06-01): totals, module chips and the caller practice stats",
+        "description": "`me` is the caller own history over the modes past_year, latih_tubi and ramalan. `yearsAvailable` is 0. The mock keeps `totalQuestions` and the two pool chips as display constants; the real backend computes them (open question 1).",
+        "responses": {
+          "200": {
+            "description": "Hub figures.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/SpmOverview"
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED \"Unauthenticated.\" (no valid session).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/spm/databank": {
+      "get": {
+        "tags": [
+          "spm"
+        ],
+        "summary": "Tahun Lepas databank subjects (M06-02)",
+        "description": "The subjects that have a databank position, in that order (18 in the mock); `databankCount` is the SPM pool size.",
+        "responses": {
+          "200": {
+            "description": "Subjects with pool size.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/SpmDatabankSubject"
+                      }
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED \"Unauthenticated.\" (no valid session).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/spm/latih-tubi": {
+      "get": {
+        "tags": [
+          "spm"
+        ],
+        "summary": "Latih Tubi subject cards (M06-03)",
+        "description": "Grouped into teras and elektif, each ordered by display order. `locked` = targetSize set and total < targetSize.",
+        "responses": {
+          "200": {
+            "description": "Cards by group.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/SpmLatihTubiList"
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED \"Unauthenticated.\" (no valid session).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/spm/latih-tubi/{code}": {
+      "get": {
+        "tags": [
+          "spm"
+        ],
+        "summary": "Latih Tubi setup for one subject (M06-04)",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Curriculum subject code (BM, MATH, ...), case-insensitive. An unknown code is 404 \"Not Found.\"."
+            },
+            "required": true,
+            "description": "Curriculum subject code (BM, MATH, ...), case-insensitive. An unknown code is 404 \"Not Found.\".",
+            "name": "code",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Setup data.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/SpmLatihTubiConfig"
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED \"Unauthenticated.\" (no valid session).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "NOT_FOUND \"Not Found.\"",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/spm/tracking-a": {
+      "get": {
+        "tags": [
+          "spm"
+        ],
+        "summary": "Tracking A hub (M06-05)",
+        "description": "`readiness` is non-null only when the active role is `admin` (BR-M06-30), otherwise null. `openSubjects` lists non-bahasa subjects with at least one startable set (teras before elektif). Set status is computed on read: readyCount < size is belum_cukup, bankSource > size is bank_besar, otherwise bersih.",
+        "responses": {
+          "200": {
+            "description": "The hub.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/SpmTrackingAHub"
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED \"Unauthenticated.\" (no valid session).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/spm/tracking-a/{code}": {
+      "get": {
+        "tags": [
+          "spm"
+        ],
+        "summary": "Tracking A sets of one subject (M06-06)",
+        "description": "BM and BI answer `{ redirect }` to the bahasa structured track (subject_id = the id of that subject). Other subjects list the sets of the Tracking year, startable first, then locked, each by set number.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Curriculum subject code (BM, MATH, ...), case-insensitive. An unknown code is 404 \"Not Found.\"."
+            },
+            "required": true,
+            "description": "Curriculum subject code (BM, MATH, ...), case-insensitive. An unknown code is 404 \"Not Found.\".",
+            "name": "code",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Sets, or the redirect for BM and BI.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/SpmTrackingASubjectResult"
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED \"Unauthenticated.\" (no valid session).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "NOT_FOUND \"Not Found.\"",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/spm/subjektif": {
+      "get": {
+        "tags": [
+          "spm"
+        ],
+        "summary": "Subjektif SPM overview (M06-07)",
+        "description": "The 15 Subjektif subjects (teras first, then by name) and the stats of the caller own structured attempts with scope spm.",
+        "responses": {
+          "200": {
+            "description": "Subjects and stats.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/SpmSubjektifOverview"
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED \"Unauthenticated.\" (no valid session).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/spm-mocks": {
+      "get": {
+        "tags": [
+          "spm"
+        ],
+        "summary": "My mock exams, newest first (M06-08)",
+        "description": "Only the caller's mocks. A bare `{ data: [...] }`: there is no `meta`.",
+        "responses": {
+          "200": {
+            "description": "Mocks.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/SpmMockListItem"
+                      }
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED \"Unauthenticated.\" (no valid session).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "spm"
+        ],
+        "summary": "Generate a mock exam (M06-09)",
+        "description": "Paper 1: 30 objective items (1 mark each) sampled from the SPM pool of the subject. Paper 2: 6 structured items of 10 marks from visible structured questions, shuffled. Writes nothing to practice, mastery, the revision queue or the wallet.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Value of Session.csrf; required on mutating requests."
+            },
+            "required": true,
+            "description": "Value of Session.csrf; required on mutating requests.",
+            "name": "X-CSRF-Token",
+            "in": "header"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SpmMockCreateRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "The new mock id.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/SpmMockCreated"
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED \"Unauthenticated.\" (no valid session).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN with code CSRF_INVALID (missing or wrong X-CSRF-Token).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "VALIDATION_ERROR with fields.subject \"Sila pilih subjek.\" (not one of the ten options) or fields.paperNumber \"Paper mesti 1 atau 2.\".",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/spm-mocks/{id}": {
+      "get": {
+        "tags": [
+          "spm"
+        ],
+        "summary": "Exam paper to sit, without answer keys (M06-10)",
+        "description": "Owner only. Items carry no model answer, student answer, marks, feedback, topic or question id.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 64,
+              "description": "Mock exam id. An unknown id or another user's mock is 404 \"Not Found.\" (BR-M06-26).",
+              "example": "1042"
+            },
+            "required": true,
+            "description": "Mock exam id. An unknown id or another user's mock is 404 \"Not Found.\" (BR-M06-26).",
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The paper.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/SpmMockExamView"
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED \"Unauthenticated.\" (no valid session).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "NOT_FOUND \"Not Found.\" (unknown id, or a mock that belongs to another user).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/spm-mocks/{id}/submit": {
+      "post": {
+        "tags": [
+          "spm"
+        ],
+        "summary": "Submit answers and grade the mock (M06-11)",
+        "description": "Owner only. Paper 1: correct iff the trimmed, upper-cased answer equals the model letter (1 or 0 marks). Paper 2 (simulated marker): 0 marks for an empty answer, otherwise round(max x min(1, words / 60)). Grade bands: >= 90 A+, 80 A, 70 B+, 60 B, 50 C, 45 D, 40 E, else G. Writes only the mock rows.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 64,
+              "description": "Mock exam id. An unknown id or another user's mock is 404 \"Not Found.\" (BR-M06-26).",
+              "example": "1042"
+            },
+            "required": true,
+            "description": "Mock exam id. An unknown id or another user's mock is 404 \"Not Found.\" (BR-M06-26).",
+            "name": "id",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Value of Session.csrf; required on mutating requests."
+            },
+            "required": true,
+            "description": "Value of Session.csrf; required on mutating requests.",
+            "name": "X-CSRF-Token",
+            "in": "header"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SpmMockSubmitRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The graded result.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/SpmMockResult"
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED \"Unauthenticated.\" (no valid session).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN with code CSRF_INVALID (missing or wrong X-CSRF-Token).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "NOT_FOUND \"Not Found.\" (unknown id, or a mock that belongs to another user).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "CONFLICT \"Mock ini sudah dihantar.\" (second submit).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "VALIDATION_ERROR with fields.answers \"Jawapan tidak sah.\" (not an array, or an entry whose `no` is not an integer from 1 to the item count, or whose `answer` is neither a string nor null).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/spm-mocks/{id}/result": {
+      "get": {
+        "tags": [
+          "spm"
+        ],
+        "summary": "Result of a submitted mock (M06-12)",
+        "description": "Owner only.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 64,
+              "description": "Mock exam id. An unknown id or another user's mock is 404 \"Not Found.\" (BR-M06-26).",
+              "example": "1042"
+            },
+            "required": true,
+            "description": "Mock exam id. An unknown id or another user's mock is 404 \"Not Found.\" (BR-M06-26).",
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The result.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/SpmMockResult"
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED \"Unauthenticated.\" (no valid session).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "NOT_FOUND \"Not Found.\" (unknown id, or a mock that belongs to another user).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Code NOT_SUBMITTED, message \"Mock belum dihantar.\" (the mock is still in_progress).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/spm-walkthrough/solve": {
+      "post": {
+        "tags": [
+          "spm"
+        ],
+        "summary": "Simulated step-by-step walkthrough (M06-13)",
+        "description": "Simulated (no external call, the image is never stored). The body is RAW `{ ok, walkthrough | error }`, not enveloped, and every business error is HTTP 200: an image that is not image/* or is over 5 MB gives `{ ok: false, error: \"Gambar tidak sah.\" }`; no text and no image gives `{ ok: false, error: \"Sila masukkan soalan atau muat naik gambar soalan.\" }`. Only an unlisted subject is 422.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Value of Session.csrf; required on mutating requests."
+            },
+            "required": true,
+            "description": "Value of Session.csrf; required on mutating requests.",
+            "name": "X-CSRF-Token",
+            "in": "header"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "$ref": "#/components/schemas/SpmWalkthroughRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Walkthrough text, or a business error with ok false.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SpmWalkthroughResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED \"Unauthenticated.\" (no valid session).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN with code CSRF_INVALID (missing or wrong X-CSRF-Token).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "VALIDATION_ERROR with fields.subject \"Sila pilih subjek.\" (not one of the 15 listed subjects).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/duta/recommendations": {
+      "get": {
+        "tags": [
+          "spm",
+          "duta"
+        ],
+        "summary": "One Duta recommendation card (M06-14, provisional M24 endpoint)",
+        "description": "Picks an active `bintang` ambassador (inspirasi, tetamu and inactive rows are never returned); `data` is null when none is active. M24 takes the route over with the same path and body.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "description": "Subject name as on the card (e.g. \"Matematik\"); trimmed."
+            },
+            "required": false,
+            "description": "Subject name as on the card (e.g. \"Matematik\"); trimmed.",
+            "name": "subject",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": [
+                "integer",
+                "null"
+              ]
+            },
+            "required": false,
+            "name": "seed",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "A card or null.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/DutaRecommendation"
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED \"Unauthenticated.\" (no valid session).",
             "content": {
               "application/json": {
                 "schema": {
