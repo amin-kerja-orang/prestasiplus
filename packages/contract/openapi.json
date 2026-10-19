@@ -91,7 +91,8 @@
           "FORBIDDEN",
           "CONFLICT",
           "SERVER_ERROR",
-          "RATE_LIMITED"
+          "RATE_LIMITED",
+          "PASSWORD_CHANGE_REQUIRED"
         ]
       },
       "ErrorPayload": {
@@ -456,6 +457,10 @@
           "csrf": {
             "type": "string",
             "minLength": 1
+          },
+          "mustChangePassword": {
+            "type": "boolean",
+            "description": "True while a forced password change is pending; other routes answer 403 PASSWORD_CHANGE_REQUIRED."
           }
         },
         "required": [
@@ -466,7 +471,8 @@
           "capabilities",
           "landingPath",
           "expiresAt",
-          "csrf"
+          "csrf",
+          "mustChangePassword"
         ]
       },
       "LoginRequest": {
