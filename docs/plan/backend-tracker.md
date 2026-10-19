@@ -99,6 +99,7 @@ Newest first. The lead appends a line when a card merges, a decision is made or 
 
 | Date | Entry |
 |---|---|
+| 2026-10-19 | LEAD merged contract-only PRs: BE-05(-) after code review (Approve). Append-only conflicts resolved; openapi.json regenerated; contract:check, contract tests and tsc green. Cards back to `todo` for their full implementation. |
 | 2026-10-19 | LEAD merged **BE-02** (Prisma 7 + adapter-pg, PrismaService with AsyncLocalStorage transactions, Clock/ids/prng, seed runner with --profile, Testcontainers template-database harness, compose db service, CI postgres). Review Approve; be:verify green. package-lock regenerated with --package-lock-only to keep the BE-31 workspace. Sync point S2 reached; **BE-03 opened**. |
 | 2026-10-19 | LEAD merged **BE-39** contract (PR #11) on the owner's instruction, with 2 Majors carried as follow-ups (preview ReviewQuestion shape, QuestionKind enum and status mapping). LEAD fix in the same merge: openapi.ts widens the component map type (TS2859 at 1000+ schemas). contract:check, 1107 tests and tsc green. |
 | 2026-10-19 | LEAD merged contract-only PRs: BE-43(#22) BE-45(#13) after code review (Approve). Append-only conflicts resolved; openapi.json regenerated; contract:check, contract tests and tsc green. Cards back to `todo` for their full implementation. |
