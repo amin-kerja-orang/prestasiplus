@@ -8,7 +8,7 @@ import { createTestDatabase, type TestDatabase } from '../support/db'
 
 const MODELS_JSON = fileURLToPath(new URL('../../prisma/migratable-models.json', import.meta.url))
 
-describe('schools schema (migration 0003_schools_import)', () => {
+describe('schools schema (migration 0004_schools_import)', () => {
   let db: TestDatabase
   let jpnId: string
   let ppdId: string

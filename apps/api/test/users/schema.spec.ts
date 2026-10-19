@@ -2,7 +2,7 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 
 import { createTestDatabase, type TestDatabase } from '../support/db'
 
-describe('users schema for M02 (BE-03 columns + migration 0003_schools_import)', () => {
+describe('users schema for M02 (BE-03 columns + migration 0004_schools_import)', () => {
   let db: TestDatabase
 
   beforeAll(async () => {

@@ -1,7 +1,7 @@
 // Owner: BE-03 created the minimal `schools`; BE-05 extends it (type, city, join_code, jpn/ppd references)
 // and adds `jpns` / `ppds` (OD-28, OWN-4) and `import_jobs` (in identity.prisma). BE-25 reads and extends this file.
 // Conventions: docs/architecture/v2-backend-plan.md section 14.2. CHECK constraints (enums are text + check)
-// are written by hand in migration 0003_schools_import.
+// are written by hand in migration 0004_schools_import.
 
 /// State education department (JPN). One row per distinct `schools.state` (plan 14.7 T-09).
 model Jpn {
