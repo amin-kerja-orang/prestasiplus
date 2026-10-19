@@ -128,12 +128,18 @@ function toSummary(s: SchoolRow): SchoolSummaryRow {
 /** Ordering of every school list: name A to Z, ties by id (mock `schools.list`). */
 const BY_NAME: Prisma.SchoolOrderByWithRelationInput[] = [{ name: 'asc' }, { id: 'asc' }]
 
-const textSearch = (term: string): Prisma.SchoolWhereInput => ({
-  OR: [
-    { name: { contains: term, mode: 'insensitive' } },
-    { code: { contains: term, mode: 'insensitive' } },
-  ],
-})
+/** Prisma passes `contains` to LIKE unescaped, so `%`, `_` and the escape character are escaped here (they match themselves). */
+const escapeLike = (term: string): string => term.replace(/[\\%_]/g, (c) => `\\${c}`)
+
+const textSearch = (term: string): Prisma.SchoolWhereInput => {
+  const safe = escapeLike(term)
+  return {
+    OR: [
+      { name: { contains: safe, mode: 'insensitive' } },
+      { code: { contains: safe, mode: 'insensitive' } },
+    ],
+  }
+}
 
 /**
  * The only doorway to the `schools`, `jpns` and `ppds` tables (ADR-0014). Other modules (users,
@@ -241,11 +247,11 @@ export class SchoolsRepository {
   async findByCode(code: string): Promise<SchoolRow | null> {
     const term = code.trim()
     if (term === '') return null
-    const row = await this.prisma.client.school.findFirst({
-      where: { code: { equals: term, mode: 'insensitive' } },
-      select: SELECT,
-    })
-    return row ? toRow(row) : null
+    // An exact comparison: `lower() = lower()`, not ILIKE, so `%` and `_` in the code match themselves.
+    const hit = await this.prisma.client.$queryRaw<{ id: bigint }[]>`
+      SELECT id FROM schools WHERE lower(code) = lower(${term}) LIMIT 1`
+    const id = hit[0]?.id
+    return id === undefined ? null : this.get(idToString(id))
   }
 
   /**
