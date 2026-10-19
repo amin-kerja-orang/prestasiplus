@@ -186,7 +186,7 @@ export class FilesController {
         'Content-Length': String(file.bytes.length),
         'X-Content-Type-Options': 'nosniff',
         // Only the public purpose may be reused from the browser cache without asking; the rest revalidate.
-        'Cache-Control': file.purpose === 'cms_image' ? 'private, max-age=300' : 'private, no-cache',
+        'Cache-Control': file.purpose === 'cms_image' ? 'private, max-age=300' : 'no-store',
         Vary: 'Cookie',
         'Content-Disposition': `${inline ? 'inline' : 'attachment'}; filename="file-${file.publicId}.${EXTENSION_OF[mime]}"`,
         // Defence in depth if a browser ever renders the bytes as a document.

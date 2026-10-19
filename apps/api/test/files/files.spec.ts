@@ -294,19 +294,19 @@ describe('GET /api/files/:id: headers (AC 3, BE-NFR-40)', () => {
     expect(res.status).toBe(200)
     expect(res.headers['content-type']).toBe('image/png')
     expect(res.headers['x-content-type-options']).toBe('nosniff')
-    expect(res.headers['cache-control']).toBe('private, no-cache')
+    expect(res.headers['cache-control']).toBe('no-store')
     expect(res.headers['content-disposition']).toBe(`inline; filename="file-${ref.id}.png"`)
     expect(res.headers['content-security-policy']).toContain("default-src 'none'")
     expect(res.headers['content-length']).toBe(String(ref.size))
     expect((res.body as Buffer).subarray(0, 8).toString('hex')).toBe('89504e470d0a1a0a')
   })
 
-  it('only the public purpose may be cached without revalidation; every other purpose is private, no-cache', async () => {
+  it('only the public purpose may be cached without revalidation; every other purpose is no-store (shared school computers)', async () => {
     const cms = await uploadOk(admin, 'cms_image', makePng())
     expect((await t.http().get(cms.url)).headers['cache-control']).toBe('private, max-age=300')
     for (const [who, purpose] of [[student, 'bijak_photo'], [teacher, 'question_image'], [student, 'avatar']] as const) {
       const ref = await uploadOk(who, purpose, makePng())
-      expect((await who.agent.get(ref.url)).headers['cache-control']).toBe('private, no-cache')
+      expect((await who.agent.get(ref.url)).headers['cache-control']).toBe('no-store')
     }
   })
 
