@@ -442,7 +442,7 @@ Fictitious only (AGENTS.md section 7). Use obviously artificial names such as `M
 
 ## 14. Git, PR and sync
 
-Branch `be/<card>-<slug>` from `origin/feature/v2-backend`; claim with a draft PR; commit after each green step as `feat(BE-08): ...`; push at least hourly and at the end of the session; rebase daily; the LEAD merges. The full routine, the Open list, what to do when blocked and the end-of-session report are in [AGENT-SYNC.md](AGENT-SYNC.md) and [sessions.md](sessions.md) section 6; the PR template is in [backend-tasks/README.md](backend-tasks/README.md). With every push update your tracker row, the PR description (status, endpoints, tables, real `be:verify` output, deviations, open questions, mapping-matrix rows) and any doc your card changes.
+One worktree per card (`git worktree add ../pp-<card-id> -b be/<card>-<slug> origin/feature/v2-backend`); claim by pushing the branch right away (the branch on GitHub is the claim; draft PR when `gh` works; AGENT-SYNC Quick start); commit after each green step as `feat(BE-08): ...`; push at least hourly and at the end of the session; rebase daily; the LEAD merges. The full routine, the Open list, what to do when blocked and the end-of-session report are in [AGENT-SYNC.md](AGENT-SYNC.md) and [sessions.md](sessions.md) section 6; the PR template is in [backend-tasks/README.md](backend-tasks/README.md). With every push update your tracker row, the PR description (status, endpoints, tables, real `be:verify` output, deviations, open questions, mapping-matrix rows) and any doc your card changes.
 
 ## 15. Checklist per card
 

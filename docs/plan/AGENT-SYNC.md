@@ -2,6 +2,35 @@
 
 Every backend agent on every PC follows this page. Re-read it from `origin/feature/v2-backend` at the start and end of each session. Details: [sessions.md](sessions.md) section 6.
 
+## Quick start: many sessions in parallel (read this first)
+
+Many sessions work at the same time, on one PC or on many. Each session is an independent worker.
+
+1. **You are one session, not "the PC".** Make your own session name once:
+   ```
+   node -e "console.log('s-'+require('os').hostname().toLowerCase()+'-'+Math.random().toString(36).slice(2,6))"
+   ```
+   Use it as the Owner. Other sessions on the same PC are other workers: never continue their card and never wait for them.
+2. **The live board is the list of `be/*` branches on GitHub.**
+   ```
+   git fetch origin --prune && git ls-remote --heads origin "be/*"
+   ```
+   - A branch exists for a card: that card is **taken**, whatever `backend-tracker.md` on `feature/v2-backend` says. Tracker rows change on the claim branch and only reach `feature/v2-backend` when the LEAD merges.
+   - Do not ask other sessions what they are doing. GitHub is the only source.
+3. **Take the first free card** from the Open list (section 0), using the rules in section 1. Several cards are open at once (contract-only cards do not wait for dependencies), so a second session normally has work.
+4. **Work in your own folder.** Several sessions must never share one checkout:
+   ```
+   git worktree add ../pp-<card-id> -b <branch> origin/feature/v2-backend
+   cd ../pp-<card-id>
+   npm ci
+   ```
+5. **Claim by pushing the branch** right away (section 2). The push is the claim:
+   - If the push is rejected because the branch exists, another session won. Remove your worktree and take the next free card.
+   - Add the draft PR when `gh` works.
+6. **Nothing free?** Report `idle` in one line and stop. The LEAD opens more cards.
+
+**Resume** a card only when the user's prompt says so ("Continue BE-xx"). Then work in that card's existing branch.
+
 > **Standing rule for every PC and every session: commit, push and update the shared records regularly.**
 > - **Commit** after every green step.
 > - **Push** at least every hour and before the session stops.
@@ -36,6 +65,30 @@ A PC may claim **only** cards listed here. A card that is not listed is closed, 
 | BE-09 | contract-only | 2026-10-19 | Question bank core: `packages/contract/src/questions/**`. |
 | BE-11 | contract-only | 2026-10-19 | Wallet and streak: `packages/contract/src/wallet/**`. |
 | BE-12 | contract-only | 2026-10-19 | Practice write path: `packages/contract/src/practice/**`. |
+| BE-25 | contract-only | 2026-10-19 | Parents and subscriptions: `packages/contract/src/schools/{parents,subscriptions}/**` only. |
+| BE-06 | contract-only | 2026-10-19 | Account and notifications: `packages/contract/src/{account,notifications}/**`. |
+| BE-10 | contract-only | 2026-10-19 | Question workflow: `packages/contract/src/question-workflow/**`. |
+| BE-15 | contract-only | 2026-10-19 | Bijak papers: `packages/contract/src/bijak/papers/**`. |
+| BE-17 | contract-only | 2026-10-19 | Classes (teacher): `packages/contract/src/classes/**`, not `classes/{missions,question-sets}`. |
+| BE-19 | contract-only | 2026-10-19 | Performance reports: `packages/contract/src/reports/performance/**`. |
+| BE-21 | contract-only | 2026-10-19 | School admin: `packages/contract/src/school-admin/**`. |
+| BE-23 | contract-only | 2026-10-19 | Gamification and shop: `packages/contract/src/gamification/**`. |
+| BE-24 | contract-only | 2026-10-19 | Content and support: `packages/contract/src/{content,support}/**`. |
+| BE-36 | contract-only | 2026-10-19 | AI adapter wire types: `packages/contract/src/ai/**`. |
+| BE-41 | contract-only | 2026-10-19 | SPM hub (M06): `packages/contract/src/spm/**`. |
+| BE-48 | contract-only | 2026-10-19 | Heatmap: `packages/contract/src/heatmap/**`. |
+| BE-16 | contract-only | 2026-10-19 | Bijak attempts: `packages/contract/src/bijak/attempts/**` only (BE-15 owns `bijak/papers`). Foreign attempt = 403 (D54b). |
+| BE-18 | contract-only | 2026-10-19 | Missions and question sets: `packages/contract/src/classes/{missions,question-sets}/**` only (BE-17 owns the rest of `classes/`). |
+| BE-20 | contract-only | 2026-10-19 | Analytics and Kirkpatrick: `packages/contract/src/reports/{analytics,kirkpatrick}/**` only (BE-19 owns `reports/performance`). |
+| BE-22 | contract-only | 2026-10-19 | Command Center and admin dashboard: `packages/contract/src/admin/command-center/**`. |
+| BE-38 | contract-only | 2026-10-19 | Intake batches and review: `packages/contract/src/intake/**`. Match the prototype intake in `src/modules/m28-bijak-spm/admin/intake` (types.ts, server/store.ts) and the five lifecycle states (D54a). |
+| BE-39 | contract-only | 2026-10-19 | Paper builder and blueprints: `packages/contract/src/bijak/builder/**` only. Match `src/modules/m28-bijak-spm/admin/papers` and server/admin.ts. |
+| BE-42 | contract-only | 2026-10-19 | PKSK: `packages/contract/src/pksk/**`. |
+| BE-43 | contract-only | 2026-10-19 | Cikgu Alesa: `packages/contract/src/cikgu/**`. |
+| BE-44 | contract-only | 2026-10-19 | Battle: `packages/contract/src/battle/**`. |
+| BE-45 | contract-only | 2026-10-19 | Papan Bijak, games hub, leagues: `packages/contract/src/games/**`. |
+| BE-46 | contract-only | 2026-10-19 | Marketplace: `packages/contract/src/marketplace/**`. |
+| BE-47 | contract-only | 2026-10-19 | Keluarga Angkat (student side): `packages/contract/src/sponsorship/**`. |
 
 Rules for `contract-only`:
 - The frontend mock is the spec: match the mock handlers' request and response shapes, error codes and BM messages exactly.
@@ -49,9 +102,13 @@ Rules for `contract-only`:
 
 ### Lead notices (current instructions; newest first)
 
+- 2026-10-19: **Decisions D55 (security):** BE-06 reset-ic has an attempt limit (5 per 15 min per account and IP, 429 RATE_LIMITED, BM message); unknown e-mail answers with the invalid-token message (no enumeration); BE-21 student-create returns the password once to the creating admin only, never logged, and the account must change its password at first login. Contracts and cards BE-03, BE-06, BE-21 and BE-33 follow D55.
+- 2026-10-19 14:40: **12 more contract-only cards opened:** BE-16, 18, 20, 22, 38, 39, 42, 43, 44, 45, 46, 47. Only BE-19 and BE-36 were left before. Same rules: one branch `be/<card>-contract` per card, push = claim.
+- 2026-10-19: **Reserved for an external collaborator: BE-11 and BE-24 (contract-only), branches `be/BE-11-contract` and `be/BE-24-contract`.** Every session skips these two cards even before their branches appear on GitHub. BE-08 contract stays with the session that pushed `be/BE-08-contract` first.
 - 2026-10-19: **Decisions D54 (docs/TRACKER.md):** questions use the v2 lifecycle on the wire: Draf, Semakan, Lulus, Diterbitkan, Diarkib (codes draft, review, approved, published, archived); another student's Bijak attempt returns 403; BE-23 is now P1; M16 leaderboards show classmates' display names (fictitious names in seeds). Cards that conflict with these follow D54.
 - 2026-10-19: **Start now; do not wait for perfect docs.** Take cards only from the Open list above. If `docs/requirements/v2-backend-urs.md` or `docs/plan/backend-dev-guide.md` is not on the branch yet, follow `docs/architecture/v2-backend-plan.md` and the card file. Once they land, re-read them at your next session start.
 
+- 2026-10-19: **Parallel sessions fixed:** read the Quick start at the top. Each session has its own name and its own worktree; a `be/*` branch on GitHub means the card is taken. 17 contract-only cards are open, so every session has work.
 - 2026-10-19: **S0 is open, start now.** Defaults in force until the LEAD says otherwise:
   - Stack: NestJS 11 + Prisma + Vitest (OD-3).
   - The LEAD reviews and merges every PR (OD-12).
@@ -62,7 +119,7 @@ Rules for `contract-only`:
 ## 0b. Any number of PCs
 
 - There is no fixed number of PCs and no fixed PC-to-lane split. Every PC **pulls** the next ready card from the whole tracker (section 1). A PC can join or leave at any time; a new PC only needs the setup in [agent-kickoff/README.md](agent-kickoff/README.md) section 1.
-- **PC name (automatic):** the agent names its PC itself: `pc-` plus the computer name in lower case (run `hostname`, e.g. `pc-desktop-7h2k`). It writes the tracker Owner as `<pc-name>/S<n>` (n = session number on that PC). Nobody has to choose a name.
+- **Session name (automatic):** each session makes its own name (Quick start step 1, e.g. `s-desktop-7h2k-q3x9`) and writes the tracker Owner as that name. Two sessions on one PC have different names.
 - **Lanes are file-ownership groups, not people.** The lane of a card (tracker column `Lane`) tells you which lane prompt to read and which folders you may edit while you hold that card.
 - More PCs help only while there are ready cards. When none is ready, a PC does the "blocked" work of [sessions.md](sessions.md) section 2 or stops and reports `idle`.
 
@@ -97,10 +154,10 @@ gh pr list --base feature/v2-backend --state open --json number,title,headRefNam
 gh issue list --label lead --state open      # LEAD instructions; if the label does not exist yet, ignore the error
 ```
 
-1. **Unfinished card of yours first:** if this PC already holds a card (its branch or draft PR, Owner = your PC name), continue it.
+1. **Resume only when told:** if the user's prompt says "Continue BE-xx", continue that card in its existing branch (in its own worktree). Otherwise always take a new free card. A card with a branch is never yours just because it was claimed from this PC.
 2. Otherwise open [backend-tracker.md](backend-tracker.md) **on `origin/feature/v2-backend`** and list the cards that are **ready**:
    - listed in the **Open list** (section 0); `contract-only` rows skip the dependency check below;
-   - status `todo`, and no open PR or `origin/be/<card>-*` branch exists for it (that would mean it is taken);
+   - **no `origin/be/<card-id>-*` branch exists** (`git ls-remote --heads origin "be/*"`) and no open PR. This is the real "taken" test, because tracker status on `feature/v2-backend` lags until merge;
    - every card in `Depends on` is `done`;
    - **no clash:** no card currently `in-progress` or `review` in the same lane touches the same module folder or Prisma file (check the "Files" or scope section of both card files). Two cards of one lane may run in parallel only when neither depends on the other and their files do not overlap (example: BE-08 curriculum and BE-11 wallet).
 3. Take the ready card with the **highest priority** (P0, then P1, then P2); on a tie, the one that unblocks the most other cards (the most cards list it in `Depends on`); then the lowest card number.
@@ -109,8 +166,9 @@ gh issue list --label lead --state open      # LEAD instructions; if the label d
 ## 2. Claim it immediately (before writing code)
 
 ```
-git switch -c be/<card-id>-<slug> origin/feature/v2-backend     # contract-only: be/<card-id>-contract
-# edit the card's row in docs/plan/backend-tracker.md: Status in-progress, Owner <pc-name>/S<n>, Branch
+git worktree add ../pp-<card-id> -b be/<card-id>-<slug> origin/feature/v2-backend   # contract-only: be/<card-id>-contract
+cd ../pp-<card-id> && npm ci
+# edit the card's row in docs/plan/backend-tracker.md: Status in-progress, Owner <session-name>, Branch
 git add docs/plan/backend-tracker.md
 git commit -m "chore(<card-id>): claim card" && git push -u origin HEAD
 gh pr create --draft --base feature/v2-backend --title "[PC-n] <card-id>: <title>" --body-file .github/pull_request_template.md
@@ -119,7 +177,7 @@ gh pr edit --add-label lane:PC-n || true     # add `contract` for contract-only;
 
 `PC-n` is the card's `Lane` column. The `[PC-n]` title prefix always carries the lane, so a missing label costs nothing. Always `git add` explicit paths, never `git commit -a`: the full test run rewrites a tracked snapshot under `src/`, and it must not enter your PR.
 
-**The draft PR is the claim.** Other PCs see it within seconds. If `git push` says the branch already exists, someone claimed it first: delete your local branch and go back to section 1. If `gh` says you are not logged in, run `gh auth login` once; do not skip the PR.
+**The pushed branch is the claim** (the draft PR adds detail). Other sessions see it within seconds. If `git push` says the branch already exists, someone claimed it first: delete your local branch and go back to section 1. If `gh` says you are not logged in, run `gh auth login` once; do not skip the PR.
 
 ## 3. While working: commit and push often
 

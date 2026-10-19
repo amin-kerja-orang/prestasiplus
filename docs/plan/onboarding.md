@@ -41,20 +41,20 @@ Which branch for what:
 | Frontend / lead work | `feature/student-prototype` (lead only) | `v2/*` (lead only) |
 | Docs-only tasks | as the lead assigns | as the lead assigns |
 
-Never push to `main`, `feature/student-prototype`, `feature/v2-backend` or `v2/*`; the lead merges PRs. The claim-by-draft-PR process, the Open list, commit/push cadence and the 5-line end report are in [AGENT-SYNC.md](AGENT-SYNC.md); follow it, it is not repeated here.
+Never push to `main`, `feature/student-prototype`, `feature/v2-backend` or `v2/*`; the lead merges PRs. How to take work is in the **Quick start** at the top of [AGENT-SYNC.md](AGENT-SYNC.md): claim a card by pushing its `be/*` branch (the branch on GitHub is the claim; a draft PR follows when `gh` works), the Open list, commit/push cadence and the end report. Follow it; it is not repeated here.
 
-**PC name:** automatic. Run `hostname`; the agent uses `pc-` plus the lower-case computer name (for example `pc-desktop-7h2k`) and writes the tracker Owner as `<pc-name>/S<n>` (n = session number on that PC).
+**Session name, not PC name:** every Claude Code session is an independent worker with its own name, made once per session as in Quick start step 1 (for example `s-desktop-7h2k-q3x9`), and used as the tracker Owner. Two sessions on one PC have different names; a session never continues another session's card. Resume a card only when the user's prompt says so ("Continue BE-xx").
 
-**Parallel sessions on one PC: use git worktrees, never switch branches in a shared folder.** A second Claude Code session in the same folder would see your half-edited files, and a `git switch` under a running session breaks it. Instead:
+**One worktree per card, never switch branches in a shared folder.** A second Claude Code session in the same folder would see your half-edited files, and a `git switch` under a running session breaks it. Instead:
 
 ```
 git fetch origin
-git worktree add ../pp-be01 -b be/BE-01-scaffold-ci origin/feature/v2-backend
-cd ../pp-be01
+git worktree add ../pp-BE-01 -b be/BE-01-scaffold-ci origin/feature/v2-backend
+cd ../pp-BE-01
 npm ci
 ```
 
-Each worktree is a full folder with its own branch and its own `node_modules`. Remove it when the PR is merged: `git worktree remove ../pp-be01`. A branch can be checked out in only one worktree at a time. Keep worktrees outside the main repo folder; `.claude/worktrees/` is used by the Claude Code harness, do not touch it.
+Each worktree is a full folder with its own branch and its own `node_modules`. Remove it when the PR is merged: `git worktree remove ../pp-BE-01`. A branch can be checked out in only one worktree at a time. Keep worktrees outside the main repo folder; `.claude/worktrees/` is used by the Claude Code harness, do not touch it.
 
 ## 3. Install and first run (mock-only frontend, exists today)
 
