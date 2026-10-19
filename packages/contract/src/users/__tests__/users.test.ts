@@ -1,9 +1,10 @@
 import { describe, expect, it } from 'vitest'
 
 import { buildOpenApiDocument } from '../../openapi'
-import { SchoolInputSchema, statusEnvelopeOf } from '../../schools/schema'
+import { SCHOOL_ACCESS, SchoolInputSchema, statusEnvelopeOf } from '../../schools/schema'
 import {
-  AdminDefaultsSchema,
+  CreatedUserSchema,
+  ImportCredentialSchema,
   AdminUserDetailSchema,
   AdminUserListItemSchema,
   BulkDeleteRequestSchema,
@@ -63,8 +64,6 @@ const create = {
   roles: ['teacher'],
   name: 'Guru Ujian',
   email: 'guru@example.test',
-  password: 'secret1',
-  passwordConfirmation: 'secret1',
   schoolId: '10',
 }
 
@@ -140,8 +139,6 @@ describe('create request', () => {
   })
   it('rejects missing fields and bad role combinations', () => {
     expect(CreateUserRequestSchema.safeParse({ ...create, name: '' }).success).toBe(false)
-    expect(CreateUserRequestSchema.safeParse({ ...create, password: '12345', passwordConfirmation: '12345' }).success).toBe(false)
-    expect(CreateUserRequestSchema.safeParse({ ...create, passwordConfirmation: 'other' }).success).toBe(false)
     expect(CreateUserRequestSchema.safeParse({ ...create, roles: ['student', 'teacher'], grade: 3 }).success).toBe(false)
     expect(CreateUserRequestSchema.safeParse({ ...create, email: null }).success).toBe(false)
     expect(CreateUserRequestSchema.safeParse({ ...create, email: 'bukan-emel' }).success).toBe(false)
@@ -194,17 +191,16 @@ describe('bulk import', () => {
     expect(BulkImportRequestSchema.safeParse({ ...base, schoolId: null }).success).toBe(false)
     expect(BulkImportRequestSchema.safeParse({ ...base, role: 'school_admin', schoolId: undefined }).success).toBe(false)
   })
-  it('rejects other roles, bad mode and a short default password', () => {
+  it('rejects other roles, bad mode', () => {
     expect(BulkImportRequestSchema.safeParse({ ...base, role: 'student' }).success).toBe(false)
     expect(BulkImportRequestSchema.safeParse({ ...base, role: 'admin' }).success).toBe(false)
     expect(BulkImportRequestSchema.safeParse({ ...base, importMode: 'xlsx' }).success).toBe(false)
-    expect(BulkImportRequestSchema.safeParse({ ...base, defaultPassword: '123' }).success).toBe(false)
   })
   it('multipart variant carries text ids', () => {
     expect(BulkImportMultipartSchema.safeParse({ role: 'teacher', schoolId: '10', importMode: 'csv', csvFile: 'a,b' }).success).toBe(true)
   })
   it('result and messages match the mock', () => {
-    const result = { created: 2, skipped: 1, failed: 1, mustChangePasswordCount: 2, errors: [{ line: 4, message: 'Emel tidak sah.' }] }
+    const result = { created: 2, skipped: 1, failed: 1, credentials: [{ line: 2, email: 'a@example.test', generatedPassword: 'Xk3pQ9vL2m', mustChangePassword: true }], errors: [{ line: 4, message: 'Emel tidak sah.' }] }
     expect(ImportResultSchema.safeParse(result).success).toBe(true)
     expect(ImportResultSchema.safeParse({ ...result, errors: [{ line: 0, message: 'x' }] }).success).toBe(false)
     expect(usersImportedText(result)).toBe('Import selesai: 2 pengguna didaftarkan, 1 dilangkau, 1 gagal.')
@@ -225,7 +221,6 @@ describe('user validation copy (mock messages)', () => {
   it('create: required, length and e-mail copy', () => {
     expect(msg(CreateUserRequestSchema.safeParse({}), 'name')).toBe('The name field is required.')
     expect(msg(CreateUserRequestSchema.safeParse({}), 'roles')).toBe('The role field is required.')
-    expect(msg(CreateUserRequestSchema.safeParse({}), 'password')).toBe('The password field is required.')
     expect(msg(CreateUserRequestSchema.safeParse({ ...create, roles: ['hantu'] }), 'roles.0')).toBe('The selected role is invalid.')
     expect(msg(CreateUserRequestSchema.safeParse({ ...create, email: 'bukan-emel' }), 'email')).toBe('The email field must be a valid email address.')
     expect(msg(CreateUserRequestSchema.safeParse({ ...create, email: null }), 'email')).toBe('The email field is required.')
@@ -233,9 +228,10 @@ describe('user validation copy (mock messages)', () => {
     expect(msg(CreateUserRequestSchema.safeParse({ ...create, phone: '1'.repeat(15) }), 'phone')).toBe('The phone field must not be greater than 14 characters.')
     expect(msg(CreateUserRequestSchema.safeParse({ ...create, icNumber: '1'.repeat(15) }), 'icNumber')).toBe('The ic number field must not be greater than 14 characters.')
   })
-  it('create: password copy', () => {
-    expect(msg(CreateUserRequestSchema.safeParse({ ...create, password: '123', passwordConfirmation: '123' }), 'password')).toBe('The password field must be at least 6 characters.')
-    expect(msg(CreateUserRequestSchema.safeParse({ ...create, passwordConfirmation: 'lain' }), 'password')).toBe('The password field confirmation does not match.')
+  it('create: no admin-chosen password (D59b)', () => {
+    expect(CreateUserRequestSchema.safeParse({ ...create, password: 'secret1' }).success).toBe(false)
+    expect(CreateUserRequestSchema.safeParse({ ...create, passwordConfirmation: 'secret1' }).success).toBe(false)
+    expect(CreateUserRequestSchema.safeParse(create).success).toBe(true)
   })
   it('create: role-conditional copy', () => {
     expect(msg(CreateUserRequestSchema.safeParse({ ...create, roles: ['student'], grade: null }), 'grade')).toBe('The grade field is required when role is student.')
@@ -264,8 +260,6 @@ describe('user validation copy (mock messages)', () => {
     expect(msg(BulkImportRequestSchema.safeParse({}), 'role')).toBe('The role field is required.')
     expect(msg(BulkImportRequestSchema.safeParse({ ...base, role: 'student' }), 'role')).toBe('The selected role is invalid.')
     expect(msg(BulkImportRequestSchema.safeParse({ ...base, schoolId: null }), 'schoolId')).toBe('The school id field is required.')
-    expect(msg(BulkImportRequestSchema.safeParse({ ...base, defaultPassword: '123' }), 'defaultPassword')).toBe('The default password field must be at least 6 characters.')
-    expect(BulkImportRequestSchema.safeParse({ ...base, defaultPassword: '' }).success).toBe(true)
     expect(msg(BulkImportRequestSchema.safeParse({ role: 'parent' }), 'importMode')).toBe('The import mode field is required.')
     expect(msg(BulkImportRequestSchema.safeParse({ ...base, importMode: 'xlsx' }), 'importMode')).toBe('The selected import mode is invalid.')
     expect(msg(BulkImportRequestSchema.safeParse({ ...base, pasteContent: '  ' }), 'pasteContent')).toBe('Tiada data untuk diimport.')
@@ -280,8 +274,8 @@ describe('security review fixes (D55, D57)', () => {
   type Op = { responses: Record<string, { headers?: Record<string, unknown> }>; description?: string }
   const doc = buildOpenApiDocument() as { paths: Record<string, Record<string, Op>> }
   const ops = Object.entries(doc.paths)
-    .filter(([p]) => /^\/(admin\/(users|teachers|schools|config)|students|schools|jpn)/.test(p))
     .flatMap(([p, m]) => Object.entries(m).map(([method, op]) => ({ key: method.toUpperCase() + ' ' + p, method, path: p, op })))
+    .filter((o) => o.key in USER_ACCESS || o.key in SCHOOL_ACCESS)
 
   it('every write route and every public lookup documents 429 with Retry-After', () => {
     const write = ops.filter((o) => o.method !== 'get')
@@ -295,7 +289,7 @@ describe('security review fixes (D55, D57)', () => {
   it('personal-data and credential responses are no-store', () => {
     const noStore = [
       'GET /admin/users', 'GET /admin/users/{id}', 'POST /admin/users', 'PUT /admin/users/{id}', 'POST /admin/users/bulk-import',
-      'GET /students/search', 'GET /admin/teachers', 'GET /admin/config/defaults', 'GET /admin/schools', 'GET /admin/schools/{id}/students',
+      'GET /students/search', 'GET /admin/teachers', 'GET /admin/schools', 'GET /admin/schools/{id}/students',
     ]
     for (const key of noStore) {
       const o = ops.find((x) => x.key === key)
@@ -304,8 +298,7 @@ describe('security review fixes (D55, D57)', () => {
       expect(ok?.headers?.['Cache-Control'], key).toBeDefined()
     }
   })
-  it('defaults are Admin Pusat only; student search is staff only and needs 3 characters', () => {
-    expect(USER_ACCESS['GET /admin/config/defaults'].roles).toEqual(['admin'])
+  it('student search is staff only and needs 3 characters', () => {
     expect([...USER_ACCESS['GET /students/search'].roles].sort()).toEqual(['admin', 'school_admin', 'teacher'])
     expect(STUDENT_SEARCH_MIN_CHARS).toBe(3)
   })
@@ -322,9 +315,7 @@ describe('security review fixes (D55, D57)', () => {
   it('password fields are capped at 128', () => {
     expect(PASSWORD_MAX).toBe(128)
     const long = 'x'.repeat(129)
-    expect(msg(CreateUserRequestSchema.safeParse({ ...create, password: long, passwordConfirmation: long }), 'password')).toBe('The password field must not be greater than 128 characters.')
     expect(msg(UpdateUserRequestSchema.safeParse({ roles: ['teacher'], name: 'a', newPassword: long, newPasswordConfirmation: long }), 'newPassword')).toBe('The new password field must not be greater than 128 characters.')
-    expect(msg(BulkImportRequestSchema.safeParse({ role: 'parent', importMode: 'paste', pasteContent: 'a, a@example.test', defaultPassword: long }), 'defaultPassword')).toBe('The default password field must not be greater than 128 characters.')
   })
   it('bulk import is capped in size and rows', () => {
     const base = { role: 'parent', importMode: 'paste' }
@@ -399,9 +390,29 @@ describe('D58 decisions', () => {
       expect(op(path, method).description, path + ' ' + method).toMatch(/BE-NFR-05/)
   })
 
-  it('the defaults route keeps the clear values, admin only and no-store, and notes D58', () => {
-    expect(op('/admin/config/defaults', 'get').description).toMatch(/D58/)
-    expect(USER_ACCESS['GET /admin/config/defaults'].roles).toEqual(['admin'])
+  it('D59: no shared default password is exposed, accepted or issued', () => {
+    expect(doc.paths['/admin/config/defaults']).toBeUndefined()
+    expect(BulkImportRequestSchema.safeParse({ role: 'parent', importMode: 'paste', pasteContent: 'a, a@example.test', defaultPassword: 'x1234567' }).success).toBe(false)
+    expect(BulkImportMultipartSchema.safeParse({ role: 'parent', importMode: 'paste', pasteContent: 'a, a@example.test', defaultPassword: 'x1234567' }).success).toBe(false)
+    expect(JSON.stringify(op('/admin/users/bulk-import', 'post'))).not.toMatch(/defaultPassword/)
+  })
+
+  it('D59: create returns a one-time generatedPassword with mustChangePassword true, no-store', () => {
+    const created = { ...detail, mustChangePassword: true, generatedPassword: 'Xk3pQ9vL2m' }
+    expect(CreatedUserSchema.safeParse(created).success).toBe(true)
+    expect(CreatedUserSchema.safeParse({ ...created, generatedPassword: undefined }).success).toBe(false)
+    expect(CreatedUserSchema.safeParse({ ...created, mustChangePassword: false }).success).toBe(false)
+    expect(AdminUserDetailSchema.parse(created)).not.toHaveProperty('generatedPassword')
+    const post = op('/admin/users', 'post').responses['201'] as { headers?: Record<string, unknown>; content?: { 'application/json': { schema: unknown } } }
+    expect(post.headers?.['Cache-Control']).toBeDefined()
+    expect(JSON.stringify(post.content)).toContain('CreatedUserEnvelope'.slice(0, 0) + 'CreatedUser')
+    expect(op('/admin/users', 'post').description).toMatch(/generatedPassword/)
+  })
+
+  it('D59: the import report carries one generated password per created account', () => {
+    const cred = { line: 2, email: 'a@example.test', generatedPassword: 'Xk3pQ9vL2m', mustChangePassword: true }
+    expect(ImportCredentialSchema.safeParse(cred).success).toBe(true)
+    expect(ImportCredentialSchema.safeParse({ ...cred, mustChangePassword: false }).success).toBe(false)
   })
 })
 
@@ -410,9 +421,6 @@ describe('envelopes and config', () => {
     const env = statusEnvelopeOf(AdminUserDetailSchema)
     expect(env.safeParse({ data: detail, status: USER_MESSAGES.created }).success).toBe(true)
     expect(env.safeParse({ data: detail }).success).toBe(false)
-  })
-  it('defaults', () => {
-    expect(AdminDefaultsSchema.safeParse({ schoolAdminDefaultPassword: 'a', bulkImportDefaultPassword: 'b', compStudentDefaultPassword: 'c' }).success).toBe(true)
   })
 })
 
@@ -432,7 +440,6 @@ describe('OpenAPI registration', () => {
       ['/students/search', 'get'],
       ['/admin/teachers', 'get'],
       ['/admin/teachers/{id}/classrooms', 'get'],
-      ['/admin/config/defaults', 'get'],
     ]
     for (const [path, method] of expected) expect(doc.paths[path]?.[method], `${method} ${path}`).toBeDefined()
     expect(Object.keys(doc.paths).some((p) => p.includes('impersonate'))).toBe(false)

@@ -49,7 +49,6 @@ export const USER_ACCESS = {
   'GET /students/search': { roles: ['admin', 'school_admin', 'teacher'], scope: 'admin: all students; school_admin and teacher: own school only. student, parent, sponsor, ppd_officer: 403' },
   'GET /admin/teachers': { roles: ['admin', 'school_admin'], scope: 'admin: all teachers; school_admin: own school only' },
   'GET /admin/teachers/{id}/classrooms': { roles: ['admin', 'school_admin'], scope: 'admin: any teacher; school_admin: own school teachers only' },
-  'GET /admin/config/defaults': { roles: ['admin'], scope: 'Admin Pusat only (D57c)' },
 } as const satisfies Record<string, AccessRule>
 
 /** Exact flash texts of the mock. */
@@ -74,8 +73,6 @@ export const IMPORT_ROW_MESSAGES = {
   nameLong: 'Nama tidak boleh melebihi 255 aksara.',
   badEmail: 'Emel tidak sah.',
   phoneLong: 'Nombor telefon tidak boleh melebihi 14 aksara.',
-  passwordLong: 'Kata laluan tidak boleh melebihi 128 aksara.',
-  passwordShort: 'Kata laluan mesti sekurang-kurangnya 6 aksara.',
 } as const
 
 /** `xxxxxx-xx-xx` plus the last two digits. Anything else (a clear IC) fails this schema. */
@@ -154,13 +151,23 @@ export const AdminUserDetailSchema = z
     isSuspended: z.boolean(),
     subscriptionPackage: z.enum(SUBSCRIPTION_PACKAGES),
     hasPkskSubscription: z.boolean(),
-    mustChangePassword: z.boolean().meta({ description: 'True for an account created with a default password, or whose password an admin set (D55c, D57c). Cleared when the user changes it.' }),
+    mustChangePassword: z.boolean().meta({ description: 'True for an account with a server-generated initial password, or whose password an admin set (D55c, D59b). Cleared when the user changes it.' }),
     ppdState: z.string().nullable(),
     ppdDistrict: z.string().nullable(),
     linkedStudents: z.array(StudentSearchItemSchema).meta({ description: 'Children of a parent; [] for every other account.' }),
   })
   .meta({ id: 'AdminUserDetail' })
 export type AdminUserDetail = z.infer<typeof AdminUserDetailSchema>
+
+/**
+ * Response of POST /admin/users (D59b): the detail plus the server-generated initial password, shown
+ * once to the creator. Never logged, never stored in clear and never retrievable again.
+ */
+export const CreatedUserSchema = AdminUserDetailSchema.extend({
+  mustChangePassword: z.literal(true),
+  generatedPassword: z.string().min(1).meta({ description: 'Random per account, shown once, never retrievable again. The response is no-store.' }),
+}).meta({ id: 'CreatedUser' })
+export type CreatedUser = z.infer<typeof CreatedUserSchema>
 
 /** `meta.roleCounts`: all users per role, ignoring the filters (the 7 stat cards). */
 export const RoleCountsSchema = z
@@ -225,21 +232,18 @@ const fields = {
   isActive: looseBool,
 }
 
-/** POST /admin/users. Field rules that depend only on the body; existence/uniqueness checks are the server's. */
+/**
+ * POST /admin/users. D59: there is no password field. The server generates a random initial password
+ * for the account and returns it once in the response (`generatedPassword`). Field rules that depend
+ * only on the body; existence/uniqueness checks are the server's.
+ */
 export const CreateUserRequestSchema = z
   .strictObject({
     roles: UserRolesSchema,
     ...fields,
-    password: z
-      .string({ error: V.required('password') })
-      .min(1, { error: V.required('password') })
-      .min(PASSWORD_MIN, { error: V.min('password', PASSWORD_MIN) })
-      .max(PASSWORD_MAX, { error: V.max('password', PASSWORD_MAX) }),
-    passwordConfirmation: z.string().nullish(),
   })
   .superRefine((v, ctx) => {
     const bad = (path: string, message: string) => ctx.addIssue({ code: 'custom', path: [path], message })
-    if (v.password !== v.passwordConfirmation) bad('password', V.confirmed('password'))
     if (!v.email && !v.username) bad('email', V.required('email'))
     if (v.roles.includes('student') && v.grade == null) bad('grade', V.requiredWhen('grade', 'role is student'))
     if (v.roles.includes('school_admin') && !v.schoolId) bad('schoolId', V.requiredWhen('school id', 'role is school_admin'))
@@ -326,12 +330,6 @@ export const SCHOOL_REQUIRED_IMPORT_ROLES = ['teacher', 'school_admin'] as const
 
 const importBase = {
   role: enumField(BULK_IMPORT_ROLES, 'role'),
-  defaultPassword: z
-    .string()
-    .refine((v) => v.trim() === '' || [...v.trim()].length >= PASSWORD_MIN, { error: V.min('default password', PASSWORD_MIN) })
-    .refine((v) => [...v].length <= PASSWORD_MAX, { error: V.max('default password', PASSWORD_MAX) })
-    .nullish()
-    .meta({ description: 'Blank or absent uses the configured bulk default.' }),
   importMode: enumField(IMPORT_MODES, 'import mode'),
   pasteContent: z.string().max(IMPORT_MAX_CHARS, { error: USER_MESSAGES.importTooLarge }).nullish().meta({ description: 'Used when importMode is paste. At most 1,048,576 characters and 1000 rows.' }),
 }
@@ -351,7 +349,7 @@ const importRules = (
 
 /**
  * POST /admin/users/bulk-import as JSON. `csvFile` is the file text; rows are
- * `name, email, phone?, password?`. No data rows is 422 "Tiada data untuk diimport." on
+ * `name, email, phone?` (D59: no password column; any extra column is ignored and the server generates a random password per account). No data rows is 422 "Tiada data untuk diimport." on
  * `fields.csvFile` or `fields.pasteContent`. The mock sets no limit; v2 caps the text at 1,048,576 characters and 1000 non-blank rows (a multipart file over 1 MB is 413).
  */
 export const BulkImportRequestSchema = z
@@ -369,6 +367,16 @@ export const ImportRowErrorSchema = z
   .object({ line: z.number().int().min(1).meta({ description: '1-based line of the file or paste.' }), message: z.string().min(1) })
   .meta({ id: 'ImportRowError' })
 
+/** One created account of an import with its one-time generated password (D59b). */
+export const ImportCredentialSchema = z
+  .object({
+    line: z.number().int().min(1).meta({ description: '1-based line of the file or paste.' }),
+    email: z.string(),
+    generatedPassword: z.string().min(1),
+    mustChangePassword: z.literal(true),
+  })
+  .meta({ id: 'ImportCredential' })
+
 /** `errors` lists the failed lines only. */
 export const ImportResultSchema = z
   .object({
@@ -376,7 +384,7 @@ export const ImportResultSchema = z
     skipped: z.number().int().min(0),
     failed: z.number().int().min(0),
     errors: z.array(ImportRowErrorSchema),
-    mustChangePasswordCount: z.number().int().min(0).meta({ description: 'Created accounts that got a default password and are flagged must-change-password (D55c).' }),
+    credentials: z.array(ImportCredentialSchema).meta({ description: 'One entry per created account (D59b): its generated password, shown once. The response is no-store.' }),
   })
   .meta({ id: 'ImportResult' })
 export type ImportResult = z.infer<typeof ImportResultSchema>
@@ -387,12 +395,3 @@ export const TeacherOptionSchema = z
 export const TeacherClassroomOptionSchema = z
   .object({ id: IdSchema, name: z.string().min(1), classCode: z.string().min(1) })
   .meta({ id: 'TeacherClassroomOption' })
-
-/** GET /admin/config/defaults: configured default passwords (OQ-API-B1-16: confirm exposing them). */
-export const AdminDefaultsSchema = z
-  .object({
-    schoolAdminDefaultPassword: z.string(),
-    bulkImportDefaultPassword: z.string(),
-    compStudentDefaultPassword: z.string(),
-  })
-  .meta({ id: 'AdminDefaults' })
