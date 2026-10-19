@@ -373,7 +373,10 @@ export const PkskAdminAccessItemSchema = z
     user: z.object({
       id: IdSchema,
       name: z.string(),
-      email: z.string().meta({ description: 'The mock sends a string (empty when the user is gone).' }),
+      email: z.string().nullable().meta({
+        description:
+          'Nullable in v2 (matches BE-05: accounts may have no e-mail; LEAD 2026-10-19). The mock sends a string (empty when the user is gone).',
+      }),
     }),
     package: z.object({ id: IdSchema, name: z.string(), level: PkskPackageLevelSchema }),
     grantedBy: z.object({ id: IdSchema, name: z.string() }).nullable(),

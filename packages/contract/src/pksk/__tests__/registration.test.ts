@@ -43,3 +43,13 @@ describe('BE-42 registration in buildOpenApiDocument()', () => {
     }
   })
 })
+
+describe('BE-42 access item e-mail (LEAD 2026-10-19: nullable, as BE-05)', () => {
+  it('accepts null and a string', async () => {
+    const { PkskAdminAccessItemSchema } = await import('../admin')
+    const email = PkskAdminAccessItemSchema.shape.user.shape.email
+    expect(email.safeParse(null).success).toBe(true)
+    expect(email.safeParse('guru.contoh@example.test').success).toBe(true)
+    expect(email.safeParse(5).success).toBe(false)
+  })
+})

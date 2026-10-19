@@ -16764,8 +16764,11 @@
                 "type": "string"
               },
               "email": {
-                "type": "string",
-                "description": "The mock sends a string (empty when the user is gone)."
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "description": "Nullable in v2 (matches BE-05: accounts may have no e-mail; LEAD 2026-10-19). The mock sends a string (empty when the user is gone)."
               }
             },
             "required": [
