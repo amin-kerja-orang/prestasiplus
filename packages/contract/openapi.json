@@ -54076,7 +54076,7 @@
           "berstruktur",
           "esei"
         ],
-        "description": "QuestionKind of the mock: objektif = MCQ, esei = a structured question with a rubric leaf, berstruktur = any other structured question."
+        "description": "QuestionKind of the mock (the three values are in admin-types.ts). How the mock derives it (kindOf: objektif = MCQ, esei = a structured question with a rubric leaf, berstruktur = any other) is not in the snapshot [PROPOSED]."
       },
       "BijakBuilderCurriculumTag": {
         "type": "object",
@@ -54099,7 +54099,7 @@
               "string",
               "null"
             ],
-            "description": "DSKP unit code, null outside the DSKP."
+            "description": "DSKP unit code, null outside the DSKP [PROPOSED]."
           },
           "unitLabel": {
             "type": "string",
@@ -54166,7 +54166,8 @@
             "example": "Bahagian A"
           },
           "title": {
-            "type": "string"
+            "type": "string",
+            "description": "Section title (`SectionDef.title`; the mock `SectionDef` is not in the snapshot) [PROPOSED]."
           },
           "markBudget": {
             "type": "integer",
@@ -54388,7 +54389,7 @@
           },
           "preview": {
             "type": "string",
-            "description": "Stem followed by the first part label and prompt when the first part is a leaf; may hold $latex$ spans."
+            "description": "Short text for the picker; may hold $latex$ spans. How the mock composes it (previewOf: the stem, followed by the first part label and prompt when the first part is a leaf) is not in the snapshot [PROPOSED]."
           },
           "marks": {
             "type": "integer",
@@ -54780,7 +54781,8 @@
             "type": "array",
             "items": {
               "$ref": "#/components/schemas/BijakAttemptPartView"
-            }
+            },
+            "description": "Question parts. `PartDef` is not in the snapshot; the BE-16 part view (same fields as the prototype PartDef) is used [PROPOSED]."
           },
           "scheme": {
             "type": "object",
@@ -90111,7 +90113,7 @@
           "bijak-builder"
         ],
         "summary": "Paper builder: student-view preview of questions, saved or not (previewQuestions)",
-        "description": "Body { ids }: the question ids currently in the editor, so unsaved edits can be previewed (the mock previewQuestions(ids)). Answers { questions, stimuli, optionBanks }: the question content as ReviewQuestion, the stimulus of each group by group id and the shared option bank of each group by group id. Ids that do not exist are left out. ReviewQuestion is the admin review shape: it carries the mark scheme and the MCQ correct option, so this route is Admin Pusat only and nothing of it reaches students. It reads only; it is a POST because it takes a body, so it needs the CSRF header and is rate limited. Shapes and BM strings are copied from the mock snapshot docs/reference/bijak-paper-builder-mock; anything the snapshot does not cover is marked [PROPOSED]. Admin Pusat only (D40a); Guru, Admin Sekolah and Murid get 403.",
+        "description": "Body { ids }: the question ids currently in the editor, so unsaved edits can be previewed (the mock previewQuestions(ids)). Answers { questions, stimuli, optionBanks }: the question content as ReviewQuestion, the stimulus of each group by group id and the shared option bank of each group by group id. Ids that do not exist are left out. ReviewQuestion is the admin review shape: it carries the mark scheme and the MCQ correct option, so this route is Admin Pusat only, nothing of it reaches students, and the 200 sends Cache-Control: no-store (D57b, conservative). It reads only; it is a POST because it takes a body, so it needs the CSRF header and is rate limited. Shapes and BM strings are copied from the mock snapshot docs/reference/bijak-paper-builder-mock; anything the snapshot does not cover is marked [PROPOSED]. Admin Pusat only (D40a); Guru, Admin Sekolah and Murid get 403.",
         "parameters": [
           {
             "schema": {
@@ -90138,6 +90140,17 @@
         "responses": {
           "200": {
             "description": "Questions, stimuli and option banks.",
+            "headers": {
+              "Cache-Control": {
+                "description": "no-store: the answer carries answer keys and mark schemes (D57b, conservative).",
+                "schema": {
+                  "type": "string",
+                  "enum": [
+                    "no-store"
+                  ]
+                }
+              }
+            },
             "content": {
               "application/json": {
                 "schema": {
@@ -90291,7 +90304,7 @@
           "bijak-builder"
         ],
         "summary": "Paper builder: edit a paper (single PUT, PaperPatch)",
-        "description": "Body { title?, year?, durationMin?, sections?: [{ id, questionIds }] }; only the keys sent change. This one route carries every edit (the mock savePaper). A terbit paper is refused: 422 VALIDATION_ERROR \"Kertas Terbit tidak boleh disunting. Tarik balik dahulu.\" (no field). Other refusals: title \"Tajuk kertas diperlukan\"; a section id that is not a section of the paper \"Bahagian tidak sah\"; a question whose curriculum subject differs from the paper subject \"Soalan tidak sah untuk kertas ini\" (a subject check only, not a kertas or status check). Duplicates and split groups are not refused here; they come back as publish errors. Answers the editor data (PaperEditorData), as the mock does. The mock throws error kind bad_request for these refusals (not_found for a missing paper); ErrorCode has no BAD_REQUEST, so the refusal is 422 VALIDATION_ERROR (mapping awaits the LEAD decision, deviations log). Shapes and BM strings are copied from the mock snapshot docs/reference/bijak-paper-builder-mock; anything the snapshot does not cover is marked [PROPOSED]. Admin Pusat only (D40a); Guru, Admin Sekolah and Murid get 403.",
+        "description": "Body { title?, year?, durationMin?, sections?: [{ id, questionIds }] }; only the keys sent change. This one route carries every edit (the mock savePaper). Checks run in the mock order: 1. the paper exists (404 NOT_FOUND), 2. the paper is not terbit, 3. the title is not blank, 4. year and durationMin apply, 5. each section id and its questions, in the order sent. A terbit paper is refused: 422 VALIDATION_ERROR \"Kertas Terbit tidak boleh disunting. Tarik balik dahulu.\" (no field). Other refusals: title \"Tajuk kertas diperlukan\"; a section id that is not a section of the paper \"Bahagian tidak sah\"; a question whose curriculum subject differs from the paper subject \"Soalan tidak sah untuk kertas ini\" (a subject check only, not a kertas or status check). Duplicates and split groups are not refused here; they come back as publish errors. Answers the editor data (PaperEditorData), as the mock does. The mock throws error kind bad_request for these refusals (not_found for a missing paper); ErrorCode has no BAD_REQUEST, so the refusal is 422 VALIDATION_ERROR (mapping awaits the LEAD decision, deviations log). Shapes and BM strings are copied from the mock snapshot docs/reference/bijak-paper-builder-mock; anything the snapshot does not cover is marked [PROPOSED]. Admin Pusat only (D40a); Guru, Admin Sekolah and Murid get 403.",
         "parameters": [
           {
             "schema": {
@@ -90642,7 +90655,7 @@
           "bijak-builder"
         ],
         "summary": "Paper builder: unpublish, tarik balik (terbit back to draf)",
-        "description": "No request body. The status goes back to draf, publishedAt is cleared and updatedAt is touched (the mock unpublishPaper; there is no withdrawn state). The paper leaves GET /bijak/papers; attempts already started are unaffected. A paper that is already draf stays draf. The path name follows the card (\"tarik balik\"). The mock returns void; this route answers { ok: true } (deviations log). Shapes and BM strings are copied from the mock snapshot docs/reference/bijak-paper-builder-mock; anything the snapshot does not cover is marked [PROPOSED]. Admin Pusat only (D40a); Guru, Admin Sekolah and Murid get 403.",
+        "description": "No request body. The status goes back to draf, publishedAt is cleared and updatedAt is touched (the mock unpublishPaper; there is no withdrawn state). The paper leaves GET /bijak/papers; attempts already started are unaffected [PROPOSED, not in the mock]. A paper that is already draf stays draf. The path name follows the card (\"tarik balik\"). The mock returns void; this route answers { ok: true } (deviations log). Shapes and BM strings are copied from the mock snapshot docs/reference/bijak-paper-builder-mock; anything the snapshot does not cover is marked [PROPOSED]. Admin Pusat only (D40a); Guru, Admin Sekolah and Murid get 403.",
         "parameters": [
           {
             "schema": {

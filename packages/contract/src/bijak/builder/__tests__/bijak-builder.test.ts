@@ -747,14 +747,18 @@ describe('openapi document', () => {
     }
   })
 
-  it('sends no credential or token on any route of the card (D57b: no Cache-Control: no-store needed)', () => {
+  it('sends Cache-Control: no-store only on the preview 200, which carries answer keys (D57b)', () => {
     for (const { path, method, op } of mine) {
       for (const [status, r] of Object.entries(
-        op.responses as Record<string, { headers?: object }>,
+        op.responses as Record<
+          string,
+          { headers?: Record<string, { schema?: { enum?: string[] } }> }
+        >,
       )) {
-        expect(Object.keys(r.headers ?? {}), `${method} ${path} ${status}`).not.toContain(
-          'Cache-Control',
-        )
+        const header = r.headers?.['Cache-Control']
+        const isPreview200 = path === '/admin/papers/preview' && status === '200'
+        if (isPreview200) expect(header?.schema?.enum).toEqual(['no-store'])
+        else expect(header, `${method} ${path} ${status}`).toBeUndefined()
       }
     }
   })
@@ -796,6 +800,7 @@ describe('openapi document', () => {
     expect(text('/admin/papers/{id}', 'put')).toContain(BIJAK_BUILDER_MESSAGES.invalidSection)
     expect(text('/admin/papers/{id}', 'put')).toContain(BIJAK_BUILDER_MESSAGES.titleRequired)
     expect(text('/admin/papers/{id}', 'put')).toContain('subject check only')
+    expect(text('/admin/papers/{id}', 'put')).toContain('Checks run in the mock order')
     expect(text('/admin/papers/{id}', 'delete')).toContain(BIJAK_BUILDER_MESSAGES.deleteTerbit)
     expect(text('/admin/papers', 'post')).toContain(BIJAK_BUILDER_MESSAGES.noBlueprint)
     expect(text('/admin/papers', 'post')).toContain('no field')

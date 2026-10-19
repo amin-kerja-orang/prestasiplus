@@ -119,7 +119,8 @@ const BLUEPRINT_NOT_FOUND = err(
 )
 /**
  * Registers the 13 admin operations of BE-39 (8 paper, 5 blueprint). The paper routes follow the
- * paper builder mock as quoted by the LEAD review (the mock is not on GitHub yet); the blueprint
+ * paper builder mock snapshot in docs/reference/bijak-paper-builder-mock/ (server_admin.ts.txt and
+ * the three domain files); the blueprint
  * write routes (create, version, retire) have NO mock and exist only because the card requires
  * them. Every response is `{ data }`, `{ data, meta }` or `{ error }`; every mutation needs
  * `X-CSRF-Token`.
@@ -130,7 +131,8 @@ const BLUEPRINT_NOT_FOUND = err(
  *
  * D57: every write route (POST, PUT, DELETE) also answers 429 RATE_LIMITED with retryAfter and a
  * Retry-After header (added by `registerRoute`); the preview is a POST and so carries it too. D57(b):
- * no response carries a credential or token, so none sends Cache-Control: no-store. D57(d)/(e): not
+ * no response carries a credential or token; only the preview 200 sends Cache-Control: no-store,
+ * because it carries answer keys. D57(d)/(e): not
  * applicable (no student search, no role assignment; every route is Admin Pusat only).
  */
 export function registerBijakBuilderPaths(registry: OpenAPIRegistry): void {
@@ -172,10 +174,19 @@ export function registerBijakBuilderPaths(registry: OpenAPIRegistry): void {
     path: '/admin/papers/preview',
     tags: [BIJAK_BUILDER_TAG],
     summary: 'Paper builder: student-view preview of questions, saved or not (previewQuestions)',
-    description: `Body { ids }: the question ids currently in the editor, so unsaved edits can be previewed (the mock previewQuestions(ids)). Answers { questions, stimuli, optionBanks }: the question content as ReviewQuestion, the stimulus of each group by group id and the shared option bank of each group by group id. Ids that do not exist are left out. ReviewQuestion is the admin review shape: it carries the mark scheme and the MCQ correct option, so this route is Admin Pusat only and nothing of it reaches students. It reads only; it is a POST because it takes a body, so it needs the CSRF header and is rate limited. ${COPY_NOTE} ${ROLE_NOTE}`,
+    description: `Body { ids }: the question ids currently in the editor, so unsaved edits can be previewed (the mock previewQuestions(ids)). Answers { questions, stimuli, optionBanks }: the question content as ReviewQuestion, the stimulus of each group by group id and the shared option bank of each group by group id. Ids that do not exist are left out. ReviewQuestion is the admin review shape: it carries the mark scheme and the MCQ correct option, so this route is Admin Pusat only, nothing of it reaches students, and the 200 sends Cache-Control: no-store (D57b, conservative). It reads only; it is a POST because it takes a body, so it needs the CSRF header and is rate limited. ${COPY_NOTE} ${ROLE_NOTE}`,
     request: { headers: [csrf], body: body(BijakBuilderPreviewRequestSchema) },
     responses: {
-      200: json(envelopeOf(BijakBuilderPreviewSchema), 'Questions, stimuli and option banks.'),
+      200: {
+        ...json(envelopeOf(BijakBuilderPreviewSchema), 'Questions, stimuli and option banks.'),
+        headers: {
+          'Cache-Control': {
+            description:
+              'no-store: the answer carries answer keys and mark schemes (D57b, conservative).',
+            schema: { type: 'string' as const, enum: ['no-store'] },
+          },
+        },
+      },
       401: UNAUTHORIZED,
       403: FORBIDDEN_WRITE,
       422: err('VALIDATION_ERROR with fields (ids).'),
@@ -205,7 +216,7 @@ export function registerBijakBuilderPaths(registry: OpenAPIRegistry): void {
     path: '/admin/papers/{id}',
     tags: [BIJAK_BUILDER_TAG],
     summary: 'Paper builder: edit a paper (single PUT, PaperPatch)',
-    description: `Body { title?, year?, durationMin?, sections?: [{ id, questionIds }] }; only the keys sent change. This one route carries every edit (the mock savePaper). A terbit paper is refused: 422 VALIDATION_ERROR "${BIJAK_BUILDER_MESSAGES.paperLocked}" (no field). Other refusals: title "${BIJAK_BUILDER_MESSAGES.titleRequired}"; a section id that is not a section of the paper "${BIJAK_BUILDER_MESSAGES.invalidSection}"; a question whose curriculum subject differs from the paper subject "${BIJAK_BUILDER_MESSAGES.invalidQuestion}" (a subject check only, not a kertas or status check). Duplicates and split groups are not refused here; they come back as publish errors. Answers the editor data (PaperEditorData), as the mock does. ${ERROR_NOTE} ${COPY_NOTE} ${ROLE_NOTE}`,
+    description: `Body { title?, year?, durationMin?, sections?: [{ id, questionIds }] }; only the keys sent change. This one route carries every edit (the mock savePaper). Checks run in the mock order: 1. the paper exists (404 NOT_FOUND), 2. the paper is not terbit, 3. the title is not blank, 4. year and durationMin apply, 5. each section id and its questions, in the order sent. A terbit paper is refused: 422 VALIDATION_ERROR "${BIJAK_BUILDER_MESSAGES.paperLocked}" (no field). Other refusals: title "${BIJAK_BUILDER_MESSAGES.titleRequired}"; a section id that is not a section of the paper "${BIJAK_BUILDER_MESSAGES.invalidSection}"; a question whose curriculum subject differs from the paper subject "${BIJAK_BUILDER_MESSAGES.invalidQuestion}" (a subject check only, not a kertas or status check). Duplicates and split groups are not refused here; they come back as publish errors. Answers the editor data (PaperEditorData), as the mock does. ${ERROR_NOTE} ${COPY_NOTE} ${ROLE_NOTE}`,
     request: { params: PaperIdParams, headers: [csrf], body: body(BijakBuilderPaperPatchSchema) },
     responses: {
       200: json(envelopeOf(BijakBuilderEditorSchema), 'The editor data after the edit.'),
@@ -254,7 +265,7 @@ export function registerBijakBuilderPaths(registry: OpenAPIRegistry): void {
     path: '/admin/papers/{id}/withdraw',
     tags: [BIJAK_BUILDER_TAG],
     summary: 'Paper builder: unpublish, tarik balik (terbit back to draf)',
-    description: `No request body. The status goes back to draf, publishedAt is cleared and updatedAt is touched (the mock unpublishPaper; there is no withdrawn state). The paper leaves GET /bijak/papers; attempts already started are unaffected. A paper that is already draf stays draf. The path name follows the card ("tarik balik"). The mock returns void; this route answers { ok: true } (deviations log). ${COPY_NOTE} ${ROLE_NOTE}`,
+    description: `No request body. The status goes back to draf, publishedAt is cleared and updatedAt is touched (the mock unpublishPaper; there is no withdrawn state). The paper leaves GET /bijak/papers; attempts already started are unaffected [PROPOSED, not in the mock]. A paper that is already draf stays draf. The path name follows the card ("tarik balik"). The mock returns void; this route answers { ok: true } (deviations log). ${COPY_NOTE} ${ROLE_NOTE}`,
     request: { params: PaperIdParams, headers: [csrf] },
     responses: {
       200: json(envelopeOf(BijakBuilderOkSchema), 'Done; the paper is now draf.'),

@@ -32,8 +32,10 @@ import {
  * `PaperCheck` server-side; the wire shows only their result (`budget`, `ok` on the list row and the
  * publish `errors`).
  *
- * Questions are owned by M04 (BE-09/BE-10). Stimulus, option and part shapes reuse the BE-16 views,
- * which have the same fields as the mock `StimulusDef`, `McqOption` and `PartDef`.
+ * Questions are owned by M04 (BE-09/BE-10). The snapshot does not contain the prototype
+ * `domain/types.ts` (`StimulusDef`, `McqOption`, `PartDef`, `CurriculumTag`, `SectionDef`) or the
+ * helpers `kindOf` and `previewOf`. Stimulus, option and part shapes therefore reuse the BE-16 views,
+ * and the fields taken from the missing file are marked [PROPOSED] where they appear.
  */
 
 /**
@@ -131,7 +133,7 @@ export const BIJAK_BUILDER_QUESTION_KINDS = ['objektif', 'berstruktur', 'esei'] 
 export const BijakBuilderQuestionKindSchema = z.enum(BIJAK_BUILDER_QUESTION_KINDS).meta({
   id: 'BijakBuilderQuestionKind',
   description:
-    'QuestionKind of the mock: objektif = MCQ, esei = a structured question with a rubric leaf, berstruktur = any other structured question.',
+    'QuestionKind of the mock (the three values are in admin-types.ts). How the mock derives it (kindOf: objektif = MCQ, esei = a structured question with a rubric leaf, berstruktur = any other) is not in the snapshot [PROPOSED].',
 })
 export type BijakBuilderQuestionKind = z.infer<typeof BijakBuilderQuestionKindSchema>
 
@@ -146,7 +148,13 @@ export const BijakBuilderPaperSectionSchema = z
   .strictObject({
     id: IdSchema,
     label: z.string().min(1).meta({ example: 'Bahagian A' }),
-    title: z.string().optional(),
+    title: z
+      .string()
+      .optional()
+      .meta({
+        description:
+          'Section title (`SectionDef.title`; the mock `SectionDef` is not in the snapshot) [PROPOSED].',
+      }),
     markBudget: z
       .number()
       .int()
@@ -243,7 +251,7 @@ export const BijakBuilderQuestionSchema = z
       .meta({ description: 'Label of the group stimulus, e.g. "Rajah 2".' }),
     preview: z.string().meta({
       description:
-        'Stem followed by the first part label and prompt when the first part is a leaf; may hold $latex$ spans.',
+        'Short text for the picker; may hold $latex$ spans. How the mock composes it (previewOf: the stem, followed by the first part label and prompt when the first part is a leaf) is not in the snapshot [PROPOSED].',
     }),
     marks: z.number().int().min(0).meta({ description: 'Total marks of the question.' }),
     kind: BijakBuilderQuestionKindSchema,
@@ -417,12 +425,19 @@ export const BijakBuilderPreviewRequestSchema = z
   .meta({ id: 'BijakBuilderPreviewRequest' })
 export type BijakBuilderPreviewRequest = z.infer<typeof BijakBuilderPreviewRequestSchema>
 
-/** Curriculum tag of a question (`CurriculumTag`, exam schema D9). */
+/**
+ * Curriculum tag of a question (`CurriculumTag`, exam schema D9). The snapshot reads only `subject` and
+ * `unitLabel`; `level`, `unit`, `sp`, `tp` and `formOrigin` come from the prototype `domain/types.ts`,
+ * which is not in the snapshot [PROPOSED].
+ */
 export const BijakBuilderCurriculumTagSchema = z
   .strictObject({
     subject: z.string().min(1).meta({ example: 'MAT' }),
     level: z.enum(['T4', 'T5', 'T4+T5']),
-    unit: z.string().nullable().meta({ description: 'DSKP unit code, null outside the DSKP.' }),
+    unit: z
+      .string()
+      .nullable()
+      .meta({ description: 'DSKP unit code, null outside the DSKP [PROPOSED].' }),
     unitLabel: z.string().meta({ description: 'Display name of the unit.' }),
     sp: z.array(z.string()),
     tp: z.number().int(),
@@ -458,7 +473,10 @@ export const BijakBuilderReviewQuestionSchema = z
         correct: z.string().optional().meta({ description: 'Id of the correct option.' }),
       })
       .optional(),
-    parts: z.array(BijakAttemptPartViewSchema).optional(),
+    parts: z.array(BijakAttemptPartViewSchema).optional().meta({
+      description:
+        'Question parts. `PartDef` is not in the snapshot; the BE-16 part view (same fields as the prototype PartDef) is used [PROPOSED].',
+    }),
     scheme: z.record(
       z.string(),
       z
