@@ -59176,7 +59176,7 @@
           "battle"
         ],
         "summary": "Search students by name to invite (M16-07)",
-        "description": "Query `q` shorter than 2 trimmed characters answers `{users: []}`. Otherwise students whose name contains `q` (case-insensitive), the caller excluded, sorted by name then id, at most 10.\nD54(d): classmates and opponents are shown by display name (and school) only; no IC, e-mail, phone or birth date is ever returned. D57: this is a student-facing lookup, not the staff-only GET /students/search; it is rate-limited (429 RATE_LIMITED with retryAfter and Retry-After) because it can be used to enumerate students, and it never exposes more than the display fields above.",
+        "description": "Query `q` shorter than 2 trimmed characters answers `{users: []}`. Otherwise students whose name contains `q` (case-insensitive), the caller excluded, sorted by name then id, at most 10.\nD54(d): classmates and opponents are shown by display name (and school) only; no IC, e-mail, phone or birth date is ever returned.\nDecided D59c: any signed-in student may search students of all schools (as the old system). The result exposes only name, display name and school (no e-mail, IC, class or contact data). Rate-limited (429).",
         "parameters": [
           {
             "schema": {
@@ -59338,7 +59338,7 @@
           "battle"
         ],
         "summary": "Own pending invitations (M16-09)",
-        "description": "The caller's `pending` invitations younger than 24 h, newest first. D54(d): classmates and opponents are shown by display name (and school) only; no IC, e-mail, phone or birth date is ever returned. D57: this is a student-facing lookup, not the staff-only GET /students/search; it is rate-limited (429 RATE_LIMITED with retryAfter and Retry-After) because it can be used to enumerate students, and it never exposes more than the display fields above.",
+        "description": "The caller's `pending` invitations younger than 24 h, newest first. D54(d): classmates and opponents are shown by display name (and school) only; no IC, e-mail, phone or birth date is ever returned.",
         "responses": {
           "200": {
             "description": "Pending invitations.",
@@ -59894,7 +59894,7 @@
           "battle-standings"
         ],
         "summary": "Student ranking (M16-18)",
-        "description": "National, not paginated. Only finished and forfeited battles count; windows are weekly (from Monday) or monthly in Asia/Kuala_Lumpur. `skor` is the sum of round(score / 100) per side; `ketepatan` is round(correct / answered * 100); `streak` is consecutive wins from the newest battle. Order: skor desc, menang desc, user id. The internal school id is not in the body.\nD54(d): classmates and opponents are shown by display name (and school) only; no IC, e-mail, phone or birth date is ever returned. D57: this is a student-facing lookup, not the staff-only GET /students/search; it is rate-limited (429 RATE_LIMITED with retryAfter and Retry-After) because it can be used to enumerate students, and it never exposes more than the display fields above.",
+        "description": "National, not paginated. Only finished and forfeited battles count; windows are weekly (from Monday) or monthly in Asia/Kuala_Lumpur. `skor` is the sum of round(score / 100) per side; `ketepatan` is round(correct / answered * 100); `streak` is consecutive wins from the newest battle. Order: skor desc, menang desc, user id. The internal school id is not in the body.\nD54(d): classmates and opponents are shown by display name (and school) only; no IC, e-mail, phone or birth date is ever returned.",
         "parameters": [
           {
             "schema": {
@@ -60009,7 +60009,7 @@
           "battle-standings"
         ],
         "summary": "School battle page (M16-20)",
-        "description": "`fighters` are the top 5 weekly students of the school; `recent` the 10 latest finished battles. D54(d): classmates and opponents are shown by display name (and school) only; no IC, e-mail, phone or birth date is ever returned. D57: this is a student-facing lookup, not the staff-only GET /students/search; it is rate-limited (429 RATE_LIMITED with retryAfter and Retry-After) because it can be used to enumerate students, and it never exposes more than the display fields above.",
+        "description": "`fighters` are the top 5 weekly students of the school; `recent` the 10 latest finished battles. D54(d): classmates and opponents are shown by display name (and school) only; no IC, e-mail, phone or birth date is ever returned.",
         "parameters": [
           {
             "schema": {
