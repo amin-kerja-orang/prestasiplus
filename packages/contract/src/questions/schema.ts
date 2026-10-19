@@ -53,14 +53,14 @@ export const QUESTION_MESSAGES = {
 } as const
 
 export const QUESTION_TYPES = ['mcq', 'true_false', 'short_answer', 'fill_blank', 'essay'] as const
-export const QuestionTypeSchema = z.enum(QUESTION_TYPES).meta({ id: 'QuestionType' })
+export const QuestionTypeSchema = z.enum(QUESTION_TYPES, QUESTION_MESSAGES.type).meta({ id: 'QuestionType' })
 export const QuestionComplianceStatusSchema = z
   .enum(['verified', 'pending_mapping', 'quarantined', 'rejected', 'draft'])
   .meta({ id: 'QuestionComplianceStatus' })
 export const QuestionSourceTypeSchema = z
   .enum(['textbook', 'dskp', 'trial', 'marking_scheme', 'ai_generated'])
   .meta({ id: 'QuestionSourceType' })
-const Language = z.enum(['bm', 'en'])
+const Language = z.enum(['bm', 'en'], QUESTION_MESSAGES.language)
 const ScriptType = z.enum(['rumi', 'arab', 'jawi', 'mixed'])
 const Difficulty = z.number().int().min(1).max(5)
 
@@ -190,22 +190,28 @@ export const QuestionDetailSchema = QuestionSchema.omit({ createdBy: true })
 
 /* ------------------------------------------------------------------------------------- requests */
 
+/** An id field whose every failure (missing, not a string, empty) gives one BM message. */
+const idWith = (message: string) => z.string({ error: message }).min(1, message).max(64, message)
+
 const baseInput = z.object({
-  subjectId: IdSchema.meta({ description: QUESTION_MESSAGES.subject }),
-  educationLevelId: IdSchema.meta({ description: QUESTION_MESSAGES.level }),
-  difficultyLevel: z.coerce.number().int().min(1).max(5),
-  questionText: z.string().trim().min(10, QUESTION_MESSAGES.text),
-  dskpSpId: IdSchema.nullable().optional(),
+  subjectId: idWith(QUESTION_MESSAGES.subject),
+  educationLevelId: idWith(QUESTION_MESSAGES.level),
+  difficultyLevel: z.coerce.number({ error: QUESTION_MESSAGES.difficulty }).int(QUESTION_MESSAGES.difficulty).min(1, QUESTION_MESSAGES.difficulty).max(5, QUESTION_MESSAGES.difficulty),
+  questionText: z.string({ error: QUESTION_MESSAGES.text }).trim().min(10, QUESTION_MESSAGES.text),
+  dskpSpId: idWith(QUESTION_MESSAGES.sp).nullable().optional(),
   /** MCQ: four texts A to D. */
-  options: z.array(z.string().trim().min(1, QUESTION_MESSAGES.options)).length(4, QUESTION_MESSAGES.options).optional(),
-  correctAnswer: z.coerce.number().int().min(0).max(3).optional(),
-  tfAnswer: z.boolean().nullable().optional(),
+  options: z
+    .array(z.string({ error: QUESTION_MESSAGES.options }).trim().min(1, QUESTION_MESSAGES.options), { error: QUESTION_MESSAGES.options })
+    .length(4, QUESTION_MESSAGES.options)
+    .optional(),
+  correctAnswer: z.coerce.number({ error: QUESTION_MESSAGES.correctAnswer }).int(QUESTION_MESSAGES.correctAnswer).min(0, QUESTION_MESSAGES.correctAnswer).max(3, QUESTION_MESSAGES.correctAnswer).optional(),
+  tfAnswer: z.boolean({ error: QUESTION_MESSAGES.tfAnswer }).nullable().optional(),
   correctAnswerText: z.string().trim().nullable().optional(),
   altAnswers: z.array(z.string()).optional(),
   modelAnswer: z.string().nullable().optional(),
   explanation: z.string().nullable().optional(),
   language: Language.optional(),
-  pointsValue: z.coerce.number().int().min(1, QUESTION_MESSAGES.points).optional(),
+  pointsValue: z.coerce.number({ error: QUESTION_MESSAGES.points }).int(QUESTION_MESSAGES.points).min(1, QUESTION_MESSAGES.points).optional(),
   removeQuestionImage: z.boolean().optional(),
   removeOptionImage: z.array(z.boolean()).max(4).optional(),
   parts: z.array(QuestionPartSchema).min(1).optional(),
@@ -238,8 +244,17 @@ export const QuestionUpdateRequestSchema = baseInput.meta({ id: 'QuestionUpdateR
 export const QUESTION_BULK_ACTIONS = ['draft', 'review', 'approved', 'published', 'archived', 'delete'] as const
 export const QuestionBulkRequestSchema = z
   .object({
-    action: z.enum(QUESTION_BULK_ACTIONS, QUESTION_MESSAGES.bulkBadAction),
-    ids: z.array(IdSchema).min(1, QUESTION_MESSAGES.bulkNoIds),
+    action: z.enum(QUESTION_BULK_ACTIONS, {
+      error: (iss) =>
+        iss.input === undefined || (typeof iss.input === 'string' && iss.input.trim() === '')
+          ? QUESTION_MESSAGES.bulkNoAction
+          : QUESTION_MESSAGES.bulkBadAction,
+    }),
+    ids: z
+      .array(z.string({ error: QUESTION_MESSAGES.bulkBadIds }).min(1, QUESTION_MESSAGES.bulkBadIds).max(64, QUESTION_MESSAGES.bulkBadIds), {
+        error: (iss) => (iss.input === undefined ? QUESTION_MESSAGES.bulkNoIds : QUESTION_MESSAGES.bulkBadIds),
+      })
+      .min(1, QUESTION_MESSAGES.bulkNoIds),
   })
   .meta({ id: 'QuestionBulkRequest' })
 

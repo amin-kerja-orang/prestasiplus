@@ -127,13 +127,12 @@ export function registerQuestionsPaths(registry: OpenAPIRegistry): void {
     tags: admin,
     summary: 'Apply one lifecycle action to many questions',
     description:
-      'Unknown ids are skipped silently; duplicates count once. Flash: "<n> soalan berjaya dikemaskini." Transition rules and "only Admin Pusat publishes" belong to BE-10 (proposed: 409 CONFLICT for a transition the table forbids).',
+      'Unknown ids are skipped silently; duplicates count once. Flash: "<n> soalan berjaya dikemaskini." Transition rules and "only Admin Pusat publishes" belong to BE-10; forbidden transitions and their error are BE-10 to define.',
     request: { headers: [csrf], body: body(QuestionBulkRequestSchema) },
     responses: {
       200: json(mutationEnvelopeOf(QuestionBulkResultSchema), 'Rows affected, with the flash text.'),
       401: unauthorized,
       403: forbidden,
-      409: err('CONFLICT: a transition not allowed by the lifecycle table (proposed, BE-10).'),
       422: invalid,
     },
   })

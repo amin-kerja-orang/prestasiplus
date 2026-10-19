@@ -265,3 +265,63 @@ describe('OpenAPI', () => {
     expect(JSON.stringify(doc.components.schemas)).not.toMatch(/legacy_|pkskDomainId/)
   })
 })
+
+const issuesOf = (r: { success: boolean; error?: { issues: { path: PropertyKey[]; message: string }[] } }) =>
+  Object.fromEntries((r.error?.issues ?? []).map((i) => [String(i.path[0]), i.message]))
+const good = { subjectId: '3', educationLevelId: '10', difficultyLevel: 3, questionText: 'Soalan contoh fiksyen.' }
+
+describe('exact mock BM copy per field (create)', () => {
+  const m = QUESTION_MESSAGES
+  it.each([
+    ['subjectId', { subjectId: '' }, m.subject],
+    ['subjectId', { subjectId: undefined }, m.subject],
+    ['subjectId', { subjectId: 3 }, m.subject],
+    ['educationLevelId', { educationLevelId: undefined }, m.level],
+    ['difficultyLevel', { difficultyLevel: 9 }, m.difficulty],
+    ['difficultyLevel', { difficultyLevel: undefined }, m.difficulty],
+    ['difficultyLevel', { difficultyLevel: 'abc' }, m.difficulty],
+    ['questionType', { questionType: 'poem' }, m.type],
+    ['questionType', { questionType: undefined }, m.type],
+    ['questionText', { questionText: 'pendek' }, m.text],
+    ['questionText', { questionText: undefined }, m.text],
+    ['language', { language: 'fr' }, m.language],
+    ['dskpSpId', { dskpSpId: '' }, m.sp],
+    ['pointsValue', { pointsValue: 0 }, m.points],
+    ['tfAnswer', { tfAnswer: 'maybe' }, m.tfAnswer],
+    ['options', { options: ['a', '', 'c', 'd'] }, m.options],
+    ['options', { options: ['a', 'b'] }, m.options],
+    ['correctAnswer', { correctAnswer: 7 }, m.correctAnswer],
+  ])('%s gives its mock message for %j', (field, patch, message) => {
+    const r = QuestionCreateRequestSchema.safeParse({ ...good, questionType: 'true_false', ...patch })
+    expect(issuesOf(r)[field]).toBe(message)
+  })
+  it('gives the answer-text message for a short answer without one', () => {
+    const r = QuestionCreateRequestSchema.safeParse({ ...good, questionType: 'short_answer' })
+    expect(issuesOf(r).correctAnswerText).toBe(QUESTION_MESSAGES.answerText)
+  })
+})
+
+describe('bulk-action three-way copy', () => {
+  const m = QUESTION_MESSAGES
+  const msg = (v: unknown) => issuesOf(QuestionBulkRequestSchema.safeParse(v))
+  it('missing or empty action', () => {
+    expect(msg({ ids: ['1'] }).action).toBe(m.bulkNoAction)
+    expect(msg({ action: '  ', ids: ['1'] }).action).toBe(m.bulkNoAction)
+  })
+  it('unknown action', () => {
+    expect(msg({ action: 'approve', ids: ['1'] }).action).toBe(m.bulkBadAction)
+    expect(msg({ action: 5, ids: ['1'] }).action).toBe(m.bulkBadAction)
+  })
+  it('missing ids or empty array', () => {
+    expect(msg({ action: 'archived' }).ids).toBe(m.bulkNoIds)
+    expect(msg({ action: 'archived', ids: [] }).ids).toBe(m.bulkNoIds)
+  })
+  it('ids not an array or items not ids', () => {
+    expect(msg({ action: 'archived', ids: '1' }).ids).toBe(m.bulkBadIds)
+    expect(msg({ action: 'archived', ids: [1, 2] }).ids).toBe(m.bulkBadIds)
+    expect(msg({ action: 'archived', ids: [''] }).ids).toBe(m.bulkBadIds)
+  })
+  it('accepts a valid request', () => {
+    expect(QuestionBulkRequestSchema.safeParse({ action: 'published', ids: ['1', '2'] }).success).toBe(true)
+  })
+})
