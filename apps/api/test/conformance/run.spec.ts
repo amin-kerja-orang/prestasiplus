@@ -27,8 +27,6 @@ import { apiScenarios } from './scenarios'
 const contract = ContractIndex.load()
 const scenarios = apiScenarios(contract)
 
-/** Domains whose controllers exist: none of their scenarios may stop at "not yet implemented". */
-const BUILT_DOMAINS = new Set(['auth', 'session', 'users', 'schools', 'files'])
 /** The run sends well over this many requests; far fewer means the scenarios were not really run. */
 const MIN_REQUESTS = 150
 
@@ -74,11 +72,14 @@ describe('the run as a whole', () => {
   })
 
   it('"not yet implemented" hides nothing in the built domains, and requests were really sent', () => {
+    // Built domain = contract tag with at least one registered route; a new controller widens the gate.
+    const built = new Set(contract.operations.filter((op) => target.implements?.(op)).map((op) => op.tag))
+    expect(built.size).toBeGreaterThan(0)
     const hidden = results()
-      .filter((r) => BUILT_DOMAINS.has(r.domain) && r.notImplemented.length > 0)
+      .filter((r) => built.has(r.domain) && r.notImplemented.length > 0)
       .map((r) => `${r.id}: ${r.notImplemented.join(', ')}`)
     expect(hidden).toEqual([])
-    for (const d of BUILT_DOMAINS) {
+    for (const d of built) {
       expect(results().filter((r) => r.domain === d && !r.notForTarget).length, `scenarios in ${d}`).toBeGreaterThan(0)
     }
     const sent = reports.reduce((n, r) => n + r.requests, 0)

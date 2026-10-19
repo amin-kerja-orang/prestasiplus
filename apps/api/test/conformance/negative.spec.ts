@@ -134,6 +134,9 @@ describe('the conformance suite fails when the API breaks the contract', () => {
   })
 
   it('a registered route that is in no contract operation is flagged by the reverse check', () => {
-    expect(unknownRoutes(registeredRoutes(t.app), contract)).toEqual([`GET ${BASE}/typo`])
+    // Allow-listed routes (NON_CONTRACT_ROUTES) are not reported; the typo is, and nothing else is.
+    const flagged = unknownRoutes(registeredRoutes(t.app), contract)
+    expect(flagged).toContain(`GET ${BASE}/typo`)
+    expect(flagged.filter((k) => k !== `GET ${BASE}/typo`)).toEqual([])
   })
 })

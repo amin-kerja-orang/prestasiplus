@@ -30,6 +30,7 @@ const FORBIDDEN_ROLE: Record<string, ActorRole> = {
   'GET /bijak/papers': 'teacher', // student (and admin / school_admin in Mod Pelajar) only
   'GET /bijak/history': 'teacher',
   'GET /me/parent-invite': 'teacher', // student only
+  'GET /me/parent-links': 'teacher', // student and parent only (a student reads own links)
 }
 
 /** Required query parameters (the contract marks them 422 when missing). */

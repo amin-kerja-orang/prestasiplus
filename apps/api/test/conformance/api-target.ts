@@ -45,8 +45,9 @@ export function registeredRoutes(app: INestApplication): Set<string> {
   for (const layer of stack) {
     const route = layer.route
     if (!route || typeof route.path !== 'string') continue
-    // Nest's own wildcard fallback for the global prefix (every method, answers its 404): not a controller route.
-    if (route.path.includes('*')) continue
+    // Nest's own fallback for the global prefix (every method, answers its 404): not a controller route.
+    // Only that exact pattern is skipped; a real controller route with a wildcard is still checked.
+    if (NEST_FALLBACK.test(route.path)) continue
     const path = route.path.startsWith(`${API_BASE}/`) ? route.path.slice(API_BASE.length) : route.path
     for (const m of Object.keys(route.methods)) out.add(`${m.toUpperCase()} ${normalisePath(path)}`)
   }
@@ -54,9 +55,14 @@ export function registeredRoutes(app: INestApplication): Set<string> {
   return out
 }
 
+/** The route Nest adds for the global prefix `api`: `/api{/*path}` (Express 5) or `/api/*` (Express 4). */
+const NEST_FALLBACK = /^\/api(\{\/?\*[A-Za-z_]*\}|\/\*[A-Za-z_]*)$/
+
 /** Routes outside the contract on purpose, each with its reason. Nothing else may be unknown. */
 export const NON_CONTRACT_ROUTES: Record<string, string> = {
   'GET /health': 'liveness / readiness probe (BE-01); infrastructure, not part of the product contract',
+  'POST /me/parent-invite/generate':
+    'mock-compat alias of POST /me/parent-invite (BE-25 deviation); removed when the frontend moves to the canonical route (V2-T31)',
 }
 
 /**

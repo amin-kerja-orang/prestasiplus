@@ -89,7 +89,7 @@ export const KNOWN_MISMATCHES: KnownMismatch[] = [
   },
   { scenario: 'parent-links/GET /me/parent-links -> 200', reason: NO_PARENT_LINKS },
   { scenario: 'parent-links/GET /me/parent-links anonymous -> 401', reason: NO_PARENT_LINKS },
-  { scenario: 'parent-links/GET /me/parent-links as student -> 403', reason: NO_PARENT_LINKS },
+  { scenario: 'parent-links/GET /me/parent-links as teacher -> 403', reason: NO_PARENT_LINKS },
   {
     scenario: 'comp-students/GET /admin/comp-students -> 200',
     reason:
