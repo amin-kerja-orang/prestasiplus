@@ -362,6 +362,28 @@ describe('openapi registration', () => {
     }
   })
 
+  it('D57(a): the write route and the view-counting product GET document 429 RATE_LIMITED with retryAfter and Retry-After', () => {
+    const limited = new Set(['get /marketplace/products/{slug}', 'post /marketplace/products/{slug}/whatsapp'])
+    for (const [method, path, op] of operations()) {
+      const key = `${method} ${path}`
+      const r = op.responses['429'] as { headers?: Record<string, unknown>; content?: Record<string, { schema?: unknown }> } | undefined
+      expect(r !== undefined, key).toBe(limited.has(key))
+      if (!r) continue
+      expect(JSON.stringify(r), key).toMatch(/RATE_LIMITED/)
+      expect(Object.keys(r.headers ?? {}), key).toContain('Retry-After')
+      expect(JSON.stringify(r.content?.['application/json']?.schema), key).toMatch(/ErrorBody/)
+    }
+  })
+
+  it('D57(b): no marketplace response carries a credential or token, so none sets Cache-Control', () => {
+    for (const [method, path, op] of operations()) {
+      for (const [status, r] of Object.entries(op.responses)) {
+        const headers = Object.keys((r as { headers?: Record<string, unknown> }).headers ?? {})
+        expect(headers, `${method} ${path} ${status}`).not.toContain('Cache-Control')
+      }
+    }
+  })
+
   it('describes path params, the five search query keys and no request body', () => {
     const names = (path: string, method: string, where: string) =>
       (doc.paths[path]?.[method]?.parameters ?? []).filter((p) => p.in === where).map((p) => p.name)
