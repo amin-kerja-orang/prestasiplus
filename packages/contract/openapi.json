@@ -45041,7 +45041,7 @@
           "sponsorship"
         ],
         "summary": "Apply for a foster family (Mohon Keluarga Angkat)",
-        "description": "Any signed-in role (student, parent, teacher, admin). The applicant user id and role come from the session; applicantUserId or applicantRole in the body are ignored. The studentEmail must be the e-mail of an existing user with role student (surrounding spaces trimmed; letter case as the user lookup treats it). Inserts one application with status `pending` and createdAt = now. No duplicate check (the same student and applicant may apply again), no notification, no e-mail. Write-only: the category, income range and reason of a minor are never returned by any route and never logged. The success text \"Permohonan anda telah dihantar. Admin akan menyemak permohonan dalam 1-3 hari bekerja.\" is shown by the client, not returned. Security note (OQ-API-B4-20): the studentEmail 422 tells a signed-in caller whether an e-mail belongs to a student, so the route is to be rate limited (RATE_LIMITED 429, BE-33).",
+        "description": "Any signed-in role (student, parent, teacher, admin). The applicant user id and role come from the session; applicantUserId or applicantRole in the body are ignored. The studentEmail must be the e-mail of an existing user with role student (surrounding spaces trimmed; letter case as the user lookup treats it). Inserts one application with status `pending` and createdAt = now. No duplicate check (the same student and applicant may apply again), no notification, no e-mail. Write-only: the category, income range and reason of a minor are never returned by any route and never logged. The success text \"Permohonan anda telah dihantar. Admin akan menyemak permohonan dalam 1-3 hari bekerja.\" is shown by the client, not returned. Security note (OQ-API-B4-20): the studentEmail 422 tells a signed-in caller whether an e-mail belongs to a student, so the route is rate limited (RATE_LIMITED 429 with retryAfter and Retry-After, D57(a), BE-33). D57(b): the response carries no credential or token, so no Cache-Control: no-store. D57(f) does not apply: the route has no parent or sponsor invite, link token or sponsor-facing view of a minor.",
         "parameters": [
           {
             "schema": {
@@ -45115,7 +45115,16 @@
             }
           },
           "429": {
-            "description": "RATE_LIMITED, with retryAfter (planned, BE-33; the mock has no limit).",
+            "description": "RATE_LIMITED (BM \"Terlalu banyak percubaan. Sila cuba sebentar lagi.\"): body error.retryAfter and the Retry-After header carry the seconds to wait. Planned (BE-33); the mock has no limit.",
+            "headers": {
+              "Retry-After": {
+                "description": "Seconds until a retry is allowed (same value as error.retryAfter).",
+                "schema": {
+                  "type": "integer",
+                  "minimum": 0
+                }
+              }
+            },
             "content": {
               "application/json": {
                 "schema": {
