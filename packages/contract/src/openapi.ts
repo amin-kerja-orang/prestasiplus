@@ -16,6 +16,7 @@ import { AccessModeSchema, PortalIdSchema, RoleCodeSchema, ScopeLevelSchema } fr
 import { ErrorBodySchema, ErrorCodeSchema, ErrorPayloadSchema } from './common/error'
 import { ClientUuidSchema, IdSchema } from './common/ids'
 import { PRACTICE_COMPONENT_SCHEMAS, registerPracticePaths } from './practice/paths'
+import { PRACTICE_READS_COMPONENT_SCHEMAS, registerPracticeReadsPaths } from './practice/reads/paths'
 import { SESSION_COMPONENT_SCHEMAS, registerSessionPaths } from './session/paths'
 import { CONTENT_COMPONENT_SCHEMAS, registerContentPaths } from './content/paths'
 import { SUPPORT_COMPONENT_SCHEMAS, registerSupportPaths } from './support/paths'
@@ -102,6 +103,7 @@ export const COMPONENT_SCHEMAS = {
   ...CURRICULUM_COMPONENT_SCHEMAS, // BE-08
   ...PRACTICE_COMPONENT_SCHEMAS, // BE-12
   ...PKSK_COMPONENT_SCHEMAS, // BE-42
+  ...PRACTICE_READS_COMPONENT_SCHEMAS, // BE-13
 } as const
 
 export const CONTRACT_VERSION = '0.1.0'
@@ -123,6 +125,7 @@ export function buildOpenApiDocument(): Record<string, unknown> {
   registerCommandCenterPaths(registry) // BE-22
   registerCurriculumPaths(registry) // BE-08
   registerPracticePaths(registry) // BE-12
+  registerPracticeReadsPaths(registry) // BE-13
   registerClassesPaths(registry) // BE-17
   registerBattlePaths(registry) // BE-44 (M16)
   registerGamesPaths(registry) // BE-45 (M16 games, leagues)
