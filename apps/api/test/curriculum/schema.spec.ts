@@ -9,7 +9,7 @@ import { createTestDatabase, type TestDatabase } from '../support/db'
 import { count, dropDatabase } from './helpers'
 
 /** The raw SQL of migration 0003 against the generated client: checks, keys and cascades. */
-describe('curriculum schema (migration 0007_curriculum)', () => {
+describe('curriculum schema (migration 0008_curriculum)', () => {
   let db: TestDatabase
   beforeAll(async () => {
     db = await createTestDatabase()
