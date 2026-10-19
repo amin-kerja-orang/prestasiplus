@@ -203,7 +203,7 @@ export function registerAiPaths(registry: OpenAPIRegistry): void {
     path: '/ai/test',
     tags: [AI_TAG],
     summary: 'Admin health check of the configured provider on a built-in sample',
-    description: `Sends a fixed built-in sample (never user content) through the same redaction, rate limit, retry and budget guard as a real call, and writes one usage row (purpose health_check; cost 0 for the mock). 200 means the provider answered; an unreachable or unconfigured provider is 503 AI_UNAVAILABLE "${AI_MESSAGES.unavailable}" and a reached cap is 503 AI_BUDGET_EXHAUSTED "${AI_MESSAGES.budgetExhausted}". The body is an empty object; any field is 422. ${KEY_NOTE} ${ROLE_NOTE}`,
+    description: `Sends a fixed built-in sample (never user content) through the same redaction, rate limit, retry and budget guard as a real call, and writes one usage row (purpose health_check; cost 0 for the mock). 200 means the provider answered (ok is always true); an unreachable or unconfigured provider is 503 AI_UNAVAILABLE "${AI_MESSAGES.unavailable}" and a reached cap is 503 AI_BUDGET_EXHAUSTED "${AI_MESSAGES.budgetExhausted}". The body is an empty object; any field is 422. ${KEY_NOTE} ${ROLE_NOTE}`,
     request: { headers: [csrf], body: body(AiTestRequestSchema) },
     responses: {
       200: noStore(envelopeOf(AiTestResultSchema), 'The provider answered.'),

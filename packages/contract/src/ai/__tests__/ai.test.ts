@@ -1,6 +1,10 @@
+import { readdirSync } from 'node:fs'
+import { dirname, join, resolve } from 'node:path'
+import { fileURLToPath } from 'node:url'
+
 import { describe, expect, expectTypeOf, it } from 'vitest'
 
-import { buildOpenApiDocument } from '../../openapi'
+import { buildOpenApiDocument, COMPONENT_SCHEMAS } from '../../openapi'
 import { AI_COMPONENT_SCHEMAS, AI_TAG } from '../paths'
 import {
   AI_FAILURE_CODES,
@@ -128,6 +132,13 @@ describe('result types: drafts only', () => {
     expect(ok(AiQuestionDraftSchema, { ...draft, approvedBy: '1' })).toBe(false)
   })
 
+  it('keeps a region inside the page', () => {
+    const q = (region: unknown) => ({ ...draft, region })
+    expect(ok(AiQuestionDraftSchema, q({ page: 1, x: 0.2, y: 0.5, w: 0.8, h: 0.5 }))).toBe(true)
+    expect(ok(AiQuestionDraftSchema, q({ page: 1, x: 0.3, y: 0, w: 0.8, h: 0.1 }))).toBe(false)
+    expect(ok(AiQuestionDraftSchema, q({ page: 1, x: 0, y: 0.6, w: 0.1, h: 0.5 }))).toBe(false)
+  })
+
   it('rejects out-of-range confidence, region and marks', () => {
     expect(ok(AiQuestionDraftSchema, { ...draft, fieldConfidence: { stem: 1.2 } })).toBe(false)
     expect(ok(AiQuestionDraftSchema, { ...draft, region: { page: 1, x: -0.1, y: 0, w: 1, h: 1 } })).toBe(false)
@@ -218,7 +229,10 @@ describe('admin wire bodies', () => {
   it('test request is an empty object; result parses', () => {
     expect(ok(AiTestRequestSchema, {})).toBe(true)
     expect(ok(AiTestRequestSchema, { text: 'user content' })).toBe(false)
-    expect(ok(AiTestResultSchema, { ok: true, provider: 'mock', model: 'heuristik-1', latencyMs: 3, checkedAt: '2026-10-19T10:00:00+08:00', usage })).toBe(true)
+    const result = { ok: true, provider: 'mock', model: 'heuristik-1', latencyMs: 3, checkedAt: '2026-10-19T10:00:00+08:00', usage }
+    expect(ok(AiTestResultSchema, result)).toBe(true)
+    // a failed check is a 503, never a 200 with ok false
+    expect(ok(AiTestResultSchema, { ...result, ok: false })).toBe(false)
   })
 })
 
@@ -235,6 +249,29 @@ describe('OpenAPI registration', () => {
     const names = Object.keys(AI_COMPONENT_SCHEMAS)
     expect(names.every((n) => n.startsWith('Ai'))).toBe(true)
     for (const n of names) expect(doc.components.schemas[n], n).toBeDefined()
+  })
+
+  it('does not share a component key with any other lane', async () => {
+    const srcDir = resolve(dirname(fileURLToPath(import.meta.url)), '../..')
+    const files = (readdirSync(srcDir, { recursive: true }) as string[])
+      .filter((f) => f.endsWith('paths.ts') && !f.includes('__tests__'))
+      .map((f) => join(srcDir, f))
+    expect(files.length).toBeGreaterThan(30)
+    const others = new Map<string, string>()
+    for (const file of files) {
+      const mod = (await import(file)) as Record<string, unknown>
+      for (const [exportName, value] of Object.entries(mod)) {
+        if (!exportName.endsWith('_COMPONENT_SCHEMAS') || value === AI_COMPONENT_SCHEMAS) continue
+        for (const key of Object.keys(value as object)) others.set(key, `${file}:${exportName}`)
+      }
+    }
+    expect(others.size).toBeGreaterThan(200)
+    const clashes = Object.keys(AI_COMPONENT_SCHEMAS).filter((k) => others.has(k))
+    expect(clashes).toEqual([])
+    // the openapi.ts inline map holds the AI keys exactly once: every key is one this card owns
+    const aiInRoot = Object.keys(COMPONENT_SCHEMAS).filter((k) => k.startsWith('Ai') && !(k in AI_COMPONENT_SCHEMAS))
+    expect(aiInRoot).toEqual([])
+    expect([...others.keys()].filter((k) => k.startsWith('Ai'))).toEqual([])
   })
 
   it('registers the four admin routes', () => {

@@ -10,7 +10,7 @@ import { ErrorBodySchema } from '../common/error'
  */
 export const RATE_LIMITED_RESPONSE = {
   description:
-    'RATE_LIMITED "Terlalu banyak percubaan. Sila cuba sebentar lagi." The body carries retryAfter (seconds) and the Retry-After header carries the same value.',
+    'RATE_LIMITED "Terlalu banyak percubaan. Sila cuba sebentar lagi." [PROPOSED] (the shared 429 moves to common/, D59d). The body carries retryAfter (seconds) and the Retry-After header carries the same value.',
   headers: {
     'Retry-After': {
       description: 'Seconds until a retry is allowed (same value as error.retryAfter).',

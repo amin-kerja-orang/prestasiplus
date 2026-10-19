@@ -44061,7 +44061,7 @@
           "AI_PROVIDER_ERROR",
           "AI_TIMEOUT"
         ],
-        "description": "AI_UNAVAILABLE: provider not configured or unreachable (same code as BE-43). AI_BUDGET_EXHAUSTED: monthly cap reached, the caller may queue (AC-29.2, AC6). RATE_LIMITED: D57a. AI_PROVIDER_ERROR and AI_TIMEOUT [PROPOSED]: the run failed after the retries with backoff on 429/5xx (AC4)."
+        "description": "AI_UNAVAILABLE: provider not configured or unreachable (same code as BE-43). AI_BUDGET_EXHAUSTED: monthly cap reached, the caller may queue (AC-29.2, AC6). RATE_LIMITED: D57a. These three are the only codes on the wire. AI_PROVIDER_ERROR and AI_TIMEOUT [PROPOSED] are in-process only: the run failed after the retries with backoff on 429/5xx (AC4); a caller that answers HTTP maps them to AI_UNAVAILABLE."
       },
       "AiFailure": {
         "type": "object",
@@ -45392,7 +45392,11 @@
         "type": "object",
         "properties": {
           "ok": {
-            "type": "boolean"
+            "type": "boolean",
+            "enum": [
+              true
+            ],
+            "description": "Always true: a 200 means the provider answered. A failed check is 503 AI_UNAVAILABLE or AI_BUDGET_EXHAUSTED, never a 200 with ok false."
           },
           "provider": {
             "$ref": "#/components/schemas/AiProviderId"
@@ -96570,7 +96574,7 @@
             }
           },
           "429": {
-            "description": "RATE_LIMITED \"Terlalu banyak percubaan. Sila cuba sebentar lagi.\" The body carries retryAfter (seconds) and the Retry-After header carries the same value.",
+            "description": "RATE_LIMITED \"Terlalu banyak percubaan. Sila cuba sebentar lagi.\" [PROPOSED] (the shared 429 moves to common/, D59d). The body carries retryAfter (seconds) and the Retry-After header carries the same value.",
             "headers": {
               "Retry-After": {
                 "description": "Seconds until a retry is allowed (same value as error.retryAfter).",
@@ -96597,7 +96601,7 @@
           "ai"
         ],
         "summary": "Admin health check of the configured provider on a built-in sample",
-        "description": "Sends a fixed built-in sample (never user content) through the same redaction, rate limit, retry and budget guard as a real call, and writes one usage row (purpose health_check; cost 0 for the mock). 200 means the provider answered; an unreachable or unconfigured provider is 503 AI_UNAVAILABLE \"Perkhidmatan AI tidak dapat dihubungi sekarang. Sila cuba sebentar lagi.\" and a reached cap is 503 AI_BUDGET_EXHAUSTED \"Had bajet AI bulanan telah dicapai. Pengekstrakan baharu ditunda sehingga had dinaikkan.\". The body is an empty object; any field is 422. The response never contains an API key, a base URL or any provider setting (BE-NFR-32); `configured` is the only statement about credentials. Admin Pusat only (role code `admin`); Guru, Admin Sekolah, Pegawai PPD/JPN, Murid, Ibu Bapa and Penaja get 403.",
+        "description": "Sends a fixed built-in sample (never user content) through the same redaction, rate limit, retry and budget guard as a real call, and writes one usage row (purpose health_check; cost 0 for the mock). 200 means the provider answered (ok is always true); an unreachable or unconfigured provider is 503 AI_UNAVAILABLE \"Perkhidmatan AI tidak dapat dihubungi sekarang. Sila cuba sebentar lagi.\" and a reached cap is 503 AI_BUDGET_EXHAUSTED \"Had bajet AI bulanan telah dicapai. Pengekstrakan baharu ditunda sehingga had dinaikkan.\". The body is an empty object; any field is 422. The response never contains an API key, a base URL or any provider setting (BE-NFR-32); `configured` is the only statement about credentials. Admin Pusat only (role code `admin`); Guru, Admin Sekolah, Pegawai PPD/JPN, Murid, Ibu Bapa and Penaja get 403.",
         "parameters": [
           {
             "schema": {
@@ -96682,7 +96686,7 @@
             }
           },
           "429": {
-            "description": "RATE_LIMITED \"Terlalu banyak percubaan. Sila cuba sebentar lagi.\" The body carries retryAfter (seconds) and the Retry-After header carries the same value.",
+            "description": "RATE_LIMITED \"Terlalu banyak percubaan. Sila cuba sebentar lagi.\" [PROPOSED] (the shared 429 moves to common/, D59d). The body carries retryAfter (seconds) and the Retry-After header carries the same value.",
             "headers": {
               "Retry-After": {
                 "description": "Seconds until a retry is allowed (same value as error.retryAfter).",

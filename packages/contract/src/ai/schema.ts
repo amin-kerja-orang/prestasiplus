@@ -40,7 +40,12 @@ export const AiProviderIdSchema = z.enum(AI_PROVIDER_IDS).meta({
 })
 export type AiProviderId = z.infer<typeof AiProviderIdSchema>
 
-/** Machine codes of an AI failure (in-process and on the wire). */
+/**
+ * Machine codes of an AI failure. On the wire (the 503 and 429 of the admin routes) only
+ * `AI_UNAVAILABLE`, `AI_BUDGET_EXHAUSTED` and `RATE_LIMITED` appear; `AI_PROVIDER_ERROR` and
+ * `AI_TIMEOUT` are in-process only (they are stored on a failed run and mapped to `AI_UNAVAILABLE`
+ * by any caller that answers HTTP).
+ */
 export const AI_FAILURE_CODES = [
   'AI_UNAVAILABLE',
   'AI_BUDGET_EXHAUSTED',
@@ -51,19 +56,18 @@ export const AI_FAILURE_CODES = [
 export const AiFailureCodeSchema = z.enum(AI_FAILURE_CODES).meta({
   id: 'AiFailureCode',
   description:
-    'AI_UNAVAILABLE: provider not configured or unreachable (same code as BE-43). AI_BUDGET_EXHAUSTED: monthly cap reached, the caller may queue (AC-29.2, AC6). RATE_LIMITED: D57a. AI_PROVIDER_ERROR and AI_TIMEOUT [PROPOSED]: the run failed after the retries with backoff on 429/5xx (AC4).',
+    'AI_UNAVAILABLE: provider not configured or unreachable (same code as BE-43). AI_BUDGET_EXHAUSTED: monthly cap reached, the caller may queue (AC-29.2, AC6). RATE_LIMITED: D57a. These three are the only codes on the wire. AI_PROVIDER_ERROR and AI_TIMEOUT [PROPOSED] are in-process only: the run failed after the retries with backoff on 429/5xx (AC4); a caller that answers HTTP maps them to AI_UNAVAILABLE.',
 })
 export type AiFailureCode = z.infer<typeof AiFailureCodeSchema>
 
 /**
  * Admin-facing BM copy. `AI_UNAVAILABLE` follows the structure of the approved BE-43 sentence
  * ("... tidak dapat menjawab sekarang. Sila cuba sebentar lagi.") without the persona name. All
- * four are [PROPOSED] (no mock has an AI failure path); the LEAD aligns them at merge.
+ * three are [PROPOSED] (no mock has an AI failure path); the LEAD aligns them at merge.
  */
 export const AI_MESSAGES = {
   unavailable: 'Perkhidmatan AI tidak dapat dihubungi sekarang. Sila cuba sebentar lagi.',
   budgetExhausted: 'Had bajet AI bulanan telah dicapai. Pengekstrakan baharu ditunda sehingga had dinaikkan.',
-  rateLimited: 'Terlalu banyak percubaan. Sila cuba sebentar lagi.',
   csrf: 'Sesi tidak sah. Sila muat semula halaman dan cuba lagi.',
 } as const
 
@@ -268,6 +272,9 @@ export const AiRegionSchema = z
     h: z.number().min(0).max(1),
   })
   .strict()
+  .refine((r) => r.x + r.w <= 1 && r.y + r.h <= 1, {
+    message: 'Region must lie inside the page (x + w <= 1 and y + h <= 1).',
+  })
   .meta({ id: 'AiRegion', description: 'Source region of a field or figure, as page fractions.' })
 export type AiRegion = z.infer<typeof AiRegionSchema>
 
@@ -631,7 +638,9 @@ export type AiTestRequest = z.infer<typeof AiTestRequestSchema>
 
 export const AiTestResultSchema = z
   .object({
-    ok: z.boolean(),
+    ok: z.literal(true).meta({
+      description: 'Always true: a 200 means the provider answered. A failed check is 503 AI_UNAVAILABLE or AI_BUDGET_EXHAUSTED, never a 200 with ok false.',
+    }),
     provider: AiProviderIdSchema,
     model: z.string().min(1).max(128),
     latencyMs: z.number().int().min(0),
