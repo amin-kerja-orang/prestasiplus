@@ -352,6 +352,22 @@ describe('D57 security defaults', () => {
     expect(ACCOUNT_SECURITY_NOTIFICATIONS.resetDone.body.length).toBeGreaterThan(0)
   })
 
+  it('D59a: IC reset stays for all roles, notifies the owner and the school, no pending PDPA note', () => {
+    const ic = op('post', '/auth/password/reset-ic').description ?? ''
+    expect(ic).toContain('Decided D59a: IC-only reset is allowed for all roles including pupils, with D55a limits and owner + school notification.')
+    expect(ic).toContain('the account owner AND the school')
+    expect(ic).toContain('school admins of the user')
+    expect(ic).toContain('only its owner')
+    expect(ic).not.toContain('pending lead/user decision')
+    expect(ic).not.toContain('PDPA')
+    expect(op('post', '/auth/password/reset').description).toContain('school admins of the user')
+    expect(ACCOUNT_RESET_TOKEN_RULES.summary).toContain('notify the account owner AND the school')
+    const n = ACCOUNT_SECURITY_NOTIFICATIONS.schoolNotice
+    expect(n.title).toBe('Kata laluan murid ditetapkan semula')
+    expect(n.body).toContain('{name}')
+    expect(n.body).not.toMatch(/\bIC\b|e-mel|token/i)
+  })
+
   it('no reset-ic response field echoes the e-mail', () => {
     const schemas = (doc as unknown as { components: { schemas: Record<string, unknown> } }).components.schemas
     expect(JSON.stringify(schemas['AccountResetToken'])).not.toContain('email')
