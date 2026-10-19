@@ -20,9 +20,8 @@ class DummyController {
 class DummyModule {}
 
 describe('registries', () => {
-  it('module registry exists and is empty at BE-01', () => {
+  it('module registry exists', () => {
     expect(Array.isArray(featureModules)).toBe(true)
-    expect(featureModules).toHaveLength(0)
   })
 
   it('a module added to the list is mounted under /api', async () => {
@@ -35,8 +34,8 @@ describe('registries', () => {
     }
   })
 
-  it('seed registry is empty and runs the modules it is given in order', async () => {
-    expect(seedModules).toHaveLength(0)
+  it('seed registry runs the modules it is given in order', async () => {
+    expect(Array.isArray(seedModules)).toBe(true)
     const calls: string[] = []
     const done = await runSeeds([
       { name: 'a', run: async () => void calls.push('a') },

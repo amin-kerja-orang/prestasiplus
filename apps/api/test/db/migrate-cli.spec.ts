@@ -1,4 +1,5 @@
 import { spawnSync } from 'node:child_process'
+import { readdirSync } from 'node:fs'
 import { randomBytes } from 'node:crypto'
 import { fileURLToPath } from 'node:url'
 
@@ -6,6 +7,12 @@ import pg from 'pg'
 import { afterAll, beforeAll, describe, expect, inject, it } from 'vitest'
 
 import { withDatabase } from '../support/global-setup'
+
+/** Migrations on disk: the tests must not hard-code how many cards have added one. */
+const MIGRATION_NAMES = readdirSync(new URL('../../prisma/migrations/', import.meta.url), { withFileTypes: true })
+  .filter((d) => d.isDirectory())
+  .map((d) => d.name)
+  .sort()
 
 const API_DIR = fileURLToPath(new URL('../../', import.meta.url))
 const name = `t_cli_${randomBytes(5).toString('hex')}`
@@ -55,13 +62,13 @@ describe('be:db:* scripts against an empty database', { timeout: 120_000 }, () =
     if (admin) await query(`DROP DATABASE IF EXISTS "${name}" WITH (FORCE)`, admin)
   })
 
-  it('migrate applies 0001_init (pgcrypto, _prisma_migrations row)', async () => {
+  it('migrate applies every migration (pgcrypto, _prisma_migrations rows)', async () => {
     const r = run('migrate')
     expect(r.status, r.stdout + r.stderr).toBe(0)
     const rows = await query<{ migration_name: string }>(
       'select migration_name from _prisma_migrations',
     )
-    expect(rows.map((x) => x.migration_name)).toEqual(['0001_init'])
+    expect(rows.map((x) => x.migration_name)).toEqual(MIGRATION_NAMES)
     expect(await query("select 1 from pg_extension where extname = 'pgcrypto'")).toHaveLength(1)
   })
 
@@ -69,7 +76,7 @@ describe('be:db:* scripts against an empty database', { timeout: 120_000 }, () =
     expect(run('migrate').status).toBe(0)
   })
 
-  it('seed runs with the empty registry', () => {
+  it('seed runs against the migrated database', () => {
     const r = run('seed')
     expect(r.status, r.stdout + r.stderr).toBe(0)
     expect(r.stdout).toContain('profile=test')
@@ -81,7 +88,7 @@ describe('be:db:* scripts against an empty database', { timeout: 120_000 }, () =
     expect(r.status).not.toBe(0)
     expect(r.stderr).toMatch(/production/)
     expect(await query("select 1 from information_schema.tables where table_name = 'leftover'")).toHaveLength(1)
-    expect(await query('select migration_name from _prisma_migrations')).toHaveLength(1)
+    expect(await query('select migration_name from _prisma_migrations')).toHaveLength(MIGRATION_NAMES.length)
   })
 
   // Prisma refuses `migrate reset` when it detects an AI agent (needs the user's own consent), so
@@ -90,6 +97,6 @@ describe('be:db:* scripts against an empty database', { timeout: 120_000 }, () =
     const r = run('reset')
     expect(r.status, r.stdout + r.stderr).toBe(0)
     expect(await query("select 1 from information_schema.tables where table_name = 'leftover'")).toHaveLength(0)
-    expect(await query('select migration_name from _prisma_migrations')).toHaveLength(1)
+    expect(await query('select migration_name from _prisma_migrations')).toHaveLength(MIGRATION_NAMES.length)
   })
 })
