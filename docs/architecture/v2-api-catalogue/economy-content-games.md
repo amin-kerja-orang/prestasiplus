@@ -237,7 +237,7 @@ Module conventions (apply to every M14 block):
 - Contract status for all M14 routes: **missing** (only the common envelope/error/Id/Timestamp schemas exist in `packages/contract/src/common`).
 - Role-access matrix: Murid items 28 to 31, 33 to 36, 38 (Syiling & Token, Tukar Token, Cabaran Harian, Kedai Hadiah, Papan Pendahulu, Pencapaian, Kotak Misteri, Rujuk Kawan, Kedai Hadiah Digital) use the student routes. Guru gamification (S19 to S22) is **not** in the matrix (`v2-cloud-gap` F-94: Hidden-OOS). The admin routes belong to Portal Pentadbiran (D48, admin in prototype scope).
 
-### M14-01 GET /api/gamification/wallet
+### M14-01 `GET /api/gamification/wallet`
 - **Roles:** any session
 - **Auth detail:** `anySession`; caller's own wallet. A user with no wallet row reads defaults (BR-M14-02).
 - **Purpose:** wallet summary (syiling, token, xp, level, tier, title, earned today/week, streak). XR-M15-01.
@@ -249,7 +249,7 @@ Module conventions (apply to every M14 block):
 - **Card:** BE-11 (listed as `GET /api/gamification/wallet`)
 - **Contract:** missing
 
-### M14-02 GET /api/gamification/dashboard
+### M14-02 `GET /api/gamification/dashboard`
 - **Roles:** any session
 - **Auth detail:** `anySession`; caller's own data.
 - **Purpose:** S11 hub: wallet, first 4 challenges, latest 6 ledger rows, subject mastery, tier grid.
@@ -261,7 +261,7 @@ Module conventions (apply to every M14 block):
 - **Card:** BE-23 (group "Student M14": `dashboard`)
 - **Contract:** missing
 
-### M14-03 GET /api/gamification/transactions
+### M14-03 `GET /api/gamification/transactions`
 - **Roles:** any session
 - **Auth detail:** `anySession`; own ledger only.
 - **Purpose:** S17 syiling ledger of the caller.
@@ -273,7 +273,7 @@ Module conventions (apply to every M14 block):
 - **Card:** BE-11 (`GET /api/gamification/transactions`, "paginated ledger"; NOTE the mock is unpaged with a non-standard meta, see OQ-API-B4-2)
 - **Contract:** missing
 
-### M14-04 GET /api/gamification/convert
+### M14-04 `GET /api/gamification/convert`
 - **Roles:** any session
 - **Auth detail:** `anySession`.
 - **Purpose:** S12 Tukar Token view (rate of the caller's tier).
@@ -285,7 +285,7 @@ Module conventions (apply to every M14 block):
 - **Card:** BE-23 (card lists `convert` under GET and POST)
 - **Contract:** missing
 
-### M14-05 POST /api/gamification/convert
+### M14-05 `POST /api/gamification/convert`
 - **Roles:** any session
 - **Auth detail:** `anySession`; own wallet.
 - **Purpose:** convert syiling to tokens at the tier rate (BR-M14-10/11).
@@ -297,7 +297,7 @@ Module conventions (apply to every M14 block):
 - **Card:** BE-23 (AC 3: mock rate, minimum, daily cap -- the mock has **no daily cap**, see OQ-API-B4-3)
 - **Contract:** missing
 
-### M14-06 GET /api/gamification/challenges
+### M14-06 `GET /api/gamification/challenges`
 - **Roles:** any session
 - **Auth detail:** `anySession`; progress is the caller's, computed from M05 practice data for the current Malaysia day.
 - **Purpose:** S13 daily challenges with progress.
@@ -309,7 +309,7 @@ Module conventions (apply to every M14 block):
 - **Card:** BE-23
 - **Contract:** missing
 
-### M14-07 GET /api/gamification/leaderboard
+### M14-07 `GET /api/gamification/leaderboard`
 - **Roles:** any session
 - **Auth detail:** `anySession`; global (all students), not scoped.
 - **Purpose:** S14 Papan Pendahulu: top 50 wallets by lifetime syiling.
@@ -321,7 +321,7 @@ Module conventions (apply to every M14 block):
 - **Card:** BE-23
 - **Contract:** missing
 
-### M14-08 GET /api/gamification/achievements
+### M14-08 `GET /api/gamification/achievements`
 - **Roles:** any session
 - **Auth detail:** `anySession`; own unlock state.
 - **Purpose:** S15 Pencapaian catalogue with unlock state.
@@ -333,7 +333,7 @@ Module conventions (apply to every M14 block):
 - **Card:** BE-23
 - **Contract:** missing
 
-### M14-09 GET /api/gamification/share-cards
+### M14-09 `GET /api/gamification/share-cards`
 - **Roles:** any session
 - **Auth detail:** `anySession`; own profile.
 - **Purpose:** S18 share cards.
@@ -345,7 +345,7 @@ Module conventions (apply to every M14 block):
 - **Card:** BE-23 (card lists `share-cards`)
 - **Contract:** missing
 
-### M14-10 GET /api/gamification/referral
+### M14-10 `GET /api/gamification/referral`
 - **Roles:** any session
 - **Auth detail:** `anySession`; own code.
 - **Purpose:** S16 Rujuk Kawan: referral code, share links, stats.
@@ -357,7 +357,7 @@ Module conventions (apply to every M14 block):
 - **Card:** BE-23
 - **Contract:** missing
 
-### M14-11 GET /api/guru/gamification
+### M14-11 `GET /api/guru/gamification`
 - **Roles:** teacher, admin
 - **Auth detail:** `teacherOnly`; own teacher wallet (BR-M14-01). Out of v2 per D28c until Q10 is confirmed (BE-23 AC 7).
 - **Purpose:** S19 Gamifikasi Guru dashboard.
@@ -369,7 +369,7 @@ Module conventions (apply to every M14 block):
 - **Card:** BE-23 (build only after OD-8/Q10)
 - **Contract:** missing
 
-### M14-12 GET /api/guru/gamification/cash
+### M14-12 `GET /api/guru/gamification/cash`
 - **Roles:** teacher, admin
 - **Auth detail:** `teacherOnly`; own data.
 - **Purpose:** S20 Tebus Tunai view.
@@ -381,7 +381,7 @@ Module conventions (apply to every M14 block):
 - **Card:** BE-23 (disabled state until Q10)
 - **Contract:** missing
 
-### M14-13 POST /api/guru/gamification/cash
+### M14-13 `POST /api/guru/gamification/cash`
 - **Roles:** teacher, admin
 - **Auth detail:** `teacherOnly`; own wallet.
 - **Purpose:** request a cash withdrawal (BR-M14-26).
@@ -393,7 +393,7 @@ Module conventions (apply to every M14 block):
 - **Card:** BE-23 (disabled until Q10)
 - **Contract:** missing
 
-### M14-14 GET /api/guru/gamification/shop
+### M14-14 `GET /api/guru/gamification/shop`
 - **Roles:** teacher, admin
 - **Auth detail:** `teacherOnly`; own balance.
 - **Purpose:** S21 teacher reward shop.
@@ -405,7 +405,7 @@ Module conventions (apply to every M14 block):
 - **Card:** BE-23
 - **Contract:** missing
 
-### M14-15 POST /api/guru/gamification/shop/:rewardId/redeem
+### M14-15 `POST /api/guru/gamification/shop/:rewardId/redeem`
 - **Roles:** teacher, admin
 - **Auth detail:** `teacherOnly`; PROPOSED behaviour (BR-M14-27).
 - **Purpose:** request a teacher reward; holds the cost, no debit until delivered.
@@ -417,7 +417,7 @@ Module conventions (apply to every M14 block):
 - **Card:** BE-23
 - **Contract:** missing
 
-### M14-16 GET /api/guru/gamification/leaderboard
+### M14-16 `GET /api/guru/gamification/leaderboard`
 - **Roles:** teacher, admin
 - **Auth detail:** `teacherOnly`; the `sekolah` tab lists teachers of the caller's school when the caller is a teacher (an admin caller sees all teachers); `global` lists all teachers. Ranked by questions then userId.
 - **Purpose:** S22 teacher leaderboard.
@@ -429,7 +429,7 @@ Module conventions (apply to every M14 block):
 - **Card:** BE-23
 - **Contract:** missing
 
-### M14-17 GET /api/admin/gamification/overview
+### M14-17 `GET /api/admin/gamification/overview`
 - **Roles:** admin
 - **Auth detail:** `adminOnly`; national (no school scope in the mock).
 - **Purpose:** S1 admin overview.
@@ -441,7 +441,7 @@ Module conventions (apply to every M14 block):
 - **Card:** BE-23
 - **Contract:** missing
 
-### M14-18 GET /api/admin/gamification/tiers
+### M14-18 `GET /api/admin/gamification/tiers`
 - **Roles:** admin
 - **Auth detail:** `adminOnly`.
 - **Purpose:** S2 tiers list (including inactive).
@@ -453,7 +453,7 @@ Module conventions (apply to every M14 block):
 - **Card:** BE-23
 - **Contract:** missing
 
-### M14-19 PUT /api/admin/gamification/tiers/:id
+### M14-19 `PUT /api/admin/gamification/tiers/:id`
 - **Roles:** admin
 - **Auth detail:** `adminOnly`.
 - **Purpose:** update a tier (V-M14-02).
@@ -465,7 +465,7 @@ Module conventions (apply to every M14 block):
 - **Card:** BE-23 (not itemised: card lists only `POST ... tiers`)
 - **Contract:** missing
 
-### M14-20 POST /api/admin/gamification/tiers/:id/toggle
+### M14-20 `POST /api/admin/gamification/tiers/:id/toggle`
 - **Roles:** admin
 - **Auth detail:** `adminOnly`.
 - **Purpose:** activate/deactivate a tier; holders keep it (BR-M14-08).
@@ -477,7 +477,7 @@ Module conventions (apply to every M14 block):
 - **Card:** BE-23 (not itemised in the card list)
 - **Contract:** missing
 
-### M14-21 POST /api/admin/gamification/tiers
+### M14-21 `POST /api/admin/gamification/tiers`
 - **Roles:** admin
 - **Auth detail:** `adminOnly`.
 - **Purpose:** create a tier (V-M14-03).
@@ -489,7 +489,7 @@ Module conventions (apply to every M14 block):
 - **Card:** BE-23
 - **Contract:** missing
 
-### M14-22 GET /api/admin/gamification/challenges
+### M14-22 `GET /api/admin/gamification/challenges`
 - **Roles:** admin
 - **Auth detail:** `adminOnly`.
 - **Purpose:** S3 all challenges (active or not).
@@ -501,7 +501,7 @@ Module conventions (apply to every M14 block):
 - **Card:** BE-23
 - **Contract:** missing
 
-### M14-23 PUT /api/admin/gamification/challenges/:id
+### M14-23 `PUT /api/admin/gamification/challenges/:id`
 - **Roles:** admin
 - **Auth detail:** `adminOnly`.
 - **Purpose:** update a challenge (V-M14-04).
@@ -513,7 +513,7 @@ Module conventions (apply to every M14 block):
 - **Card:** BE-23 (not itemised: card lists only `POST challenges`)
 - **Contract:** missing
 
-### M14-24 POST /api/admin/gamification/challenges/:id/toggle
+### M14-24 `POST /api/admin/gamification/challenges/:id/toggle`
 - **Roles:** admin
 - **Auth detail:** `adminOnly`.
 - **Purpose:** activate/deactivate a challenge.
@@ -525,7 +525,7 @@ Module conventions (apply to every M14 block):
 - **Card:** BE-23 (not itemised)
 - **Contract:** missing
 
-### M14-25 DELETE /api/admin/gamification/challenges/:id
+### M14-25 `DELETE /api/admin/gamification/challenges/:id`
 - **Roles:** admin
 - **Auth detail:** `adminOnly`.
 - **Purpose:** delete a challenge.
@@ -537,7 +537,7 @@ Module conventions (apply to every M14 block):
 - **Card:** BE-23 (not itemised)
 - **Contract:** missing
 
-### M14-26 POST /api/admin/gamification/challenges
+### M14-26 `POST /api/admin/gamification/challenges`
 - **Roles:** admin
 - **Auth detail:** `adminOnly`.
 - **Purpose:** create a challenge.
@@ -549,7 +549,7 @@ Module conventions (apply to every M14 block):
 - **Card:** BE-23
 - **Contract:** missing
 
-### M14-27 GET /api/admin/gamification/students
+### M14-27 `GET /api/admin/gamification/students`
 - **Roles:** admin
 - **Auth detail:** `adminOnly`; all students (national).
 - **Purpose:** S4 student wallets list.
@@ -561,7 +561,7 @@ Module conventions (apply to every M14 block):
 - **Card:** BE-23
 - **Contract:** missing
 
-### M14-28 POST /api/admin/gamification/award
+### M14-28 `POST /api/admin/gamification/award`
 - **Roles:** admin
 - **Auth detail:** `adminOnly`.
 - **Purpose:** admin awards syiling to a student (BR-M14-20).
@@ -573,7 +573,7 @@ Module conventions (apply to every M14 block):
 - **Card:** BE-23
 - **Contract:** missing
 
-### M14-29 GET /api/admin/gamification/transactions
+### M14-29 `GET /api/admin/gamification/transactions`
 - **Roles:** admin
 - **Auth detail:** `adminOnly`.
 - **Purpose:** S5 all ledger rows.
@@ -585,7 +585,7 @@ Module conventions (apply to every M14 block):
 - **Card:** BE-23
 - **Contract:** missing
 
-### M14-30 GET /api/admin/gamification/guru
+### M14-30 `GET /api/admin/gamification/guru`
 - **Roles:** admin
 - **Auth detail:** `adminOnly`.
 - **Purpose:** S6 teacher gamification admin overview.
@@ -597,7 +597,7 @@ Module conventions (apply to every M14 block):
 - **Card:** BE-23
 - **Contract:** missing
 
-### M14-31 PUT /api/admin/gamification/guru/badges/:id
+### M14-31 `PUT /api/admin/gamification/guru/badges/:id`
 - **Roles:** admin
 - **Auth detail:** `adminOnly`.
 - **Purpose:** edit a teacher badge (V-M14-07).
@@ -609,7 +609,7 @@ Module conventions (apply to every M14 block):
 - **Card:** BE-23 (not itemised)
 - **Contract:** missing
 
-### M14-32 POST /api/admin/gamification/guru/rewards
+### M14-32 `POST /api/admin/gamification/guru/rewards`
 - **Roles:** admin
 - **Auth detail:** `adminOnly`.
 - **Purpose:** create a teacher reward. **Multipart** (image upload); in the mock the image is kept as a reference only (D22).
@@ -621,7 +621,7 @@ Module conventions (apply to every M14 block):
 - **Card:** BE-23 (+ BE-04 for the file)
 - **Contract:** missing
 
-### M14-33 GET /api/admin/gamification/guru/redemptions
+### M14-33 `GET /api/admin/gamification/guru/redemptions`
 - **Roles:** admin
 - **Auth detail:** `adminOnly`.
 - **Purpose:** S7 teacher reward redemptions.
@@ -633,7 +633,7 @@ Module conventions (apply to every M14 block):
 - **Card:** BE-23 (`guru/redemptions`)
 - **Contract:** missing
 
-### M14-34 PATCH /api/admin/gamification/guru/redemptions/:id
+### M14-34 `PATCH /api/admin/gamification/guru/redemptions/:id`
 - **Roles:** admin
 - **Auth detail:** `adminOnly`; PROPOSED (BR-M14-27).
 - **Purpose:** move a teacher redemption forward.
@@ -645,7 +645,7 @@ Module conventions (apply to every M14 block):
 - **Card:** BE-23 (not itemised: PATCH)
 - **Contract:** missing
 
-### M14-35 GET /api/admin/gamification/guru/cash
+### M14-35 `GET /api/admin/gamification/guru/cash`
 - **Roles:** admin
 - **Auth detail:** `adminOnly`.
 - **Purpose:** S8 cash requests.
@@ -657,7 +657,7 @@ Module conventions (apply to every M14 block):
 - **Card:** BE-23 (`guru/cash`)
 - **Contract:** missing
 
-### M14-36 PATCH /api/admin/gamification/guru/cash/:id
+### M14-36 `PATCH /api/admin/gamification/guru/cash/:id`
 - **Roles:** admin
 - **Auth detail:** `adminOnly`.
 - **Purpose:** set the status of a cash request (BR-M14-26).
@@ -669,7 +669,7 @@ Module conventions (apply to every M14 block):
 - **Card:** BE-23 (not itemised: PATCH)
 - **Contract:** missing
 
-### M14-37 GET /api/admin/gamification/settings
+### M14-37 `GET /api/admin/gamification/settings`
 - **Roles:** admin
 - **Auth detail:** `adminOnly`.
 - **Purpose:** S9 the 10 gamification settings.
@@ -681,7 +681,7 @@ Module conventions (apply to every M14 block):
 - **Card:** BE-23
 - **Contract:** missing
 
-### M14-38 PUT /api/admin/gamification/settings
+### M14-38 `PUT /api/admin/gamification/settings`
 - **Roles:** admin
 - **Auth detail:** `adminOnly`.
 - **Purpose:** save settings (only posted keys change).
@@ -693,7 +693,7 @@ Module conventions (apply to every M14 block):
 - **Card:** BE-23
 - **Contract:** missing
 
-### M14-39 GET /api/admin/reward-control
+### M14-39 `GET /api/admin/reward-control`
 - **Roles:** admin
 - **Auth detail:** `adminOnly`; national.
 - **Purpose:** S10 Kawalan Reward.
@@ -705,7 +705,7 @@ Module conventions (apply to every M14 block):
 - **Card:** BE-23
 - **Contract:** missing
 
-### M14-40 PUT /api/admin/reward-control/settings
+### M14-40 `PUT /api/admin/reward-control/settings`
 - **Roles:** admin
 - **Auth detail:** `adminOnly`.
 - **Purpose:** save the five shared economy settings.
@@ -717,7 +717,7 @@ Module conventions (apply to every M14 block):
 - **Card:** BE-23 (`PUT /api/admin/reward-control/settings`)
 - **Contract:** missing
 
-### M14-41 PUT /api/admin/reward-control/rewards/:id/cost
+### M14-41 `PUT /api/admin/reward-control/rewards/:id/cost`
 - **Roles:** admin
 - **Auth detail:** `adminOnly`.
 - **Purpose:** set the RM cost value of a syiling-priced reward (V-M14-13).
@@ -729,7 +729,7 @@ Module conventions (apply to every M14 block):
 - **Card:** BE-23 (**not itemised in the card list**)
 - **Contract:** missing
 
-### M14-42 POST /api/admin/reward-control/draws
+### M14-42 `POST /api/admin/reward-control/draws`
 - **Roles:** admin
 - **Auth detail:** `adminOnly`.
 - **Purpose:** create a lucky draw (Cabutan Bertuah, V-M14-12, BR-M14-29).
@@ -756,7 +756,7 @@ Module conventions:
 - Contract status for all M15 routes: **missing**.
 - Role-access matrix: Murid items 31 (Kedai Hadiah), 35 (Kotak Misteri), 22 (Cabutan Bertuah), 38 (Kedai Hadiah Digital). Admin screens belong to Portal Pentadbiran (D48). Parent routes: parent is **out of prototype scope** (D43/D48; `v2-portals`), the routes remain in the mock.
 
-### M15-01 GET /api/hadiah-digital/items
+### M15-01 `GET /api/hadiah-digital/items`
 - **Roles:** any session
 - **Auth detail:** `signedIn`.
 - **Purpose:** L43 digital reward shop list. **Always empty** (BR-M15-26; the reward store is never read).
@@ -768,7 +768,7 @@ Module conventions:
 - **Card:** BE-23 (generic "M15 shop" line; endpoint not named)
 - **Contract:** missing
 
-### M15-02 GET /api/hadiah-digital/redemptions
+### M15-02 `GET /api/hadiah-digital/redemptions`
 - **Roles:** any session
 - **Auth detail:** `signedIn`.
 - **Purpose:** L43 the caller's digital redemptions. **Always empty** (BR-M15-28).
@@ -780,7 +780,7 @@ Module conventions:
 - **Card:** BE-23 (not named)
 - **Contract:** missing
 
-### M15-03 POST /api/hadiah/redemptions
+### M15-03 `POST /api/hadiah/redemptions`
 - **Roles:** any session
 - **Auth detail:** `signedIn`; the redeemer is the session user. No shop UI is built (S5 builds none, OQ-M15-01) but the route backs hook `m15Redeem`.
 - **Purpose:** redeem a catalogue reward with tokens (BR-M15-05..07, 21).
@@ -792,7 +792,7 @@ Module conventions:
 - **Card:** BE-23
 - **Contract:** missing
 
-### M15-04 GET /api/gamification/mystery-boxes
+### M15-04 `GET /api/gamification/mystery-boxes`
 - **Roles:** any session
 - **Auth detail:** `signedIn`; own openings.
 - **Purpose:** Kotak Misteri: box catalogue, token balance, last 10 openings.
@@ -804,7 +804,7 @@ Module conventions:
 - **Card:** BE-23 (covered by the generic "M15 shop" line; endpoint not named)
 - **Contract:** missing
 
-### M15-05 POST /api/gamification/mystery-boxes/:id/open
+### M15-05 `POST /api/gamification/mystery-boxes/:id/open`
 - **Roles:** any session
 - **Auth detail:** `signedIn`.
 - **Purpose:** open a box (BR-M15-17/18).
@@ -816,7 +816,7 @@ Module conventions:
 - **Card:** BE-23
 - **Contract:** missing
 
-### M15-06 GET /api/cabutan
+### M15-06 `GET /api/cabutan`
 - **Roles:** any session
 - **Auth detail:** `signedIn`; own ticket counts.
 - **Purpose:** Cabutan Bertuah: open draws (BR-M15-19).
@@ -828,7 +828,7 @@ Module conventions:
 - **Card:** BE-23
 - **Contract:** missing
 
-### M15-07 POST /api/cabutan/:drawId/tickets
+### M15-07 `POST /api/cabutan/:drawId/tickets`
 - **Roles:** any session
 - **Auth detail:** `signedIn`.
 - **Purpose:** buy one draw ticket with syiling.
@@ -840,7 +840,7 @@ Module conventions:
 - **Card:** BE-23
 - **Contract:** missing
 
-### M15-08 GET /api/parent/hadiah-approvals
+### M15-08 `GET /api/parent/hadiah-approvals`
 - **Roles:** any session (scoped to linked children; effectively parent)
 - **Auth detail:** `signedIn` only (no role guard). Scope = students linked to the caller via M02 parent links (`parentLinks.studentIdsOf`); a non-parent has no children, so gets empty lists. Parent is out of prototype scope (D43).
 - **Purpose:** parent consent queue.
@@ -852,7 +852,7 @@ Module conventions:
 - **Card:** BE-23 (needs BE-25 parent links; parent routes not named in the card)
 - **Contract:** missing
 
-### M15-09 POST /api/parent/hadiah-approvals/:id/approve
+### M15-09 `POST /api/parent/hadiah-approvals/:id/approve`
 - **Roles:** parent
 - **Auth detail:** `parentOnly` (403 for other roles); the redemption must belong to a linked child, else 404 (no probing).
 - **Purpose:** parent approves; moves to admin queue.
@@ -864,7 +864,7 @@ Module conventions:
 - **Card:** BE-23 (+BE-25; not itemised)
 - **Contract:** missing
 
-### M15-10 POST /api/parent/hadiah-approvals/:id/reject
+### M15-10 `POST /api/parent/hadiah-approvals/:id/reject`
 - **Roles:** parent
 - **Auth detail:** `parentOnly`; child ownership as M15-09.
 - **Purpose:** parent rejects: cancel and refund (BR-M15-09).
@@ -876,7 +876,7 @@ Module conventions:
 - **Card:** BE-23 (+BE-25; not itemised)
 - **Contract:** missing
 
-### M15-11 GET /api/admin/hadiah
+### M15-11 `GET /api/admin/hadiah`
 - **Roles:** admin
 - **Auth detail:** `adminOnly`.
 - **Purpose:** S1 rewards catalogue admin list (BR-M15-01).
@@ -888,7 +888,7 @@ Module conventions:
 - **Card:** BE-23
 - **Contract:** missing
 
-### M15-12 POST /api/admin/hadiah/bulk
+### M15-12 `POST /api/admin/hadiah/bulk`
 - **Roles:** admin
 - **Auth detail:** `adminOnly`. Registered before `/:id` so `bulk` is not read as an id.
 - **Purpose:** bulk action on rewards (BR-M15-11/12/24).
@@ -900,7 +900,7 @@ Module conventions:
 - **Card:** BE-23
 - **Contract:** missing
 
-### M15-13 GET /api/admin/hadiah/redemptions
+### M15-13 `GET /api/admin/hadiah/redemptions`
 - **Roles:** admin
 - **Auth detail:** `adminOnly`. Registered before `/:id`.
 - **Purpose:** S2 redemption queue (BR-M15-15).
@@ -912,7 +912,7 @@ Module conventions:
 - **Card:** BE-23
 - **Contract:** missing
 
-### M15-14 POST /api/admin/hadiah/redemptions/:id/deliver
+### M15-14 `POST /api/admin/hadiah/redemptions/:id/deliver`
 - **Roles:** admin
 - **Auth detail:** `adminOnly`.
 - **Purpose:** mark delivered with a voucher code (BR-M15-10).
@@ -924,7 +924,7 @@ Module conventions:
 - **Card:** BE-23
 - **Contract:** missing
 
-### M15-15 POST /api/admin/hadiah/redemptions/:id/cancel
+### M15-15 `POST /api/admin/hadiah/redemptions/:id/cancel`
 - **Roles:** admin
 - **Auth detail:** `adminOnly`.
 - **Purpose:** admin cancels a `pending_admin` redemption; refund (BR-M15-09).
@@ -936,7 +936,7 @@ Module conventions:
 - **Card:** BE-23
 - **Contract:** missing
 
-### M15-16 GET /api/admin/hadiah/:id
+### M15-16 `GET /api/admin/hadiah/:id`
 - **Roles:** admin
 - **Auth detail:** `adminOnly`.
 - **Purpose:** one reward (edit form).
@@ -948,7 +948,7 @@ Module conventions:
 - **Card:** BE-23
 - **Contract:** missing
 
-### M15-17 POST /api/admin/hadiah
+### M15-17 `POST /api/admin/hadiah`
 - **Roles:** admin
 - **Auth detail:** `adminOnly`.
 - **Purpose:** create a reward (BR-M15-11/13).
@@ -960,7 +960,7 @@ Module conventions:
 - **Card:** BE-23
 - **Contract:** missing
 
-### M15-18 PUT /api/admin/hadiah/:id
+### M15-18 `PUT /api/admin/hadiah/:id`
 - **Roles:** admin
 - **Auth detail:** `adminOnly`.
 - **Purpose:** replace a reward (full body, same rules as create; omitted optionals fall back to defaults, i.e. not a patch).
@@ -991,7 +991,7 @@ Module conventions:
 - Real-time: clients poll (`poll-match` 3 s, rooms 3 s); no websocket in the mock. Time-based rules use the mock clock in Asia/Kuala_Lumpur.
 - Coin rewards go through M14 `onGameResult` (`repository/games-common.ts:97 reportGame`): syiling is credited only when setting `games_award_syiling` = 1 and the user's coins are enabled (`canEarnSyiling`); a positive `coins` writes an `earn` ledger row via `creditSyilingOp`; `xp` is always 0 from M16. The returned `coinsCredited` is 0 when disabled.
 
-### M16-01 GET /api/tournament/active
+### M16-01 `GET /api/tournament/active`
 - **Roles:** any session
 - **Auth detail:** `requireAuth()`; banner shown on every user page.
 - **Purpose:** active tournaments banner (BR-M16-38). #1.
@@ -1003,7 +1003,7 @@ Module conventions:
 - **Card:** **UNCOVERED** (M16 backlog; in v2 feature scope F-60)
 - **Contract:** missing
 
-### M16-02 POST /api/battle/quick-match
+### M16-02 `POST /api/battle/quick-match`
 - **Roles:** any session
 - **Auth detail:** `requireAuth()`.
 - **Purpose:** join the quick-match queue (BR-M16-03). #2.
@@ -1015,7 +1015,7 @@ Module conventions:
 - **Card:** **UNCOVERED**
 - **Contract:** missing
 
-### M16-03 POST /api/battle/school-battle
+### M16-03 `POST /api/battle/school-battle`
 - **Roles:** any session
 - **Auth detail:** `requireAuth()`.
 - **Purpose:** same as M16-02 but the opponent must be from another school (bot pick rule). #3.
@@ -1025,7 +1025,7 @@ Module conventions:
 - **Card:** **UNCOVERED**
 - **Contract:** missing
 
-### M16-04 GET /api/battle/poll-match/:queueId
+### M16-04 `GET /api/battle/poll-match/:queueId`
 - **Roles:** any session
 - **Auth detail:** `requireAuth()`; only the queue owner (others get `not_found`).
 - **Purpose:** poll a queue (BR-M16-04/05). #4.
@@ -1037,7 +1037,7 @@ Module conventions:
 - **Card:** **UNCOVERED**
 - **Contract:** missing
 
-### M16-05 POST /api/battle/accept-challenger/:queueId
+### M16-05 `POST /api/battle/accept-challenger/:queueId`
 - **Roles:** any session
 - **Auth detail:** `requireAuth()`; queue owner only.
 - **Purpose:** accept the incoming challenger (#5).
@@ -1049,7 +1049,7 @@ Module conventions:
 - **Card:** **UNCOVERED**
 - **Contract:** missing
 
-### M16-06 POST /api/battle/reject-challenger/:queueId
+### M16-06 `POST /api/battle/reject-challenger/:queueId`
 - **Roles:** any session
 - **Auth detail:** `requireAuth()`; owner only.
 - **Purpose:** reject the challenger; queue returns to waiting (#6).
@@ -1061,7 +1061,7 @@ Module conventions:
 - **Card:** **UNCOVERED**
 - **Contract:** missing
 
-### M16-07 GET /api/battle/search-opponent
+### M16-07 `GET /api/battle/search-opponent`
 - **Roles:** any session
 - **Auth detail:** `requireAuth()`; searches all students (national).
 - **Purpose:** find an opponent by name for an invite (BR-M16-11). #7.
@@ -1073,7 +1073,7 @@ Module conventions:
 - **Card:** **UNCOVERED**
 - **Contract:** missing
 
-### M16-08 POST /api/battle/invite
+### M16-08 `POST /api/battle/invite`
 - **Roles:** any session
 - **Auth detail:** `requireAuth()`.
 - **Purpose:** invite a named student to a battle (BR-M16-06). #8.
@@ -1085,7 +1085,7 @@ Module conventions:
 - **Card:** **UNCOVERED**
 - **Contract:** missing
 
-### M16-09 GET /api/battle/invitations
+### M16-09 `GET /api/battle/invitations`
 - **Roles:** any session
 - **Auth detail:** `requireAuth()`; own incoming invitations.
 - **Purpose:** list pending invitations (#9).
@@ -1097,7 +1097,7 @@ Module conventions:
 - **Card:** **UNCOVERED**
 - **Contract:** missing
 
-### M16-10 POST /api/battle/invite/:uuid/accept
+### M16-10 `POST /api/battle/invite/:uuid/accept`
 - **Roles:** any session
 - **Auth detail:** `requireAuth()`; receiver only.
 - **Purpose:** accept an invitation (#10).
@@ -1109,7 +1109,7 @@ Module conventions:
 - **Card:** **UNCOVERED**
 - **Contract:** missing
 
-### M16-11 POST /api/battle/invite/:uuid/decline
+### M16-11 `POST /api/battle/invite/:uuid/decline`
 - **Roles:** any session
 - **Auth detail:** `requireAuth()`; receiver only.
 - **Purpose:** decline an invitation (#11).
@@ -1121,7 +1121,7 @@ Module conventions:
 - **Card:** **UNCOVERED**
 - **Contract:** missing
 
-### M16-12 POST /api/battle/join-queue/:queueId
+### M16-12 `POST /api/battle/join-queue/:queueId`
 - **Roles:** any session
 - **Auth detail:** `requireAuth()`; not the queue owner. No UI caller on live (DV-M16-06).
 - **Purpose:** ask to join someone's waiting queue (#12).
@@ -1133,7 +1133,7 @@ Module conventions:
 - **Card:** **UNCOVERED**
 - **Contract:** missing
 
-### M16-13 GET /api/battle/poll-challenger/:queueId
+### M16-13 `GET /api/battle/poll-challenger/:queueId`
 - **Roles:** any session
 - **Auth detail:** `requireAuth()`; only the joiner of that queue.
 - **Purpose:** the joiner polls the owner's decision (#13).
@@ -1145,7 +1145,7 @@ Module conventions:
 - **Card:** **UNCOVERED**
 - **Contract:** missing
 
-### M16-14 POST /api/battle/forfeit/:uuid
+### M16-14 `POST /api/battle/forfeit/:uuid`
 - **Roles:** any session
 - **Auth detail:** `requireAuth()`; a player of that battle.
 - **Purpose:** forfeit an active battle (BR-M16-09). #14.
@@ -1157,7 +1157,7 @@ Module conventions:
 - **Card:** **UNCOVERED**
 - **Contract:** missing
 
-### M16-15 GET /api/battle/lobby
+### M16-15 `GET /api/battle/lobby`
 - **Roles:** any session
 - **Auth detail:** `requireAuth()`.
 - **Purpose:** battle lobby data (BR-M16-02/03). #15.
@@ -1169,7 +1169,7 @@ Module conventions:
 - **Card:** **UNCOVERED**
 - **Contract:** missing
 
-### M16-16 GET /api/battle/arena/:uuid
+### M16-16 `GET /api/battle/arena/:uuid`
 - **Roles:** any session
 - **Auth detail:** `requireAuth()`; only the two players, others 404. PROVISIONAL rules (SRS).
 - **Purpose:** current arena state (#16).
@@ -1181,7 +1181,7 @@ Module conventions:
 - **Card:** **UNCOVERED**
 - **Contract:** missing
 
-### M16-17 POST /api/battle/arena/:uuid/answer
+### M16-17 `POST /api/battle/arena/:uuid/answer`
 - **Roles:** any session
 - **Auth detail:** `requireAuth()`; a player. PROVISIONAL.
 - **Purpose:** answer the next arena question (BR-M16-07/08). #17.
@@ -1193,7 +1193,7 @@ Module conventions:
 - **Card:** **UNCOVERED**
 - **Contract:** missing
 
-### M16-18 GET /api/battle/standings/students
+### M16-18 `GET /api/battle/standings/students`
 - **Roles:** any session
 - **Auth detail:** `requireAuth()`; national.
 - **Purpose:** student ranking (BR-M16-12/13). #18.
@@ -1205,7 +1205,7 @@ Module conventions:
 - **Card:** **UNCOVERED** (matrix row 18 Kedudukan is mapped to M08 `/ranking` in some docs; confirm, OQ-API-B4-12)
 - **Contract:** missing
 
-### M16-19 GET /api/battle/standings/schools
+### M16-19 `GET /api/battle/standings/schools`
 - **Roles:** any session
 - **Auth detail:** `requireAuth()`; national. Also feeds Portal Pentadbiran PG-12.
 - **Purpose:** school ranking (#19).
@@ -1217,7 +1217,7 @@ Module conventions:
 - **Card:** **UNCOVERED**
 - **Contract:** missing
 
-### M16-20 GET /api/battle/schools/:id
+### M16-20 `GET /api/battle/schools/:id`
 - **Roles:** any session
 - **Auth detail:** `requireAuth()`.
 - **Purpose:** one school's battle page (#20).
@@ -1229,7 +1229,7 @@ Module conventions:
 - **Card:** **UNCOVERED**
 - **Contract:** missing
 
-### M16-21 GET /api/battle/history
+### M16-21 `GET /api/battle/history`
 - **Roles:** any session
 - **Auth detail:** `requireAuth()`; own battles.
 - **Purpose:** the caller's finished/forfeited battles (#21).
@@ -1241,7 +1241,7 @@ Module conventions:
 - **Card:** **UNCOVERED**
 - **Contract:** missing
 
-### M16-22 GET /api/games/hub
+### M16-22 `GET /api/games/hub`
 - **Roles:** any session
 - **Auth detail:** `requireAuth()`.
 - **Purpose:** games hub: open rooms and chips (BR-M16-16/17). #22.
@@ -1253,7 +1253,7 @@ Module conventions:
 - **Card:** **UNCOVERED**
 - **Contract:** missing
 
-### M16-23 GET /api/games/:game/lobby
+### M16-23 `GET /api/games/:game/lobby`
 - **Roles:** any session
 - **Auth detail:** `requireAuth()`.
 - **Purpose:** lobby of a room game (BR-M16-22/23). #23.
@@ -1265,7 +1265,7 @@ Module conventions:
 - **Card:** **UNCOVERED**
 - **Contract:** missing
 
-### M16-24 POST /api/games/:game/rooms
+### M16-24 `POST /api/games/:game/rooms`
 - **Roles:** any session
 - **Auth detail:** `requireAuth()`; caller becomes host and first player.
 - **Purpose:** create a room (V-M16-01..05). #24.
@@ -1277,7 +1277,7 @@ Module conventions:
 - **Card:** **UNCOVERED**
 - **Contract:** missing
 
-### M16-25 POST /api/games/:game/rooms/join
+### M16-25 `POST /api/games/:game/rooms/join`
 - **Roles:** any session
 - **Auth detail:** `requireAuth()`.
 - **Purpose:** join a waiting room by code (BR-M16-18). #25.
@@ -1289,7 +1289,7 @@ Module conventions:
 - **Card:** **UNCOVERED**
 - **Contract:** missing
 
-### M16-26 GET /api/games/:game/rooms/:code
+### M16-26 `GET /api/games/:game/rooms/:code`
 - **Roles:** any session
 - **Auth detail:** `requireAuth()`; only players of the room (others 404). PROVISIONAL rules, polled every 3 s.
 - **Purpose:** the room state (#26).
@@ -1301,7 +1301,7 @@ Module conventions:
 - **Card:** **UNCOVERED**
 - **Contract:** missing
 
-### M16-27 POST /api/games/:game/rooms/:code/start
+### M16-27 `POST /api/games/:game/rooms/:code/start`
 - **Roles:** any session
 - **Auth detail:** `requireAuth()`; room host only.
 - **Purpose:** start the game (BR-M16-19). #27.
@@ -1313,7 +1313,7 @@ Module conventions:
 - **Card:** **UNCOVERED**
 - **Contract:** missing
 
-### M16-28 POST /api/games/:game/rooms/:code/action
+### M16-28 `POST /api/games/:game/rooms/:code/action`
 - **Roles:** any session
 - **Auth detail:** `requireAuth()`; players; only the "human" of the room may act.
 - **Purpose:** a roll (Papan Bijak) or an answer (#28).
@@ -1325,7 +1325,7 @@ Module conventions:
 - **Card:** **UNCOVERED**
 - **Contract:** missing
 
-### M16-29 POST /api/papan-bijak/quick-match
+### M16-29 `POST /api/papan-bijak/quick-match`
 - **Roles:** any session
 - **Auth detail:** `requireAuth()`.
 - **Purpose:** start a Papan Bijak quick-match search (BR-M16-24). #29.
@@ -1337,7 +1337,7 @@ Module conventions:
 - **Card:** **UNCOVERED**
 - **Contract:** missing
 
-### M16-30 GET /api/papan-bijak/quick-match/poll
+### M16-30 `GET /api/papan-bijak/quick-match/poll`
 - **Roles:** any session
 - **Auth detail:** `requireAuth()`; own latest search.
 - **Purpose:** poll the quick match (#30).
@@ -1349,7 +1349,7 @@ Module conventions:
 - **Card:** **UNCOVERED**
 - **Contract:** missing
 
-### M16-31 POST /api/papan-bijak/quick-match/cancel
+### M16-31 `POST /api/papan-bijak/quick-match/cancel`
 - **Roles:** any session
 - **Auth detail:** `requireAuth()`.
 - **Purpose:** cancel the search (#31).
@@ -1361,7 +1361,7 @@ Module conventions:
 - **Card:** **UNCOVERED**
 - **Contract:** missing
 
-### M16-32 GET /api/games/solo/:game
+### M16-32 `GET /api/games/solo/:game`
 - **Roles:** any session
 - **Auth detail:** `requireAuth()`.
 - **Purpose:** start a single-player game session and get its items (BR-M16-25/26). #32.
@@ -1373,7 +1373,7 @@ Module conventions:
 - **Card:** **UNCOVERED**
 - **Contract:** missing
 
-### M16-33 POST /api/games/solo/:game/submit
+### M16-33 `POST /api/games/solo/:game/submit`
 - **Roles:** any session
 - **Auth detail:** `requireAuth()`; own session only.
 - **Purpose:** submit a result and earn syiling (BR-M16-27/28). #33.
@@ -1385,7 +1385,7 @@ Module conventions:
 - **Card:** **UNCOVERED**
 - **Contract:** missing
 
-### M16-34 GET /api/games/roda-nasib
+### M16-34 `GET /api/games/roda-nasib`
 - **Roles:** any session
 - **Auth detail:** `requireAuth()`; own stats.
 - **Purpose:** Roda Nasib page (BR-M16-29). #34.
@@ -1397,7 +1397,7 @@ Module conventions:
 - **Card:** **UNCOVERED**
 - **Contract:** missing
 
-### M16-35 POST /api/games/roda-nasib/spin
+### M16-35 `POST /api/games/roda-nasib/spin`
 - **Roles:** any session
 - **Auth detail:** `requireAuth()`; one spin per Malaysia day.
 - **Purpose:** spin the wheel (#35).
@@ -1409,7 +1409,7 @@ Module conventions:
 - **Card:** **UNCOVERED**
 - **Contract:** missing
 
-### M16-36 GET /api/games/jutawan
+### M16-36 `GET /api/games/jutawan`
 - **Roles:** any session
 - **Auth detail:** `requireAuth()`.
 - **Purpose:** Jutawan Ilmu page (BR-M16-30). #36.
@@ -1421,7 +1421,7 @@ Module conventions:
 - **Card:** **UNCOVERED**
 - **Contract:** missing
 
-### M16-37 POST /api/games/jutawan/start
+### M16-37 `POST /api/games/jutawan/start`
 - **Roles:** any session
 - **Auth detail:** `requireAuth()`. PROVISIONAL game rules.
 - **Purpose:** start a Jutawan session of 15 questions.
@@ -1433,7 +1433,7 @@ Module conventions:
 - **Card:** **UNCOVERED**
 - **Contract:** missing
 
-### M16-38 POST /api/games/jutawan/:sessionId/answer
+### M16-38 `POST /api/games/jutawan/:sessionId/answer`
 - **Roles:** any session
 - **Auth detail:** `requireAuth()`; own session.
 - **Purpose:** answer the current question.
@@ -1445,7 +1445,7 @@ Module conventions:
 - **Card:** **UNCOVERED**
 - **Contract:** missing
 
-### M16-39 POST /api/games/jutawan/:sessionId/lifeline
+### M16-39 `POST /api/games/jutawan/:sessionId/lifeline`
 - **Roles:** any session
 - **Auth detail:** `requireAuth()`; own session.
 - **Purpose:** use the 50:50 lifeline.
@@ -1457,7 +1457,7 @@ Module conventions:
 - **Card:** **UNCOVERED**
 - **Contract:** missing
 
-### M16-40 GET /api/games/pertandingan
+### M16-40 `GET /api/games/pertandingan`
 - **Roles:** any session
 - **Auth detail:** `requireAuth()`.
 - **Purpose:** weekly competition board (BR-M16-31). #40.
@@ -1469,7 +1469,7 @@ Module conventions:
 - **Card:** **UNCOVERED**
 - **Contract:** missing
 
-### M16-41 GET /api/games/uji-minda
+### M16-41 `GET /api/games/uji-minda`
 - **Roles:** any session
 - **Auth detail:** `requireAuth()`.
 - **Purpose:** Uji Minda placeholder (no challenge exists).
@@ -1481,7 +1481,7 @@ Module conventions:
 - **Card:** **UNCOVERED**
 - **Contract:** missing
 
-### M16-42 GET /api/tournaments
+### M16-42 `GET /api/tournaments`
 - **Roles:** any session
 - **Auth detail:** `requireAuth()`.
 - **Purpose:** tournaments list (same active set as M16-01). #42.
@@ -1493,7 +1493,7 @@ Module conventions:
 - **Card:** **UNCOVERED**
 - **Contract:** missing
 
-### M16-43 GET /api/tournaments/form-options
+### M16-43 `GET /api/tournaments/form-options`
 - **Roles:** admin
 - **Auth detail:** `requireRole('admin')`.
 - **Purpose:** create-form options (S24). #43.
@@ -1505,7 +1505,7 @@ Module conventions:
 - **Card:** **UNCOVERED**
 - **Contract:** missing
 
-### M16-44 POST /api/tournaments
+### M16-44 `POST /api/tournaments`
 - **Roles:** admin
 - **Auth detail:** `requireRole('admin')`.
 - **Purpose:** create a tournament as draft or open registration (BR-M16-32). #44.
@@ -1517,7 +1517,7 @@ Module conventions:
 - **Card:** **UNCOVERED**
 - **Contract:** missing
 
-### M16-45 GET /api/tournaments/:uuid
+### M16-45 `GET /api/tournaments/:uuid`
 - **Roles:** any session
 - **Auth detail:** `requireAuth()`; drafts visible to `admin` only (others 404). PROVISIONAL.
 - **Purpose:** tournament detail (#45).
@@ -1529,7 +1529,7 @@ Module conventions:
 - **Card:** **UNCOVERED**
 - **Contract:** missing
 
-### M16-46 GET /api/leagues
+### M16-46 `GET /api/leagues`
 - **Roles:** any session
 - **Auth detail:** `requireAuth()`; "mine" uses the caller's school.
 - **Purpose:** leagues list (BR-M16-33). #46.
@@ -1541,7 +1541,7 @@ Module conventions:
 - **Card:** **UNCOVERED**
 - **Contract:** missing
 
-### M16-47 POST /api/leagues
+### M16-47 `POST /api/leagues`
 - **Roles:** any session
 - **Auth detail:** `requireAuth()`; any role may create (no role check in the mock).
 - **Purpose:** create a league (V-M16-14/15). #47.
@@ -1553,7 +1553,7 @@ Module conventions:
 - **Card:** **UNCOVERED**
 - **Contract:** missing
 
-### M16-48 POST /api/leagues/join
+### M16-48 `POST /api/leagues/join`
 - **Roles:** any session
 - **Auth detail:** `requireAuth()`; the caller's school joins.
 - **Purpose:** join by invite code (BR-M16-33). #48.
@@ -1565,7 +1565,7 @@ Module conventions:
 - **Card:** **UNCOVERED**
 - **Contract:** missing
 
-### M16-49 GET /api/leagues/:id
+### M16-49 `GET /api/leagues/:id`
 - **Roles:** any session
 - **Auth detail:** `requireAuth()`; the invite code is visible to non-members (as live).
 - **Purpose:** league detail (#49).
@@ -1577,7 +1577,7 @@ Module conventions:
 - **Card:** **UNCOVERED**
 - **Contract:** missing
 
-### M16-50 GET /api/sekolah-bersaing
+### M16-50 `GET /api/sekolah-bersaing`
 - **Roles:** any session
 - **Auth detail:** `requireAuth()`; matrix row 45 (Admin Sekolah, "Visi & Pertandingan > Sekolah Bersaing") and student/teacher pages (F-62 M,G,AS).
 - **Purpose:** weekly school board (BR-M16-35). #50.
@@ -1589,7 +1589,7 @@ Module conventions:
 - **Card:** **UNCOVERED**
 - **Contract:** missing
 
-### M16-51 GET /api/admin/games
+### M16-51 `GET /api/admin/games`
 - **Roles:** admin
 - **Auth detail:** `requireRole('admin')`.
 - **Purpose:** game settings page data (S29, BR-M16-36). #51.
@@ -1601,7 +1601,7 @@ Module conventions:
 - **Card:** **UNCOVERED**
 - **Contract:** missing
 
-### M16-52 PUT /api/admin/games/settings
+### M16-52 `PUT /api/admin/games/settings`
 - **Roles:** admin
 - **Auth detail:** `requireRole('admin')`.
 - **Purpose:** save the Papan Bijak quiz-tile count.
@@ -1631,7 +1631,7 @@ Module conventions:
 - Contract status for all M09 routes: **missing**.
 - Role-access matrix: Murid rows 7 (Video), 20 (Artikel), 27 (Audio KBAT); Guru row 7 (Video); Admin Sekolah row 7 (Video). Perutusan write is `school_admin` and `admin` only (compose context). Admin routes belong to Portal Pentadbiran (D48).
 
-### M09-01 GET /api/admin/articles
+### M09-01 `GET /api/admin/articles`
 - **Roles:** admin
 - **Auth detail:** `adminOnly`.
 - **Purpose:** S1 article admin list (all statuses).
@@ -1643,7 +1643,7 @@ Module conventions:
 - **Card:** BE-24
 - **Contract:** missing
 
-### M09-02 GET /api/admin/articles/:id
+### M09-02 `GET /api/admin/articles/:id`
 - **Roles:** admin
 - **Auth detail:** `adminOnly`.
 - **Purpose:** S3/S4 article edit/view.
@@ -1655,7 +1655,7 @@ Module conventions:
 - **Card:** BE-24 (item route implied by the `GET/POST /admin/articles` line)
 - **Contract:** missing
 
-### M09-03 POST /api/admin/articles
+### M09-03 `POST /api/admin/articles`
 - **Roles:** admin
 - **Auth detail:** `adminOnly`; the author is the session user.
 - **Purpose:** create an article (S2).
@@ -1667,7 +1667,7 @@ Module conventions:
 - **Card:** BE-24
 - **Contract:** missing
 
-### M09-04 PUT /api/admin/articles/:id
+### M09-04 `PUT /api/admin/articles/:id`
 - **Roles:** admin
 - **Auth detail:** `adminOnly`.
 - **Purpose:** update an article (S3).
@@ -1679,7 +1679,7 @@ Module conventions:
 - **Card:** BE-24 (implied)
 - **Contract:** missing
 
-### M09-05 DELETE /api/admin/articles/:id
+### M09-05 `DELETE /api/admin/articles/:id`
 - **Roles:** admin
 - **Auth detail:** `adminOnly`.
 - **Purpose:** delete an article and its attachment rows.
@@ -1691,7 +1691,7 @@ Module conventions:
 - **Card:** BE-24 (implied)
 - **Contract:** missing
 
-### M09-06 GET /api/articles
+### M09-06 `GET /api/articles`
 - **Roles:** public
 - **Auth detail:** no guard (guests allowed); only published articles are ever returned (BR-M09-02).
 - **Purpose:** S15 reader list.
@@ -1703,7 +1703,7 @@ Module conventions:
 - **Card:** BE-24
 - **Contract:** missing
 
-### M09-07 GET /api/articles/hot
+### M09-07 `GET /api/articles/hot`
 - **Roles:** public
 - **Auth detail:** no guard.
 - **Purpose:** "Hot" strip (BR-M09-05).
@@ -1715,7 +1715,7 @@ Module conventions:
 - **Card:** BE-24
 - **Contract:** missing
 
-### M09-08 GET /api/articles/:slug
+### M09-08 `GET /api/articles/:slug`
 - **Roles:** public
 - **Auth detail:** no guard; unpublished is 404. Static path `latest` wins over `:slug`.
 - **Purpose:** S16 article page.
@@ -1727,7 +1727,7 @@ Module conventions:
 - **Card:** BE-24
 - **Contract:** missing
 
-### M09-09 GET /api/articles/latest
+### M09-09 `GET /api/articles/latest`
 - **Roles:** public
 - **Auth detail:** no guard.
 - **Purpose:** latest published articles (M05 dashboard strip, S16 aside; BR-M09-06).
@@ -1739,7 +1739,7 @@ Module conventions:
 - **Card:** BE-24
 - **Contract:** missing
 
-### M09-10 GET /api/admin/notes
+### M09-10 `GET /api/admin/notes`
 - **Roles:** admin
 - **Auth detail:** `adminOnly`. There is no notes reader in the mock (FR-M09-50).
 - **Purpose:** S5 notes list.
@@ -1751,7 +1751,7 @@ Module conventions:
 - **Card:** BE-24
 - **Contract:** missing
 
-### M09-11 GET /api/admin/notes/:id
+### M09-11 `GET /api/admin/notes/:id`
 - **Roles:** admin
 - **Auth detail:** `adminOnly`.
 - **Purpose:** S7/S8 note detail.
@@ -1763,7 +1763,7 @@ Module conventions:
 - **Card:** BE-24 (implied)
 - **Contract:** missing
 
-### M09-12 POST /api/admin/notes
+### M09-12 `POST /api/admin/notes`
 - **Roles:** admin
 - **Auth detail:** `adminOnly`; author = session user.
 - **Purpose:** create a note (S6).
@@ -1775,7 +1775,7 @@ Module conventions:
 - **Card:** BE-24
 - **Contract:** missing
 
-### M09-13 PUT /api/admin/notes/:id
+### M09-13 `PUT /api/admin/notes/:id`
 - **Roles:** admin
 - **Auth detail:** `adminOnly`.
 - **Purpose:** update a note (S7).
@@ -1787,7 +1787,7 @@ Module conventions:
 - **Card:** BE-24 (implied)
 - **Contract:** missing
 
-### M09-14 DELETE /api/admin/notes/:id
+### M09-14 `DELETE /api/admin/notes/:id`
 - **Roles:** admin
 - **Auth detail:** `adminOnly`.
 - **Purpose:** delete a note.
@@ -1799,7 +1799,7 @@ Module conventions:
 - **Card:** BE-24 (implied)
 - **Contract:** missing
 
-### M09-15 GET /api/admin/banners
+### M09-15 `GET /api/admin/banners`
 - **Roles:** admin
 - **Auth detail:** `adminOnly`.
 - **Purpose:** S9 banner list (all, unpaged).
@@ -1811,7 +1811,7 @@ Module conventions:
 - **Card:** BE-24
 - **Contract:** missing
 
-### M09-16 GET /api/admin/banners/:id
+### M09-16 `GET /api/admin/banners/:id`
 - **Roles:** admin
 - **Auth detail:** `adminOnly`.
 - **Purpose:** S11 banner edit.
@@ -1823,7 +1823,7 @@ Module conventions:
 - **Card:** BE-24 (implied)
 - **Contract:** missing
 
-### M09-17 POST /api/admin/banners
+### M09-17 `POST /api/admin/banners`
 - **Roles:** admin
 - **Auth detail:** `adminOnly`.
 - **Purpose:** create a banner (S10).
@@ -1835,7 +1835,7 @@ Module conventions:
 - **Card:** BE-24
 - **Contract:** missing
 
-### M09-18 PUT /api/admin/banners/:id
+### M09-18 `PUT /api/admin/banners/:id`
 - **Roles:** admin
 - **Auth detail:** `adminOnly`.
 - **Purpose:** update a banner (S11). Accepts the banner's own stored code even if it is not a form option (BR-M09-13, DV-M09-07), so seeded `FEATURE`/`PROMOTIONAL` banners can be saved unchanged.
@@ -1847,7 +1847,7 @@ Module conventions:
 - **Card:** BE-24 (implied)
 - **Contract:** missing
 
-### M09-19 DELETE /api/admin/banners/:id
+### M09-19 `DELETE /api/admin/banners/:id`
 - **Roles:** admin
 - **Auth detail:** `adminOnly`.
 - **Purpose:** delete a banner.
@@ -1859,7 +1859,7 @@ Module conventions:
 - **Card:** BE-24 (implied)
 - **Contract:** missing
 
-### M09-20 GET /api/banners/active
+### M09-20 `GET /api/banners/active`
 - **Roles:** any session
 - **Auth detail:** `requireAuth()`; filtered by the caller's role.
 - **Purpose:** dashboard carousel banners (BR-M09-14, M05 input).
@@ -1871,7 +1871,7 @@ Module conventions:
 - **Card:** BE-24
 - **Contract:** missing
 
-### M09-21 GET /api/admin/audio-kbat-sets
+### M09-21 `GET /api/admin/audio-kbat-sets`
 - **Roles:** admin
 - **Auth detail:** `adminOnly`.
 - **Purpose:** S12 Audio KBAT sets admin list.
@@ -1883,7 +1883,7 @@ Module conventions:
 - **Card:** BE-24 (`/admin/audio-kbat-sets`)
 - **Contract:** missing
 
-### M09-22 GET /api/admin/audio-kbat-sets/template
+### M09-22 `GET /api/admin/audio-kbat-sets/template`
 - **Roles:** admin
 - **Auth detail:** `adminOnly`. Registered before `/:id`-style paths.
 - **Purpose:** download the set template (XLSX/Word). Placeholder text files in the mock (OQ-M09-03).
@@ -1895,7 +1895,7 @@ Module conventions:
 - **Card:** BE-24 (`+ /admin/audio-kbat-sets/template`)
 - **Contract:** missing
 
-### M09-23 POST /api/admin/audio-kbat-sets
+### M09-23 `POST /api/admin/audio-kbat-sets`
 - **Roles:** admin
 - **Auth detail:** `adminOnly`; creator = session user.
 - **Purpose:** create an Audio KBAT set of exactly 4 sections and 30 questions (S13). **Multipart** (section audio files) or JSON.
@@ -1907,7 +1907,7 @@ Module conventions:
 - **Card:** BE-24 (+ BE-04 for files)
 - **Contract:** missing
 
-### M09-24 GET /api/audio-kbat-sets
+### M09-24 `GET /api/audio-kbat-sets`
 - **Roles:** any session
 - **Auth detail:** `requireAuth()`; only `approved` sets.
 - **Purpose:** S21 student list of sets.
@@ -1919,7 +1919,7 @@ Module conventions:
 - **Card:** BE-24 ("set listing")
 - **Contract:** missing
 
-### M09-25 GET /api/audio-kbat-sets/:id
+### M09-25 `GET /api/audio-kbat-sets/:id`
 - **Roles:** any session
 - **Auth detail:** `requireAuth()`; non-approved sets answer 404. Provisional player (L-3).
 - **Purpose:** the player data of one set.
@@ -1931,7 +1931,7 @@ Module conventions:
 - **Card:** **UNCOVERED** (BE-24: "Audio KBAT student play is backlog")
 - **Contract:** missing
 
-### M09-26 POST /api/audio-kbat-sets/:id/attempts
+### M09-26 `POST /api/audio-kbat-sets/:id/attempts`
 - **Roles:** any session
 - **Auth detail:** `requireAuth()`; approved sets only.
 - **Purpose:** submit an attempt and get the score (provisional).
@@ -1943,7 +1943,7 @@ Module conventions:
 - **Card:** **UNCOVERED** (backlog as above)
 - **Contract:** missing
 
-### M09-27 GET /api/videos
+### M09-27 `GET /api/videos`
 - **Roles:** public
 - **Auth detail:** no guard; a guest sees `global` videos only; a signed-in non-admin also sees `school` videos of the same school (the "video-form school", see M09-32); admin sees all (BR-M09-19).
 - **Purpose:** S17 video library.
@@ -1955,7 +1955,7 @@ Module conventions:
 - **Card:** BE-24
 - **Contract:** missing
 
-### M09-28 GET /api/videos/:id
+### M09-28 `GET /api/videos/:id`
 - **Roles:** public
 - **Auth detail:** no guard; same visibility as M09-27 (an invisible video is 404).
 - **Purpose:** S18 video page and S19 edit-form load.
@@ -1967,7 +1967,7 @@ Module conventions:
 - **Card:** BE-24 (implied)
 - **Contract:** missing
 
-### M09-29 POST /api/videos
+### M09-29 `POST /api/videos`
 - **Roles:** any session
 - **Auth detail:** `requireAuth()`; any role may upload (card AC 5 mentions a teacher approval state; the mock has none, OQ-API-B4-16).
 - **Purpose:** publish a video link (S20).
@@ -1979,7 +1979,7 @@ Module conventions:
 - **Card:** BE-24
 - **Contract:** missing
 
-### M09-30 PUT /api/videos/:id
+### M09-30 `PUT /api/videos/:id`
 - **Roles:** any session (uploader or admin)
 - **Auth detail:** `requireAuth()`; invisible video 404; not uploader and not admin 403.
 - **Purpose:** edit a video (S19).
@@ -1991,7 +1991,7 @@ Module conventions:
 - **Card:** BE-24 (implied)
 - **Contract:** missing
 
-### M09-31 DELETE /api/videos/:id
+### M09-31 `DELETE /api/videos/:id`
 - **Roles:** any session (uploader or admin)
 - **Auth detail:** `requireAuth()`; as M09-30.
 - **Purpose:** delete a video.
@@ -2003,7 +2003,7 @@ Module conventions:
 - **Card:** BE-24 (implied)
 - **Contract:** missing
 
-### M09-32 GET /api/videos/form-context
+### M09-32 `GET /api/videos/form-context`
 - **Roles:** any session
 - **Auth detail:** `requireAuth()`. Registered before `/:id` (a static path beats the param).
 - **Purpose:** uploader and school shown on the video form (BR-M09-21).
@@ -2015,7 +2015,7 @@ Module conventions:
 - **Card:** BE-24
 - **Contract:** missing
 
-### M09-33 GET /api/perutusan
+### M09-33 `GET /api/perutusan`
 - **Roles:** any session
 - **Auth detail:** `requireAuth()`; visibility BR-M09-23: posts that are `published`, or `scheduled` and due, and that are national, or belong to the viewer's school, or are the viewer's own, or the viewer is admin.
 - **Purpose:** S22 perutusan feed (pinned first, then newest effective time, then id).
@@ -2027,7 +2027,7 @@ Module conventions:
 - **Card:** BE-24
 - **Contract:** missing
 
-### M09-34 GET /api/perutusan/mine
+### M09-34 `GET /api/perutusan/mine`
 - **Roles:** any session
 - **Auth detail:** `requireAuth()`; own posts, all statuses.
 - **Purpose:** S25 the author's posts.
@@ -2039,7 +2039,7 @@ Module conventions:
 - **Card:** BE-24
 - **Contract:** missing
 
-### M09-35 GET /api/perutusan/:id
+### M09-35 `GET /api/perutusan/:id`
 - **Roles:** any session
 - **Auth detail:** `requireAuth()`; visible posts, or a non-published post for its author and admin; anything else 404 (never 403).
 - **Purpose:** S23 post page.
@@ -2051,7 +2051,7 @@ Module conventions:
 - **Card:** BE-24 (implied)
 - **Contract:** missing
 
-### M09-36 GET /api/perutusan/compose-context
+### M09-36 `GET /api/perutusan/compose-context`
 - **Roles:** any session
 - **Auth detail:** `requireAuth()`. Registered before `/:id`.
 - **Purpose:** what the viewer may write (S24).
@@ -2063,7 +2063,7 @@ Module conventions:
 - **Card:** BE-24
 - **Contract:** missing
 
-### M09-37 POST /api/perutusan
+### M09-37 `POST /api/perutusan`
 - **Roles:** admin, school_admin
 - **Auth detail:** `requireAuth()` then role check inside the handler: other roles get 403 `FORBIDDEN` "This action is unauthorized." (BR-M09-22, INFERRED OQ-M09-05). **Multipart** (files).
 - **Purpose:** create a post (S24).
@@ -2075,7 +2075,7 @@ Module conventions:
 - **Card:** BE-24
 - **Contract:** missing
 
-### M09-38 POST /api/perutusan/:id/reactions
+### M09-38 `POST /api/perutusan/:id/reactions`
 - **Roles:** any session
 - **Auth detail:** `requireAuth()`; post must be visible to the caller (else 404).
 - **Purpose:** toggle a reaction (BR-M09-25).
@@ -2087,7 +2087,7 @@ Module conventions:
 - **Card:** BE-24 (implied)
 - **Contract:** missing
 
-### M09-39 POST /api/perutusan/:id/comments
+### M09-39 `POST /api/perutusan/:id/comments`
 - **Roles:** any session
 - **Auth detail:** `requireAuth()`; visible post only.
 - **Purpose:** comment on a post (BR-M09-26).
@@ -2099,7 +2099,7 @@ Module conventions:
 - **Card:** BE-24 (implied)
 - **Contract:** missing
 
-### M09-40 GET /api/public/perutusan/:id
+### M09-40 `GET /api/public/perutusan/:id`
 - **Roles:** public
 - **Auth detail:** no guard; only `isPublic` and `published` posts, else 404.
 - **Purpose:** S28 public share page.
@@ -2111,7 +2111,7 @@ Module conventions:
 - **Card:** BE-24 (implied; `v2-portals` moves public pages to `awam`)
 - **Contract:** missing
 
-### M09-41 GET /api/admin/screenshots
+### M09-41 `GET /api/admin/screenshots`
 - **Roles:** admin
 - **Auth detail:** `adminOnly`.
 - **Purpose:** S14 private screenshot list.
@@ -2123,7 +2123,7 @@ Module conventions:
 - **Card:** BE-24 (`/admin/screenshots`)
 - **Contract:** missing
 
-### M09-42 POST /api/admin/screenshots
+### M09-42 `POST /api/admin/screenshots`
 - **Roles:** admin
 - **Auth detail:** `adminOnly`.
 - **Purpose:** upload screenshots. **Multipart** `files[]`.
@@ -2135,7 +2135,7 @@ Module conventions:
 - **Card:** BE-24 (+ BE-04)
 - **Contract:** missing
 
-### M09-43 GET /api/config/support
+### M09-43 `GET /api/config/support`
 - **Roles:** public
 - **Auth detail:** no guard.
 - **Purpose:** support e-mail and WhatsApp number for the help box (DV-M09-14).
@@ -2156,7 +2156,7 @@ Mock: `src/modules/m20-marketplace/mock/handlers/buyer.ts`; wire types `api/type
 
 Module conventions: every route is `requireAuth()` (any signed-in role; 401 "Unauthenticated."). Ids are integers (OQ-API-B4-1). Prices are decimal **strings** with 2 dp ("89.90"). Datetimes ISO `+08:00`. No data is written except the counters noted (D14: no cart, order or payment; the buyer is handed to WhatsApp). Contract status: **missing**.
 
-### M20-13 GET /api/marketplace/categories
+### M20-13 `GET /api/marketplace/categories`
 - **Roles:** any session
 - **Auth detail:** `requireAuth()`.
 - **Purpose:** the 6 constant categories (selects and chips).
@@ -2168,7 +2168,7 @@ Module conventions: every route is `requireAuth()` (any signed-in role; 401 "Una
 - **Card:** **UNCOVERED** (out of B1)
 - **Contract:** missing
 
-### M20-14 GET /api/marketplace/products
+### M20-14 `GET /api/marketplace/products`
 - **Roles:** any session
 - **Auth detail:** `requireAuth()`.
 - **Purpose:** S6 product search (BR-M20-05, V-M20-03).
@@ -2180,7 +2180,7 @@ Module conventions: every route is `requireAuth()` (any signed-in role; 401 "Una
 - **Card:** **UNCOVERED**
 - **Contract:** missing
 
-### M20-15 GET /api/marketplace/products/:slug
+### M20-15 `GET /api/marketplace/products/:slug`
 - **Roles:** any session
 - **Auth detail:** `requireAuth()`.
 - **Purpose:** S7 product page.
@@ -2192,7 +2192,7 @@ Module conventions: every route is `requireAuth()` (any signed-in role; 401 "Una
 - **Card:** **UNCOVERED**
 - **Contract:** missing
 
-### M20-16 POST /api/marketplace/products/:slug/whatsapp
+### M20-16 `POST /api/marketplace/products/:slug/whatsapp`
 - **Roles:** any session
 - **Auth detail:** `requireAuth()`.
 - **Purpose:** record a contact click and return the WhatsApp hand-off URL (BR-M20-21, D14: simulation of an external hand-off).
@@ -2204,7 +2204,7 @@ Module conventions: every route is `requireAuth()` (any signed-in role; 401 "Una
 - **Card:** **UNCOVERED**
 - **Contract:** missing
 
-### M20-17 GET /api/marketplace/sellers/:id
+### M20-17 `GET /api/marketplace/sellers/:id`
 - **Roles:** any session
 - **Auth detail:** `requireAuth()`; active sellers only (BR-M20-08).
 - **Purpose:** S8 public seller shop.
@@ -2222,7 +2222,7 @@ Mock: `src/modules/m21-sponsorship/mock/handlers/foster-application.ts`; wire ty
 
 **Scope status: sponsorship is out of B1** (plan section 2 non-goals; role `sponsor` has schema columns only; BE README backlog "M21 sponsorship" 2 routes). The one built route is however the Murid matrix row 15 "Mohon Keluarga Angkat" (`v2-cloud-gap.md` F-68, Replicate) and has no BE card, so it is **UNCOVERED**; the admin side (F-167, approving applications) has no route in the mock and is not documented here (OQ-API-B4-19).
 
-### M21-15 POST /api/mohon-keluarga-angkat
+### M21-15 `POST /api/mohon-keluarga-angkat`
 - **Roles:** any session
 - **Auth detail:** `requireAuth()`; the applicant is the session user (`applicantUserId`, `applicantRole` taken from the session, never from the body).
 - **Purpose:** foster-family ("keluarga angkat") application for a named student (BR-M21-13, V-M21-03).
@@ -2240,7 +2240,7 @@ Mock: `src/modules/m22-support-tickets/mock/handlers/tickets.ts`; wire types `ap
 
 Module conventions: ids are integers (OQ-API-B4-1); statuses `dibuka|dalam_proses|menunggu_balas|selesai|ditutup` with labels Dibuka, Dalam Proses, Menunggu Balas, Selesai, Ditutup (BR-M22-02). There is **no endpoint to reply to or change the status of a ticket** in the mock (read-only queue, BR-M22-16); `adminReply` is always null for runtime tickets (OQ-API-B4-21). Contract status: **missing**.
 
-### M22-01 GET /api/tiket
+### M22-01 `GET /api/tiket`
 - **Roles:** any session
 - **Auth detail:** `requireAuth()`; the user comes from the session (a `userId` query value is ignored, FR-M22-25): own tickets only.
 - **Purpose:** the caller's tickets.
@@ -2252,7 +2252,7 @@ Module conventions: ids are integers (OQ-API-B4-1); statuses `dibuka|dalam_prose
 - **Card:** BE-24
 - **Contract:** missing
 
-### M22-02 POST /api/tiket
+### M22-02 `POST /api/tiket`
 - **Roles:** any session
 - **Auth detail:** `requireAuth()`; the owner is the session user.
 - **Purpose:** create a ticket (BR-M22-03, BR-M22-12).
@@ -2264,7 +2264,7 @@ Module conventions: ids are integers (OQ-API-B4-1); statuses `dibuka|dalam_prose
 - **Card:** BE-24 (AC 3)
 - **Contract:** missing
 
-### M22-03 GET /api/admin/tiket
+### M22-03 `GET /api/admin/tiket`
 - **Roles:** admin
 - **Auth detail:** `adminOnly` (401 / 403 "This action is unauthorized.").
 - **Purpose:** the admin support queue (read-only).
@@ -2276,7 +2276,7 @@ Module conventions: ids are integers (OQ-API-B4-1); statuses `dibuka|dalam_prose
 - **Card:** BE-24 (AC 4)
 - **Contract:** missing
 
-### M22-04 GET /api/admin/tiket/open-count
+### M22-04 `GET /api/admin/tiket/open-count`
 - **Roles:** admin
 - **Auth detail:** `adminOnly`. Static path registered next to `/api/admin/tiket`.
 - **Purpose:** badge count of open tickets.

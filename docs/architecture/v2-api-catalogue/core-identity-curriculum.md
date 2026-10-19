@@ -101,10 +101,10 @@ Roles: `any` = any logged-in role; `public` = no session needed; `admin` = Admin
 | C-01 | GET | `/api/me` | any | BE-06 | missing |
 | C-02 | GET | `/api/me/gamification-summary` | any | BE-11 | missing |
 | C-03 | GET | `/api/admin/server-status` | admin | BE-22 | missing |
-| S-01 | GET | `/api/session` | any (contract) | BE-03 | exists (no mock) |
-| S-02 | POST | `/api/session/role` | any (contract) | BE-03 | exists (no mock) |
-| S-03 | POST | `/api/session/mode` | admin, school_admin (contract) | BE-03 | exists (no mock) |
-| S-04 | DELETE | `/api/session/mode` | any (contract) | BE-03 | exists (no mock) |
+| S-01 | GET | `/api/session` | any (contract) | BE-03 | exists |
+| S-02 | POST | `/api/session/role` | any (contract) | BE-03 | exists |
+| S-03 | POST | `/api/session/mode` | admin, school_admin (contract) | BE-03 | exists |
+| S-04 | DELETE | `/api/session/mode` | any (contract) | BE-03 | exists |
 | M01-01 | POST | `/api/auth/login` | public | BE-03 | partial |
 | M01-02 | POST | `/api/auth/register` | public | BE-06 | missing |
 | M01-03 | POST | `/api/auth/password/email` | public | BE-06 | missing |
