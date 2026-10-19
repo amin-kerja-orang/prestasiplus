@@ -1,9 +1,9 @@
 import { z } from '../zod'
 import { ListMetaSchema } from '../common/envelope'
-import { RoleCodeSchema } from '../common/enums'
+import { ROLE_CODES } from '../common/enums'
 import { IdSchema } from '../common/ids'
 import { TimestampSchema } from '../common/time'
-import { ClassLevelSchema, SchoolSummarySchema } from '../schools/schema'
+import { ClassLevelSchema, SchoolSummarySchema, V, enumField, optionalText, requiredText } from '../schools/schema'
 
 /**
  * M02 users wire contract (BE-05, contract-only). Source: the M02 mock handlers (`users-admin.ts`,
@@ -50,9 +50,10 @@ export const IcMaskedSchema = z
  * Role list of an account (replaces the mock single `role`). Rules shared with the session:
  * unique, `student` never combines with another role, `admin` is single-role.
  */
+const RoleInputSchema = enumField(ROLE_CODES, 'role')
 export const UserRolesSchema = z
-  .array(RoleCodeSchema)
-  .min(1)
+  .array(RoleInputSchema, { error: V.required('role') })
+  .min(1, { error: V.required('role') })
   .superRefine((roles, ctx) => {
     if (new Set(roles).size !== roles.length) ctx.addIssue({ code: 'custom', message: 'roles must be unique' })
     if (roles.includes('student') && roles.length > 1)
@@ -144,7 +145,7 @@ export const UserListQuerySchema = z
     schoolId: z.string().optional().meta({ description: 'School id; an unknown id gives an empty page.' }),
     isActive: z.string().optional().meta({ description: '"1" or "0"; other values mean no filter.' }),
     search: z.string().optional().meta({ description: 'Case-insensitive substring of name or e-mail.' }),
-    page: z.coerce.number().int().min(1).default(1),
+    page: z.string().optional().meta({ description: 'Page number; a missing, non-numeric or < 1 value is treated as 1 (not an error).' }),
   })
   .meta({ id: 'UserListQuery' })
 
@@ -152,18 +153,37 @@ export const UserFiltersSchema = z
   .object({ schools: z.array(z.object({ id: IdSchema, name: z.string().min(1) })) })
   .meta({ id: 'UserFilters' })
 
+/** An id in a body: an opaque string; blank means null. */
+const bodyId = z.string().max(64).nullish()
+/** Grade 1..11, sent as a number or a digit string (the mock accepts both). */
+const gradeField = z
+  .union([z.number().int(), z.string().regex(/^\d+$/)], { error: V.invalid('grade') })
+  .refine((v) => Number(v) >= 1 && Number(v) <= 11, { error: V.invalid('grade') })
+  .nullish()
+/** Laravel-style boolean as the mock reads it (true, 1, "1", "true", "on", "yes" are true; anything else false). */
+const looseBool = z.union([z.boolean(), z.number(), z.string()]).optional().meta({ description: 'Coerced like Laravel boolean(); never rejected.' })
+
 const fields = {
-  name: z.string().trim().min(1).max(255),
-  email: z.string().trim().email().max(255).nullish(),
-  username: z.string().trim().min(1).max(255).nullish(),
-  phone: z.string().trim().max(14).nullish(),
-  grade: z.number().int().min(1).max(11).nullish(),
-  icNumber: z.string().trim().max(14).nullish().meta({ description: 'Accepted on input only; stored as hash + mask.' }),
-  schoolId: IdSchema.nullish(),
-  linkedStudentIds: z.array(IdSchema).optional(),
-  ppdState: z.string().trim().min(1).nullish().meta({ description: 'A JPN name.' }),
-  ppdDistrict: z.string().trim().min(1).nullish().meta({ description: 'A PPD code of the chosen JPN (the school district value).' }),
-  isActive: z.boolean().optional(),
+  name: requiredText('name', 255),
+  email: z
+    .string({ error: V.string('email') })
+    .trim()
+    .email({ error: V.email('email') })
+    .max(255, { error: V.max('email', 255) })
+    .nullish()
+    .meta({ description: 'Unique, case-insensitive (server: 422 "The email has already been taken.").' }),
+  username: optionalText('username', 255).meta({ description: 'Unique per school (server).' }),
+  phone: optionalText('phone', 14),
+  grade: gradeField,
+  icNumber: optionalText('ic number', 14).meta({ description: 'Accepted on input only; stored as hash + mask.' }),
+  schoolId: bodyId.meta({ description: 'Must exist (server: 422 "The selected school id is invalid.").' }),
+  linkedStudentIds: z
+    .array(z.string().max(64), { error: V.invalid('linked student ids') })
+    .optional()
+    .meta({ description: 'Parents only; every id must be a student (server).' }),
+  ppdState: optionalText('ppd state', 255).meta({ description: 'A JPN name (server: "The selected ppd state is invalid.").' }),
+  ppdDistrict: optionalText('ppd district', 255).meta({ description: 'A PPD code of the chosen JPN (server: "The selected ppd district is invalid.").' }),
+  isActive: looseBool,
 }
 
 /** POST /admin/users. Field rules that depend only on the body; existence/uniqueness checks are the server's. */
@@ -171,17 +191,20 @@ export const CreateUserRequestSchema = z
   .object({
     roles: UserRolesSchema,
     ...fields,
-    password: z.string().min(PASSWORD_MIN),
-    passwordConfirmation: z.string(),
+    password: z
+      .string({ error: V.required('password') })
+      .min(1, { error: V.required('password') })
+      .min(PASSWORD_MIN, { error: V.min('password', PASSWORD_MIN) }),
+    passwordConfirmation: z.string().nullish(),
   })
   .superRefine((v, ctx) => {
     const bad = (path: string, message: string) => ctx.addIssue({ code: 'custom', path: [path], message })
-    if (v.password !== v.passwordConfirmation) bad('password', 'password confirmation does not match')
-    if (!v.email && !v.username) bad('email', 'email or username is required')
-    if (v.roles.includes('student') && v.grade == null) bad('grade', 'grade is required for student')
-    if (v.roles.includes('school_admin') && !v.schoolId) bad('schoolId', 'schoolId is required for school_admin')
-    if (v.roles.includes('ppd_officer') && !v.ppdState) bad('ppdState', 'ppdState is required for ppd_officer')
-    if (v.roles.includes('ppd_officer') && !v.ppdDistrict) bad('ppdDistrict', 'ppdDistrict is required for ppd_officer')
+    if (v.password !== v.passwordConfirmation) bad('password', V.confirmed('password'))
+    if (!v.email && !v.username) bad('email', V.required('email'))
+    if (v.roles.includes('student') && v.grade == null) bad('grade', V.requiredWhen('grade', 'role is student'))
+    if (v.roles.includes('school_admin') && !v.schoolId) bad('schoolId', V.requiredWhen('school id', 'role is school_admin'))
+    if (v.roles.includes('ppd_officer') && !v.ppdState) bad('ppdState', V.required('ppd state'))
+    if (v.roles.includes('ppd_officer') && !v.ppdDistrict) bad('ppdDistrict', V.requiredWhen('ppd district', 'role is ppd_officer'))
   })
   .meta({ id: 'CreateUserRequest' })
 export type CreateUserRequest = z.infer<typeof CreateUserRequestSchema>
@@ -195,12 +218,12 @@ export const UpdateUserRequestSchema = z
   .object({
     roles: UserRolesSchema,
     ...fields,
-    newPassword: z.string().min(PASSWORD_MIN).nullish(),
+    newPassword: z.string().min(PASSWORD_MIN, { error: V.min('new password', PASSWORD_MIN) }).nullish(),
     newPasswordConfirmation: z.string().nullish(),
   })
   .superRefine((v, ctx) => {
     if (v.newPassword && v.newPassword !== v.newPasswordConfirmation)
-      ctx.addIssue({ code: 'custom', path: ['newPassword'], message: 'password confirmation does not match' })
+      ctx.addIssue({ code: 'custom', path: ['newPassword'], message: V.confirmed('new password') })
   })
   .meta({ id: 'UpdateUserRequest' })
 export type UpdateUserRequest = z.infer<typeof UpdateUserRequestSchema>
@@ -210,7 +233,13 @@ export const UserToggleResultSchema = z.object({ isActive: z.boolean() }).meta({
 
 /** POST /admin/users/bulk-delete. Unknown ids are skipped; the acting account in the list is 422 `fields.ids`. */
 export const BulkDeleteRequestSchema = z
-  .object({ ids: z.array(IdSchema).min(1) })
+  .object({
+    ids: z
+      .array(z.string().max(64), {
+        error: (i) => (i.input === undefined || i.input === null ? V.required('ids') : 'The ids field must be an array of integers.'),
+      })
+      .min(1, { error: V.required('ids') }),
+  })
   .meta({ id: 'BulkDeleteRequest' })
 
 export const StudentSearchQuerySchema = z
@@ -225,14 +254,25 @@ export const ImportModeSchema = z.enum(IMPORT_MODES).meta({ id: 'ImportMode' })
 export const SCHOOL_REQUIRED_IMPORT_ROLES = ['teacher', 'school_admin'] as const
 
 const importBase = {
-  role: BulkImportRoleSchema,
-  defaultPassword: z.string().min(PASSWORD_MIN).nullish().meta({ description: 'Blank uses the configured bulk default.' }),
-  importMode: ImportModeSchema,
+  role: enumField(BULK_IMPORT_ROLES, 'role'),
+  defaultPassword: z
+    .string()
+    .refine((v) => v.trim() === '' || [...v.trim()].length >= PASSWORD_MIN, { error: V.min('default password', PASSWORD_MIN) })
+    .nullish()
+    .meta({ description: 'Blank or absent uses the configured bulk default.' }),
+  importMode: enumField(IMPORT_MODES, 'import mode'),
   pasteContent: z.string().nullish().meta({ description: 'Used when importMode is paste.' }),
 }
-const schoolRequired = (v: { role: string; schoolId?: string | null }, ctx: z.core.$RefinementCtx) => {
+const importRules = (
+  v: { role: string; schoolId?: string | null; importMode: string; csvFile?: string | null; pasteContent?: string | null },
+  ctx: z.core.$RefinementCtx,
+) => {
   if ((SCHOOL_REQUIRED_IMPORT_ROLES as readonly string[]).includes(v.role) && !v.schoolId)
-    ctx.addIssue({ code: 'custom', path: ['schoolId'], message: 'schoolId is required for this role' })
+    ctx.addIssue({ code: 'custom', path: ['schoolId'], message: V.required('school id') })
+  // No data rows is a 422 on the field of the chosen mode; blank text certainly has none.
+  const text = v.importMode === 'csv' ? v.csvFile : v.pasteContent
+  if (typeof text !== 'string' || text.trim() === '')
+    ctx.addIssue({ code: 'custom', path: [v.importMode === 'csv' ? 'csvFile' : 'pasteContent'], message: USER_MESSAGES.noData })
 }
 
 /**
@@ -241,14 +281,14 @@ const schoolRequired = (v: { role: string; schoolId?: string | null }, ctx: z.co
  * `fields.csvFile` or `fields.pasteContent`. The mock sets no file-size or row limit.
  */
 export const BulkImportRequestSchema = z
-  .object({ ...importBase, schoolId: IdSchema.nullish(), csvFile: z.string().nullish().meta({ description: 'CSV text, used when importMode is csv.' }) })
-  .superRefine(schoolRequired)
+  .object({ ...importBase, schoolId: bodyId, csvFile: z.string().nullish().meta({ description: 'CSV text, used when importMode is csv.' }) })
+  .superRefine(importRules)
   .meta({ id: 'BulkImportRequest' })
 
 /** The same request as multipart/form-data: every value is text and `csvFile` is the uploaded file. */
 export const BulkImportMultipartSchema = z
-  .object({ ...importBase, schoolId: z.string().nullish(), csvFile: z.string().meta({ format: 'binary' }).nullish() })
-  .superRefine(schoolRequired)
+  .object({ ...importBase, schoolId: bodyId, csvFile: z.string().meta({ format: 'binary' }).nullish() })
+  .superRefine(importRules)
   .meta({ id: 'BulkImportMultipartRequest' })
 
 export const ImportRowErrorSchema = z

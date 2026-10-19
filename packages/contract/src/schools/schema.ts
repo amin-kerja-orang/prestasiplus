@@ -14,6 +14,41 @@ export function statusEnvelopeOf<T extends z.ZodType>(data: T) {
   return z.object({ data, status: z.string().min(1).meta({ description: 'BM flash text for display.' }) })
 }
 
+/**
+ * Validation copy of the mock (Laravel defaults, English, with the attribute in words). The schemas
+ * below produce exactly these messages per field; `fields[name]` of a 422 carries them.
+ */
+export const V = {
+  required: (a: string) => `The ${a} field is required.`,
+  requiredWhen: (a: string, when: string) => `The ${a} field is required when ${when}.`,
+  invalid: (a: string) => `The selected ${a} is invalid.`,
+  email: (a: string) => `The ${a} field must be a valid email address.`,
+  string: (a: string) => `The ${a} field must be a string.`,
+  boolean: (a: string) => `The ${a} field must be true or false.`,
+  max: (a: string, n: number) => `The ${a} field must not be greater than ${String(n)} characters.`,
+  min: (a: string, n: number) => `The ${a} field must be at least ${String(n)} characters.`,
+  confirmed: (a: string) => `The ${a} field confirmation does not match.`,
+  taken: (a: string) => `The ${a} has already been taken.`,
+} as const
+
+const blank = (input: unknown) => input === undefined || input === null || input === ''
+
+/** Required trimmed text (a blank string counts as missing, as the mock turns it into null). */
+export const requiredText = (attr: string, max: number) =>
+  z
+    .string({ error: (i) => (blank(i.input) ? V.required(attr) : V.string(attr)) })
+    .trim()
+    .min(1, { error: V.required(attr) })
+    .max(max, { error: V.max(attr, max) })
+
+/** Optional trimmed text; blank means null. */
+export const optionalText = (attr: string, max: number) =>
+  z.string({ error: V.string(attr) }).trim().max(max, { error: V.max(attr, max) }).nullish()
+
+/** Enum with the mock required / invalid copy. */
+export const enumField = <T extends readonly [string, ...string[]]>(values: T, attr: string) =>
+  z.enum(values, { error: (i) => (blank(i.input) ? V.required(attr) : V.invalid(attr)) })
+
 /** Fixed page sizes of the mock lists (the client sends `page` only). */
 export const SCHOOLS_PAGE_SIZE = 30
 export const EXISTING_STUDENTS_LIMIT = 200
@@ -72,20 +107,23 @@ export const SchoolListQuerySchema = z
     search: z.string().optional().meta({ description: 'Substring of name or code.' }),
     state: z.string().optional().meta({ description: 'Exact full state name.' }),
     type: z.string().optional().meta({ description: 'Exact school type; an unknown value matches nothing.' }),
-    page: z.coerce.number().int().min(1).default(1),
+    page: z.string().optional().meta({ description: 'Page number; a missing, non-numeric or < 1 value is treated as 1 (not an error).' }),
   })
   .meta({ id: 'SchoolListQuery' })
 
 /** Body of POST/PUT /admin/schools. Strings are trimmed by the server; `district`/`city` may be empty. `joinCode` is never accepted. */
 export const SchoolInputSchema = z
   .object({
-    name: z.string().trim().min(1).max(255),
-    code: z.string().trim().min(1).max(20),
-    type: SchoolTypeSchema,
-    state: z.string().trim().min(1).max(255),
-    district: z.string().trim().max(255).nullish(),
-    city: z.string().trim().max(255).nullish(),
-    isActive: z.boolean().optional().meta({ description: 'Default true on create; absent keeps the stored value on update.' }),
+    name: requiredText('name', 255),
+    code: requiredText('code', 20).meta({ description: 'Unique, case-insensitive (server: 422 "The code has already been taken.").' }),
+    type: enumField(SCHOOL_TYPES, 'type'),
+    state: requiredText('state', 255).meta({ description: 'A known state name (server: 422 "The selected state is invalid.").' }),
+    district: optionalText('district', 255),
+    city: optionalText('city', 255),
+    isActive: z
+      .union([z.boolean(), z.literal(0), z.literal(1), z.literal('0'), z.literal('1')], { error: V.boolean('is active') })
+      .optional()
+      .meta({ description: 'true/false/1/0/"1"/"0". Default true on create; absent keeps the stored value on update.' }),
   })
   .meta({ id: 'SchoolInput' })
 export type SchoolInput = z.infer<typeof SchoolInputSchema>
@@ -93,15 +131,15 @@ export type SchoolInput = z.infer<typeof SchoolInputSchema>
 export const SchoolToggleResultSchema = z.object({ isActive: z.boolean() }).meta({ id: 'SchoolToggleResult' })
 
 /** GET /schools?all=1 (admin). Anything but `1` is 422 `fields.all`. */
-export const SchoolOptionsQuerySchema = z.object({ all: z.literal('1') }).meta({ id: 'SchoolOptionsQuery' })
+export const SchoolOptionsQuerySchema = z.object({ all: z.literal('1', { error: V.required('all') }) }).meta({ id: 'SchoolOptionsQuery' })
 
 /** GET /schools/search (public, active schools only, not paginated). */
 export const SchoolSearchQuerySchema = z
   .object({
     q: z.string().optional().meta({ description: 'Substring of name or code.' }),
     state: z.string().optional().meta({ description: 'Exact full state name; blank ignored.' }),
-    limit: z.coerce.number().int().min(1).optional().meta({ description: 'Default 20, no maximum.' }),
-    id: z.string().min(1).optional().meta({ description: 'One school by id; other filters ignored.' }),
+    limit: z.string().optional().meta({ description: 'Positive integer, default 20, no maximum; an invalid value is ignored (default used).' }),
+    id: z.string().optional().meta({ description: 'One school by id; other filters ignored.' }),
   })
   .meta({ id: 'SchoolSearchQuery' })
 

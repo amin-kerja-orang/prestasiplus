@@ -15,6 +15,7 @@ import {
   StudentSearchItemSchema,
   UpdateUserRequestSchema,
   UserListMetaSchema,
+  UserListQuerySchema,
   UserRolesSchema,
   USER_MESSAGES,
   usersDeletedText,
@@ -188,7 +189,7 @@ describe('bulk import', () => {
     expect(BulkImportRequestSchema.safeParse({ ...base, defaultPassword: '123' }).success).toBe(false)
   })
   it('multipart variant carries text ids', () => {
-    expect(BulkImportMultipartSchema.safeParse({ role: 'teacher', schoolId: '10', importMode: 'csv' }).success).toBe(true)
+    expect(BulkImportMultipartSchema.safeParse({ role: 'teacher', schoolId: '10', importMode: 'csv', csvFile: 'a,b' }).success).toBe(true)
   })
   it('result and messages match the mock', () => {
     const result = { created: 2, skipped: 1, failed: 1, errors: [{ line: 4, message: 'Emel tidak sah.' }] }
@@ -202,6 +203,64 @@ describe('bulk import', () => {
     expect(USER_MESSAGES.toggled).toBe('Status pengguna berjaya dikemaskini.')
     expect(USER_MESSAGES.ownDelete).toBe('Anda tidak boleh memadam akaun sendiri.')
     expect(USER_MESSAGES.noData).toBe('Tiada data untuk diimport.')
+  })
+})
+
+const msg = (r: { success: boolean; error?: { issues: { path: PropertyKey[]; message: string }[] } }, path: string) =>
+  r.error?.issues.find((i) => i.path.join('.') === path)?.message
+
+describe('user validation copy (mock messages)', () => {
+  it('create: required, length and e-mail copy', () => {
+    expect(msg(CreateUserRequestSchema.safeParse({}), 'name')).toBe('The name field is required.')
+    expect(msg(CreateUserRequestSchema.safeParse({}), 'roles')).toBe('The role field is required.')
+    expect(msg(CreateUserRequestSchema.safeParse({}), 'password')).toBe('The password field is required.')
+    expect(msg(CreateUserRequestSchema.safeParse({ ...create, roles: ['hantu'] }), 'roles.0')).toBe('The selected role is invalid.')
+    expect(msg(CreateUserRequestSchema.safeParse({ ...create, email: 'bukan-emel' }), 'email')).toBe('The email field must be a valid email address.')
+    expect(msg(CreateUserRequestSchema.safeParse({ ...create, email: null }), 'email')).toBe('The email field is required.')
+    expect(msg(CreateUserRequestSchema.safeParse({ ...create, name: 'x'.repeat(256) }), 'name')).toBe('The name field must not be greater than 255 characters.')
+    expect(msg(CreateUserRequestSchema.safeParse({ ...create, phone: '1'.repeat(15) }), 'phone')).toBe('The phone field must not be greater than 14 characters.')
+    expect(msg(CreateUserRequestSchema.safeParse({ ...create, icNumber: '1'.repeat(15) }), 'icNumber')).toBe('The ic number field must not be greater than 14 characters.')
+  })
+  it('create: password copy', () => {
+    expect(msg(CreateUserRequestSchema.safeParse({ ...create, password: '123', passwordConfirmation: '123' }), 'password')).toBe('The password field must be at least 6 characters.')
+    expect(msg(CreateUserRequestSchema.safeParse({ ...create, passwordConfirmation: 'lain' }), 'password')).toBe('The password field confirmation does not match.')
+  })
+  it('create: role-conditional copy', () => {
+    expect(msg(CreateUserRequestSchema.safeParse({ ...create, roles: ['student'], grade: null }), 'grade')).toBe('The grade field is required when role is student.')
+    expect(msg(CreateUserRequestSchema.safeParse({ ...create, roles: ['student'], grade: 12 }), 'grade')).toBe('The selected grade is invalid.')
+    expect(msg(CreateUserRequestSchema.safeParse({ ...create, roles: ['school_admin'], schoolId: null }), 'schoolId')).toBe('The school id field is required when role is school_admin.')
+    expect(msg(CreateUserRequestSchema.safeParse({ ...create, roles: ['ppd_officer'] }), 'ppdState')).toBe('The ppd state field is required.')
+    expect(msg(CreateUserRequestSchema.safeParse({ ...create, roles: ['ppd_officer'], ppdState: 'Johor' }), 'ppdDistrict')).toBe('The ppd district field is required when role is ppd_officer.')
+  })
+  it('accepts what the mock coerces: digit-string grade, loose isActive, blank optionals', () => {
+    expect(CreateUserRequestSchema.safeParse({ ...create, roles: ['student'], grade: '4' }).success).toBe(true)
+    for (const v of [true, 0, '1', 'yes', 'off']) expect(CreateUserRequestSchema.safeParse({ ...create, isActive: v }).success, String(v)).toBe(true)
+    expect(CreateUserRequestSchema.safeParse({ ...create, phone: '', username: '', schoolId: '', ppdState: '' }).success).toBe(true)
+  })
+  it('update: copy for new password', () => {
+    const update = { roles: ['teacher'], name: 'Guru Ujian', email: 'guru@example.test' }
+    expect(msg(UpdateUserRequestSchema.safeParse({ ...update, newPassword: '123' }), 'newPassword')).toBe('The new password field must be at least 6 characters.')
+    expect(msg(UpdateUserRequestSchema.safeParse({ ...update, newPassword: 'secret1', newPasswordConfirmation: 'x' }), 'newPassword')).toBe('The new password field confirmation does not match.')
+  })
+  it('bulk delete copy', () => {
+    expect(msg(BulkDeleteRequestSchema.safeParse({}), 'ids')).toBe('The ids field is required.')
+    expect(msg(BulkDeleteRequestSchema.safeParse({ ids: [] }), 'ids')).toBe('The ids field is required.')
+    expect(msg(BulkDeleteRequestSchema.safeParse({ ids: 'x' }), 'ids')).toBe('The ids field must be an array of integers.')
+  })
+  it('bulk import copy, incl. "Tiada data untuk diimport."', () => {
+    const base = { role: 'teacher', schoolId: '10', importMode: 'paste', pasteContent: 'Guru, guru@example.test' }
+    expect(msg(BulkImportRequestSchema.safeParse({}), 'role')).toBe('The role field is required.')
+    expect(msg(BulkImportRequestSchema.safeParse({ ...base, role: 'student' }), 'role')).toBe('The selected role is invalid.')
+    expect(msg(BulkImportRequestSchema.safeParse({ ...base, schoolId: null }), 'schoolId')).toBe('The school id field is required.')
+    expect(msg(BulkImportRequestSchema.safeParse({ ...base, defaultPassword: '123' }), 'defaultPassword')).toBe('The default password field must be at least 6 characters.')
+    expect(BulkImportRequestSchema.safeParse({ ...base, defaultPassword: '' }).success).toBe(true)
+    expect(msg(BulkImportRequestSchema.safeParse({ role: 'parent' }), 'importMode')).toBe('The import mode field is required.')
+    expect(msg(BulkImportRequestSchema.safeParse({ ...base, importMode: 'xlsx' }), 'importMode')).toBe('The selected import mode is invalid.')
+    expect(msg(BulkImportRequestSchema.safeParse({ ...base, pasteContent: '  ' }), 'pasteContent')).toBe('Tiada data untuk diimport.')
+    expect(msg(BulkImportRequestSchema.safeParse({ ...base, importMode: 'csv', csvFile: '' }), 'csvFile')).toBe('Tiada data untuk diimport.')
+  })
+  it('list query never rejects a page value', () => {
+    expect(UserListQuerySchema.safeParse({ page: 'abc', role: 'hantu', isActive: 'x' }).success).toBe(true)
   })
 })
 

@@ -70,19 +70,49 @@ describe('school input', () => {
   })
 })
 
+const msg = (r: { success: boolean; error?: { issues: { path: PropertyKey[]; message: string }[] } }, path: string) =>
+  r.error?.issues.find((i) => i.path.join('.') === path)?.message
+
+describe('school validation copy (mock messages)', () => {
+  const input = { name: 'SK Baru', code: 'NEW1', type: 'SMK', state: 'Kedah' }
+  it('required fields', () => {
+    expect(msg(SchoolInputSchema.safeParse({}), 'name')).toBe('The name field is required.')
+    expect(msg(SchoolInputSchema.safeParse({ ...input, name: '  ' }), 'name')).toBe('The name field is required.')
+    expect(msg(SchoolInputSchema.safeParse({ ...input, code: undefined }), 'code')).toBe('The code field is required.')
+    expect(msg(SchoolInputSchema.safeParse({ ...input, type: undefined }), 'type')).toBe('The type field is required.')
+    expect(msg(SchoolInputSchema.safeParse({ ...input, state: undefined }), 'state')).toBe('The state field is required.')
+  })
+  it('max, enum, string and boolean copy', () => {
+    expect(msg(SchoolInputSchema.safeParse({ ...input, name: 'x'.repeat(256) }), 'name')).toBe('The name field must not be greater than 255 characters.')
+    expect(msg(SchoolInputSchema.safeParse({ ...input, code: 'x'.repeat(21) }), 'code')).toBe('The code field must not be greater than 20 characters.')
+    expect(msg(SchoolInputSchema.safeParse({ ...input, type: 'Swasta' }), 'type')).toBe('The selected type is invalid.')
+    expect(msg(SchoolInputSchema.safeParse({ ...input, name: 5 }), 'name')).toBe('The name field must be a string.')
+    expect(msg(SchoolInputSchema.safeParse({ ...input, district: 5 }), 'district')).toBe('The district field must be a string.')
+    expect(msg(SchoolInputSchema.safeParse({ ...input, isActive: 'maybe' }), 'isActive')).toBe('The is active field must be true or false.')
+  })
+  it('accepts the Laravel booleans', () => {
+    for (const v of [true, false, 1, 0, '1', '0']) expect(SchoolInputSchema.safeParse({ ...input, isActive: v }).success, String(v)).toBe(true)
+  })
+  it('options query: all=1 required copy', () => {
+    expect(msg(SchoolOptionsQuerySchema.safeParse({}), 'all')).toBe('The all field is required.')
+  })
+})
+
 describe('queries and lookups', () => {
-  it('list query defaults page to 1', () => {
-    expect(SchoolListQuerySchema.parse({}).page).toBe(1)
-    expect(SchoolListQuerySchema.parse({ page: '3', state: 'Johor' }).page).toBe(3)
+  it('list query never rejects a page value (the server treats a bad one as 1)', () => {
+    expect(SchoolListQuerySchema.safeParse({}).success).toBe(true)
+    expect(SchoolListQuerySchema.safeParse({ page: 'abc', state: 'Johor' }).success).toBe(true)
+    expect(SchoolListQuerySchema.safeParse({ page: '0' }).success).toBe(true)
   })
   it('options query needs all=1', () => {
     expect(SchoolOptionsQuerySchema.safeParse({ all: '1' }).success).toBe(true)
     expect(SchoolOptionsQuerySchema.safeParse({}).success).toBe(false)
     expect(SchoolOptionsQuerySchema.safeParse({ all: '0' }).success).toBe(false)
   })
-  it('search query coerces limit', () => {
-    expect(SchoolSearchQuerySchema.parse({ q: 'sk', limit: '15' }).limit).toBe(15)
-    expect(SchoolSearchQuerySchema.safeParse({ limit: '0' }).success).toBe(false)
+  it('search query ignores a bad limit instead of rejecting it', () => {
+    expect(SchoolSearchQuerySchema.safeParse({ q: 'sk', limit: '15' }).success).toBe(true)
+    expect(SchoolSearchQuerySchema.safeParse({ limit: '0' }).success).toBe(true)
+    expect(SchoolSearchQuerySchema.safeParse({ limit: 'x' }).success).toBe(true)
   })
   it('JPN and PPD', () => {
     expect(JpnSchema.safeParse({ id: '1', code: 'JHR', name: 'Johor' }).success).toBe(true)
