@@ -43,6 +43,7 @@ model User {
   sessions     Session[]
   auditEvents  AuditEvent[]
   importJobs   ImportJob[]
+  files        File[]
 
   @@unique([legacySource, legacyId], map: "uq_users_legacy")
   @@index([schoolId], map: "ix_users_school_id")
