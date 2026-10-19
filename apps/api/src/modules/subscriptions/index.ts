@@ -1,0 +1,7 @@
+export { SubscriptionsModule } from './subscriptions.module'
+export { SubscriptionService, type TrialStatus } from './subscription.service'
+export { QuotaService, type QuotaFigures } from './quota.service'
+export { TRIAL_LIMIT } from './subscriptions.constants'
+export { SubscriptionsRepository } from './subscriptions.repository'
+export type { PackageRow, SubscriptionRecord, SubscriptionStatus, SubscriptionTier } from './subscriptions.repository'
+export { COMP_CLASSROOM_PORT, type CompClassroom, type CompClassroomPort, type CompEnrolmentView } from './comp-students/classroom.port'

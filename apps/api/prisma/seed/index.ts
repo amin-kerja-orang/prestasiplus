@@ -13,6 +13,7 @@ import { FixedClock, SEED_NOW, type Clock } from '../../src/db/clock'
 import { createPrismaClient, type PrismaClient } from '../../src/db/client'
 import { DEFAULT_SEED_BASE, type Prng, prngStream } from '../../src/db/prng'
 import { identitySeed } from './core/identity'
+import { schoolPackagesSeed } from './core/school-packages'
 import { schoolsSeed } from './core/schools'
 
 export const DEFAULT_PROFILE = 'poc'
@@ -30,16 +31,30 @@ export interface SeedContext {
 export interface SeedModule {
   /** Domain name, e.g. `core`, `curriculum`. */
   name: string
+  /**
+   * `reference`: structural data the system needs (catalogues); runs in EVERY environment, production included.
+   * `demo` (default): fictitious accounts and sample data; refused in production unless ALLOW_DEMO_SEED.
+   */
+  kind?: 'reference' | 'demo'
   /** Profiles this entry runs in. Omitted: runs in every profile. */
   profiles?: readonly string[]
   /** Idempotent and deterministic; fictitious data only. */
   run(ctx: SeedContext): Promise<void>
 }
 
-export const seedModules: SeedModule[] = [identitySeed, schoolsSeed]
+/**
+ * THE REFERENCE SET. Modules with `kind: 'reference'` run in EVERY environment, production included.
+ * The set is minimal and explicit: today it contains the school_packages catalogue only
+ * (`core-school-packages`), pinned by test/subscriptions/seed-production.spec.ts.
+ * Adding a reference module needs LEAD approval first, because demo data must never reach production.
+ * A reference seed must be idempotent and deterministic, carry no `legacy_*` values and contain no
+ * personal data. Everything else is demo (the default kind) and is refused in production unless
+ * ALLOW_DEMO_SEED.
+ */
+export const seedModules: SeedModule[] = [identitySeed, schoolsSeed, schoolPackagesSeed]
 
 /**
- * The seeds create demo accounts with a published password. They must never run against production
+ * Demo seeds create demo accounts with a published password. They must never run against production
  * unless the operator says so explicitly with `ALLOW_DEMO_SEED=true` (or `1`).
  */
 export function assertSeedAllowed(env: Record<string, string | undefined> = process.env): void {
@@ -51,17 +66,30 @@ export function assertSeedAllowed(env: Record<string, string | undefined> = proc
 }
 
 export interface RunSeedsOptions {
+  /** Environment read by the demo guard (default `process.env`). */
+  env?: Record<string, string | undefined>
   profile?: string
   prisma?: PrismaClient
   seedBase?: number
 }
 
-/** Runs the modules selected by the profile in declared order; returns the names that ran. */
+/**
+ * Runs the modules selected by the profile in declared order; returns the names that ran. In production
+ * without ALLOW_DEMO_SEED only `reference` modules run (the demo guard skips the demo ones), so
+ * `be:db:seed` in production loads reference data and nothing else.
+ */
 export async function runSeeds(
   modules: SeedModule[] = seedModules,
   options: RunSeedsOptions = {},
 ): Promise<string[]> {
-  assertSeedAllowed()
+  const env = options.env ?? process.env
+  // Demo modules are skipped (never loaded by mistake) when the demo guard refuses; reference modules always run.
+  let demoAllowed = true
+  try {
+    assertSeedAllowed(env)
+  } catch {
+    demoAllowed = false
+  }
   const profile = options.profile ?? DEFAULT_PROFILE
   const { prisma, seedBase = DEFAULT_SEED_BASE } = options
   const ctx: SeedContext = {
@@ -74,10 +102,21 @@ export async function runSeeds(
     },
   }
   const done: string[] = []
+  const skipped: string[] = []
   for (const m of modules) {
     if (m.profiles && !m.profiles.includes(profile)) continue
+    if ((m.kind ?? 'demo') === 'demo' && !demoAllowed) {
+      skipped.push(m.name)
+      continue
+    }
     await m.run(ctx)
     done.push(m.name)
+  }
+  // Say so loudly: an operator must see that demo data was refused, not silently absent (BE-03 H2).
+  if (skipped.length > 0) {
+    console.warn(
+      `seed: demo modules skipped in production (set ALLOW_DEMO_SEED=1 to load them): ${skipped.join(', ')}`,
+    )
   }
   return done
 }

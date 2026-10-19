@@ -1,0 +1,33 @@
+// Stored files (BE-04). One row per object kept by `FileStorage`; the bytes live outside the
+// database under `storage_key`. Other cards reference `files.id` and use `FilesService`.
+// Hand-written in migration 0005_files: identity column, CHECK constraints (text + check, no enums),
+// FK on delete set null. Conventions: docs/architecture/v2-backend-plan.md section 14.2.
+
+model File {
+  id           BigInt   @id @default(autoincrement())
+  /// The only id the API shows: random 128-bit base64url (22 chars). `id` never leaves the server.
+  publicId     String   @unique(map: "uq_files_public_id") @map("public_id")
+  /// Uploader. Set null when the user is deleted (the object stays until cleaned up).
+  ownerUserId  BigInt?  @map("owner_user_id")
+  /// avatar, bijak_photo, question_image, cms_image, plus the derived intake_* purposes. Open list (format check only).
+  purpose      String
+  /// Decided from the content (magic bytes), never from the client.
+  mime         String
+  sizeBytes    BigInt   @map("size_bytes")
+  /// SHA-256 (hex) of the stored bytes (de-duplication, integrity).
+  sha256       String
+  /// Server-generated key; never contains the client file name. Unique.
+  storageKey   String   @unique(map: "uq_files_storage_key") @map("storage_key")
+  /// Written while an admin is in Mod Pelajar (G-07).
+  isTest       Boolean  @default(false) @map("is_test")
+  createdAt    DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  legacySource String?  @map("legacy_source")
+  legacyId     String?  @map("legacy_id")
+
+  owner User? @relation(fields: [ownerUserId], references: [id], onDelete: SetNull, map: "fk_files_owner_user_id")
+
+  @@unique([legacySource, legacyId], map: "uq_files_legacy")
+  @@index([ownerUserId, purpose], map: "ix_files_owner_user_id_purpose")
+  @@index([sha256], map: "ix_files_sha256")
+  @@map("files")
+}
