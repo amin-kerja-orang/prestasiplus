@@ -209,6 +209,7 @@ export function assemble(account: AccountRecord, state: SessionState, csrf: stri
     landingPath: LANDING_PATHS[active.role],
     expiresAt: toMytTimestamp(state.expiresAt),
     csrf,
+    mustChangePassword: false, // placeholder until BE-06 wires accounts.must_change_password
   }
   const auth: AuthContext = {
     sessionRowId: state.id,

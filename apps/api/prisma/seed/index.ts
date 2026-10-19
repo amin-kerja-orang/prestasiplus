@@ -13,9 +13,13 @@ import { FixedClock, SEED_NOW, type Clock } from '../../src/db/clock'
 import { createPrismaClient, type PrismaClient } from '../../src/db/client'
 import { DEFAULT_SEED_BASE, type Prng, prngStream } from '../../src/db/prng'
 import { identitySeed } from './core/identity'
+import { populationSeed } from './core/population'
 import { schoolPackagesSeed } from './core/school-packages'
 import { schoolsSeed } from './core/schools'
 import { curriculumSeed } from './curriculum'
+import { assertSeedAllowed } from './guard'
+
+export { assertSeedAllowed }
 
 export const DEFAULT_PROFILE = 'poc'
 
@@ -52,19 +56,7 @@ export interface SeedModule {
  * personal data. Everything else is demo (the default kind) and is refused in production unless
  * ALLOW_DEMO_SEED.
  */
-export const seedModules: SeedModule[] = [identitySeed, schoolsSeed, schoolPackagesSeed, curriculumSeed]
-
-/**
- * Demo seeds create demo accounts with a published password. They must never run against production
- * unless the operator says so explicitly with `ALLOW_DEMO_SEED=true` (or `1`).
- */
-export function assertSeedAllowed(env: Record<string, string | undefined> = process.env): void {
-  if (env.NODE_ENV === 'production' && env.ALLOW_DEMO_SEED !== '1' && env.ALLOW_DEMO_SEED !== 'true') {
-    throw new Error(
-      'Refusing to seed demo data: NODE_ENV=production. Set ALLOW_DEMO_SEED=true (or 1) only if you really mean it. The database was not touched.',
-    )
-  }
-}
+export const seedModules: SeedModule[] = [identitySeed, schoolsSeed, schoolPackagesSeed, populationSeed, curriculumSeed]
 
 export interface RunSeedsOptions {
   /** Environment read by the demo guard (default `process.env`). */
