@@ -34660,6 +34660,25 @@
                 }
               }
             }
+          },
+          "429": {
+            "description": "RATE_LIMITED \"Terlalu banyak percubaan. Sila cuba sebentar lagi.\" The body carries retryAfter (seconds) and the Retry-After header carries the same value.",
+            "headers": {
+              "Retry-After": {
+                "description": "Seconds until a retry is allowed (same value as error.retryAfter).",
+                "schema": {
+                  "type": "integer",
+                  "minimum": 0
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
           }
         }
       }
@@ -34839,6 +34858,25 @@
                 }
               }
             }
+          },
+          "429": {
+            "description": "RATE_LIMITED \"Terlalu banyak percubaan. Sila cuba sebentar lagi.\" The body carries retryAfter (seconds) and the Retry-After header carries the same value.",
+            "headers": {
+              "Retry-After": {
+                "description": "Seconds until a retry is allowed (same value as error.retryAfter).",
+                "schema": {
+                  "type": "integer",
+                  "minimum": 0
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
           }
         }
       }
@@ -34944,6 +34982,25 @@
                 }
               }
             }
+          },
+          "429": {
+            "description": "RATE_LIMITED \"Terlalu banyak percubaan. Sila cuba sebentar lagi.\" The body carries retryAfter (seconds) and the Retry-After header carries the same value.",
+            "headers": {
+              "Retry-After": {
+                "description": "Seconds until a retry is allowed (same value as error.retryAfter).",
+                "schema": {
+                  "type": "integer",
+                  "minimum": 0
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
           }
         }
       }
@@ -35007,6 +35064,25 @@
           },
           "404": {
             "description": "NOT_FOUND \"Percubaan tidak ditemui\" (unknown attempt id).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "RATE_LIMITED \"Terlalu banyak percubaan. Sila cuba sebentar lagi.\" The body carries retryAfter (seconds) and the Retry-After header carries the same value.",
+            "headers": {
+              "Retry-After": {
+                "description": "Seconds until a retry is allowed (same value as error.retryAfter).",
+                "schema": {
+                  "type": "integer",
+                  "minimum": 0
+                }
+              }
+            },
             "content": {
               "application/json": {
                 "schema": {
@@ -35144,7 +35220,16 @@
             }
           },
           "429": {
-            "description": "RATE_LIMITED: check requests are rate-limited (NFR-05); the threshold is an open question of BE-16. Not in the mock.",
+            "description": "RATE_LIMITED \"Terlalu banyak percubaan. Sila cuba sebentar lagi.\" The body carries retryAfter (seconds) and the Retry-After header carries the same value.",
+            "headers": {
+              "Retry-After": {
+                "description": "Seconds until a retry is allowed (same value as error.retryAfter).",
+                "schema": {
+                  "type": "integer",
+                  "minimum": 0
+                }
+              }
+            },
             "content": {
               "application/json": {
                 "schema": {
@@ -35396,6 +35481,25 @@
           },
           "422": {
             "description": "VALIDATION_ERROR with fields.file \"Gambar mesti JPG atau PNG, maksimum 5 MB.\" or \"Maksimum 3 gambar bagi setiap bahagian.\", or fields.partId.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "RATE_LIMITED \"Terlalu banyak percubaan. Sila cuba sebentar lagi.\" The body carries retryAfter (seconds) and the Retry-After header carries the same value.",
+            "headers": {
+              "Retry-After": {
+                "description": "Seconds until a retry is allowed (same value as error.retryAfter).",
+                "schema": {
+                  "type": "integer",
+                  "minimum": 0
+                }
+              }
+            },
             "content": {
               "application/json": {
                 "schema": {
