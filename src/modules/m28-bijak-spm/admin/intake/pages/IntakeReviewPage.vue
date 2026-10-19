@@ -40,9 +40,11 @@ const isManual = computed(() => batch.value?.sourceKind === 'manual')
 const paperBack = computed(() =>
   batch.value?.forPaperId ? `/admin/spm/kertas/${encodeURIComponent(batch.value.forPaperId)}?menunggu=1` : '',
 )
-// The shell header (breadcrumb title) matches the page for a manual batch.
+// The shell header (breadcrumb title) and tab title match the page for a manual batch.
 watch(isManual, (m) => {
-  if (m) pageMeta.setHeader({ title: 'Tulis Soalan Manual', subtitle: 'Taip soalan sendiri tanpa PDF' })
+  if (!m) return
+  pageMeta.setHeader({ title: 'Tulis Soalan Manual', subtitle: 'Taip soalan sendiri tanpa PDF' })
+  pageMeta.setTitle('Tulis Soalan Manual - Admin PRESTASIPLUS')
 })
 const mobileTab = ref<'soalan' | 'sumber'>('soalan')
 const pageNo = ref(1)
