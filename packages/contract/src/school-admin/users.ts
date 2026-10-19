@@ -118,7 +118,7 @@ export const SchoolAdminResetPasswordRequestSchema = z
   .meta({ id: 'SchoolAdminResetPasswordRequest' })
 export type SchoolAdminResetPasswordRequest = z.infer<typeof SchoolAdminResetPasswordRequestSchema>
 
-/** Write result `{ data, status }` with the user (update: "Pengguna berjaya dikemaskini."; create teacher: "Pengguna berjaya didaftarkan."). */
+/** Write result `{ data, status }` with the user (update: "Pengguna berjaya dikemaskini."; the teacher create has its own result with the credential). */
 export const SchoolAdminUserWriteResultSchema = z
   .object({ data: SchoolAdminUserDetailSchema, status: z.string().min(1) })
   .meta({ id: 'SchoolAdminUserWriteResult' })

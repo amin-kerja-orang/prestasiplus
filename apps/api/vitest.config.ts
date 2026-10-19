@@ -14,8 +14,15 @@ export default defineConfig({
   ],
   test: {
     environment: 'node',
+    globalSetup: ['test/support/global-setup.ts'],
     include: ['test/**/*.spec.ts', 'src/**/*.spec.ts'],
-    env: { NODE_ENV: 'test', LOG_LEVEL: 'silent' },
+    env: {
+      NODE_ENV: 'test',
+      LOG_LEVEL: 'silent',
+      // Importing app.module validates the env; a closed port keeps tests without a DB honest.
+      DATABASE_URL: 'postgresql://test:test@127.0.0.1:1/none',
+    },
     testTimeout: 30_000,
+    hookTimeout: 120_000, // first run pulls the Postgres image
   },
 })

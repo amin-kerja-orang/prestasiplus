@@ -10,6 +10,8 @@ export const EnvSchema = z.object({
   NODE_ENV: z.enum(['development', 'test', 'production']),
   PORT: z.coerce.number().int().min(1).max(65535).default(3000),
   LOG_LEVEL: z.enum(LOG_LEVELS).default('info'),
+  // PC-1 block (BE-02). The message must not echo the value (it holds a password).
+  DATABASE_URL: z.string().regex(/^postgres(ql)?:\/\//, 'must be a postgresql:// URL'),
 })
 export type Env = z.infer<typeof EnvSchema>
 

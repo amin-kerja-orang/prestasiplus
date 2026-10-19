@@ -67,9 +67,7 @@ import {
 } from './rooms'
 import {
   GamesBetulSalahPayloadSchema,
-  GamesBetulSalahSubmitSchema,
   GamesCabaranKilatPayloadSchema,
-  GamesCabaranKilatSubmitSchema,
   GamesJutawanAnswerRequestSchema,
   GamesJutawanAnswerResponseSchema,
   GamesJutawanLifelineRequestSchema,
@@ -80,20 +78,32 @@ import {
   GamesJutawanStartResponseSchema,
   GamesJutawanSubjectSchema,
   GamesKadMemoriPayloadSchema,
-  GamesKadMemoriSubmitSchema,
   GamesSessionIdSchema,
   GamesSoloPayloadSchema,
   GamesSoloQuerySchema,
+  GAMES_SOLO_CHECK_EXAMPLES,
+  GamesBetulSalahCheckResultSchema,
+  GamesBetulSalahCheckSchema,
+  GamesCabaranKilatCheckResultSchema,
+  GamesCabaranKilatCheckSchema,
+  GamesKadMemoriCheckResultSchema,
+  GamesKadMemoriCheckSchema,
+  GamesKadMemoriFaceSchema,
+  GamesKadMemoriRevealRequestSchema,
+  GamesSoloCheckRequestSchema,
+  GamesSoloCheckResponseSchema,
   GamesSoloSubmitRequestSchema,
+  GamesSusunJawapanCheckResultSchema,
+  GamesSusunJawapanCheckSchema,
+  GamesTembakJawapanCheckResultSchema,
+  GamesTembakJawapanCheckSchema,
   GamesSoloSubmitResponseSchema,
   GamesSpinPageSchema,
   GamesSpinRefusedSchema,
   GamesSpinResponseSchema,
   GamesSpinSegmentSchema,
   GamesSusunJawapanPayloadSchema,
-  GamesSusunJawapanSubmitSchema,
   GamesTembakJawapanPayloadSchema,
-  GamesTembakJawapanSubmitSchema,
   GamesUjiMindaSchema,
   GamesWeeklyCompetitionSchema,
   GamesWeeklyRowSchema,
@@ -147,11 +157,20 @@ export const GAMES_COMPONENT_SCHEMAS = {
   GamesSusunJawapanPayload: GamesSusunJawapanPayloadSchema,
   GamesKadMemoriPayload: GamesKadMemoriPayloadSchema,
   GamesSoloPayload: GamesSoloPayloadSchema,
-  GamesBetulSalahSubmit: GamesBetulSalahSubmitSchema,
-  GamesCabaranKilatSubmit: GamesCabaranKilatSubmitSchema,
-  GamesTembakJawapanSubmit: GamesTembakJawapanSubmitSchema,
-  GamesSusunJawapanSubmit: GamesSusunJawapanSubmitSchema,
-  GamesKadMemoriSubmit: GamesKadMemoriSubmitSchema,
+  GamesBetulSalahCheck: GamesBetulSalahCheckSchema,
+  GamesCabaranKilatCheck: GamesCabaranKilatCheckSchema,
+  GamesTembakJawapanCheck: GamesTembakJawapanCheckSchema,
+  GamesSusunJawapanCheck: GamesSusunJawapanCheckSchema,
+  GamesKadMemoriCheck: GamesKadMemoriCheckSchema,
+  GamesBetulSalahCheckResult: GamesBetulSalahCheckResultSchema,
+  GamesCabaranKilatCheckResult: GamesCabaranKilatCheckResultSchema,
+  GamesTembakJawapanCheckResult: GamesTembakJawapanCheckResultSchema,
+  GamesSusunJawapanCheckResult: GamesSusunJawapanCheckResultSchema,
+  GamesKadMemoriCheckResult: GamesKadMemoriCheckResultSchema,
+  GamesKadMemoriFace: GamesKadMemoriFaceSchema,
+  GamesKadMemoriRevealRequest: GamesKadMemoriRevealRequestSchema,
+  GamesSoloCheckRequest: GamesSoloCheckRequestSchema,
+  GamesSoloCheckResponse: GamesSoloCheckResponseSchema,
   GamesSoloSubmitRequest: GamesSoloSubmitRequestSchema,
   GamesSoloSubmitResponse: GamesSoloSubmitResponseSchema,
   GamesSpinSegment: GamesSpinSegmentSchema,
@@ -225,12 +244,37 @@ const FORBIDDEN_ADMIN = err('FORBIDDEN "This action is unauthorized." (role is n
 const FORBIDDEN_ADMIN_WRITE = err(
   'FORBIDDEN "This action is unauthorized." (role is not admin), or CSRF_INVALID (missing or wrong X-CSRF-Token).',
 )
+/**
+ * D57(a): every write route (and the solo GET that creates a session row) can answer 429. Always the standard
+ * `{ error }` body, even on the raw-body routes (M16-29, M16-31, M16-33, M16-35), because the mock has no limiter
+ * and the live raw shape has no rate-limit case.
+ */
+const RATE_LIMITED = {
+  description:
+    'RATE_LIMITED (BM "Terlalu banyak percubaan. Sila cuba sebentar lagi."): body error.retryAfter and the Retry-After header carry the seconds to wait.',
+  headers: {
+    'Retry-After': {
+      description: 'Seconds until a retry is allowed (same value as error.retryAfter).',
+      schema: { type: 'integer' as const, minimum: 0 },
+    },
+  },
+  content: { 'application/json': { schema: ErrorBodySchema } },
+}
+/** D57(b): responses that carry join codes (room code, league invite code) or answer keys (the solo check, D58a) are never cached. */
+const NO_STORE_HEADERS = {
+  'Cache-Control': {
+    description: 'no-store: the body carries a join code or answer keys and must not be cached by browsers or proxies.',
+    schema: { type: 'string' as const, enum: ['no-store'] },
+  },
+}
+const noStore = (schema: z.ZodType, description: string) => ({ ...json(schema, description), headers: NO_STORE_HEADERS })
+
 const GAME_404 = 'NOT_FOUND "Permainan tidak dijumpai." (unknown game).'
 
 const TAGS = ['games']
 
 /**
- * Registers the 27 BE-45 routes: games hub and lobbies, rooms and the Papan Bijak quick match, solo
+ * Registers the 29 BE-45 routes: games hub and lobbies, rooms and the Papan Bijak quick match, solo
  * games, Roda Nasib, Jutawan Ilmu, the weekly board, Uji Minda, leagues, Sekolah Bersaing and the admin
  * game settings. Bodies are `{ data }` / `{ error }` except the raw routes M16-29 to M16-31, M16-33 and
  * M16-35 whose live-shaped bodies and raw error bodies are declared per route. The battle routes (BE-44)
@@ -245,8 +289,8 @@ export function registerGamesPaths(registry: OpenAPIRegistry): void {
     tags: TAGS,
     summary: 'Permainan hub: open rooms and chips (M16-22)',
     description:
-      'Up to 6 newest waiting rooms with a free seat, newest first. chips.battled comes from the battle read service (BE-44).',
-    responses: { 200: json(envelopeOf(GamesHubSchema), 'Open rooms and chips.'), 401: UNAUTHORIZED },
+      'Up to 6 newest waiting rooms with a free seat, newest first. chips.battled comes from the battle read service (BE-44). Lists open room codes: Cache-Control: no-store.',
+    responses: { 200: noStore(envelopeOf(GamesHubSchema), 'Open rooms and chips; Cache-Control: no-store.'), 401: UNAUTHORIZED },
   })
 
   registry.registerPath({
@@ -271,7 +315,8 @@ export function registerGamesPaths(registry: OpenAPIRegistry): void {
       'The caller becomes host and first (human) player; the room is waiting. Success is 201. Validation order: subject, grade_level, match_mode, grade_min, max_players.',
     request: { params: GameParam, headers: [csrf], body: body(GamesRoomCreateRequestSchema) },
     responses: {
-      201: json(envelopeOf(GamesRoomCodeResultSchema), 'Room created.'),
+      429: RATE_LIMITED,
+      201: noStore(envelopeOf(GamesRoomCodeResultSchema), 'Room created; the code is a join code, Cache-Control: no-store.'),
       401: UNAUTHORIZED,
       403: CSRF_INVALID,
       404: err(GAME_404),
@@ -290,7 +335,8 @@ export function registerGamesPaths(registry: OpenAPIRegistry): void {
       'Every refusal is 404 "Bilik tidak dijumpai." (blank code, unknown room, other game, not waiting, full, grade not allowed by the match mode). Already a player: 200 with the same code, no second row.',
     request: { params: GameParam, headers: [csrf], body: body(GamesRoomJoinRequestSchema) },
     responses: {
-      200: json(envelopeOf(GamesRoomCodeResultSchema), 'Joined (or already a player).'),
+      429: RATE_LIMITED,
+      200: noStore(envelopeOf(GamesRoomCodeResultSchema), 'Joined (or already a player); Cache-Control: no-store.'),
       401: UNAUTHORIZED,
       403: CSRF_INVALID,
       404: err('NOT_FOUND "Bilik tidak dijumpai." for every refusal, or "Permainan tidak dijumpai." (unknown game).'),
@@ -306,7 +352,7 @@ export function registerGamesPaths(registry: OpenAPIRegistry): void {
       'Only players of the room; others get 404. SIMULATION on read (D53(a)): a poll by the host of a waiting room below the minimum players (2, Kuiz Relay 4) adds one bot; server clocks advance or finish timed games (Perang Fakta 10 s rounds, Teka Silang Kata 5 minutes) and settle rewards once. The question is keyless.',
     request: { params: RoomParams },
     responses: {
-      200: json(envelopeOf(GamesRoomViewSchema), 'The room.'),
+      200: noStore(envelopeOf(GamesRoomViewSchema), 'The room; Cache-Control: no-store.'),
       401: UNAUTHORIZED,
       404: err('NOT_FOUND "Bilik tidak dijumpai." (unknown, other game, or caller is not a player), or "Permainan tidak dijumpai.".'),
     },
@@ -320,6 +366,7 @@ export function registerGamesPaths(registry: OpenAPIRegistry): void {
     description: 'Host only. Draws the question pool for the room subject and the host level. No body.',
     request: { params: RoomParams, headers: [csrf] },
     responses: {
+      429: RATE_LIMITED,
       200: json(envelopeOf(GamesRoomViewSchema), 'The playing room.'),
       401: UNAUTHORIZED,
       403: FORBIDDEN_CSRF_OR('"Hanya hos boleh memulakan permainan." (caller is not the host)'),
@@ -337,6 +384,7 @@ export function registerGamesPaths(registry: OpenAPIRegistry): void {
       'Only the room human (the host) acts; every other player is a bot. If a server clock ended the game just before the action, the finished room is returned instead of an error. On finish: standings and one reward report for the caller.',
     request: { params: RoomParams, headers: [csrf], body: body(GamesRoomActionRequestSchema) },
     responses: {
+      429: RATE_LIMITED,
       200: json(envelopeOf(GamesRoomViewSchema), 'The room after the action.'),
       401: UNAUTHORIZED,
       403: FORBIDDEN_CSRF_OR('"Bukan giliran anda." (caller is not the room human)'),
@@ -358,6 +406,7 @@ export function registerGamesPaths(registry: OpenAPIRegistry): void {
     description: 'RAW live-shaped body (no `{ data }`). The 422 body is raw `{ error: "<BM>" }`, not the standard error body.',
     request: { headers: [csrf], body: body(GamesQuickMatchStartRequestSchema) },
     responses: {
+      429: RATE_LIMITED,
       200: json(GamesQuickMatchStartResponseSchema, 'Searching.'),
       401: UNAUTHORIZED,
       403: CSRF_INVALID,
@@ -381,7 +430,7 @@ export function registerGamesPaths(registry: OpenAPIRegistry): void {
     summary: 'Cancel the quick match (M16-31)',
     description: 'RAW body. Always answers cancelled and turns a searching row into cancelled.',
     request: { headers: [csrf] },
-    responses: { 200: json(GamesQuickMatchCancelResponseSchema, 'Cancelled.'), 401: UNAUTHORIZED, 403: CSRF_INVALID },
+    responses: { 429: RATE_LIMITED, 200: json(GamesQuickMatchCancelResponseSchema, 'Cancelled.'), 401: UNAUTHORIZED, 403: CSRF_INVALID },
   })
 
   // ---- single-player games --------------------------------------------------------------------------------------
@@ -392,13 +441,70 @@ export function registerGamesPaths(registry: OpenAPIRegistry): void {
     tags: TAGS,
     summary: 'Start a single-player game session (M16-32)',
     description:
-      'Creates a session row and returns its items. SECURITY EXCEPTION (SEC-M16-01, BE-45 Open question 8): as in the mock, this payload carries the answer keys (is_true, correct, answer, pair_id).',
+      'Creates a session row and returns its items. D58a: the payload is keyless; no answer key (is_true, correct, answer, pair_id) is sent before the answer. Each answer is checked by POST /games/solo/{game}/check. Kad Memori: the board has only opaque card ids, the count and the layout, face-down; a face comes only from the reveal route (first card of a move) and the check response.',
     request: { params: SoloGameParam, query: GamesSoloQuerySchema },
     responses: {
-      200: json(envelopeOf(GamesSoloPayloadSchema), 'The session id and the items of the game.'),
+      429: RATE_LIMITED,
+      200: json(envelopeOf(GamesSoloPayloadSchema), 'The session id and the keyless items of the game.'),
       401: UNAUTHORIZED,
       404: err(GAME_404),
       422: err('VALIDATION_ERROR "Tahap tidak sah." (fields.darjah): darjah outside 1..11.'),
+    },
+  })
+
+  const checkExamples = <K extends 'request' | 'response'>(kind: K) =>
+    Object.fromEntries(
+      Object.entries(GAMES_SOLO_CHECK_EXAMPLES).map(([game, ex]) => [game, { summary: `${game} (${kind === 'request' ? 'GamesXxxCheck' : 'GamesXxxCheckResult'})`, value: kind === 'request' ? ex.request : { data: ex.response } }]),
+    )
+
+  registry.registerPath({
+    method: 'post',
+    path: '/games/solo/{game}/check',
+    tags: TAGS,
+    summary: 'Check one single-player answer (D58a) [PROPOSED route, not in the mock]',
+    description:
+      'Modelled on the Bijak "Semak" check (/bijak/attempts/{id}/questions/{questionId}/check). Own session only. The path parameter `game` selects the body and the result: betul-salah = GamesBetulSalahCheck / GamesBetulSalahCheckResult, cabaran-kilat = GamesCabaranKilatCheck / GamesCabaranKilatCheckResult, tembak-jawapan = GamesTembakJawapanCheck / GamesTembakJawapanCheckResult, susun-jawapan = GamesSusunJawapanCheck / GamesSusunJawapanCheckResult, kad-memori = GamesKadMemoriCheck / GamesKadMemoriCheckResult (one named component each; request and response `examples` are keyed by game). A body of another game is 422. ' +
+      'The server checks the answer against the stored key, stores the check, and returns correct/wrong plus the key of that item, revealed only now ({ data }). One check per item: a second check of the same item is 409 (so the key cannot be probed by retrying). ' +
+      'Kad Memori: the body names two cards by opaque id; the response carries BOTH faces (the board never does), correct when they are a pair, and pair_id only on a match (null on a mismatch); a mismatch may be repeated, a card of an already matched pair is 409, and if another card is open (revealed, not checked) 409 "Sila padankan kad yang dibuka dahulu." [PROPOSED]. Every stored check feeds the final submit (moves = number of Kad Memori checks). ' +
+      'Standard `{ error }` bodies. All BM texts of this route are [PROPOSED] (the mock has no check route): 404 "Sesi tidak dijumpai." and "Soalan tidak dijumpai." (copy reused from Jutawan), 409 "Soalan sudah dijawab.", "Kad sudah dipadankan.", 422 "Jawapan tidak sah." (reused). The response carries answer keys, so Cache-Control: no-store.',
+    request: {
+      params: SoloGameParam,
+      headers: [csrf],
+      body: {
+        required: true,
+        content: { 'application/json': { schema: GamesSoloCheckRequestSchema, examples: checkExamples('request') } },
+      },
+    },
+    responses: {
+      429: RATE_LIMITED,
+      200: {
+        ...noStore(envelopeOf(GamesSoloCheckResponseSchema), 'Correct or wrong plus the key of the item (per-game GamesXxxCheckResult); Cache-Control: no-store.'),
+        content: { 'application/json': { schema: envelopeOf(GamesSoloCheckResponseSchema), examples: checkExamples('response') } },
+      },
+      401: UNAUTHORIZED,
+      403: CSRF_INVALID,
+      404: err('NOT_FOUND "Permainan tidak dijumpai." (unknown game), "Sesi tidak dijumpai." [PROPOSED] (unknown or foreign session) or "Soalan tidak dijumpai." [PROPOSED] (item or card not in the session).'),
+      409: err('CONFLICT "Keputusan sudah dihantar." (session already submitted), "Soalan sudah dijawab." [PROPOSED] (item already checked), "Kad sudah dipadankan." [PROPOSED] (Kad Memori: card already matched) or "Sila padankan kad yang dibuka dahulu." [PROPOSED] (Kad Memori: another card is open).'),
+      422: err('VALIDATION_ERROR "Jawapan tidak sah." [PROPOSED] (answer, option or card value, a body of another game, or the same card twice).'),
+    },
+  })
+
+  registry.registerPath({
+    method: 'post',
+    path: '/games/solo/kad-memori/reveal',
+    tags: TAGS,
+    summary: 'Reveal one Kad Memori face (D58a) [PROPOSED route, LEAD decision pending]',
+    description:
+      'The mock page shows the face of the first flipped card at once, so the first card of a move needs a reveal; the second card comes with the check response. Static path: wins over `/games/solo/{game}/...`. At most one card may be open (revealed and not yet checked): a second reveal is 409 "Sila padankan kad yang dibuka dahulu." [PROPOSED], and the open card is closed by the next check naming it, so reveals never outnumber moves by more than one and the faces cannot be read without playing. A matched card is 409 "Kad sudah dipadankan." [PROPOSED]. If the LEAD prefers faces via the check response only, drop this route and the page shows the first card face-down until the second tap. Standard `{ error }` bodies; the face is not a key but is sent no-store.',
+    request: { headers: [csrf], body: body(GamesKadMemoriRevealRequestSchema) },
+    responses: {
+      429: RATE_LIMITED,
+      200: noStore(envelopeOf(GamesKadMemoriFaceSchema), 'The face of the card; Cache-Control: no-store.'),
+      401: UNAUTHORIZED,
+      403: CSRF_INVALID,
+      404: err('NOT_FOUND "Sesi tidak dijumpai." [PROPOSED] (unknown or foreign session) or "Soalan tidak dijumpai." [PROPOSED] (card not in the session).'),
+      409: err('CONFLICT "Keputusan sudah dihantar.", "Kad sudah dipadankan." [PROPOSED] or "Sila padankan kad yang dibuka dahulu." [PROPOSED].'),
+      422: err('VALIDATION_ERROR "Jawapan tidak sah." [PROPOSED] (card id).'),
     },
   })
 
@@ -408,15 +514,16 @@ export function registerGamesPaths(registry: OpenAPIRegistry): void {
     tags: TAGS,
     summary: 'Submit a single-player result (M16-33)',
     description:
-      'RAW live-shaped bodies; errors are raw `{ message }` (404, 409, 422), not the standard error body. Own session only, one submit per session. A first result is a record, later ones only if they exceed the stored best.',
+      'D58a: the body is only the session id; the server computes score, counts, streak, combo, level and coins from the stored checks and ignores any value the client sends. RAW live-shaped bodies; errors are raw `{ message }` (404, 409, 422), not the standard error body. Own session only, one submit per session. A first result is a record, later ones only if they exceed the stored best. The response also returns the computed values ([PROPOSED] fields).',
     request: { params: SoloGameParam, headers: [csrf], body: body(GamesSoloSubmitRequestSchema) },
     responses: {
-      200: json(GamesSoloSubmitResponseSchema, '{ is_new_record, syiling_awarded } or, for Kad Memori, { results }.'),
+      429: RATE_LIMITED,
+      200: json(GamesSoloSubmitResponseSchema, '{ is_new_record, syiling_awarded, score, correct_count, total_answered } or, for Kad Memori, { results: { syiling_earned, accuracy, moves, time_seconds } }.'),
       401: UNAUTHORIZED,
       403: CSRF_INVALID,
       404: json(GamesRawMessageSchema, 'Raw `{ message: "Permainan tidak dijumpai." }`.'),
       409: json(GamesRawMessageSchema, 'Raw `{ message: "Keputusan sudah dihantar." }`.'),
-      422: json(GamesRawMessageSchema, 'Raw `{ message: "Keputusan tidak sah." }` (unknown or foreign session, or values beyond the bounds).'),
+      422: json(GamesRawMessageSchema, 'Raw `{ message: "Keputusan tidak sah." }` (unknown or foreign session, no stored check, or Kad Memori with fewer than 6 matched pairs).'),
     },
   })
 
@@ -438,6 +545,7 @@ export function registerGamesPaths(registry: OpenAPIRegistry): void {
     description: 'RAW body. The segment is drawn server-side by the weights. A second spin the same day is 409 raw `{ success: false, message }`.',
     request: { headers: [csrf] },
     responses: {
+      429: RATE_LIMITED,
       200: json(GamesSpinResponseSchema, 'Spin result.'),
       401: UNAUTHORIZED,
       403: CSRF_INVALID,
@@ -469,6 +577,7 @@ export function registerGamesPaths(registry: OpenAPIRegistry): void {
     description: 'Success is 200 (not 201). The first question is keyless.',
     request: { headers: [csrf], body: body(GamesJutawanStartRequestSchema) },
     responses: {
+      429: RATE_LIMITED,
       200: json(envelopeOf(GamesJutawanStartResponseSchema), 'Session, question 1 and 3 lifelines.'),
       401: UNAUTHORIZED,
       403: CSRF_INVALID,
@@ -485,6 +594,7 @@ export function registerGamesPaths(registry: OpenAPIRegistry): void {
       'Own session only. A wrong answer or level 15 ends the game with `result`; otherwise `next` is the keyless next question. On end the best level and games count are updated and one reward report is made.',
     request: { params: SessionParams, headers: [csrf], body: body(GamesJutawanAnswerRequestSchema) },
     responses: {
+      429: RATE_LIMITED,
       200: json(envelopeOf(GamesJutawanAnswerResponseSchema), 'Answer outcome.'),
       401: UNAUTHORIZED,
       403: CSRF_INVALID,
@@ -502,6 +612,7 @@ export function registerGamesPaths(registry: OpenAPIRegistry): void {
     description: 'Removes two wrong options of the current question and remembers the removal for it.',
     request: { params: SessionParams, headers: [csrf], body: body(GamesJutawanLifelineRequestSchema) },
     responses: {
+      429: RATE_LIMITED,
       200: json(envelopeOf(GamesJutawanLifelineResponseSchema), 'Removed options and lifelines left.'),
       401: UNAUTHORIZED,
       403: CSRF_INVALID,
@@ -551,6 +662,7 @@ export function registerGamesPaths(registry: OpenAPIRegistry): void {
       'Any signed-in role. The league is upcoming with an 8-character invite code (A-Z0-9); the creator school (if any) joins. Success is 201.',
     request: { headers: [csrf], body: body(GamesLeagueCreateRequestSchema) },
     responses: {
+      429: RATE_LIMITED,
       201: json(envelopeOf(GamesLeagueIdResultSchema), 'League created.'),
       401: UNAUTHORIZED,
       403: CSRF_INVALID,
@@ -568,6 +680,7 @@ export function registerGamesPaths(registry: OpenAPIRegistry): void {
     description: 'The caller school joins. Static path: wins over `/leagues/{id}`.',
     request: { headers: [csrf], body: body(GamesLeagueJoinRequestSchema) },
     responses: {
+      429: RATE_LIMITED,
       200: json(envelopeOf(GamesLeagueIdResultSchema), 'Joined.'),
       401: UNAUTHORIZED,
       403: CSRF_INVALID,
@@ -585,7 +698,7 @@ export function registerGamesPaths(registry: OpenAPIRegistry): void {
     description: 'The invite code and share link are visible to non-members, as live.',
     request: { params: LeagueParams },
     responses: {
-      200: json(envelopeOf(GamesLeagueDetailSchema), 'League detail.'),
+      200: noStore(envelopeOf(GamesLeagueDetailSchema), 'League detail with the invite code; Cache-Control: no-store.'),
       401: UNAUTHORIZED,
       404: err('NOT_FOUND "Liga tidak dijumpai.".'),
     },
@@ -623,6 +736,7 @@ export function registerGamesPaths(registry: OpenAPIRegistry): void {
     description: 'Role admin only. The mock writes no audit event.',
     request: { headers: [csrf], body: body(GamesAdminSettingsUpdateRequestSchema) },
     responses: {
+      429: RATE_LIMITED,
       200: json(envelopeOf(GamesAdminSettingsResultSchema), 'Saved.'),
       401: UNAUTHORIZED,
       403: FORBIDDEN_ADMIN_WRITE,

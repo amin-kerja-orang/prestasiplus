@@ -96,13 +96,16 @@ export const ACCOUNT_THROTTLE = {
 export const ACCOUNT_RESET_TOKEN_RULES = {
   minEntropyBits: 128,
   summary:
-    'The token is at least 128 bits from a CSPRNG; only its hash is stored; it is valid 60 minutes and single use; issuing a new token revokes every earlier unused token of that user (one active token); a successful reset consumes every outstanding token of the user; the stored hash is compared in constant time; an inactive account is never issued a token; the token is bound to the e-mail it was issued for and is redeemable only with that same e-mail.',
+    'The token is at least 128 bits from a CSPRNG; only its hash is stored; it is valid 60 minutes and single use; issuing a new token revokes every earlier unused token of that user (one active token); a successful reset consumes every outstanding token of the user; the stored hash is compared in constant time; an inactive account is never issued a token; a successful reset-ic and a successful reset notify the account owner AND the school (D59a, see ACCOUNT_SECURITY_NOTIFICATIONS); the token is bound to the e-mail it was issued for and is redeemable only with that same e-mail.',
 } as const
 
 /**
  * Proposed BM copy of the in-app security notices (NotificationsService.push, type is a free code)
  * sent to the account owner when a reset token is issued by IC and when a password is reset, so a
- * takeover is visible. No existing frontend string; the lead confirms.
+ * takeover is visible, and (D59a) to the school of the account: the school admins of the user's school,
+ * through the same service; an account without a school notifies only its owner. The school notice
+ * names the user by display name only (never the IC, e-mail or token); `{name}` in the body is
+ * replaced by the display name. [PROPOSED] copy, no existing frontend string; the lead confirms.
  */
 export const ACCOUNT_SECURITY_NOTIFICATIONS = {
   resetIcIssued: {
@@ -114,6 +117,12 @@ export const ACCOUNT_SECURITY_NOTIFICATIONS = {
     type: 'password_reset',
     title: 'Kata laluan telah ditetapkan semula',
     body: 'Kata laluan akaun anda telah ditetapkan semula. Jika bukan anda, sila hubungi pentadbir.',
+  },
+  /** D59a: to the school admins of the user's school, after a successful reset-ic or reset. */
+  schoolNotice: {
+    type: 'student_password_reset',
+    title: 'Kata laluan murid ditetapkan semula',
+    body: 'Kata laluan akaun {name} telah ditetapkan semula. Jika ini tidak dijangka, sila semak dengan murid berkenaan.',
   },
 } as const
 

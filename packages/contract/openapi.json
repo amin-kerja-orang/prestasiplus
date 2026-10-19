@@ -20826,10 +20826,6 @@
                 "statement": {
                   "type": "string"
                 },
-                "is_true": {
-                  "type": "boolean",
-                  "description": "ANSWER KEY shipped to the client by design (SEC-M16-01)."
-                },
                 "difficulty": {
                   "type": "integer",
                   "minimum": 1
@@ -20838,7 +20834,6 @@
               "required": [
                 "id",
                 "statement",
-                "is_true",
                 "difficulty"
               ],
               "additionalProperties": false
@@ -20894,16 +20889,11 @@
                       },
                       "text": {
                         "type": "string"
-                      },
-                      "correct": {
-                        "type": "boolean",
-                        "description": "ANSWER KEY shipped to the client by design (SEC-M16-01)."
                       }
                     },
                     "required": [
                       "id",
-                      "text",
-                      "correct"
+                      "text"
                     ],
                     "additionalProperties": false
                   }
@@ -20963,15 +20953,10 @@
                     "properties": {
                       "text": {
                         "type": "string"
-                      },
-                      "correct": {
-                        "type": "boolean",
-                        "description": "ANSWER KEY shipped to the client by design (SEC-M16-01)."
                       }
                     },
                     "required": [
-                      "text",
-                      "correct"
+                      "text"
                     ],
                     "additionalProperties": false
                   }
@@ -21020,10 +21005,6 @@
                 "question": {
                   "type": "string"
                 },
-                "answer": {
-                  "type": "string",
-                  "description": "ANSWER KEY shipped to the client by design (SEC-M16-01)."
-                },
                 "scrambled": {
                   "type": "array",
                   "items": {
@@ -21049,7 +21030,6 @@
               "required": [
                 "id",
                 "question",
-                "answer",
                 "scrambled",
                 "type",
                 "difficulty",
@@ -21087,48 +21067,56 @@
               "type": "object",
               "properties": {
                 "id": {
-                  "type": "integer",
-                  "minimum": 1,
-                  "maximum": 12
-                },
-                "pair_id": {
-                  "type": "integer",
-                  "minimum": 0,
-                  "maximum": 5,
-                  "description": "ANSWER KEY shipped to the client by design (SEC-M16-01)."
-                },
-                "type": {
                   "type": "string",
-                  "enum": [
-                    "question",
-                    "answer"
-                  ]
-                },
-                "content": {
-                  "type": "string"
-                },
-                "difficulty": {
-                  "type": "integer",
-                  "minimum": 1
+                  "minLength": 1,
+                  "maxLength": 64,
+                  "description": "Opaque card id of this session (not a pair index).",
+                  "example": "1042"
                 }
               },
               "required": [
-                "id",
-                "pair_id",
-                "type",
-                "content",
-                "difficulty"
+                "id"
               ],
               "additionalProperties": false
             },
             "maxItems": 12
+          },
+          "count": {
+            "type": "number",
+            "enum": [
+              12
+            ],
+            "description": "[PROPOSED] Number of cards (6 pairs)."
+          },
+          "layout": {
+            "type": "object",
+            "properties": {
+              "columns": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 12
+              },
+              "rows": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 12
+              }
+            },
+            "required": [
+              "columns",
+              "rows"
+            ],
+            "additionalProperties": false,
+            "description": "[PROPOSED] Default board grid (4 x 3); the client may reflow it responsively."
           }
         },
         "required": [
           "sessionId",
           "personalBest",
           "canEarnSyiling",
-          "cards"
+          "cards",
+          "count",
+          "layout"
         ],
         "additionalProperties": false
       },
@@ -21150,199 +21138,335 @@
             "$ref": "#/components/schemas/GamesKadMemoriPayload"
           }
         ],
-        "description": "The payload of the requested game: statements (betul-salah), questions (cabaran-kilat, tembak-jawapan), puzzles (susun-jawapan) or cards (kad-memori). A session row is created by the GET."
+        "description": "The keyless payload of the requested game: statements (betul-salah), questions (cabaran-kilat, tembak-jawapan), puzzles (susun-jawapan) or cards (kad-memori). A session row is created by the GET. No answer key is present (D58a)."
       },
-      "GamesBetulSalahSubmit": {
+      "GamesBetulSalahCheck": {
         "type": "object",
         "properties": {
           "session_id": {
             "$ref": "#/components/schemas/GamesSessionId"
           },
-          "correct_count": {
-            "type": "integer",
-            "minimum": 0
+          "item_id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 64,
+            "description": "Id of the statement, question or puzzle in the payload of this session.",
+            "example": "1042"
           },
-          "total_answered": {
-            "type": "integer",
-            "minimum": 0
-          },
-          "streak": {
-            "type": "integer",
-            "minimum": 0
-          },
-          "score": {
-            "type": "integer",
-            "minimum": 0
-          },
-          "syiling_earned": {
-            "type": "integer",
-            "minimum": 0
+          "answer": {
+            "type": "boolean"
           }
         },
         "required": [
           "session_id",
-          "correct_count",
-          "total_answered",
-          "streak",
-          "score",
-          "syiling_earned"
+          "item_id",
+          "answer"
         ]
       },
-      "GamesCabaranKilatSubmit": {
+      "GamesCabaranKilatCheck": {
         "type": "object",
         "properties": {
           "session_id": {
             "$ref": "#/components/schemas/GamesSessionId"
           },
-          "correct_count": {
-            "type": "integer",
-            "minimum": 0
+          "item_id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 64,
+            "description": "Id of the statement, question or puzzle in the payload of this session.",
+            "example": "1042"
           },
-          "total_answered": {
+          "option_id": {
             "type": "integer",
-            "minimum": 0
-          },
-          "max_combo": {
-            "type": "integer",
-            "minimum": 0
-          },
-          "score": {
-            "type": "integer",
-            "minimum": 0
-          },
-          "syiling_earned": {
-            "type": "integer",
-            "minimum": 0
+            "minimum": 0,
+            "maximum": 3,
+            "description": "The id (0..3) of the chosen option."
           }
         },
         "required": [
           "session_id",
-          "correct_count",
-          "total_answered",
-          "max_combo",
-          "score",
-          "syiling_earned"
+          "item_id",
+          "option_id"
         ]
       },
-      "GamesTembakJawapanSubmit": {
+      "GamesTembakJawapanCheck": {
         "type": "object",
         "properties": {
           "session_id": {
             "$ref": "#/components/schemas/GamesSessionId"
           },
-          "correct_count": {
-            "type": "integer",
-            "minimum": 0
+          "item_id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 64,
+            "description": "Id of the statement, question or puzzle in the payload of this session.",
+            "example": "1042"
           },
-          "total_answered": {
+          "option_index": {
             "type": "integer",
-            "minimum": 0
-          },
-          "max_level": {
-            "type": "integer",
-            "minimum": 1
-          },
-          "score": {
-            "type": "integer",
-            "minimum": 0
-          },
-          "syiling_earned": {
-            "type": "integer",
-            "minimum": 0
+            "minimum": 0,
+            "maximum": 3,
+            "description": "The position (0..3) of the chosen option."
           }
         },
         "required": [
           "session_id",
-          "correct_count",
-          "total_answered",
-          "max_level",
-          "score",
-          "syiling_earned"
+          "item_id",
+          "option_index"
         ]
       },
-      "GamesSusunJawapanSubmit": {
+      "GamesSusunJawapanCheck": {
         "type": "object",
         "properties": {
           "session_id": {
             "$ref": "#/components/schemas/GamesSessionId"
           },
-          "solved_count": {
-            "type": "integer",
-            "minimum": 0
+          "item_id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 64,
+            "description": "Id of the statement, question or puzzle in the payload of this session.",
+            "example": "1042"
           },
-          "total_puzzles": {
-            "type": "integer",
-            "minimum": 0
-          },
-          "score": {
-            "type": "integer",
-            "minimum": 0
-          },
-          "syiling_earned": {
-            "type": "integer",
-            "minimum": 0
+          "answer": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200
           }
         },
         "required": [
           "session_id",
-          "solved_count",
-          "total_puzzles",
-          "score",
-          "syiling_earned"
+          "item_id",
+          "answer"
         ]
       },
-      "GamesKadMemoriSubmit": {
+      "GamesKadMemoriCheck": {
         "type": "object",
         "properties": {
           "session_id": {
             "$ref": "#/components/schemas/GamesSessionId"
           },
-          "matches": {
-            "type": "number",
+          "card_id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 64,
+            "description": "Opaque card id from the payload.",
+            "example": "1042"
+          },
+          "other_card_id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 64,
+            "description": "The second flipped card (must differ).",
+            "example": "1042"
+          }
+        },
+        "required": [
+          "session_id",
+          "card_id",
+          "other_card_id"
+        ]
+      },
+      "GamesBetulSalahCheckResult": {
+        "type": "object",
+        "properties": {
+          "correct": {
+            "type": "boolean"
+          },
+          "is_true": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "correct",
+          "is_true"
+        ],
+        "additionalProperties": false
+      },
+      "GamesCabaranKilatCheckResult": {
+        "type": "object",
+        "properties": {
+          "correct": {
+            "type": "boolean"
+          },
+          "correct_option_id": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 3
+          }
+        },
+        "required": [
+          "correct",
+          "correct_option_id"
+        ],
+        "additionalProperties": false
+      },
+      "GamesTembakJawapanCheckResult": {
+        "type": "object",
+        "properties": {
+          "correct": {
+            "type": "boolean"
+          },
+          "correct_option_index": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 3
+          }
+        },
+        "required": [
+          "correct",
+          "correct_option_index"
+        ],
+        "additionalProperties": false
+      },
+      "GamesSusunJawapanCheckResult": {
+        "type": "object",
+        "properties": {
+          "correct": {
+            "type": "boolean"
+          },
+          "answer": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "correct",
+          "answer"
+        ],
+        "additionalProperties": false
+      },
+      "GamesKadMemoriCheckResult": {
+        "type": "object",
+        "properties": {
+          "correct": {
+            "type": "boolean",
+            "description": "true when the two cards are a pair."
+          },
+          "pair_id": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "minimum": 0,
+            "maximum": 5,
+            "description": "The pair id, only when the cards match; null on a mismatch."
+          },
+          "cards": {
+            "type": "array",
+            "prefixItems": [
+              {
+                "$ref": "#/components/schemas/GamesKadMemoriFace"
+              },
+              {
+                "$ref": "#/components/schemas/GamesKadMemoriFace"
+              }
+            ],
+            "description": "The faces of card_id and other_card_id, in that order."
+          }
+        },
+        "required": [
+          "correct",
+          "pair_id",
+          "cards"
+        ],
+        "additionalProperties": false
+      },
+      "GamesKadMemoriFace": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 64,
+            "description": "The opaque card id.",
+            "example": "1042"
+          },
+          "type": {
+            "type": "string",
             "enum": [
-              6
+              "question",
+              "answer"
             ]
           },
-          "total_pairs": {
-            "type": "number",
-            "enum": [
-              6
-            ]
+          "content": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "type",
+          "content"
+        ],
+        "additionalProperties": false
+      },
+      "GamesKadMemoriRevealRequest": {
+        "type": "object",
+        "properties": {
+          "session_id": {
+            "$ref": "#/components/schemas/GamesSessionId"
           },
-          "moves": {
-            "type": "integer",
-            "minimum": 6
-          },
-          "time_seconds": {
-            "type": "integer",
-            "minimum": 0
+          "card_id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 64,
+            "description": "Opaque card id from the payload.",
+            "example": "1042"
           }
         },
         "required": [
           "session_id",
-          "matches",
-          "total_pairs",
-          "moves",
-          "time_seconds"
+          "card_id"
         ]
       },
-      "GamesSoloSubmitRequest": {
+      "GamesSoloCheckRequest": {
         "anyOf": [
           {
-            "$ref": "#/components/schemas/GamesBetulSalahSubmit"
+            "$ref": "#/components/schemas/GamesBetulSalahCheck"
           },
           {
-            "$ref": "#/components/schemas/GamesCabaranKilatSubmit"
+            "$ref": "#/components/schemas/GamesCabaranKilatCheck"
           },
           {
-            "$ref": "#/components/schemas/GamesTembakJawapanSubmit"
+            "$ref": "#/components/schemas/GamesTembakJawapanCheck"
           },
           {
-            "$ref": "#/components/schemas/GamesSusunJawapanSubmit"
+            "$ref": "#/components/schemas/GamesSusunJawapanCheck"
           },
           {
-            "$ref": "#/components/schemas/GamesKadMemoriSubmit"
+            "$ref": "#/components/schemas/GamesKadMemoriCheck"
           }
+        ],
+        "description": "One of the per-game bodies; the path parameter `game` decides which: betul-salah = GamesBetulSalahCheck, cabaran-kilat = GamesCabaranKilatCheck, tembak-jawapan = GamesTembakJawapanCheck, susun-jawapan = GamesSusunJawapanCheck, kad-memori = GamesKadMemoriCheck. A body of another game is 422 \"Jawapan tidak sah.\" [PROPOSED]."
+      },
+      "GamesSoloCheckResponse": {
+        "anyOf": [
+          {
+            "$ref": "#/components/schemas/GamesBetulSalahCheckResult"
+          },
+          {
+            "$ref": "#/components/schemas/GamesCabaranKilatCheckResult"
+          },
+          {
+            "$ref": "#/components/schemas/GamesTembakJawapanCheckResult"
+          },
+          {
+            "$ref": "#/components/schemas/GamesSusunJawapanCheckResult"
+          },
+          {
+            "$ref": "#/components/schemas/GamesKadMemoriCheckResult"
+          }
+        ],
+        "description": "The result of the requested game: betul-salah = GamesBetulSalahCheckResult { correct, is_true }; cabaran-kilat = GamesCabaranKilatCheckResult { correct, correct_option_id }; tembak-jawapan = GamesTembakJawapanCheckResult { correct, correct_option_index }; susun-jawapan = GamesSusunJawapanCheckResult { correct, answer }; kad-memori = GamesKadMemoriCheckResult { correct, pair_id | null, cards: [face, face] }."
+      },
+      "GamesSoloSubmitRequest": {
+        "type": "object",
+        "properties": {
+          "session_id": {
+            "$ref": "#/components/schemas/GamesSessionId"
+          }
+        },
+        "required": [
+          "session_id"
         ]
       },
       "GamesSoloSubmitResponse": {
@@ -21356,11 +21480,29 @@
               "syiling_awarded": {
                 "type": "integer",
                 "minimum": 0
+              },
+              "score": {
+                "type": "integer",
+                "minimum": 0,
+                "description": "[PROPOSED] Server-computed score."
+              },
+              "correct_count": {
+                "type": "integer",
+                "minimum": 0,
+                "description": "[PROPOSED] Correct checks (solved puzzles for susun-jawapan)."
+              },
+              "total_answered": {
+                "type": "integer",
+                "minimum": 0,
+                "description": "[PROPOSED] Checks stored for the session."
               }
             },
             "required": [
               "is_new_record",
-              "syiling_awarded"
+              "syiling_awarded",
+              "score",
+              "correct_count",
+              "total_answered"
             ],
             "additionalProperties": false
           },
@@ -21379,11 +21521,23 @@
                     "minimum": 0,
                     "maximum": 100,
                     "description": "round(6 / moves * 100); coins 6."
+                  },
+                  "moves": {
+                    "type": "integer",
+                    "minimum": 6,
+                    "description": "[PROPOSED] Pair checks stored for the session."
+                  },
+                  "time_seconds": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "description": "[PROPOSED] Server clock: submit time minus session start."
                   }
                 },
                 "required": [
                   "syiling_earned",
-                  "accuracy"
+                  "accuracy",
+                  "moves",
+                  "time_seconds"
                 ],
                 "additionalProperties": false
               }
@@ -26047,6 +26201,32 @@
           "state"
         ]
       },
+      "SchoolAdminInitialCredential": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "school": {
+            "type": "string"
+          },
+          "email": {
+            "type": "string"
+          },
+          "password": {
+            "type": "string",
+            "minLength": 12,
+            "description": "Generated by the server (CSPRNG, at least 12 characters; exact policy in the implementation card). Shown once, only to the creating school admin in this 201 response. Never logged, never stored in plain text, not retrievable again (no other route returns it). There is no shared default password (D59b)."
+          }
+        },
+        "required": [
+          "name",
+          "school",
+          "email",
+          "password"
+        ],
+        "description": "One-time hand-over credential (D55c, D59b). Present only in a create response; later reads and the reset-password routes never echo a password."
+      },
       "SchoolAdminSubscriptionStatus": {
         "type": "string",
         "enum": [
@@ -27862,26 +28042,40 @@
               "null"
             ],
             "maxLength": 14
-          },
-          "password": {
-            "type": "string",
-            "minLength": 8,
-            "maxLength": 255,
-            "writeOnly": true,
-            "description": "8 to 255 characters."
-          },
-          "passwordConfirmation": {
-            "type": "string",
-            "maxLength": 255,
-            "writeOnly": true,
-            "description": "Must equal the password; at most 255 characters."
           }
         },
         "required": [
           "name",
-          "email",
-          "password",
-          "passwordConfirmation"
+          "email"
+        ]
+      },
+      "SchoolAdminTeacherCreatedResult": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/SchoolAdminUserDetail"
+          },
+          "credential": {
+            "$ref": "#/components/schemas/SchoolAdminInitialCredential"
+          },
+          "mustChangePassword": {
+            "type": "boolean",
+            "enum": [
+              true
+            ],
+            "description": "Always true on create (D59b): the new teacher account is flagged must-change-password, so the first login forces a password change (enforced by BE-03)."
+          },
+          "status": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Pengguna berjaya didaftarkan."
+          }
+        },
+        "required": [
+          "data",
+          "credential",
+          "mustChangePassword",
+          "status"
         ]
       },
       "SchoolAdminToggleActiveResult": {
@@ -28012,33 +28206,11 @@
               ]
             },
             "description": "Active classrooms of the school by name A to Z: the valid targets of `classId`."
-          },
-          "passwordPlaceholder": {
-            "type": "string",
-            "enum": [
-              "••••••••"
-            ],
-            "description": "Eight bullets."
-          },
-          "passwordHint": {
-            "type": "string",
-            "enum": [
-              "Biarkan kosong untuk guna kata laluan lalai (minimum 8 aksara)."
-            ]
-          },
-          "passwordMinLength": {
-            "type": "number",
-            "enum": [
-              8
-            ]
           }
         },
         "required": [
           "school",
-          "classes",
-          "passwordPlaceholder",
-          "passwordHint",
-          "passwordMinLength"
+          "classes"
         ]
       },
       "SchoolAdminPupilCreateRequest": {
@@ -28054,26 +28226,6 @@
             "type": "string",
             "maxLength": 255,
             "format": "email"
-          },
-          "password": {
-            "anyOf": [
-              {
-                "type": "string",
-                "enum": [
-                  ""
-                ]
-              },
-              {
-                "type": "string",
-                "minLength": 8,
-                "maxLength": 255
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "writeOnly": true,
-            "description": "Empty, null or absent = the default password; otherwise 8 to 255 characters."
           },
           "classId": {
             "anyOf": [
@@ -28104,37 +28256,14 @@
             "$ref": "#/components/schemas/SchoolAdminUserDetail"
           },
           "credential": {
-            "type": "object",
-            "properties": {
-              "name": {
-                "type": "string"
-              },
-              "school": {
-                "type": "string"
-              },
-              "email": {
-                "type": "string"
-              },
-              "password": {
-                "type": "string",
-                "minLength": 1,
-                "description": "Shown once, only to the creating school admin in this 201 response. Never logged, never stored in plain text, not retrievable again (no other route returns it)."
-              }
-            },
-            "required": [
-              "name",
-              "school",
-              "email",
-              "password"
-            ],
-            "description": "One-time hand-over credential (D55c). Present only in this create response; later reads and the reset-password routes never echo a password."
+            "$ref": "#/components/schemas/SchoolAdminInitialCredential"
           },
           "mustChangePassword": {
             "type": "boolean",
             "enum": [
               true
             ],
-            "description": "Always true on create (D55c): the new pupil account is flagged must-change-password, so the first login forces a password change (enforced by BE-03)."
+            "description": "Always true on create (D55c, D59b): the new pupil account is flagged must-change-password, so the first login forces a password change (enforced by BE-03)."
           },
           "status": {
             "type": "string",
@@ -43342,7 +43471,7 @@
         "properties": {
           "message": {
             "type": "string",
-            "description": "The turn text. Blank after trim = 422 `{}`. No length cap in the mock (open question)."
+            "description": "The turn text. Blank after trim = 422 `{}`. At most 2000 characters (code points): longer = 422 \"Mesej terlalu panjang (maksimum 2000 aksara).\" (cap added by the security review; the mock has none)."
           },
           "thread_id": {
             "type": [
@@ -43453,7 +43582,8 @@
             "type": "string",
             "enum": [
               "RATE_LIMITED",
-              "AI_UNAVAILABLE"
+              "AI_UNAVAILABLE",
+              "VALIDATION_ERROR"
             ],
             "description": "Machine code."
           },
@@ -43894,7 +44024,8 @@
                 }
               ]
             },
-            "description": "Tag ids (decimal strings; integers also accepted). No size cap in the mock (open question)."
+            "maxItems": 100,
+            "description": "Tag ids (decimal strings; integers also accepted). At most 100 items: more = 422 \"Terlalu banyak item dipilih (maksimum 100).\" on fields.ids (cap added by the security review; the mock has none)."
           }
         }
       },
@@ -53878,6 +54009,1069 @@
         "required": [
           "error"
         ]
+      },
+      "BijakBuilderSectionRule": {
+        "oneOf": [
+          {
+            "type": "object",
+            "properties": {
+              "type": {
+                "type": "string",
+                "enum": [
+                  "all"
+                ]
+              }
+            },
+            "required": [
+              "type"
+            ],
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "properties": {
+              "type": {
+                "type": "string",
+                "enum": [
+                  "choose"
+                ]
+              },
+              "n": {
+                "type": "integer",
+                "minimum": 1
+              }
+            },
+            "required": [
+              "type",
+              "n"
+            ],
+            "additionalProperties": false
+          }
+        ],
+        "description": "{ type: all } = answer every question; { type: choose, n } = answer n of the questions (choose-N counts only the N largest questions in the section marks)."
+      },
+      "BijakBuilderPaperStatus": {
+        "type": "string",
+        "enum": [
+          "draf",
+          "terbit"
+        ],
+        "description": "draf = being assembled (editable, can be deleted); terbit = published, visible in Kertas Pilihan and locked. Unpublish (tarik balik) sets the status back to draf; there is no ready or withdrawn state. Mapping to BE-15 `papers.status` (draft, ready, published, withdrawn) is internal: draf = draft or withdrawn, terbit = published; ready is not exposed."
+      },
+      "BijakBuilderQuestionStatus": {
+        "type": "string",
+        "enum": [
+          "draft",
+          "review",
+          "approved",
+          "published",
+          "archived"
+        ],
+        "description": "Question lifecycle code (D54a): draft, review, approved, published, archived. The mock status values are realigned to these codes at the http switch."
+      },
+      "BijakBuilderPaperSection": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "label": {
+            "type": "string",
+            "minLength": 1,
+            "example": "Bahagian A"
+          },
+          "title": {
+            "type": "string"
+          },
+          "markBudget": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Marks after choose-N (printed budget)."
+          },
+          "questionCount": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Questions the section holds on the paper (not the number to answer)."
+          },
+          "compulsory": {
+            "type": "boolean",
+            "description": "\"Soalan ini mesti dijawab\"."
+          },
+          "instruction": {
+            "type": "string",
+            "description": "Authored instruction; absent means derived from the rule."
+          },
+          "rule": {
+            "$ref": "#/components/schemas/BijakBuilderSectionRule"
+          },
+          "questionIds": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Id"
+            },
+            "description": "Placed question ids, in order."
+          }
+        },
+        "required": [
+          "id",
+          "label",
+          "markBudget",
+          "questionCount",
+          "rule",
+          "questionIds"
+        ],
+        "additionalProperties": false
+      },
+      "BijakBuilderPaperSummary": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "title": {
+            "type": "string",
+            "minLength": 1
+          },
+          "subject": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Subject code.",
+            "example": "MAT"
+          },
+          "subjectName": {
+            "type": "string",
+            "minLength": 1,
+            "example": "Matematik"
+          },
+          "kertas": {
+            "type": "integer",
+            "minimum": 1,
+            "description": "Kertas number.",
+            "example": 2
+          },
+          "year": {
+            "type": "integer"
+          },
+          "code": {
+            "type": "string",
+            "minLength": 1,
+            "example": "1449/2"
+          },
+          "durationMin": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "status": {
+            "$ref": "#/components/schemas/BijakBuilderPaperStatus"
+          },
+          "questionCount": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Questions placed, all sections."
+          },
+          "marks": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Total effective marks (derived)."
+          },
+          "budget": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Total printed mark budget of the blueprint sections."
+          },
+          "ok": {
+            "type": "boolean",
+            "description": "True when the paper passes the publish check (no `errors` would be returned)."
+          },
+          "updatedAt": {
+            "$ref": "#/components/schemas/Timestamp"
+          }
+        },
+        "required": [
+          "id",
+          "title",
+          "subject",
+          "subjectName",
+          "kertas",
+          "year",
+          "code",
+          "durationMin",
+          "status",
+          "questionCount",
+          "marks",
+          "budget",
+          "ok",
+          "updatedAt"
+        ],
+        "additionalProperties": false
+      },
+      "BijakBuilderPaper": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "title": {
+            "type": "string",
+            "minLength": 1
+          },
+          "subject": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Subject code.",
+            "example": "MAT"
+          },
+          "kertas": {
+            "type": "integer",
+            "minimum": 1,
+            "description": "Kertas number.",
+            "example": 2
+          },
+          "year": {
+            "type": "integer"
+          },
+          "code": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Printed paper code.",
+            "example": "1449/2"
+          },
+          "durationMin": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "instructions": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Cover instruction lines, verbatim."
+          },
+          "reference": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/BijakPaperReferencePanel"
+            },
+            "description": "Reference-sheet panels; absent when the paper has none."
+          },
+          "sections": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/BijakBuilderPaperSection"
+            }
+          },
+          "status": {
+            "$ref": "#/components/schemas/BijakBuilderPaperStatus"
+          },
+          "createdAt": {
+            "$ref": "#/components/schemas/Timestamp"
+          },
+          "updatedAt": {
+            "$ref": "#/components/schemas/Timestamp"
+          },
+          "publishedAt": {
+            "type": "string",
+            "format": "date-time",
+            "pattern": "\\+08:00$",
+            "description": "Time of the latest publish; absent while the paper has never been published.",
+            "example": "2026-10-16T09:30:00+08:00"
+          }
+        },
+        "required": [
+          "id",
+          "title",
+          "subject",
+          "kertas",
+          "year",
+          "code",
+          "durationMin",
+          "instructions",
+          "sections",
+          "status",
+          "createdAt",
+          "updatedAt"
+        ],
+        "additionalProperties": false
+      },
+      "BijakBuilderQuestion": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "groupId": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 64,
+            "description": "Stimulus group (D6), when it has one.",
+            "example": "1042"
+          },
+          "stimulusLabel": {
+            "type": "string",
+            "description": "Label of the group stimulus, e.g. \"Rajah 2\"."
+          },
+          "preview": {
+            "type": "string",
+            "description": "Start of the stem for the picker; may hold $latex$ spans."
+          },
+          "marks": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Total marks of the question."
+          },
+          "kind": {
+            "type": "string",
+            "minLength": 1,
+            "description": "QuestionKind of the mock (for example mcq or a structured kind). The value set is not quoted by the review [PROPOSED]."
+          },
+          "topic": {
+            "type": "string",
+            "description": "Display name of the curriculum unit."
+          },
+          "status": {
+            "$ref": "#/components/schemas/BijakBuilderQuestionStatus"
+          },
+          "kertas": {
+            "type": "integer",
+            "minimum": 1,
+            "description": "Kertas number.",
+            "example": 2
+          },
+          "subject": {
+            "type": "string",
+            "minLength": 1,
+            "example": "MAT"
+          }
+        },
+        "required": [
+          "id",
+          "preview",
+          "marks",
+          "kind",
+          "topic",
+          "status",
+          "kertas",
+          "subject"
+        ],
+        "additionalProperties": false
+      },
+      "BijakBuilderGroup": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "stimulus": {
+            "$ref": "#/components/schemas/BijakAttemptStimulus"
+          },
+          "questionIds": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Id"
+            },
+            "description": "Question ids in published order."
+          }
+        },
+        "required": [
+          "id",
+          "stimulus",
+          "questionIds"
+        ],
+        "additionalProperties": false
+      },
+      "BijakBuilderEditor": {
+        "type": "object",
+        "properties": {
+          "paper": {
+            "$ref": "#/components/schemas/BijakBuilderPaper"
+          },
+          "blueprint": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "properties": {
+              "subject": {
+                "type": "string",
+                "minLength": 1,
+                "example": "MAT"
+              },
+              "subjectName": {
+                "type": "string",
+                "minLength": 1
+              },
+              "kertas": {
+                "type": "integer",
+                "minimum": 1,
+                "description": "Kertas number (the mock types it 1 | 2).",
+                "example": 2
+              },
+              "source": {
+                "type": "string",
+                "enum": [
+                  "Disahkan",
+                  "Spec",
+                  "Draf"
+                ],
+                "description": "Provenance tag (Disahkan, Spec, Draf)."
+              },
+              "code": {
+                "type": "string",
+                "minLength": 1,
+                "example": "1449/2"
+              },
+              "durationMin": {
+                "type": "integer",
+                "minimum": 1
+              },
+              "instructions": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "totalMarks": {
+                "type": "integer",
+                "minimum": 0,
+                "description": "Sum of the section mark budgets (derived)."
+              },
+              "sections": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/BijakBlueprintViewSection"
+                },
+                "minItems": 1
+              }
+            },
+            "required": [
+              "subject",
+              "subjectName",
+              "kertas",
+              "source",
+              "code",
+              "durationMin",
+              "instructions",
+              "totalMarks",
+              "sections"
+            ],
+            "additionalProperties": false,
+            "description": "The blueprint of the paper subject and kertas; null when there is none."
+          },
+          "questions": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/BijakBuilderQuestion"
+            }
+          },
+          "groups": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/BijakBuilderGroup"
+            }
+          }
+        },
+        "required": [
+          "paper",
+          "blueprint",
+          "questions",
+          "groups"
+        ],
+        "additionalProperties": false
+      },
+      "BijakBlueprintViewSection": {
+        "type": "object",
+        "properties": {
+          "label": {
+            "type": "string",
+            "minLength": 1,
+            "example": "Bahagian A"
+          },
+          "markBudget": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "questionCount": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Questions the section holds."
+          },
+          "compulsory": {
+            "type": "boolean"
+          },
+          "instruction": {
+            "type": "string",
+            "description": "Authored instruction; empty string when none."
+          },
+          "rule": {
+            "$ref": "#/components/schemas/BijakBuilderSectionRule"
+          },
+          "pool": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Pool tag the section draws from; the builder uses it to suggest questions (internal, never sent to students)."
+          }
+        },
+        "required": [
+          "label",
+          "markBudget",
+          "questionCount",
+          "compulsory",
+          "instruction",
+          "rule",
+          "pool"
+        ],
+        "additionalProperties": false
+      },
+      "BijakBuilderPaperCreate": {
+        "type": "object",
+        "properties": {
+          "subject": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 32,
+            "example": "MAT"
+          },
+          "kertas": {
+            "type": "integer",
+            "minimum": 1,
+            "description": "Kertas number.",
+            "example": 2
+          },
+          "title": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200,
+            "description": "Default title is chosen by the server when omitted [PROPOSED]."
+          }
+        },
+        "required": [
+          "subject",
+          "kertas"
+        ],
+        "additionalProperties": false
+      },
+      "BijakBuilderPaperCreateResult": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "$ref": "#/components/schemas/Id"
+          }
+        },
+        "required": [
+          "id"
+        ],
+        "additionalProperties": false
+      },
+      "BijakBuilderSectionPatch": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 64,
+            "description": "Id of a section of this paper (fixed by the blueprint).",
+            "example": "1042"
+          },
+          "questionIds": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Id"
+            },
+            "maxItems": 500
+          }
+        },
+        "required": [
+          "id",
+          "questionIds"
+        ],
+        "additionalProperties": false
+      },
+      "BijakBuilderPaperPatch": {
+        "type": "object",
+        "properties": {
+          "title": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200,
+            "example": "Percubaan SPM Matematik Kertas 2 Set B"
+          },
+          "year": {
+            "type": "integer",
+            "minimum": 1900,
+            "maximum": 2100
+          },
+          "durationMin": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 600
+          },
+          "sections": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/BijakBuilderSectionPatch"
+            },
+            "maxItems": 20
+          }
+        },
+        "additionalProperties": false
+      },
+      "BijakBuilderOk": {
+        "type": "object",
+        "properties": {
+          "ok": {
+            "type": "boolean",
+            "enum": [
+              true
+            ]
+          }
+        },
+        "required": [
+          "ok"
+        ],
+        "additionalProperties": false
+      },
+      "BijakBuilderPublishResult": {
+        "type": "object",
+        "properties": {
+          "ok": {
+            "type": "boolean"
+          },
+          "errors": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Empty when ok is true."
+          }
+        },
+        "required": [
+          "ok",
+          "errors"
+        ],
+        "additionalProperties": false
+      },
+      "BijakBuilderPreviewRequest": {
+        "type": "object",
+        "properties": {
+          "ids": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Id"
+            },
+            "maxItems": 500,
+            "description": "Question ids to preview (may be unsaved edits)."
+          }
+        },
+        "required": [
+          "ids"
+        ],
+        "additionalProperties": false
+      },
+      "BijakBuilderReviewQuestion": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "topic": {
+            "type": "string",
+            "description": "Display name of the curriculum unit."
+          },
+          "formOrigin": {
+            "type": "string",
+            "enum": [
+              "T1-T3",
+              "T4",
+              "T5"
+            ]
+          },
+          "groupId": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "stem": {
+            "type": "string"
+          },
+          "marks": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "mcq": {
+            "type": "object",
+            "properties": {
+              "options": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/BijakAttemptOption"
+                },
+                "minItems": 2
+              }
+            },
+            "required": [
+              "options"
+            ],
+            "additionalProperties": false
+          },
+          "parts": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/BijakAttemptPartView"
+            }
+          }
+        },
+        "required": [
+          "id",
+          "topic",
+          "formOrigin",
+          "stem",
+          "marks"
+        ],
+        "additionalProperties": false
+      },
+      "BijakBuilderPreview": {
+        "type": "object",
+        "properties": {
+          "questions": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/BijakBuilderReviewQuestion"
+            }
+          },
+          "stimuli": {
+            "type": "object",
+            "additionalProperties": {
+              "$ref": "#/components/schemas/BijakAttemptStimulus"
+            }
+          },
+          "optionBanks": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "array",
+              "items": {
+                "$ref": "#/components/schemas/BijakAttemptOption"
+              }
+            }
+          }
+        },
+        "required": [
+          "questions",
+          "stimuli",
+          "optionBanks"
+        ],
+        "additionalProperties": false
+      },
+      "BijakBuilderPaperListQuery": {
+        "type": "object",
+        "properties": {
+          "page": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "pageSize": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 100
+          },
+          "status": {
+            "$ref": "#/components/schemas/BijakBuilderPaperStatus"
+          }
+        }
+      },
+      "BijakBuilderCsrfError": {
+        "type": "object",
+        "properties": {
+          "error": {
+            "type": "object",
+            "properties": {
+              "code": {
+                "type": "string",
+                "enum": [
+                  "CSRF_INVALID"
+                ]
+              },
+              "message": {
+                "type": "string",
+                "enum": [
+                  "Sesi tidak sah. Sila muat semula halaman dan cuba lagi."
+                ]
+              },
+              "requestId": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "code",
+              "message"
+            ]
+          }
+        },
+        "required": [
+          "error"
+        ]
+      },
+      "BijakBlueprintView": {
+        "type": "object",
+        "properties": {
+          "subject": {
+            "type": "string",
+            "minLength": 1,
+            "example": "MAT"
+          },
+          "subjectName": {
+            "type": "string",
+            "minLength": 1
+          },
+          "kertas": {
+            "type": "integer",
+            "minimum": 1,
+            "description": "Kertas number (the mock types it 1 | 2).",
+            "example": 2
+          },
+          "source": {
+            "type": "string",
+            "enum": [
+              "Disahkan",
+              "Spec",
+              "Draf"
+            ],
+            "description": "Provenance tag (Disahkan, Spec, Draf)."
+          },
+          "code": {
+            "type": "string",
+            "minLength": 1,
+            "example": "1449/2"
+          },
+          "durationMin": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "instructions": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "totalMarks": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Sum of the section mark budgets (derived)."
+          },
+          "sections": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/BijakBlueprintViewSection"
+            },
+            "minItems": 1
+          }
+        },
+        "required": [
+          "subject",
+          "subjectName",
+          "kertas",
+          "source",
+          "code",
+          "durationMin",
+          "instructions",
+          "totalMarks",
+          "sections"
+        ],
+        "additionalProperties": false
+      },
+      "BijakBlueprintAdminSectionInput": {
+        "type": "object",
+        "properties": {
+          "label": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 100,
+            "example": "Bahagian A"
+          },
+          "markBudget": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 1000
+          },
+          "questionCount": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 500
+          },
+          "compulsory": {
+            "type": "boolean",
+            "description": "Default: false."
+          },
+          "instruction": {
+            "type": "string",
+            "maxLength": 500,
+            "description": "Default: empty."
+          },
+          "rule": {
+            "$ref": "#/components/schemas/BijakBuilderSectionRule"
+          },
+          "pool": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 64
+          }
+        },
+        "required": [
+          "label",
+          "markBudget",
+          "questionCount",
+          "rule",
+          "pool"
+        ],
+        "additionalProperties": false
+      },
+      "BijakBlueprintAdminVersionInput": {
+        "type": "object",
+        "properties": {
+          "source": {
+            "type": "string",
+            "enum": [
+              "Disahkan",
+              "Spec",
+              "Draf"
+            ],
+            "description": "Provenance tag of the blueprint. A blueprint with source Draf cannot generate a paper (NO_BLUEPRINT)."
+          },
+          "code": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 32,
+            "example": "1449/2"
+          },
+          "durationMin": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 600
+          },
+          "instructions": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "maxLength": 500
+            },
+            "maxItems": 30,
+            "description": "Cover instruction lines. Default: empty."
+          },
+          "reference": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/BijakPaperReferencePanel"
+            },
+            "maxItems": 10,
+            "description": "Reference-sheet panels for papers made from this blueprint. Write-only here: `BlueprintView` does not carry it."
+          },
+          "sections": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/BijakBlueprintAdminSectionInput"
+            },
+            "minItems": 1,
+            "maxItems": 20
+          }
+        },
+        "required": [
+          "source",
+          "code",
+          "durationMin",
+          "sections"
+        ],
+        "additionalProperties": false
+      },
+      "BijakBlueprintAdminCreate": {
+        "type": "object",
+        "properties": {
+          "subject": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 32,
+            "example": "MAT"
+          },
+          "kertas": {
+            "type": "integer",
+            "minimum": 1,
+            "description": "Kertas number.",
+            "example": 2
+          },
+          "source": {
+            "type": "string",
+            "enum": [
+              "Disahkan",
+              "Spec",
+              "Draf"
+            ],
+            "description": "Provenance tag of the blueprint. A blueprint with source Draf cannot generate a paper (NO_BLUEPRINT)."
+          },
+          "code": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 32,
+            "example": "1449/2"
+          },
+          "durationMin": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 600
+          },
+          "instructions": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "maxLength": 500
+            },
+            "maxItems": 30,
+            "description": "Cover instruction lines. Default: empty."
+          },
+          "reference": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/BijakPaperReferencePanel"
+            },
+            "maxItems": 10,
+            "description": "Reference-sheet panels for papers made from this blueprint. Write-only here: `BlueprintView` does not carry it."
+          },
+          "sections": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/BijakBlueprintAdminSectionInput"
+            },
+            "minItems": 1,
+            "maxItems": 20
+          }
+        },
+        "required": [
+          "subject",
+          "kertas",
+          "source",
+          "code",
+          "durationMin",
+          "sections"
+        ],
+        "additionalProperties": false
+      },
+      "BijakBlueprintListQuery": {
+        "type": "object",
+        "properties": {
+          "page": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "pageSize": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 100
+          },
+          "subject": {
+            "type": "string",
+            "maxLength": 32,
+            "description": "Subject code."
+          },
+          "kertas": {
+            "type": "integer",
+            "minimum": 1
+          }
+        }
       },
       "QuestionBulkResult": {
         "type": "object",
@@ -71072,7 +72266,7 @@
           "battle"
         ],
         "summary": "Search students by name to invite (M16-07)",
-        "description": "Query `q` shorter than 2 trimmed characters answers `{users: []}`. Otherwise students whose name contains `q` (case-insensitive), the caller excluded, sorted by name then id, at most 10.\nD54(d): classmates and opponents are shown by display name (and school) only; no IC, e-mail, phone or birth date is ever returned. D57: this is a student-facing lookup, not the staff-only GET /students/search; it is rate-limited (429 RATE_LIMITED with retryAfter and Retry-After) because it can be used to enumerate students, and it never exposes more than the display fields above.",
+        "description": "Query `q` shorter than 2 trimmed characters answers `{users: []}`. Otherwise students whose name contains `q` (case-insensitive), the caller excluded, sorted by name then id, at most 10.\nD54(d): classmates and opponents are shown by display name (and school) only; no IC, e-mail, phone or birth date is ever returned. D57: this is a student-facing lookup, not the staff-only GET /students/search; it is rate-limited (429 RATE_LIMITED with retryAfter and Retry-After) because it can be used to enumerate students, and it never exposes more than the display fields above.\nDecided D59c: any signed-in student may search students of all schools (as the old system). The result exposes only name, display name and school (no e-mail, IC, class or contact data). Rate-limited (429).",
         "parameters": [
           {
             "schema": {
@@ -72295,10 +73489,21 @@
           "games"
         ],
         "summary": "Permainan hub: open rooms and chips (M16-22)",
-        "description": "Up to 6 newest waiting rooms with a free seat, newest first. chips.battled comes from the battle read service (BE-44).",
+        "description": "Up to 6 newest waiting rooms with a free seat, newest first. chips.battled comes from the battle read service (BE-44). Lists open room codes: Cache-Control: no-store.",
         "responses": {
           "200": {
-            "description": "Open rooms and chips.",
+            "description": "Open rooms and chips; Cache-Control: no-store.",
+            "headers": {
+              "Cache-Control": {
+                "description": "no-store: the body carries a join code or answer keys and must not be cached by browsers or proxies.",
+                "schema": {
+                  "type": "string",
+                  "enum": [
+                    "no-store"
+                  ]
+                }
+              }
+            },
             "content": {
               "application/json": {
                 "schema": {
@@ -72447,7 +73652,18 @@
         },
         "responses": {
           "201": {
-            "description": "Room created.",
+            "description": "Room created; the code is a join code, Cache-Control: no-store.",
+            "headers": {
+              "Cache-Control": {
+                "description": "no-store: the body carries a join code or answer keys and must not be cached by browsers or proxies.",
+                "schema": {
+                  "type": "string",
+                  "enum": [
+                    "no-store"
+                  ]
+                }
+              }
+            },
             "content": {
               "application/json": {
                 "schema": {
@@ -72496,6 +73712,25 @@
           },
           "422": {
             "description": "VALIDATION_ERROR with fields[x] = message and the same top-level message: \"Subjek tidak sah.\" (subject), \"Tahap soalan tidak sah.\" (grade_level), \"Julat tahap tidak sah.\" (match_mode or grade_min), \"Bilangan pemain tidak sah.\" (max_players).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "RATE_LIMITED (BM \"Terlalu banyak percubaan. Sila cuba sebentar lagi.\"): body error.retryAfter and the Retry-After header carry the seconds to wait.",
+            "headers": {
+              "Retry-After": {
+                "description": "Seconds until a retry is allowed (same value as error.retryAfter).",
+                "schema": {
+                  "type": "integer",
+                  "minimum": 0
+                }
+              }
+            },
             "content": {
               "application/json": {
                 "schema": {
@@ -72557,7 +73792,18 @@
         },
         "responses": {
           "200": {
-            "description": "Joined (or already a player).",
+            "description": "Joined (or already a player); Cache-Control: no-store.",
+            "headers": {
+              "Cache-Control": {
+                "description": "no-store: the body carries a join code or answer keys and must not be cached by browsers or proxies.",
+                "schema": {
+                  "type": "string",
+                  "enum": [
+                    "no-store"
+                  ]
+                }
+              }
+            },
             "content": {
               "application/json": {
                 "schema": {
@@ -72596,6 +73842,25 @@
           },
           "404": {
             "description": "NOT_FOUND \"Bilik tidak dijumpai.\" for every refusal, or \"Permainan tidak dijumpai.\" (unknown game).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "RATE_LIMITED (BM \"Terlalu banyak percubaan. Sila cuba sebentar lagi.\"): body error.retryAfter and the Retry-After header carry the seconds to wait.",
+            "headers": {
+              "Retry-After": {
+                "description": "Seconds until a retry is allowed (same value as error.retryAfter).",
+                "schema": {
+                  "type": "integer",
+                  "minimum": 0
+                }
+              }
+            },
             "content": {
               "application/json": {
                 "schema": {
@@ -72647,7 +73912,18 @@
         ],
         "responses": {
           "200": {
-            "description": "The room.",
+            "description": "The room; Cache-Control: no-store.",
+            "headers": {
+              "Cache-Control": {
+                "description": "no-store: the body carries a join code or answer keys and must not be cached by browsers or proxies.",
+                "schema": {
+                  "type": "string",
+                  "enum": [
+                    "no-store"
+                  ]
+                }
+              }
+            },
             "content": {
               "application/json": {
                 "schema": {
@@ -72794,6 +74070,25 @@
                 }
               }
             }
+          },
+          "429": {
+            "description": "RATE_LIMITED (BM \"Terlalu banyak percubaan. Sila cuba sebentar lagi.\"): body error.retryAfter and the Retry-After header carry the seconds to wait.",
+            "headers": {
+              "Retry-After": {
+                "description": "Seconds until a retry is allowed (same value as error.retryAfter).",
+                "schema": {
+                  "type": "integer",
+                  "minimum": 0
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
           }
         }
       }
@@ -72925,6 +74220,25 @@
                 }
               }
             }
+          },
+          "429": {
+            "description": "RATE_LIMITED (BM \"Terlalu banyak percubaan. Sila cuba sebentar lagi.\"): body error.retryAfter and the Retry-After header carry the seconds to wait.",
+            "headers": {
+              "Retry-After": {
+                "description": "Seconds until a retry is allowed (same value as error.retryAfter).",
+                "schema": {
+                  "type": "integer",
+                  "minimum": 0
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
           }
         }
       }
@@ -72996,6 +74310,25 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/GamesRawError"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "RATE_LIMITED (BM \"Terlalu banyak percubaan. Sila cuba sebentar lagi.\"): body error.retryAfter and the Retry-After header carry the seconds to wait.",
+            "headers": {
+              "Retry-After": {
+                "description": "Seconds until a retry is allowed (same value as error.retryAfter).",
+                "schema": {
+                  "type": "integer",
+                  "minimum": 0
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
                 }
               }
             }
@@ -73084,6 +74417,25 @@
                 }
               }
             }
+          },
+          "429": {
+            "description": "RATE_LIMITED (BM \"Terlalu banyak percubaan. Sila cuba sebentar lagi.\"): body error.retryAfter and the Retry-After header carry the seconds to wait.",
+            "headers": {
+              "Retry-After": {
+                "description": "Seconds until a retry is allowed (same value as error.retryAfter).",
+                "schema": {
+                  "type": "integer",
+                  "minimum": 0
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
           }
         }
       }
@@ -73094,7 +74446,7 @@
           "games"
         ],
         "summary": "Start a single-player game session (M16-32)",
-        "description": "Creates a session row and returns its items. SECURITY EXCEPTION (SEC-M16-01, BE-45 Open question 8): as in the mock, this payload carries the answer keys (is_true, correct, answer, pair_id).",
+        "description": "Creates a session row and returns its items. D58a: the payload is keyless; no answer key (is_true, correct, answer, pair_id) is sent before the answer. Each answer is checked by POST /games/solo/{game}/check. Kad Memori: the board has only opaque card ids, the count and the layout, face-down; a face comes only from the reveal route (first card of a move) and the check response.",
         "parameters": [
           {
             "schema": {
@@ -73128,7 +74480,7 @@
         ],
         "responses": {
           "200": {
-            "description": "The session id and the items of the game.",
+            "description": "The session id and the keyless items of the game.",
             "content": {
               "application/json": {
                 "schema": {
@@ -73174,6 +74526,407 @@
                 }
               }
             }
+          },
+          "429": {
+            "description": "RATE_LIMITED (BM \"Terlalu banyak percubaan. Sila cuba sebentar lagi.\"): body error.retryAfter and the Retry-After header carry the seconds to wait.",
+            "headers": {
+              "Retry-After": {
+                "description": "Seconds until a retry is allowed (same value as error.retryAfter).",
+                "schema": {
+                  "type": "integer",
+                  "minimum": 0
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/games/solo/{game}/check": {
+      "post": {
+        "tags": [
+          "games"
+        ],
+        "summary": "Check one single-player answer (D58a) [PROPOSED route, not in the mock]",
+        "description": "Modelled on the Bijak \"Semak\" check (/bijak/attempts/{id}/questions/{questionId}/check). Own session only. The path parameter `game` selects the body and the result: betul-salah = GamesBetulSalahCheck / GamesBetulSalahCheckResult, cabaran-kilat = GamesCabaranKilatCheck / GamesCabaranKilatCheckResult, tembak-jawapan = GamesTembakJawapanCheck / GamesTembakJawapanCheckResult, susun-jawapan = GamesSusunJawapanCheck / GamesSusunJawapanCheckResult, kad-memori = GamesKadMemoriCheck / GamesKadMemoriCheckResult (one named component each; request and response `examples` are keyed by game). A body of another game is 422. The server checks the answer against the stored key, stores the check, and returns correct/wrong plus the key of that item, revealed only now ({ data }). One check per item: a second check of the same item is 409 (so the key cannot be probed by retrying). Kad Memori: the body names two cards by opaque id; the response carries BOTH faces (the board never does), correct when they are a pair, and pair_id only on a match (null on a mismatch); a mismatch may be repeated, a card of an already matched pair is 409, and if another card is open (revealed, not checked) 409 \"Sila padankan kad yang dibuka dahulu.\" [PROPOSED]. Every stored check feeds the final submit (moves = number of Kad Memori checks). Standard `{ error }` bodies. All BM texts of this route are [PROPOSED] (the mock has no check route): 404 \"Sesi tidak dijumpai.\" and \"Soalan tidak dijumpai.\" (copy reused from Jutawan), 409 \"Soalan sudah dijawab.\", \"Kad sudah dipadankan.\", 422 \"Jawapan tidak sah.\" (reused). The response carries answer keys, so Cache-Control: no-store.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "enum": [
+                "betul-salah",
+                "cabaran-kilat",
+                "tembak-jawapan",
+                "susun-jawapan",
+                "kad-memori"
+              ],
+              "description": "Solo game key. Unknown: 404 \"Permainan tidak dijumpai.\"."
+            },
+            "required": true,
+            "description": "Solo game key. Unknown: 404 \"Permainan tidak dijumpai.\".",
+            "name": "game",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Value of Session.csrf; required on mutating requests."
+            },
+            "required": true,
+            "description": "Value of Session.csrf; required on mutating requests.",
+            "name": "X-CSRF-Token",
+            "in": "header"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "examples": {
+                "betul-salah": {
+                  "summary": "betul-salah (GamesXxxCheck)",
+                  "value": {
+                    "session_id": "3f2b8a6e-5c1d-4e7a-9b0f-1a2b3c4d5e6f",
+                    "item_id": "9001",
+                    "answer": true
+                  }
+                },
+                "cabaran-kilat": {
+                  "summary": "cabaran-kilat (GamesXxxCheck)",
+                  "value": {
+                    "session_id": "3f2b8a6e-5c1d-4e7a-9b0f-1a2b3c4d5e6f",
+                    "item_id": "9001",
+                    "option_id": 1
+                  }
+                },
+                "tembak-jawapan": {
+                  "summary": "tembak-jawapan (GamesXxxCheck)",
+                  "value": {
+                    "session_id": "3f2b8a6e-5c1d-4e7a-9b0f-1a2b3c4d5e6f",
+                    "item_id": "9001",
+                    "option_index": 0
+                  }
+                },
+                "susun-jawapan": {
+                  "summary": "susun-jawapan (GamesXxxCheck)",
+                  "value": {
+                    "session_id": "3f2b8a6e-5c1d-4e7a-9b0f-1a2b3c4d5e6f",
+                    "item_id": "9001",
+                    "answer": "KUALA LUMPUR"
+                  }
+                },
+                "kad-memori": {
+                  "summary": "kad-memori (GamesXxxCheck)",
+                  "value": {
+                    "session_id": "3f2b8a6e-5c1d-4e7a-9b0f-1a2b3c4d5e6f",
+                    "card_id": "c7",
+                    "other_card_id": "c2"
+                  }
+                }
+              },
+              "schema": {
+                "$ref": "#/components/schemas/GamesSoloCheckRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Correct or wrong plus the key of the item (per-game GamesXxxCheckResult); Cache-Control: no-store.",
+            "headers": {
+              "Cache-Control": {
+                "description": "no-store: the body carries a join code or answer keys and must not be cached by browsers or proxies.",
+                "schema": {
+                  "type": "string",
+                  "enum": [
+                    "no-store"
+                  ]
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "examples": {
+                  "betul-salah": {
+                    "summary": "betul-salah (GamesXxxCheckResult)",
+                    "value": {
+                      "data": {
+                        "correct": true,
+                        "is_true": true
+                      }
+                    }
+                  },
+                  "cabaran-kilat": {
+                    "summary": "cabaran-kilat (GamesXxxCheckResult)",
+                    "value": {
+                      "data": {
+                        "correct": true,
+                        "correct_option_id": 1
+                      }
+                    }
+                  },
+                  "tembak-jawapan": {
+                    "summary": "tembak-jawapan (GamesXxxCheckResult)",
+                    "value": {
+                      "data": {
+                        "correct": false,
+                        "correct_option_index": 1
+                      }
+                    }
+                  },
+                  "susun-jawapan": {
+                    "summary": "susun-jawapan (GamesXxxCheckResult)",
+                    "value": {
+                      "data": {
+                        "correct": true,
+                        "answer": "KUALA LUMPUR"
+                      }
+                    }
+                  },
+                  "kad-memori": {
+                    "summary": "kad-memori (GamesXxxCheckResult)",
+                    "value": {
+                      "data": {
+                        "correct": true,
+                        "pair_id": 3,
+                        "cards": [
+                          {
+                            "id": "c7",
+                            "type": "question",
+                            "content": "7 + 5"
+                          },
+                          {
+                            "id": "c2",
+                            "type": "answer",
+                            "content": "12"
+                          }
+                        ]
+                      }
+                    }
+                  }
+                },
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/GamesSoloCheckResponse"
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED \"Unauthenticated.\" (no valid session).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "CSRF_INVALID (missing or wrong X-CSRF-Token).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "NOT_FOUND \"Permainan tidak dijumpai.\" (unknown game), \"Sesi tidak dijumpai.\" [PROPOSED] (unknown or foreign session) or \"Soalan tidak dijumpai.\" [PROPOSED] (item or card not in the session).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "CONFLICT \"Keputusan sudah dihantar.\" (session already submitted), \"Soalan sudah dijawab.\" [PROPOSED] (item already checked), \"Kad sudah dipadankan.\" [PROPOSED] (Kad Memori: card already matched) or \"Sila padankan kad yang dibuka dahulu.\" [PROPOSED] (Kad Memori: another card is open).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "VALIDATION_ERROR \"Jawapan tidak sah.\" [PROPOSED] (answer, option or card value, a body of another game, or the same card twice).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "RATE_LIMITED (BM \"Terlalu banyak percubaan. Sila cuba sebentar lagi.\"): body error.retryAfter and the Retry-After header carry the seconds to wait.",
+            "headers": {
+              "Retry-After": {
+                "description": "Seconds until a retry is allowed (same value as error.retryAfter).",
+                "schema": {
+                  "type": "integer",
+                  "minimum": 0
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/games/solo/kad-memori/reveal": {
+      "post": {
+        "tags": [
+          "games"
+        ],
+        "summary": "Reveal one Kad Memori face (D58a) [PROPOSED route, LEAD decision pending]",
+        "description": "The mock page shows the face of the first flipped card at once, so the first card of a move needs a reveal; the second card comes with the check response. Static path: wins over `/games/solo/{game}/...`. At most one card may be open (revealed and not yet checked): a second reveal is 409 \"Sila padankan kad yang dibuka dahulu.\" [PROPOSED], and the open card is closed by the next check naming it, so reveals never outnumber moves by more than one and the faces cannot be read without playing. A matched card is 409 \"Kad sudah dipadankan.\" [PROPOSED]. If the LEAD prefers faces via the check response only, drop this route and the page shows the first card face-down until the second tap. Standard `{ error }` bodies; the face is not a key but is sent no-store.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Value of Session.csrf; required on mutating requests."
+            },
+            "required": true,
+            "description": "Value of Session.csrf; required on mutating requests.",
+            "name": "X-CSRF-Token",
+            "in": "header"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GamesKadMemoriRevealRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The face of the card; Cache-Control: no-store.",
+            "headers": {
+              "Cache-Control": {
+                "description": "no-store: the body carries a join code or answer keys and must not be cached by browsers or proxies.",
+                "schema": {
+                  "type": "string",
+                  "enum": [
+                    "no-store"
+                  ]
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/GamesKadMemoriFace"
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED \"Unauthenticated.\" (no valid session).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "CSRF_INVALID (missing or wrong X-CSRF-Token).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "NOT_FOUND \"Sesi tidak dijumpai.\" [PROPOSED] (unknown or foreign session) or \"Soalan tidak dijumpai.\" [PROPOSED] (card not in the session).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "CONFLICT \"Keputusan sudah dihantar.\", \"Kad sudah dipadankan.\" [PROPOSED] or \"Sila padankan kad yang dibuka dahulu.\" [PROPOSED].",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "VALIDATION_ERROR \"Jawapan tidak sah.\" [PROPOSED] (card id).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "RATE_LIMITED (BM \"Terlalu banyak percubaan. Sila cuba sebentar lagi.\"): body error.retryAfter and the Retry-After header carry the seconds to wait.",
+            "headers": {
+              "Retry-After": {
+                "description": "Seconds until a retry is allowed (same value as error.retryAfter).",
+                "schema": {
+                  "type": "integer",
+                  "minimum": 0
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
           }
         }
       }
@@ -73184,7 +74937,7 @@
           "games"
         ],
         "summary": "Submit a single-player result (M16-33)",
-        "description": "RAW live-shaped bodies; errors are raw `{ message }` (404, 409, 422), not the standard error body. Own session only, one submit per session. A first result is a record, later ones only if they exceed the stored best.",
+        "description": "D58a: the body is only the session id; the server computes score, counts, streak, combo, level and coins from the stored checks and ignores any value the client sends. RAW live-shaped bodies; errors are raw `{ message }` (404, 409, 422), not the standard error body. Own session only, one submit per session. A first result is a record, later ones only if they exceed the stored best. The response also returns the computed values ([PROPOSED] fields).",
         "parameters": [
           {
             "schema": {
@@ -73227,7 +74980,7 @@
         },
         "responses": {
           "200": {
-            "description": "{ is_new_record, syiling_awarded } or, for Kad Memori, { results }.",
+            "description": "{ is_new_record, syiling_awarded, score, correct_count, total_answered } or, for Kad Memori, { results: { syiling_earned, accuracy, moves, time_seconds } }.",
             "content": {
               "application/json": {
                 "schema": {
@@ -73277,11 +75030,30 @@
             }
           },
           "422": {
-            "description": "Raw `{ message: \"Keputusan tidak sah.\" }` (unknown or foreign session, or values beyond the bounds).",
+            "description": "Raw `{ message: \"Keputusan tidak sah.\" }` (unknown or foreign session, no stored check, or Kad Memori with fewer than 6 matched pairs).",
             "content": {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/GamesRawMessage"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "RATE_LIMITED (BM \"Terlalu banyak percubaan. Sila cuba sebentar lagi.\"): body error.retryAfter and the Retry-After header carry the seconds to wait.",
+            "headers": {
+              "Retry-After": {
+                "description": "Seconds until a retry is allowed (same value as error.retryAfter).",
+                "schema": {
+                  "type": "integer",
+                  "minimum": 0
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
                 }
               }
             }
@@ -73384,6 +75156,25 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/GamesSpinRefused"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "RATE_LIMITED (BM \"Terlalu banyak percubaan. Sila cuba sebentar lagi.\"): body error.retryAfter and the Retry-After header carry the seconds to wait.",
+            "headers": {
+              "Retry-After": {
+                "description": "Seconds until a retry is allowed (same value as error.retryAfter).",
+                "schema": {
+                  "type": "integer",
+                  "minimum": 0
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
                 }
               }
             }
@@ -73532,6 +75323,25 @@
                 }
               }
             }
+          },
+          "429": {
+            "description": "RATE_LIMITED (BM \"Terlalu banyak percubaan. Sila cuba sebentar lagi.\"): body error.retryAfter and the Retry-After header carry the seconds to wait.",
+            "headers": {
+              "Retry-After": {
+                "description": "Seconds until a retry is allowed (same value as error.retryAfter).",
+                "schema": {
+                  "type": "integer",
+                  "minimum": 0
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
           }
         }
       }
@@ -73645,6 +75455,25 @@
                 }
               }
             }
+          },
+          "429": {
+            "description": "RATE_LIMITED (BM \"Terlalu banyak percubaan. Sila cuba sebentar lagi.\"): body error.retryAfter and the Retry-After header carry the seconds to wait.",
+            "headers": {
+              "Retry-After": {
+                "description": "Seconds until a retry is allowed (same value as error.retryAfter).",
+                "schema": {
+                  "type": "integer",
+                  "minimum": 0
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
           }
         }
       }
@@ -73751,6 +75580,25 @@
           },
           "422": {
             "description": "VALIDATION_ERROR \"Bantuan tidak sah.\" (type).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "RATE_LIMITED (BM \"Terlalu banyak percubaan. Sila cuba sebentar lagi.\"): body error.retryAfter and the Retry-After header carry the seconds to wait.",
+            "headers": {
+              "Retry-After": {
+                "description": "Seconds until a retry is allowed (same value as error.retryAfter).",
+                "schema": {
+                  "type": "integer",
+                  "minimum": 0
+                }
+              }
+            },
             "content": {
               "application/json": {
                 "schema": {
@@ -73955,6 +75803,25 @@
                 }
               }
             }
+          },
+          "429": {
+            "description": "RATE_LIMITED (BM \"Terlalu banyak percubaan. Sila cuba sebentar lagi.\"): body error.retryAfter and the Retry-After header carry the seconds to wait.",
+            "headers": {
+              "Retry-After": {
+                "description": "Seconds until a retry is allowed (same value as error.retryAfter).",
+                "schema": {
+                  "type": "integer",
+                  "minimum": 0
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
           }
         }
       }
@@ -74037,6 +75904,25 @@
                 }
               }
             }
+          },
+          "429": {
+            "description": "RATE_LIMITED (BM \"Terlalu banyak percubaan. Sila cuba sebentar lagi.\"): body error.retryAfter and the Retry-After header carry the seconds to wait.",
+            "headers": {
+              "Retry-After": {
+                "description": "Seconds until a retry is allowed (same value as error.retryAfter).",
+                "schema": {
+                  "type": "integer",
+                  "minimum": 0
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
           }
         }
       }
@@ -74063,7 +75949,18 @@
         ],
         "responses": {
           "200": {
-            "description": "League detail.",
+            "description": "League detail with the invite code; Cache-Control: no-store.",
+            "headers": {
+              "Cache-Control": {
+                "description": "no-store: the body carries a join code or answer keys and must not be cached by browsers or proxies.",
+                "schema": {
+                  "type": "string",
+                  "enum": [
+                    "no-store"
+                  ]
+                }
+              }
+            },
             "content": {
               "application/json": {
                 "schema": {
@@ -74274,6 +76171,25 @@
           },
           "422": {
             "description": "VALIDATION_ERROR \"Nilai mesti antara 0 dan 38.\" (fields.boardgame_quiz_tiles).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "RATE_LIMITED (BM \"Terlalu banyak percubaan. Sila cuba sebentar lagi.\"): body error.retryAfter and the Retry-After header carry the seconds to wait.",
+            "headers": {
+              "Retry-After": {
+                "description": "Seconds until a retry is allowed (same value as error.retryAfter).",
+                "schema": {
+                  "type": "integer",
+                  "minimum": 0
+                }
+              }
+            },
             "content": {
               "application/json": {
                 "schema": {
@@ -77190,7 +79106,7 @@
           "account"
         ],
         "summary": "Request a password reset link",
-        "description": "Public. Answers 200 \"We have emailed your password reset link.\" for a known AND an unknown e-mail alike (existence is never disclosed; approved deviation D55b from the mock 422 \"We can't find a user with that email address.\", card AC3). Token rules: The token is at least 128 bits from a CSPRNG; only its hash is stored; it is valid 60 minutes and single use; issuing a new token revokes every earlier unused token of that user (one active token); a successful reset consumes every outstanding token of the user; the stored hash is compared in constant time; an inactive account is never issued a token; the token is bound to the e-mail it was issued for and is redeemable only with that same e-mail. The e-mailed link carries the token in the URL fragment (/password/reset#token=...&email=...), never in the path or query, so it is not sent to servers, logs or Referer; the reset pages send Referrer-Policy: no-referrer. The mail goes through a MailPort; the dev MailPort logs only the masked e-mail and the token id, never the link or the token. Throttle (uniform, no enumeration): one request per 60 seconds per e-mail, keyed on the hash of the normalised e-mail for EVERY request whether the e-mail exists, is inactive or not (the state of an unknown e-mail is stored too, bounded by expiry); every reset-ic attempt (match or not) starts the same 60 second throttle, so a 429 here is never a match oracle. A second request inside the interval is 429 RATE_LIMITED with retryAfter and the Retry-After header; in addition 20 requests per client IP per 60 seconds across all e-mails. Do the same work for known and unknown e-mails (no timing difference). Log redaction (BE-NFR-10, BE-NFR-11): the request body, the IC number, the reset token, the e-mail and every password are never written to application logs, audit rows or error bodies (an e-mail may appear only masked, a token only as its id).",
+        "description": "Public. Answers 200 \"We have emailed your password reset link.\" for a known AND an unknown e-mail alike (existence is never disclosed; approved deviation D55b from the mock 422 \"We can't find a user with that email address.\", card AC3). Token rules: The token is at least 128 bits from a CSPRNG; only its hash is stored; it is valid 60 minutes and single use; issuing a new token revokes every earlier unused token of that user (one active token); a successful reset consumes every outstanding token of the user; the stored hash is compared in constant time; an inactive account is never issued a token; a successful reset-ic and a successful reset notify the account owner AND the school (D59a, see ACCOUNT_SECURITY_NOTIFICATIONS); the token is bound to the e-mail it was issued for and is redeemable only with that same e-mail. The e-mailed link carries the token in the URL fragment (/password/reset#token=...&email=...), never in the path or query, so it is not sent to servers, logs or Referer; the reset pages send Referrer-Policy: no-referrer. The mail goes through a MailPort; the dev MailPort logs only the masked e-mail and the token id, never the link or the token. Throttle (uniform, no enumeration): one request per 60 seconds per e-mail, keyed on the hash of the normalised e-mail for EVERY request whether the e-mail exists, is inactive or not (the state of an unknown e-mail is stored too, bounded by expiry); every reset-ic attempt (match or not) starts the same 60 second throttle, so a 429 here is never a match oracle. A second request inside the interval is 429 RATE_LIMITED with retryAfter and the Retry-After header; in addition 20 requests per client IP per 60 seconds across all e-mails. Do the same work for known and unknown e-mails (no timing difference). Log redaction (BE-NFR-10, BE-NFR-11): the request body, the IC number, the reset token, the e-mail and every password are never written to application logs, audit rows or error bodies (an e-mail may appear only masked, a token only as its id).",
         "requestBody": {
           "required": true,
           "content": {
@@ -77258,7 +79174,7 @@
           "account"
         ],
         "summary": "Set a new password with a reset token",
-        "description": "Public. Replaces the password, consumes the token (single use) and invalidates the user's other sessions (card AC2), then logs the user in: the response is the contract Session plus the flash text, and the cookie is set (not remembered). An unknown, used, expired or other-e-mail token, and an unknown e-mail, all answer 422 \"This password reset token is invalid.\" on fields.email: the unknown e-mail never gets a user-not-found message (decided, D55b, no account enumeration; the mock answered \"We can't find a user with that email address.\"). An inactive account is refused with 403 ACCOUNT_INACTIVE and nothing changes (reachable only with a valid token, so not an oracle). Token rules: The token is at least 128 bits from a CSPRNG; only its hash is stored; it is valid 60 minutes and single use; issuing a new token revokes every earlier unused token of that user (one active token); a successful reset consumes every outstanding token of the user; the stored hash is compared in constant time; an inactive account is never issued a token; the token is bound to the e-mail it was issued for and is redeemable only with that same e-mail. Every wrong redemption counts as a failure: 5 failures per 60 seconds per (e-mail hash, client IP) and 20 per client IP, then 429 RATE_LIMITED with retryAfter and the Retry-After header (BE-03 login numbers, backoff doubling). A successful reset: invalidates the user's other sessions and remember tokens, re-hashes the password with argon2id, clears must-change-password, writes an audit event (without the token) and notifies the user in-app (proposed copy \"Kata laluan telah ditetapkan semula\"). The response sets the session cookie and is Cache-Control: no-store. Log redaction (BE-NFR-10, BE-NFR-11): the request body, the IC number, the reset token, the e-mail and every password are never written to application logs, audit rows or error bodies (an e-mail may appear only masked, a token only as its id).",
+        "description": "Public. Replaces the password, consumes the token (single use) and invalidates the user's other sessions (card AC2), then logs the user in: the response is the contract Session plus the flash text, and the cookie is set (not remembered). An unknown, used, expired or other-e-mail token, and an unknown e-mail, all answer 422 \"This password reset token is invalid.\" on fields.email: the unknown e-mail never gets a user-not-found message (decided, D55b, no account enumeration; the mock answered \"We can't find a user with that email address.\"). An inactive account is refused with 403 ACCOUNT_INACTIVE and nothing changes (reachable only with a valid token, so not an oracle). Token rules: The token is at least 128 bits from a CSPRNG; only its hash is stored; it is valid 60 minutes and single use; issuing a new token revokes every earlier unused token of that user (one active token); a successful reset consumes every outstanding token of the user; the stored hash is compared in constant time; an inactive account is never issued a token; a successful reset-ic and a successful reset notify the account owner AND the school (D59a, see ACCOUNT_SECURITY_NOTIFICATIONS); the token is bound to the e-mail it was issued for and is redeemable only with that same e-mail. Every wrong redemption counts as a failure: 5 failures per 60 seconds per (e-mail hash, client IP) and 20 per client IP, then 429 RATE_LIMITED with retryAfter and the Retry-After header (BE-03 login numbers, backoff doubling). A successful reset: invalidates the user's other sessions and remember tokens, re-hashes the password with argon2id, clears must-change-password, writes an audit event (without the token) and notifies the user in-app (proposed copy \"Kata laluan telah ditetapkan semula\") and the school admins of the user's school (D59a, proposed copy \"Kata laluan murid ditetapkan semula\"; none for an account without a school). The response sets the session cookie and is Cache-Control: no-store. Log redaction (BE-NFR-10, BE-NFR-11): the request body, the IC number, the reset token, the e-mail and every password are never written to application logs, audit rows or error bodies (an e-mail may appear only masked, a token only as its id).",
         "requestBody": {
           "required": true,
           "content": {
@@ -77339,7 +79255,7 @@
           "account"
         ],
         "summary": "Reset by e-mail and IC number (returns a reset token)",
-        "description": "Public. The IC number is compared with its stored hash and is never returned. A match returns a reset token (data.token only, the e-mail is not echoed) bound to that e-mail: it can only be redeemed through /auth/password/reset together with the same e-mail, never for another account or any other way. Token rules: The token is at least 128 bits from a CSPRNG; only its hash is stored; it is valid 60 minutes and single use; issuing a new token revokes every earlier unused token of that user (one active token); a successful reset consumes every outstanding token of the user; the stored hash is compared in constant time; an inactive account is never issued a token; the token is bound to the e-mail it was issued for and is redeemable only with that same e-mail. The response is Cache-Control: no-store. An unknown e-mail, an inactive account, an account without a stored IC (teacher, parent) and a wrong IC number are indistinguishable in status, body and timing (equal work, dummy compare; no token is issued for an inactive account): 422 \"Email atau No Kad Pengenalan tidak sepadan.\" on fields.email. A match behaves no differently from a miss for throttling: EVERY attempt, match or not, also starts the 60 second per-e-mail throttle of /auth/password/email (keyed on the e-mail hash), so a 429 there never reveals a correct guess. A match is audited (without the IC or the token) and notifies the account owner in-app (NotificationsService.push, proposed copy \"Permintaan tetap semula kata laluan\"), so a takeover is visible. Open product question: whether IC-only self-service reset is acceptable for minors (PDPA) is a pending lead/user decision. Log redaction (BE-NFR-10, BE-NFR-11): the request body, the IC number, the reset token, the e-mail and every password are never written to application logs, audit rows or error bodies (an e-mail may appear only masked, a token only as its id). Attempt limit (D55a): at most 5 attempts per 15 minutes, counted separately per account (e-mail, whether or not it exists, so the limit does not reveal existence) and per client IP; every attempt counts, successful or not, and whichever limit is reached first answers 429 RATE_LIMITED with retryAfter seconds (also the Retry-After header).",
+        "description": "Public. The IC number is compared with its stored hash and is never returned. A match returns a reset token (data.token only, the e-mail is not echoed) bound to that e-mail: it can only be redeemed through /auth/password/reset together with the same e-mail, never for another account or any other way. Token rules: The token is at least 128 bits from a CSPRNG; only its hash is stored; it is valid 60 minutes and single use; issuing a new token revokes every earlier unused token of that user (one active token); a successful reset consumes every outstanding token of the user; the stored hash is compared in constant time; an inactive account is never issued a token; a successful reset-ic and a successful reset notify the account owner AND the school (D59a, see ACCOUNT_SECURITY_NOTIFICATIONS); the token is bound to the e-mail it was issued for and is redeemable only with that same e-mail. The response is Cache-Control: no-store. An unknown e-mail, an inactive account, an account without a stored IC (teacher, parent) and a wrong IC number are indistinguishable in status, body and timing (equal work, dummy compare; no token is issued for an inactive account): 422 \"Email atau No Kad Pengenalan tidak sepadan.\" on fields.email. A match behaves no differently from a miss for throttling: EVERY attempt, match or not, also starts the 60 second per-e-mail throttle of /auth/password/email (keyed on the e-mail hash), so a 429 there never reveals a correct guess. A match is audited (without the IC or the token) and notifies the account owner AND the school in-app (NotificationsService.push: the owner, proposed copy \"Permintaan tetap semula kata laluan\", and the school admins of the user's school, proposed copy \"Kata laluan murid ditetapkan semula\" naming the user by display name only; an account without a school notifies only its owner), so a takeover is visible. Decided D59a: IC-only reset is allowed for all roles including pupils, with D55a limits and owner + school notification. Log redaction (BE-NFR-10, BE-NFR-11): the request body, the IC number, the reset token, the e-mail and every password are never written to application logs, audit rows or error bodies (an e-mail may appear only masked, a token only as its id). Attempt limit (D55a): at most 5 attempts per 15 minutes, counted separately per account (e-mail, whether or not it exists, so the limit does not reveal existence) and per client IP; every attempt counts, successful or not, and whichever limit is reached first answers 429 RATE_LIMITED with retryAfter seconds (also the Retry-After header).",
         "requestBody": {
           "required": true,
           "content": {
@@ -78990,7 +80906,7 @@
           "school-admin"
         ],
         "summary": "Create a teacher (S11)",
-        "description": "Creates an active teacher of the caller school (createdBy = the caller). The password (8 to 255 characters) is hashed and never returned. The e-mail is unique across all schools (accepted enumeration trade-off, see POST /admin-sekolah/pelajar). Unknown and protected body keys are ignored (mass-assignment waiver).",
+        "description": "Creates an active teacher of the caller school (createdBy = the caller). D59b: there is no password in the request; the server ALWAYS generates a random initial password (CSPRNG, at least 12 characters), returns it once in credential.password and sets mustChangePassword true (the first login forces a change, BE-03). The password is never logged, never stored in plain text and never re-served; the 201 carries Cache-Control: no-store and Pragma: no-cache (D57b). LOST RESPONSE: recover with POST /admin-sekolah/guru/{id}/reset-password; the optional Idempotency-Key header prevents a duplicate account on a retry (a replayed key answers 409 CONFLICT, proposed). The e-mail is unique across all schools (accepted enumeration trade-off, see POST /admin-sekolah/pelajar). Unknown and protected body keys, a password key included, are ignored (mass-assignment waiver).",
         "parameters": [
           {
             "schema": {
@@ -79001,6 +80917,18 @@
             "required": true,
             "description": "Value of Session.csrf; required on mutating requests.",
             "name": "X-CSRF-Token",
+            "in": "header"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 128,
+              "description": "Optional (BE-NFR-18, proposed). A client-generated key, one per create attempt. A replay with a key the server has already used answers 409 CONFLICT and never creates a second account; the credential is NOT re-served (recover with reset-password)."
+            },
+            "required": false,
+            "description": "Optional (BE-NFR-18, proposed). A client-generated key, one per create attempt. A replay with a key the server has already used answers 409 CONFLICT and never creates a second account; the credential is NOT re-served (recover with reset-password).",
+            "name": "Idempotency-Key",
             "in": "header"
           }
         ],
@@ -79016,11 +80944,25 @@
         },
         "responses": {
           "201": {
-            "description": "Created; status \"Pengguna berjaya didaftarkan.\".",
+            "description": "Created, with the one-time credential and mustChangePassword true; status \"Pengguna berjaya didaftarkan.\". Never cached.",
+            "headers": {
+              "Cache-Control": {
+                "description": "no-store (nothing is kept by a proxy or the browser cache).",
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "Pragma": {
+                "description": "no-cache (HTTP/1.0 caches).",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/SchoolAdminUserWriteResult"
+                  "$ref": "#/components/schemas/SchoolAdminTeacherCreatedResult"
                 }
               }
             }
@@ -79037,6 +80979,16 @@
           },
           "403": {
             "description": "FORBIDDEN \"This action is unauthorized.\" (role is not school_admin, Admin Pusat included, or no school), or CSRF_INVALID (missing or wrong X-CSRF-Token).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "CONFLICT (proposed): the Idempotency-Key was already used. No second account is created and the credential is NOT re-served; use reset-password.",
             "content": {
               "application/json": {
                 "schema": {
@@ -79465,7 +81417,7 @@
           "school-admin"
         ],
         "summary": "Reset a teacher password",
-        "description": "The target must be an active teacher of the school. Replaces the hash at once and revokes the target sessions (not the caller). The new password (8 to 255 characters) is never echoed or logged. Rate limited (429).",
+        "description": "The target must be an active teacher of the school. Replaces the hash at once and revokes the target sessions (not the caller). The new password (8 to 255 characters, chosen by the admin) is required: there is no fallback to a shared default password (D59b). It is never echoed or logged. Rate limited (429).",
         "parameters": [
           {
             "schema": {
@@ -79665,7 +81617,7 @@
           "school-admin"
         ],
         "summary": "Create a pupil (S12)",
-        "description": "Creates an active pupil of the caller school (createdBy = the caller); with classId the pupil is enrolled with source school_admin. D55c: the response shows the password once, to the creating admin only (never logged, never stored in plain text, not retrievable again) and returns mustChangePassword true: the account is flagged so the first login forces a password change (BE-03). The 201 carries Cache-Control: no-store (D57b). LOST RESPONSE: the credential is never re-served. If the 201 is lost, a retry answers 422 \"The email has already been taken.\" and the password is gone; recover with POST /admin-sekolah/pelajar/{id}/reset-password (the admin sets a new password). The server must not store the plaintext to support a retry. The optional Idempotency-Key header prevents a duplicate account on a retry: a replayed key answers 409 CONFLICT and never re-serves the credential. ACCEPTED TRADE-OFF (e-mail enumeration): the e-mail is unique across all schools, so the 422 \"The email has already been taken.\" reveals that an address is registered somewhere (a pupil of another school included). It cannot be hidden without dropping uniqueness; it is mitigated by the 429 rate limit and the audit trail. An empty password means the configured default password; the account is then still must-change-password (D55c / D57c; risk accepted pending LEAD, a server-generated random initial password is the alternative and keeps the same wire shape). Mass assignment waiver: role, schoolId, isActive, grade and icNumber in the body are ignored, never bound (BE-NFR-05 exception, mock fidelity). 429 RATE_LIMITED guards bulk account creation.",
+        "description": "Creates an active pupil of the caller school (createdBy = the caller); with classId the pupil is enrolled with source school_admin. D55c: the response shows the password once, to the creating admin only (never logged, never stored in plain text, not retrievable again) and returns mustChangePassword true: the account is flagged so the first login forces a password change (BE-03). The 201 carries Cache-Control: no-store (D57b). LOST RESPONSE: the credential is never re-served. If the 201 is lost, a retry answers 422 \"The email has already been taken.\" and the password is gone; recover with POST /admin-sekolah/pelajar/{id}/reset-password (the admin sets a new password). The server must not store the plaintext to support a retry. The optional Idempotency-Key header prevents a duplicate account on a retry: a replayed key answers 409 CONFLICT and never re-serves the credential. ACCEPTED TRADE-OFF (e-mail enumeration): the e-mail is unique across all schools, so the 422 \"The email has already been taken.\" reveals that an address is registered somewhere (a pupil of another school included). It cannot be hidden without dropping uniqueness; it is mitigated by the 429 rate limit and the audit trail. D59b: there is no password in the request and no shared default password: the server ALWAYS generates a random initial password (CSPRNG, at least 12 characters; exact policy in the implementation card) and returns it once in credential.password with mustChangePassword true. Mass assignment waiver: role, schoolId, isActive, grade, icNumber and a password key in the body are ignored, never bound (BE-NFR-05 exception, mock fidelity). 429 RATE_LIMITED guards bulk account creation.",
         "parameters": [
           {
             "schema": {
@@ -79793,10 +81745,10 @@
           "school-admin"
         ],
         "summary": "Create-pupil form data (S12)",
-        "description": "Matches before the {id} route. Never carries the default password.",
+        "description": "Matches before the {id} route. Carries the school and the active classes only: there is no password field in the create form (D59b, the server generates the initial password).",
         "responses": {
           "200": {
-            "description": "School, active classes and password hints.",
+            "description": "School and active classes.",
             "content": {
               "application/json": {
                 "schema": {
@@ -80130,7 +82082,7 @@
           "school-admin"
         ],
         "summary": "Reset a pupil password",
-        "description": "The target must be an active pupil of the school. Replaces the hash at once and revokes the target sessions (not the caller). The new password (8 to 255 characters) is never echoed or logged. This is the recovery path when the one-time credential of POST /admin-sekolah/pelajar was lost. Rate limited (429).",
+        "description": "The target must be an active pupil of the school. Replaces the hash at once and revokes the target sessions (not the caller). The new password (8 to 255 characters, chosen by the admin) is required: there is no fallback to a shared default password (D59b). It is never echoed or logged. This is the recovery path when the one-time credential of POST /admin-sekolah/pelajar was lost. Rate limited (429).",
         "parameters": [
           {
             "schema": {
@@ -87785,6 +89737,1425 @@
         }
       }
     },
+    "/admin/papers": {
+      "get": {
+        "tags": [
+          "bijak-builder"
+        ],
+        "summary": "Paper builder: list papers (draf and terbit)",
+        "description": "Newest update first. Optional filter: status. Each row (AdminPaperSummary) carries subjectName, code, budget and ok. The mock listAdminPapers returns a plain array; this route is paged (deviations log). BM strings quoted from the mock server/admin.ts are confirmed by the LEAD round-3 review; any string or field the mock does not have is marked [PROPOSED]. Admin Pusat only (D40a); Guru, Admin Sekolah and Murid get 403.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "required": false,
+            "name": "page",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100
+            },
+            "required": false,
+            "name": "pageSize",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "$ref": "#/components/schemas/BijakBuilderPaperStatus"
+            },
+            "required": false,
+            "description": "draf = being assembled (editable, can be deleted); terbit = published, visible in Kertas Pilihan and locked. Unpublish (tarik balik) sets the status back to draf; there is no ready or withdrawn state. Mapping to BE-15 `papers.status` (draft, ready, published, withdrawn) is internal: draf = draft or withdrawn, terbit = published; ready is not exposed.",
+            "name": "status",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Papers (paged).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/BijakBuilderPaperSummary"
+                      }
+                    },
+                    "meta": {
+                      "$ref": "#/components/schemas/ListMeta"
+                    }
+                  },
+                  "required": [
+                    "data",
+                    "meta"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED (no valid session).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN (the active role is not Admin Pusat).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "bijak-builder"
+        ],
+        "summary": "Paper builder: create a paper (createPaper)",
+        "description": "Body { subject, kertas, title? }. The sections come from the blueprint of that subject and kertas and start empty; the status is draf. Answers the new id. No blueprint for the pair: a plain 422 VALIDATION_ERROR \"Tiada blueprint untuk subjek dan kertas ini\" with no field (the mock throws it without a field). The mock throws bad_request for every refusal; ErrorCode has no BAD_REQUEST, so the refusal is 422 VALIDATION_ERROR (mapping awaits the LEAD decision, deviations log). BM strings quoted from the mock server/admin.ts are confirmed by the LEAD round-3 review; any string or field the mock does not have is marked [PROPOSED]. Admin Pusat only (D40a); Guru, Admin Sekolah and Murid get 403.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Value of Session.csrf; required on mutating requests."
+            },
+            "required": true,
+            "description": "Value of Session.csrf; required on mutating requests.",
+            "name": "X-CSRF-Token",
+            "in": "header"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BijakBuilderPaperCreate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "The new paper id.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/BijakBuilderPaperCreateResult"
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED (no valid session).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN (the active role is not Admin Pusat) or CSRF_INVALID \"Sesi tidak sah. Sila muat semula halaman dan cuba lagi.\" (missing or wrong X-CSRF-Token).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "anyOf": [
+                    {
+                      "$ref": "#/components/schemas/ErrorBody"
+                    },
+                    {
+                      "$ref": "#/components/schemas/BijakBuilderCsrfError"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "VALIDATION_ERROR: no blueprint \"Tiada blueprint untuk subjek dan kertas ini\" (no field), or fields (subject, kertas, title \"Tajuk kertas diperlukan\").",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "RATE_LIMITED \"Terlalu banyak percubaan. Sila cuba sebentar lagi.\" The body carries retryAfter (seconds) and the Retry-After header carries the same value.",
+            "headers": {
+              "Retry-After": {
+                "description": "Seconds until a retry is allowed (same value as error.retryAfter).",
+                "schema": {
+                  "type": "integer",
+                  "minimum": 0
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/papers/preview": {
+      "post": {
+        "tags": [
+          "bijak-builder"
+        ],
+        "summary": "Paper builder: student-view preview of questions, saved or not (previewQuestions)",
+        "description": "Body { ids }: the question ids currently in the editor, so unsaved edits can be previewed (the mock previewQuestions(ids)). Answers { questions, stimuli, optionBanks }: the questions as a student sees them, the stimulus of each group by group id and the shared option bank of each group by group id. It never carries an answer key or scheme. It reads only; it is a POST because it takes a body, so it needs the CSRF header and is rate limited. Ids that do not exist are left out [PROPOSED]. The ReviewQuestion field list is derived from the BE-16 student view [PROPOSED]. BM strings quoted from the mock server/admin.ts are confirmed by the LEAD round-3 review; any string or field the mock does not have is marked [PROPOSED]. Admin Pusat only (D40a); Guru, Admin Sekolah and Murid get 403.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Value of Session.csrf; required on mutating requests."
+            },
+            "required": true,
+            "description": "Value of Session.csrf; required on mutating requests.",
+            "name": "X-CSRF-Token",
+            "in": "header"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BijakBuilderPreviewRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Questions, stimuli and option banks.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/BijakBuilderPreview"
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED (no valid session).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN (the active role is not Admin Pusat) or CSRF_INVALID \"Sesi tidak sah. Sila muat semula halaman dan cuba lagi.\" (missing or wrong X-CSRF-Token).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "anyOf": [
+                    {
+                      "$ref": "#/components/schemas/ErrorBody"
+                    },
+                    {
+                      "$ref": "#/components/schemas/BijakBuilderCsrfError"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "VALIDATION_ERROR with fields (ids).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "RATE_LIMITED \"Terlalu banyak percubaan. Sila cuba sebentar lagi.\" The body carries retryAfter (seconds) and the Retry-After header carries the same value.",
+            "headers": {
+              "Retry-After": {
+                "description": "Seconds until a retry is allowed (same value as error.retryAfter).",
+                "schema": {
+                  "type": "integer",
+                  "minimum": 0
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/papers/{id}": {
+      "get": {
+        "tags": [
+          "bijak-builder"
+        ],
+        "summary": "Paper builder: the editor read (getPaperEditor)",
+        "description": "PaperEditorData: the paper (AdminPaper, with sections and question ids), the blueprint of its subject and kertas (BlueprintView, or null), the picker candidates (BuilderQuestion) and the stimulus groups (BuilderGroup). BM strings quoted from the mock server/admin.ts are confirmed by the LEAD round-3 review; any string or field the mock does not have is marked [PROPOSED]. Admin Pusat only (D40a); Guru, Admin Sekolah and Murid get 403.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 64,
+              "description": "Paper id.",
+              "example": "1042"
+            },
+            "required": true,
+            "description": "Paper id.",
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The paper, its blueprint, picker questions and groups.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/BijakBuilderEditor"
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED (no valid session).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN (the active role is not Admin Pusat).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "NOT_FOUND \"Kertas tidak ditemui\".",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "bijak-builder"
+        ],
+        "summary": "Paper builder: edit a paper (single PUT, PaperPatch)",
+        "description": "Body { title?, year?, durationMin?, sections?: [{ id, questionIds }] }; only the keys sent change. This one route carries every edit. A terbit paper is refused: 422 VALIDATION_ERROR \"Kertas Terbit tidak boleh disunting. Tarik balik dahulu.\" (no field). Other refusals: title \"Tajuk kertas diperlukan\"; a section id that is not a section of the paper \"Bahagian tidak sah\"; a question whose curriculum subject differs from the paper subject \"Soalan tidak sah untuk kertas ini\" (a subject check only, not a kertas or status check). Duplicates and split groups are not refused here; they come back as publish errors. Answers the updated paper. The mock throws bad_request for every refusal; ErrorCode has no BAD_REQUEST, so the refusal is 422 VALIDATION_ERROR (mapping awaits the LEAD decision, deviations log). BM strings quoted from the mock server/admin.ts are confirmed by the LEAD round-3 review; any string or field the mock does not have is marked [PROPOSED]. Admin Pusat only (D40a); Guru, Admin Sekolah and Murid get 403.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 64,
+              "description": "Paper id.",
+              "example": "1042"
+            },
+            "required": true,
+            "description": "Paper id.",
+            "name": "id",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Value of Session.csrf; required on mutating requests."
+            },
+            "required": true,
+            "description": "Value of Session.csrf; required on mutating requests.",
+            "name": "X-CSRF-Token",
+            "in": "header"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BijakBuilderPaperPatch"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The updated paper.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/BijakBuilderPaper"
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED (no valid session).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN (the active role is not Admin Pusat) or CSRF_INVALID \"Sesi tidak sah. Sila muat semula halaman dan cuba lagi.\" (missing or wrong X-CSRF-Token).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "anyOf": [
+                    {
+                      "$ref": "#/components/schemas/ErrorBody"
+                    },
+                    {
+                      "$ref": "#/components/schemas/BijakBuilderCsrfError"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "NOT_FOUND \"Kertas tidak ditemui\".",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "VALIDATION_ERROR: the paper is terbit \"Kertas Terbit tidak boleh disunting. Tarik balik dahulu.\", or a field is invalid (title, year, durationMin, sections).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "RATE_LIMITED \"Terlalu banyak percubaan. Sila cuba sebentar lagi.\" The body carries retryAfter (seconds) and the Retry-After header carries the same value.",
+            "headers": {
+              "Retry-After": {
+                "description": "Seconds until a retry is allowed (same value as error.retryAfter).",
+                "schema": {
+                  "type": "integer",
+                  "minimum": 0
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "bijak-builder"
+        ],
+        "summary": "Paper builder: delete a paper (idempotent)",
+        "description": "Idempotent, as the mock deletePaper: an unknown id also answers 200 { data: { ok: true } } (so there is no 404). A terbit paper answers 422 VALIDATION_ERROR \"Tarik balik kertas Terbit sebelum memadam\" (no field); unpublish it first. The mock throws bad_request for every refusal; ErrorCode has no BAD_REQUEST, so the refusal is 422 VALIDATION_ERROR (mapping awaits the LEAD decision, deviations log). BM strings quoted from the mock server/admin.ts are confirmed by the LEAD round-3 review; any string or field the mock does not have is marked [PROPOSED]. Admin Pusat only (D40a); Guru, Admin Sekolah and Murid get 403.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 64,
+              "description": "Paper id.",
+              "example": "1042"
+            },
+            "required": true,
+            "description": "Paper id.",
+            "name": "id",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Value of Session.csrf; required on mutating requests."
+            },
+            "required": true,
+            "description": "Value of Session.csrf; required on mutating requests.",
+            "name": "X-CSRF-Token",
+            "in": "header"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Deleted, or there was nothing to delete.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/BijakBuilderOk"
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED (no valid session).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN (the active role is not Admin Pusat) or CSRF_INVALID \"Sesi tidak sah. Sila muat semula halaman dan cuba lagi.\" (missing or wrong X-CSRF-Token).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "anyOf": [
+                    {
+                      "$ref": "#/components/schemas/ErrorBody"
+                    },
+                    {
+                      "$ref": "#/components/schemas/BijakBuilderCsrfError"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "VALIDATION_ERROR \"Tarik balik kertas Terbit sebelum memadam\" (no field).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "RATE_LIMITED \"Terlalu banyak percubaan. Sila cuba sebentar lagi.\" The body carries retryAfter (seconds) and the Retry-After header carries the same value.",
+            "headers": {
+              "Retry-After": {
+                "description": "Seconds until a retry is allowed (same value as error.retryAfter).",
+                "schema": {
+                  "type": "integer",
+                  "minimum": 0
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/papers/{id}/publish": {
+      "post": {
+        "tags": [
+          "bijak-builder"
+        ],
+        "summary": "Paper builder: publish (draf to terbit)",
+        "description": "No request body. A normal 200 result (not an error): { ok: true, errors: [] }, or { ok: false, errors: string[] } with the BM lines built by checkPaper, each prefixed with the section label (\"{label}: \"): \"Kurang N soalan (perlu X, ada Y)\", \"Markah M tidak sama dengan bajet B\", \"{N} soalan belum Terbit\", \"Kumpulan rangsangan G tidak berturutan\", \"tidak lengkap\", and the paper-wide \"Soalan berulang dalam kertas: ...\" and \"Kumpulan rangsangan X dipecahkan antara dua bahagian\". Nothing changes on ok: false. On ok: true the status becomes terbit and the paper appears in GET /bijak/papers; implementations pin the question versions in force (a later edit, version n+1, does not change the paper). Publishing a paper that is already terbit is a no-op { ok: true, errors: [] } [PROPOSED]. BM strings quoted from the mock server/admin.ts are confirmed by the LEAD round-3 review; any string or field the mock does not have is marked [PROPOSED]. Admin Pusat only (D40a); Guru, Admin Sekolah and Murid get 403.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 64,
+              "description": "Paper id.",
+              "example": "1042"
+            },
+            "required": true,
+            "description": "Paper id.",
+            "name": "id",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Value of Session.csrf; required on mutating requests."
+            },
+            "required": true,
+            "description": "Value of Session.csrf; required on mutating requests.",
+            "name": "X-CSRF-Token",
+            "in": "header"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Publish result (ok true or false).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/BijakBuilderPublishResult"
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED (no valid session).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN (the active role is not Admin Pusat) or CSRF_INVALID \"Sesi tidak sah. Sila muat semula halaman dan cuba lagi.\" (missing or wrong X-CSRF-Token).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "anyOf": [
+                    {
+                      "$ref": "#/components/schemas/ErrorBody"
+                    },
+                    {
+                      "$ref": "#/components/schemas/BijakBuilderCsrfError"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "NOT_FOUND \"Kertas tidak ditemui\".",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "RATE_LIMITED \"Terlalu banyak percubaan. Sila cuba sebentar lagi.\" The body carries retryAfter (seconds) and the Retry-After header carries the same value.",
+            "headers": {
+              "Retry-After": {
+                "description": "Seconds until a retry is allowed (same value as error.retryAfter).",
+                "schema": {
+                  "type": "integer",
+                  "minimum": 0
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/papers/{id}/withdraw": {
+      "post": {
+        "tags": [
+          "bijak-builder"
+        ],
+        "summary": "Paper builder: unpublish, tarik balik (terbit back to draf)",
+        "description": "No request body. The status goes back to draf (the mock unpublishPaper; there is no withdrawn state). The paper leaves GET /bijak/papers; attempts already started are unaffected. A paper that is already draf is a no-op [PROPOSED]. The path name follows the card (\"tarik balik\"). The mock method returns void; this route answers the updated paper (deviations log). BM strings quoted from the mock server/admin.ts are confirmed by the LEAD round-3 review; any string or field the mock does not have is marked [PROPOSED]. Admin Pusat only (D40a); Guru, Admin Sekolah and Murid get 403.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 64,
+              "description": "Paper id.",
+              "example": "1042"
+            },
+            "required": true,
+            "description": "Paper id.",
+            "name": "id",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Value of Session.csrf; required on mutating requests."
+            },
+            "required": true,
+            "description": "Value of Session.csrf; required on mutating requests.",
+            "name": "X-CSRF-Token",
+            "in": "header"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The paper, now draf.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/BijakBuilderPaper"
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED (no valid session).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN (the active role is not Admin Pusat) or CSRF_INVALID \"Sesi tidak sah. Sila muat semula halaman dan cuba lagi.\" (missing or wrong X-CSRF-Token).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "anyOf": [
+                    {
+                      "$ref": "#/components/schemas/ErrorBody"
+                    },
+                    {
+                      "$ref": "#/components/schemas/BijakBuilderCsrfError"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "NOT_FOUND \"Kertas tidak ditemui\".",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "RATE_LIMITED \"Terlalu banyak percubaan. Sila cuba sebentar lagi.\" The body carries retryAfter (seconds) and the Retry-After header carries the same value.",
+            "headers": {
+              "Retry-After": {
+                "description": "Seconds until a retry is allowed (same value as error.retryAfter).",
+                "schema": {
+                  "type": "integer",
+                  "minimum": 0
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/blueprints": {
+      "get": {
+        "tags": [
+          "bijak-blueprint-admin"
+        ],
+        "summary": "Blueprint: list blueprints (BlueprintView, latest active version)",
+        "description": "One row per blueprint (subject and kertas), as the mock listBlueprints (BlueprintView). Filters: subject, kertas. Retired blueprints are not listed [PROPOSED]. The mock returns a plain array; this route is paged (deviations log). BM strings quoted from the mock server/admin.ts are confirmed by the LEAD round-3 review; any string or field the mock does not have is marked [PROPOSED]. Admin Pusat only (D40a); Guru, Admin Sekolah and Murid get 403.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "required": false,
+            "name": "page",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100
+            },
+            "required": false,
+            "name": "pageSize",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "maxLength": 32,
+              "description": "Subject code."
+            },
+            "required": false,
+            "description": "Subject code.",
+            "name": "subject",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "required": false,
+            "name": "kertas",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Blueprints (paged).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/BijakBlueprintView"
+                      }
+                    },
+                    "meta": {
+                      "$ref": "#/components/schemas/ListMeta"
+                    }
+                  },
+                  "required": [
+                    "data",
+                    "meta"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED (no valid session).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN (the active role is not Admin Pusat).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "bijak-blueprint-admin"
+        ],
+        "summary": "Blueprint admin: create a blueprint, version 1 (NO MOCK)",
+        "description": "No mock exists for blueprint writes; kept because the card requires them. A second blueprint for the same subject and kertas answers 409 CONFLICT \"Kontrak untuk subjek dan kertas ini sudah wujud. Cipta versi baharu.\" [PROPOSED]: add a version instead. BM strings quoted from the mock server/admin.ts are confirmed by the LEAD round-3 review; any string or field the mock does not have is marked [PROPOSED]. Admin Pusat only (D40a); Guru, Admin Sekolah and Murid get 403.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Value of Session.csrf; required on mutating requests."
+            },
+            "required": true,
+            "description": "Value of Session.csrf; required on mutating requests.",
+            "name": "X-CSRF-Token",
+            "in": "header"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BijakBlueprintAdminCreate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "The created blueprint (version 1).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/BijakBlueprintView"
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED (no valid session).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN (the active role is not Admin Pusat) or CSRF_INVALID \"Sesi tidak sah. Sila muat semula halaman dan cuba lagi.\" (missing or wrong X-CSRF-Token).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "anyOf": [
+                    {
+                      "$ref": "#/components/schemas/ErrorBody"
+                    },
+                    {
+                      "$ref": "#/components/schemas/BijakBuilderCsrfError"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "CONFLICT \"Kontrak untuk subjek dan kertas ini sudah wujud. Cipta versi baharu.\" [PROPOSED].",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "VALIDATION_ERROR with fields (subject, kertas, code, durationMin, sections, sections.N.*).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "RATE_LIMITED \"Terlalu banyak percubaan. Sila cuba sebentar lagi.\" The body carries retryAfter (seconds) and the Retry-After header carries the same value.",
+            "headers": {
+              "Retry-After": {
+                "description": "Seconds until a retry is allowed (same value as error.retryAfter).",
+                "schema": {
+                  "type": "integer",
+                  "minimum": 0
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/blueprints/{subject}/{kertas}": {
+      "get": {
+        "tags": [
+          "bijak-blueprint-admin"
+        ],
+        "summary": "Blueprint: one blueprint by subject and kertas (BlueprintView)",
+        "description": "BlueprintView has no id, so a blueprint is addressed by subject and kertas, as the mock does. Route path is [PROPOSED]. BM strings quoted from the mock server/admin.ts are confirmed by the LEAD round-3 review; any string or field the mock does not have is marked [PROPOSED]. Admin Pusat only (D40a); Guru, Admin Sekolah and Murid get 403.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 32,
+              "description": "Subject code.",
+              "example": "MAT"
+            },
+            "required": true,
+            "description": "Subject code.",
+            "name": "subject",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "description": "Kertas number.",
+              "example": 2
+            },
+            "required": true,
+            "description": "Kertas number.",
+            "name": "kertas",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The blueprint.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/BijakBlueprintView"
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED (no valid session).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN (the active role is not Admin Pusat).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "NOT_FOUND \"Kontrak tidak ditemui\" [PROPOSED].",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/blueprints/{subject}/{kertas}/versions": {
+      "post": {
+        "tags": [
+          "bijak-blueprint-admin"
+        ],
+        "summary": "Blueprint admin: add a new version, the only way to edit (NO MOCK)",
+        "description": "No mock exists; kept because the card requires it. Creates version n+1 from the full body; earlier versions stay as they were (a version used by a terbit paper is immutable). The version number is internal and not part of BlueprintView. A retired blueprint answers 409 CONFLICT \"Kontrak ini sudah dipersara.\" [PROPOSED]. Answers the view of the new latest version. BM strings quoted from the mock server/admin.ts are confirmed by the LEAD round-3 review; any string or field the mock does not have is marked [PROPOSED]. Admin Pusat only (D40a); Guru, Admin Sekolah and Murid get 403.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 32,
+              "description": "Subject code.",
+              "example": "MAT"
+            },
+            "required": true,
+            "description": "Subject code.",
+            "name": "subject",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "description": "Kertas number.",
+              "example": 2
+            },
+            "required": true,
+            "description": "Kertas number.",
+            "name": "kertas",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Value of Session.csrf; required on mutating requests."
+            },
+            "required": true,
+            "description": "Value of Session.csrf; required on mutating requests.",
+            "name": "X-CSRF-Token",
+            "in": "header"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BijakBlueprintAdminVersionInput"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "The blueprint at its new version.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/BijakBlueprintView"
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED (no valid session).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN (the active role is not Admin Pusat) or CSRF_INVALID \"Sesi tidak sah. Sila muat semula halaman dan cuba lagi.\" (missing or wrong X-CSRF-Token).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "anyOf": [
+                    {
+                      "$ref": "#/components/schemas/ErrorBody"
+                    },
+                    {
+                      "$ref": "#/components/schemas/BijakBuilderCsrfError"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "NOT_FOUND \"Kontrak tidak ditemui\" [PROPOSED].",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "CONFLICT \"Kontrak ini sudah dipersara.\" [PROPOSED].",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "VALIDATION_ERROR with fields (code, durationMin, sections, sections.N.*).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "RATE_LIMITED \"Terlalu banyak percubaan. Sila cuba sebentar lagi.\" The body carries retryAfter (seconds) and the Retry-After header carries the same value.",
+            "headers": {
+              "Retry-After": {
+                "description": "Seconds until a retry is allowed (same value as error.retryAfter).",
+                "schema": {
+                  "type": "integer",
+                  "minimum": 0
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/blueprints/{subject}/{kertas}/retire": {
+      "post": {
+        "tags": [
+          "bijak-blueprint-admin"
+        ],
+        "summary": "Blueprint admin: retire a blueprint (NO MOCK)",
+        "description": "No mock exists; kept because the card requires it. No request body. Every version becomes retired: it is no longer listed and new papers cannot be created from it. Terbit papers keep their version. Retiring a retired blueprint answers 409 CONFLICT \"Kontrak ini sudah dipersara.\" [PROPOSED]. BM strings quoted from the mock server/admin.ts are confirmed by the LEAD round-3 review; any string or field the mock does not have is marked [PROPOSED]. Admin Pusat only (D40a); Guru, Admin Sekolah and Murid get 403.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 32,
+              "description": "Subject code.",
+              "example": "MAT"
+            },
+            "required": true,
+            "description": "Subject code.",
+            "name": "subject",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "description": "Kertas number.",
+              "example": 2
+            },
+            "required": true,
+            "description": "Kertas number.",
+            "name": "kertas",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Value of Session.csrf; required on mutating requests."
+            },
+            "required": true,
+            "description": "Value of Session.csrf; required on mutating requests.",
+            "name": "X-CSRF-Token",
+            "in": "header"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Retired.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/BijakBuilderOk"
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED (no valid session).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN (the active role is not Admin Pusat) or CSRF_INVALID \"Sesi tidak sah. Sila muat semula halaman dan cuba lagi.\" (missing or wrong X-CSRF-Token).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "anyOf": [
+                    {
+                      "$ref": "#/components/schemas/ErrorBody"
+                    },
+                    {
+                      "$ref": "#/components/schemas/BijakBuilderCsrfError"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "NOT_FOUND \"Kontrak tidak ditemui\" [PROPOSED].",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "CONFLICT \"Kontrak ini sudah dipersara.\" [PROPOSED].",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "RATE_LIMITED \"Terlalu banyak percubaan. Sila cuba sebentar lagi.\" The body carries retryAfter (seconds) and the Retry-After header carries the same value.",
+            "headers": {
+              "Retry-After": {
+                "description": "Seconds until a retry is allowed (same value as error.retryAfter).",
+                "schema": {
+                  "type": "integer",
+                  "minimum": 0
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/me/parent-invite": {
       "get": {
         "tags": [
@@ -90564,7 +93935,7 @@
             "description": "The reply. Raw snake_case body, no envelope.",
             "headers": {
               "Cache-Control": {
-                "description": "no-store: the body carries personal data of minors (chat text, essays, student names).",
+                "description": "no-store: the body carries personal data of minors (chat text, essays, student names, class and lesson plans).",
                 "schema": {
                   "type": "string",
                   "enum": [
@@ -90602,17 +93973,24 @@
             }
           },
           "422": {
-            "description": "Blank or non-string message: body exactly `{}`. Nothing stored.",
+            "description": "Blank or non-string message: body exactly `{}`. Message longer than 2000 characters: raw body `{error: \"Mesej terlalu panjang (maksimum 2000 aksara).\", code: \"VALIDATION_ERROR\"}`. Nothing stored.",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/CikguChatEmptyBody"
+                  "anyOf": [
+                    {
+                      "$ref": "#/components/schemas/CikguChatEmptyBody"
+                    },
+                    {
+                      "$ref": "#/components/schemas/CikguChatErrorBody"
+                    }
+                  ]
                 }
               }
             }
           },
           "429": {
-            "description": "Either the daily quota is used up (body exactly `{\"quota_exhausted\": true}`, nothing stored), or [PROPOSED] RATE_LIMITED (D57a; raw body with a BM string `error`, `code` RATE_LIMITED and `retryAfter`, plus the Retry-After header). Tell them apart by the `quota_exhausted` key.",
+            "description": "Two different bodies share this status. (1) Daily turn quota used up: body exactly `{\"quota_exhausted\": true}`, nothing stored, no Retry-After; the client shows its quota text. (2) Per-minute throttle (D57a): raw body `{error: <BM string>, code: \"RATE_LIMITED\", retryAfter}` plus the Retry-After header. A client tells them apart by the key: `quota_exhausted === true` is the daily quota; `code === \"RATE_LIMITED\"` is the throttle (retry after `retryAfter` seconds).",
             "headers": {
               "Retry-After": {
                 "description": "Seconds until a retry is allowed (same value as error.retryAfter).",
@@ -90638,7 +94016,7 @@
             }
           },
           "503": {
-            "description": "[PROPOSED] AI_UNAVAILABLE: raw body `{error: \"Cikgu Alesa tak boleh respon. Cuba lagi.\", code: \"AI_UNAVAILABLE\"}`. Nothing is stored and no quota turn is consumed.",
+            "description": "AI_UNAVAILABLE: raw body `{error: \"Cikgu Alesa tidak dapat menjawab sekarang. Sila cuba sebentar lagi.\", code: \"AI_UNAVAILABLE\"}`. Nothing is stored and no quota turn is consumed.",
             "content": {
               "application/json": {
                 "schema": {
@@ -90656,7 +94034,7 @@
           "cikgu"
         ],
         "summary": "My RPH list",
-        "description": "Teacher or admin. Only the caller's own RPHs, `lessonDate` descending then id descending, 20 per page. An admin sees only their own (normally empty) rows.",
+        "description": "Teacher or admin. Only the caller's own RPHs, `lessonDate` descending then id descending, 20 per page. An admin sees only their own (normally empty) rows. Rows name subjects and topics taught to a class: `Cache-Control: no-store`.",
         "parameters": [
           {
             "schema": {
@@ -90673,6 +94051,17 @@
         "responses": {
           "200": {
             "description": "One page of the caller's RPHs.",
+            "headers": {
+              "Cache-Control": {
+                "description": "no-store: the body carries personal data of minors (chat text, essays, student names, class and lesson plans).",
+                "schema": {
+                  "type": "string",
+                  "enum": [
+                    "no-store"
+                  ]
+                }
+              }
+            },
             "content": {
               "application/json": {
                 "schema": {
@@ -90816,7 +94205,7 @@
             }
           },
           "503": {
-            "description": "[PROPOSED] AI_UNAVAILABLE \"Cikgu Alesa tak boleh respon. Cuba lagi.\" (provider error, BE-36 rate limit or AI_BUDGET_EXHAUSTED). Nothing is stored.",
+            "description": "AI_UNAVAILABLE \"Cikgu Alesa tidak dapat menjawab sekarang. Sila cuba sebentar lagi.\" (provider error, BE-36 rate limit or AI_BUDGET_EXHAUSTED). Nothing is stored.",
             "content": {
               "application/json": {
                 "schema": {
@@ -90834,7 +94223,7 @@
           "cikgu"
         ],
         "summary": "RPH detail",
-        "description": "Teacher or admin. Own rows only; unknown, foreign or non-numeric id = 404 NOT_FOUND \"Not Found.\" (no existence leak).",
+        "description": "Teacher or admin. Own rows only; unknown, foreign or non-numeric id = 404 NOT_FOUND \"Not Found.\" (no existence leak). Carries class names and plan content: `Cache-Control: no-store`.",
         "parameters": [
           {
             "schema": {
@@ -90853,6 +94242,17 @@
         "responses": {
           "200": {
             "description": "The RPH.",
+            "headers": {
+              "Cache-Control": {
+                "description": "no-store: the body carries personal data of minors (chat text, essays, student names, class and lesson plans).",
+                "schema": {
+                  "type": "string",
+                  "enum": [
+                    "no-store"
+                  ]
+                }
+              }
+            },
             "content": {
               "application/json": {
                 "schema": {
@@ -90927,7 +94327,7 @@
             "description": "One page of the caller's markings.",
             "headers": {
               "Cache-Control": {
-                "description": "no-store: the body carries personal data of minors (chat text, essays, student names).",
+                "description": "no-store: the body carries personal data of minors (chat text, essays, student names, class and lesson plans).",
                 "schema": {
                   "type": "string",
                   "enum": [
@@ -91009,7 +94409,7 @@
             "description": "The marking.",
             "headers": {
               "Cache-Control": {
-                "description": "no-store: the body carries personal data of minors (chat text, essays, student names).",
+                "description": "no-store: the body carries personal data of minors (chat text, essays, student names, class and lesson plans).",
                 "schema": {
                   "type": "string",
                   "enum": [
@@ -91092,7 +94492,7 @@
             "description": "One page of the pending tags.",
             "headers": {
               "Cache-Control": {
-                "description": "no-store: the body carries personal data of minors (chat text, essays, student names).",
+                "description": "no-store: the body carries personal data of minors (chat text, essays, student names, class and lesson plans).",
                 "schema": {
                   "type": "string",
                   "enum": [
@@ -91244,7 +94644,7 @@
           "cikgu"
         ],
         "summary": "Approve PBD tags in bulk",
-        "description": "Teacher or admin. Only the caller's `pending` tags among `ids` become `approved` with `approvedAt` = now; foreign, unknown or non-pending ids are ignored silently; duplicates count once; non-array or empty `ids` = `{approved: 0}` (never 422). `approved` = how many changed.",
+        "description": "Teacher or admin. Only the caller's `pending` tags among `ids` become `approved` with `approvedAt` = now; foreign, unknown or non-pending ids are ignored silently; duplicates count once; non-array or empty `ids` = `{approved: 0}`; more than 100 items = 422. `approved` = how many changed.",
         "parameters": [
           {
             "schema": {
@@ -91307,6 +94707,16 @@
               }
             }
           },
+          "422": {
+            "description": "VALIDATION_ERROR, `fields.ids` = \"Terlalu banyak item dipilih (maksimum 100).\" when `ids` has more than 100 items.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
           "429": {
             "description": "RATE_LIMITED \"Terlalu banyak percubaan. Sila cuba sebentar lagi.\" The body carries retryAfter (seconds) and the Retry-After header carries the same value.",
             "headers": {
@@ -91335,7 +94745,7 @@
           "cikgu"
         ],
         "summary": "Export approved PBD tags as CSV (raw file)",
-        "description": "Teacher or admin. A file, not JSON: UTF-8 `text/csv; charset=utf-8`, attachment `pbd-approved.csv`, `Cache-Control: no-store`. First line `pelajar,kelas,sp,skor,tp,tarikh_lulus`; one line per approved tag of the caller ordered by approval time (else roll-up time), student name, id; `skor` with one decimal, `tarikh_lulus` = YYYY-MM-DD (Malaysia date of approval). A cell starting with `=`, `+`, `@` or `-` gets a leading `'`; a cell containing `\"`, `,`, CR or LF is double-quoted with inner quotes doubled; lines end with `\\n`, including the last; no approved tag = the header line only. Bulk child data: rate limited (D57, [PROPOSED] on a read).",
+        "description": "Teacher or admin. A file, not JSON: UTF-8 `text/csv; charset=utf-8`, attachment `pbd-approved.csv`, `Cache-Control: no-store`. First line `pelajar,kelas,sp,skor,tp,tarikh_lulus`; one line per approved tag of the caller ordered by approval time (else roll-up time), student name, id; `skor` with one decimal, `tarikh_lulus` = YYYY-MM-DD (Malaysia date of approval). A cell starting with `=`, `+`, `@` or `-` gets a leading `'`; a cell containing `\"`, `,`, CR or LF is double-quoted with inner quotes doubled; lines end with `\\n`, including the last; no approved tag = the header line only. Bulk child data: rate limited (D57, a read of bulk child data).",
         "x-envelope": "none",
         "responses": {
           "200": {
@@ -91348,7 +94758,7 @@
                 }
               },
               "Cache-Control": {
-                "description": "no-store: the body carries personal data of minors (chat text, essays, student names).",
+                "description": "no-store: the body carries personal data of minors (chat text, essays, student names, class and lesson plans).",
                 "schema": {
                   "type": "string",
                   "enum": [

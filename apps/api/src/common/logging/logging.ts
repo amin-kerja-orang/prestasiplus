@@ -15,6 +15,12 @@ export const REDACT_PATHS = [
 
 type WithId = { id?: unknown }
 
+/** Health probes (Docker healthcheck, load balancer) are not access-logged. */
+export function isHealthRequest(req: object): boolean {
+  const path = ((req as { url?: string }).url ?? '').split('?')[0]
+  return path === '/api/health' || path === '/health'
+}
+
 /** pino-http options (JSON to stdout; the container filesystem is read-only, so no log files). */
 export function pinoHttpOptions(env: Pick<Env, 'LOG_LEVEL'>) {
   return {
@@ -22,6 +28,7 @@ export function pinoHttpOptions(env: Pick<Env, 'LOG_LEVEL'>) {
     redact: { paths: REDACT_PATHS, censor: '[Redacted]' },
     // `req.id` is set by the request-id middleware before pino-http runs.
     genReqId: (req: WithId) => String(req.id),
+    autoLogging: { ignore: isHealthRequest },
     customProps: (req: WithId) => ({ requestId: String(req.id) }),
   }
 }

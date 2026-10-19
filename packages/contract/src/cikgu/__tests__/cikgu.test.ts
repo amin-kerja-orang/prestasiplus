@@ -4,6 +4,10 @@ import { buildOpenApiDocument } from '../../openapi'
 import { CIKGU_COMPONENT_SCHEMAS } from '../paths'
 import {
   CIKGU_AI_UNAVAILABLE_MESSAGE,
+  CIKGU_BULK_IDS_MAX,
+  CIKGU_BULK_IDS_TOO_MANY,
+  CIKGU_MESSAGE_MAX,
+  CIKGU_MESSAGE_TOO_LONG,
   CIKGU_CHAT_FAILED_TEXT,
   CIKGU_GENERAL_REPLY,
   CIKGU_HANDOFF_PREFIX,
@@ -57,6 +61,17 @@ describe('chat turn: raw wire shapes', () => {
     }
   })
 
+  it('caps the message at 2000 code points with the BM message', () => {
+    expect(CIKGU_MESSAGE_MAX).toBe(2000)
+    expect(CIKGU_MESSAGE_TOO_LONG).toBe('Mesej terlalu panjang (maksimum 2000 aksara).')
+    expect(ok(CikguSendRequestSchema, { message: 'a'.repeat(2000) })).toBe(true)
+    expect(ok(CikguSendRequestSchema, { message: '😀'.repeat(2000) })).toBe(true)
+    const r = CikguSendRequestSchema.safeParse({ message: 'a'.repeat(2001) })
+    expect(r.success).toBe(false)
+    expect(r.success ? '' : r.error.issues[0]?.message).toBe(CIKGU_MESSAGE_TOO_LONG)
+    expect(ok(CikguSendRequestSchema, { message: '😀'.repeat(2001) })).toBe(false)
+  })
+
   it('parses the 200 body (snake_case, no envelope) and rejects a wrapped or malformed one', () => {
     const good = {
       thread_id: '9000001',
@@ -87,7 +102,9 @@ describe('chat turn: raw wire shapes', () => {
     expect(ok(CikguChatErrorBodySchema, { error: CIKGU_AI_UNAVAILABLE_MESSAGE, code: 'AI_UNAVAILABLE' })).toBe(true)
     expect(ok(CikguChatErrorBodySchema, { error: 'AI_UNAVAILABLE', code: 'OTHER' })).toBe(false)
     expect(ok(CikguChatErrorBodySchema, { error: { code: 'RATE_LIMITED' }, code: 'RATE_LIMITED' })).toBe(false)
-    expect(CIKGU_AI_UNAVAILABLE_MESSAGE).toBe(CIKGU_CHAT_FAILED_TEXT)
+    expect(CIKGU_AI_UNAVAILABLE_MESSAGE).toBe('Cikgu Alesa tidak dapat menjawab sekarang. Sila cuba sebentar lagi.')
+    expect(CIKGU_CHAT_FAILED_TEXT).toBe('Cikgu Alesa tak boleh respon. Cuba lagi.')
+    expect(ok(CikguChatErrorBodySchema, { error: CIKGU_MESSAGE_TOO_LONG, code: 'VALIDATION_ERROR' })).toBe(true)
   })
 })
 
@@ -308,6 +325,16 @@ describe('response bodies', () => {
     expect(ok(CikguBulkApproveRequestSchema, { ids: [] })).toBe(true)
     expect(ok(CikguBulkApproveRequestSchema, {})).toBe(true)
   })
+
+  it('caps bulk-approve ids at 100 with the BM message', () => {
+    expect(CIKGU_BULK_IDS_MAX).toBe(100)
+    expect(CIKGU_BULK_IDS_TOO_MANY).toBe('Terlalu banyak item dipilih (maksimum 100).')
+    const ids = (n: number) => Array.from({ length: n }, (_, i) => String(i + 1))
+    expect(ok(CikguBulkApproveRequestSchema, { ids: ids(100) })).toBe(true)
+    const r = CikguBulkApproveRequestSchema.safeParse({ ids: ids(101) })
+    expect(r.success).toBe(false)
+    expect(r.success ? '' : r.error.issues[0]?.message).toBe(CIKGU_BULK_IDS_TOO_MANY)
+  })
 })
 
 describe('openapi registration', () => {
@@ -388,9 +415,32 @@ describe('openapi registration', () => {
     expect(JSON.stringify(send?.responses['429'])).toContain('CikguChatQuotaBody')
   })
 
+  it('documents the two 429 bodies of send and how to tell them apart', () => {
+    const r429 = doc.paths['/cikgu/send']?.post?.responses['429']
+    const text = JSON.stringify(r429)
+    expect(text).toContain('CikguChatQuotaBody')
+    expect(text).toContain('CikguChatErrorBody')
+    expect(text).toContain('Retry-After')
+    const description = (r429 as unknown as { description: string }).description
+    // the daily quota is told by the quota_exhausted key, the per-minute throttle by code RATE_LIMITED
+    expect(description).toContain('quota_exhausted === true')
+    expect(description).toContain('code === "RATE_LIMITED"')
+  })
+
+  it('wire bodies of the two 429 kinds are distinguishable by key', () => {
+    const quota = { quota_exhausted: true }
+    const throttle = { error: CIKGU_RATE_LIMITED_MESSAGE, code: 'RATE_LIMITED', retryAfter: 20 }
+    expect(ok(CikguChatQuotaBodySchema, quota)).toBe(true)
+    expect(ok(CikguChatErrorBodySchema, quota)).toBe(false)
+    expect(ok(CikguChatErrorBodySchema, throttle)).toBe(true)
+    expect(ok(CikguChatQuotaBodySchema, throttle)).toBe(false)
+  })
+
   it('sends no-store on responses that carry personal data of minors', () => {
     const refs: [string, string][] = [
       ['/cikgu/send', 'post'],
+      ['/cikgu/rph', 'get'],
+      ['/cikgu/rph/{id}', 'get'],
       ['/cikgu/essays', 'get'],
       ['/cikgu/essays/{id}', 'get'],
       ['/cikgu/pbd', 'get'],
