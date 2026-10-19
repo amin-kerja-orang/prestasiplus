@@ -1,7 +1,8 @@
 import { ConfigService } from '@nestjs/config'
 import { AUTH_ERROR_MESSAGES, ErrorBodySchema } from '@pp/contract'
-import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from 'vitest'
+import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
 
+import { SESSION_RESOLVER, type SessionResolver } from '../../src/common/guards/session-resolver'
 import { loadEnv } from '../../src/common/config/env.schema'
 import { FilesConfig } from '../../src/modules/files/files.config'
 import { FilesService } from '../../src/modules/files/files.service'
@@ -105,6 +106,35 @@ describe('download rate limit (D57, separate counter)', () => {
   })
 })
 
+describe('download throttle order (security Low 4)', () => {
+  let t: FilesTestApp
+  beforeAll(async () => {
+    t = await bootFilesApp({ FILE_READS_PER_MINUTE: '3' })
+  })
+  afterAll(async () => {
+    await t.close()
+  })
+
+  it('a cookie-less flood is throttled by address and never reaches the session lookup', async () => {
+    const admin = await loginAs(t, 'admin@demo.test')
+    const cms = await uploadOk(admin, 'cms_image', makePng())
+    t.clock.advance(61_000)
+    const spy = vi.spyOn(t.app.get<SessionResolver>(SESSION_RESOLVER), 'resolve')
+    try {
+      for (let i = 0; i < 3; i += 1) expect((await t.http().get(cms.url)).status).toBe(200)
+      expectError(await t.http().get(cms.url), 'RATE_LIMITED')
+      expectError(await t.http().get('/api/files/AAAAAAAAAAAAAAAAAAAAAA'), 'RATE_LIMITED')
+      expect(spy).not.toHaveBeenCalled()
+      // with a session cookie the session is looked up, and the user's own counter applies
+      t.clock.advance(61_000)
+      expect((await admin.agent.get(cms.url)).status).toBe(200)
+      expect(spy).toHaveBeenCalledTimes(1)
+    } finally {
+      spy.mockRestore()
+    }
+  })
+})
+
 describe('SlidingWindow housekeeping', () => {
   it('sweeps idle keys at most once a minute instead of on every hit', async () => {
     const { SlidingWindow } = await import('../../src/modules/files/upload-throttle')
@@ -201,8 +231,30 @@ describe('environment', () => {
     return new FilesConfig(new ConfigService())
   }
 
-  it('requires FILE_STORAGE_DIR in production only (boot fails fast)', () => {
-    expect(() => config({ NODE_ENV: 'production' })).toThrow(/FILE_STORAGE_DIR/)
+  const prod = {
+    NODE_ENV: 'production',
+    DATABASE_URL: 'postgresql://u:p@db:5432/x',
+    SESSION_SECRET: 's'.repeat(32),
+    IC_HASH_KEY: 'i'.repeat(32),
+  }
+
+  it('loadEnv refuses production with FILE_STORAGE_DIR unset, whitespace-only or relative', () => {
+    expect(() => loadEnv(prod)).toThrow(/FILE_STORAGE_DIR/)
+    expect(() => loadEnv({ ...prod, FILE_STORAGE_DIR: '   ' })).toThrow(/FILE_STORAGE_DIR/)
+    expect(() => loadEnv({ ...prod, FILE_STORAGE_DIR: '' })).toThrow(/FILE_STORAGE_DIR/)
+    expect(() => loadEnv({ ...prod, FILE_STORAGE_DIR: 'data/files' })).toThrow(/absolute/)
+    expect(() => loadEnv({ ...prod, FILE_STORAGE_DIR: './files' })).toThrow(/absolute/)
+    expect(() => loadEnv({ ...prod, FILE_STORAGE_DIR: ' ../files ' })).toThrow(/absolute/)
+  })
+
+  it('loadEnv accepts an absolute path in production (trimmed) and does not require it elsewhere', () => {
+    expect(loadEnv({ ...prod, FILE_STORAGE_DIR: '  /data/files  ' }).FILE_STORAGE_DIR).toBe('/data/files')
+    const dev = { NODE_ENV: 'development', DATABASE_URL: prod.DATABASE_URL }
+    expect(loadEnv(dev).FILE_STORAGE_DIR).toBeUndefined()
+    expect(() => loadEnv({ ...dev, FILE_STORAGE_DIR: '   ' })).toThrow(/FILE_STORAGE_DIR/)
+  })
+
+  it('FilesConfig reads the typed value and falls back to a temp folder outside production', () => {
     expect(config({ NODE_ENV: 'production', FILE_STORAGE_DIR: '/data/files' }).storageDir).toBe('/data/files')
     expect(config({ NODE_ENV: 'development' }).storageDir).toContain('pp-files')
   })

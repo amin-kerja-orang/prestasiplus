@@ -28,7 +28,7 @@ describe('files survive a restart (AC 6)', () => {
       res.on('end', () => cb(null, Buffer.concat(chunks)))
     })).body as Buffer
 
-    await first.app.close() // the "container restart"
+    await first.closeApp() // the "container restart"
     second = await bootFilesApp({}, { db: first.db, dir: first.dir })
 
     // The same session cookie is still valid (sessions live in the database) and the bytes are the same.

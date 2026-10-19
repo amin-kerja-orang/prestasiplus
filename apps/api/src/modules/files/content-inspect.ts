@@ -16,7 +16,7 @@
  * - WebP keeps: VP8X, VP8 , VP8L, ALPH, ANIM, ANMF, ICCP (the EXIF flag is cleared; ANMF frames may
  *   contain only ALPH, VP8 and VP8L).
  * - Every declared image size (JPEG SOF, PNG IHDR and fcTL, WebP VP8X, VP8, VP8L and ANMF) is checked
- *   against MAX_PIXELS. A file whose structure does not parse is refused like a wrong type.
+ *   against MAX_PIXELS; the summed frame area of an animation (PNG fcTL, WebP ANMF) is capped at 4 x MAX_PIXELS. A file whose structure does not parse is refused like a wrong type.
  */
 
 export type DetectedMime = 'image/jpeg' | 'image/png' | 'image/webp' | 'application/pdf'
@@ -230,6 +230,7 @@ function sanitizePng(b: Buffer): Buffer | null {
   let first = true
   let sawData = false
   let ended = false
+  let framePixels = 0
 
   while (pos + 12 <= b.length) {
     const length = b.readUInt32BE(pos)
@@ -251,6 +252,8 @@ function sanitizePng(b: Buffer): Buffer | null {
       const fw = chunk.readUInt32BE(12)
       const fh = chunk.readUInt32BE(16)
       if (fw === 0 || fh === 0 || fw * fh > MAX_PIXELS) return null
+      framePixels += fw * fh // an animation costs the sum of its frames, as for WebP ANMF
+      if (framePixels > 4 * MAX_PIXELS) return null
     }
     if (type === 'IDAT') sawData = true
     if (PNG_KEEP.has(type)) kept.push(chunk)

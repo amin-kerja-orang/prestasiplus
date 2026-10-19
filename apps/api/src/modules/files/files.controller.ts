@@ -39,6 +39,8 @@ import { SESSION_RESOLVER, type SessionResolver } from '../../common/guards/sess
 import { ok } from '../../common/http/respond'
 import { requestIdOf } from '../../common/request/request-id'
 import { AUTH_CONTEXT_KEY, type AuthContext, type RequestWithAuth } from '../../common/scope/auth-context'
+import { AuthConfig } from '../auth/auth.config'
+import { sessionTokenOf } from '../auth/cookies'
 import { ZodValidationPipe } from '../../common/validation/zod-validation.pipe'
 import { EXTENSION_OF, type DetectedMime } from './content-inspect'
 import { FilesConfig } from './files.config'
@@ -138,6 +140,7 @@ export class FilesController {
     @Inject(FilesService) private readonly files: FilesService,
     @Inject(SESSION_RESOLVER) private readonly resolver: SessionResolver,
     @Inject(DownloadThrottle) private readonly reads: DownloadThrottle,
+    @Inject(AuthConfig) private readonly authConfig: AuthConfig,
   ) {}
 
   @Post()
@@ -164,8 +167,15 @@ export class FilesController {
   @Public()
   @Get(':id')
   async download(@Param('id') id: string, @Req() req: Request, @Res() res: Response): Promise<void> {
-    const auth = await this.resolver.resolve(req)
-    this.reads.hit(auth ? { userId: auth.userId } : { ip: req.ip ?? req.socket.remoteAddress ?? 'unknown' })
+    const ip = req.ip ?? req.socket.remoteAddress ?? 'unknown'
+    let auth: AuthContext | null = null
+    if (sessionTokenOf(req, this.authConfig) === undefined) {
+      // No session cookie: throttle by address BEFORE any session lookup, so a cookie-less flood costs no database work.
+      this.reads.hit({ ip })
+    } else {
+      auth = await this.resolver.resolve(req)
+      this.reads.hit(auth ? { userId: auth.userId } : { ip })
+    }
     const file = await this.files.read(id, auth)
     const mime = file.mime as DetectedMime
     const inline = mime !== 'application/pdf'

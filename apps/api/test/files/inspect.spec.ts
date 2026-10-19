@@ -159,6 +159,12 @@ describe('pixel bombs (F3)', () => {
     expect(inspectUpload(makeWebp({ width: BIG, height: BIG }))).toBeNull()
   })
 
+  it('caps the summed area of PNG animation frames, like the WebP ANMF cap (4 x the pixel cap)', () => {
+    const frame = { width: 5000, height: 5000 } // 25M pixels each, under the single-frame cap
+    expect(inspectUpload(makePng({ frames: Array.from({ length: 8 }, () => frame) }))?.mime).toBe('image/png') // 200M = the cap
+    expect(inspectUpload(makePng({ frames: Array.from({ length: 9 }, () => frame) }))).toBeNull() // 225M
+  })
+
   it('refuses a PNG animation frame (fcTL) over the cap and accepts a small one', () => {
     expect(inspectUpload(makePng({ fcTL: { width: 100000, height: 100000 } }))).toBeNull()
     expect(inspectUpload(makePng({ fcTL: { width: 0, height: 4 } }))).toBeNull()

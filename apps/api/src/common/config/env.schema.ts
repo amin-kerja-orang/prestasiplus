@@ -1,3 +1,5 @@
+import { isAbsolute } from 'node:path'
+
 import { z } from 'zod'
 
 /**
@@ -46,7 +48,8 @@ export const EnvSchema = z.object({
   LOGIN_FAILURE_FLOOR_MS: z.coerce.number().int().min(0).max(10_000).default(1500),
   /** Failed logins per 15 minutes for one identifier across all addresses, before 429. */
   LOGIN_IDENTIFIER_FAIL_LIMIT: z.coerce.number().int().min(5).default(100),
-  // BE-04 (files). Optional here; FilesConfig applies the defaults (10, 20, 30, 120) and, in production, refuses to start without FILE_STORAGE_DIR (read from the environment, not declared here).
+  // BE-04 (files). Optional here; FilesConfig applies the defaults (10, 20, 30, 120). FILE_STORAGE_DIR is required in production and must be an absolute path (see loadEnv).
+  FILE_STORAGE_DIR: z.string().trim().min(1).optional(),
   /** Global ceiling of one upload in MB; each purpose has its own, lower limit. */
   MAX_UPLOAD_MB: z.coerce.number().int().min(1).max(100).optional(),
   /** Ceiling of a derived intake file (page image, figure crop, original) in MB. */
@@ -84,6 +87,10 @@ function withSessionSecret(env: Env): Env {
     throw new Error(
       `Invalid environment configuration. IC_HASH_KEY: required in production, at least ${MIN_IC_KEY_LENGTH} characters and different from SESSION_SECRET`,
     )
+  }
+  const dir = env.FILE_STORAGE_DIR
+  if (!dir || !isAbsolute(dir)) {
+    throw new Error('Invalid environment configuration. FILE_STORAGE_DIR: required in production and must be an absolute path')
   }
   return env
 }

@@ -33,6 +33,6 @@ import { SessionStore } from './session.store'
     AuthService,
     ...GUARD_PROVIDERS,
   ],
-  exports: [SESSION_RESOLVER, PasswordService, SessionStore],
+  exports: [SESSION_RESOLVER, PasswordService, SessionStore, AuthConfig],
 })
 export class AuthModule {}

@@ -26,6 +26,8 @@ export { expectError, loginAs, type LoggedIn } from '../auth/helpers'
 export interface FilesTestApp extends AuthTestApp {
   /** The folder FILE_STORAGE_DIR points at. */
   dir: string
+  /** Closes the Nest app only (idempotent); `close()` calls it, so an app is never closed twice. */
+  closeApp(): Promise<void>
 }
 
 /** Nest app with the auth and files modules on a private database, a temp storage folder and a fixed clock. */
@@ -72,6 +74,9 @@ export async function bootFilesApp(
   configureApp(app)
   await app.init()
 
+  let appClosed: Promise<void> | undefined
+  const closeOnce = (): Promise<void> => (appClosed ??= app.close())
+
   return {
     app,
     db,
@@ -79,8 +84,9 @@ export async function bootFilesApp(
     dir,
     http: () => request(app.getHttpServer()) as unknown as TestAgent,
     agent: () => request.agent(app.getHttpServer()),
+    closeApp: closeOnce,
     async close() {
-      await app.close()
+      await closeOnce()
       if (reuse) return
       await db.drop()
       await rm(dir, { recursive: true, force: true })

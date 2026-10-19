@@ -5,7 +5,7 @@ import { FILE_PURPOSE_RULES, FILE_PURPOSES, FileRefSchema, UploadFileQuerySchema
 
 describe('files contract', () => {
   it('parses a FileRef and rejects an unknown mime or purpose', () => {
-    const ref = { id: '7', url: '/api/files/7', mime: 'image/png', size: 10, purpose: 'avatar' }
+    const ref = { id: 'Zk3Qx9vB2mLw7TnRa1YpUg', url: '/api/files/Zk3Qx9vB2mLw7TnRa1YpUg', mime: 'image/png', size: 10, purpose: 'avatar' }
     expect(FileRefSchema.parse(ref)).toEqual(ref)
     expect(FileRefSchema.safeParse({ ...ref, mime: 'image/svg+xml' }).success).toBe(false)
     expect(FileRefSchema.safeParse({ ...ref, purpose: 'intake_page' }).success).toBe(false)

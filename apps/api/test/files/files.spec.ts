@@ -144,7 +144,7 @@ describe('POST /api/files: size limits (AC 2)', () => {
     expectFieldError(await upload(student, 'bijak_photo', makeJpeg({ padTo: 5 * MB + 1 }), { filename: 'p.jpg', contentType: 'image/jpeg' }), PHOTO_MSG)
   })
 
-  it('a body over the global ceiling (MAX_UPLOAD_MB) is the same 422, not a server error', async () => {
+  it('a body far over every limit (11 MB) is the same 422 from the multer limit, not a server error', async () => {
     const res = await upload(student, 'avatar', makeJpeg({ padTo: 11 * MB }), { filename: 'huge.jpg', contentType: 'image/jpeg' })
     expectFieldError(res, AVATAR_SIZE)
     const photo = await upload(student, 'bijak_photo', makeJpeg({ padTo: 11 * MB }), { filename: 'huge.jpg', contentType: 'image/jpeg' })
@@ -172,6 +172,8 @@ describe('memory and early refusal (code review Major 2, security F5)', () => {
     try {
       // Over the avatar limit: if the body were read the error would be about the file, not the purpose.
       const big = makeJpeg({ padTo: 3 * MB })
+      let answered = 0
+      let reset = 0
       for (const purpose of ['wallpaper', undefined, '', 'intake_page']) {
         let res
         try {
@@ -179,11 +181,14 @@ describe('memory and early refusal (code review Major 2, security F5)', () => {
         } catch (err) {
           // The server answered and closed the connection without reading the rest of the body: also proof.
           expect(String(err)).toMatch(/ECONNRESET|EPIPE|socket hang up/)
+          reset += 1
           continue
         }
         expectFieldError(res, 'The selected purpose is invalid.', 'purpose')
         expect(ErrorBodySchema.parse(res.body).error.fields).not.toHaveProperty('file')
+        answered += 1
       }
+      expect(answered + reset).toBe(4) // every path asserted something
       // The same via a small body, where the answer always arrives.
       const small = await upload(student, 'wallpaper', makePng())
       expectFieldError(small, 'The selected purpose is invalid.', 'purpose')

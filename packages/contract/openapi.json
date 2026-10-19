@@ -44058,7 +44058,7 @@
             "minLength": 1,
             "maxLength": 64,
             "description": "Opaque public token (random, 22 characters). It is the only id the API shows for a file; never parse it.",
-            "example": "1042"
+            "example": "Zk3Qx9vB2mLw7TnRa1YpUg"
           },
           "url": {
             "type": "string",

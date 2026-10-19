@@ -22,6 +22,8 @@ export interface PngOptions {
   trailing?: Buffer
   /** An animation frame control chunk with this frame size. */
   fcTL?: { width: number; height: number }
+  /** Several animation frames (each its own fcTL chunk). */
+  frames?: Array<{ width: number; height: number }>
   /** Pad the IDAT with this many extra bytes (to reach a size). */
   padTo?: number
 }
@@ -34,10 +36,10 @@ export function makePng(opts: PngOptions = {}): Buffer {
   ihdr[9] = 2
   const parts = [PNG_SIGNATURE, pngChunk('IHDR', ihdr)]
   if (opts.text) parts.push(pngChunk('tEXt', Buffer.from(`GPSLatitude\0${opts.text}`, 'latin1')))
-  if (opts.fcTL) {
+  for (const frame of opts.frames ?? (opts.fcTL ? [opts.fcTL] : [])) {
     const fc = Buffer.alloc(26)
-    fc.writeUInt32BE(opts.fcTL.width, 4)
-    fc.writeUInt32BE(opts.fcTL.height, 8)
+    fc.writeUInt32BE(frame.width, 4)
+    fc.writeUInt32BE(frame.height, 8)
     parts.push(pngChunk('fcTL', fc))
   }
   const idat = Buffer.alloc(Math.max(16, (opts.padTo ?? 0) - 100), 0x11)
