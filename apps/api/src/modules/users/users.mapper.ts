@@ -76,15 +76,17 @@ export function toStudentItem(s: StudentRow, schoolName: string | null | undefin
 export interface DetailParts {
   user: UserRecord
   school: SchoolLike | null
+  /** Children of a parent, already filtered for the caller (school_admin: own school only). */
+  linkedStudents?: StudentSearchItem[]
 }
 
 /**
  * `AdminUserDetail`. A school_admin's PPD state/district come from its school (mock BR-09); a
  * ppd_officer's from its district scope row. The subscription is derived by BE-25 (tables do not
- * exist yet), so every account reads `none` / false here. `linkedStudents` is [] until BE-25 adds
- * the parent links.
+ * exist yet), so every account reads `none` / false here. `linkedStudents` is given by the service
+ * (BE-25 parent links) and is [] for an account that is not a parent.
  */
-export function toDetail({ user: u, school }: DetailParts): AdminUserDetail {
+export function toDetail({ user: u, school, linkedStudents = [] }: DetailParts): AdminUserDetail {
   const ppd = u.roles.includes('ppd_officer')
     ? u.ppd
     : u.roles.includes('school_admin') && school?.state
@@ -114,6 +116,6 @@ export function toDetail({ user: u, school }: DetailParts): AdminUserDetail {
     mustChangePassword: u.mustChangePassword,
     ppdState: ppd?.state ?? null,
     ppdDistrict: ppd?.district ? ppd.district : null,
-    linkedStudents: [],
+    linkedStudents,
   }
 }

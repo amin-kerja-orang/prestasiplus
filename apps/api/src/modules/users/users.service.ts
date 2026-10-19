@@ -102,7 +102,7 @@ export class UsersService {
     })
     const names = await this.schoolNames(rows.map((r) => r.schoolId))
     return {
-      data: rows.map((r) => toListItem(r, r.schoolId === null ? undefined : names.get(r.schoolId))),
+      data: rows.map((r) => toListItem(r, r.schoolId === null || !this.schoolShown(caller, r.schoolId) ? undefined : names.get(r.schoolId))),
       meta: { ...listMeta(page, USERS_PAGE_SIZE, total), roleCounts: toWire(roleCounts) },
     }
   }
@@ -124,7 +124,7 @@ export class UsersService {
     const user = await this.users.findVisible(caller, id)
     if (!user) throw notFound()
     await this.audit.record({ ...this.auditBase(caller, USER_AUDIT.READ, user) })
-    return this.detailOf(user)
+    return this.detailOf(caller, user)
   }
 
   async searchStudents(caller: Caller, raw: string | undefined): Promise<StudentSearchItem[]> {
@@ -211,7 +211,7 @@ export class UsersService {
       return newId
     })
     const created = await this.mustGet(id)
-    const detail = await this.detailOf(created)
+    const detail = await this.detailOf(caller, created)
     return { data: { ...detail, mustChangePassword: true, generatedPassword: password }, status: USER_MESSAGES.created }
   }
 
@@ -231,14 +231,23 @@ export class UsersService {
       await this.users.lockAdminChanges()
       const target = await this.users.findVisible(caller, id)
       if (!target) throw notFound()
-      this.assertAssignable(caller, body.roles)
+      // A school_admin edits the non-role fields of an in-scope parent but cannot change its roles
+      // (contract PUT /admin/users/{id}); every other target needs an assignable role set.
+      const parentTarget = !caller.isAdmin && target.roles.includes('parent')
+      if (parentTarget) {
+        if (body.roles.length !== target.roles.length || body.roles.some((r) => !target.roles.includes(r))) throw forbidden()
+      } else {
+        this.assertAssignable(caller, body.roles)
+      }
       const roles = body.roles
       const isStudent = roles.includes('student')
       const fields: Record<string, string> = {}
 
       // school: absent keeps the stored value, null clears it.
       let schoolId: string | null = target.schoolId
-      if (body.schoolId !== undefined) {
+      // A school_admin never changes the school of a parent target: body.schoolId is ignored (no
+      // comparison, no error), so the school a parent carries cannot be guessed (AC 7).
+      if (body.schoolId !== undefined && !parentTarget) {
         const sent = blankToNull(body.schoolId)
         if (caller.isAdmin) {
           if (sent !== null && !(await this.schools.exists(sent))) fields.schoolId = FIELD_MESSAGES.schoolInvalid
@@ -304,7 +313,9 @@ export class UsersService {
         if ((demote || deactivate) && target.isActive && (await this.users.countActiveAdmins([target.id])) === 0) throw lastAdmin()
       }
 
-      await this.users.update(id, {
+      await this.users.update(
+        id,
+        {
         name: body.name,
         ...(body.email !== undefined ? { email } : {}),
         ...(body.username !== undefined ? { username } : {}),
@@ -315,7 +326,9 @@ export class UsersService {
         ...(body.isActive !== undefined ? { isActive: nextActive } : {}),
         ...(newHash !== null ? { passwordHash: newHash, mustChangePassword: true } : {}),
         now,
-      })
+        },
+        caller,
+      )
       const rolesChanged = roles.length !== target.roles.length || roles.some((r) => !target.roles.includes(r))
       if (rolesChanged) {
         await this.users.setRoles(id, roles, now)
@@ -341,7 +354,7 @@ export class UsersService {
     })
 
     const saved = await this.mustGet(id)
-    const detail = await this.detailOf(saved)
+    const detail = await this.detailOf(caller, saved)
     return { data: { ...detail, ...(newPassword !== null ? { generatedPassword: newPassword } : {}) }, status: USER_MESSAGES.updated }
   }
 
@@ -356,7 +369,7 @@ export class UsersService {
       if (!target) throw notFound()
       const next = !target.isActive
       if (!next && target.roles.includes('admin') && (await this.users.countActiveAdmins([target.id])) === 0) throw lastAdmin()
-      await this.users.update(id, { isActive: next, now })
+      await this.users.update(id, { isActive: next, now }, caller)
       if (!next) await this.users.revokeSessions([id])
       await this.audit.record({
         tx,
@@ -384,7 +397,7 @@ export class UsersService {
       if (target.id === caller.userId) throw invalid({ id: USER_MESSAGES.ownDelete })
       if (target.roles.includes('admin') && target.isActive && (await this.users.countActiveAdmins([target.id])) === 0) throw lastAdmin()
       await this.audit.record({ tx, ...this.auditBase(caller, USER_AUDIT.DELETED, target), details: { roles: target.roles } })
-      await this.users.remove([id])
+      if ((await this.users.remove([id], caller)) !== 1) throw notFound()
     })
     return { data: { deleted: 1 }, status: USER_MESSAGES.deleted }
   }
@@ -403,7 +416,7 @@ export class UsersService {
       const removedAdmins = targets.filter((t) => t.roles.includes('admin') && t.isActive).map((t) => t.id)
       if (removedAdmins.length > 0 && (await this.users.countActiveAdmins(removedAdmins)) === 0) throw lastAdmin()
       const targetIds = targets.map((t) => t.id)
-      const count = await this.users.remove(targetIds)
+      const count = await this.users.remove(targetIds, caller)
       await this.audit.record({
         tx,
         action: USER_AUDIT.BULK_DELETED,
@@ -522,9 +535,26 @@ export class UsersService {
     return new Map(rows.map((s) => [s.id, s.name]))
   }
 
-  private async detailOf(user: UserRecord): Promise<AdminUserDetail> {
-    const school = user.schoolId === null ? null : await this.schools.get(user.schoolId)
-    return toDetail({ user, school })
+  /**
+   * A school_admin sees a school only when it is its own: a visible parent may carry any school (its
+   * visibility comes from its children), and that school is not the caller's to learn (AC 7).
+   */
+  private schoolShown(caller: Caller, schoolId: string | null): boolean {
+    return caller.isAdmin || (schoolId !== null && schoolId === caller.schoolId)
+  }
+
+  private async detailOf(caller: Caller, user: UserRecord): Promise<AdminUserDetail> {
+    const shown = this.schoolShown(caller, user.schoolId)
+    const visibleUser = shown ? user : { ...user, schoolId: null }
+    const school = !shown || user.schoolId === null ? null : await this.schools.get(user.schoolId)
+    // Children of a parent only; a school_admin gets those of its own school (contract AdminUserDetail).
+    let linkedStudents: StudentSearchItem[] = []
+    if (user.roles.includes('parent')) {
+      const rows = (await this.users.linkedStudents(caller, user.id)).sort(byNameThenId)
+      const names = caller.isAdmin ? await this.schoolNames(rows.map((r) => r.schoolId)) : null
+      linkedStudents = rows.map((r) => toStudentItem(r, names ? (r.schoolId === null ? null : (names.get(r.schoolId) ?? null)) : undefined))
+    }
+    return toDetail({ user: visibleUser, school, linkedStudents })
   }
 
   private async mustGet(id: string): Promise<UserRecord> {
