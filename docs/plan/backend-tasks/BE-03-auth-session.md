@@ -15,6 +15,8 @@
 
 Implement the six session endpoints of `@pp/contract`, the identity tables they need, the guards (`AuthGuard`, `RolesGuard`, `CapabilityGuard`), the request-scoped `ScopeContext` / `ScopeFilter`, CSRF, login throttling, and an `audit_events` writer. This is the base every other card builds on.
 
+**User decision 2026-10-19 (UD-1): the contract wins over the mock for ids and session.** Ids on the wire are decimal strings; authentication is a cookie session with `X-CSRF-Token`, the `Session` shape and the `/api/session*` endpoints; bad credentials are 401 `INVALID_CREDENTIALS` (`packages/contract/src/auth/errors.ts`); there is no Bearer token on the real API. Where the mock differs (numeric ids, the `{token, expiresAt, user}` login body, 422 for bad credentials, Bearer), do not port it: the mock supplies only the rules (throttle, inactive account, lifetime). The LEAD realigns the mock and `HttpTransport` (V2-T31).
+
 ## Inputs (read these)
 
 - `docs/plan/AGENT-SYNC.md`, `docs/plan/sessions.md` section 5

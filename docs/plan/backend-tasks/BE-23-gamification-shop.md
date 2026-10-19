@@ -21,7 +21,7 @@ Everything in M14/M15 beyond the wallet core: dashboard, daily challenges, achie
 - Mock M14: `src/modules/m14-gamification/mock/handlers/{student,teacher,admin-economy,admin-ops,common,input,index}.ts`, repository `src/modules/m14-gamification/mock/repository/*`, tables `src/modules/m14-gamification/mock/tables/tables.ts` (tiers, challenges, challengeCompletions, achievements, userAchievements, learnerBadges, learnerBadgeHoldings, teacherBadges, teacherBadgeAwards, referralCodes, referrals, draws, drawTickets, rewardClaims, syilingRewards, teacherWallets, teacherLedger, teacherRewards, teacherRedemptions, cashWithdrawals, settings); client `src/modules/m14-gamification/api/*`; mock tests `src/modules/m14-gamification/__tests__/{mock,student-a,student-b}/**`
 - Mock M15: `src/modules/m15-rewards-shop/mock/handlers/{user,admin,input}.ts`, repository `src/modules/m15-rewards-shop/mock/repository/*`; client `src/modules/m15-rewards-shop/api/*`; mock tests `src/modules/m15-rewards-shop/__tests__/mock/**`
 - `docs/architecture/v2-data-migration.md` section 4.9 and Q10 (teacher wallets and contributor rewards are **out of v2 per D28c**: confirm before building teacher cash-out)
-- BE-11 `WalletService`, `tiers`, `StreakService`; BE-25 parent links (parent approvals)
+- BE-11 `WalletService`, `tiers`, `StreakService`; BE-25 parent links (not needed here: parent approvals are not built, UD-3)
 - Requirements: BE-FR-16; BE-NFR-08, BE-NFR-17, BE-NFR-18, BE-NFR-20 ([URS 9.2](../../requirements/v2-backend-urs.md))
 - API catalogue part B4 (economy, content, games): [economy-content-games.md](../../architecture/v2-api-catalogue/economy-content-games.md) (endpoint list, wire conventions and open questions for this card's scope)
 - Data model: [v2-data-model.md](../../architecture/v2-data-model.md) (tables, keys and indexes of this card; being written 2026-10-19)
@@ -29,7 +29,7 @@ Everything in M14/M15 beyond the wallet core: dashboard, daily challenges, achie
 ## Outputs
 
 - Contract: `packages/contract/src/gamification/**` (M14 and M15 schemas; rewards schemas go in `gamification/rewards.ts`)
-- `apps/api/prisma/schema/gamification.prisma` + migration with the tables of the list above except `tiers` (BE-11) and the M15 tables (`rewards`, `reward_claims`, `mystery_boxes`, digital shop items and redemptions, parent approvals; names fixed in the contract PR from the M15 repository)
+- `apps/api/prisma/schema/gamification.prisma` + migration with the tables of the list above except `tiers` (BE-11) and the M15 tables (`rewards`, `reward_claims`, `mystery_boxes`, digital shop items and redemptions; names fixed in the contract PR from the M15 repository)
 - `apps/api/src/modules/gamification/**` (M14) and `apps/api/src/modules/shop/**` (M15), both PC-2 lane modules
 - Seed `apps/api/prisma/seed/gamification.ts` (challenges, achievements, rewards from the mock seeds; one line in the registry; add `gamification` to the PC-2 seed list)
 - Tests under `apps/api/test/gamification/**`, `apps/api/test/shop/**`
@@ -58,7 +58,8 @@ Every route below exists in the mock (verified). Counts: M14 student 8 (+2 in BE
 | Admin M14 economy | `GET /api/admin/gamification/overview`, `GET /api/admin/gamification/students`, `GET /api/admin/gamification/transactions`, `GET /api/admin/gamification/tiers`, `GET /api/admin/gamification/challenges`; `POST /api/admin/gamification/award`, `POST /api/admin/gamification/challenges`, `PUT /api/admin/gamification/challenges/:id`, `DELETE /api/admin/gamification/challenges/:id`, `POST /api/admin/gamification/challenges/:id/toggle`, `POST /api/admin/gamification/tiers`, `PUT /api/admin/gamification/tiers/:id`, `POST /api/admin/gamification/tiers/:id/toggle` |
 | Admin M14 operations | `GET /api/admin/gamification/guru`, `GET /api/admin/gamification/guru/cash`, `GET /api/admin/gamification/guru/redemptions`, `GET /api/admin/gamification/settings`; `PATCH /api/admin/gamification/guru/cash/:id`, `PATCH /api/admin/gamification/guru/redemptions/:id`, `POST /api/admin/gamification/guru/rewards`, `PUT /api/admin/gamification/guru/badges/:id`, `PUT /api/admin/gamification/settings`; `GET /api/admin/reward-control`, `POST /api/admin/reward-control/draws`, `PUT /api/admin/reward-control/rewards/:id/cost`, `PUT /api/admin/reward-control/settings` |
 | M15 admin | `GET /api/admin/hadiah`, `GET /api/admin/hadiah/:id`, `GET /api/admin/hadiah/redemptions`, `POST /api/admin/hadiah`, `POST /api/admin/hadiah/bulk`, `PUT /api/admin/hadiah/:id`, `POST /api/admin/hadiah/redemptions/:id/cancel`, `POST /api/admin/hadiah/redemptions/:id/deliver` |
-| M15 user | `GET /api/cabutan`, `POST /api/cabutan/:drawId/tickets`, `GET /api/gamification/mystery-boxes`, `POST /api/gamification/mystery-boxes/:id/open`, `GET /api/hadiah-digital/items`, `GET /api/hadiah-digital/redemptions`, `POST /api/hadiah/redemptions`, `GET /api/parent/hadiah-approvals`, `POST /api/parent/hadiah-approvals/:id/approve`, `POST /api/parent/hadiah-approvals/:id/reject` |
+| M15 user | `GET /api/cabutan`, `POST /api/cabutan/:drawId/tickets`, `GET /api/gamification/mystery-boxes`, `POST /api/gamification/mystery-boxes/:id/open`, `GET /api/hadiah-digital/items`, `GET /api/hadiah-digital/redemptions`, `POST /api/hadiah/redemptions` |
+| Not in B1 (UD-3) | `GET /api/parent/hadiah-approvals`, `POST /api/parent/hadiah-approvals/:id/approve`, `POST /api/parent/hadiah-approvals/:id/reject` (catalogue M15-08 to M15-10): the backend does not register them; the frontend hides the entry point (user decision 2026-10-19; unbuilt screens are hidden, no "coming soon" page). |
 
 ## DB tables touched
 
@@ -69,7 +70,7 @@ All gamification and rewards tables listed above, `wallets`/`coin_ledger` (via `
 1. Every credit or debit goes through `WalletService` inside the caller's transaction. Redeeming or buying with too little balance fails with the mock error: 409 `INSUFFICIENT_BALANCE` "Baki syiling tidak mencukupi." / "Baki token tidak mencukupi." (M14) or `INSUFFICIENT_TOKENS` "Token tidak mencukupi." (M15). Stock: "Stok habis." (`OUT_OF_STOCK`), per-user limit "Had tebusan dicapai." (`LIMIT_REACHED`), monthly cap "Had tebusan bulanan dicapai." (`MONTHLY_CAP`), draw "Cabutan ditutup." (`DRAW_CLOSED`) and "Had tiket dicapai." (`TICKET_LIMIT`). Stock decrement is race-safe: a concurrent-redeem test with N buyers for N-1 items yields exactly N-1 successes.
 2. Daily challenge completion is idempotent per user per Malaysia day (a second completion adds nothing).
 3. Conversion (`POST /api/gamification/convert`, mock `walletRepo.convert`): tokens = floor(syiling / tier conversionRate); the amount must be an integer, at least the rate and at most the current balance, otherwise 422 `VALIDATION_ERROR` with `fields.syilingAmount` "Jumlah syiling tidak sah."; the ledger row is type `convert`, source `token_conversion`, description "Tukar {s} syiling → {t} token". There is no daily cap in the mock, so none is built.
-4. Roles: admin routes need `admin`; teacher routes need `teacher`; parent approvals need the parent link of BE-25; students cannot read other users' ledgers (admin routes only, 404 otherwise); missing CSRF 403 `CSRF_INVALID`.
+4. Roles: admin routes need `admin`; teacher routes need `teacher`; students cannot read other users' ledgers (admin routes only, 404 otherwise); missing CSRF 403 `CSRF_INVALID`.
 5. Lucky-draw creation and ticket allocation are deterministic under the seeded PRNG in tests; each draw result writes an audit event.
 6. Responses match the mock shapes for the seeded data: replay the cases of the mock tests in Inputs that do not depend on live totals.
 7. Teacher cash-out (`POST /api/guru/gamification/cash`) returns 403 `CASH_DISABLED` "Tebus tunai tidak aktif buat masa ini." until Q10 is answered (flagged in the PR); the admin cash routes behave accordingly.
@@ -107,7 +108,6 @@ Do not guess these; write your working assumption in the PR and ask the lead (is
 
 1. Teacher cash-out and contributor rewards are out of v2 per D28c (Q10). Working assumption: keep the routes returning the mock's disabled state and build no teacher wallet logic beyond what the mock shows.
 2. M15 table names are not fixed in the card; derive them from `src/modules/m15-rewards-shop/mock/repository/*` and record them in the mapping matrix.
-3. Pending LEAD decision: OQ-20 of the URS. The M15 routes include the parent approvals (`/api/parent/hadiah-approvals*`, catalogue M15-08 to M15-10) but the plan gives the parent role no endpoints; URS default: parent approval routes are not built in B1. (added 2026-10-19)
 
 ## Prompt for Claude Code
 

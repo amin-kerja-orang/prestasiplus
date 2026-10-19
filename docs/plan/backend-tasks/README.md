@@ -65,7 +65,7 @@ Never run two sessions that edit the same `apps/api/prisma/schema/<module>.prism
 
 ## Wave 4+ backlog (no cards yet; the lead promotes items when the frontend needs them)
 
-These are the only mock routes that no card builds. Counts were re-verified against the mock handlers on 2026-10-19: 488 routes in total; 381 are built by cards BE-03 to BE-25 (their endpoint tables list every one of them by full path); 107 are backlog, namely the 105 below plus the 2 student audio-play routes that BE-24 lists as not built. The session routes (`/api/session*`) and the new D52 routes are not in the 488 (they have no mock route).
+These are the only mock routes that no card builds. Counts were re-verified against the mock handlers on 2026-10-19: 488 routes in total; 381 are built by cards BE-03 to BE-25 (their endpoint tables list every one of them by full path); 103 are backlog (the 4 M18 Amaran routes moved into BE-21 on 2026-10-19, UD-4), namely the rows below plus the 2 student audio-play routes that BE-24 lists as not built. The session routes (`/api/session*`) and the new D52 routes are not in the 488 (they have no mock route).
 
 | Backlog item | Mock routes (count) | Notes |
 |---|---|---|
@@ -73,7 +73,8 @@ These are the only mock routes that no card builds. Counts were re-verified agai
 | M07 PKSK (student, admin access, admin questions) | 21 | tags on the one bank in v2 (v2-question-bank A6) |
 | M16 battle, games, tournaments, leagues, Sekolah Bersaing, standings | 50 | needed for Admin Sekolah "Sekolah Bersaing" and Murid Permainan/Tournament/Kedudukan |
 | M13 Cikgu Alesa (M25 AI centre has no mock route) | 10 | external AI: out of B1 (OD-7) |
-| M09 student Audio KBAT play (`GET /api/audio-kbat-sets/:id`, `POST /api/audio-kbat-sets/:id/attempts`), M20 marketplace, M21 sponsorship, M18 PPD/JPN (amaran) | 2, 5, 1, 4 | roles/features outside the prototype scope |
+| M09 student Audio KBAT play (`GET /api/audio-kbat-sets/:id`, `POST /api/audio-kbat-sets/:id/attempts`), M20 marketplace, M21 sponsorship | 2, 5, 1 | roles/features outside the prototype scope |
+| Not built by user decision (2026-10-19) | UD-2: the 2 impersonation routes (BE-05, BE-21); UD-3: the 3 parent approval routes `/api/parent/hadiah-approvals*` | the mock routes are intentionally not ported; M18 Amaran (4 routes) is now built by BE-21 (UD-4) |
 | Sistem stores (`audit_logs` UI, `settings`, `feature_flags`, `ai_usage_logs`), Kewangan (`payments`, `invoices`, `dunning_logs`, `packages`) | new | V2-T27/V2-T28 in `docs/architecture/v2-frontend.md` |
 
 ## PR description template (copy into every PR)

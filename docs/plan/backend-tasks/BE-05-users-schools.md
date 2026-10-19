@@ -13,7 +13,7 @@
 
 ## Goal
 
-Persist and serve the M02 user and school management used by Admin Pusat and Admin Sekolah: user list/filters/detail/create/update/delete/toggle-active, bulk delete and bulk import, school list/options/search/create, impersonation entry used by Mod Pelajar, all scope-filtered.
+Persist and serve the M02 user and school management used by Admin Pusat and Admin Sekolah: user list/filters/detail/create/update/delete/toggle-active, bulk delete and bulk import, school list/options/search/create, all scope-filtered.
 
 ## Inputs (read these)
 
@@ -59,7 +59,7 @@ Every route below exists in the mock handlers (verified).
 | `GET /api/admin/users`, `GET /api/admin/users/filters`, `GET /api/admin/users/:id` | list with filters, pagination meta with `counts`; scope-filtered |
 | `POST /api/admin/users`, `PUT /api/admin/users/:id`, `DELETE /api/admin/users/:id` | create/update/delete; rules from `users-rules.ts` |
 | `POST /api/admin/users/:id/toggle-active`, `POST /api/admin/users/bulk-delete`, `POST /api/admin/users/bulk-import` | bulk operations with a result report; `bulk-import` creates teacher, parent, school_admin and ppd_officer accounts (mock `BULK_IMPORT_ROLES`; school required for teacher and school_admin) |
-| `POST /api/admin/users/:id/impersonate` | the "Login As" entry; implemented on top of the BE-03 session mode, not as a second mechanism; flag conflicts |
+| ~~`POST /api/admin/users/:id/impersonate`~~ | **Not built: user decision 2026-10-19 (UD-2).** The mock "Login As" route is intentionally not ported; Mod Pelajar is `POST /api/session/mode` (BE-03). |
 | `GET /api/admin/schools`, `GET /api/admin/schools/options`, `GET /api/admin/schools/:id`, `POST /api/admin/schools`, `PUT /api/admin/schools/:id`, `POST /api/admin/schools/:id/toggle` | admin school management |
 | `GET /api/admin/schools/:id/students` | existing students of a school (`search`, `classLevel` filters; at most 200 rows, name A to Z) used by the import screen |
 | `GET /api/schools`, `GET /api/schools/search`, `GET /api/jpn`, `GET /api/jpn/:id/ppd` | public school/JPN/PPD pickers (used by login and register) |
@@ -81,7 +81,7 @@ Subscriptions, packages, parent invites, complimentary students, **`POST /api/ad
 6. Bulk user import (`POST /api/admin/users/bulk-import`, mock BR-14): an empty file gives 422 "Tiada data untuk diimport."; the import is atomic in the mock (a failure rolls the whole import back), so a malformed line is reported in the result and valid lines import only as the mock's `planUserImport` decides (replay `src/modules/m02-users-schools/__tests__/mock/**` import cases); the roles are limited to teacher, parent, school_admin, ppd_officer; the file size and row limits equal the constants in `src/modules/m02-users-schools/mock/import/*.ts` (read them, do not guess).
 7. Deleting a user with dependent rows follows the mock rule in `users-admin.ts` (block or cascade); the rule you implement is stated in the PR and covered by a test.
 8. List pagination `meta` (`page`, `pageSize`, `totalItems`, `totalPages`, `from`, `to`, `counts`) is exact for the seeded data; a test recomputes the counts from the table.
-9. `POST /api/admin/users/:id/impersonate` starts the BE-03 `mod_pelajar` mode with `isTest = true` and an audit row; the returned message equals the mock's (`MSG_IMPERSONATE...` in M27 for school admins; for admin read `users-admin.ts`).
+9. ~~`POST /api/admin/users/:id/impersonate`~~ is not built (user decision 2026-10-19, UD-2): there is one mechanism only, Mod Pelajar via `POST /api/session/mode` (D31c). A test asserts that the route does not exist (404).
 10. Roles: only `admin` may use `/api/admin/users*`, `/api/admin/schools*`, `/api/admin/teachers*`, `/api/admin/config/defaults` except where the mock allows `school_admin` (per `requireAdmin`/`requireSchoolAdmin` guards in the handlers); everyone else gets 403; no session 401; missing CSRF 403 `CSRF_INVALID`.
 
 ## Test commands
@@ -115,7 +115,6 @@ Do not guess these; write your working assumption in the PR and ask the lead (is
 
 1. The mock keeps `faith` in user settings (M01 BR-17) while the data-migration plan drops `faith` from `users` (Q7). This card stores no `faith`; BE-06 asks the question for settings.
 2. Deleting a user with dependent rows: the working rule is the mock's (read `users-admin.ts`); confirm cascade versus block for real data.
-3. Pending LEAD decision: OQ-17 of the URS. AC9 builds `POST /api/admin/users/:id/impersonate` on the BE-03 session mode, but the URS default drops the route in favour of `POST /api/session/mode` (two mechanisms are forbidden; D31c: Mod Pelajar acts as the admin account itself). Do not implement act-as-another-user until answered. (added 2026-10-19)
 
 ## Prompt for Claude Code
 
