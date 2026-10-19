@@ -6,10 +6,10 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 
 import { upsertByLegacy } from '../../../src/migration/kit'
 import { createKitDb, type KitDb } from './helpers'
-import { MODEL_FIXTURES } from './model-fixtures'
+import { MODEL_FIXTURES, type FixtureQuery } from './model-fixtures'
 
 /**
- * Plan 14.9 item 6, generic: for every model in `migratable-models.json`, insert one generated row
+ * Plan 14.9 item 6, generic: for every table in `migratable-models.json`, insert one generated row
  * through `upsertByLegacy` twice and assert a single row and zero updates the second time.
  * The row is generated from the table's NOT NULL columns without a default; a table whose
  * required columns cannot be generated (foreign keys, checks) needs an entry in `model-fixtures.ts`.
@@ -21,11 +21,9 @@ const schemaText = readdirSync(join(PRISMA, 'schema'))
   .map((f) => readFileSync(join(PRISMA, 'schema', f), 'utf8'))
   .join('\n')
 
-const tableOf = (model: string): string => {
-  const block = new RegExp(`model\\s+${model}\\s*\\{[\\s\\S]*?\\n\\}`).exec(schemaText)?.[0] ?? ''
-  const map = /@@map\("([^"]+)"\)/.exec(block)
-  if (!map) throw new Error(`${model}: no @@map in the schema`)
-  return map[1] as string
+/** The list holds TABLE names; the schema must have a model mapped to each (the lint enforces it too). */
+const assertMapped = (table: string): void => {
+  if (!new RegExp(`@@map\\("${table}"\\)`).test(schemaText)) throw new Error(`${table}: no model with @@map in the schema`)
 }
 
 const SAMPLE: Record<string, unknown> = {
@@ -44,24 +42,25 @@ afterAll(async () => {
 })
 
 describe('double upsert for every migratable model (BE-MIG-03)', () => {
-  it('has a list to walk (an empty list is fine until a table card adds its model)', () => {
+  it('has a list to walk (an empty list is fine until a table card adds its table)', () => {
     expect(Array.isArray(listed)).toBe(true)
   })
 
-  it.each(listed)('%s: two upserts of the same row give one row and no update', async (model) => {
-    const table = tableOf(model)
+  it.each(listed)('%s: two upserts of the same row give one row and no update', async (table) => {
+    assertMapped(table)
     const cols = await kit.db.query<{ column_name: string; data_type: string; is_nullable: string; column_default: string | null; is_identity: string; is_generated: string }>(
       `select column_name, data_type, is_nullable, column_default, is_identity, is_generated
        from information_schema.columns where table_schema = 'public' and table_name = $1`,
       [table],
     )
-    const fixture = MODEL_FIXTURES[model] ?? {}
+    const entry = MODEL_FIXTURES[table]
+    const fixture = typeof entry === 'function' ? await entry(kit.db.query as FixtureQuery) : (entry ?? {})
     const values: Record<string, unknown> = { ...fixture }
     for (const c of cols) {
       if (c.column_name in values || c.column_name.startsWith('legacy_')) continue
       if (c.is_identity === 'YES' || c.is_generated !== 'NEVER') continue
       if (c.is_nullable === 'YES' || c.column_default !== null) continue
-      if (!(c.data_type in SAMPLE)) throw new Error(`${model}.${c.column_name} (${c.data_type}): add a fixture in model-fixtures.ts`)
+      if (!(c.data_type in SAMPLE)) throw new Error(`${table}.${c.column_name} (${c.data_type}): add a fixture in model-fixtures.ts`)
       values[c.column_name] = SAMPLE[c.data_type]
     }
     const spec = { table, source: 'cloud' as const, columns: Object.keys(values), rows: [{ legacyId: 'g1', values }], idColumn: null }

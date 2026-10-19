@@ -2,29 +2,32 @@
  * Migration lint (BE-34, plan 14.2 and 14.9). `npm run be:lint:migration`.
  *
  * Fails (exit 1) when
- *  - a model listed in `prisma/migratable-models.json` is missing from the schema, or lacks the
+ *  - a table listed in `prisma/migratable-models.json` has no model in the schema, or lacks the
  *    `legacy_source` / `legacy_id` columns, the unique `(legacy_source, legacy_id)`, or (for the
- *    models in HASH_REQUIRED_MODELS) `legacy_hash`;
- *  - a migration creates a Postgres enum type (`CREATE TYPE ... AS ENUM`), or a schema file
- *    declares a Prisma `enum` (enums are `text` + `check`, plan 14.2);
- *  - the list file is not an alphabetical array of unique model names.
+ *    tables in HASH_REQUIRED_TABLES) `legacy_hash`;
+ *  - a migration creates a Postgres enum type (`CREATE TYPE ... AS ENUM`, also the schema-qualified
+ *    form, comments ignored), or a schema file declares a Prisma `enum` (enums are `text` + `check`,
+ *    plan 14.2);
+ *  - the list file is not an alphabetical array of unique table names.
  *
  * Reports as warnings (exit stays 0, so existing tables can be fixed by their owning cards):
  *  - a model that is NOT listed but carries a `legacy_source` or `legacy_id` column;
  *  - a model that is NOT listed and looks like a business table (every model except the `Etl*`
  *    control tables and `_`-prefixed ones), so the owning card can either list it or confirm that
  *    no source row can land in it;
- *  - a listed model with no `legacy_source IN ('cloud', 'my')` check constraint in any migration.
+ *  - a listed table with no `legacy_source IN ('cloud', 'my')` check constraint in any migration.
  *
- * File format of `migratable-models.json`: a JSON array of Prisma model names (PascalCase, as
- * written in `schema/*.prisma`), sorted alphabetically, no duplicates. Example: ["Chapter", "User"].
+ * File format of `migratable-models.json`: a JSON array of TABLE names (the `@@map` value of the
+ * model, else the model name; snake_case as in the database), sorted alphabetically, no
+ * duplicates. Example: ["schools", "users"]. This is the format BE-03 wrote and that its schema
+ * spec reads.
  */
 import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs'
 import { join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
-/** Models that must also carry `legacy_hash` (big activity tables, plan 14.2). Extend when a card adds one. */
-export const HASH_REQUIRED_MODELS: ReadonlySet<string> = new Set(['CoinLedger', 'PracticeAnswer'])
+/** Tables that must also carry `legacy_hash` (big activity tables, plan 14.2). Extend when a card adds one. */
+export const HASH_REQUIRED_TABLES: ReadonlySet<string> = new Set(['coin_ledger', 'practice_answers'])
 
 /** Control and platform models that never receive legacy rows (no warning when unlisted). */
 const CONTROL_MODEL = /^(Etl[A-Z]|_)/
@@ -42,15 +45,20 @@ export interface CheckResult {
 
 interface ParsedModel {
   name: string
+  /** Database table: the `@@map` value, else the model name. */
+  table: string
   /** Column name per field (the `@map` value, else the field name). */
   columns: Map<string, string>
-  /** Each `@@unique` as a list of column names. */
+  /** Each `@@unique` as a list of field names. */
   uniques: string[][]
 }
 
 function stripComments(text: string): string {
   return text.replace(/\/\/[^\n]*/g, '')
 }
+
+/** Block attributes (`@@unique([...])`, possibly over several lines, `@@map("...")`). */
+const BLOCK_ATTR = /@@(\w+)\(((?:[^()]|\([^()]*\))*)\)/g
 
 export function parseModels(schemaText: string): ParsedModel[] {
   const models: ParsedModel[] = []
@@ -60,21 +68,27 @@ export function parseModels(schemaText: string): ParsedModel[] {
     const body = m[2] as string
     const columns = new Map<string, string>()
     const uniques: string[][] = []
-    for (const rawLine of body.split('\n')) {
+    let table = name
+    for (const a of body.matchAll(BLOCK_ATTR)) {
+      const args = a[2] as string
+      if (a[1] === 'unique') {
+        const u = /^\s*\[([^\]]*)\]/.exec(args)
+        if (u) uniques.push((u[1] as string).split(',').map((s) => s.trim()).filter(Boolean))
+      } else if (a[1] === 'map') {
+        const t = /^\s*"([^"]+)"/.exec(args)
+        if (t) table = t[1] as string
+      }
+    }
+    for (const rawLine of body.replace(BLOCK_ATTR, '').split('\n')) {
       const line = rawLine.trim()
       if (!line) continue
-      if (line.startsWith('@@')) {
-        const u = /^@@unique\(\s*\[([^\]]*)\]/.exec(line)
-        if (u) uniques.push((u[1] as string).split(',').map((s) => s.trim()).filter(Boolean))
-        continue
-      }
       const f = /^(\w+)\s+\S+/.exec(line)
       if (!f) continue
       const field = f[1] as string
       const map = /@map\(\s*"([^"]+)"\s*\)/.exec(line)
       columns.set(field, map ? (map[1] as string) : field)
     }
-    models.push({ name, columns, uniques })
+    models.push({ name, table, columns, uniques })
   }
   return models
 }
@@ -97,6 +111,10 @@ function readMigrations(migrationsDir: string): { dir: string; sql: string }[] {
     })
 }
 
+function stripSqlComments(sql: string): string {
+  return sql.replace(/\/\*[\s\S]*?\*\//g, ' ').replace(/--[^\n]*/g, ' ')
+}
+
 export function checkMigratable(paths: CheckPaths): CheckResult {
   const errors: string[] = []
   const warnings: string[] = []
@@ -106,96 +124,83 @@ export function checkMigratable(paths: CheckPaths): CheckResult {
   try {
     const parsed: unknown = JSON.parse(readFileSync(paths.listFile, 'utf8'))
     if (!Array.isArray(parsed) || !parsed.every((x) => typeof x === 'string')) {
-      errors.push('migratable-models.json must be a JSON array of model names (strings).')
+      errors.push('migratable-models.json must be a JSON array of table names (strings).')
     } else {
       listed = parsed as string[]
       const sorted = [...listed].sort((a, b) => (a < b ? -1 : a > b ? 1 : 0))
       if (listed.join('|') !== sorted.join('|')) {
         errors.push('migratable-models.json must be sorted alphabetically (plain code-point order).')
       }
-      if (new Set(listed).size !== listed.length) errors.push('migratable-models.json lists a model twice.')
+      if (new Set(listed).size !== listed.length) errors.push('migratable-models.json lists a table twice.')
     }
   } catch (err) {
     errors.push(`migratable-models.json cannot be read: ${err instanceof Error ? err.message : String(err)}`)
   }
 
-  // 2. The schema.
+  // 2. The schema (models keyed by table name).
   const files = readSchemaFiles(paths.schemaDir)
-  const models = new Map<string, ParsedModel>()
+  const byTable = new Map<string, ParsedModel>()
   for (const { file, text } of files) {
     if (/^\s*enum\s+\w+\s*\{/m.test(stripComments(text))) {
       errors.push(`${file}: Prisma "enum" is not allowed; use String + CHECK in the migration (plan 14.2).`)
     }
-    for (const model of parseModels(text)) models.set(model.name, model)
+    for (const model of parseModels(text)) byTable.set(model.table, model)
   }
 
   const listedSet = new Set(listed)
-  for (const name of listed) {
-    const model = models.get(name)
+  for (const table of listed) {
+    const model = byTable.get(table)
     if (!model) {
-      errors.push(`${name}: listed in migratable-models.json but no such model in prisma/schema.`)
+      errors.push(`${table}: listed in migratable-models.json but no model maps to this table in prisma/schema.`)
       continue
     }
     const cols = new Set(model.columns.values())
     for (const need of ['legacy_source', 'legacy_id']) {
-      if (!cols.has(need)) errors.push(`${name}: missing column ${need} (plan 14.2).`)
+      if (!cols.has(need)) errors.push(`${table}: missing column ${need} (plan 14.2).`)
     }
-    if (HASH_REQUIRED_MODELS.has(name) && !cols.has('legacy_hash')) {
-      errors.push(`${name}: missing column legacy_hash (required for big activity tables).`)
+    if (HASH_REQUIRED_TABLES.has(table) && !cols.has('legacy_hash')) {
+      errors.push(`${table}: missing column legacy_hash (required for big activity tables).`)
     }
     const hasUnique = model.uniques.some((u) => {
       const cs = u.map((field) => model.columns.get(field) ?? field)
       return cs.length === 2 && cs[0] === 'legacy_source' && cs[1] === 'legacy_id'
     })
     if (!hasUnique) {
-      errors.push(`${name}: missing @@unique([legacySource, legacyId]) (the ETL upsert key).`)
+      errors.push(`${table}: missing @@unique([legacySource, legacyId]) (the ETL upsert key).`)
     }
   }
 
   // 3. Migrations.
-  const migrations = readMigrations(paths.migrationsDir)
+  const migrations = readMigrations(paths.migrationsDir).map((m) => ({ ...m, sql: stripSqlComments(m.sql) }))
   for (const { dir, sql } of migrations) {
-    if (/create\s+type\s+("?[\w.]+"?)\s+as\s+enum/i.test(sql)) {
+    if (/create\s+type\s+[^;(]*?\s+as\s+enum\b/i.test(sql)) {
       errors.push(`migrations/${dir}: creates a Postgres enum type; use text + CHECK (plan 14.2).`)
     }
   }
 
   // 4. Warnings for existing tables.
   const statements = migrations.flatMap((m) => m.sql.split(';'))
-  for (const model of models.values()) {
-    if (listedSet.has(model.name) || CONTROL_MODEL.test(model.name)) continue
+  for (const model of byTable.values()) {
+    if (listedSet.has(model.table) || CONTROL_MODEL.test(model.name)) continue
     const cols = new Set(model.columns.values())
-    const hasLegacy = cols.has('legacy_source') || cols.has('legacy_id')
-    if (hasLegacy) {
-      warnings.push(`${model.name}: has legacy_* columns but is not listed in migratable-models.json.`)
+    if (cols.has('legacy_source') || cols.has('legacy_id')) {
+      warnings.push(`${model.table}: has legacy_* columns but is not listed in migratable-models.json.`)
     } else {
       warnings.push(
-        `${model.name}: not listed in migratable-models.json and has no legacy_* columns (list it, or confirm no source row can land in it).`,
+        `${model.table}: not listed in migratable-models.json and has no legacy_* columns (list it, or confirm no source row can land in it).`,
       )
     }
   }
-  for (const name of listed) {
-    if (!models.has(name)) continue
-    const table = tableOf(name, files)
-    const hasCheck =
-      table !== undefined &&
-      statements.some(
-        (st) => st.includes(table) && /legacy_source[^;]*\bin\s*\(\s*'cloud'\s*,\s*'my'\s*\)/i.test(st),
-      )
-    if (!hasCheck) warnings.push(`${name}: no CHECK (legacy_source IN ('cloud', 'my')) found in any migration.`)
+  for (const table of listed) {
+    if (!byTable.has(table)) continue
+    const mention = new RegExp(`["\\s.]${table}["\\s]`)
+    const hasCheck = statements.some(
+      (st) => mention.test(st) && /legacy_source[^;]*\bin\s*\(\s*'cloud'\s*,\s*'my'\s*\)/i.test(st),
+    )
+    if (!hasCheck) warnings.push(`${table}: no CHECK (legacy_source IN ('cloud', 'my')) found in any migration.`)
   }
 
   return { errors, warnings }
-}
-
-function tableOf(model: string, files: { text: string }[]): string | undefined {
-  for (const { text } of files) {
-    const m = new RegExp(`model\\s+${model}\\s*\\{[\\s\\S]*?@@map\\(\\s*"([^"]+)"\\s*\\)[\\s\\S]*?\\}`).exec(
-      stripComments(text),
-    )
-    if (m) return m[1]
-  }
-  return undefined
 }
 
 export function defaultPaths(): CheckPaths {
