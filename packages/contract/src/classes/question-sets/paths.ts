@@ -60,6 +60,11 @@ const csrf = z.object({
 
 const unauthorized = err('UNAUTHORIZED ("Unauthenticated."): no valid session.')
 const teacherOnly = err('FORBIDDEN ("This action is unauthorized."): role is not teacher or admin; or CSRF_INVALID on a mutation.')
+const rateLimited = {
+  description: 'RATE_LIMITED (D57): too many writes. Body error.code RATE_LIMITED with retryAfter (seconds); Retry-After header carries the same value.',
+  headers: { 'Retry-After': { description: 'Seconds until a retry is allowed.', schema: { type: 'integer' as const } } },
+  content: { 'application/json': { schema: ErrorBodySchema } },
+}
 
 const download = (contentType: string, fileName: string, description: string) => ({
   description,
@@ -90,13 +95,14 @@ export function registerQuestionSetsPaths(registry: OpenAPIRegistry): void {
     tags: ['question-sets'],
     summary: 'Upload a question paper (S22, BR-M10-25, FR-M10-98)',
     description:
-      'Teacher or admin. Multipart. Creates a question bank submission with status pending for the admin to review. 422 lists every failing field at once (first message per field); the message is the Laravel summary. The file checks (1 to 5 files, .pdf .doc .docx .xls .xlsx, each at most 20 MB) are on the uploaded parts.',
+      'SCOPE: BE-18 owns only this submission request and its validation; storing and processing the uploaded files belongs to BE-37 (intake). Teacher or admin. Multipart. Creates a question bank submission with status pending for the admin to review. 422 lists every failing field at once (first message per field); the message is the Laravel summary. The file checks (1 to 5 files, .pdf .doc .docx .xls .xlsx, each at most 20 MB) are on the uploaded parts.',
     request: { headers: [csrf], body: { required: true, content: { 'multipart/form-data': { schema: QuestionSetPaperUploadSchema } } } },
     responses: {
       201: json(envelopeOf(QuestionSetPaperSchema), 'The pending submission.'),
       401: unauthorized,
       403: teacherOnly,
       422: json(QuestionSetPaperFieldErrorSchema, 'VALIDATION_ERROR with fields.'),
+      429: rateLimited,
     },
   })
 
@@ -139,6 +145,7 @@ export function registerQuestionSetsPaths(registry: OpenAPIRegistry): void {
     responses: {
       201: json(DskpBidangSchema, 'Bare { id, code, name }.'),
       200: json(DskpBidangInlineErrorSchema, 'Refusal: { error } with the BM text.'),
+      429: rateLimited,
       401: unauthorized,
       403: teacherOnly,
     },
@@ -154,6 +161,7 @@ export function registerQuestionSetsPaths(registry: OpenAPIRegistry): void {
     responses: {
       201: json(DskpSkSchema, 'Bare { id, code, description }.'),
       200: json(DskpSkInlineErrorSchema, 'Refusal: { error } with the BM text.'),
+      429: rateLimited,
       401: unauthorized,
       403: teacherOnly,
     },
@@ -169,6 +177,7 @@ export function registerQuestionSetsPaths(registry: OpenAPIRegistry): void {
     responses: {
       201: json(DskpSpSchema, 'Bare { id, code, description }.'),
       200: json(DskpSpInlineErrorSchema, 'Refusal: { error } with the BM text.'),
+      429: rateLimited,
       401: unauthorized,
       403: teacherOnly,
     },

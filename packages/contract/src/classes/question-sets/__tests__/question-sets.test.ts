@@ -209,7 +209,7 @@ describe('OpenAPI registration', () => {
     expect(Object.keys(doc.paths['/guru/dskp/sk'] ?? {})).toContain('post')
     expect(Object.keys(doc.paths['/guru/dskp/sp'] ?? {})).toContain('post')
     expect(Object.keys(doc.paths['/guru/question-papers']?.post?.requestBody?.content ?? {})).toEqual(['multipart/form-data'])
-    expect(Object.keys(doc.paths['/guru/dskp/sk']?.post?.responses ?? {}).sort()).toEqual(['200', '201', '401', '403'])
+    expect(Object.keys(doc.paths['/guru/dskp/sk']?.post?.responses ?? {}).sort()).toEqual(['200', '201', '401', '403', '429'])
   })
 
   it('serves the templates as attachments with the right content types', () => {
@@ -224,5 +224,14 @@ describe('OpenAPI registration', () => {
   it('registers every component and no legacy column', () => {
     for (const name of Object.keys(QUESTION_SETS_COMPONENT_SCHEMAS)) expect(doc.components.schemas[name]).toBeDefined()
     expect(JSON.stringify(doc)).not.toMatch(/legacy_/)
+  })
+})
+
+describe('D57 rate limit', () => {
+  const doc = buildOpenApiDocument() as { paths: Record<string, Record<string, { responses: Record<string, { headers?: Record<string, unknown> }> }>> }
+  it('declares 429 with a Retry-After header on question-papers and the DSKP POSTs', () => {
+    for (const p of ['/guru/question-papers', '/guru/dskp/bidang', '/guru/dskp/sk', '/guru/dskp/sp']) {
+      expect(doc.paths[p]?.post?.responses['429']?.headers?.['Retry-After']).toBeDefined()
+    }
   })
 })

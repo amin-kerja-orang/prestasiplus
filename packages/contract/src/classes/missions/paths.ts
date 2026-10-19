@@ -67,6 +67,11 @@ const idParam = z.object({ id: IdSchema })
 
 const unauthorized = err('UNAUTHORIZED ("Unauthenticated."): no valid session.')
 const teacherOnly = err('FORBIDDEN ("This action is unauthorized."): role is not teacher or admin; or CSRF_INVALID on a mutation.')
+const rateLimited = {
+  description: 'RATE_LIMITED (D57): too many writes. Body error.code RATE_LIMITED with retryAfter (seconds); Retry-After header carries the same value.',
+  headers: { 'Retry-After': { description: 'Seconds until a retry is allowed.', schema: { type: 'integer' as const } } },
+  content: { 'application/json': { schema: ErrorBodySchema } },
+}
 
 /** Registers the BE-18 missions and remedial endpoints. Bodies are `{ data }`, `{ data, meta }` or bare, as the mock. */
 export function registerMissionsPaths(registry: OpenAPIRegistry): void {
@@ -142,6 +147,7 @@ export function registerMissionsPaths(registry: OpenAPIRegistry): void {
         'FORBIDDEN "Pelajar ini bukan murid anda."; or the generic role text; or CSRF_INVALID.',
       ),
       422: json(z.union([RemedialGenerateFieldErrorSchema, RemedialGenerateRefusedSchema]), 'VALIDATION_ERROR with fields, or without fields (typed refusal).'),
+      429: rateLimited,
     },
   })
 
@@ -160,6 +166,7 @@ export function registerMissionsPaths(registry: OpenAPIRegistry): void {
       404: json(RemedialTestNotFoundSchema, 'NOT_FOUND "Ujian remedial tidak dijumpai.".'),
       409: json(RemedialTestNotActiveSchema, 'CONFLICT "Ujian remedial ini tidak aktif.".'),
       422: json(RemedialCancelFieldErrorSchema, 'VALIDATION_ERROR fields.quizId "ID ujian tidak sah.".'),
+      429: rateLimited,
     },
   })
 

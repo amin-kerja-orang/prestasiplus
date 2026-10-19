@@ -220,13 +220,27 @@ describe('OpenAPI registration', () => {
     expect(Object.keys(doc.paths['/guru/remedial-progress'] ?? {})).toEqual(['get'])
     expect(Object.keys(doc.paths['/guru/command-center/remedial/scan'] ?? {})).toEqual(['get'])
     const generate = doc.paths['/guru/command-center/remedial/generate']?.post
-    expect(Object.keys(generate?.responses ?? {}).sort()).toEqual(['201', '401', '403', '422'])
+    expect(Object.keys(generate?.responses ?? {}).sort()).toEqual(['201', '401', '403', '422', '429'])
     const cancel = doc.paths['/guru/command-center/remedial/cancel']?.post
-    expect(Object.keys(cancel?.responses ?? {}).sort()).toEqual(['200', '401', '403', '404', '409', '422'])
+    expect(Object.keys(cancel?.responses ?? {}).sort()).toEqual(['200', '401', '403', '404', '409', '422', '429'])
   })
 
   it('registers every component and no legacy column', () => {
     for (const name of Object.keys(MISSIONS_COMPONENT_SCHEMAS)) expect(doc.components.schemas[name]).toBeDefined()
     expect(JSON.stringify(doc)).not.toMatch(/legacy_/)
+  })
+})
+
+describe('D57 rate limit and removed provisional routes', () => {
+  const doc = buildOpenApiDocument() as { paths: Record<string, Record<string, { responses: Record<string, { headers?: Record<string, unknown> }> }>> }
+  it('declares 429 with a Retry-After header on remedial writes', () => {
+    for (const p of ['generate', 'cancel']) {
+      const r = doc.paths[`/guru/command-center/remedial/${p}`]?.post?.responses['429']
+      expect(r?.headers?.['Retry-After']).toBeDefined()
+    }
+  })
+  it('has no /guru/missions route and no provisional mission schemas', () => {
+    expect(doc.paths['/guru/missions']).toBeUndefined()
+    expect(Object.keys(MISSIONS_COMPONENT_SCHEMAS)).not.toContain('MissionCreateRequest')
   })
 })
