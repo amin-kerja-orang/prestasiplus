@@ -41349,6 +41349,614 @@
         ],
         "description": "On fields.csvFile (csv mode) or fields.pasteContent (paste mode)."
       },
+      "CikguRubricKey": {
+        "type": "string",
+        "enum": [
+          "spm_bm_karangan",
+          "spm_bi_continuous_writing",
+          "pt3_bm_karangan",
+          "pt3_bi_essay",
+          "sejarah_essay",
+          "general"
+        ]
+      },
+      "CikguLevelCode": {
+        "type": "string",
+        "enum": [
+          "D1",
+          "D2",
+          "D3",
+          "D4",
+          "D5",
+          "D6",
+          "T1",
+          "T2",
+          "T3",
+          "T4",
+          "T5"
+        ]
+      },
+      "CikguChatTier": {
+        "type": "string",
+        "enum": [
+          "admin",
+          "guru",
+          "pelajar"
+        ]
+      },
+      "CikguSendRequest": {
+        "type": "object",
+        "properties": {
+          "message": {
+            "type": "string",
+            "description": "The turn text. Blank after trim = 422 `{}`. No length cap in the mock (open question)."
+          },
+          "thread_id": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Opaque thread id returned by an earlier turn. Null, missing, non-string, unknown or foreign = a new thread."
+          }
+        },
+        "required": [
+          "message"
+        ]
+      },
+      "CikguSendResponse": {
+        "type": "object",
+        "properties": {
+          "thread_id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 64,
+            "description": "Opaque thread id (decimal string); echo it back to continue the thread.",
+            "example": "1042"
+          },
+          "reply": {
+            "type": "string"
+          },
+          "tier": {
+            "$ref": "#/components/schemas/CikguChatTier"
+          },
+          "turns_remaining": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "limit - (used + 1); 0 after the last allowed turn."
+          },
+          "tool_hops": {
+            "anyOf": [
+              {
+                "type": "number",
+                "enum": [
+                  0
+                ]
+              },
+              {
+                "type": "number",
+                "enum": [
+                  1
+                ]
+              }
+            ],
+            "description": "1 when the turn ran mark_essay, saved an RPH or returned practice questions; else 0."
+          },
+          "tokens": {
+            "type": "object",
+            "properties": {
+              "in": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "out": {
+                "type": "integer",
+                "minimum": 0
+              }
+            },
+            "required": [
+              "in",
+              "out"
+            ]
+          }
+        },
+        "required": [
+          "thread_id",
+          "reply",
+          "tier",
+          "turns_remaining",
+          "tool_hops",
+          "tokens"
+        ]
+      },
+      "CikguChatEmptyBody": {
+        "type": "object",
+        "properties": {},
+        "additionalProperties": false
+      },
+      "CikguChatQuotaBody": {
+        "type": "object",
+        "properties": {
+          "quota_exhausted": {
+            "type": "boolean",
+            "enum": [
+              true
+            ]
+          }
+        },
+        "required": [
+          "quota_exhausted"
+        ],
+        "additionalProperties": false
+      },
+      "CikguChatErrorBody": {
+        "type": "object",
+        "properties": {
+          "error": {
+            "type": "string",
+            "minLength": 1,
+            "description": "BM message for direct display."
+          },
+          "code": {
+            "type": "string",
+            "enum": [
+              "RATE_LIMITED",
+              "AI_UNAVAILABLE"
+            ],
+            "description": "Machine code."
+          },
+          "retryAfter": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Seconds, on RATE_LIMITED only."
+          }
+        },
+        "required": [
+          "error",
+          "code"
+        ]
+      },
+      "CikguRph": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "userId": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "subjectName": {
+            "type": "string"
+          },
+          "level": {
+            "$ref": "#/components/schemas/CikguLevelCode"
+          },
+          "tajuk": {
+            "type": "string"
+          },
+          "className": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "lessonDate": {
+            "$ref": "#/components/schemas/DateOnly"
+          },
+          "durationMinutes": {
+            "type": "integer",
+            "minimum": 15,
+            "maximum": 240
+          },
+          "timeSlot": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "tema": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "pengajaranKeperluan": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "generated"
+            ]
+          },
+          "source": {
+            "type": "string",
+            "enum": [
+              "form",
+              "chat"
+            ]
+          },
+          "content": {
+            "type": "string",
+            "description": "The generated plan text, lines joined with \\n."
+          },
+          "threadId": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "minLength": 1,
+            "maxLength": 64,
+            "description": "Set when source = chat; null for a form RPH.",
+            "example": "1042"
+          },
+          "createdAt": {
+            "$ref": "#/components/schemas/Timestamp"
+          }
+        },
+        "required": [
+          "id",
+          "userId",
+          "subjectName",
+          "level",
+          "tajuk",
+          "className",
+          "lessonDate",
+          "durationMinutes",
+          "timeSlot",
+          "tema",
+          "pengajaranKeperluan",
+          "status",
+          "source",
+          "content",
+          "threadId",
+          "createdAt"
+        ]
+      },
+      "CikguRphListItem": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "lessonDate": {
+            "$ref": "#/components/schemas/DateOnly"
+          },
+          "subjectName": {
+            "type": "string"
+          },
+          "level": {
+            "$ref": "#/components/schemas/CikguLevelCode"
+          },
+          "tajuk": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "generated"
+            ]
+          }
+        },
+        "required": [
+          "id",
+          "lessonDate",
+          "subjectName",
+          "level",
+          "tajuk",
+          "status"
+        ]
+      },
+      "CikguRphCreateRequest": {
+        "type": "object",
+        "properties": {
+          "subjectName": {
+            "type": "string",
+            "minLength": 1
+          },
+          "level": {
+            "type": "string",
+            "minLength": 1,
+            "description": "One of D1 to D6, T1 to T5."
+          },
+          "tajuk": {
+            "type": "string",
+            "minLength": 1
+          },
+          "durationMinutes": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "minimum": 15,
+            "maximum": 240,
+            "description": "Integer 15 to 240; missing or null = 60."
+          },
+          "lessonDate": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "YYYY-MM-DD and a real date. Empty, blank, non-string or missing = today (Malaysia)."
+          },
+          "pengajaranKeperluan": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Optional. Blank or non-string = null. At most 500 characters (code points)."
+          },
+          "className": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Optional. Blank or non-string = null. At most 100 characters (code points)."
+          },
+          "timeSlot": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Optional. Blank or non-string = null. At most 100 characters (code points)."
+          },
+          "tema": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Optional. Blank or non-string = null. At most 100 characters (code points)."
+          }
+        },
+        "required": [
+          "subjectName",
+          "level",
+          "tajuk"
+        ]
+      },
+      "CikguEssayMarking": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "userId": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "rubricKey": {
+            "$ref": "#/components/schemas/CikguRubricKey"
+          },
+          "subjectName": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "level": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Free text from the hand-off message (not restricted to the level codes)."
+          },
+          "studentName": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "essayTitle": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "essayText": {
+            "type": "string"
+          },
+          "marks": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "maxMarks": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "comment": {
+            "type": "string"
+          },
+          "threadId": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "createdAt": {
+            "$ref": "#/components/schemas/Timestamp"
+          }
+        },
+        "required": [
+          "id",
+          "userId",
+          "rubricKey",
+          "subjectName",
+          "level",
+          "studentName",
+          "essayTitle",
+          "essayText",
+          "marks",
+          "maxMarks",
+          "comment",
+          "threadId",
+          "createdAt"
+        ]
+      },
+      "CikguEssayListItem": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "studentName": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "subjectName": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "rubricKey": {
+            "$ref": "#/components/schemas/CikguRubricKey"
+          },
+          "essayTitle": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "marks": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "maxMarks": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "createdAt": {
+            "$ref": "#/components/schemas/Timestamp"
+          }
+        },
+        "required": [
+          "id",
+          "studentName",
+          "subjectName",
+          "rubricKey",
+          "essayTitle",
+          "marks",
+          "maxMarks",
+          "createdAt"
+        ]
+      },
+      "CikguPbdQueueItem": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "studentId": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "studentName": {
+            "type": "string"
+          },
+          "classroomId": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "sp": {
+            "type": "string"
+          },
+          "skor": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 100,
+            "description": "One decimal."
+          },
+          "tp": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 6
+          }
+        },
+        "required": [
+          "id",
+          "studentId",
+          "studentName",
+          "classroomId",
+          "sp",
+          "skor",
+          "tp"
+        ]
+      },
+      "CikguRollupRequest": {
+        "type": "object",
+        "properties": {
+          "classroomId": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Id"
+              },
+              {
+                "type": "integer",
+                "minimum": 0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Class id (decimal string; an integer is also accepted). Anything else = zero result."
+          }
+        }
+      },
+      "CikguRollupResult": {
+        "type": "object",
+        "properties": {
+          "created": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "updated": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "skipped": {
+            "type": "integer",
+            "minimum": 0
+          }
+        },
+        "required": [
+          "created",
+          "updated",
+          "skipped"
+        ]
+      },
+      "CikguBulkApproveRequest": {
+        "type": "object",
+        "properties": {
+          "ids": {
+            "type": [
+              "array",
+              "null"
+            ],
+            "items": {
+              "anyOf": [
+                {
+                  "$ref": "#/components/schemas/Id"
+                },
+                {
+                  "type": "integer",
+                  "minimum": 0
+                }
+              ]
+            },
+            "description": "Tag ids (decimal strings; integers also accepted). No size cap in the mock (open question)."
+          }
+        }
+      },
+      "CikguBulkApproveResult": {
+        "type": "object",
+        "properties": {
+          "approved": {
+            "type": "integer",
+            "minimum": 0
+          }
+        },
+        "required": [
+          "approved"
+        ]
+      },
       "AccessGroupId": {
         "type": "string",
         "enum": [
@@ -80271,6 +80879,885 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/RateLimitedBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/cikgu/send": {
+      "post": {
+        "tags": [
+          "cikgu"
+        ],
+        "summary": "Chat turn with Cikgu Alesa (raw, un-enveloped body)",
+        "description": "Any signed-in role. RAW body (no `{data}` envelope, snake_case), as the live site; the client reads the body for every HTTP status. A guest gets 401 with body exactly `{}` (not the error envelope). A non-string or blank (after trim) `message` is 422 body `{}`, checked before the thread and the AI call; nothing is stored. Quota by role (BR-M13-06), counted per user per Malaysia calendar day from the stored user messages: `admin` tier `admin` 100 turns, `teacher` tier `guru` 30, every other role tier `pelajar` 10. When used >= limit: 429 body exactly `{\"quota_exhausted\": true}` and nothing is stored. `turns_remaining` = limit - (used + 1). Routing of the reply is deterministic string logic on the server (BR-M13-04), first match on the trimmed message, case-insensitive: starts with \"Tolong mark karangan ini menggunakan rubric \" = `mark_essay` (stores an essay marking); contains \"rph\" = RPH tool (stores an RPH when subject and level are found); contains \"latihan\" or \"soalan\" = practice reply; otherwise the general reply. `tool_hops` is 1 when the turn ran mark_essay, saved an RPH or returned practice questions, else 0. With the mock AI provider `tokens.in = 120 + ceil(codepoints(message) / 4)` and `tokens.out = ceil(codepoints(reply) / 4)`. AI: the reply, marks and RPH text come from the mock provider or, later, the BE-36 adapter (redaction, rate limit, cost log, budget); this route calls no AI vendor. PDPA: the user is often a minor. The message and reply are personal data: never logged, `Cache-Control: no-store`, sent to a provider only after redaction. The contract makes no statement that content is not used to train models (open question). The CSRF header is checked (403 CSRF_INVALID, standard envelope).",
+        "x-envelope": "none",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Value of Session.csrf; required on mutating requests."
+            },
+            "required": true,
+            "description": "Value of Session.csrf; required on mutating requests.",
+            "name": "X-CSRF-Token",
+            "in": "header"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CikguSendRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The reply. Raw snake_case body, no envelope.",
+            "headers": {
+              "Cache-Control": {
+                "description": "no-store: the body carries personal data of minors (chat text, essays, student names).",
+                "schema": {
+                  "type": "string",
+                  "enum": [
+                    "no-store"
+                  ]
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CikguSendResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Guest: body exactly `{}`.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CikguChatEmptyBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "CSRF_INVALID (missing or wrong X-CSRF-Token).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Blank or non-string message: body exactly `{}`. Nothing stored.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CikguChatEmptyBody"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Either the daily quota is used up (body exactly `{\"quota_exhausted\": true}`, nothing stored), or [PROPOSED] RATE_LIMITED (D57a; raw body with a BM string `error`, `code` RATE_LIMITED and `retryAfter`, plus the Retry-After header). Tell them apart by the `quota_exhausted` key.",
+            "headers": {
+              "Retry-After": {
+                "description": "Seconds until a retry is allowed (same value as error.retryAfter).",
+                "schema": {
+                  "type": "integer",
+                  "minimum": 0
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "anyOf": [
+                    {
+                      "$ref": "#/components/schemas/CikguChatQuotaBody"
+                    },
+                    {
+                      "$ref": "#/components/schemas/CikguChatErrorBody"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "[PROPOSED] AI_UNAVAILABLE: raw body `{error: \"Cikgu Alesa tak boleh respon. Cuba lagi.\", code: \"AI_UNAVAILABLE\"}`. Nothing is stored and no quota turn is consumed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CikguChatErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/cikgu/rph": {
+      "get": {
+        "tags": [
+          "cikgu"
+        ],
+        "summary": "My RPH list",
+        "description": "Teacher or admin. Only the caller's own RPHs, `lessonDate` descending then id descending, 20 per page. An admin sees only their own (normally empty) rows.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "description": "1-based page. The page size is fixed at 20 (no pageSize). An invalid value means 1; a page beyond the last is an empty page that keeps the requested page number."
+            },
+            "required": false,
+            "description": "1-based page. The page size is fixed at 20 (no pageSize). An invalid value means 1; a page beyond the last is an empty page that keeps the requested page number.",
+            "name": "page",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "One page of the caller's RPHs.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/CikguRphListItem"
+                      }
+                    },
+                    "meta": {
+                      "$ref": "#/components/schemas/ListMeta"
+                    }
+                  },
+                  "required": [
+                    "data",
+                    "meta"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED \"Unauthenticated.\" (no valid session).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN \"This action is unauthorized.\" (any role other than teacher or admin).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "cikgu"
+        ],
+        "summary": "Generate and save an RPH from the form",
+        "description": "Teacher or admin. Validates (BR-M13-12), generates the plan text with the AI provider (mock: the canned plan), stores the row with `status` generated, `source` form, `threadId` null, 201 `{data: Rph}`. Values are trimmed; lengths count Unicode code points; optional text fields that are blank become null; `lessonDate` empty or missing = today (Malaysia); `durationMinutes` missing = 60. Content for 60 minutes splits 6/15/15/15/9 (a = round(0.10 x total), e = round(0.15 x total), b = floor((total - a - e) / 3), d = total - a - e - 2b). The mock waits 1,500 ms; the API does not (open question). The CSRF header is checked.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Value of Session.csrf; required on mutating requests."
+            },
+            "required": true,
+            "description": "Value of Session.csrf; required on mutating requests.",
+            "name": "X-CSRF-Token",
+            "in": "header"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CikguRphCreateRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "The saved RPH.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/CikguRph"
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED \"Unauthenticated.\" (no valid session).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN \"This action is unauthorized.\" (any role other than teacher or admin), or CSRF_INVALID.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "VALIDATION_ERROR with `fields`, collected for all fields and returned together, inserted in the order subjectName, level, tajuk, durationMinutes, lessonDate, pengajaranKeperluan, className, timeSlot, tema. Messages: required text = \"Medan ini diperlukan.\"; level not in D1-D6/T1-T5 = \"Medan ini tidak sah.\"; too long = \"Medan ini tidak boleh melebihi {max} aksara.\" (subjectName 100, tajuk 200, pengajaranKeperluan 500, className/timeSlot/tema 100); durationMinutes = \"Tempoh mesti antara 15 dan 240 minit.\"; lessonDate = \"Tarikh tidak sah.\". Top-level message = the first field message plus \" (and N more error(s))\" when several fields fail.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "RATE_LIMITED \"Terlalu banyak percubaan. Sila cuba sebentar lagi.\" The body carries retryAfter (seconds) and the Retry-After header carries the same value.",
+            "headers": {
+              "Retry-After": {
+                "description": "Seconds until a retry is allowed (same value as error.retryAfter).",
+                "schema": {
+                  "type": "integer",
+                  "minimum": 0
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "[PROPOSED] AI_UNAVAILABLE \"Cikgu Alesa tak boleh respon. Cuba lagi.\" (provider error, BE-36 rate limit or AI_BUDGET_EXHAUSTED). Nothing is stored.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/cikgu/rph/{id}": {
+      "get": {
+        "tags": [
+          "cikgu"
+        ],
+        "summary": "RPH detail",
+        "description": "Teacher or admin. Own rows only; unknown, foreign or non-numeric id = 404 NOT_FOUND \"Not Found.\" (no existence leak).",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 64,
+              "description": "Decimal-string id of a row of the caller. Unknown, foreign or non-numeric = 404.",
+              "example": "1042"
+            },
+            "required": true,
+            "description": "Decimal-string id of a row of the caller. Unknown, foreign or non-numeric = 404.",
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The RPH.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/CikguRph"
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED \"Unauthenticated.\" (no valid session).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN \"This action is unauthorized.\" (any role other than teacher or admin).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "NOT_FOUND \"Not Found.\" (unknown, foreign or non-numeric id; indistinguishable on purpose).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/cikgu/essays": {
+      "get": {
+        "tags": [
+          "cikgu"
+        ],
+        "summary": "My essay markings",
+        "description": "Teacher or admin. Own markings only, `createdAt` descending then id descending, 20 per page. Rows carry a student name typed by the teacher (PDPA): `Cache-Control: no-store`, never logged.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "description": "1-based page. The page size is fixed at 20 (no pageSize). An invalid value means 1; a page beyond the last is an empty page that keeps the requested page number."
+            },
+            "required": false,
+            "description": "1-based page. The page size is fixed at 20 (no pageSize). An invalid value means 1; a page beyond the last is an empty page that keeps the requested page number.",
+            "name": "page",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "One page of the caller's markings.",
+            "headers": {
+              "Cache-Control": {
+                "description": "no-store: the body carries personal data of minors (chat text, essays, student names).",
+                "schema": {
+                  "type": "string",
+                  "enum": [
+                    "no-store"
+                  ]
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/CikguEssayListItem"
+                      }
+                    },
+                    "meta": {
+                      "$ref": "#/components/schemas/ListMeta"
+                    }
+                  },
+                  "required": [
+                    "data",
+                    "meta"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED \"Unauthenticated.\" (no valid session).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN \"This action is unauthorized.\" (any role other than teacher or admin).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/cikgu/essays/{id}": {
+      "get": {
+        "tags": [
+          "cikgu"
+        ],
+        "summary": "Essay marking detail",
+        "description": "Teacher or admin. Own rows only; unknown, foreign or non-numeric id = 404 NOT_FOUND \"Not Found.\". Carries the essay text and student name (child data): `Cache-Control: no-store`, never logged.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 64,
+              "description": "Decimal-string id of a row of the caller. Unknown, foreign or non-numeric = 404.",
+              "example": "1042"
+            },
+            "required": true,
+            "description": "Decimal-string id of a row of the caller. Unknown, foreign or non-numeric = 404.",
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The marking.",
+            "headers": {
+              "Cache-Control": {
+                "description": "no-store: the body carries personal data of minors (chat text, essays, student names).",
+                "schema": {
+                  "type": "string",
+                  "enum": [
+                    "no-store"
+                  ]
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/CikguEssayMarking"
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED \"Unauthenticated.\" (no valid session).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN \"This action is unauthorized.\" (any role other than teacher or admin).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "NOT_FOUND \"Not Found.\" (unknown, foreign or non-numeric id; indistinguishable on purpose).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/cikgu/pbd": {
+      "get": {
+        "tags": [
+          "cikgu"
+        ],
+        "summary": "My pending PBD tags (approval queue)",
+        "description": "Teacher or admin. Own `pending` tags only, newest roll-up first, then student name A to Z (case and diacritic insensitive, Malay collation), then id; 20 per page. Student names: `Cache-Control: no-store`.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "description": "1-based page. The page size is fixed at 20 (no pageSize). An invalid value means 1; a page beyond the last is an empty page that keeps the requested page number."
+            },
+            "required": false,
+            "description": "1-based page. The page size is fixed at 20 (no pageSize). An invalid value means 1; a page beyond the last is an empty page that keeps the requested page number.",
+            "name": "page",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "One page of the pending tags.",
+            "headers": {
+              "Cache-Control": {
+                "description": "no-store: the body carries personal data of minors (chat text, essays, student names).",
+                "schema": {
+                  "type": "string",
+                  "enum": [
+                    "no-store"
+                  ]
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/CikguPbdQueueItem"
+                      }
+                    },
+                    "meta": {
+                      "$ref": "#/components/schemas/ListMeta"
+                    }
+                  },
+                  "required": [
+                    "data",
+                    "meta"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED \"Unauthenticated.\" (no valid session).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN \"This action is unauthorized.\" (any role other than teacher or admin).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/cikgu/pbd/rollup": {
+      "post": {
+        "tags": [
+          "cikgu"
+        ],
+        "summary": "Roll up practice answers of a class into PBD tags",
+        "description": "Teacher or admin. `classroomId` null, malformed, not the caller's class, or a class without a subject: 200 `{created: 0, updated: 0, skipped: 0}` and no change (never 422, never reveals a foreign class). Otherwise, for every active member with at least one answer in the class subject (rows with `is_test` excluded): skor = round(correct / answered x 1000) / 10; tp bands <20 1, <40 2, <60 3, <75 4, <90 5, else 6; sp = \"5.1.1\" for subject Kimia, \"1.1.1\" for Sejarah and every other subject (illustrative, open question). An existing `pending` tag for (teacher, class, student, sp) gets the new skor/tp and `createdAt` = now (`updated`); else if an approved tag exists it is left alone (`skipped`); else a new pending tag (`created`).",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Value of Session.csrf; required on mutating requests."
+            },
+            "required": true,
+            "description": "Value of Session.csrf; required on mutating requests.",
+            "name": "X-CSRF-Token",
+            "in": "header"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CikguRollupRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Counts of the run.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/CikguRollupResult"
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED \"Unauthenticated.\" (no valid session).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN \"This action is unauthorized.\" (any role other than teacher or admin), or CSRF_INVALID.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "RATE_LIMITED \"Terlalu banyak percubaan. Sila cuba sebentar lagi.\" The body carries retryAfter (seconds) and the Retry-After header carries the same value.",
+            "headers": {
+              "Retry-After": {
+                "description": "Seconds until a retry is allowed (same value as error.retryAfter).",
+                "schema": {
+                  "type": "integer",
+                  "minimum": 0
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/cikgu/pbd/bulk-approve": {
+      "post": {
+        "tags": [
+          "cikgu"
+        ],
+        "summary": "Approve PBD tags in bulk",
+        "description": "Teacher or admin. Only the caller's `pending` tags among `ids` become `approved` with `approvedAt` = now; foreign, unknown or non-pending ids are ignored silently; duplicates count once; non-array or empty `ids` = `{approved: 0}` (never 422). `approved` = how many changed.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Value of Session.csrf; required on mutating requests."
+            },
+            "required": true,
+            "description": "Value of Session.csrf; required on mutating requests.",
+            "name": "X-CSRF-Token",
+            "in": "header"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CikguBulkApproveRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Number of tags approved.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/CikguBulkApproveResult"
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED \"Unauthenticated.\" (no valid session).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN \"This action is unauthorized.\" (any role other than teacher or admin), or CSRF_INVALID.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "RATE_LIMITED \"Terlalu banyak percubaan. Sila cuba sebentar lagi.\" The body carries retryAfter (seconds) and the Retry-After header carries the same value.",
+            "headers": {
+              "Retry-After": {
+                "description": "Seconds until a retry is allowed (same value as error.retryAfter).",
+                "schema": {
+                  "type": "integer",
+                  "minimum": 0
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/cikgu/pbd/export.csv": {
+      "get": {
+        "tags": [
+          "cikgu"
+        ],
+        "summary": "Export approved PBD tags as CSV (raw file)",
+        "description": "Teacher or admin. A file, not JSON: UTF-8 `text/csv; charset=utf-8`, attachment `pbd-approved.csv`, `Cache-Control: no-store`. First line `pelajar,kelas,sp,skor,tp,tarikh_lulus`; one line per approved tag of the caller ordered by approval time (else roll-up time), student name, id; `skor` with one decimal, `tarikh_lulus` = YYYY-MM-DD (Malaysia date of approval). A cell starting with `=`, `+`, `@` or `-` gets a leading `'`; a cell containing `\"`, `,`, CR or LF is double-quoted with inner quotes doubled; lines end with `\\n`, including the last; no approved tag = the header line only. Bulk child data: rate limited (D57, [PROPOSED] on a read).",
+        "x-envelope": "none",
+        "responses": {
+          "200": {
+            "description": "The CSV file.",
+            "headers": {
+              "Content-Disposition": {
+                "description": "attachment; filename=\"pbd-approved.csv\"",
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "Cache-Control": {
+                "description": "no-store: the body carries personal data of minors (chat text, essays, student names).",
+                "schema": {
+                  "type": "string",
+                  "enum": [
+                    "no-store"
+                  ]
+                }
+              }
+            },
+            "content": {
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED \"Unauthenticated.\" (no valid session).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN \"This action is unauthorized.\" (any role other than teacher or admin).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "RATE_LIMITED \"Terlalu banyak percubaan. Sila cuba sebentar lagi.\" The body carries retryAfter (seconds) and the Retry-After header carries the same value.",
+            "headers": {
+              "Retry-After": {
+                "description": "Seconds until a retry is allowed (same value as error.retryAfter).",
+                "schema": {
+                  "type": "integer",
+                  "minimum": 0
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
                 }
               }
             }
