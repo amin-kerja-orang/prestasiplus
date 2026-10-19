@@ -1,0 +1,3 @@
+{"id":1,"school_id":1,"package":"premium","quota":100,"starts_at":"2026-01-01","ends_at":"2026-12-31"}
+{"id":2,"school_id":2,"package":"asas","quota":101,"starts_at":"2026-01-01","ends_at":"2026-12-31"}
+{"id":3,"school_id":3,"package":"premium","quota":102,"starts_at":"2026-01-01","ends_at":"2026-12-31"}
