@@ -12,10 +12,10 @@ Single source of truth for the **state of every backend card**. The lead's proje
 
 | Priority | Cards | Of which done |
 |---|---|---|
-| P0 | 13 | 3 |
+| P0 | 13 | 4 |
 | P1 | 23 | 0 |
 | P2 | 12 | 0 |
-| **Total** | **48** | **3** |
+| **Total** | **48** | **4** |
 
 (Done = implementation squash-merged into feature/v2-backend: BE-01, BE-02, BE-03. "Contract merged" rows are contract-only, not yet done.)
 
@@ -58,7 +58,7 @@ Single source of truth for the **state of every backend card**. The lead's proje
 | BE-31 | Contract conformance suite and OpenAPI breaking-change gate | PC-6 | P0 | BE-03 | M | todo | - | `be/BE-31-conformance-suite` | - | Harness merged 2026-10-19 (runner, known-mismatch list, coverage gate, oasdiff job; mock run via npm run conformance: 121 scenarios, 0 failing, 19 known). Remaining: API target (Nest supertest) and auth scenarios after BE-03. |
 | BE-32 | Compose stack, nginx proxy, Vite dev proxy and Playwright e2e against the real API | PC-1 + LEAD | P1 | BE-03, BE-07, BE-31 | M | todo | - | `be/BE-32-http-switch-e2e` | - | Joint with LEAD (V2-T31 hybrid transport). Raise nginx body size for uploads. |
 | BE-33 | Security hardening, observability and release readiness | PC-1 | P2 | BE-32, BE-16, BE-38, BE-39 | M | todo | - | `be/BE-33-hardening-release` | - | Final security pass: uploads, AI keys, SSRF, migration data handling. Release gate. |
-| BE-34 | Migration kit: legacy-column convention, ETL control tables, upsert helper, dry-run runner | PC-4 | P0 | BE-02 | M | todo | - | `be/BE-34-migration-kit` | - | Parallel with BE-03. Blocks BE-27/28. |
+| BE-34 | Migration kit: legacy-column convention, ETL control tables, upsert helper, dry-run runner | PC-4 | P0 | BE-02 | M | done | s-aminfaudzi-e3m2 (taken over from s-aminfaudzi-mlcq on LEAD instruction) | `be/BE-34-migration-kit` | - (LEAD merges by git) | **Merged 2026-10-19 (squash), base af5946f7.** LEAD independent verify: contract:check + be:lint:migration (3 expected warnings: BE-03 auth tables non-migratable) + be:verify PASS (30 files/243 passed, real Testcontainers). Migration 0003_etl_control_tables. security re-review PASS, code review Approve. Added .github/workflows/no-dumps.yml. LEAD follow-ups: Runner-level apply guard is a HARD condition on BE-27; doc "model names"→"table names" sweep; no-dumps .zip/.7z/.gz+size cap. Blocks BE-27/28 (now unblocked). |
 | BE-35 | Anonymiser tool and synthetic .cloud fixture generator | PC-4 | P1 | BE-27 | M | todo | - | `be/BE-35-anonymiser-fixtures` | - | Lead runs the anonymiser (OD-18). Security review. |
 | BE-36 | AI extraction service: provider adapters, redaction, rate limit, cost log, budget cap | PC-5 | P1 | BE-03, BE-06 | M | review | s-vm-obgn | `be/BE-36-contract` | #27 | Contract only (ai). D52. Security review. Mock provider default. Needs BE-06 (budget notification). 4 routes (/ai/status, /ai/usage, /ai/settings, /ai/test), 43 Ai* components, 3 deviation rows; contract ready for review. |
 | BE-37 | Intake files, page images, figure crops, server OCR and job runner | PC-5 | P1 | BE-04 | L | todo | - | `be/BE-37-intake-files-ocr` | - | D52. Security review (untrusted PDFs). |
