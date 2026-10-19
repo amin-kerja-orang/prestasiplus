@@ -8,10 +8,34 @@ import { IdSchema } from '../common/ids'
  * Teachers, pupils, classes and schools are owned by BE-05 / BE-17, which are not merged yet, so this
  * folder carries LOCAL `SchoolAdmin...` twins of the few shapes it needs and imports nothing from
  * another domain folder.
+ *
+ * TODO(BE-05, BE-17): once the school, class and user owners are merged, dedupe the local twins
+ * (`SchoolAdminSchoolRef`, `SchoolAdminSchoolInfo`, the user detail / row shapes and the class row)
+ * against the owner contracts and import them instead of keeping copies.
  */
 
 /** A non-negative integer (counts). */
 export const count = z.number().int().min(0)
+
+/** Password length bounds of EVERY password field of this contract (create, update, reset). */
+export const PASSWORD_MIN_LENGTH = 8
+/** Upper bound that keeps oversized input away from the hasher. */
+export const PASSWORD_MAX_LENGTH = 255
+
+/**
+ * The new-password pair of an update or reset: 8 to 255 characters, confirmed by the second field.
+ * The M27 mock (UI placeholder "Minimum 6 aksara") accepts 6; this contract aligns with the
+ * create-pupil rule and the form options (`passwordMinLength` 8), see the deviations log.
+ */
+export const password8 = z
+  .string()
+  .min(PASSWORD_MIN_LENGTH)
+  .max(PASSWORD_MAX_LENGTH)
+  .meta({ writeOnly: true, description: '8 to 255 characters.' })
+export const passwordConfirmation = z
+  .string()
+  .max(PASSWORD_MAX_LENGTH)
+  .meta({ writeOnly: true, description: 'Must equal the password; at most 255 characters.' })
 
 /** A text with at most `max` characters that is not blank (the server trims; a blank text is "absent"). */
 export const nonBlank = (max: number) => z.string().max(max).regex(/\S/, 'must not be blank')
@@ -40,6 +64,11 @@ export const SCHOOL_ADMIN_MESSAGES = {
   accountInactive: 'Akaun ini tidak aktif.',
   userNotFound: 'Pengguna tidak ditemui.',
   roleNotManaged: 'Anda tidak boleh mengurus akaun ini.',
+  /**
+   * Refusal when the target of a toggle is the caller's own account (an admin cannot deactivate
+   * themself). PROPOSED copy: the M27 mock has no such refusal (see the toggle route description).
+   */
+  selfToggle: 'Anda tidak boleh menyahaktifkan akaun sendiri.',
   /** Hint of the create-pupil form. */
   passwordHint: 'Biarkan kosong untuk guna kata laluan lalai (minimum 8 aksara).',
 } as const

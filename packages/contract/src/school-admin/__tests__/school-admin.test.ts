@@ -321,10 +321,12 @@ describe('school-admin contract: teachers and pupils', () => {
   })
 
   it('create teacher: valid and invalid bodies; unmanaged keys are stripped', () => {
-    const valid = { name: 'Cikgu Baharu', email: 'baharu@example.test', password: 'rahsia1', passwordConfirmation: 'rahsia1' }
+    const valid = { name: 'Cikgu Baharu', email: 'baharu@example.test', password: 'rahsia12', passwordConfirmation: 'rahsia12' }
     expect(ok(SchoolAdminTeacherCreateRequestSchema, valid)).toBe(true)
     expect(ok(SchoolAdminTeacherCreateRequestSchema, { ...valid, phone: '0123456789' })).toBe(true)
-    expect(ok(SchoolAdminTeacherCreateRequestSchema, { ...valid, password: '12345' })).toBe(false)
+    expect(ok(SchoolAdminTeacherCreateRequestSchema, { ...valid, password: '1234567' })).toBe(false)
+    expect(ok(SchoolAdminTeacherCreateRequestSchema, { ...valid, password: 'x'.repeat(256), passwordConfirmation: 'x'.repeat(256) })).toBe(false)
+    expect(ok(SchoolAdminTeacherCreateRequestSchema, { ...valid, password: 'x'.repeat(255), passwordConfirmation: 'x'.repeat(255) })).toBe(true)
     expect(ok(SchoolAdminTeacherCreateRequestSchema, { ...valid, phone: '012345678901234' })).toBe(false)
     expect(ok(SchoolAdminTeacherCreateRequestSchema, { ...valid, name: '   ' })).toBe(false)
     expect(ok(SchoolAdminTeacherCreateRequestSchema, { ...valid, email: 'bukan-emel' })).toBe(false)
@@ -341,6 +343,7 @@ describe('school-admin contract: teachers and pupils', () => {
     expect(ok(SchoolAdminPupilCreateRequestSchema, { ...valid, password: '', classId: '' })).toBe(true)
     expect(ok(SchoolAdminPupilCreateRequestSchema, { ...valid, password: 'abcdefgh', classId: '7' })).toBe(true)
     expect(ok(SchoolAdminPupilCreateRequestSchema, { ...valid, password: 'abcdefg' })).toBe(false)
+    expect(ok(SchoolAdminPupilCreateRequestSchema, { ...valid, password: 'x'.repeat(256) })).toBe(false)
     expect(ok(SchoolAdminPupilCreateRequestSchema, { ...valid, name: 'Al' })).toBe(false)
     expect(ok(SchoolAdminPupilCreateRequestSchema, { ...valid, classId: 7 })).toBe(false)
     const parsed = SchoolAdminPupilCreateRequestSchema.parse({ ...valid, role: 'teacher', grade: 9, icNumber: '000000000000' })
@@ -391,16 +394,18 @@ describe('school-admin contract: teachers and pupils', () => {
     const base = { name: 'Aisyah Demo', email: 'aisyah.demo@example.test' }
     expect(ok(SchoolAdminUserUpdateRequestSchema, base)).toBe(true)
     expect(ok(SchoolAdminUserUpdateRequestSchema, { ...base, phone: null })).toBe(true)
-    expect(ok(SchoolAdminUserUpdateRequestSchema, { ...base, newPassword: 'abcdef', newPasswordConfirmation: 'abcdef' })).toBe(true)
-    expect(ok(SchoolAdminUserUpdateRequestSchema, { ...base, newPassword: 'abcde' })).toBe(false)
+    expect(ok(SchoolAdminUserUpdateRequestSchema, { ...base, newPassword: 'abcdefgh', newPasswordConfirmation: 'abcdefgh' })).toBe(true)
+    expect(ok(SchoolAdminUserUpdateRequestSchema, { ...base, newPassword: 'abcdefg' })).toBe(false)
+    expect(ok(SchoolAdminUserUpdateRequestSchema, { ...base, newPassword: 'x'.repeat(256), newPasswordConfirmation: 'x'.repeat(256) })).toBe(false)
     expect(ok(SchoolAdminUserUpdateRequestSchema, { name: 'Tanpa Emel' })).toBe(false)
     expect(SchoolAdminUserUpdateRequestSchema.parse({ ...base, role: 'admin', schoolId: '9' })).toEqual(base)
   })
 
   it('reset password request and results', () => {
-    expect(ok(SchoolAdminResetPasswordRequestSchema, { newPassword: 'abcdef', newPasswordConfirmation: 'abcdef' })).toBe(true)
-    expect(ok(SchoolAdminResetPasswordRequestSchema, { newPassword: 'abcde', newPasswordConfirmation: 'abcde' })).toBe(false)
-    expect(ok(SchoolAdminResetPasswordRequestSchema, { newPassword: 'abcdef' })).toBe(false)
+    expect(ok(SchoolAdminResetPasswordRequestSchema, { newPassword: 'abcdefgh', newPasswordConfirmation: 'abcdefgh' })).toBe(true)
+    expect(ok(SchoolAdminResetPasswordRequestSchema, { newPassword: 'abcdefg', newPasswordConfirmation: 'abcdefg' })).toBe(false)
+    expect(ok(SchoolAdminResetPasswordRequestSchema, { newPassword: 'x'.repeat(256), newPasswordConfirmation: 'x'.repeat(256) })).toBe(false)
+    expect(ok(SchoolAdminResetPasswordRequestSchema, { newPassword: 'abcdefgh' })).toBe(false)
     expect(ok(SchoolAdminResetResultSchema, { data: { reset: true }, status: SCHOOL_ADMIN_FLASH.updated })).toBe(true)
     expect(ok(SchoolAdminResetResultSchema, { data: { reset: false }, status: SCHOOL_ADMIN_FLASH.updated })).toBe(false)
     // the response never echoes a password
@@ -421,6 +426,7 @@ describe('school-admin contract: teachers and pupils', () => {
     expect(SCHOOL_ADMIN_MESSAGES.roleNotManaged).toBe('Anda tidak boleh mengurus akaun ini.')
     expect(SCHOOL_ADMIN_MESSAGES.accountInactive).toBe('Akaun ini tidak aktif.')
     expect(SCHOOL_ADMIN_MESSAGES.userNotFound).toBe('Pengguna tidak ditemui.')
+    expect(SCHOOL_ADMIN_MESSAGES.selfToggle).toBe('Anda tidak boleh menyahaktifkan akaun sendiri.')
     expect(SCHOOL_ADMIN_USER_CSV_COLUMNS.join(',')).toBe('id,name,email,role,sekolah,kelas,is_active,created_at')
   })
 
@@ -486,6 +492,7 @@ describe('school-admin contract: Amaran', () => {
 describe('school-admin contract: OpenAPI document', () => {
   type Operation = {
     tags?: string[]
+    description?: string
     parameters?: { name: string; in: string }[]
     requestBody?: { content: Record<string, unknown> }
     responses: Record<string, { content?: Record<string, unknown>; headers?: Record<string, unknown> }>
@@ -582,6 +589,67 @@ describe('school-admin contract: OpenAPI document', () => {
     expect(doc.paths['/amaran/export/school/{id}']!.get!.responses['200']!.headers?.['Cache-Control']).toBeDefined()
   })
 
+  it('both user CSV exports and the pupil credential 201 send Cache-Control: no-store (D57b)', () => {
+    for (const path of ['/admin-sekolah/pelajar/export.csv', '/admin-sekolah/guru/export.csv']) {
+      expect(doc.paths[path]!.get!.responses['200']!.headers?.['Cache-Control'], path).toBeDefined()
+    }
+    const created = doc.paths['/admin-sekolah/pelajar']!.post!.responses['201']!
+    expect(created.headers?.['Cache-Control']).toBeDefined()
+  })
+
+  it('writes, reset-password routes and CSV exports document 429 RATE_LIMITED with Retry-After (D57a)', () => {
+    const limited: readonly [string, string][] = [
+      ...MUTATING.filter(([, p]) => p.startsWith('/admin-sekolah')),
+      ['get', '/admin-sekolah/pelajar/export.csv'],
+      ['get', '/admin-sekolah/guru/export.csv'],
+      ['get', '/amaran/export/school/{id}'],
+    ]
+    expect(limited).toHaveLength(7 + 3)
+    for (const [method, path] of limited) {
+      const res = doc.paths[path]![method]!.responses['429']
+      expect(res, `${method} ${path}`).toBeDefined()
+      expect(res!.headers?.['Retry-After'], `${method} ${path}`).toBeDefined()
+      expect(JSON.stringify(res), `${method} ${path}`).toMatch(/ErrorBody/)
+    }
+  })
+
+  it('documents the lost-response recovery, the optional Idempotency-Key and the enumeration trade-off on create pupil', () => {
+    const op = doc.paths['/admin-sekolah/pelajar']!.post! as Operation
+    expect(op.description).toMatch(/never re-served/i)
+    expect(op.description).toMatch(/reset-password/)
+    expect(op.description).toMatch(/Idempotency-Key/)
+    expect(op.description).toMatch(/enumeration/i)
+    expect(op.description).toMatch(/mass assignment/i)
+    expect(op.description).toMatch(/risk accepted pending LEAD/i)
+    const key = op.parameters?.find((p) => p.name === 'Idempotency-Key') as { required?: boolean } | undefined
+    expect(key).toBeDefined()
+    expect(key?.required ?? false).toBe(false)
+    expect(op.responses['409']).toBeDefined()
+    const reset = doc.paths['/admin-sekolah/pelajar/{id}/reset-password']!.post! as Operation
+    expect(reset.description).toMatch(/recovery path/i)
+  })
+
+  it('excludes Admin Pusat from /admin-sekolah/*, documents the self-toggle refusal and the 404 scope rule', () => {
+    const dash = doc.paths['/admin-sekolah/dashboard']!.get!
+    expect(JSON.stringify(dash.responses['403'])).toMatch(/Admin \(Pusat\) role is EXCLUDED/)
+    const toggle = doc.paths['/admin-sekolah/guru/{id}/toggle-active']!.post! as Operation
+    expect(toggle.description).toMatch(/cannot deactivate their own account/)
+    expect(toggle.description).toContain(SCHOOL_ADMIN_MESSAGES.selfToggle)
+    const risk = doc.paths['/amaran/schools/{id}']!.get! as Operation
+    expect(JSON.stringify(risk.responses['403'])).not.toMatch(/outside the caller scope/)
+    expect(JSON.stringify(risk.responses['404'])).toMatch(/outside the caller scope/)
+    const csvRoute = doc.paths['/amaran/export/school/{id}']!.get! as Operation
+    expect(csvRoute.description).toMatch(/role check \(403\) comes BEFORE the 404/)
+    expect(JSON.stringify(csvRoute.responses['404'])).toMatch(/outside the caller scope/)
+  })
+
+  it('PDPA notes sit on the exports and the Amaran pupil lists', () => {
+    for (const path of ['/admin-sekolah/pelajar/export.csv', '/admin-sekolah/guru/export.csv', '/amaran/export/school/{id}', '/amaran/schools/{id}']) {
+      expect(doc.paths[path]!.get!.description, path).toMatch(/PDPA/)
+    }
+    expect(JSON.stringify(doc.components.schemas.AmaranPupilRisk)).toBeDefined()
+  })
+
   it('passwords are write-only in every request schema', () => {
     const req = doc.components.schemas
     const props = (name: string) => (req[name]!.properties ?? {}) as Record<string, { writeOnly?: boolean }>
@@ -590,6 +658,26 @@ describe('school-admin contract: OpenAPI document', () => {
     expect(props('SchoolAdminPupilCreateRequest').password!.writeOnly).toBe(true)
     expect(props('SchoolAdminUserUpdateRequest').newPassword!.writeOnly).toBe(true)
     expect(props('SchoolAdminResetPasswordRequest').newPassword!.writeOnly).toBe(true)
+  })
+
+  it('every password field is 8 to 255 characters in the OpenAPI schema', () => {
+    const req = doc.components.schemas
+    const fields: readonly [string, string][] = [
+      ['SchoolAdminTeacherCreateRequest', 'password'],
+      ['SchoolAdminTeacherCreateRequest', 'passwordConfirmation'],
+      ['SchoolAdminUserUpdateRequest', 'newPassword'],
+      ['SchoolAdminUserUpdateRequest', 'newPasswordConfirmation'],
+      ['SchoolAdminResetPasswordRequest', 'newPassword'],
+      ['SchoolAdminResetPasswordRequest', 'newPasswordConfirmation'],
+    ]
+    for (const [name, field] of fields) {
+      const prop = (req[name]!.properties as Record<string, { minLength?: number; maxLength?: number }>)[field]!
+      expect(prop.maxLength, `${name}.${field}`).toBe(255)
+      if (!field.endsWith('Confirmation')) expect(prop.minLength, `${name}.${field}`).toBe(8)
+    }
+    const pupil = JSON.stringify(req.SchoolAdminPupilCreateRequest!.properties)
+    expect(pupil).toContain('"minLength":8')
+    expect(pupil).toContain('"maxLength":255')
   })
 
   it('no response schema other than the one-time credential carries a password', () => {

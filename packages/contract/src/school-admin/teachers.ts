@@ -1,7 +1,7 @@
 import { z } from '../zod'
 import { IdSchema } from '../common/ids'
 import { TimestampSchema } from '../common/time'
-import { count, nonBlank } from './common'
+import { count, nonBlank, password8, passwordConfirmation } from './common'
 import { SchoolAdminUserListMetaSchema } from './users'
 
 /**
@@ -33,17 +33,19 @@ export type SchoolAdminTeacherListResponse = z.infer<typeof SchoolAdminTeacherLi
 
 /**
  * `POST /admin-sekolah/guru` body. The teacher is created ACTIVE, with role teacher and the caller
- * school; `role`, `schoolId` and any other key are ignored. Validation (422, Laravel English text):
- * `name` required, at most 255; `email` required, valid, at most 255, unique; `phone` at most 14;
- * `password` required, at least 6, confirmed ("The password field confirmation does not match.").
+ * school; `role`, `schoolId` and any other key are ignored (mass-assignment waiver of BE-NFR-05, see
+ * the create-pupil route). Validation (422, Laravel English text):
+ * `name` required, at most 255; `email` required, valid, at most 255, unique among ALL users
+ * (cross-school, accepted enumeration trade-off); `phone` at most 14; `password` required, 8 to 255
+ * characters, confirmed ("The password field confirmation does not match.").
  */
 export const SchoolAdminTeacherCreateRequestSchema = z
   .object({
     name: nonBlank(255),
     email: z.email().max(255),
     phone: z.string().max(14).nullable().optional(),
-    password: z.string().min(6).meta({ writeOnly: true }),
-    passwordConfirmation: z.string().meta({ writeOnly: true }),
+    password: password8,
+    passwordConfirmation,
   })
   .meta({ id: 'SchoolAdminTeacherCreateRequest' })
 export type SchoolAdminTeacherCreateRequest = z.infer<typeof SchoolAdminTeacherCreateRequestSchema>

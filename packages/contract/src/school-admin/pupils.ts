@@ -1,13 +1,17 @@
 import { z } from '../zod'
 import { IdSchema } from '../common/ids'
 import { TimestampSchema } from '../common/time'
-import { nonBlank, SchoolAdminSchoolInfoSchema } from './common'
+import { nonBlank, PASSWORD_MAX_LENGTH, PASSWORD_MIN_LENGTH, SchoolAdminSchoolInfoSchema } from './common'
 import { SchoolAdminUserDetailSchema, SchoolAdminUserListMetaSchema } from './users'
 
 /**
  * Pupil management of the Admin Sekolah (S6, S9, S12): list, form options, detail, CSV export,
  * create (with the one-time credential), update, reset password. Routes are under
  * `/admin-sekolah/pelajar`. Pupils cannot be toggled active or inactive here.
+ *
+ * PDPA: pupils are mostly minors. The list row carries `email` and `phone` because the M27 pupil
+ * list screen shows both columns (S6: "Emel", "Telefon"); no IC number appears in any response.
+ * The frontend list is the reason `phone` stays in the row (a drop was considered, BE-21 review).
  */
 
 export const SchoolAdminPupilRowSchema = z
@@ -50,19 +54,28 @@ export type SchoolAdminPupilFormOptions = z.infer<typeof SchoolAdminPupilFormOpt
 
 /**
  * `POST /admin-sekolah/pelajar` body. The pupil is created ACTIVE with role student and the caller
- * school; `role`, `schoolId`, `isActive`, `grade`, `icNumber` are ignored. `password` empty or
- * absent = the configured default password. `classId` blank or absent = no class. Validation (422,
+ * school; `role`, `schoolId`, `isActive`, `grade`, `icNumber` are ignored (mass-assignment waiver:
+ * the mock ignores unknown and protected keys instead of the strict 422 of BE-NFR-05; the server
+ * must never bind them, proved by an integration test). `password` empty or absent = the
+ * configured default password (the account is then flagged `mustChangePassword`, D55c / D57c; risk
+ * accepted pending LEAD, a server-generated random initial password per account is the alternative
+ * and would not change the wire shape). `classId` blank or absent = no class. Validation (422,
  * Laravel English text): `name` required, 3 to 255 ("The name field must be at least 3
- * characters."); `email` required, valid, at most 255, unique ("The email has already been
- * taken."); `password` 8 to 255 when given; `classId` an active classroom of the school ("The
- * selected class id is invalid.").
+ * characters."); `email` required, valid, at most 255, unique among ALL users of every school
+ * ("The email has already been taken."); `password` 8 to 255 when given; `classId` an active
+ * classroom of the school ("The selected class id is invalid.").
+ *
+ * Accepted trade-off (e-mail enumeration): because the e-mail is unique across schools, the 422
+ * "The email has already been taken." tells a school admin that an address is registered
+ * somewhere, including a pupil of another school. This cannot be hidden without dropping
+ * uniqueness; it is mitigated by the 429 rate limit and the audit trail.
  */
 export const SchoolAdminPupilCreateRequestSchema = z
   .object({
     name: nonBlank(255).min(3),
     email: z.email().max(255),
     password: z
-      .union([z.literal(''), z.string().min(8).max(255)])
+      .union([z.literal(''), z.string().min(PASSWORD_MIN_LENGTH).max(PASSWORD_MAX_LENGTH)])
       .nullable()
       .optional()
       .meta({ writeOnly: true, description: 'Empty, null or absent = the default password; otherwise 8 to 255 characters.' }),
@@ -77,6 +90,12 @@ export type SchoolAdminPupilCreateRequest = z.infer<typeof SchoolAdminPupilCreat
  * is never logged, never stored in plain text (only the hash is kept) and cannot be retrieved
  * again: no other route returns it. The account is created flagged `mustChangePassword`: the
  * pupil's first login is forced to set a new password (enforced by BE-03, the session/login flow).
+ *
+ * Lost response: the credential is NEVER re-served. If the 201 is lost, a blind retry answers 422
+ * "The email has already been taken." (the account exists) and the password is gone; the recovery
+ * is `POST /admin-sekolah/pelajar/{id}/reset-password` (the admin sets a new password and hands
+ * it over). The server must not keep the plaintext to support a retry. The response carries
+ * `Cache-Control: no-store` so no proxy or browser cache keeps a minor's password.
  */
 export const SchoolAdminPupilCreatedResultSchema = z
   .object({

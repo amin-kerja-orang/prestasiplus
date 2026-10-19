@@ -149,10 +149,38 @@ const json = (schema: z.ZodType, description: string) => ({
 })
 const err = (description: string) => json(ErrorBodySchema, description)
 const body = (schema: z.ZodType) => ({ required: true, content: { 'application/json': { schema } } })
-const csv = (description: string, headers: Record<string, { description: string; schema: { type: 'string' } }>) => ({
+type HeaderDoc = Record<string, { description: string; schema: { type: 'string' | 'integer' } }>
+const csv = (description: string, headers: HeaderDoc) => ({
   description,
   headers,
   content: { 'text/csv': { schema: z.string().meta({ type: 'string' }) } },
+})
+
+/** D57b: a response that carries a credential, a token or a bulk dump of minors' data must not be cached. */
+const NO_STORE: HeaderDoc = {
+  'Cache-Control': { description: 'no-store (nothing is kept by a proxy or the browser cache).', schema: { type: 'string' } },
+}
+
+/** D57a / BE-NFR-04: 429 of every write, both reset-password routes and the CSV exports. The numeric limits belong to the implementation card and the runbook. */
+const RATE_LIMITED = {
+  description:
+    'RATE_LIMITED "Terlalu banyak percubaan. Sila cuba sebentar lagi." (proposed copy, same text as the auth routes) with error.retryAfter in seconds and the Retry-After header.',
+  headers: {
+    'Retry-After': { description: 'Seconds until a retry is allowed (equals error.retryAfter).', schema: { type: 'integer' } },
+  } as HeaderDoc,
+  content: { 'application/json': { schema: ErrorBodySchema } },
+}
+
+const IdempotencyKey = z.object({
+  'Idempotency-Key': z
+    .string()
+    .min(1)
+    .max(128)
+    .optional()
+    .meta({
+      description:
+        'Optional (BE-NFR-18, proposed). A client-generated key, one per create attempt. A replay with a key the server has already used answers 409 CONFLICT and never creates a second account; the credential is NOT re-served (recover with reset-password).',
+    }),
 })
 
 const IdParams = z.object({
@@ -163,12 +191,15 @@ const csrf = z.object({
 })
 
 const UNAUTHORIZED = err('UNAUTHORIZED "Unauthenticated." (no valid session).')
-/** 403 of every M27 read: any role other than school_admin, or a school admin without a school. */
+/**
+ * 403 of every M27 read: any role other than school_admin (Admin Pusat included: it has no school to
+ * scope to), or a school admin without a school.
+ */
 const FORBIDDEN_SA = err(
-  'FORBIDDEN "This action is unauthorized." (role is not school_admin, or the school admin has no school; a missing school never means "all schools").',
+  'FORBIDDEN "This action is unauthorized." (role is not school_admin, or the school admin has no school; a missing school never means "all schools"). The Admin (Pusat) role is EXCLUDED from /admin-sekolah/* and also gets 403.',
 )
 const FORBIDDEN_SA_WRITE = err(
-  'FORBIDDEN "This action is unauthorized." (role is not school_admin, or no school), or CSRF_INVALID (missing or wrong X-CSRF-Token).',
+  'FORBIDDEN "This action is unauthorized." (role is not school_admin, Admin Pusat included, or no school), or CSRF_INVALID (missing or wrong X-CSRF-Token).',
 )
 const NOT_FOUND_USER = err(
   'NOT_FOUND "Not Found." (unknown id, a user of another school, or a user of another role: indistinguishable). The owner message "Pengguna tidak ditemui." applies only if the account vanishes between the scope check and the write.',
@@ -198,6 +229,14 @@ const contentDisposition = {
  * The mock impersonation routes (`POST /admin-sekolah/users/{id}/impersonate` and
  * `POST /admin-sekolah/impersonate/leave`) are NOT part of the contract (UD-2): Mod Pelajar is
  * `POST /session/mode`. Static segments (`export.csv`, `form-options`) win over `{id}`.
+ *
+ * Role: ONLY school_admin may call `/admin-sekolah/*`; Admin (Pusat) is excluded (403, no school to
+ * scope to). The BE-21 card AC1 ("school_admin (and admin)") must be amended by the LEAD. Admin
+ * keeps access to the `/amaran/*` routes, which carry an explicit school id.
+ *
+ * Every write, both reset-password routes and the export routes document 429 RATE_LIMITED
+ * (D57a). Mass assignment: the server ignores unknown and protected body keys (waiver of
+ * BE-NFR-05, mock fidelity). Passwords are 8 to 255 characters on every field.
  */
 export function registerSchoolAdminPaths(registry: OpenAPIRegistry): void {
   // -------------------------------------------------------------------------------------------
@@ -282,12 +321,13 @@ export function registerSchoolAdminPaths(registry: OpenAPIRegistry): void {
     path: '/admin-sekolah/guru/export.csv',
     tags: ['school-admin'],
     summary: 'Teachers CSV export',
-    description: `Same filters as the list, no paging; teachers ordered by id. File name users-guru-{yyyy-mm-dd}.csv. Body: UTF-8 BOM, LF line ends and a trailing newline; header ${SCHOOL_ADMIN_USER_CSV_COLUMNS.join(',')}; role = "guru", sekolah = the school name, kelas empty, is_active 1 / 0. Cells starting with = + - @ tab or CR are prefixed with an apostrophe; cells holding a comma, quote or line break are quoted (RFC 4180). No IC and no phone. ${SCHOOL_ONLY}`,
+    description: `Same filters as the list, no paging; teachers ordered by id. File name users-guru-{yyyy-mm-dd}.csv. Body: UTF-8 BOM, LF line ends and a trailing newline; header ${SCHOOL_ADMIN_USER_CSV_COLUMNS.join(',')}; role = "guru", sekolah = the school name, kelas empty, is_active 1 / 0. Cells starting with = + - @ tab or CR are prefixed with an apostrophe; cells holding a comma, quote or line break are quoted (RFC 4180). No IC and no phone. Sends Cache-Control: no-store. PDPA: the file is a bulk list of names and e-mails (of minors for pupils); every export writes an audit event (actor, school, file name, never the content) and is rate limited. ${SCHOOL_ONLY}`,
     request: { query: SchoolAdminUserExportQuerySchema },
     responses: {
-      200: csv('The CSV file (text/csv; charset=utf-8).', { 'Content-Disposition': contentDisposition }),
+      200: csv('The CSV file (text/csv; charset=utf-8).', { 'Content-Disposition': contentDisposition, ...NO_STORE }),
       401: UNAUTHORIZED,
       403: FORBIDDEN_SA,
+      429: RATE_LIMITED,
     },
   })
 
@@ -306,13 +346,14 @@ export function registerSchoolAdminPaths(registry: OpenAPIRegistry): void {
     path: '/admin-sekolah/guru',
     tags: ['school-admin'],
     summary: 'Create a teacher (S11)',
-    description: 'Creates an active teacher of the caller school (createdBy = the caller). The password is hashed and never returned.',
+    description: 'Creates an active teacher of the caller school (createdBy = the caller). The password (8 to 255 characters) is hashed and never returned. The e-mail is unique across all schools (accepted enumeration trade-off, see POST /admin-sekolah/pelajar). Unknown and protected body keys are ignored (mass-assignment waiver).',
     request: { headers: [csrf], body: body(SchoolAdminTeacherCreateRequestSchema) },
     responses: {
       201: json(SchoolAdminUserWriteResultSchema, 'Created; status "Pengguna berjaya didaftarkan.".'),
       401: UNAUTHORIZED,
       403: FORBIDDEN_SA_WRITE,
       422: err(FIELD_RULES),
+      429: RATE_LIMITED,
     },
   })
 
@@ -321,7 +362,7 @@ export function registerSchoolAdminPaths(registry: OpenAPIRegistry): void {
     path: '/admin-sekolah/guru/{id}',
     tags: ['school-admin'],
     summary: 'Update a teacher (S10)',
-    description: 'Checks: guard, 404, 403 (inactive), 422. Role, school and status never change. A new password revokes all the teacher sessions.',
+    description: 'Checks: guard, 404, 403 (inactive), 422. Role, school and status never change (such body keys are ignored, mass-assignment waiver). A new password (8 to 255 characters) revokes all the teacher sessions. The e-mail is unique across all schools (accepted enumeration trade-off).',
     request: { params: IdParams, headers: [csrf], body: body(SchoolAdminUserUpdateRequestSchema) },
     responses: {
       200: json(SchoolAdminUserWriteResultSchema, 'Updated; status "Pengguna berjaya dikemaskini.".'),
@@ -329,6 +370,7 @@ export function registerSchoolAdminPaths(registry: OpenAPIRegistry): void {
       403: FORBIDDEN_INACTIVE,
       404: NOT_FOUND_USER,
       422: err(FIELD_RULES),
+      429: RATE_LIMITED,
     },
   })
 
@@ -337,13 +379,14 @@ export function registerSchoolAdminPaths(registry: OpenAPIRegistry): void {
     path: '/admin-sekolah/guru/{id}/toggle-active',
     tags: ['school-admin'],
     summary: 'Switch a teacher active / inactive',
-    description: 'No body. Flips isActive in either direction, including an inactive teacher. Deactivating revokes all the teacher sessions. Writes an audit event with the actor. Pupils cannot be toggled (a pupil id is 404).',
+    description: 'No body. Flips isActive in either direction, including an inactive teacher. Deactivating revokes all the teacher sessions. Writes an audit event with the actor. Pupils cannot be toggled (a pupil id is 404). SELF-TOGGLE: an admin cannot deactivate their own account. The M27 mock has no explicit refusal: the caller is a school_admin, not a teacher, so a self-target already answers 404 NOT_FOUND "Not Found." like any non-teacher id. If the managed roles ever widen so that the caller can be a target, the refusal is 422 VALIDATION_ERROR with fields.id "Anda tidak boleh menyahaktifkan akaun sendiri." (proposed copy, modelled on the M02 own-account refusals) and nothing changes. Rate limited (429).',
     request: { params: IdParams, headers: [csrf] },
     responses: {
       200: json(SchoolAdminToggleActiveResultSchema, 'Toggled; data.isActive is the new state; status "Status pengguna berjaya dikemaskini.".'),
       401: UNAUTHORIZED,
       403: FORBIDDEN_SA_WRITE,
       404: NOT_FOUND_USER,
+      429: RATE_LIMITED,
     },
   })
 
@@ -352,7 +395,7 @@ export function registerSchoolAdminPaths(registry: OpenAPIRegistry): void {
     path: '/admin-sekolah/guru/{id}/reset-password',
     tags: ['school-admin'],
     summary: 'Reset a teacher password',
-    description: 'The target must be an active teacher of the school. Replaces the hash at once and revokes the target sessions (not the caller). The new password is never echoed or logged.',
+    description: 'The target must be an active teacher of the school. Replaces the hash at once and revokes the target sessions (not the caller). The new password (8 to 255 characters) is never echoed or logged. Rate limited (429).',
     request: { params: IdParams, headers: [csrf], body: body(SchoolAdminResetPasswordRequestSchema) },
     responses: {
       200: json(SchoolAdminResetResultSchema, 'Reset; status "Pengguna berjaya dikemaskini.".'),
@@ -360,6 +403,7 @@ export function registerSchoolAdminPaths(registry: OpenAPIRegistry): void {
       403: FORBIDDEN_INACTIVE,
       404: NOT_FOUND_USER,
       422: err(FIELD_RULES),
+      429: RATE_LIMITED,
     },
   })
 
@@ -372,7 +416,7 @@ export function registerSchoolAdminPaths(registry: OpenAPIRegistry): void {
     path: '/admin-sekolah/pelajar',
     tags: ['school-admin'],
     summary: 'Pupils of the school (S6)',
-    description: `Active first, then id descending; 25 per page; a page beyond the last gives the last page. meta.counts ignore the filters. ${SCHOOL_ONLY}`,
+    description: `Active first, then id descending; 25 per page; a page beyond the last gives the last page. meta.counts ignore the filters. PDPA: rows are mostly minors; the list shows name, e-mail and phone because the screen does; no IC number. ${SCHOOL_ONLY}`,
     request: { query: SchoolAdminUserListQuerySchema },
     responses: { 200: json(SchoolAdminPupilListResponseSchema, 'Pupils with meta.'), 401: UNAUTHORIZED, 403: FORBIDDEN_SA },
   })
@@ -391,12 +435,13 @@ export function registerSchoolAdminPaths(registry: OpenAPIRegistry): void {
     path: '/admin-sekolah/pelajar/export.csv',
     tags: ['school-admin'],
     summary: 'Pupils CSV export',
-    description: `Matches before the {id} route. Same filters as the list, no paging; pupils ordered by id. File name users-pelajar-{yyyy-mm-dd}.csv. Body: UTF-8 BOM, LF line ends and a trailing newline; header ${SCHOOL_ADMIN_USER_CSV_COLUMNS.join(',')}; role = "pelajar", sekolah = the school name, kelas = the names of the active classes joined by ", ", is_active 1 / 0. Cells starting with = + - @ tab or CR are prefixed with an apostrophe; cells holding a comma, quote or line break are quoted (RFC 4180). No IC and no phone. ${SCHOOL_ONLY}`,
+    description: `Matches before the {id} route. Same filters as the list, no paging; pupils ordered by id. File name users-pelajar-{yyyy-mm-dd}.csv. Body: UTF-8 BOM, LF line ends and a trailing newline; header ${SCHOOL_ADMIN_USER_CSV_COLUMNS.join(',')}; role = "pelajar", sekolah = the school name, kelas = the names of the active classes joined by ", ", is_active 1 / 0. Cells starting with = + - @ tab or CR are prefixed with an apostrophe; cells holding a comma, quote or line break are quoted (RFC 4180). No IC and no phone. Sends Cache-Control: no-store. PDPA: the file is a bulk list of names and e-mails (of minors for pupils); every export writes an audit event (actor, school, file name, never the content) and is rate limited. ${SCHOOL_ONLY}`,
     request: { query: SchoolAdminUserExportQuerySchema },
     responses: {
-      200: csv('The CSV file (text/csv; charset=utf-8).', { 'Content-Disposition': contentDisposition }),
+      200: csv('The CSV file (text/csv; charset=utf-8).', { 'Content-Disposition': contentDisposition, ...NO_STORE }),
       401: UNAUTHORIZED,
       403: FORBIDDEN_SA,
+      429: RATE_LIMITED,
     },
   })
 
@@ -415,13 +460,22 @@ export function registerSchoolAdminPaths(registry: OpenAPIRegistry): void {
     path: '/admin-sekolah/pelajar',
     tags: ['school-admin'],
     summary: 'Create a pupil (S12)',
-    description: 'Creates an active pupil of the caller school (createdBy = the caller); with classId the pupil is enrolled with source school_admin. D55c: the response shows the password once, to the creating admin only (never logged, never stored in plain text, not retrievable again) and returns mustChangePassword true: the account is flagged so the first login forces a password change (BE-03).',
-    request: { headers: [csrf], body: body(SchoolAdminPupilCreateRequestSchema) },
+    description:
+      'Creates an active pupil of the caller school (createdBy = the caller); with classId the pupil is enrolled with source school_admin. D55c: the response shows the password once, to the creating admin only (never logged, never stored in plain text, not retrievable again) and returns mustChangePassword true: the account is flagged so the first login forces a password change (BE-03). The 201 carries Cache-Control: no-store (D57b). ' +
+      'LOST RESPONSE: the credential is never re-served. If the 201 is lost, a retry answers 422 "The email has already been taken." and the password is gone; recover with POST /admin-sekolah/pelajar/{id}/reset-password (the admin sets a new password). The server must not store the plaintext to support a retry. The optional Idempotency-Key header prevents a duplicate account on a retry: a replayed key answers 409 CONFLICT and never re-serves the credential. ' +
+      'ACCEPTED TRADE-OFF (e-mail enumeration): the e-mail is unique across all schools, so the 422 "The email has already been taken." reveals that an address is registered somewhere (a pupil of another school included). It cannot be hidden without dropping uniqueness; it is mitigated by the 429 rate limit and the audit trail. ' +
+      'An empty password means the configured default password; the account is then still must-change-password (D55c / D57c; risk accepted pending LEAD, a server-generated random initial password is the alternative and keeps the same wire shape). Mass assignment waiver: role, schoolId, isActive, grade and icNumber in the body are ignored, never bound (BE-NFR-05 exception, mock fidelity). 429 RATE_LIMITED guards bulk account creation.',
+    request: { headers: [csrf, IdempotencyKey], body: body(SchoolAdminPupilCreateRequestSchema) },
     responses: {
-      201: json(SchoolAdminPupilCreatedResultSchema, 'Created, with the one-time credential and mustChangePassword true.'),
+      201: {
+        ...json(SchoolAdminPupilCreatedResultSchema, 'Created, with the one-time credential and mustChangePassword true. Never cached.'),
+        headers: NO_STORE,
+      },
       401: UNAUTHORIZED,
       403: FORBIDDEN_SA_WRITE,
+      409: err('CONFLICT (proposed): the Idempotency-Key was already used. No second account is created and the credential is NOT re-served; use reset-password.'),
       422: err(FIELD_RULES),
+      429: RATE_LIMITED,
     },
   })
 
@@ -430,7 +484,7 @@ export function registerSchoolAdminPaths(registry: OpenAPIRegistry): void {
     path: '/admin-sekolah/pelajar/{id}',
     tags: ['school-admin'],
     summary: 'Update a pupil (S9)',
-    description: 'Checks: guard, 404, 403 (inactive), 422. Role, school, status and grade never change. A new password revokes all the pupil sessions.',
+    description: 'Checks: guard, 404, 403 (inactive), 422. Role, school, status and grade never change (such body keys are ignored, mass-assignment waiver). A new password (8 to 255 characters) revokes all the pupil sessions. The e-mail is unique across all schools (accepted enumeration trade-off, see POST /admin-sekolah/pelajar).',
     request: { params: IdParams, headers: [csrf], body: body(SchoolAdminUserUpdateRequestSchema) },
     responses: {
       200: json(SchoolAdminUserWriteResultSchema, 'Updated; status "Pengguna berjaya dikemaskini.".'),
@@ -438,6 +492,7 @@ export function registerSchoolAdminPaths(registry: OpenAPIRegistry): void {
       403: FORBIDDEN_INACTIVE,
       404: NOT_FOUND_USER,
       422: err(FIELD_RULES),
+      429: RATE_LIMITED,
     },
   })
 
@@ -446,7 +501,7 @@ export function registerSchoolAdminPaths(registry: OpenAPIRegistry): void {
     path: '/admin-sekolah/pelajar/{id}/reset-password',
     tags: ['school-admin'],
     summary: 'Reset a pupil password',
-    description: 'The target must be an active pupil of the school. Replaces the hash at once and revokes the target sessions (not the caller). The new password is never echoed or logged.',
+    description: 'The target must be an active pupil of the school. Replaces the hash at once and revokes the target sessions (not the caller). The new password (8 to 255 characters) is never echoed or logged. This is the recovery path when the one-time credential of POST /admin-sekolah/pelajar was lost. Rate limited (429).',
     request: { params: IdParams, headers: [csrf], body: body(SchoolAdminResetPasswordRequestSchema) },
     responses: {
       200: json(SchoolAdminResetResultSchema, 'Reset; status "Pengguna berjaya dikemaskini.".'),
@@ -454,6 +509,7 @@ export function registerSchoolAdminPaths(registry: OpenAPIRegistry): void {
       403: FORBIDDEN_INACTIVE,
       404: NOT_FOUND_USER,
       422: err(FIELD_RULES),
+      429: RATE_LIMITED,
     },
   })
 
@@ -462,20 +518,20 @@ export function registerSchoolAdminPaths(registry: OpenAPIRegistry): void {
   // -------------------------------------------------------------------------------------------
 
   const AMARAN_ACCESS =
-    'Roles in B1: admin, school_admin, teacher (student, parent, sponsor and ppd_officer get 403). School access: admin any school; school_admin its own school; teacher its own school or a school of a class it owns.'
+    'Roles in B1: admin, school_admin, teacher (student, parent, sponsor and ppd_officer get 403). School access: admin any school; school_admin its own school; teacher its own school or a school of a class it owns. A school outside the caller reach answers 404 NOT_FOUND "Not Found.", indistinguishable from an unknown school (BE-NFR-05, no school-id enumeration); 403 is only for a role that is not allowed. PDPA: the pupil lists show minors\' names, classes and risk scores; never cache them and show them only to staff who need them.'
 
   registry.registerPath({
     method: 'get',
     path: '/amaran/schools/{id}',
     tags: ['amaran'],
     summary: 'School risk page (Amaran Awal)',
-    description: `${AMARAN_ACCESS} Risk is computed at request time and never stored: per pupil A = 100 - mean practice accuracy, E = min(100, days since active x 100 / 30), M = (10 - mean mastery) x 10, score = 0.4A + 0.3E + 0.3M (1 decimal). An unknown school is 404 (checked before access); a school outside the caller scope is 403 (not 404, a deliberate deviation from the 404 convention).`,
+    description: `${AMARAN_ACCESS} Risk is computed at request time and never stored: per pupil A = 100 - mean practice accuracy, E = min(100, days since active x 100 / 30), M = (10 - mean mastery) x 10, score = 0.4A + 0.3E + 0.3M (1 decimal). The role is checked first (403); then an unknown school and a school outside the caller scope are both 404 (the mock answered 403 for the latter; changed so the 403/404 difference cannot be used to list valid school ids).`,
     request: { params: IdParams, query: AmaranSchoolRiskQuerySchema },
     responses: {
       200: json(envelopeOf(AmaranSchoolRiskSchema), 'The school risk page.'),
       401: UNAUTHORIZED,
-      403: err('FORBIDDEN "This action is unauthorized." (role not allowed, or the school is outside the caller scope).'),
-      404: err('NOT_FOUND "Not Found." (unknown school).'),
+      403: err('FORBIDDEN "This action is unauthorized." (role not allowed).'),
+      404: err('NOT_FOUND "Not Found." (unknown school, or a school outside the caller scope: indistinguishable).'),
     },
   })
 
@@ -484,13 +540,13 @@ export function registerSchoolAdminPaths(registry: OpenAPIRegistry): void {
     path: '/amaran/summary',
     tags: ['amaran'],
     summary: 'Executive summary of a school, district or state',
-    description: `${AMARAN_ACCESS} Without scope the default is the viewer own scope (school_admin and teacher: own school; admin: the preview district). The district and state scopes are admin only (403 for school_admin and teacher). Reserved fixture schools are excluded from district and state roll-ups. Check order: 422, then 404 (unknown school, or a district / state with no schools), then 403.`,
+    description: `${AMARAN_ACCESS} Without scope the default is the viewer own scope (school_admin and teacher: own school; admin: the preview district). The district and state scopes are admin only (403 for school_admin and teacher). Reserved fixture schools are excluded from district and state roll-ups. Check order: 422, then 403 (role not allowed, no default scope, or the district / state scope for a role other than admin), then 404 (unknown school, a school outside the caller reach: indistinguishable, or a district / state with no schools). The mock answered 403 for an out-of-reach school; changed to 404 (BE-NFR-05).`,
     request: { query: AmaranSummaryQuerySchema },
     responses: {
       200: json(envelopeOf(AmaranSummarySchema), 'The summary (generatedAt is epoch milliseconds).'),
       401: UNAUTHORIZED,
-      403: err('FORBIDDEN "This action is unauthorized." (role not allowed, scope outside the caller reach, or no default scope).'),
-      404: err('NOT_FOUND "Not Found." (unknown school, or a district / state with no schools).'),
+      403: err('FORBIDDEN "This action is unauthorized." (role not allowed, the district / state scope for a role other than admin, or no default scope).'),
+      404: err('NOT_FOUND "Not Found." (unknown school, a school outside the caller reach, or a district / state with no schools).'),
       422: err(
         'VALIDATION_ERROR (English copy; the top-level message equals the field text): scope=school without an integer schoolId -> fields.schoolId "The school id is required."; scope=district without district and state -> fields.district "The district and state are required."; scope=state without a state -> fields.state "The state is required."; any other scope -> fields.scope "The scope must be school, district or state.".',
       ),
@@ -515,7 +571,7 @@ export function registerSchoolAdminPaths(registry: OpenAPIRegistry): void {
     path: '/amaran/export/school/{id}',
     tags: ['amaran'],
     summary: 'School risk list as CSV',
-    description: `Roles: admin (any school) and school_admin (own school); a teacher gets 403. An unknown school is 404 (before access). File name amaran-sekolah-{id}-{yyyymmdd}.csv (date in Malaysia time). Headers: Content-Type text/csv; charset=utf-8, Cache-Control no-store. Body: UTF-8 BOM, CRLF line ends with a trailing CRLF; header ${AMARAN_CSV_COLUMNS.join(',')}; one line per pupil of the school (no tingkatan filter), score with one decimal, status label, then the three BM cell texts of the risk page. Cells starting with = + - @ tab or CR are prefixed with an apostrophe; quoting follows RFC 4180. No IC, e-mail or phone. Every accepted download writes an audit event (actor, school, file name) and never personal content.`,
+    description: `Roles: admin (any school) and school_admin (own school); a teacher or any other role gets 403. Check order: the role check (403) comes BEFORE the 404; then an unknown school and a school outside the caller scope are both 404 (indistinguishable; the mock answered 403 for the latter). File name amaran-sekolah-{id}-{yyyymmdd}.csv (date in Malaysia time). Headers: Content-Type text/csv; charset=utf-8, Cache-Control no-store. Body: UTF-8 BOM, CRLF line ends with a trailing CRLF; header ${AMARAN_CSV_COLUMNS.join(',')}; one line per pupil of the school (no tingkatan filter), score with one decimal, status label, then the three BM cell texts of the risk page. Cells starting with = + - @ tab or CR are prefixed with an apostrophe; quoting follows RFC 4180. No IC, e-mail or phone. PDPA: the file lists minors\' names, classes and risk scores, the most sensitive derived data; it is never cached and rate limited (429, proposed on top of D57a because it is a bulk dump of minors). Every accepted download writes an audit event (actor, school, file name) and never personal content.`,
     request: { params: IdParams },
     responses: {
       200: csv('The CSV file.', {
@@ -523,8 +579,9 @@ export function registerSchoolAdminPaths(registry: OpenAPIRegistry): void {
         'Cache-Control': { description: 'no-store', schema: { type: 'string' } },
       }),
       401: UNAUTHORIZED,
-      403: err('FORBIDDEN "This action is unauthorized." (role not allowed, a teacher, or the school is outside the caller scope).'),
-      404: err('NOT_FOUND "Not Found." (unknown school).'),
+      403: err('FORBIDDEN "This action is unauthorized." (role not allowed, including a teacher; checked before the 404).'),
+      404: err('NOT_FOUND "Not Found." (unknown school, or a school outside the caller scope: indistinguishable).'),
+      429: RATE_LIMITED,
     },
   })
 }

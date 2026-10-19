@@ -143,6 +143,11 @@ export type AmaranSchoolRiskQuery = z.infer<typeof AmaranSchoolRiskQuerySchema>
  * {n}%" / "Tiada data latihan" (never active) / "Tiada data"; engagementText "Terakhir aktif:
  * {yyyy-mm-dd}" / "Tiada aktiviti"; masteryText "Purata tahap: L{n}" / "Tiada data penguasaan"
  * (never active) / "Tiada data". Personal contact data (IC, e-mail, phone) is never present.
+ *
+ * PDPA: this is the most sensitive derived data about minors (name, class and a risk score). It is
+ * served only to roles with access to the school (an out-of-scope school is 404), never cached
+ * (the CSV is `Cache-Control: no-store`) and every export is audited. Show it only to staff who
+ * need it for intervention.
  */
 export const AmaranPupilRiskSchema = z
   .object({
