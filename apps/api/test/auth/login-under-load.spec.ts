@@ -1,7 +1,7 @@
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest'
 
 import { argon2Gate } from '../../src/modules/auth/password.service'
-import { ADMIN, apiOf, bootUsersApp, DEMO_PASSWORD, login, schoolIdOf, type UsersTestApp } from './helpers'
+import { ADMIN, apiOf, bootUsersApp, DEMO_PASSWORD, login, schoolIdOf, type UsersTestApp } from '../users/helpers'
 
 describe('login while the argon2 gate is saturated by a big import', () => {
   let t: UsersTestApp
@@ -60,6 +60,21 @@ describe('an overloaded database is a retryable 429, never a 500', () => {
     expect(isOverloadError(null)).toBe(false)
   })
 
+  it('a tested credential failure stays a 401 and keeps its count even if the audit write overloads', async () => {
+    const t = await bootUsersApp()
+    try {
+      const { AuditService } = await import('../../src/common/audit/audit.service')
+      const spy = vi.spyOn(t.app.get(AuditService), 'record').mockRejectedValue(Object.assign(new Error('expired'), { code: 'P2028' }))
+      const res = await t.http().post('/api/auth/login').send({ identifier: 'guru@demo.test', password: 'Salah-1234' })
+      expect(res.status).toBe(401)
+      const rows = await t.db.query<{ attempts: number }>(`select attempts from login_attempts`)
+      expect(rows.reduce((n, r) => n + r.attempts, 0)).toBeGreaterThan(0)
+      spy.mockRestore()
+    } finally {
+      await t.close()
+    }
+  })
+
   it('login answers 429 with Retry-After when the database reports an expired transaction', async () => {
     const t = await bootUsersApp()
     try {
@@ -70,6 +85,9 @@ describe('an overloaded database is a retryable 429, never a 500', () => {
       expect(res.status).toBe(429)
       expect(res.body.error).toMatchObject({ code: 'RATE_LIMITED', retryAfter: 5 })
       expect(res.headers['retry-after']).toBe('5')
+      // The reserved throttle units were given back: no counter holds an attempt.
+      const rows = await t.db.query<{ attempts: number }>(`select attempts from login_attempts`)
+      expect(rows.reduce((n, r) => n + r.attempts, 0)).toBe(0)
       spy.mockRestore()
       expect((await t.http().post('/api/auth/login').send({ identifier: 'guru@demo.test', password: DEMO_PASSWORD })).status).toBe(200)
     } finally {

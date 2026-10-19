@@ -18,7 +18,7 @@ import { AuthConfig } from './auth.config'
 import { authError, isOverloadError, rateLimited } from './auth.errors'
 import { LOGIN_TX, MAX_LEGACY_CHECKS_PER_LOGIN } from './auth.constants'
 import { isLegacyBcrypt, LegacyBcryptBusyError } from './legacy-bcrypt'
-import { LoginThrottle } from './login-throttle.service'
+import { LoginThrottle, type ThrottleKeys } from './login-throttle.service'
 import { PasswordService } from './password.service'
 import type { ResolvedSession } from './session-resolver.service'
 import { assemble, buildGrants } from './session-view'
@@ -37,6 +37,13 @@ export interface SessionGrant {
   session: Session
   token: string
   expiresAt: Date
+}
+
+/** What a login attempt has reserved in the throttle, so an overload can give it back. */
+interface AttemptState {
+  keys: ThrottleKeys | null
+  /** True once a failed credential check was counted (that unit stays). */
+  counted: boolean
 }
 
 @Injectable()
@@ -62,12 +69,22 @@ export class AuthService {
    */
   async login(body: LoginRequest, info: RequestInfo, oldToken?: string): Promise<SessionGrant> {
     const started = performance.now()
+    const attempt: AttemptState = { keys: null, counted: false }
     try {
-      return await this.attemptLogin(body, info, oldToken)
+      return await this.attemptLogin(body, info, oldToken, attempt)
     } catch (err) {
       // An overloaded database or event loop is retryable: 429 with Retry-After, never a 500.
       if (isOverloadError(err)) {
         this.logger.warn(`login overloaded (requestId=${info.requestId ?? '-'})`)
+        // The attempt never tested a credential: give the reserved unit back (pair and address counters)
+        // so an overload retry does not count against the user. A credential failure already counted stays.
+        if (attempt.keys && !attempt.counted) {
+          try {
+            await this.throttle.refund(attempt.keys)
+          } catch {
+            this.logger.warn(`login overload refund failed (requestId=${info.requestId ?? '-'})`)
+          }
+        }
         throw rateLimited(5)
       }
       // Timing oracle floor: every failed credential answer takes at least the floor, held with a
@@ -80,10 +97,11 @@ export class AuthService {
     }
   }
 
-  private async attemptLogin(body: LoginRequest, info: RequestInfo, oldToken?: string): Promise<SessionGrant> {
+  private async attemptLogin(body: LoginRequest, info: RequestInfo, oldToken: string | undefined, attempt: AttemptState): Promise<SessionGrant> {
     const now = this.clock.now()
     const keys = this.throttle.keys(body.identifier, info.ip)
     await this.throttle.begin(keys, now)
+    attempt.keys = keys
 
     const candidates = await this.accounts.findLoginCandidates(body.identifier, body.schoolId)
     let checks: Awaited<ReturnType<AuthService['checkAll']>>
@@ -103,6 +121,7 @@ export class AuthService {
       const only = candidates.length === 1 ? (candidates[0] as LoginCandidate) : null
       try {
         await this.throttle.fail(keys, now, checks.length)
+        attempt.counted = true
       } catch {
         // Never turn a 401 into a 500 because the global counters could not be written.
         this.logger.warn(`login throttle write failed (requestId=${info.requestId ?? '-'})`)
