@@ -174,7 +174,8 @@ describe('parent links (BE-25 part B)', () => {
       expect(row.student.schoolName).toBe('SMK Demo Satu')
       expect(row.parent.emailMasked).toBe('i***@ujian.test')
       const dump = JSON.stringify(res.body)
-      for (const secret of ['ibu.campur@ujian.test', '0123456789', 'SK Demo Dua', 'Anak Lain', linkMixedForeign]) expect(dump).not.toContain(secret)
+      for (const needle of ['ibu.campur@ujian.test', '0123456789', 'SK Demo Dua', 'Anak Lain']) expect(dump).not.toContain(needle)
+      expect(res.body.data.some((x: { linkId: string }) => x.linkId === linkMixedForeign)).toBe(false)
       const all = await sa.get('/admin/parent-links')
       expect(all.body.meta.totalItems).toBe(all.body.data.length)
       expect(all.body.data.every((x: { student: { schoolName: string } }) => x.student.schoolName === 'SMK Demo Satu')).toBe(true)
@@ -237,13 +238,15 @@ describe('parent links (BE-25 part B)', () => {
     })
 
     it('a removed link changes parent visibility for a school_admin (AC 7)', async () => {
-      // mixed parent: one own-school child (already unlinked by the student above) and one foreign child.
-      expectError(await sa.get(`/admin/users/${mixed.id}`), 'NOT_FOUND')
-      expect((await admin.del(`/admin/parent-links/${linkMixedForeign}`)).status).toBe(204)
-      // now it has no child at all: still invisible (fail closed)
-      expectError(await sa.get(`/admin/users/${mixed.id}`), 'NOT_FOUND')
-      await link(mixed.id, own)
-      expect((await sa.get(`/admin/users/${mixed.id}`)).status).toBe(200)
+      // Its own parent and links, so no earlier test's state matters.
+      const p = await newParent(t, admin, 'ibu.keterlihatan@ujian.test', 'Ibu Keterlihatan')
+      const ownLink = await link(p.id, own)
+      const farLink = await link(p.id, foreign)
+      expectError(await sa.get(`/admin/users/${p.id}`), 'NOT_FOUND') // one child in another school
+      expect((await admin.del(`/admin/parent-links/${farLink}`)).status).toBe(204)
+      expect((await sa.get(`/admin/users/${p.id}`)).status).toBe(200) // only an own-school child is left
+      expect((await admin.del(`/admin/parent-links/${ownLink}`)).status).toBe(204)
+      expectError(await sa.get(`/admin/users/${p.id}`), 'NOT_FOUND') // no child at all: fail closed
     })
   })
 })
