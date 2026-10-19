@@ -52,3 +52,6 @@ playwright-report-*/
 # Backend env files with secrets (BE-01; examples: .env.api.example)
 .env.api
 .env.db
+
+# Local compose override (BE-02; example: compose.override.example.yaml)
+compose.override.yaml

@@ -1,0 +1,12 @@
+# Copy to compose.override.yaml (git-ignored; Compose merges it automatically).
+# Publishes Postgres on loopback only, for local tooling (psql, Prisma Studio, be:db:migrate on the host).
+# 5432 and 5433 are used by other stacks on some PCs, hence the 5434 default.
+# Host DATABASE_URL then looks like postgresql://pp:<password>@127.0.0.1:5434/prestasiplus
+services:
+  db:
+    ports:
+      - '127.0.0.1:${DB_HOST_PORT:-5434}:5432'
+  # Optional: expose the API on loopback too.
+  # api:
+  #   ports:
+  #     - '127.0.0.1:3000:3000'
