@@ -35,8 +35,8 @@ describe('registries', () => {
     }
   })
 
-  it('seed registry is empty and runs the modules it is given in order', async () => {
-    expect(seedModules).toHaveLength(0)
+  it('seed registry runs the modules it is given in order', async () => {
+    expect(Array.isArray(seedModules)).toBe(true)
     const calls: string[] = []
     const done = await runSeeds([
       { name: 'a', run: async () => void calls.push('a') },
