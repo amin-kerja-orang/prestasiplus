@@ -101,6 +101,9 @@ export const SessionSchema = z
     landingPath: z.string().startsWith('/'),
     expiresAt: TimestampSchema,
     csrf: z.string().min(1),
+    mustChangePassword: z.boolean().meta({
+      description: 'True while a forced password change is pending; other routes answer 403 PASSWORD_CHANGE_REQUIRED.',
+    }),
   })
   .superRefine((s, ctx) => {
     const bad = (path: (string | number)[], message: string) =>
