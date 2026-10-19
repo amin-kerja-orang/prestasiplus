@@ -13,6 +13,7 @@ import { FixedClock, SEED_NOW, type Clock } from '../../src/db/clock'
 import { createPrismaClient, type PrismaClient } from '../../src/db/client'
 import { DEFAULT_SEED_BASE, type Prng, prngStream } from '../../src/db/prng'
 import { identitySeed } from './core/identity'
+import { curriculumSeed } from './curriculum'
 
 export const DEFAULT_PROFILE = 'poc'
 
@@ -35,7 +36,7 @@ export interface SeedModule {
   run(ctx: SeedContext): Promise<void>
 }
 
-export const seedModules: SeedModule[] = [identitySeed]
+export const seedModules: SeedModule[] = [identitySeed, curriculumSeed]
 
 /**
  * The seeds create demo accounts with a published password. They must never run against production
