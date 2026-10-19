@@ -11,8 +11,8 @@
 
 1. **Mock first.** Columns come from the mock row types (`src/modules/*/mock`, `src/mock`) and the Bijak types (`src/modules/m28-bijak-spm/domain/types.ts`, `server/store.ts`). Where v2 deliberately changes the mock, the change comes from a decision (D28 to D52), the contract, the exam schema or the migration plan, and the source is named.
 2. **Nothing invented.** A column, table or rule that no source states is marked **[P]** (proposed) and has an open question in section 7 or a gap in section 6. A developer who meets a **[P]** item builds it as written here unless the lead answers the question differently; it is not a business rule.
-3. **The intake mock is not in this snapshot.** The documentation worktree this file was written from does not contain the SPM question-intake frontend (merged on the main branch after this snapshot, TRACKER D52). The intake and AI tables (section 3.5) are therefore derived from plan section 15, cards BE-36 to BE-40, `v2-question-bank.md` and `v2-exam-schema.md`, **not** from mock row types. OQ-DM-01 asks the lead to re-check them against the real mock files (plan OD-20).
-4. **ADR-0019 is not in this snapshot** (the plan says it may still be in progress). Nothing here depends on its text.
+3. **The intake mock** (TRACKER D52) is read from local commit `b2e1033` (branch `feature/student-prototype`) with `git show`, read-only (revision 2, 2026-10-19). Its paths (`src/modules/m28-bijak-spm/admin/intake/types.ts`, `server/store.ts` intake methods, `docs/adr/0019-ai-provider-agnostic-extraction.md`) **land on `feature/v2-backend` only after the LEAD merges that commit**; until then they cannot be opened in the worktree. Section 3.5 is aligned with those types and with the audited cards BE-36 to BE-40; OQ-DM-01 is closed (OQ-DM-33 holds what is left).
+4. **Revision 2 (2026-10-19):** re-checked against the LEAD's card audit (commit 63d363c) and its "Files touched"/"Open questions" sections. Changes are marked **[rev2]** where they are not obvious.
 
 ## Contents
 
@@ -107,10 +107,10 @@ D12 and ADR-0014: exactly one owner per store. This table lists **every** persis
 | OWN-2 | **Provenance/rights in two places** | `source_papers` (BE-10: "provenance, rights declaration") and `intake_batches`/`intake_files` (BE-37) plus per-item provenance (BE-38) all hold file hash, subject, kertas, year, board, rights. Exam schema D10 and section 6 name one entity `source_paper / submission`. | `source_papers` = the registry of a paper's identity and rights (natural key, hash, board, takedown unit); `intake_batches` = the upload event pointing at one `source_papers` row. OQ-DM-02. |
 | OWN-3 | **Three event logs** | `audit_events` (BE-03, platform), `question_status_events` (BE-10) and `intake_item_events` (BE-38). URS BE-NFR-08 speaks of one append-only audit trail; `v2-question-bank` US-15 needs before/after, reason and AI-run id on question changes. | Keep three, with a fixed split: `audit_events` = security and administration actions (no content); `question_status_events` = question lifecycle transitions (actor, reason, version); `intake_item_events` = item edits with previous AI text (AC-08.2). Documented in 3.1/3.4/3.5. |
 | OWN-4 | **`jpns` and `ppds` have no card** | `GET /api/jpn`, `schools.jpn`, `schools.ppd` exist in the mock and BE-05 serves `GET /api/jpn`, but no card lists the tables; plan 14.7 derives them from distinct state/district (T-09). | Create both in BE-05 (schools.prisma). **[P]** GAP-2. |
-| OWN-5 | **`settings`** | BE-28 loads `settings` and `v2-data-migration` 6.1 step 1 loads `settings`, `feature_flags`; the matrix puts them in "Out of B1"; the mock has `gamification.settings` (BE-23), `content.supportConfig` (BE-24) and `m16.gameSettings`. No generic `settings` owner. | Treat `gamification_settings` and `support_config` as the two B1 setting stores; `settings`/`feature_flags` stay backlog (3.13). GAP-3, OQ-DM-03. |
-| OWN-6 | **`mood_checkins`** | Matrix row says schema card BE-22, but BE-22 is read-only and lists no table. Mock store `m26.moodCheckins` (hosted in M17). | Give the table to BE-22 (reports.prisma) or to BE-20 with `interventions` (the intervention rows read mood). **[P]**, OQ-DM-04. |
+| OWN-5 | **`settings`** (**[rev2] narrowed**) | BE-28 now says: `settings` and `packages` have no v2 table; skip them and list them in the report (BE-28 open question 2; URS OQ-24 default: `settings` deferred with the Sistem stores). The matrix still lists `settings` as "Out of B1" while `v2-data-migration` 6.1 step 1 loads it. | Settled for B1: no generic `settings`; `gamification_settings` and `support_config` are the two setting stores. The remaining gap is only the matrix wording (GAP-3). |
+| OWN-6 | **`mood_checkins`** (**[rev2] not assigned**) | BE-22 now states that no card creates the table and says "do not add it until answered" (URS OQ-24, default: not migrated, Q7). Plan 14.7 still names BE-22/BE-29. | The table is **not a B1 table** any more; it moves to the backlog list (3.13) with its columns kept. `interventions` still stores mood values (E-mood). |
 | OWN-7 | **Child tables the mock needs and no card lists** | `practice_session_questions` (the served list), `remedial_test_items`, `draw_prizes`, `timeline_post_photos`, `spm_history_subjects`, `perutusan_files`, `stimulus_group_stimuli`, `stimulus_group_options`, `question_version_stimuli`, `question_version_sp_nodes`, `curriculum_tp_descriptors`. The mock embeds these as arrays inside the parent row; the "jsonb never replaces a table" rule (G-11) turns them into tables. | Created by the card that owns the parent (BE-12, BE-18, BE-23, BE-19, BE-24, BE-09, BE-08). **[P]**. |
-| OWN-8 | **`token_movements`** | Mock `gamification.tokenMovements` (user, delta, source, ref); BE-11 reads it as input but its Outputs omit it; BE-23 omits it too. The ledger already has a `tokens` column. | Fold into `coin_ledger` (tokens) and drop the table, or add it to BE-11. OQ-DM-06. |
+| OWN-8 | **`token_movements`, `tiers`** (**[rev2] resolved**) | BE-11 now creates `token_movements` and `tiers` in `wallet.prisma` ("a wallet carries its tier"); BE-23 keeps admin tier CRUD only. | Both tables are owned by BE-11. The ledger `tokens` column stays for the per-entry token delta. OQ-DM-06 closed. |
 | OWN-9 | **Two reward catalogues** | `rewards`/`reward_claims` (plan) versus mock `gamification.syilingRewards` + `rewardClaims` (M14) **and** `hadiah.rewards` + `hadiah.redemptions` (M15). The matrix maps .cloud `gifts`/`gift_redemptions` to `rewards`/`reward_claims` without saying which mock store. | This document: M15 Hadiah = `rewards` + `reward_redemptions`; M14 Syiling = `syiling_rewards` + `reward_claims`. OQ-DM-07, GAP-9. |
 | OWN-10 | **Teacher economy** | `teacher_wallets`, `teacher_ledger`, `teacher_rewards`, `teacher_redemptions`, `cash_withdrawals`, `teacher_badges`, `teacher_badge_awards` are in BE-23's mock list, but D28(c) puts contributor rewards out of scope and URS OQ-16 / OD-8 / migration Q10 are open. | Specified here (3.7) so the schema exists if kept; whether they ship is URS OQ-16. |
 | OWN-11 | **`curriculum_nodes` versus `dskp_bidang/sk/sp`** | BE-08 owns the DSKP node tree (exam schema D9: unit, SK, SP). BE-18 owns `dskp_bidang/sk/sp` (teacher picks, with `created_by`). BE-10 serves `GET /api/guru/dskp/*` "for question tagging". The mock M04 `dskpSpId` points to the `dskp_sp` store. | Questions tag `curriculum_nodes` only. `dskp_*` stays the teacher-created picking list until a card says otherwise. OQ-DM-08. |
@@ -190,17 +190,18 @@ D12 and ADR-0014: exactly one owner per store. This table lists **every** persis
 
 | Table | Owner card | Mock source | Migrated from | Wave | Mig | T | Flag |
 |---|---|---|---|---|---|---|---|
-| `ai_extraction_runs` | BE-36 | none in this snapshot (OQ-DM-01) | new | - | - | - | |
+| `ai_extraction_runs` | BE-36 | m28 intake: `ExtractedPaper.provider/model` on the batch (b2e1033) | new | - | - | - | |
 | `ai_usage_logs` | BE-36 | none (mock extractor) | `ai_usage_logs` (optional, BE-29) | W4 | M | - | |
 | `ai_settings` | BE-36 | none | new | - | - | - | |
-| `intake_batches` | BE-37 | none in this snapshot | new | - | - | - | C (OWN-1/2) |
-| `intake_files` | BE-37 | none in this snapshot | new | - | - | - | |
-| `intake_pages` | BE-37 | none in this snapshot | new | - | - | - | |
-| `intake_figures` | BE-37 | none in this snapshot | new | - | - | - | |
+| `intake_batches` | BE-37 | m28 `IntakeBatch`/`IntakeMeta` (`BijakServer` intake store, b2e1033) | new | - | - | - | C (OWN-1/2) |
+| `intake_files` | BE-37 | `IntakeMeta.fileName/fileHash/pageCount` (b2e1033) | new | - | - | - | |
+| `intake_pages` | BE-37 | `PageText` (text, source, confidence); `PageImage` stays in the browser (b2e1033) | new | - | - | - | |
+| `intake_figures` | BE-37 | `IntakeStimulus.page` (figure crop source page) (b2e1033) | new | - | - | - | |
+| `intake_stimuli` | BE-38 **[P]** | `IntakeBatch.stimuli[]` (`IntakeStimulus`) (b2e1033) | new | - | - | - | P, OQ-DM-33 |
 | `jobs` | BE-37 (platform) | none | new | - | - | - | |
-| `intake_items` | BE-38 | none in this snapshot | new | - | - | - | |
-| `intake_item_events` | BE-38 | none in this snapshot | new | - | - | - | |
-| `duplicate_links` | BE-38 | none in this snapshot | new | - | - | - | |
+| `intake_items` | BE-38 | `IntakeBatch.questions[]` (`IntakeQuestion`) (b2e1033) | new | - | - | - | |
+| `intake_item_events` | BE-38 | none (the mock keeps no history; AC-08.2) | new | - | - | - | |
+| `duplicate_links` | BE-38 | none (the mock extractor does no duplicate check) | new | - | - | - | |
 
 #### Practice (M05)
 
@@ -225,8 +226,8 @@ D12 and ADR-0014: exactly one owner per store. This table lists **every** persis
 | `streaks` | BE-11 | `gamification.streaks` | `student_wallets.streak_days` (recomputed, T-05) | W2 | M | - | |
 | `session_credits` | BE-11 | `gamification.sessionCredits` | none | - | - | T | |
 | `daily_login_marks` | BE-11 | `gamification.dailyLoginMarks` | none | - | - | - | |
-| `token_movements` | none | `gamification.tokenMovements` | none | - | - | - | U (OWN-8) |
-| `tiers` | BE-23 | `gamification.tiers` | `gamification_tiers` | W1 | M | - | |
+| `token_movements` | BE-11 **[rev2]** | `gamification.tokenMovements` | none | - | - | - | |
+| `tiers` | BE-11 **[rev2]** (admin CRUD in BE-23) | `gamification.tiers` | `gamification_tiers` | W1 | M | - | |
 | `challenges` | BE-23 | `gamification.challenges` | `challenges` (platform rows) | W1 | M | - | |
 | `challenge_completions` | BE-23 | `gamification.challengeCompletions` | `challenge_user` | W3 | M | T | |
 | `achievements` | BE-23 | `gamification.achievements` | `achievements` | W1 | M | - | |
@@ -251,10 +252,10 @@ D12 and ADR-0014: exactly one owner per store. This table lists **every** persis
 
 | Table | Owner card | Mock source | Migrated from | Wave | Mig | T | Flag |
 |---|---|---|---|---|---|---|---|
-| `papers` | BE-15; BE-39 ext. (status, version) | m28 `PaperDef`, `GeneratedPaper` | not migrated (`exam_papers` archived) | - | - | - | C: two cards, sequential |
+| `papers` | BE-15 (status, version, printed duration created now; BE-39 writes rows only, **[rev2]** no schema change) | m28 `PaperDef`, `GeneratedPaper` | not migrated (`exam_papers` archived) | - | - | - | |
 | `paper_sections` | BE-15 | m28 `SectionDef` | not migrated | - | - | - | |
 | `paper_placements` | BE-15 | `SectionDef.questionIds[]` | not migrated | - | - | - | |
-| `blueprints` | BE-15; BE-39 ext. (versions) | m28 `Blueprint` | not migrated | - | - | - | C |
+| `blueprints` | BE-15 (version, status, source tag, unique `(code, version)` created now **[rev2]**) | m28 `Blueprint` | not migrated | - | - | - | |
 | `blueprint_sections` | BE-15 | m28 `BlueprintSection` | not migrated | - | - | - | |
 | `exam_attempts` | BE-16 | m28 `Attempt` | `exam_attempts` (header, historical) | W3 | H | T | |
 | `attempt_answers` | BE-16 | `Attempt.answers` | none (`part_responses` dropped, Q5) | - | - | - | |
@@ -292,8 +293,6 @@ D12 and ADR-0014: exactly one owner per store. This table lists **every** persis
 | `monitoring_flags` | BE-20 | `m11.monitoringFlags` | none | - | - | - | |
 | `feedback` | BE-20 | `kirkpatrick.feedback` | `feedback` | W3 | M | T | GAP-13 |
 | `interventions` | BE-20 | `kirkpatrick.interventions` | `interventions` | W3 | M | - | |
-| `mood_checkins` | none (OWN-6) **[P]** | `m26.moodCheckins` | `mood_checkins` | W3 | M | T | U |
-| `activity_events` | BE-22 (optional) | `m08.activity` (computed) | none | - | - | - | read model unless the mock persists an event log |
 
 #### Content and support
 
@@ -320,7 +319,7 @@ D12 and ADR-0014: exactly one owner per store. This table lists **every** persis
 
 #### Unowned / deferred (section 3.13)
 
-`settings`, `feature_flags`, PKSK (6 tables), M06 tracking sets and mock exams, M13 Cikgu Alesa (6), M16 battles/games (19), M18 (2), M20 marketplace (6), M21 sponsorship (3), M26 tuition centres, M09 audio KBAT attempts, and the computed stores of M05/M08/M12 (3.13 and section 5).
+`settings`, `feature_flags`, `mood_checkins` (**[rev2]** no card; URS OQ-24), PKSK (6 tables), M06 tracking sets and mock exams, M13 Cikgu Alesa (6), M16 battles/games (19), M18 (2), M20 marketplace (6), M21 sponsorship (3), M26 tuition centres, M09 audio KBAT attempts, and the computed stores of M05/M08/M12 (3.13 and section 5).
 
 ---
 ## 3. Domains: ER diagrams and table specifications
@@ -331,7 +330,7 @@ Each domain has one `erDiagram` (key columns only; the table specifications belo
 
 ### 3.1 Identity and platform
 
-Owner: M01 (base identity, BE-03, BE-06) and M02 (admin extensions, BE-05). Files: BE-04. Prisma files: `identity.prisma`, `users.prisma`, `account.prisma`, `notifications.prisma`, `files.prisma`.
+Owner: M01 (base identity, BE-03, BE-06) and M02 (admin extensions, BE-05). Files: BE-04. Prisma files **[rev2, per the audited cards]**: `identity.prisma` (BE-03, BE-05, BE-06: users, roles, scopes, sessions, audit, resets, settings, notifications), `schools.prisma` (BE-03 minimal `schools`, BE-05 extension, `import_jobs`), `files.prisma` (BE-04).
 
 ```mermaid
 erDiagram
@@ -577,7 +576,7 @@ The mock imports synchronously and returns a report; the card adds a table "with
 
 ### 3.2 Schools, subscriptions, parents
 
-Owner: M02 (BE-05 schools, BE-25 the rest). Prisma files: `schools.prisma`, `subscriptions.prisma`.
+Owner: M02 (BE-05 schools, BE-25 the rest). Prisma file **[rev2]**: `schools.prisma` (BE-05 and BE-25 share it; BE-25 adds the subscription, package, parent and complimentary tables). `jpns`/`ppds` are still listed by no card (OWN-4).
 
 ```mermaid
 erDiagram
@@ -904,7 +903,7 @@ Exam schema D9 gives "TP descriptors per Unit (or per SK, or per skill)" and the
 
 ### 3.4 Question bank and workflow
 
-Owner: M04 (BE-09 core, BE-10 workflow). Prisma files `questions.prisma`, `question-workflow.prisma`. The shape follows the approved exam schema (D47): a question is an **ordered tree of parts**; only leaf parts carry marks and an answer mode; five answer-key kinds; stimuli and stimulus groups; curriculum tags; versions. **Not migrated** from .cloud (D29a): the old bank is dumped to `archive_cloud`; the new bank is loaded through the intake (3.5). The mock M04 flat `Question` is the legacy model; Appendix B says where each of its fields goes.
+Owner: M04 (BE-09 core, BE-10 workflow). Prisma files **[rev2]**: `questions.prisma` (BE-09) and `questions-workflow.prisma` (BE-10; separate file and lane so BE-10 never edits BE-09 tables). The shape follows the approved exam schema (D47): a question is an **ordered tree of parts**; only leaf parts carry marks and an answer mode; five answer-key kinds; stimuli and stimulus groups; curriculum tags; versions. **Not migrated** from .cloud (D29a): the old bank is dumped to `archive_cloud`; the new bank is loaded through the intake (3.5). The mock M04 flat `Question` is the legacy model; Appendix B says where each of its fields goes.
 
 Identity and versions: `questions` is the stable identity; `question_versions` holds every editable fact, because "Sunting" on a Terbit question creates **version n+1 as Draf while version n keeps serving** (`v2-question-bank` 4.6), and student answers, reports and placements record **question id + version**.
 
@@ -1267,7 +1266,7 @@ OQ-DM-21 asks what the audit computes in v2.
 ---
 ### 3.5 Intake, AI extraction and jobs
 
-Owner: BE-36 (`ai.prisma`), BE-37 (`intake.prisma` first part, `jobs`), BE-38 (`intake.prisma` second part). **Source caveat:** derived from plan section 15, the cards and `v2-question-bank.md`; the intake mock was not in this documentation snapshot (OQ-DM-01). Every column below is therefore **[card]** or **[P]**; none comes from a mock row type. The workflow statuses are the BM words of v2-question-bank 4.1/4.2 with English codes **[P]**.
+Owner: BE-36 (`ai.prisma`), BE-37 (`intake.prisma` first part, `jobs`), BE-38 (`intake.prisma` second part). **[rev2] Sources:** the audited cards BE-36 to BE-40, plan section 15, `v2-question-bank.md`, and the intake mock of local commit `b2e1033` (`admin/intake/types.ts`, the intake methods of `server/store.ts`, ADR-0019), read with `git show`; those paths reach `feature/v2-backend` only after the LEAD merges the commit. The mock is **browser-side and batch-shaped** (OCR and extraction run in the browser, the store keeps one `IntakeBatch` document with `questions[]`, `stimuli[]`, `pages[]`; statuses `draf`/`semakan`); the cards are **server-side and item-shaped**. The tables follow the cards and carry the mock fields as columns where the mock has them. Mock fields are tagged **[mock]**, card fields **[card]**, the rest **[P]**. The workflow statuses are the BM words of v2-question-bank 4.1/4.2 with English codes **[P]**.
 
 Flow: a **batch** (the Submission: declaration + files) -> **files** -> **pages** (images, text layer, OCR) and **figures** -> a **job** runs render/OCR/extraction -> an **AI run** per extraction call -> **items** (reviewable drafts with source region and confidence) -> review -> **accept** creates a Draf question through `QuestionsService` (BE-09). The AI service has no approval right and cannot set a status beyond Draf.
 
@@ -1311,6 +1310,8 @@ erDiagram
     boolean has_text_layer
     text ocr_status
   }
+  intake_batches ||--o{ intake_stimuli : "stimuli"
+  intake_stimuli ||--o{ intake_items : "shared by"
   intake_items {
     bigint id PK
     bigint batch_id FK
@@ -1350,17 +1351,21 @@ The Submission of `v2-question-bank` 4.2 (also the unit the Guru sees: "Dihantar
 | Column | Type | Null | Default | Notes |
 |---|---|---|---|---|
 | owner_user_id | bigint | Y | | FK -> users.id; a Guru sees only own batches (403 on another's) |
-| paper_type | enum(E-paper_type) | Y | | declaration "jenis kertas": `general`, `trial`, `dskp`, `textbook`, `exercise_book`, `exam`, `other` (Soalan Umum / Trial / DSKP / Buku Teks / Buku Latihan / Peperiksaan / Lain-lain) **[P codes]** |
-| subject_id | bigint | N | | FK -> subjects.id |
-| education_level_id | bigint | N | | FK -> education_levels.id |
-| year | smallint | N | | |
-| rights_status | enum(E-rights_status) | Y | | source declaration, mandatory (AC-17.1) |
-| note | text | N | | free text, never sent to the AI service |
+| paper_type | enum(E-paper_type) | Y | | declaration "jenis kertas" **[mock]**: the mock offers `Percubaan SPM`, `Soalan Umum`, `Peperiksaan Sebenar`, `Buku Latihan`, `Lain-lain` (`PAPER_TYPES`); v2-question-bank 4.2 also lists Trial and DSKP and Buku Teks. Codes `general`, `trial`, `dskp`, `textbook`, `exercise_book`, `exam`, `other` **[P]** (mock `Percubaan SPM` -> `trial`, `Peperiksaan Sebenar` -> `exam`) |
+| subject_id | bigint | N | | FK -> subjects.id (mock `subject`, an m28 code; OQ-DM-25) |
+| kertas | text | N | | mock `kertas: 1 \| 2`; printed label (`K1`, `K2`) **[P]** |
+| education_level_id | bigint | N | | FK -> education_levels.id (card; the mock has no level field, the level is in each question tag) |
+| year | smallint | N | | [mock] |
+| source_text | text | N | | [mock `source`] the free-text source declaration ("sumber") |
+| rights_status | enum(E-rights_status) | Y | | mock `copyright`: `sendiri` ("Milik sendiri / sekolah") -> `own` or `school`, `rasmi` -> `official_lpm`, `pihak-ketiga` -> `third_party`; the mock has no "unclear" option; mandatory (AC-17.1). The own/school split is not in the mock (OQ-DM-33) |
+| note | text | N | | [mock `notes`] free text, never sent to the AI service |
 | source_paper_id | bigint | N | | FK -> source_papers.id (OWN-2) |
-| status | enum(E-batch_status) | Y | `submitted` | `submitted` (Dihantar), `processing` (Sedang diproses), `ready_for_review` (Sedia untuk semakan), `failed` (Gagal) |
+| status | enum(E-batch_status) | Y | `submitted` | `submitted` (Dihantar), `processing` (Sedang diproses), `ready_for_review` (Sedia untuk semakan), `failed` (Gagal) [card]. The mock has only `draf` and `semakan` (Draf batch being edited / submitted for review); BE-38 open question 1 maps them to "has unreviewed items" / "all items reviewed" |
 | status_reason | text | N | | visible reason, for example the AI budget is exhausted and the batch stays queued (BE-38) |
 | detected_count | int | N | | "N dikesan" (AC-04.6) |
-| ai_provider_override | text | N | | admin-only per-batch override, logged (plan 15.2) |
+| unmatched_scheme_entries | text[] | Y | `{}` | [mock `IntakeBatch.unmatched`] scheme entries whose question number was not found (AC-04.2) |
+| submitted_at | timestamptz | N | | [mock `submittedAt`] set when the batch leaves Draf |
+| ai_provider_override | text | N | | admin-only per-batch override, logged (plan 15.2). The mock keeps `provider`/`model` on the batch; v2 keeps them on `ai_extraction_runs` |
 
 Index `(owner_user_id, status)`, `(status, created_at)`. Retention of files/pages follows `INTAKE_RETENTION_MONTHS` (default 12 months after publish).
 
@@ -1370,10 +1375,10 @@ Index `(owner_user_id, status)`, `(status, created_at)`. Retention of files/page
 |---|---|---|---|---|
 | batch_id | bigint | Y | | FK -> intake_batches.id on delete cascade |
 | file_id | bigint | Y | | FK -> files.id (the original, through `FileStorage`; the card says "storage key") **[P]** |
-| original_name | text | Y | | |
+| original_name | text | Y | | [mock `fileName`] |
 | role | enum(E-intake_file_role) | Y | `paper` | `paper`, `scheme` (a separate answer-scheme file is matched to questions by number label, AC-04.2) **[P]** |
-| sha256 | text | Y | | indexed; a file already imported is blocked **before** extraction cost (AC-06.4) |
-| page_count | int | N | | cap `OCR_MAX_PAGES` (default 200) |
+| sha256 | text | Y | | [mock `fileHash`, computed in the browser] indexed; a file already imported is blocked **before** extraction cost (AC-06.4); the mock does not check duplicates |
+| page_count | int | N | | [mock `pageCount`] cap `OCR_MAX_PAGES` (default 200) |
 | status | enum(E-intake_file_status) | Y | `uploaded` | `uploaded`, `rendering`, `ocr`, `extracting`, `done`, `failed` **[P]** |
 | error_code | text | N | | no content |
 
@@ -1385,13 +1390,33 @@ Index `(owner_user_id, status)`, `(status, created_at)`. Retention of files/page
 | | page_no | int | Y | | `unique (intake_file_id, page_no)` |
 | | image_file_id | bigint | N | | FK -> files.id (WebP, about 150 dpi) |
 | | thumb_file_id | bigint | N | | FK -> files.id |
-| | has_text_layer | boolean | Y | false | scanned-page detection by text density (configurable) |
+| | text | text | N | | [mock `PageText.text`] page text kept for review and re-extraction |
+| | text_source | enum(E-text_source) | N | | [mock `PageText.source`] `text_layer` (digital-born PDF) or `ocr` (scanned page) |
+| | ocr_confidence | numeric(5,2) | N | | [mock `PageText.confidence`] mean OCR confidence 0 to 100, OCR pages only |
+| | has_text_layer | boolean | Y | false | scanned-page detection by text density (configurable); `text_source = text_layer` in the mock |
 | | ocr_status | enum(E-ocr_status) | Y | `pending` | `pending`, `not_needed`, `done`, `failed` **[P]** |
-| | ocr_blocks | jsonb | N | | text blocks with bounding boxes and confidences (G-11 document) **[P]** |
+| | ocr_blocks | jsonb | N | | text blocks with bounding boxes and confidences (G-11 document) [card BE-37]; the mock keeps text per page only. Page images (`PageImage`: page, data URL, width, height) stay in the browser in the mock; v2 stores them as `image_file_id` |
 | `intake_figures` | intake_page_id | bigint | Y | | FK on delete cascade |
 | | bbox | jsonb | Y | | `{x,y,w,h}` page fractions |
 | | crop_file_id | bigint | N | | FK -> files.id (cropped server-side) |
 | | alt_text_suggestion | text | N | | AI may suggest; author supplies the final `stimuli.alt_text` |
+
+#### `intake_stimuli` (PK, TS) owner BE-38 **[P] table**
+
+The mock stores the shared figures/passages of a batch as `IntakeBatch.stimuli[]` (`StimulusDef` + `page`) and links questions by `stimulusId`; the gate checks "Rajah / petikan yang dirujuk tidak wujud". The cards have `intake_figures` (crops) but no staging row for a stimulus before accept. Until accept it is staged here; accept creates the `stimuli` row (3.4) and the `stimulus_groups` (`grouping.ts`: questions sharing one `stimulusId` form a group, kept together).
+
+| Column | Type | Null | Default | Notes |
+|---|---|---|---|---|
+| batch_id | bigint | Y | | FK -> intake_batches.id on delete cascade |
+| ref | text | Y | | the mock stimulus id inside the batch; `unique (batch_id, ref)` |
+| kind | enum(E-stimulus_kind) | Y | | the mock uses `diagram`, `passage`, `table` |
+| label | text | N | | `Rajah 2` |
+| caption | text | N | | |
+| alt_text | text | N | | mock `alt` (accessible description; required for image-like kinds before publish) |
+| body | text | N | | mock `text` (passage) |
+| table_data | jsonb | N | | mock `table {head, rows}` (grid document) |
+| figure_id | bigint | N | | FK -> intake_figures.id (the crop; the mock keeps inline SVG) |
+| page_no | int | N | | [mock `IntakeStimulus.page`] |
 
 #### `jobs` (PK, TS) owner BE-37 (platform table)
 
@@ -1424,9 +1449,15 @@ One reviewable draft (a detected question). An item that is **accepted** is a Dr
 | intake_file_id | bigint | N | | FK -> intake_files.id |
 | intake_page_id | bigint | N | | FK -> intake_pages.id |
 | region | jsonb | N | | `{x,y,w,h}` of the question on the page; redrawn in review (AC-08.3) |
-| number_label | text | N | | `12(a)` |
-| payload | jsonb | Y | | extracted question validated against the question schema (G-11 document: parts, options, key, tags) |
-| field_confidence | jsonb | N | | per-field confidence `0..1`; bands High >= 0.90, Medium 0.70 to 0.89, Low < 0.70 (AC-05.3) |
+| number_label | text | N | | [mock `IntakeQuestion.label`] `12(a)` |
+| item_type | enum(E-intake_qtype) | N | | [mock `type`] `mcq`, `structured`, `short`, `essay` (the extractor's guess; the final `question_versions.type` is set at accept) |
+| payload | jsonb | Y | | extracted question validated against the question schema (G-11 document). Shape of the mock `IntakeQuestion` without ids: `stem`, `options[]` (`McqOption`), `marks`, `mode` (`LeafKind`), `parts[]` (`{id,label,prompt,marks,mode,scheme?}`), `scheme?` (`SchemeDef`), `tag` (`CurriculumTag`: subject, level, unit, sp[], tp, formOrigin) |
+| stimulus_id | bigint | N | | FK -> intake_stimuli.id **[P]** (mock `stimulusId`: the figure/passage a group of questions shares) |
+| page_no | int | N | | [mock `page`] source page, 1-based |
+| low_fields | text[] | Y | `{}` | [mock `lowFields`] fields the extractor was unsure of; names used by the gate: `tag.unit`, `tag.sp`, `marks`, `stem`, `scheme` |
+| confirmed_fields | text[] | Y | `{}` | [mock `confirmed`] low fields a person confirmed; a Draf cannot move to Semakan while any low field is unconfirmed (gate 4.8, AC-05.4) |
+| needs_manual | boolean | Y | false | [mock `needsManual`] extractor could not parse it: "Perlu semak manual" (AC-04.5) |
+| field_confidence | jsonb | N | | [card] per-field confidence `0..1`; bands High >= 0.90, Medium 0.70 to 0.89, Low < 0.70 (AC-05.3). The mock has no numeric confidence, only `low_fields`; with a real provider `low_fields` is derived from the Low band |
 | lowest_confidence | numeric(4,3) | N | | denormalised for the queue filter "confidence band (lowest field)" **[P]** |
 | review_state | enum(E-item_review_state) | Y | `generated` | `generated` (Dijana), `needs_review` (Perlu semakan), `accepted` (Diterima), `rejected` (Ditolak), `duplicate` (Pendua) [card BE-38] |
 | reject_reason | text | N | | mandatory when rejected |
@@ -1724,7 +1755,7 @@ A counter per subject (mock `practice.subjectUsage`, the id is the subject id). 
 ---
 ### 3.7 Wallet, gamification, rewards shop
 
-Owner: M14 (BE-11 core: wallet, ledger, streak; BE-23 the rest) and M15 (BE-23). Prisma files `wallet.prisma`, `gamification.prisma`, `rewards.prisma`. Currency words: **Syiling** (coins) and **token** are integers, not money (G-06). The wallet is written **only** through `WalletService` (credit idempotent by `(source, source_id)`); other modules never touch these tables. The tier is derived from lifetime Syiling (BE-23); the cached `tier_id` is written by the owner.
+Owner: M14 (BE-11 core: wallet, ledger, streak; BE-23 the rest) and M15 (BE-23). Prisma files **[rev2]**: `wallet.prisma` (BE-11: `wallets`, `coin_ledger`, `streaks`, `session_credits`, `daily_login_marks`, `token_movements`, `tiers`) and `gamification.prisma` (BE-23: everything else, M15 tables included; there is no `rewards.prisma`). Currency words: **Syiling** (coins) and **token** are integers, not money (G-06). The wallet is written **only** through `WalletService` (credit idempotent by `(source, source_id)`); other modules never touch these tables. The tier is derived from lifetime Syiling (BE-23); the cached `tier_id` is written by the owner.
 
 ```mermaid
 erDiagram
@@ -1818,7 +1849,7 @@ The ledger balance is reconciled, never silently corrected: `coin_transactions.b
 | type | enum(E-ledger_type) | Y | | `earn`, `spend`, `convert`, `bonus`, `refund` (mock; the .cloud vocabulary is profiled, T-02) |
 | source | text | Y | | what caused it (`practice`, `bijak`, `quest`, `shop`, ...); open list owned by the services, .cloud values mapped per column |
 | source_id | text | N | | the cause (session uuid, attempt uuid, claim id); mock `refId`. **Idempotency:** `unique (user_id, source, source_id) where source_id is not null` **[P]** (the card says `(source, source_id)`; including `user_id` keeps one user's credit from blocking another's when a source id is not globally unique) |
-| tokens | int | N | | token movement of the entry (the mock folds `tokenMovements` here, OWN-8) |
+| tokens | int | N | | token delta of the entry (the separate `token_movements` table also exists, BE-11) |
 | amount | int | Y | | Syiling delta; sign follows `type` |
 | balance_after | int | Y | | kept from .cloud and reconciled |
 | description | text | Y | | BM text |
@@ -1848,7 +1879,11 @@ The ledger balance is reconciled, never silently corrected: `coin_transactions.b
 
 Whether a Bijak attempt also credits the wallet is open: the mock `BijakServer` only computes `coins = score * 2`, `points = score * 10` in the result and calls no wallet (OQ-DM-22).
 
-#### `tiers` (PK, TS, LEG) owner BE-23
+#### `token_movements` (PK, created_at) owner BE-11 **[rev2]**
+
+Mock `gamification.tokenMovements`; BE-11 now lists it. Columns: `user_id` bigint FK -> users.id; `delta` int; `source` text; `ref_id` text N; `created_at`. Index `(user_id, created_at)`. It overlaps `coin_ledger.tokens` (the per-entry token delta); the card keeps both (OQ-DM-06 closed, no data rule beyond the mock).
+
+#### `tiers` (PK, TS, LEG) owner BE-11 **[rev2]** (BE-11 seeds the mock tiers; admin tier CRUD stays in BE-23)
 
 | Column | Type | Null | Default | Notes |
 |---|---|---|---|---|
@@ -2049,7 +2084,7 @@ Key/value settings (mock `gamification.settings`).
 
 ### 3.8 Exam / Bijak SPM
 
-Owner: M28 (BE-15 papers/blueprints read side, BE-16 attempts, BE-39 builder write side). Prisma file `exam.prisma` (BE-15 creates, BE-16 and BE-39 append: one open migration PR at a time). The marking engine is the shared package `@pp/exam-core` (BE-14); the database only stores facts. Papers and attempts follow the approved exam schema (D5, D7) and the m28 types.
+Owner: M28 (BE-15 papers/blueprints, BE-16 attempts, BE-39 builder write side). Prisma file `exam.prisma` (BE-15 creates the paper and blueprint tables **including** the status/version/provenance columns the builder needs, BE-16 appends the attempt tables; **[rev2]** BE-39 makes no schema change: a missing column there is a `cross-lane` issue). The marking engine is the shared package `@pp/exam-core` (BE-14); the database only stores facts. Papers and attempts follow the approved exam schema (D5, D7) and the m28 types.
 
 ```mermaid
 erDiagram
@@ -2117,7 +2152,7 @@ erDiagram
   }
 ```
 
-#### `blueprints` (PK, TS, no LEG) and `blueprint_sections` (PK, TS) owner BE-15 (BE-39 adds versioning)
+#### `blueprints` (PK, TS, no LEG) and `blueprint_sections` (PK, TS) owner BE-15 (versioning columns are created by BE-15 **[rev2]**)
 
 The "Kontrak Blueprint": a validator **and** the recipe for "Jana Kertas" (D32). Versioned: a paper published under a version stays valid when the blueprint changes (AC-28.2). The 36 .cloud blueprints are not migrated (19 are empty skeletons; they are re-derived, exam schema D7).
 
@@ -2126,9 +2161,10 @@ The "Kontrak Blueprint": a validator **and** the recipe for "Jana Kertas" (D32).
 | `blueprints` | subject_id | bigint | Y | | FK -> subjects.id (m28 `subject` code `MAT`, `SN`, `SEJ` maps to the subject row) |
 | | kertas | text | Y | | `K1`, `K2`, `P1`, ... printed label (the mock has `1 \| 2`) |
 | | paper_code | text | Y | | `1449/1` |
-| | version | int | Y | 1 | `unique (subject_id, kertas, version)`; a new version is a new row (BE-39) |
-| | status | enum(E-blueprint_status) | Y | `draft` | `draft` (Draf), `verified` (Disahkan), plus `retired` for "retire" (BE-39) **[P]**; the mock `source` also has `Spec` (OQ-DM-23) |
-| | provenance | enum(E-blueprint_provenance) | Y | `spec` | `data`, `paper`, `dskp`, `inferred`, `spec` (exam D7 tags DATA / PAPER / DSKP / INFERRED; the mock `source` `Disahkan`/`Spec`/`Draf`) |
+| | version | int | Y | 1 | `unique (paper_code, version)` **[rev2, card BE-15: unique `(code, version)`]**; a new version is a new row (written by BE-39, column created by BE-15) |
+| | status | enum(E-blueprint_status) | Y | `draft` | `draft`, `active`, `retired` **[rev2, card BE-15]** |
+| | source | enum(E-blueprint_source) | Y | `spec` | [mock `Blueprint.source`, card "provenance `source` tag"] `verified` (Disahkan), `spec` (Spec), `draft` (Draf) **[P codes]** (OQ-DM-23) |
+| | provenance | enum(E-blueprint_provenance) | N | | `data`, `paper`, `dskp`, `inferred` (exam D7 evidence tags; not stored by the mock) |
 | | confidence | enum(E-confidence) | N | | `high`, `medium`, `low` (exam D7) |
 | | duration_min | int | N | | default duration, marked Low until LPM confirms (Q-S1); each paper stores its own printed duration |
 | | total_marks | int | N | | |
@@ -2150,7 +2186,7 @@ The "Kontrak Blueprint": a validator **and** the recipe for "Jana Kertas" (D32).
 | | allowed_modes | text[] | N | | subset of E-answer_mode (exam `allowed_modes`) |
 | | topic_weights | jsonb | N | | `{unit_code: target_count}`, INFERRED until a JSU is shared |
 
-#### `papers` (PK, TS, no LEG) owner BE-15, extended by BE-39
+#### `papers` (PK, TS, no LEG) owner BE-15 (BE-39 writes rows only **[rev2]**)
 
 Covers both kinds: `pilihan` (admin-curated "Kertas Pilihan", published) and `jana` (generated "Jana Kertas", private to the user who generated it; mock `GeneratedPaper`).
 
@@ -2163,14 +2199,14 @@ Covers both kinds: `pilihan` (admin-curated "Kertas Pilihan", published) and `ja
 | year | smallint | N | | |
 | paper_code | text | N | | |
 | level_scope | enum(E-level_scope) | N | | `t4`, `t5`, `t4_t5` (exam D5) |
-| duration_min | int | N | | each paper stores its printed duration (Q-S1) |
+| printed_duration_min | int | N | | **[rev2, card BE-15 `papers.printed_duration_min`]** the printed duration (Q-S1); the mock `durationMin` |
 | total_marks | int | N | | **derived** by default (G-15); store only if the card needs it for listing (the mock computes it) |
 | language_mode | enum(E-question_language) | N | | |
 | instructions | text[] | N | | |
 | reference_sheets | jsonb | N | | formula sheet panels (G-11) |
 | blueprint_id | bigint | N | | FK -> blueprints.id (the version it conforms to) |
-| status | enum(E-paper_status) | Y | `draft` | `draft`, `ready`, `published`, `withdrawn` [BE-39]; the exam schema D12 and US-12 say Draf, Semakan, Terbit, Diarkib (OQ-DM-24) |
-| version | int | Y | 1 | [BE-39] |
+| status | enum(E-paper_status) | Y | `draft` | `draft`, `ready`, `published`, `withdrawn` [card BE-15, seeded papers `published`]; the exam schema D12 and US-12 say Draf, Semakan, Terbit, Diarkib; meaning of `ready` is BE-39 open question 1 (OQ-DM-24) |
+| version | int | Y | 1 | [card BE-15] |
 | generated_for_user_id | bigint | N | | FK -> users.id on delete cascade; set for `jana` papers (mock `GeneratedPaper.userId`) |
 | published_at | timestamptz | N | | |
 | created_by_id | bigint | N | | FK -> users.id |
@@ -2442,7 +2478,7 @@ Teacher-maintained picking list (`created_by`); not the admin-managed DSKP tree 
 
 ### 3.10 Reports and analytics stores
 
-Most of M08/M11/M12/M17/M27 are **read models** over practice, wallet, enrolments (section 5). Only the stores below are persisted, because the mock persists them or a card says so. Prisma files `performance.prisma` (BE-19), `analytics.prisma` (BE-20). Rows of `risk_profiles` and `sp_records` look like caches (see OQ-DM-11).
+Most of M08/M11/M12/M17/M27 are **read models** over practice, wallet, enrolments (section 5). Only the stores below are persisted, because the mock persists them or a card says so. Prisma file **[rev2]**: `reports.prisma` (BE-19 and BE-20 share it). Rows of `risk_profiles` and `sp_records` look like caches (see OQ-DM-11).
 
 ```mermaid
 erDiagram
@@ -2455,7 +2491,6 @@ erDiagram
   users ||--o{ monitoring_flags : "flagged"
   users ||--o{ feedback : "gives"
   users ||--o{ interventions : "student"
-  users ||--o{ mood_checkins : "checks in"
   schools ||--o{ spm_history : "results"
   spm_history ||--o{ spm_history_subjects : "per subject"
   headcount_configs {
@@ -2478,12 +2513,6 @@ erDiagram
     bigint student_id FK
     text alert_type
     date action_date
-  }
-  mood_checkins {
-    bigint id PK
-    bigint user_id FK
-    text mood
-    date checkin_date
   }
 ```
 
@@ -2585,22 +2614,12 @@ Unique `(teacher_id, classroom_id, subject_id, academic_year)` on configs. Per-s
 | before_mood, after_mood | enum(E-mood) | N | | `happy`, `okay`, `sad`, `stressed` |
 | created_by_id | bigint | Y | | FK -> users.id |
 
-#### `mood_checkins` (PK, TS, LEG, TEST) **[P] owner (OWN-6)**
-
-| Column | Type | Null | Default | Notes |
-|---|---|---|---|---|
-| user_id | bigint | Y | | FK -> users.id |
-| mood | enum(E-mood) | Y | | |
-| reason | text | N | | free text; sensitive |
-| checkin_date | date | Y | | Malaysia day (.cloud `checked_in_on`, UTC-derived, T-05) |
-
-Index `(user_id, checkin_date)`. Mock store `m26.moodCheckins` (hosted provisionally in M17 for the deferred M26).
 
 ---
 
 ### 3.11 Content and support
 
-Owner: M09 (BE-24 content) and M22 (BE-24 support). Prisma files `content.prisma`, `support.prisma`. Images and attachments are `files` rows (T-10 rewrites the .cloud paths into `FileStorage` keys); external URLs stay text. Rich-text bodies are sanitised on write (URS BE-NFR-37). Several mock code lists are Malay or upper case; section 4 records the mock values and the proposed codes.
+Owner: M09 (BE-24 content) and M22 (BE-24 support). Prisma file **[rev2]**: `content.prisma` (the support tables live in the same file). Images and attachments are `files` rows (T-10 rewrites the .cloud paths into `FileStorage` keys); external URLs stay text. Rich-text bodies are sanitised on write (URS BE-NFR-37). Several mock code lists are Malay or upper case; section 4 records the mock values and the proposed codes.
 
 ```mermaid
 erDiagram
@@ -2736,7 +2755,7 @@ erDiagram
 
 ### 3.12 Migration control tables (ETL)
 
-Owner: BE-34, Prisma file `etl.prisma` (`public` schema). They replace the `migration_runs`, `migration_rejects`, `migration_id_map` that BE-28 used to define (GAP-14). Columns follow plan 14.4. Staging (`staging_cloud`, `staging_my`) and archive (`archive_cloud`) are **schemas of raw mirror tables created by SQL** (`staging_cloud.sql`, BE-27), not Prisma models, and are not described here; they are dropped and recreated per rehearsal and never serve the API.
+Owner: BE-34, Prisma file `etl.prisma` (`public` schema). The audited BE-28/BE-29 cards now use these tables (the old `migration_*` names are gone **[rev2]**). Columns follow plan 14.4. Staging (`staging_cloud`, `staging_my`) and archive (`archive_cloud`) are **schemas of raw mirror tables created by SQL** (`staging_cloud.sql`, BE-27), not Prisma models, and are not described here; they are dropped and recreated per rehearsal and never serve the API.
 
 | Table | Column | Type | Null | Default | Notes |
 |---|---|---|---|---|---|
@@ -2789,6 +2808,7 @@ These mock stores exist and have endpoints or seeds but **no B1 card**, or are c
 | `marketplace.*` (categories, products, images, sellers, documents, reviews) | `marketplace_*` | seller `{user_id, shop_name, phone, whatsapp, status, verified_at, whatsapp_clicks}`; product `{seller_id, name, slug, category_id, price, original_price, condition, stock_status, status, shipping_method, shipping_fee, location, views}` | `marketplace_sellers`, `marketplace_products`, `marketplace_orders` | plan non-goal (M20) |
 | `m21.sponsors`, `anakAngkat`, `fosterApplications` | `sponsors`, `foster_sponsorships`, `foster_applications` | sponsor `{user_id, name, category, ..., contact_person_name, contact_email, contact_phone, status}`; foster `{sponsor_id, student_id, student_category B40\|Asnaf\|Yatim\|OKU, channel, status}`; application `{student_id, applicant_user_id, applicant_role, student_category, family_income_range, reason, status}` (personal and sensitive: Q7) | `sponsors`, `foster_sponsorships`, `foster_applications` | plan non-goal (M21) |
 | `m26.tuitionCentres` | `tuition_centres` | `{name, city, state, active_pupils}` | none | M26 deferred |
+| `m26.moodCheckins` **[rev2]** | `mood_checkins` | `{user_id, mood happy\|okay\|sad\|stressed, reason, checkin_date (Malaysia day)}`; free text is sensitive | `mood_checkins` (`checked_in_on`) | no card creates it (plan 14.7 names BE-22/BE-29; URS OQ-24: not migrated) |
 | `content.audioKbatAttempts` | `audio_kbat_attempts` | `{set_id, user_id, answers[{no, choice A..D}], score, total_marks, submitted_at}` | none | student play is backlog |
 | (none) | `settings`, `feature_flags` | `settings {key, value, group}`; `feature_flags {slug, enabled, audience}` | `settings`, `feature_flags` | Sistem stores (V2-T27), OWN-5 |
 
@@ -2850,7 +2870,7 @@ Every enum used in a persisted column. Storage is `text` + `CHECK` (G-05). "Mock
 | `E-form_origin` | `question_versions.form_origin` | `t1_t3`, `t4`, `t5` | m28 (`T1-T3`, `T4`, `T5`) | m28 |
 | `E-exam_type` | `question_versions.exam_type`, `source_papers.exam_type` | `sebenar`, `percubaan`, `modul`, `topikal`, `latihan` | exam D8 (BM words used as codes there; kept because they are the controlled vocabulary of the schema) | exam D8 |
 | `E-source_kind` | `question_versions.source_kind`, `source_papers.source_kind` | `lpm_official`, `state_trial`, `school`, `publisher`, `teacher_own`, `ai_variant` | exam D8 | exam D8 |
-| `E-rights_status` | `question_versions.rights_status`, `source_papers.rights_status`, `intake_batches.rights_status` | `own`, `school`, `official_lpm`, `third_party`, `unclear` | exam D10; the upload declaration (AC-17.1) says own work, school-owned, official KPM/LPM, commercial/third-party | `docs/requirements/v2-question-bank.md` AC-17.1 |
+| `E-rights_status` | `question_versions.rights_status`, `source_papers.rights_status`, `intake_batches.rights_status` | `own`, `school`, `official_lpm`, `third_party`, `unclear` | exam D10; the upload declaration (AC-17.1) says own work, school-owned, official KPM/LPM, commercial/third-party; the mock `COPYRIGHT_OPTIONS` are `sendiri`, `rasmi`, `pihak-ketiga` (three values) | `docs/requirements/v2-question-bank.md` AC-17.1 |
 | `E-question_source_type` | `questions.source_type` | `pdf`, `excel`, `manual`, `ai_variant` | AC-16.1; mock `SourceType` (`textbook`, `dskp`, `trial`, `marking_scheme`, `ai_generated`) is a different axis (Appendix B) | v2-question-bank US-16 |
 | `E-family_relation` | `questions.family_relation` | `variant` | exam D11; exact duplicates are blocked, not stored as a family | n/a |
 | `E-tag_kind` | `question_tags.kind` | `pool`, `pksk_domain`, `pksk_level` | **[P]** (OQ-DM-17) | n/a |
@@ -2865,8 +2885,10 @@ Every enum used in a persisted column. Storage is `text` + `CHECK` (G-05). "Mock
 
 | Enum | Column(s) | Codes | Note | BM label source |
 |---|---|---|---|---|
-| `E-paper_type` | `intake_batches.paper_type` | `general`, `trial`, `dskp`, `textbook`, `exercise_book`, `exam`, `other` | **[P]** codes for Soalan Umum / Trial / DSKP / Buku Teks / Buku Latihan / Peperiksaan / Lain-lain (`TC:1000` in v2-question-bank 4.2) | v2-question-bank 4.2 |
-| `E-batch_status` | `intake_batches.status` | `submitted`, `processing`, `ready_for_review`, `failed` | Dihantar, Sedang diproses, Sedia untuk semakan, Gagal (plan 15.2) | plan 15.2 |
+| `E-paper_type` | `intake_batches.paper_type` | `general`, `trial`, `dskp`, `textbook`, `exercise_book`, `exam`, `other` | **[P]** codes. Mock `PAPER_TYPES`: Percubaan SPM, Soalan Umum, Peperiksaan Sebenar, Buku Latihan, Lain-lain (a subset; `Percubaan SPM` -> `trial`, `Peperiksaan Sebenar` -> `exam`); v2-question-bank 4.2 adds DSKP and Buku Teks | `src/modules/m28-bijak-spm/admin/intake/types.ts` (b2e1033) |
+| `E-text_source` | `intake_pages.text_source` | `text_layer`, `ocr` | [mock `PageText.source`] written `text-layer` in the mock | same |
+| `E-intake_qtype` | `intake_items.item_type` | `mcq`, `structured`, `short`, `essay` | [mock `IntakeQType`] | same |
+| `E-batch_status` | `intake_batches.status` | `submitted`, `processing`, `ready_for_review`, `failed` | Dihantar, Sedang diproses, Sedia untuk semakan, Gagal (plan 15.2). The mock `IntakeStatus` is `draf` / `semakan` (BE-38 open question 1) | plan 15.2 |
 | `E-intake_file_role` | `intake_files.role` | `paper`, `scheme` | **[P]** | n/a |
 | `E-intake_file_status` | `intake_files.status` | `uploaded`, `rendering`, `ocr`, `extracting`, `done`, `failed` | **[P]** | n/a |
 | `E-ocr_status` | `intake_pages.ocr_status` | `pending`, `not_needed`, `done`, `failed` | **[P]** | n/a |
@@ -2910,12 +2932,13 @@ Every enum used in a persisted column. Storage is `text` + `CHECK` (G-05). "Mock
 
 | Enum | Column(s) | Codes | Mock value / note | BM label source |
 |---|---|---|---|---|
-| `E-blueprint_status` | `blueprints.status` | `draft`, `verified`, `retired` | **[P]**; the mock `Blueprint.source` is `Disahkan`, `Spec`, `Draf` (OQ-DM-23) | `src/modules/m28-bijak-spm/pages` (UI-owned) |
-| `E-blueprint_provenance` | `blueprints.provenance` | `data`, `paper`, `dskp`, `inferred`, `spec` | exam D7 tags | exam D7 |
+| `E-blueprint_status` | `blueprints.status` | `draft`, `active`, `retired` | [card BE-15 **rev2**]; the mock `Blueprint.source` (`Disahkan`, `Spec`, `Draf`) is a different axis: column `blueprints.source`, enum `E-blueprint_source` `verified`, `spec`, `draft` **[P codes]** (OQ-DM-23) | `src/modules/m28-bijak-spm/pages` (UI-owned) |
+| `E-blueprint_provenance` | `blueprints.provenance` | `data`, `paper`, `dskp`, `inferred` | exam D7 evidence tags | exam D7 |
+| `E-blueprint_source` | `blueprints.source` | `verified`, `spec`, `draft` | **[P codes]** for the mock `Disahkan`, `Spec`, `Draf` | `src/modules/m28-bijak-spm/domain/types.ts` (`Blueprint.source`) |
 | `E-confidence` | `blueprints.confidence`, `headcount_entries.confidence_override` | `high`, `medium`, `low` | exam D7; the M08 mock uses `Tinggi`, `Sederhana`, `Rendah` | (UI-owned) |
 | `E-section_rule` | `blueprint_sections.rule_type`, `paper_sections.rule_type` | `all`, `choose` | exam D5 (.cloud `answer_all`, `choose_n`) | exam D5 |
 | `E-paper_kind` | `papers.kind`, `exam_attempts.paper_kind` | `pilihan`, `jana` | m28 `PaperKind` ("Kertas Pilihan", "Jana Kertas") | m28 (UI-owned) |
-| `E-paper_status` | `papers.status` | `draft`, `ready`, `published`, `withdrawn` | BE-39; exam D12 / US-12 say Draf, Semakan, Terbit, Diarkib (OQ-DM-24) | n/a |
+| `E-paper_status` | `papers.status` | `draft`, `ready`, `published`, `withdrawn` | BE-15/BE-39 (card); exam D12 / US-12 say Draf, Semakan, Terbit, Diarkib (OQ-DM-24) | n/a |
 | `E-answer_medium` | `paper_sections.answer_medium` | `on_paper`, `separate_book`, `omr` | exam D5 | exam D5 |
 | `E-stimulus_policy` | `paper_sections.stimulus_policy` | `none`, `group`, `per_part` | exam D5 | exam D5 |
 | `E-attempt_mode` | `exam_attempts.mode` | `exam`, `latihan` | m28 | m28 |
@@ -2973,9 +2996,9 @@ Everything below is computed on read from the tables named, **excluding rows wit
 | Rankings and leaderboard, standings (week / month / all-time) | BE-19 | `coin_ledger`, `practice_sessions`, `practice_answers`, `users`, `schools` | replaces the mock `rankingEntries`/`standings` (which carry `generated`/`observed` flags); needs a period index on `coin_ledger (created_at)` |
 | Item analysis (`ItemStatistic`, `ItemSummary`) for ppd / state / school | BE-19 | `practice_answers` grouped by question, `users`, `schools`, `ppds` | wrong counts, pupils, popular wrong option label; the mock persists these as fixtures, v2 computes them |
 | Teacher report, monitoring overview and export | BE-20 | `enrolments`, `practice_*`, `monitoring_flags`, `users` | CSV/PDF export behind `PdfPort` |
-| Kirkpatrick levels (reaction, learning, behaviour, results, chain, own view) | BE-20 | `feedback` (level 1), `practice_sessions`/`practice_answers` (level 2, replaces the virtual 20,991-session aggregate), `mood_checkins`, `interventions`, `spm_history` (level 4) | school scores, Alesa predictions and consistency are computed (the mock rows carry `observed` flags); cache only if the mock needs it |
+| Kirkpatrick levels (reaction, learning, behaviour, results, chain, own view) | BE-20 | `feedback` (level 1), `practice_sessions`/`practice_answers` (level 2, replaces the virtual 20,991-session aggregate), `interventions`, `spm_history` (level 4); mood check-ins only if a card creates `mood_checkins` (URS OQ-24) | school scores, Alesa predictions and consistency are computed (the mock rows carry `observed` flags); cache only if the mock needs it |
 | School admin dashboard, usage statistics, activity and monthly report, DSKP heatmap | BE-21 | `users`, `user_roles`, `classrooms`, `enrolments`, performance read models, `school_subscriptions` | no own tables ("`school_activity_daily` only if the mock persists it") |
-| Command Center live data and drill-down, daily activity, badge holders | BE-22 | practice, performance, wallet, classes, users | polling-friendly ETag, no websockets; optional `activity_events` only if the mock keeps an event log |
+| Command Center live data and drill-down, daily activity, badge holders | BE-22 | practice, performance, wallet, classes, users | polling-friendly ETag, no websockets; no `activity_events` table (the mock keeps no event log, BE-22 **[rev2]**) |
 | Admin dashboard counts | BE-22 | users, schools, subscriptions, practice | |
 | Weekly report | BE-19 | none | the mock returns 403 for every role (URS OQ-15) |
 | Subscription `used` (students enrolled) and quota check | BE-25 | `school_subscriptions`, `enrolments`, `users` | |
@@ -3000,8 +3023,8 @@ Comparison of this model with plan section 14.7 (the mapping matrix), `v2-data-m
 | GAP-5 | `comp_students`, `teacher_profiles` | .cloud has sources for both (`users.is_complimentary`; `users.teaching_subject`, `teaching_experience_years`, `teaching_qualification`), but the User row lists only `users, user_roles, user_scopes, user_settings`. | Extend the User row's target list; state the T-nn for each. | M |
 | GAP-7 | `spm_targets` | `users.spm_targets` (.cloud text, probably JSON) has no row. | Add a row (parse JSON to one row per subject; unknown shapes to `etl_rejects`), or declare it dropped. | M |
 | GAP-8 | `referral_codes`, `referrals` | `users.referral_code` and `users.referred_by` (self-reference, two-pass load) have no row. | Add rows (BE-23 schema, BE-28/29 ETL) or declare dropped. | M |
-| GAP-3 | `gamification_settings`, `settings`, `feature_flags` | `reward_settings` has no row; `settings`/`feature_flags` are listed under "Out of B1" while `v2-data-migration` 6.1 step 1 loads them and BE-28 lists `settings` among its tables. | Decide: either map `reward_settings` -> `gamification_settings` (pivot to key/value rows) and keep `settings` out of BE-28, or add a `settings` owner card. | M |
-| GAP-21 | `mood_checkins` | The Mood row names schema card **BE-22**, but BE-22 is read-only and creates no table; the mock store is `m26.moodCheckins`. | Assign the table to BE-20 (with `interventions`) or give BE-22 an explicit output. | H |
+| GAP-3 | `gamification_settings`, `settings`, `feature_flags` | **[rev2] narrowed.** `reward_settings` still has no row; the matrix lists `settings`/`feature_flags` as "Out of B1" while `v2-data-migration` 6.1 step 1 loads them. BE-28 now skips `settings` and `packages` and lists them in its report (BE-28 open question 2; URS OQ-24). | Map `reward_settings` -> `gamification_settings` (pivot to key/value rows) and align the 6.1 wording with BE-28. | L |
+| GAP-21 | `mood_checkins` | **[rev2] still open, now deferred.** Plan 14.7 names BE-22 (schema) and BE-29 (ETL); BE-22 says no table is created and BE-29 does not migrate mood (URS OQ-24, default: not migrated). | Edit the matrix row to "not migrated / backlog" or assign a card. | M |
 | GAP-22 | tables of the 134-table inventory with neither a row nor a deferral | `v2-data-migration` section 1 lists `packages`, `pksk_packages`, `pksk_accesses`, `student_notes`, `study_schedules`, `broadcasts`, `chatbot_conversations`, `chatbot_messages`, `dunning_logs`, `wellbeing_alerts`, `psychometric_results`, `aspirations`, `career_paths`, `universities`, `scholarships`, `reward_settings`; the "Out of B1" row names only battles, games, leagues, marketplace, sponsorship, duta, payments, invoices, settings, feature_flags, audit_logs, career, psychometric, wellbeing. | Extend the "Out of B1" row (or add rows) so every .cloud table is mapped, dropped or deferred; `packages` maps to `school_packages`. | M |
 | GAP-23 | `files` | Rows for Content (T-10) and any image-bearing entity rewrite paths, but no row names `files` as a target; `files` has no `legacy_*` convention stated in a card. | Add a `Files` row (T-10, `legacy_id` = source path) and put `files` in `migratable-models.json`. | M |
 | GAP-32 | `curriculum_nodes`, `curriculum_tp_descriptors` | Seeded from `docs/reference/dskp/*.json`, not from .cloud (the .cloud `chapters` are Tingkatan 5 SP rows and do not match the official text). The matrix has no row saying "not from .cloud". | Add a "seeded, not migrated" row so nobody loads `chapters` into the node tree. | L |
@@ -3014,8 +3037,8 @@ Comparison of this model with plan section 14.7 (the mapping matrix), `v2-data-m
 | GAP-9 | Reward shop | `rewards`, `reward_claims` | The mock has two catalogues (M14 Syiling rewards + claims, M15 Hadiah rewards + redemptions). Which one is .cloud `gifts`/`gift_redemptions` (`price_token`, `price_rm`, `cost_value_sen`, `stock`, `status`)? This model assumes `gifts` is the Hadiah catalogue (`rewards`, `reward_redemptions`) and names the M14 pair `syiling_rewards`/`reward_claims`. | Confirm the mapping and rename the matrix targets (`rewards`, `reward_redemptions`). | H |
 | GAP-10 | Exam attempt | `exam_attempts` only | The score columns live in `attempt_results`; BE-29's table list names `attempt_results` ("scores only") but the matrix row does not. | Add `attempt_results` (and `section_scores`) to the row's target. | M |
 | GAP-24 | Content | `audio_kbat` "same names" | BE-24's table is `audio_kbat_sets`. | Rename in the matrix. | L |
-| GAP-14 | all rows with "ETL card BE-28/29" | `migration_*` | BE-28 and BE-29 still define `migration_runs`, `migration_rejects`, `migration_id_map` (card text) although plan 15.4 replaced them with `etl_*` of BE-34. | Edit the two cards (lead decides; this document only reports it). | H |
-| GAP-11 | Teacher question set, Challenge (teacher), Timeline, Headcount, Feedback, Intervention, Mood | ETL card dependencies | BE-28 depends on BE-17/BE-25/BE-05/BE-08 but loads `question_sets` (schema BE-18); BE-29 depends on BE-11/12/16/23/24 but loads `missions` (BE-18), `timeline_posts`/`headcount_*` (BE-19), `feedback`/`interventions` (BE-20) and `mood_checkins` (BE-22/20). | Add the schema cards to the ETL cards' "Depends on" or move the rows to a later ETL card. | M |
+| GAP-14 | all rows with "ETL card BE-28/29" | `etl_*` | **Resolved [rev2]:** BE-28/29 now use the BE-34 `etl_*` tables; no `migration_*` tables remain. | none | - |
+| GAP-11 | Teacher question set, Challenge (teacher), Headcount, Mood | ETL card targets | **[rev2] changed shape.** BE-29 now loads feedback, interventions, timeline only "if the owning card has merged, otherwise skipped and listed", so the dependency gap is closed. What remains: the matrix names BE-28 for `question_sets` and BE-29 for `missions`/`headcount_*`/`mood_checkins`, but neither card lists those targets. | Remove those targets from the matrix or add them to the cards. | M |
 
 ### 6.3 Column-level gaps
 
@@ -3038,7 +3061,7 @@ Comparison of this model with plan section 14.7 (the mapping matrix), `v2-data-m
 | GAP-30 | Coin ledger | The matrix keeps `balance_after` and reconciles. The idempotency key `(user_id, source, source_id)` is null for migrated rows (no `ref_id` in .cloud); `source` must be one of the profiled values. | Confirm that migrated rows leave `source_id` null and are excluded from the idempotent-credit unique index (partial index, done in 3.7). | L |
 | GAP-31 | Support ticket, Article, Note, Video | Enum maps are listed as "BM status -> English" only for tickets; articles, notes, videos use upper-case or mixed-case mock values (`TIPS_BELAJAR`, `Youtube`). | Add enum maps for every text column with a CHECK to the profile list (BE-27) per plan 14.2. | L |
 
-Counts: 6.1 = 10 findings, 6.2 = 6, 6.3 = 16; total 32 (GAP-1 to GAP-32).
+Counts **[rev2]**: 32 findings numbered GAP-1 to GAP-32; GAP-14 is resolved, so 31 are open (6.1 = 10, 6.2 = 5 open + 1 resolved, 6.3 = 16).
 
 ---
 
@@ -3048,12 +3071,12 @@ Counts: 6.1 = 10 findings, 6.2 = 6, 6.3 = 16; total 32 (GAP-1 to GAP-32).
 
 | ID | Question | Why it matters | Default until answered |
 |---|---|---|---|
-| OQ-DM-01 | The intake mock (D52) and ADR-0019 are not in the documentation snapshot this file was derived from. Please re-check section 3.5 against the real intake client/types (plan OD-20) before BE-36 to BE-40 start. | The intake tables are derived from docs only, not from row types. | Build section 3.5 as written; mark deviations in the card PR. |
+| OQ-DM-01 | **Closed [rev2].** The intake mock was read from commit `b2e1033` (read-only `git show`) and section 3.5 aligned with it. Its paths exist on `feature/v2-backend` only after the LEAD merges that commit. | n/a | n/a |
 | OQ-DM-02 | One table or two for the teacher paper submission: `question_submissions` (BE-10), `intake_batches` (BE-37) and `source_papers` (BE-10) overlap (OWN-1, OWN-2). | Duplicate declaration/rights data and two queues. | `intake_batches` is the Submission; `source_papers` is the paper identity and rights register; `question_submissions` is built only as a thin read of batches. |
-| OQ-DM-03 | Is there a generic `settings` / `feature_flags` store in B1? | BE-28 and migration load order touch `settings`; no card owns it. | No; `gamification_settings` and `support_config` only. |
-| OQ-DM-04 | Which card creates `mood_checkins` (matrix says BE-22, BE-22 has no table)? | The Kirkpatrick and Command Center reads need it. | BE-20 creates it with `interventions`. |
+| OQ-DM-03 | Is there a generic `settings` / `feature_flags` store in B1? | **[rev2]** BE-28 skips them (open question 2); no card owns them. | No; `gamification_settings` and `support_config` only. |
+| OQ-DM-04 | **[rev2] superseded by URS OQ-24.** `mood_checkins` is created by no card. | The Kirkpatrick and Command Center reads that need mood. | Not created in B1. |
 | OQ-DM-05 | English enum codes (X2): the mock stores Malay or upper-case values for ticket status, timeline category, trend labels, article categories, grade levels, platforms, note types, reward statuses, and the question lifecycle words. Confirm the proposed codes in section 4 (and the question status codes `draft`, `in_review`, `approved`, `published`, `archived`). | `CHECK` constraints and the contract enums are written once. | Section 4 codes. |
-| OQ-DM-06 | `token_movements` (mock) versus `coin_ledger.tokens`: keep or drop the table? | BE-11 reads it but does not list it. | Dropped; tokens are in the ledger. |
+| OQ-DM-06 | **Closed [rev2].** BE-11 now creates `token_movements` and `tiers`. | n/a | n/a |
 | OQ-DM-07 | Which mock catalogue is .cloud `gifts`? (GAP-9.) | The ETL target. | Hadiah (`rewards`). |
 | OQ-DM-08 | `dskp_bidang/sk/sp` (teacher-created) versus `curriculum_nodes` (admin-managed DSKP tree): one tree or two? `GET /api/guru/dskp/*` feeds question tagging (BE-10). | A question tag could point at two different trees; `sp_records` and the mock `dskpSpId` point at `dskp_sp`. | Questions and `sp_records` tag `curriculum_nodes`; `dskp_*` stays the teacher picking list. |
 | OQ-DM-09 | `is_test` on counters: wallets, streaks, mastery, revision_queue, spm_targets, trial counter of an admin acting in Mod Pelajar are not separable by a row stamp. | Test activity leaks into the admin's own figures (not into aggregates, which exclude the admin's stamped rows). | Stamp rows and ledgers; counters belong to the admin account and are excluded from aggregates by `is_test` on their source rows. |
@@ -3070,16 +3093,17 @@ Counts: 6.1 = 10 findings, 6.2 = 6, 6.3 = 16; total 32 (GAP-1 to GAP-32).
 | OQ-DM-20 | Difficulty scale: legacy 1 to 5 (mock, practice filters, `question_imports.default_difficulty`, `practice_answers.difficulty` for migrated rows) versus TP 1 to 6 (`difficulty_tp`, exam D8). | Filters and statistics mix two scales. | `practice_answers.difficulty` keeps the legacy value for historical rows; new rows store TP. |
 | OQ-DM-21 | What does `quality_audits` compute in v2 (the legacy quality-score semantics are not carried over, AC-29.3)? | Columns of the table. | A run log only. |
 | OQ-DM-22 | Does a Bijak attempt credit the wallet? The mock result carries `coins = score * 2`, `points = score * 10` but calls no wallet. | `coin_ledger` source `bijak`, idempotency, leaderboard. | No wallet credit; store the figures in `attempt_results`. |
-| OQ-DM-23 | Blueprint status words: mock `Disahkan` / `Spec` / `Draf`; exam D7 status `Draf`/`Disahkan` plus provenance tags. | CHECK. | `draft`, `verified`, `retired` + `provenance`. |
-| OQ-DM-24 | Paper status: BE-39 `draft`, `ready`, `published`, `withdrawn` versus exam D12 / US-12 `Draf`, `Semakan`, `Terbit`, `Diarkib`. | Contract enum and the publish workflow. | BE-39's set. |
+| OQ-DM-23 | **[rev2] narrowed.** `blueprints.status` is `draft`/`active`/`retired` (BE-15); only the codes for the mock `source` tag (`Disahkan`/`Spec`/`Draf`) are proposed. | CHECK. | `verified`, `spec`, `draft`. |
+| OQ-DM-24 | Paper status: BE-15/BE-39 `draft`, `ready`, `published`, `withdrawn` versus exam D12 / US-12 `Draf`, `Semakan`, `Terbit`, `Diarkib`; BE-39 open question 1 asks the meaning of `ready`. | Contract enum and the publish workflow. | The card set; `ready` = all questions published and the paper conforms. |
 | OQ-DM-25 | Subject codes differ between M03 (`MATH`, `SCI`, `ADDMATH`, `PHY`, `CHEM`, `BIO`) and the m28 prototype (`MAT`, `SN`, `SEJ`). Seeds need one map. | `papers.subject_id`, `blueprints.subject_id`. | M03 codes win; the m28 seed maps its codes. |
 | OQ-DM-26 | `level_scope` is limited to `t4`, `t5`, `t4_t5` (launch scope D40b), but M05 practice and M03 cover Darjah 1 to Tingkatan 5 and the mock bank has questions for all levels. How will further levels be added? | Enum widening is a migration. | Widen the CHECK when a level is promoted; do not change meaning. |
 | OQ-DM-27 | M03 `chapters`/`topics` (practice dimensions, chapter mode) versus the exam-schema tag (`unit`, `sp`): how does a v2 question get a `chapter_id` / `topic_id`? | Chapter-mode practice and `practice_answers.chapter_id` for new rows. | Optional `chapter_id`/`topic_id` columns on `question_versions` set by the reviewer; no automatic mapping. |
-| OQ-DM-28 | Teacher economy tables (3.7) exist if BE-23 keeps them; URS OQ-16 / D28(c) / migration Q10 are open. | 7 tables, one with bank details. | Specified, not built until answered. |
+| OQ-DM-28 | Teacher economy tables (3.7): BE-23 open question 1 says build **no** teacher wallet logic beyond the mock's disabled state; the tables are still in the mock list. URS OQ-16 / D28(c) / migration Q10 are open. | 7 tables, one with bank details. | Specified, not built until answered. |
 | OQ-DM-29 | PKSK fields on `practice_sessions` (`pksk_domain`, `pksk_target_level`) have no FK because PKSK is backlog. | Referential integrity later. | Plain nullable columns. |
 | OQ-DM-30 | `sessions` key and columns are proposed (uuid, `token_hash`, `csrf_hash`, mode columns) because the card names the table only. | BE-03 design. | As in 3.1. |
 | OQ-DM-31 | Are `user_scopes` rows stored for every grant or only where the scope is not derivable from the account? | Out-of-scope 404 logic and the ETL (BE-28 derives them for `pegawai_ppd`). | Only where not derivable. |
 | OQ-DM-32 | The `audit_events.action` list is open (not a CHECK). Should it be closed? | Typo safety versus cross-card edits. | Open list, documented in 3.1. |
+| OQ-DM-33 | **[rev2]** Intake: (a) the mock stores one batch document and offers no batch-level endpoint in the cards (BE-38 open question 1; catalogue IN-04/IN-05); (b) the shared stimulus of a batch has no staging table in any card (`intake_stimuli` here is **[P]**); (c) the mock `copyright` has `sendiri` for "own or school" while `E-rights_status` splits `own`/`school`. | Contract PR for BE-37/38 and the accept path. | As in 3.5; the lead adapts the client. |
 
 ---
 
