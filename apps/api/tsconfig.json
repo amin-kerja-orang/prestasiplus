@@ -1,0 +1,19 @@
+{
+  "extends": "@tsconfig/node22/tsconfig.json",
+  "include": ["src/**/*.ts", "test/**/*.ts", "prisma/**/*.ts", "*.ts"],
+  "compilerOptions": {
+    "noEmit": true,
+    "strict": true,
+    "noUncheckedIndexedAccess": true,
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "allowImportingTsExtensions": true,
+    "isolatedModules": true,
+    "experimentalDecorators": true,
+    "emitDecoratorMetadata": true,
+    "useDefineForClassFields": false,
+    "moduleDetection": "force",
+    "skipLibCheck": true,
+    "types": ["node"]
+  }
+}

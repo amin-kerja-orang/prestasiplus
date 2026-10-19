@@ -23,7 +23,7 @@ Single source of truth for the **state of every backend card**. The lead's proje
 
 | ID | Title | Lane | Priority | Depends on | Size | Status | Owner (PC/session) | Branch | PR | Notes |
 |---|---|---|---|---|---|---|---|---|---|---|
-| BE-01 | Scaffold the NestJS app and backend CI | PC-1 | P0 | none | M | todo | - | `be/BE-01-scaffold-ci` | - | Sync S1 (workspace + CI). Writes ADR-0020. Needs OD-1, OD-3. |
+| BE-01 | Scaffold the NestJS app and backend CI | PC-1 | P0 | none | M | done | pc-aminfaudzi/S2 | `be/BE-01-scaffold-ci` | - (LEAD merges by git) | Merged 2026-10-19 (LEAD review Approve, 3 minors). Sync S1 (workspace + CI). Writes ADR-0020. be:verify green (17 tests); image runs read-only, healthy; gitleaks full history clean (.gitleaks.toml). @swc/core pinned 1.15.47 (Windows native-cache ACL, ADR-0020). Open: add `apps/*/dist/**` to root ESLint ignores (lead-owned). |
 | BE-02 | PostgreSQL service, Prisma setup and test harness | PC-1 | P0 | BE-01 | M | todo | - | `be/BE-02-db-orm` | - | Sync S2. Conventions: plan 14.2. Also creates the empty migratable-models.json and the seed runner `--profile`. |
 | BE-03 | Authentication, session, roles, scope and Mod Pelajar | PC-1 | P0 | BE-02 | L | todo | - | `be/BE-03-auth-session` | - | Sync S3 (auth, scope). Security review. Users table already has legacy columns. |
 | BE-04 | File storage service and upload handling | PC-1 | P0 | BE-03 | S | todo | - | `be/BE-04-file-storage` | - | Sync S4. Security review (uploads). Also derived files for BE-37. |
@@ -99,6 +99,7 @@ Newest first. The lead appends a line when a card merges, a decision is made or 
 
 | Date | Entry |
 |---|---|
+| 2026-10-19 | LEAD merged **BE-01** (NestJS 11 scaffold, error envelope, request id, config, logging redaction, health, non-root read-only image, backend CI with verify/docker/secret-scan, .gitleaks.toml). Review: Approve, no Blocker/Major. LEAD follow-ups in the merge: eslint ignores `apps/*/dist/**`; ids.ts comment now says legacy_source + legacy_id. Sync point S1 reached; BE-02 (stacked) continues. |
 | 2026-10-19 | LEAD merged contract-only PRs: BE-22(-) BE-44(#12) BE-45(#13) BE-46(#14) BE-47(#15) BE-16(#10) after code review (Approve). Append-only conflicts resolved; openapi.json regenerated; contract:check, contract tests and tsc green. Cards back to `todo` for their full implementation. |
 | 2026-10-19 | LEAD merged contract-only PRs: BE-08(-) BE-12(-) BE-17(-) after code review (Approve). Append-only conflicts resolved; openapi.json regenerated; contract:check, contract tests and tsc green. Cards back to `todo` for their full implementation. |
 | 2026-10-19 | LEAD merged contract-only PRs: BE-10(#7) BE-15(#8) BE-41(#9) BE-48(#5) after code review (Approve). Append-only conflicts resolved; openapi.json regenerated; contract:check, contract tests and tsc green. Cards back to `todo` for their full implementation. |

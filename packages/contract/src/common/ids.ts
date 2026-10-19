@@ -5,7 +5,7 @@ import { z } from '../zod'
  *
  * Decision (V2-T06): ids are strings. The backend generates its own primary keys (bigint identity,
  * serialised as a decimal string so JavaScript never loses precision, or UUID for session-like
- * records) and keeps the .cloud key in an internal `legacy_cloud_id` column that is NOT part of
+ * records) and keeps the .cloud key in the internal `legacy_source` + `legacy_id` columns (plan 14.2) that is NOT part of
  * the contract. Clients must never parse, compare numerically or construct ids. The mock's
  * `ID_RANGES` stays inside the mock.
  *

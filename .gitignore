@@ -48,3 +48,7 @@ playwright-report-*/
 
 # page-shots harness output (local only, D-H5)
 .page-shots/
+
+# Backend env files with secrets (BE-01; examples: .env.api.example)
+.env.api
+.env.db
