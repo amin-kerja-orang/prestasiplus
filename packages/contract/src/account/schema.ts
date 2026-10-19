@@ -61,7 +61,7 @@ export const ACCOUNT_AUTH_MESSAGES = {
   resetThrottled: 'Please wait before retrying.',
   tokenInvalid: 'This password reset token is invalid.',
   icMismatch: 'Email atau No Kad Pengenalan tidak sepadan.',
-  /** D55a: BM message of the reset-ic attempt limit (proposed copy, no existing frontend string). */
+  /** D55a: BM message of the reset-ic attempt limit; copy approved by D58c (2026-10-19). */
   resetIcRateLimited: 'Terlalu banyak percubaan. Sila cuba lagi dalam 15 minit.',
   accountInactive: 'Akaun anda tidak aktif. Sila hubungi pentadbir.',
   currentPasswordWrong: 'The password is incorrect.',
@@ -96,7 +96,7 @@ export const ACCOUNT_THROTTLE = {
 export const ACCOUNT_RESET_TOKEN_RULES = {
   minEntropyBits: 128,
   summary:
-    'The token is at least 128 bits from a CSPRNG; only its hash is stored; it is valid 60 minutes and single use; issuing a new token revokes every earlier unused token of that user (one active token); a successful reset consumes every outstanding token of the user; the stored hash is compared in constant time; an inactive account is never issued a token.',
+    'The token is at least 128 bits from a CSPRNG; only its hash is stored; it is valid 60 minutes and single use; issuing a new token revokes every earlier unused token of that user (one active token); a successful reset consumes every outstanding token of the user; the stored hash is compared in constant time; an inactive account is never issued a token; the token is bound to the e-mail it was issued for and is redeemable only with that same e-mail.',
 } as const
 
 /**

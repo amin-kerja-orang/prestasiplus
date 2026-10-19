@@ -316,7 +316,7 @@ describe('D57 security defaults', () => {
   })
 
   it('specifies the reset token on both token routes', () => {
-    for (const phrase of ['128 bits', 'only its hash is stored', '60 minutes', 'single use', 'revokes every earlier unused token', 'consumes every outstanding token', 'constant time']) {
+    for (const phrase of ['128 bits', 'only its hash is stored', '60 minutes', 'single use', 'revokes every earlier unused token', 'consumes every outstanding token', 'constant time', 'bound to the e-mail']) {
       expect(ACCOUNT_RESET_TOKEN_RULES.summary, phrase).toContain(phrase)
     }
     expect(ACCOUNT_RESET_TOKEN_RULES.minEntropyBits).toBe(128)
@@ -343,6 +343,7 @@ describe('D57 security defaults', () => {
       expect(op(method, path).description, path).toContain('Log redaction')
     }
     const ic = op('post', '/auth/password/reset-ic').description ?? ''
+    expect(ic).toContain('bound to that e-mail')
     expect(ic).toContain('no token is issued for an inactive account')
     expect(ic).toContain('audited')
     expect(ic).toContain('NotificationsService.push')
