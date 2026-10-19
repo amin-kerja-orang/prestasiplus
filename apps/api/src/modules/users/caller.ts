@@ -24,6 +24,9 @@ export function callerOf(req: Request & RequestWithAuth): Caller {
   if (!auth) throw ApiError.of('UNAUTHORIZED')
   const { role, scope } = auth.active
   const schoolId = (scope.level === 'school' || scope.level === 'class') && scope.schoolId ? scope.schoolId : null
+  // Fail closed: a school-scoped caller without a school must never reach a query (reads would crash,
+  // create and import would write a null school). Same answer as an out-of-scope record.
+  if (role !== 'admin' && schoolId === null) throw ApiError.of('NOT_FOUND')
   return {
     auth,
     userId: auth.userId,
