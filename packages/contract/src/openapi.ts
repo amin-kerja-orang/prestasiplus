@@ -22,6 +22,7 @@ import { SUPPORT_COMPONENT_SCHEMAS, registerSupportPaths } from './support/paths
 import { GAMIFICATION_COMPONENT_SCHEMAS, registerGamificationPaths } from './gamification/paths'
 import { QUESTION_WORKFLOW_COMPONENT_SCHEMAS, registerQuestionWorkflowPaths } from './question-workflow/paths'
 import { CLASSES_COMPONENT_SCHEMAS, registerClassesPaths } from './classes/paths'
+import { QUESTIONS_COMPONENT_SCHEMAS, registerQuestionsPaths } from './questions/paths'
 import { DateOnlySchema, TimestampInputSchema, TimestampSchema } from './common/time'
 import { WALLET_COMPONENT_SCHEMAS, registerWalletPaths } from './wallet/paths'
 import { BIJAK_PAPERS_COMPONENT_SCHEMAS, registerBijakPapersPaths } from './bijak/papers/paths'
@@ -58,6 +59,7 @@ export const COMPONENT_SCHEMAS = {
   ...SPM_COMPONENT_SCHEMAS, // BE-41
   ...HEATMAP_COMPONENT_SCHEMAS, // BE-48 (M25)
   ...CLASSES_COMPONENT_SCHEMAS, // BE-17
+  ...QUESTIONS_COMPONENT_SCHEMAS, // BE-09
   // V2-T08 access matrix
   AccessGroupId: AccessGroupIdSchema,
   AccessGroup: AccessGroupSchema,
@@ -90,6 +92,7 @@ export function buildOpenApiDocument(): Record<string, unknown> {
   registerCurriculumPaths(registry) // BE-08
   registerPracticePaths(registry) // BE-12
   registerClassesPaths(registry) // BE-17
+  registerQuestionsPaths(registry) // BE-09
   const generator = new OpenApiGeneratorV31(registry.definitions)
   return generator.generateDocument({
     openapi: '3.1.0',
