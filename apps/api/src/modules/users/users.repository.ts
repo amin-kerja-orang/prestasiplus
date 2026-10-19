@@ -65,7 +65,8 @@ export interface NewUserRow {
   icHash: string | null
   icMasked: string | null
   isActive: boolean
-  createdById: string
+  /** The admin who created the account; null for a self-registered account (BE-06). */
+  createdById: string | null
   /** DELIMa id (student import); omitted: null. */
   idDelima?: string | null
   /** Complimentary student flag; omitted: false. */
@@ -88,6 +89,7 @@ export interface UserPatchRow {
   email?: string | null
   username?: string | null
   phone?: string | null
+  bio?: string | null
   schoolId?: string | null
   grade?: number | null
   icHash?: string | null
@@ -96,6 +98,20 @@ export interface UserPatchRow {
   passwordHash?: string
   mustChangePassword?: boolean
   now: Date
+}
+
+/** What the account flows (BE-06: reset, password change) need to know about one user. Never leaves the API. */
+export interface UserCredentials {
+  id: string
+  name: string
+  email: string | null
+  passwordHash: string | null
+  /** Keyed HMAC of the IC number (reset-ic compare); null when none is stored. */
+  icHash: string | null
+  isActive: boolean
+  isSuspended: boolean
+  mustChangePassword: boolean
+  schoolId: string | null
 }
 
 export type RoleCounts = Record<RoleCode, number>
@@ -150,6 +166,32 @@ function toRecord(u: UserDb): UserRecord {
       .filter((r): r is RoleCode => (ROLE_CODES as readonly string[]).includes(r))
       .sort((a, b) => roleRank(a) - roleRank(b)),
     ppd: ppdScope?.districtCode && ppdScope.stateCode ? { state: ppdScope.stateCode, district: ppdScope.districtCode } : null,
+  }
+}
+
+const CREDENTIALS_SELECT = {
+  id: true,
+  name: true,
+  email: true,
+  passwordHash: true,
+  icHash: true,
+  isActive: true,
+  isSuspended: true,
+  mustResetPassword: true,
+  schoolId: true,
+} as const
+
+function toCredentials(r: Prisma.UserGetPayload<{ select: typeof CREDENTIALS_SELECT }>): UserCredentials {
+  return {
+    id: idToString(r.id),
+    name: r.name,
+    email: r.email,
+    passwordHash: r.passwordHash,
+    icHash: r.icHash,
+    isActive: r.isActive,
+    isSuspended: r.isSuspended,
+    mustChangePassword: r.mustResetPassword,
+    schoolId: r.schoolId === null ? null : idToString(r.schoolId),
   }
 }
 
@@ -216,6 +258,32 @@ export class UsersRepository {
       SELECT id FROM users WHERE lower(email) = lower(${email}) LIMIT 1`
     const first = rows[0]
     return first ? this.get(idToString(first.id)) : null
+  }
+
+  /** Credentials facts of one user (BE-06), or null. */
+  async getCredentials(id: string): Promise<UserCredentials | null> {
+    if (!isIdString(id)) return null
+    const row = await this.prisma.client.user.findUnique({ where: { id: idFromString(id) }, select: CREDENTIALS_SELECT })
+    return row ? toCredentials(row) : null
+  }
+
+  /** Credentials facts of the user with this e-mail (case-insensitive), or null. */
+  async findCredentialsByEmail(email: string): Promise<UserCredentials | null> {
+    const rows = await this.prisma.client.$queryRaw<{ id: bigint }[]>`
+      SELECT id FROM users WHERE lower(email) = lower(${email}) LIMIT 1`
+    const first = rows[0]
+    return first ? this.getCredentials(idToString(first.id)) : null
+  }
+
+  /** Ids of the active school admins of one school (recipients of the school notices, D59a). */
+  async schoolAdminIds(schoolId: string): Promise<string[]> {
+    if (!isIdString(schoolId)) return []
+    const rows = await this.prisma.client.user.findMany({
+      where: { schoolId: idFromString(schoolId), isActive: true, isSuspended: false, roles: { some: { role: 'school_admin' } } },
+      select: { id: true },
+      orderBy: { id: 'asc' },
+    })
+    return rows.map((r) => idToString(r.id))
   }
 
   /** Users whose name or e-mail contains `q`, name A to Z. */
@@ -473,6 +541,7 @@ export class UsersRepository {
         ...(rest.email !== undefined ? { email: rest.email } : {}),
         ...(rest.username !== undefined ? { username: rest.username } : {}),
         ...(rest.phone !== undefined ? { phone: rest.phone } : {}),
+        ...(rest.bio !== undefined ? { bio: rest.bio } : {}),
         ...(rest.grade !== undefined ? { grade: rest.grade } : {}),
         ...(rest.icHash !== undefined ? { icHash: rest.icHash } : {}),
         ...(rest.icMasked !== undefined ? { icMasked: rest.icMasked } : {}),
@@ -604,7 +673,7 @@ function toCreateData(input: NewUserRow): Prisma.UserUncheckedCreateInput {
     icHash: input.icHash,
     icMasked: input.icMasked,
     isActive: input.isActive,
-    createdById: idFromString(input.createdById),
+    createdById: input.createdById === null ? null : idFromString(input.createdById),
     ...(input.idDelima !== undefined ? { idDelima: input.idDelima } : {}),
     ...(input.isComplimentary !== undefined ? { isComplimentary: input.isComplimentary } : {}),
     createdAt: input.now,

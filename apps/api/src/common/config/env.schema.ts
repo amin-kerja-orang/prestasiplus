@@ -67,6 +67,10 @@ export const EnvSchema = z.object({
   UPLOAD_RATE_PER_MINUTE: z.coerce.number().int().min(1).max(1000).optional(),
   /** Downloads per user per minute (anonymous cms_image reads: per address) before 429. */
   FILE_READS_PER_MINUTE: z.coerce.number().int().min(1).max(10000).optional(),
+  // BE-06 (account). Optional: the code applies 30 writes per minute per user when unset.
+  THROTTLE_ACCOUNT_WRITE_PER_MINUTE: z.coerce.number().int().min(1).optional(),
+  // BE-06: development only. true lets the logging MailPort print the password reset link (a secret) to the log. Ignored outside NODE_ENV=development; refused at start in production.
+  MAIL_LOG_RESET_LINKS: z.enum(['true', 'false']).optional(),
 })
 export type Env = z.infer<typeof EnvSchema>
 
@@ -96,6 +100,9 @@ function withSessionSecret(env: Env): Env {
     throw new Error(
       `Invalid environment configuration. IC_HASH_KEY: required in production, at least ${MIN_IC_KEY_LENGTH} characters and different from SESSION_SECRET`,
     )
+  }
+  if (env.MAIL_LOG_RESET_LINKS === 'true') {
+    throw new Error('Invalid environment configuration. MAIL_LOG_RESET_LINKS: must not be true in production (it would write reset links to the log)')
   }
   const dir = env.FILE_STORAGE_DIR
   if (!dir || !isAbsolute(dir)) {
