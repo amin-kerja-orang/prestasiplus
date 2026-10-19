@@ -7,7 +7,7 @@ import { BijakPaperKindSchema } from '../papers/schema'
  * Bijak SPM (M28) attempts: the write side of BE-16 (start, resume, autosave, server timer,
  * submit, per-question "Semak", marking, results, history, working photos). The mock `BijakServer`
  * (`src/modules/m28-bijak-spm/server/store.ts`, types in `domain/types.ts`) has no HTTP routes; the
- * eleven routes of this contract are derived from its attempt methods (`findInProgress`,
+ * ten routes of this contract are derived from its attempt methods (`findInProgress`,
  * `startAttempt`, `getAttemptView`, `saveAnswers`, `submit`, `abandon`, `checkQuestion`,
  * `getResult`, `history`) plus the card-only photo upload. `sweep()` is a scheduled job and
  * `serverNow()` is returned inside the attempt view; neither is a route.

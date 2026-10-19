@@ -137,7 +137,7 @@ const REVEAL_NOTE =
   'The attempt view carries no answer key, mark scheme, accepted equivalent or explanation (US-15); a scheme is revealed only after submit (exam) or per question after "Semak" (latihan). The deadline and every timestamp come from the server clock.'
 
 /**
- * Registers the eleven Bijak SPM attempt routes of BE-16, all student-only and owner-only. The
+ * Registers the ten Bijak SPM attempt routes of BE-16, all student-only and owner-only. The
  * mock `BijakServer` has no HTTP routes; they map to `findInProgress`, `startAttempt`,
  * `getAttemptView`, `saveAnswers`, `submit`, `abandon`, `checkQuestion`, `getResult`, `history`
  * and a card-only photo upload. Every response body is `{ data }` or `{ error }`.
