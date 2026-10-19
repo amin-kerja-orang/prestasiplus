@@ -3,14 +3,14 @@
 | Field | Value |
 |---|---|
 | Size | L |
-| Lane | PC-1 (proposed; lane table: sessions.md section 5; reason below) |
+| Lane | PC-1; approved by the LEAD 2026-10-19 (folders: sessions.md section 5; the rows to add are in "Files touched") |
 | Priority | P2 |
 | Wave | 3 |
 | Depends on | BE-03, BE-05, BE-09, BE-10, BE-12, BE-25 |
 | Parallel with | BE-16, BE-18, BE-19, BE-23, BE-41 |
 | Owner module | M07 (PKSK domains, packages, access grants, exam attempts, mastery, practice loads) |
 
-Lane and priority reason (proposal for the LEAD, per D53): the folders `apps/api/src/modules/pksk/**`, `prisma/schema/pksk.prisma` and `packages/contract/src/pksk/**` belong to no lane today, so no file clashes with any PC. PC-1 owns identity, subscriptions and audit (access grants are entitlements) and is free after BE-24 until BE-32 and BE-33, whereas PC-2 is full with P0 cards. P2 because nothing else depends on it; matrix row 19 "PKSK" (Murid) is reachable in the prototype, so it is in B1 by D53.
+Lane and priority reason (approved by the LEAD 2026-10-19): the folders `apps/api/src/modules/pksk/**`, `prisma/schema/pksk.prisma` and `packages/contract/src/pksk/**` belong to no lane today, so no file clashes with any PC. PC-1 owns identity, subscriptions and audit (access grants are entitlements) and is free after BE-24 until BE-32 and BE-33, whereas PC-2 is full with P0 cards. P2 because nothing else depends on it; matrix row 19 "PKSK" (Murid) is reachable in the prototype, so it is in B1 by D53.
 
 ## Goal
 

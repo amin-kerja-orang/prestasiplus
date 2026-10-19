@@ -3,10 +3,10 @@
 | Field | Value |
 |---|---|
 | Size | L |
-| Lane | PC-5 (proposed: it owns BE-36, whose adapter this card calls, and no file of PC-5's other cards overlaps; folders: sessions.md section 5, to be extended with the rows in "Files touched") |
+| Lane | PC-5; approved by the LEAD 2026-10-19 (folders: sessions.md section 5; the rows to add are in "Files touched") |
 | Priority | P2 |
 | Wave | 4 |
-| Depends on | BE-36 (provider-agnostic AI adapter), BE-03, BE-05, BE-08, BE-12, BE-17 |
+| Depends on | BE-36 (provider-agnostic AI adapter, including its `generateText` method, AC 9 of BE-36), BE-03, BE-05, BE-08, BE-12, BE-17 |
 | Parallel with | BE-20, BE-21, BE-22, BE-40, BE-46, BE-47, BE-48 |
 | Owner module | M13 Cikgu Alesa (new module `cikgu`; owns all five tables below) |
 | Security review | required (child names inside essays, text sent to an external AI through BE-36, raw un-enveloped endpoint, CSV export) |
@@ -164,7 +164,7 @@ npm run be:test -- apps/api/test/conformance   # only after BE-31 is merged
 
 Do not guess these; write your working assumption in the PR and ask the lead (issue labelled `question`) if it blocks you.
 
-1. BE-36's `ExtractionProvider` has `extractPaper`, `suggestTags`, `healthCheck` only; chat, marking and plan generation need a text-generation capability. Working assumption: PC-5 adds `generateText({purpose, system, input})` returning `{text, tokensIn, tokensOut}` to the adapter interface and the `mock` adapter; `AdapterCikguAi` calls it; until it exists BE-43 ships with `MockCikguAi` only and the PR says so. Also: the prompts, the output format for marks, and validation of a real model's marks (an integer from 0 to the rubric maximum) are not defined by the mock; they are written only when the lead supplies them.
+1. Closed (LEAD 2026-10-19, URS OQ-29): BE-36 provides `generateText({purpose, system, input})` returning `{text, tokensIn, tokensOut}` with the same redaction, usage log (`ai_usage_logs`), rate limit and budget as its extraction methods; `AdapterCikguAi` calls it and BE-43 does not edit `ai-extraction/**`. If BE-36 has not merged yet, BE-43 ships with `MockCikguAi` only and the PR says so. Still open: the prompts, the output format for marks, and validation of a real model's marks (an integer from 0 to the rubric maximum) are not defined by the mock; they are written only when the lead supplies them.
 2. BE-36's redaction masks names and contact details and forbids user/student identifiers in a request, but marking needs the essay text (which may contain a child's name). Working assumption: the student name field is never sent; the essay body goes through the redaction step; the lead confirms this is acceptable (BE-NFR-31 to BE-NFR-36).
 3. The mock has no AI failure path. Working assumption: provider error, rate limit or `AI_BUDGET_EXHAUSTED` returns 503 with raw body `{"error": "AI_UNAVAILABLE"}` on `send` and 503 `AI_UNAVAILABLE` in the standard envelope on `POST /api/cikgu/rph`; no BM message exists, the client fallback text is used. Confirm the code and the copy.
 4. The mock thread id is `thr-<n>`; v2 ids are decimal strings (UD-1). Working assumption: `thread_id` is the bigint id as a decimal string and the client treats it as opaque (verified against `chat-lib.ts` and the client); a non-numeric string is "unknown" and starts a new thread.

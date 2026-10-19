@@ -3,7 +3,7 @@
 | Field | Value |
 |---|---|
 | Size | S |
-| Lane | PC-1 (proposed: it needs only BE-05's user lookup and sits next to BE-24 support tickets, the other small "send a request" card; no file overlap; folders: sessions.md section 5, to be extended with the rows in "Files touched") |
+| Lane | PC-1; approved by the LEAD 2026-10-19 (folders: sessions.md section 5; the rows to add are in "Files touched") |
 | Priority | P2 |
 | Wave | 3 |
 | Depends on | BE-03, BE-05 |

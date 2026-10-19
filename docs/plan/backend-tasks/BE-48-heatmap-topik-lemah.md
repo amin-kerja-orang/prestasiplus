@@ -3,7 +3,7 @@
 | Field | Value |
 |---|---|
 | Size | S |
-| Lane | PC-2 (proposed: it is a read over BE-12/BE-13 practice data and BE-08 curriculum, both PC-2 modules, so one lane keeps the practice repository change in one hand; folders: sessions.md section 5, to be extended with the row in "Files touched") |
+| Lane | PC-2; approved by the LEAD 2026-10-19 (folders: sessions.md section 5; the rows to add are in "Files touched") |
 | Priority | P1 |
 | Wave | 3 |
 | Depends on | BE-12, BE-13, BE-08 |

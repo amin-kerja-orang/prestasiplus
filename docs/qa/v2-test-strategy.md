@@ -48,7 +48,7 @@
 | Naming | `<subject>.test.ts`; `describe` names the unit; a test traced to a requirement starts its title with the id (section 6). |
 | Data | Mock seeds and D11 virtual datasets via the mock runtime; fixed clock `TEST_NOW` from `src/mock/server/__tests__/helpers.ts`; `VITE_PROTOTYPE_SCOPE=off`, `VITE_DATA_PROFILE=full` set by the config. |
 | Run (verified) | `npm test` (= `vitest run --project unit`); one file: `npx vitest run --project unit <path>`; watch: `npm run test:watch`; coverage: `npm run test:coverage`. |
-| CI | Frontend CI job: **planned**, no `.github/workflows` exists in the worktree at the time of writing; BE-01 creates `.github/workflows/api.yml` (backend, path-filtered). The frontend gate today is the lead running `npm run verify` (OQ-TS-1). |
+| CI | Frontend CI job: **planned**, no `.github/workflows` exists in the worktree at the time of writing; BE-01 AC 11 creates the folder and `.github/workflows/api.yml` (backend, path-filtered), and BE-02 AC 8 makes `.gitignore` ignore `.env.api`, `.env.db` and `compose.override.yaml`. The frontend gate today is the lead running `npm run verify` (OQ-TS-1). |
 | Boot test | `src/mock/server/__tests__/registry-boot.test.ts` boots the real registry (core + all modules, 466k-question dataset, about 56 s quiet, 120 s ceiling, `BOOT_TEST_TIMEOUT_MS` overrides). It must pass before any shared-store-data change is merged back (CLAUDE.md "Shared working tree"). Run it alone: `npx vitest run --project unit src/mock/server/__tests__/registry-boot.test.ts`. |
 
 ### 2.2 Component (Vue)
@@ -113,7 +113,7 @@
 | Location | `e2e/<mNN-slug>/*.spec.ts` (one folder per module), `e2e/global/*.spec.ts` (`@smoke`: harness, guards, not-found, prototype scope, user shell, cross-tab), helpers in `e2e/fixtures/` (`test.ts`, `mock-page.ts`, `mock-handle.ts`) and `e2e/support/` (`act-as.ts`, `assertions.ts`, `viewport.ts`, `tags.ts`, `probe-route.ts`). |
 | Rules | Every spec runs on all three projects; branch on viewport helpers, never on project name. Navigate with the `gotoApp` fixture (own 15 s boot budget, `expect` keeps 5 s). Never delete or edit a spec to hide a failure; exclude mock-only specs from http runs by **tag**. |
 | Tags and ids | Title starts with the SRS id (`E2E-M06-31 ...`), tag `@mNN`; `@provisional` (via `provisional(reason)`) for unobserved or proposed behaviour; `@smoke`; `@api` for specs valid against a real backend (BE-32). |
-| Responsive | Required (CLAUDE.md section 7): no horizontal page scroll at 375/768/1280; 320 px is spot-checked by QA (it was not covered by the final sweep, OQ-TS-6). |
+| Responsive | Required (CLAUDE.md section 7): no horizontal page scroll at 375/768/1280; 320 px is spot-checked by QA until the frontend backlog item "320 px Playwright project" lands (it was not covered by the final sweep, OQ-TS-6). |
 | Run (verified) | `npm run test:e2e` (all, 3 projects); `npm run test:e2e:observed` (excludes `@provisional`); `npm run test:e2e:module -- m05-practice` (one module); `npm run check:trace` (traceability SRS id to test, add `--all` at G5 via `node scripts/check-e2e-trace.mjs --all`). Other configs exist for isolated ports (`playwright.5021/5024/5142/bijak/scope.config.mjs`); use one with its own port so the shared 4173/5173 are never touched. |
 | Run (planned, BE-32) | `npm run test:e2e:http -- --grep @api` against the compose stack; module run in http mode `npm run test:e2e:module -- mNN` with the http config. Domain complete when its module e2e is green in **both** modes. |
 | Exploratory | Interactive checks use the Playwright MCP lanes (`playwright`, `playwright2`, `playwright3`); one agent per lane, lanes 2-3 log in themselves; keep load modest; scripts and screenshots in the agent's own scratchpad subfolder. |
@@ -328,7 +328,16 @@ Rules: a bug is judged against the AC or requirement it violates and against D9 
 | OQ-TS-3 | No card owns performance/load testing beyond loose IT timings (URS notes this). Are the BE-NFR-15 numbers final (URS OQ-1), and is a load test needed before go-live? | G6 cannot claim capacity. | Keep loose timings now; decide a k6 smoke before G6 if the user expects real traffic. |
 | OQ-TS-4 | No card owns the extraction-quality PILOT measurement (BE-NFR-36) or the sample set. | The quality targets cannot be evidenced. | Assign to QA with a pilot set supplied by the lead; report as PILOT, not as a gate. |
 | OQ-TS-5 | Quarantine tag `@flaky` and a `test:e2e:http` / `playwright.http.config.ts` naming are proposals. | Consistent selection by tag. | Lead approves; BE-32 and `tags.ts` follow. |
-| OQ-TS-6 | 320 px is required by CLAUDE.md section 7 ("mobile >= 320px") but the Playwright projects and the final sweep use 375, 768, 1280 (and 1440 once). Add a fourth 320 project or keep 320 as a QA spot check? | Rule says 320 but tests do not run it. | Keep 375/768/1280 in the suite; QA spot-checks 320 on layout-heavy screens at G5 and lists it. |
+| OQ-TS-6 | **Updated (LEAD 2026-10-19):** 320 px is required by CLAUDE.md section 7 ("mobile >= 320px") but the Playwright projects and the final sweep use 375, 768, 1280 (and 1440 once). Decision: add a 320 px Playwright project as a frontend backlog item (section 10). | Rule says 320 but tests do not run it. | Until the project exists, QA spot-checks 320 on layout-heavy screens at G5 and lists it; then close this question. |
 | OQ-TS-7 | Authz matrix test: is `packages/contract/src/access/matrix.ts` complete enough to generate the route-level (route, role) cases, or does each BE card hand-write them? | Default-deny proof depends on it. | Generate from the matrix and fall back to hand-written cases for routes the matrix does not name; track gaps in the BE-33 PR. |
 | OQ-TS-8 | Data-subject rights (access, correction, erasure) have no rule and no card (BE-NFR-14). Out of test scope until a rule exists. | Possible PDPA gap. | Escalate to the user at G2/G6; add tests when the rule is decided. |
 | OQ-TS-9 | Exact migration script names (`migrate:all`, `migrate:delta`, `migrate:verify`, `migrate:core`) come from card text; they may change at implementation. | Docs quote them. | Re-verify against root/`@pp/api` `package.json` when BE-28..BE-30 merge. |
+
+## 10. Frontend backlog (not backend)
+
+Items for the frontend lead; no BE card owns them (LEAD 2026-10-19).
+
+| Item | What | Why |
+|---|---|---|
+| 320 px Playwright project | Add a fourth Playwright project at 320 px width beside 375/768/1280 and run the layout-heavy specs in it (OQ-TS-6). | CLAUDE.md section 7 requires mobile >= 320 px; today no test runs it. |
+| `.mcp.json` portability | `.mcp.json` starts the Playwright servers with `cmd /c npx`, which works only on Windows. Make it portable (for example `npx` directly, or a per-OS note) so every PC and the CI-free QA lanes can use the three lanes. | The backend is built by many PCs; QA lanes in section 7.1 must start on any of them. |

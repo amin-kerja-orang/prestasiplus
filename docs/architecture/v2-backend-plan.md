@@ -3,7 +3,7 @@
 - **Status:** Draft for user review (2026-10-18). Plan only; no backend code exists yet.
 - **Owner:** solution-architect. **Audience:** the backend collaborator and their Claude Code agent. Self-contained: you have not seen the chat history, so everything you need is here or linked by path.
 - **Decision source:** user, 2026-10-18 ("a second developer builds the v2 backend in parallel on another PC; sync through GitHub").
-- **Task cards:** [docs/plan/backend-tasks/](../plan/backend-tasks/README.md) (BE-01 to BE-40). **How to start:** [docs/plan/README.md](../plan/README.md). **Programme (multi-PC, multi-session):** [backend-tracker](../plan/backend-tracker.md), [sessions](../plan/sessions.md), [agent-kickoff](../plan/agent-kickoff/README.md).
+- **Task cards:** [docs/plan/backend-tasks/](../plan/backend-tasks/README.md) (BE-01 to BE-48). **How to start:** [docs/plan/README.md](../plan/README.md). **Programme (multi-PC, multi-session):** [backend-tracker](../plan/backend-tracker.md), [sessions](../plan/sessions.md), [agent-kickoff](../plan/agent-kickoff/README.md).
 - **Related:** TRACKER D28 to D52, ADR-0019 (SPM question intake, provider-agnostic AI; may still be in progress), ADR-0014 (store ownership), ADR-0016/0017 (portals, role list, scope), ADR-0018 (contract first), `v2-data-migration.md`, `v2-frontend.md`, `v2-exam-schema.md`, `docs/ops/containers.md`.
 
 ## 1. What we are building
@@ -135,13 +135,21 @@ Rules that apply to every table (decided; see `v2-data-migration.md` section 4.0
 | Identity (BE-03, BE-05, BE-06) | `users`, `user_roles` (role list per user), `user_scopes`, `sessions`, `password_resets`, `login_attempts`, `user_settings`, `notifications`, `audit_events` | `src/modules/m01-*/mock`, `src/mock/core-data`, `src/mock/auth` | `users`, `personal_access_tokens` (not migrated) |
 | Schools (BE-05, BE-25) | `schools` (JPN/PPD derived from distinct state/district), `school_subscriptions`, `school_packages`, `parent_links`, `parent_invites`, `comp_students` | `m02-*/mock`, tables `schools.*`, `users.*` | `schools`, `school_subscriptions`, `parent_student` |
 | Curriculum (BE-08) | `education_levels`, `subjects`, `subject_levels`, `chapters`, `topics`, `subtopics`, `curriculum_nodes` (DSKP tree, from `v2-exam-schema.md` D9) | `m03-*/mock` tables `curriculum.*` | `education_levels`, `subjects`, `chapters`, `topics` |
-| Question bank (BE-09, BE-10; intake BE-36 to BE-38) | `stimuli`, `stimulus_groups`, `questions` (+ versions), `question_parts` (tree), `part_options`, `answer_keys`, `question_tags`, `question_reports`, `question_submissions`, `source_papers`, `question_imports`; intake adds `intake_batches`, `intake_files`, `intake_pages`, `intake_figures`, `intake_items`, `ai_extraction_runs`, `ai_usage_logs` (section 15) | `m04-*/mock`, m28 intake (D52), `v2-exam-schema.md` sections 3 to 6 | **not migrated** (D29a); old bank archived read-only |
-| Practice (BE-12, BE-13) | `practice_sessions`, `practice_answers` (with curriculum dimensions + nullable `question_id`, `historical`, `client_uuid`), `revision_queue`, `mastery`, `spm_targets`, `structured_attempts`, `check_rows`, `subject_usage` | `m05-*/mock` tables `practice.*` | `practice_sessions`, `question_attempts` (snapshot), `review_schedules` (dropped, Q4), `structured_attempts` |
-| Wallet (BE-11, BE-23) | `wallets`, `coin_ledger`, `streaks`, then `tiers`, `challenges`, `challenge_completions`, `achievements`, `user_achievements`, `badges`, `referrals`, `draws`, `draw_tickets`, `rewards`, `reward_claims`, `teacher_*` | `m14-*/mock`, `m15-*/mock` tables `gamification.*` | `student_wallets`, `coin_transactions`, `gamification_tiers`, `challenges`, `challenge_user`, `achievements`, `achievement_user`, `gifts`, `gift_redemptions`, `lucky_draws` |
+| Question bank (BE-09, BE-10; intake BE-36 to BE-38) | `stimuli`, `stimulus_groups`, `questions` (+ versions), `question_parts` (tree), `part_options`, `answer_keys`, `question_tags`, `question_reports`, `source_papers` (the teacher Submission is `intake_batches`; `question_submissions` is dropped, D53 OWN-1), `question_imports`; intake adds `intake_batches`, `intake_files`, `intake_pages`, `intake_figures`, `intake_items`, `ai_extraction_runs`, `ai_usage_logs` (section 15) | `m04-*/mock`, m28 intake (D52), `v2-exam-schema.md` sections 3 to 6 | **not migrated** (D29a); old bank archived read-only |
+| Practice (BE-12, BE-13) | `practice_sessions`, `practice_answers` (with curriculum dimensions + nullable `question_id`, `historical`; `client_uuid` is on `practice_sessions`), `revision_queue`, `mastery`, `spm_targets`, `structured_attempts`, `check_rows`, `subject_usage` | `m05-*/mock` tables `practice.*` | `practice_sessions`, `question_attempts` (snapshot), `review_schedules` (dropped, Q4), `structured_attempts` |
+| Wallet (BE-11, BE-23) | `wallets`, `coin_ledger`, `streaks`, then `tiers`, `challenges`, `challenge_completions`, `achievements`, `user_achievements`, `badges`, `referrals`, `draws`, `draw_tickets`, `syiling_rewards`, `reward_claims`, `rewards`, `reward_redemptions` (the teacher economy is backlog, D53 OWN-10) | `m14-*/mock`, `m15-*/mock` tables `gamification.*` | `student_wallets`, `coin_transactions`, `gamification_tiers`, `challenges`, `challenge_user`, `achievements`, `achievement_user`, `gifts`, `gift_redemptions`, `lucky_draws` |
 | Exam / Bijak (BE-15, BE-16, BE-39) | `papers`, `paper_sections`, `paper_placements`, `blueprints`, `blueprint_sections`, `exam_attempts`, `attempt_answers`, `attempt_photos`, `attempt_results` | `m28-bijak-spm/server/store.ts`, `domain/types.ts`, `data/*.ts` | `exam_attempts`, `part_responses` (header + scores only) |
 | Classes (BE-17, BE-18) | `classrooms`, `enrolments`, `missions`, `mission_items`, `remedial_tests`, `question_sets`, `question_set_items`, `teacher_profiles`, `dskp_bidang/sk/sp` (teacher DSKP picks) | `m10-*/mock` tables `m10.*` | `classrooms`, `classroom_student`, `question_sets` (headers only, Q4) |
 | Reports (BE-19 to BE-22) | mostly **read models** (SQL views/materialised views or service queries) over practice, wallet, enrolments; plus `headcount_*`, `timeline_posts`, `risk_profiles`, `kirkpatrick_*`, `monitoring_flags`, `feedback`, `interventions` | `m08`, `m11`, `m12`, `m17`, `m27` mocks | `headcounts`, `timeline_entries`, `feedback`, `interventions` |
-| Content (BE-24) | `articles`, `banners`, `videos`, `notes`, `perutusan*`, `support_tickets` | `m09-*/mock`, `m22-*/mock` | `articles`, `banners`, `videos`, `notes`, `support_tickets` |
+| Content (BE-24) | `articles`, `banners`, `videos`, `notes`, `audio_kbat_sets`, `perutusan*`, `support_tickets` | `m09-*/mock`, `m22-*/mock` | `articles`, `banners`, `videos`, `notes`, `support_tickets` |
+| SPM hub (BE-41, D53) | `spm_subject_configs`, `spm_tracking_sets`, `spm_tracking_set_questions`, `spm_mock_exams`, `spm_mock_exam_items`, `duta_profiles` (provisional owner) | `m06-spm/mock` | none (not migrated) |
+| PKSK (BE-42, D53) | `pksk_domains`, `pksk_packages` (provisional owner), `pksk_accesses`, `pksk_exam_attempts`, `pksk_mastery`, `pksk_practice_loads` | `m07-pksk/mock` | `pksk_packages`, `pksk_accesses` (the .cloud PKSK questions are not migrated) |
+| Cikgu Alesa (BE-43, D53) | `chat_threads`, `chat_messages`, `rph_plans`, `essay_markings`, `pbd_tags` | `m13-cikgu-alesa/mock` | `chatbot_conversations`, `chatbot_messages` (not migrated in B1) |
+| Battle (BE-44, D53) | `battles`, `battle_participants`, `battle_questions`, `battle_answers`, `battle_queues`, `battle_invitations`, `tournaments`, `tournament_subjects` (and the card's other tournament tables) | `m16-battle-games/mock` | `battles`, `battle_participants` |
+| Games hub (BE-45, D53) | `game_rooms`, `game_room_players`, `game_standings`, `game_sessions`, `game_session_items`, `personal_bests`, `jutawan_stats`, `spins`, `spin_stats`, plus the card's settings, league and Sekolah Bersaing tables | `m16-battle-games/mock` | `game_sessions` (rooms optional; leagues not mapped, Q13) |
+| Marketplace, buyer slice (BE-46, D53) | `marketplace_categories`, `marketplace_sellers`, `marketplace_products`, `marketplace_product_images`, `marketplace_reviews` | `m20-marketplace/mock` | `marketplace_sellers`, `marketplace_products` (staged and profiled only in B1) |
+| Keluarga Angkat, student side (BE-47, D53) | `foster_applications` | `m21-sponsorship/mock` | `foster_applications` (not loaded in B1, Q7) |
+| Heatmap Topik Lemah (BE-48, D53) | none: a read model over `practice_answers`, `chapters`, `subjects` | `m25-ai-centre/mock` | none |
 
 Migration load order, risks and the 13 open questions (Q1 to Q13) are in `v2-data-migration.md` sections 5 to 7; the ETL tasks (BE-27 to BE-30, BE-34, BE-35) implement that document and do not redesign it. The entity-by-entity old-to-new table mapping is the matrix in section 14.7.
 
@@ -164,24 +172,34 @@ Migration load order, risks and the 13 open questions (Q1 to Q13) are in `v2-dat
 
 ### 6.3 Endpoint groups mapped to frontend clients and mock handlers
 
-Counts are the number of `route(...)` registrations in the mock handlers (the spec to match). Cards list the exact endpoints.
+Counts are verified in [v2-api-catalogue.md](v2-api-catalogue.md) section 3 (checked 2026-10-19 with a multi-line-aware script over the mock handlers): **491 mock routes + 4 contract-only session endpoints = 495 HTTP endpoints**, plus 16 Bijak SPM class methods and the 10 D52 intake operations (no HTTP routes). The catalogue has one block per endpoint (path, guard, request, response, errors, card); cards list the exact endpoints. Since D53(a) every module reachable in the prototype is in B1; the endpoints not built by owner decision are listed in the catalogue section 5.3 (UD-2 impersonation 3, UD-3 parent hadiah approvals 3, D53 OWN-10 teacher economy 13).
 
 | Group | Card | Frontend client (`src/modules/.../api`) | Mock handlers (`src/modules/.../mock/handlers`) | Mock routes |
 |---|---|---|---|---|
-| Auth, session, role, mode | BE-03 | `src/stores`, `packages/contract/src/session`, `src/api` | `m01-*/auth*.ts`, `src/mock/core-data` | 6 (contract) + register/reset |
-| Account, notifications, settings | BE-06 | `m01-authentication/api` | `m01-*/mock/handlers/auth-account.ts`, `notifications.ts` | 17 |
-| Users, schools, subscriptions | BE-05, BE-25 | `m02-users-schools/api` | `m02-*/mock/handlers/*` | 43 |
-| Curriculum | BE-08 | `m03-curriculum/api` | `m03-*/mock/handlers/*` | 12 |
-| Question bank | BE-09, BE-10 | `m04-question-bank/api` | `m04-*/mock/handlers/*` | 25 |
-| Practice | BE-12, BE-13 | `m05-practice/api` | `m05-*/mock/handlers/*` | 20 |
-| Wallet / gamification | BE-11, BE-23 | `m14-gamification/api`, `m15-rewards-shop/api` | `m14-*`, `m15-*` | 32 + 18 |
-| Bijak SPM | BE-14 to BE-16 | `m28-bijak-spm/server/client.ts` (class `BijakServer`) | **no HTTP routes yet**: the mock is a class in `m28-bijak-spm/server/store.ts`; the contract must be derived from its public methods | 0 (about 12 methods) |
-| Classes, teacher | BE-17, BE-18 | `m10-teacher-class/api` | `m10-*/mock/handlers/*` | 33 |
-| Student performance | BE-19 | `m08-student-performance/api` | `m08-*` | 17 |
-| Teacher analytics, Kirkpatrick | BE-20 | `m11-*`, `m12-*` | `m11-*`, `m12-*` | 4 + 13 |
-| School admin | BE-21 | `m27-school-admin/api` | `m27-*` | 17 |
-| Command Center, admin aggregates | BE-22 | `m17-admin-dashboard/api`, `m10-*/api` | `m17-*`, `m10-*/command-center*.ts` | 2 + CC routes |
-| Content, support | BE-24 | `m09-content/api`, `m22-support-tickets/api` | `m09-*`, `m22-*` | 25 + 4 |
+| Auth, session, role, mode | BE-03 | `src/stores`, `packages/contract/src/session`, `src/api` | `m01-*/auth*.ts`, `src/mock/core-data` | 4 contract-only (S-01..S-04) + 6 M01 auth routes |
+| Account, notifications, settings (M01) and core (`/api/me`, gamification summary, server status) | BE-06 (core also BE-11, BE-22) | `m01-authentication/api` | `m01-*/mock/handlers/*` | 19 (M01) + 3 (core) |
+| Users, schools, subscriptions (M02) | BE-05, BE-25 | `m02-users-schools/api` | `m02-*/mock/handlers/*` | 49 |
+| Curriculum (M03) | BE-08 | `m03-curriculum/api` | `m03-*/mock/handlers/*` | 29 |
+| Question bank (M04) | BE-09, BE-10 (M04-13..15: BE-37, BE-38; D53 OWN-1) | `m04-question-bank/api` | `m04-*/mock/handlers/*` | 30 |
+| Practice (M05) | BE-12, BE-13, BE-18 | `m05-practice/api` | `m05-*/mock/handlers/*` | 23 |
+| SPM classic hub (M06) | BE-41 (D53) | `m06-spm/api` | `m06-*/mock/handlers/*` | 14 |
+| PKSK (M07) | BE-42 (D53) | `m07-pksk/api` | `m07-*/mock/handlers/*` | 21 |
+| Cikgu Alesa (M13) | BE-43 (D53) | `m13-cikgu-alesa/api` | `m13-*/mock/handlers/*` | 10 |
+| Heatmap Topik Lemah (M25) | BE-48 (D53) | `m25-ai-centre/api` | `m25-*/mock/handlers/*` | 1 |
+| Wallet / gamification (M14), rewards shop (M15) | BE-11, BE-23 | `m14-gamification/api`, `m15-rewards-shop/api` | `m14-*`, `m15-*` | 42 + 18 (13 M14 teacher-economy routes not in B1, 3 M15 parent approvals not built) |
+| Battle, games, competitions (M16) | BE-44 (M16-01..21, M16-42..45), BE-45 (M16-22..41, M16-46..52) (D53) | `m16-battle-games/api` | `m16-*/mock/handlers/*` | 52 |
+| Bijak SPM (M28) | BE-14 to BE-16 | `m28-bijak-spm/server/client.ts` (class `BijakServer`) | **no HTTP routes**: the mock is a class in `m28-bijak-spm/server/store.ts`; the contract is derived from its 16 public methods | 0 routes, 16 methods |
+| SPM intake and paper builder (D52) | BE-36 to BE-40 (builder: BE-39) | `m28-bijak-spm` intake client | browser-side domain/store, operations IN-01..IN-10 (commit `b2e1033`) | 0 routes, 10 operations |
+| Classes, teacher (M10) | BE-17, BE-18 (BE-09, BE-10, BE-22 for question and Command Center routes) | `m10-teacher-class/api` | `m10-*/mock/handlers/*` | 39 (30 + 9 Command Center) |
+| Student performance (M08) | BE-19 | `m08-student-performance/api` | `m08-*` | 30 |
+| Teacher analytics, Kirkpatrick (M11, M12) | BE-20 | `m11-*`, `m12-*` | `m11-*`, `m12-*` | 7 + 14 |
+| School admin (M27) | BE-21 | `m27-school-admin/api` | `m27-*` | 22 (2 impersonation routes dropped, UD-2) |
+| Amaran Awal (M18) | BE-21 (UD-4) | `m18-ppd-jpn/api` | `m18-*` | 4 |
+| Command Center, admin dashboard (M17) | BE-22 | `m17-admin-dashboard/api`, `m10-*/api` | `m17-*`, `m10-*/command-center*.ts` | 11 (the 9 teacher Command Center routes are counted in M10) |
+| Content incl. Audio KBAT play (M09), support (M22) | BE-24 | `m09-content/api`, `m22-support-tickets/api` | `m09-*`, `m22-*` | 43 + 4 |
+| Marketplace, buyer (M20) | BE-46 (D53) | `m20-marketplace/api` | `m20-*/mock/handlers/*` | 5 |
+| Keluarga Angkat, student side (M21) | BE-47 (D53) | `m21-sponsorship/api` | `m21-*/mock/handlers/*` | 1 |
+| **Total** | | | | **491 mock routes + 4 contract-only = 495** |
 
 ## 7. How the frontend switches to the real API
 
@@ -265,6 +283,28 @@ flowchart TD
   BE10 --> BE39
   BE36 --> BE40[BE-40 intake dashboard]
   BE38 --> BE40
+  BE08 --> BE41[BE-41 SPM hub]
+  BE09 --> BE41
+  BE12 --> BE41
+  BE13 --> BE41
+  BE05 --> BE42[BE-42 PKSK]
+  BE10 --> BE42
+  BE12 --> BE42
+  BE25 --> BE42
+  BE36 --> BE43[BE-43 Cikgu Alesa]
+  BE12 --> BE43
+  BE17 --> BE43
+  BE09 --> BE44[BE-44 battle]
+  BE12 --> BE44
+  BE23 --> BE44
+  BE11 --> BE45[BE-45 games hub]
+  BE13 --> BE45
+  BE23 --> BE45
+  BE05 --> BE46[BE-46 marketplace]
+  BE05 --> BE47[BE-47 keluarga angkat]
+  BE08 --> BE48[BE-48 heatmap]
+  BE12 --> BE48
+  BE13 --> BE48
   BE16 --> BE33
   BE38 --> BE33
   BE39 --> BE33
@@ -277,8 +317,9 @@ flowchart TD
 | **M2 Learning loop** | BE-09, BE-10, BE-12, BE-13 | A Murid can start, answer and submit a practice session; revision/mastery/wallet update in one transaction. |
 | **M3 Bijak SPM** | BE-14 to BE-16 | A Murid can sit a paper, autosave, submit, see marked results. |
 | **M3b SPM intake and builder (D52)** | BE-36 to BE-40 (BE-10 first) | An admin uploads a PDF, the server OCRs and extracts with the configured provider (mock in CI), reviewers accept items into Draf, an approved set is assembled into a paper against a blueprint and published to Bijak SPM. |
+| **M4b Prototype modules (D53(a))** | BE-41, BE-42, BE-46, BE-47, BE-48 (wave 3); BE-43, BE-44, BE-45 (wave 4) | The SPM hub, PKSK, Marketplace buyer, Keluarga Angkat student side and Heatmap routes (wave 3) and Cikgu Alesa, Battle, Games hub (wave 4) answer like the mock, so every module reachable in the prototype is served by the real API. Dependencies per card are in the backend-tasks README (BE-43 needs BE-36 and BE-17; BE-44 and BE-45 need BE-23; BE-45 stubs BE-44). |
 | **M4 Teacher/admin** | BE-17 to BE-22, BE-23 | Guru class flows, reports and Command Center served with scope filtering. |
-| **M5 Integration** | BE-26, BE-31, BE-32 | Frontend e2e green against compose stack for the carded modules. |
+| **M5 Integration** | BE-26, BE-31, BE-32 | Frontend e2e green against compose stack for the carded modules (BE-01 to BE-48). |
 | **M6 Migration + hardening** | BE-27 to BE-30, BE-33 to BE-35 | Rehearsed migration on a staging copy; security review (G4) passed. |
 
 Parallelism: the programme runs in six lanes plus the lead lane (PC-1 Foundation to Identity, PC-2 Learning and Question bank, PC-3 Bijak and Paper builder, PC-4 Migration and ETL, PC-5 AI intake, PC-6 Teacher, Reports and Seed). Lanes, order, sync points and the Gantt diagram are in [docs/plan/sessions.md](../plan/sessions.md); the live status of every card is in [docs/plan/backend-tracker.md](../plan/backend-tracker.md); paste-ready agent prompts are in [docs/plan/agent-kickoff/](../plan/agent-kickoff/README.md). The migration stream (BE-34, BE-27 onward) is independent of the API lanes and is blocked only by OD-2 (real data) and OD-10.
@@ -376,7 +417,7 @@ When the docs, the mock and `@pp/contract` disagree, or a rule is not written an
 | OD-8 | Day boundary for streaks and daily limits (Q8): Malaysia time. Teacher wallets (Q10): keep as in the mock until profiling. | Malaysia time; keep teacher wallets. | BE-11 |
 | OD-9 | Id wire format: contract says opaque **string** ids; the mock/UI use numbers for users and schools. The lead realigns the frontend (V2-T24/T25) as each domain switches. Confirm. | Strings per contract. | BE-05 onward |
 | OD-10 | Migration open questions Q1 to Q7 and Q9 to Q13 of `v2-data-migration.md` section 7 (role set, duplicates, PPD scope, history retention, sensitive data). Answers needed before BE-28/29 only. | Defaults in that table. | BE-28, BE-29 |
-| OD-11 | Which Murid matrix rows beyond the carded domains must be live in B1 (M06 SPM classic, M07 PKSK, M16 Kedudukan/Permainan/Tournament, Audio KBAT, Marketplace, Cikgu Alesa)? | Not in B1; Bijak SPM replaces SPM classic; others stay mock via hybrid until promoted. | scope only |
+| OD-11 | **Resolved by D53(a) (2026-10-19):** every module reachable in the prototype is in B1. M06 SPM classic, M07 PKSK, M13 Cikgu Alesa, M16 Kedudukan/Permainan/Tournament, M20 Marketplace (buyer), M21 Keluarga Angkat (student side) and M25 Heatmap are cards BE-41 to BE-48; Audio KBAT play is in BE-24; M18 Amaran is in BE-21. Not built by owner decision: UD-2 impersonation, UD-3 parent hadiah approvals, D53 OWN-10 teacher economy. | n/a | BE-41 to BE-48 |
 | OD-12 | Who merges PRs and enforces branch protection on `feature/v2-backend` (required CI check, no force-push)? | The lead; enable protection on the branch. | process |
 | OD-13 | Is prestasiplus.my a migration source at all? `v2-data-migration.md` says .cloud only ("not replicas"); the staging design mirrors both. | .cloud only; `staging_my` and `legacy_source = 'my'` exist as empty extension points. | BE-27, BE-34 scope only |
 | OD-14 | AI provider(s) for production intake, data location, monthly budget cap (v2-question-bank Q5, NFR-03 default RM 2.00 per 40-question paper). | Build all adapters behind the interface with `mock` default; pick the production provider and region at G6; start with an openai-compatible or Anthropic adapter. | BE-36 production use only |
@@ -386,6 +427,14 @@ When the docs, the mock and `@pp/contract` disagree, or a rule is not written an
 | OD-18 | Who runs the anonymiser and where the pseudonym key and dumps are stored (PDPA, minors). | The lead, on the lead PC, encrypted storage outside the repo. | BE-35 real-data use |
 | OD-19 | Confirm the ADR numbering: ADR-0019 = frontend SPM intake (D52), ADR-0020 = backend stack (BE-01). | As stated. | BE-01 |
 | OD-20 | Which frontend files define the intake and builder wire shapes (mock extractor, client, types) so BE-36 to BE-40 derive the contract from them. The lead lists the paths in the first contract PR comment. | Lead supplies before PC-5 starts BE-37/38. | BE-36 to BE-40 |
+| OD-21 | Notification broadcast migration (GAP-6): fan out each broadcast into per-user rows (A) or add `notification_broadcasts` + `notification_reads` (B)? | Decide at BE-29 planning; until then broadcasts are not loaded. | BE-29 |
+| OD-22 | School subscription quota (GAP-15): `student_quota` nullable for migrated rows, or .cloud `quota` is the student quota and `question_limit` stays null? Needs profiling. | `student_quota` nullable until profiled. | BE-25, BE-28 |
+| OD-23 | `ai_usage_logs` (GAP-16): map .cloud `tokens` to `tokens_in`? Keep `event`/`tool` as nullable columns. | Keep the nullable columns; leave the loader optional. | BE-29 (optional) |
+| OD-24 | Practice `mode` (GAP-17): add `spm`/`battle` codes to the enum, or reject? | Reject unknown values (14.1 rule 3). | BE-12, BE-29 |
+| OD-25 | Challenge `metric` (GAP-28): define a map from .cloud `type`/`criteria`, or leave `metric` null for legacy rows? | Null for legacy rows. | BE-23, BE-29 |
+| OD-26 | `practice_answers.difficulty` on historical rows (GAP-26): document "legacy scale for historical rows, TP for new rows" or add `difficulty_scale`? | Document the meaning; no new column. | BE-12 |
+| OD-27 | `packages` target (GAP-22): the migration inventory maps it to `school_packages`, BE-28 skips it (no Sistem store yet). Which? | Skip (BE-28 wins) and list it in the reconciliation report. | BE-28 |
+| OD-28 | Ownership findings OWN-2 (`source_papers` vs `intake_batches` roles), OWN-3 (three event logs), OWN-4 (`jpns`/`ppds` created by BE-05, not yet listed in its card), OWN-7 (child tables created by the parent owner), OWN-9 (two reward catalogues), OWN-12 to OWN-14 (platform tables, provisional owners, PKSK domain by code): confirm the data-model handling. | The handling in `v2-data-model.md` section 2.1. | BE-05, BE-09, BE-10, BE-23, BE-37, BE-41, BE-42, BE-44 |
 
 ## 14. Migration-first design
 
@@ -483,7 +532,7 @@ Output: `.migration-out/recon-<run>.md/json` (git-ignored, aggregates only). BE-
 
 ### 14.7 Mapping matrix: old table to new table, per entity
 
-Legend. Match: **1:1** copy/rename, **T** transform (ids below), **split**, **drop** (not migrated). "Schema card" creates the v2 table and its `legacy_*` columns; "ETL card" loads it (BE-28 core, BE-29 activity). The `.my` mapping is `TBD (OD-13)` for every row: the loader supports a second source, no mapping is written until decided. Table names on the v2 side are indicative (section 5); the schema card finalises them and updates this row.
+Legend. Match: **1:1** copy/rename, **T** transform (ids below), **split**, **drop** (not migrated). "Schema card" creates the v2 table and its `legacy_*` columns; "ETL card" loads it (BE-28 core, BE-29 activity). The `.my` mapping is `TBD (OD-13)` for every row: the loader supports a second source, no mapping is written until decided. Table names on the v2 side are indicative (section 5); the schema card finalises them and updates this row. Every ETL card records state in the BE-34 `etl_*` control tables (14.4); no `migration_*` tables exist. "Not migrated" = no row is loaded (reason in the row); "no source" = the v2 table is born in v2; "source unknown (OQ)" = the .cloud table or column is not known and is listed in the open questions below the matrix. Rows marked (D53) were added from the data-model gap list GAP-1..GAP-40 and the cards BE-41 to BE-48 on 2026-10-19.
 
 | Entity | Old table (.cloud) | New table | Match | Transforms and key columns | Schema card | ETL card |
 |---|---|---|---|---|---|---|
@@ -492,40 +541,68 @@ Legend. Match: **1:1** copy/rename, **T** transform (ids below), **split**, **dr
 | Subject-level pivot | (derived from `chapters`) | `subject_levels` | T-09 | distinct (`subject_id`, `education_level_id`) of chapters | BE-08 | BE-28 |
 | Chapter | `chapters` | `chapters` | 1:1 | `title`, `number`, `dskp_code`, `strand`; `in_tree` by rule | BE-08 | BE-28 |
 | Topic | `topics` | `topics` | 1:1 | `chapter_id`, `subject_id`, `name`, `sort_order` | BE-08 | BE-28 |
-| User | `users` | `users`, `user_roles`, `user_scopes`, `user_settings` | split, T-01..T-05 | role string -> `user_roles` (T-01); `email` nullable; `username` kept; `is_active` + `is_suspended` -> status (T-02); `ic` -> hash + mask (T-03); `password` bcrypt kept for verify-and-rehash (T-04); `faith`, `google_id` dropped; `last_login_at` copied | BE-03, BE-05 | BE-28 |
-| School | `schools` | `schools` (+ derived JPN/PPD) | T-09 | free-text `state`/`district` normalised into reference rows; `join_code`, `code`, `type`, `is_active` kept | BE-05 | BE-28 |
-| School subscription | `school_subscriptions` | `school_subscriptions`, `school_packages` | split, T-02 | `package` string -> package row; `quota` -> `question_limit`; date-only `starts_at/ends_at` kept as dates (T-05) | BE-25 | BE-28 |
-| Parent link | `parent_student` | `parent_links` | 1:1 | `relationship` added; invite tokens: unexpired only, else dropped | BE-25 | BE-28 |
+| User | `users` | `users`, `user_roles`, `user_scopes`, `user_settings`, `comp_students`, `teacher_profiles` | split, T-01..T-05 | role string -> `user_roles` (T-01); `email` nullable; `username` kept; `is_active` + `is_suspended` -> status (T-02); `ic` -> hash + mask (T-03); `password` bcrypt kept for verify-and-rehash (T-04); `faith`, `google_id` dropped; `kelas` -> `class_label`; `bio`, `phone`, `last_login_at` copied; `grade` derived from classroom level or `kelas` (T-09); `is_complimentary` flag copied (the `comp_students` profile has no source); `teaching_subject`, `teaching_experience_years`, `teaching_qualification` -> `teacher_profiles`; `spm_targets` -> own row; `referral_code`, `referred_by` -> own rows; `parent_invite_token` -> `parent_invites` (Parent link row); `notifications_read_at` -> Notification row (open, OD-21) | BE-03, BE-05, BE-17, BE-25 | BE-28 |
+| School | `schools` | `schools`, `jpns`, `ppds` | T-09 | free-text `state`/`district` normalised into `jpns`/`ppds` reference rows (load wave W1, created by BE-05); `join_code`, `code`, `type`, `is_active` kept; `city` stays null (no .cloud column) | BE-05 | BE-28 |
+| School subscription | `school_subscriptions` | `school_subscriptions`, `school_packages` | split, T-02 | `package` string -> package row; `quota` -> `question_limit`, with `student_quota` (required by the mock) left open: nullable for migrated rows, or `quota` is the student quota (open, OD-22; needs profiling); date-only `starts_at/ends_at` kept as dates (T-05) | BE-25 | BE-28 |
+| Parent link | `parent_student` | `parent_links`, `parent_invites` | 1:1 | `relationship` added; invite tokens (`users.parent_invite_token`) -> `parent_invites`: unexpired only, else dropped | BE-25 | BE-28 |
 | Class | `classrooms` | `classrooms` | T-02 | `kind` derived from `teacher_id` presence; `code` -> `join_code`; `session_year` kept | BE-17 | BE-28 |
 | Class member | `classroom_student` | `enrolments` | 1:1 | `status=active`, `source='code'`; legacy_id = `classroom:student` | BE-17 | BE-28 |
 | Wallet | `student_wallets` | `wallets`, `streaks` | split | `syiling_balance`->`current_syiling`, `syiling_lifetime`->`total_syiling_earned`; `streak_days` -> `streaks` (recomputed, T-05) | BE-11 | BE-29 |
-| Coin ledger | `coin_transactions` | `coin_ledger` | T-02 | `type`/`source` enum map; `balance_after` kept and reconciled, not corrected | BE-11 | BE-29 |
-| Practice session | `practice_sessions` | `practice_sessions` | T-02, T-06 | `status=completed`; `mode` mapped; `accuracy` recomputed; `syiling_earned` -> `coins_earned`; `client_uuid` kept | BE-12 | BE-29 |
-| Practice answer | `question_attempts` (+ legacy `questions` for dimensions) | `practice_answers` | T-07 | snapshot join: `subject_id`, `level_id`, `chapter_id`, `topic_id`, `difficulty`, `question_type`, `is_correct`, `selected_label`, `time_seconds`, `answered_at`; `historical=true`; soft refs `legacy_question_ref`, `legacy_content_hash`, `source_natural_key` | BE-12 | BE-29 |
+| Coin ledger | `coin_transactions` | `coin_ledger` | T-02 | `type`/`source` enum map (`source` must be a profiled value); `balance_after` kept and reconciled, not corrected; migrated rows leave `source_id` null (no `ref_id` in .cloud) and sit outside the idempotent-credit partial unique index | BE-11 | BE-29 |
+| Practice session | `practice_sessions` | `practice_sessions` | T-02, T-06 | `status=completed`; `mode` mapped, an unknown value is rejected, never defaulted (14.1 rule 3; whether `spm`/`battle` become codes is open, OD-24); `accuracy` recomputed; `syiling_earned` -> `coins_earned`; `client_uuid` kept (a column of the session, not of the answers) | BE-12 | BE-29 |
+| Practice answer | `question_attempts` (+ legacy `questions` for dimensions) | `practice_answers` | T-07 | snapshot join: `subject_id`, `level_id`, `chapter_id`, `topic_id`, `difficulty`, `question_type`, `is_correct`, `selected_label`, `time_seconds`, `answered_at`; `historical=true`; `difficulty` keeps the legacy 1..5 scale on historical rows (it is not TP; scale column or rule open, OD-26); soft refs `legacy_question_ref`, `legacy_content_hash`, `source_natural_key` | BE-12 | BE-29 |
 | Revision schedule | `review_schedules` | `revision_queue` | drop | question-bound; rebuilt from future answers (Q4) | BE-12 | none |
 | Structured attempt | `structured_attempts` | `structured_attempts` | 1:1 header | scores only; `structured_attempt_answers` dropped (Q5) | BE-12 | BE-29 |
-| Exam attempt | `exam_attempts` | `exam_attempts` (historical) | T-07, T-08 | header + scores + `section_scores`; question-id JSON dropped (T-08); paper reference as snapshot title/year | BE-16 | BE-29 |
+| Exam attempt | `exam_attempts` | `exam_attempts` (historical), `attempt_results` | T-02, T-07, T-08 | header in `exam_attempts`; scores and `section_scores` in `attempt_results`; question-id JSON dropped (T-08); paper reference as snapshot title/year (`paper_id` nullable); `.cloud mode` and `status` (`attempt_statuses`) mapped to `exam`/`latihan` and the four statuses, both enum maps added to the BE-27 profile list | BE-16 | BE-29 |
 | Part response | `part_responses` | none | drop | needs the stem; Q5 | BE-16 | none |
-| Challenge (platform) | `challenges` (no `created_by`) | `challenges` | T-02 | `metric` mapped | BE-23 | BE-29 |
-| Challenge (teacher) | `challenges` (`created_by` / `classroom_id` set) | `missions` | split | teacher rows -> M10 missions | BE-18 | BE-29 |
+| Challenge (platform) | `challenges` (no `created_by`) | `challenges` | T-02 | .cloud has no `metric`: `challenge_type` and `metric` are mapped from `type`/`criteria`, or `metric` stays null for legacy rows (the mock requires it; open, OD-25) | BE-23 | BE-29 |
+| Challenge (teacher) | `challenges` (`created_by` / `classroom_id` set) | `missions` | split | teacher rows -> M10 missions; neither BE-28 nor BE-29 lists `missions` as a target, so ETL is none until a card adds it (GAP-11) | BE-18 | none (GAP-11) |
 | Challenge progress | `challenge_user` | `challenge_completions` | T-05 | `claimed_on` date, unique per day | BE-23 | BE-29 |
 | Tier | `gamification_tiers` | `tiers` | 1:1 | `perks` text -> array | BE-23 | BE-28 |
-| Achievement | `achievements`, `achievement_user` | `achievements`, `user_achievements` | T-02 | by-name match to catalogue; free-text `criteria` kept as legacy achievement | BE-23 | BE-29 |
-| Reward shop | `gifts`, `gift_redemptions` | `rewards`, `reward_claims` | T-02, T-06 | `price_rm` numeric, `cost_value_sen` integer sen; status map | BE-23 | BE-29 |
-| Draw | `lucky_draws` | `draws` | T-02 | no ticket rows in the source | BE-23 | BE-29 |
-| Teacher badge | `teacher_badges`, `teacher_badge_user` | teacher badge tables | 1:1 | only if teacher wallets stay (Q10) | BE-23 | BE-29 |
+| Achievement | `achievements`, `achievement_user` | `achievements`, `user_achievements` | T-02 | by-name match to catalogue; free-text `criteria` kept in `legacy_criteria_text` with the structured columns null (legacy achievement, no auto-unlock) | BE-23 | BE-29 |
+| Reward shop | `gifts`, `gift_redemptions` | `rewards`, `reward_redemptions` | T-02, T-06 | `gifts` is the Hadiah (M15) catalogue (data-model default, OQ-DM-07); `price_rm` numeric, `cost_value_sen` integer sen; status map. The M14 Syiling pair `syiling_rewards`/`reward_claims` has no .cloud source | BE-23 | BE-29 |
+| Draw | `lucky_draws` | `draws` | T-02 | no ticket rows in the source; `winner_user_id`, `drawn_at` kept (the contract exposes the winner) | BE-23 | BE-29 |
+| Teacher badge | `teacher_badges`, `teacher_badge_user` | none | not migrated | teacher economy is backlog (D53 OWN-10); staged and profiled only | none | none |
 | Timeline | `timeline_entries` | `timeline_posts` | T-02 | `happened_on` -> `event_date`; `category` default | BE-19 | BE-29 |
-| Headcount | `headcounts` | `headcount_*` | T-02 | aggregate (`tov`, `rs`) only | BE-19 | BE-29 |
-| Feedback | `feedback` | `feedback` | T-02 | four scores kept; `nps` NULL | BE-20 | BE-29 |
+| Headcount | `headcounts` | `headcount_*` | T-02 | aggregate (`tov`, `rs`) only, kept in `headcount_configs.legacy_tov` / `legacy_rs` (nullable); BE-29 does not list headcount, so ETL is none until a card adds it (GAP-11) | BE-19 | none (GAP-11) |
+| Feedback | `feedback` | `feedback` | T-02 | four scores kept in nullable `usability`, `relevance`, `score`, `comment`; `nps` NULL | BE-20 | BE-29 |
 | Intervention | `interventions` | `interventions` | T-02 | free text kept (Q9) | BE-20 | BE-29 |
-| Mood check-in | `mood_checkins` | `mood_checkins` | 1:1 | `checked_in_on` date (T-05) | BE-22 | BE-29 |
-| Content | `banners`, `articles`, `notes`, `videos`, `audio_kbat` | same names | T-10 | file paths rewritten after file copy | BE-24 | BE-29 |
-| Support ticket | `support_tickets` | `support_tickets` | T-02 | BM status -> English | BE-24 | BE-29 |
-| Notification | `notifications` (admin broadcast) | `notifications` (broadcast kind) | T-02 | per-user read via `users.notifications_read_at` -> read marks | BE-06 | BE-29 |
-| Teacher question set | `question_sets` | `question_sets` | 1:1 header | `needs_rebuild = true`; items dropped (Q4) | BE-18 | BE-28 |
-| AI usage | `ai_usage_logs` | `ai_usage_logs` | 1:1 | `cost_sen` integer; table created by BE-36 | BE-36 | BE-29 (optional) |
-| Question bank (all) | `questions`, `question_options`, `exam_*`, `question_parts`, ... | none | drop | reloaded through the intake (D29a); dumped to `archive_cloud` | BE-09 | BE-27 (archive) |
-| Out of B1 | battles, games, leagues, marketplace, sponsorship, duta, payments, invoices, `settings`, `feature_flags`, `audit_logs`, career, psychometric, wellbeing | none yet | deferred | staged and profiled only; rows added to this matrix when a card promotes them | none | none |
+| Mood check-in | `mood_checkins` | none | not migrated | no card creates the table (BE-22); backlog, sensitive category (Q7, D53 OWN-6); staged only | none | none |
+| Content | `banners`, `articles`, `notes`, `videos`, `audio_kbat` | `banners`, `articles`, `notes`, `videos`, `audio_kbat_sets` | T-10 | file paths rewritten after file copy; every text column with a CHECK gets an enum map in the BE-27 profile list (article categories, note types, video platforms) | BE-24 | BE-29 |
+| Support ticket | `support_tickets` | `support_tickets` | T-02 | BM status -> English; every other text column with a CHECK gets an enum map in the BE-27 profile list | BE-24 | BE-29 |
+| Notification | `notifications` (admin broadcast) | `notifications` | T-02 | a broadcast (`target`, `recipients`, `sent_at`) has no per-user column in the model; read state is in `users.notifications_read_at`. Option A: fan out into per-user rows with `read_at`; Option B: `notification_broadcasts` + `notification_reads`. Open, OD-21 (decide before BE-29) | BE-06 | BE-29 |
+| Teacher question set | `question_sets` | `question_sets` | 1:1 header | `needs_rebuild = true`; items dropped (Q4); neither BE-28 nor BE-29 lists `question_sets`, so ETL is none until a card adds it (GAP-11) | BE-18 | none (GAP-11) |
+| AI usage | `ai_usage_logs` | `ai_usage_logs` | 1:1 | `cost_sen` integer; `event` and `tool` kept as nullable columns; `tokens` -> `tokens_in` and the rest of the extraction columns null (open, OD-23); table created by BE-36 | BE-36 | BE-29 (optional) |
+| Package (D53) | `packages` | `school_packages` (proposed) | T-02 | the migration inventory maps it to school packages (GAP-22); BE-28 currently skips `packages` (open question 2), so the target is open (OD-27) | BE-25 | none until OD-27 |
+| Reward settings (D53) | `reward_settings` | `gamification_settings` | T-09 | single row (`reward_budget_sen_month`, `flat_quiz_reward`, `current_session_year`, `games_award_syiling`) pivoted to key/value rows | BE-23 | BE-29 |
+| SPM target (D53) | `users.spm_targets` (text, probably JSON; shape to profile) | `spm_targets` | T | parsed to one row per subject; an unknown shape goes to `etl_rejects`; if profiling shows it is not usable the row becomes "drop" | BE-13 | BE-29 |
+| Referral (D53) | `users.referral_code`, `users.referred_by` | `referral_codes`, `referrals` | T | `referred_by` is a self-reference, loaded in a second pass | BE-23 | BE-29 |
+| File (D53) | image-bearing paths of Content, avatars and similar | `files` | T-10 | `legacy_id` = source path; `files` is listed in `migratable-models.json` | BE-04 | BE-29 |
+| Curriculum nodes (D53) | none (.cloud `chapters` are Tingkatan 5 SP rows and do not match the official text) | `curriculum_nodes`, `curriculum_tp_descriptors` | seeded, not migrated | seeded from `docs/reference/dskp/*.json`; never load `chapters` into the node tree | BE-08 | none |
+| PKSK package (D53) | `pksk_packages` | `pksk_packages` | 1:1 | provisional owner BE-42 (the real owner, M19 packages, has no card) | BE-42 | BE-29 |
+| PKSK access (D53) | `pksk_accesses` | `pksk_accesses` | T-02 | status word `aktif` -> `active`; several rows per user allowed | BE-42 | BE-29 |
+| PKSK other (D53) | none (.cloud PKSK questions are not migrated, D29a) | `pksk_domains`, `pksk_exam_attempts`, `pksk_mastery`, `pksk_practice_loads` | born in v2 | no .cloud source | BE-42 | none |
+| SPM hub and Duta profiles (D53) | `spm_sets`, `spm_set_question` (plain question lists) | `spm_subject_configs`, `spm_tracking_sets`, `spm_tracking_set_questions`, `spm_mock_exams`, `spm_mock_exam_items`, `duta_profiles` | not migrated | no table is migratable; seeds only (fictitious duta rows) | BE-41 | none |
+| Chat thread and message (D53) | `chatbot_conversations`, `chatbot_messages` | `chat_threads`, `chat_messages` | not migrated in B1 | .cloud rows are anonymous public-site chats (`visitor_id`, ratings); the v2 tables keep `legacy_*` so a later promotion needs no migration | BE-43 | none |
+| RPH, essay marking, PBD tag (D53) | none | `rph_plans`, `essay_markings`, `pbd_tags` | no source | born in v2 | BE-43 | none |
+| Battle (D53) | `battles` | `battles` | T (reshape) | `mode` (`1v1`, `quick_match`, `school_battle`) mapped to English codes; `1v1` has no v2 code (open, BE-44 question 10); live fields (`total_questions`, `duration_seconds`) dropped; `challenge` and `queue_join` are born in v2 | BE-44 | BE-29 |
+| Battle participant (D53) | `battle_participants` | `battle_participants` (winner on `battles`) | T (reshape) | rows paired per battle into sides A and B; `is_bot` kept; battles with other than two participants rejected to `etl_rejects` | BE-44 | BE-29 |
+| Battle queue and invite (D53) | `battle_queue`, `battle_invites` | `battle_queues`, `battle_invitations` | drop | transient, not migrated | BE-44 | none |
+| School battle ranking (D53) | `school_battle_rankings` | none (not the target of `sekolah_bersaing_weeks`) | drop | aggregate, recomputed from battles | BE-44, BE-45 | none |
+| Tournament and battle answers (D53) | none | `tournaments`, `tournament_subjects`, `battle_answers`, `battle_questions` | born in v2 | no .cloud source | BE-44 | none |
+| Game catalogue (D53) | `games` | none (check constraint on `game_sessions.game`) | drop | `name`/`type` mapped to the solo keys; JSON `config` dropped | BE-45 | none |
+| Game session (D53) | `game_sessions` | `game_sessions` | T (reshape) | `game_id` mapped to the `game` key; `score` kept; `result` dropped; no question reference | BE-45 | BE-29 |
+| Game room and player (D53) | `game_rooms`, `game_room_players` | `game_rooms`, `game_room_players` | T | transient; completed rooms only if history is wanted; `state` JSON with question ids dropped; `current_q` dropped | BE-45 | BE-29 (optional) |
+| League and member (D53) | `leagues`, `league_members` | `leagues`, `league_schools` | not mapped | .cloud leagues are user groups, v2 leagues are school-based (data migration Q13) | BE-45 | none until Q13 |
+| Games, born in v2 (D53) | none | `game_standings`, `personal_bests`, `jutawan_stats`, `spins`, `spin_stats`, `pb_searches`, `game_settings`, `league_*`, `sekolah_bersaing_weeks`, `game_session_items` | born in v2 | no .cloud source | BE-45 | none |
+| Marketplace seller and product (D53) | `marketplace_sellers`, `marketplace_products` | `marketplace_sellers`, `marketplace_products` | T (reshape) | staged and profiled only in B1 until the lead decides | BE-46 | none in B1 |
+| Marketplace order (D53) | `marketplace_orders` | none | drop | no v2 table (D14, WhatsApp contact only) | BE-46 | none |
+| Marketplace other (D53) | none | `marketplace_categories`, `marketplace_product_images`, `marketplace_reviews` | no source | born in v2 | BE-46 | none |
+| Foster application (D53) | `foster_applications` | `foster_applications` | T (reshape) | .cloud has free-text `applicant_name`, no applicant user, no income range; sensitive, not loaded until a user can be matched (Q7) | BE-47 | none in B1 |
+| Sponsor, foster sponsorship (D53) | `sponsors`, `foster_sponsorships` | none | out of B1 | Penaja is out of scope (D48) | none | none |
+| Heatmap Topik Lemah (D53) | none (derived) | none (computed from `practice_answers`, `chapters`, `subjects`) | derived | no table, nothing to migrate; migrated learners show a heatmap through the historical chapter snapshot | BE-48 | none |
+| Question bank (all) | `questions`, `question_options`, `exam_*`, `question_parts`, ... | none | drop | reloaded through the intake (D29a); dumped to `archive_cloud`; the teacher Submission is `intake_batches` (BE-37) and `question_submissions` is dropped (D53 OWN-1) | BE-09 | BE-27 (archive) |
+| Out of B1 | `duta_applications`, `duta_bookings`, `payments`, `invoices`, `dunning_logs`, `settings`, `feature_flags`, `audit_logs`, `student_notes`, `study_schedules`, `broadcasts`, `wellbeing_alerts`, `psychometric_results`, `aspirations`, `career_paths`, `universities`, `scholarships`, sponsorship beyond the rows above | none yet | deferred | staged and profiled only; no generic `settings` store in B1 (`gamification_settings` and `support_config` only); rows added to this matrix when a card promotes them | none | none |
 
 Transform catalogue:
 
@@ -543,6 +620,8 @@ Transform catalogue:
 | T-10 | File path rewrite | copy object, checksum, rewrite to a `FileStorage` key |
 
 A later card that adds a column or table **must add or update its matrix row** in the same PR (the PR checklist enforces it).
+
+**Open points behind the matrix (data model sections 2.1 and 6; ids are decisions for the lead):** OD-21 notification broadcast shape (GAP-6); OD-22 `student_quota` source (GAP-15); OD-23 `ai_usage_logs` token mapping (GAP-16); OD-24 practice `mode` codes `spm`/`battle` (GAP-17; 14.1 rule 3 applies meanwhile); OD-25 challenge `metric` map (GAP-28); OD-26 meaning of `practice_answers.difficulty` on historical rows (GAP-26); OD-27 `packages` target (GAP-22 vs BE-28 skip); OD-28 ownership findings still awaiting confirmation (OWN-2, OWN-3, OWN-4, OWN-7, OWN-9, OWN-12 to OWN-14; section 13). The .cloud source of `users.spm_targets` is a text column of unknown shape ("source unknown (OQ)": the shape is settled by the BE-27 profile). Resolved by D53: OWN-1 (`intake_batches` is the Submission), OWN-8 (BE-11 owns `token_movements` and `tiers`), OWN-10 (teacher economy backlog), OWN-11 (questions tag `curriculum_node` only). Settled for B1 and reflected above: OWN-5 (no generic `settings`), OWN-6 (`mood_checkins` not a B1 table).
 
 ### 14.8 Dumps, anonymisation and fixtures
 

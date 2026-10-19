@@ -246,9 +246,11 @@ Because the prototype followed .my, these must be realigned (or consciously kept
 
 ### 4.0 Cross-cutting
 
+Naming note (2026-10-19): the earlier single column `legacy_cloud_id` is replaced everywhere by the pair `legacy_source` + `legacy_id` defined in `v2-backend-plan.md` section 14.2; the meaning is unchanged.
+
 | # | Gap | Realign to |
 |---|---|---|
-| X1 | **Ids.** .cloud uses `bigint`. The prototype uses numbers for users and schools, but strings for sessions (`A2`, `g1`, `s_...`), classes (`sc-{n}`) and battles (`jut_...`), plus reserved ranges (`ID_RANGES`: users 1 to 11 canonical, 1 to 6,000 generated, runtime floor 9,000,001; schools 900001 to 900099; questions floor 9,000,001). Real .cloud ids will collide with the mock anchors. | Backend generates its own primary keys (`bigint` identity, or UUID for session-like records) and every migrated table gets `legacy_cloud_id` (unique with source). Frontend treats ids as opaque; drop `ID_RANGES` from backend code. |
+| X1 | **Ids.** .cloud uses `bigint`. The prototype uses numbers for users and schools, but strings for sessions (`A2`, `g1`, `s_...`), classes (`sc-{n}`) and battles (`jut_...`), plus reserved ranges (`ID_RANGES`: users 1 to 11 canonical, 1 to 6,000 generated, runtime floor 9,000,001; schools 900001 to 900099; questions floor 9,000,001). Real .cloud ids will collide with the mock anchors. | Backend generates its own primary keys (`bigint` identity, or UUID for session-like records) and every migratable table gets `legacy_source` + `legacy_id` (unique pair; plan section 14.2). Frontend treats ids as opaque; drop `ID_RANGES` from backend code. |
 | X2 | **Enum language.** .cloud stores Malay status codes (`menunggu`, `aktif`, `dibuka`, `diluluskan`, `ditolak`, `diarkib`, `draf`, `baru`); the prototype stores English codes (`pending_review`, `approved`, `archived`, `in_progress`). | Store English codes in v2 (the prototype contract); the ETL carries an explicit mapping table per column, built after profiling real distinct values. UI labels stay BM. |
 | X3 | **Timestamps.** .cloud is UTC `created_at/updated_at` plus date-only columns; the prototype uses ISO strings with `+08:00` and epoch-ms twins (`createdAtMs`, `answeredAtMs`). | PostgreSQL `timestamptz`; the API serialises `+08:00`; epoch twins are computed, not stored. Date-only columns: see Q8. |
 | X4 | **Money.** .cloud mixes `decimal(10,2)` RM (`price`, `amount`, `price_rm`) and integer sen (`cost_value_sen`, `cost_sen`, `reward_budget_sen_month`); the prototype uses strings for prices. | `numeric(10,2)` for RM, integer sen where .cloud has sen; serialise as in the prototype contract. |
@@ -361,14 +363,14 @@ Because the prototype followed .my, these must be realigned (or consciously kept
 | **Seed rosters in the reference repo** | `backend/database/data/bbb_students.json` and `bbb_teachers.json` appear to be rosters (**to confirm**); the roster seeders and `roster:backfill-logins` assign one shared default password. | Never load or copy these files. Every roster account (`username` set) must be forced to reset on first login. |
 | **Passwords and hashes** | Laravel hashes (assumed bcrypt `$2y$`; to verify per prefix). Sanctum tokens, `remember_token` exist. | Migrate hashes only; accept `$2y$` as `$2b$` in the Node verifier, rehash to the v2 algorithm on first successful login; flag accounts whose hash is not bcrypt; never migrate tokens (everyone re-logs in); accounts with the shared default hash are forced to reset. No plaintext in any file. |
 | **IC numbers** | Plain text in `users.ic`. | Hash + mask at extract; drop the column; do not log. |
-| **Id collisions and remapping** | Reserved mock ranges and string ids (X1). Foreign keys inside JSON (`served_composition`, `section_selections`, `game_rooms.state`). | New keys plus `legacy_cloud_id`; two-pass load (parents then children); rewrite JSON ids or drop the JSON. |
+| **Id collisions and remapping** | Reserved mock ranges and string ids (X1). Foreign keys inside JSON (`served_composition`, `section_selections`, `game_rooms.state`). | New keys plus `legacy_source` + `legacy_id`; two-pass load (parents then children); rewrite JSON ids or drop the JSON. |
 | **Timestamps and timezones** | UTC in MySQL; the product shows Malaysia time. `date` columns (`checked_in_on`, `claimed_on`, `happened_on`, `action_date`, `starts_at`, `ends_at`, `expires_at`) were created by the app clock (UTC), so a day boundary falls at 08:00 MYT. | Convert datetimes to `timestamptz`; for date-only columns keep the stored date as is, and recompute streaks and daily limits from the migrated datetimes in `Asia/Kuala_Lumpur` (Q8). |
 | **Orphans** | FKs may not be enforced in production MySQL (e.g. rows pointing at deleted users, schools, questions); `legacy_canonical_map` and `unify_quarantine` show known skipped items. | Run an orphan report before load; quarantine table in staging; load only rows whose users exist; log every rejected row count. |
 | **Duplicates** | `users.email` unique only when present; `username` unique per school only; duplicate people across roster and self-registration. | Dedupe report; keep both rows unless the user decides otherwise (Q2). |
 | **Ledger integrity** | `coin_transactions.balance_after` and `student_wallets.syiling_balance` are independent counters and may disagree. | Migrate both as is; add a reconciliation report; do not silently correct (the repo rule: never tune values to agree). |
 | **Derived data drift** | Streak, mastery, tiers, rankings are recomputed in v2 and will differ from .cloud screens. | Compare totals after load; list accepted differences. |
 | **Files** | Images, audio, PDFs on the .cloud disk (paths in many tables). | Copy objects, rewrite paths, checksum; question images are part of the discarded bank. |
-| **Scale** | Row counts unknown (the .cloud answer log could be large). | Profile first; bulk `COPY` in batches, per-table checkpoints, idempotent loads keyed by `legacy_cloud_id`. |
+| **Scale** | Row counts unknown (the .cloud answer log could be large). | Profile first; bulk `COPY` in batches, per-table checkpoints, idempotent loads keyed by `legacy_source` + `legacy_id`. |
 | **Cutover** | Two live systems; .cloud stays untouched (D28a). | Rehearse on a staging copy; freeze window or incremental delta by `updated_at`; .cloud remains read-only after cutover. |
 
 ## 6. Plan
@@ -379,6 +381,8 @@ Because the prototype followed .my, these must be realigned (or consciously kept
 2. Users, then `parent_student`, `classrooms`, `classroom_student`, `school_subscriptions`, `pksk_accesses`, `student_wallets`.
 3. Activity with the snapshot join: `practice_sessions` -> `question_attempts`; `structured_attempts` (header); `exam_attempts` (header); `coin_transactions`; `challenge_user`; `achievement_user`; `teacher_badge_user`; `battles` + participants; `game_sessions`; `mood_checkins`; `timeline_entries`; `headcounts`; `feedback`; `interventions`.
 4. Content and operations: `banners`, `articles`, `notes`, `videos`, `audio_kbat`, `notifications`, `support_tickets`, `payments`, `invoices`, marketplace, sponsorship, `audit_logs`.
+
+Aligned with `v2-backend-plan.md` section 14.7 (2026-10-19): in B1 the ETL does not load `settings`, `feature_flags`, `teacher_badges`, `teacher_badge_user`, `mood_checkins`, `payments`, `invoices`, `audit_logs`, marketplace, sponsorship or `battle_queue`/`battle_invites`; `packages` is open (plan OD-27, BE-28 skips it). Their tables are staged and profiled only.
 5. Archive the question tables; start the new intake; run the optional backfill.
 
 ### 6.2 Realignment tasks (before and during backend work)
@@ -391,7 +395,7 @@ Because the prototype followed .my, these must be realigned (or consciously kept
 | MIG-04 | Realign M01/M02 contracts (roles, nullable email, username login, status flags, scope table) | backend-developer, frontend-developer | MIG-02, Q1 to Q3 |
 | MIG-05 | Realign M05 contracts (nullable `questionId`, `selectedLabel`, `historical`, dimensions on answer rows, `clientUuid`) | backend-developer, frontend-developer | MIG-03 |
 | MIG-06 | Add stores for the 22 "Missing in prototype" tables that stay in scope | backend-developer, frontend-developer | MIG-02 |
-| MIG-07 | Write the ETL (staging copy, transforms, `legacy_cloud_id`, two-pass load, reconciliation reports) | backend-developer | MIG-01, MIG-04 to MIG-06 |
+| MIG-07 | Write the ETL (staging copy, transforms, `legacy_source` + `legacy_id`, two-pass load, reconciliation reports) | backend-developer | MIG-01, MIG-04 to MIG-06 |
 | MIG-08 | Staging database, encrypted dump handling, object-storage file copy, rehearsal pipeline | devops-engineer | MIG-01 |
 | MIG-09 | Post-reload backfill job (natural key + hash) | backend-developer | new intake live |
 

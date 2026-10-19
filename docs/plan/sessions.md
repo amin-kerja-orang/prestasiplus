@@ -1,20 +1,21 @@
 # Backend programme: PCs, lanes, sessions and sync
 
-How the v2 backend (40 cards, BE-01 to BE-40) is split across several PCs and Claude Code sessions, in strict priority and dependency order, without two PCs editing the same files. Companion files: [backend-tracker.md](backend-tracker.md) (status), [agent-kickoff/](agent-kickoff/README.md) (prompts), [backend-tasks/](backend-tasks/README.md) (cards), [../architecture/v2-backend-plan.md](../architecture/v2-backend-plan.md) (design; section 14 migration-first, section 15 intake).
+How the v2 backend (48 cards, BE-01 to BE-48) is split across several PCs and Claude Code sessions, in strict priority and dependency order, without two PCs editing the same files. Companion files: [backend-tracker.md](backend-tracker.md) (status), [agent-kickoff/](agent-kickoff/README.md) (prompts), [backend-tasks/](backend-tasks/README.md) (cards), [../architecture/v2-backend-plan.md](../architecture/v2-backend-plan.md) (design; section 14 migration-first, section 15 intake).
 
-Terms. **Lane** = a stream of cards owned by one PC at a time (PC-1 to PC-6, plus the lead lane). **Session** = one fresh Claude Code run on that PC that takes 1 to 2 cards back to back, each on its own branch and PR. **Sync point** = a merge that other lanes must wait for.
+Terms. **Lane** = a stream of cards owned by one PC at a time (PC-1 to PC-7, plus the lead lane). **Session** = one fresh Claude Code run on that PC that takes 1 to 2 cards back to back, each on its own branch and PR. **Sync point** = a merge that other lanes must wait for.
 
 ## 1. Lanes
 
 | Lane | Theme | Cards in order | Priority mix | Can start |
 |---|---|---|---|---|
 | **LEAD** | Contract owner (common/session/auth/access), frontend integration, PR review and merge, dumps | L0 setup, L1 V2-T31 hybrid transport, L2 anonymised dump, L3 frontend merges, L4 reviews, L5 per-domain http switch | n/a | now |
-| **PC-1** | Foundation to Identity | BE-01, BE-02, BE-03, BE-04, BE-05, BE-25, BE-07, BE-06, BE-24, BE-32 (joint), BE-33 | P0 first, P2 last | after S0 |
-| **PC-2** | Learning and Question bank | BE-08, BE-09, BE-11, BE-12, BE-13, BE-23 | P0 | after S3 (BE-03) |
-| **PC-3** | Bijak and Paper builder | BE-14, BE-15, BE-16, BE-39 | P1 | BE-14 after S1 |
+| **PC-1** | Foundation to Identity | BE-01, BE-02, BE-03, BE-04, BE-05, BE-25, BE-07, BE-06, BE-24, BE-32 (joint), BE-33, BE-42, BE-46, BE-47 | P0 first, P2 last | after S0 |
+| **PC-2** | Learning and Question bank | BE-08, BE-09, BE-11, BE-12, BE-13, BE-48, BE-23 | P0 (BE-48 P1, BE-23 P2) | after S3 (BE-03) |
+| **PC-3** | Bijak and Paper builder | BE-14, BE-15, BE-16, BE-39, BE-41 | P1 | BE-14 after S1 |
 | **PC-4** | Migration and ETL | BE-34, BE-27, BE-35, BE-28, BE-29, BE-30 | P0 then P1/P2 | BE-34 after S2 |
-| **PC-5** | AI intake | BE-36, BE-37, BE-10, BE-38, BE-40 | P1 | BE-36 after S3, BE-37 after S4 |
+| **PC-5** | AI intake | BE-36, BE-37, BE-10, BE-38, BE-40, BE-43 | P1, P2 (BE-40, BE-43) | BE-36 after S3, BE-37 after S4 |
 | **PC-6** | Teacher, Reports, Conformance and Seed | BE-31, BE-17, BE-19, BE-18, BE-21, BE-22, BE-20, BE-26 | P0 start, then P1/P2 | BE-31 after S3 |
+| **PC-7** | Games and competitions | BE-44, BE-45 | P2 | after BE-23 (and BE-09, BE-12, BE-13) |
 
 Order inside a lane is fixed (it already respects dependencies and priority). BE-10 sits in PC-5 on purpose: it is on the path to the intake workflow, and its tables live in their own Prisma file (`questions-workflow.prisma`) so it never collides with PC-2.
 
@@ -32,7 +33,7 @@ A PC must not start the cards in "Unblocks" before the merge in "Gate" is on `fe
 | **S4** | BE-04 (file storage) | BE-37 (PC-5); BE-06, BE-24 (PC-1); BE-16 later | merge |
 | **S5** | BE-05 and BE-08 | BE-17 (PC-6); BE-09 (PC-2, needs BE-08); BE-25 (PC-1, needs BE-05) | merge |
 | **S6** | **BE-09 (question schema, owner service)** | BE-10 (PC-5); BE-15 (PC-3, with BE-14); BE-12 (PC-2, with BE-11 and BE-25) | merge, **merge frontend again** |
-| **S7** | BE-25, BE-11, BE-12 (practice write path) | BE-19, BE-18 (PC-6); BE-13, BE-23 (PC-2); BE-29 inputs (PC-4) | merge |
+| **S7** | BE-25, BE-11, BE-12 (practice write path) | BE-19, BE-18 (PC-6); BE-13, BE-23 (PC-2); BE-29 inputs (PC-4); then BE-41 (PC-3), BE-48 (PC-2), BE-42 (PC-1) once BE-13 / BE-10 are merged, BE-44 and BE-45 (PC-7) once BE-23 is merged | merge |
 | **S8** | BE-07, BE-31 and lead L1 (V2-T31) | BE-32 (joint) | merge, **merge frontend again** |
 | **S9** | BE-16, BE-38, BE-39, BE-32 | BE-33 final pass; BE-26 full seed | security review (`security-engineer`) |
 | **S10** | BE-29, BE-30, BE-35 and the anonymised dump (L2) | Rehearsal on the staging copy (devops) | lead + devops |
@@ -74,6 +75,7 @@ Blocked time is spent on work that cannot conflict: contract-first schemas as se
 | PC-4 | BE-34 and BE-27 need only BE-02. While waiting for real data (OD-2): build against `BE-35` synthetic fixtures; pre-write enum mapping stubs and the `staging_cloud.sql` from `v2-data-migration.md` inventory; draft the BE-28/29 transform signatures. | OD-2, OD-10, S5, S7 |
 | PC-5 | BE-36 can run on the mock provider alone. While waiting for BE-09/10: draft the intake contracts (items, review, dashboard) from the frontend mock (OD-20), prepare recorded provider fixtures, generated test PDFs. | S4 (BE-37), S6 (BE-10/38) |
 | PC-6 | BE-31 skeleton first (needs only BE-03). Then contract PRs for classes, student performance, school admin from the m10/m08/m27 mocks. | S5 (BE-17), S7 (BE-19) |
+| PC-7 | Nothing starts before BE-23 (P2 leaf lane). Meanwhile draft the battle and games contracts from the m16 mock handlers as `contract` PRs when the Open list allows, and write deviation rows. | BE-23, BE-09, BE-12, BE-13 |
 | LEAD | Review contract PRs first, run L1 (hybrid transport), answer issues within one working day. | n/a |
 
 ## 3. Number of PCs (open)
@@ -82,7 +84,7 @@ Blocked time is spent on work that cannot conflict: contract-first schemas as se
 
 | PCs | Assignment | Estimated finish |
 |---|---|---|
-| 6 + lead | PC-1 to PC-6 as in section 1 | about 8 weeks (Gantt below) |
+| 6 + lead | PC-1 to PC-6 as in section 1 (PC-7 cards are P2 leaf work taken by whichever PC is free) | about 8 weeks (Gantt below) |
 | 4 + lead | A = PC-1; B = PC-2 then PC-6 first half (BE-31, BE-17, BE-19, BE-18); C = PC-3 + PC-5 interleaved (BE-14, BE-36, BE-37, BE-10, BE-15, BE-38, BE-16, BE-39, BE-40); D = PC-4 then PC-6 second half (BE-21, BE-22, BE-20, BE-26) | about 11 weeks |
 | 3 + lead | A = PC-1 + PC-4; B = PC-2 + PC-6; C = PC-3 + PC-5 | about 14 weeks |
 | 2 + lead | A = PC-1 + PC-2 + PC-4; B = PC-3 + PC-5 + PC-6 | about 20 weeks; not recommended (the critical path BE-01 to BE-12 serialises anyway) |
@@ -111,6 +113,9 @@ gantt
   BE-24 :t24, 2026-11-19, 2d
   BE-32 :t32, 2026-11-23, 2d
   BE-33 :t33, 2026-11-27, 2d
+  BE-42 :t42, 2026-12-01, 4d
+  BE-46 :t46, 2026-12-07, 2d
+  BE-47 :t47, 2026-12-09, 1d
   section PC-2
   BE-08 :t08, 2026-11-05, 2d
   BE-09 :crit, t09, 2026-11-09, 4d
@@ -118,11 +123,13 @@ gantt
   BE-12 :crit, t12, 2026-11-17, 4d
   BE-13 :t13, 2026-11-23, 2d
   BE-23 :t23, 2026-11-25, 4d
+  BE-48 :t48, 2026-11-25, 1d
   section PC-3
   BE-14 :t14, 2026-10-28, 2d
   BE-15 :t15, 2026-11-13, 2d
   BE-16 :t16, 2026-11-17, 4d
   BE-39 :t39, 2026-11-23, 4d
+  BE-41 :t41, 2026-11-30, 2d
   section PC-4
   BE-34 :t34, 2026-10-30, 2d
   BE-27 :t27, 2026-11-03, 2d
@@ -136,6 +143,7 @@ gantt
   BE-10 :t10, 2026-11-13, 2d
   BE-38 :t38, 2026-11-17, 4d
   BE-40 :t40, 2026-11-23, 1d
+  BE-43 :t43, 2026-11-25, 4d
   section PC-6
   BE-31 :t31, 2026-11-05, 2d
   BE-17 :t17, 2026-11-12, 2d
@@ -145,6 +153,9 @@ gantt
   BE-22 :t22, 2026-12-07, 4d
   BE-20 :t20, 2026-12-11, 4d
   BE-26 :t26, 2026-12-17, 2d
+  section PC-7
+  BE-44 :t44, 2026-12-02, 4d
+  BE-45 :t45, 2026-12-08, 4d
   section LEAD
   V2-T31 hybrid transport cookie and CSRF :tL1, 2026-11-05, 5d
   Lead anonymised dump :tL2, 2026-11-12, 1d
@@ -167,6 +178,11 @@ A PR that touches a path owned by another lane is rejected in review. If you nee
 | `apps/api/src/migration/**`; `apps/api/test/migration/**`; `prisma/schema/etl.prisma`; `apps/api/scripts/check-migratable.ts`; `docs/architecture/v2-migration-runbook.md` | PC-4 | PC-4 never edits another lane's Prisma file; a missing `legacy_*` column is an issue to the owning lane (they must already have it by plan 14.9). |
 | `apps/api/src/modules/{ai-extraction,ocr,jobs,intake}/**`; `apps/api/src/modules/questions/workflow/**`; `prisma/schema/{ai,intake,questions-workflow}.prisma`; contract `{ai,intake,question-workflow}/`; seed `intake`; `apps/api/test/{ai,intake-*}/**` | PC-5 | |
 | `apps/api/src/modules/{classes,missions,reports,school-admin,command-center}/**`; `prisma/schema/{classes,reports}.prisma`; contract `{classes,reports,school-admin,admin}/`; `apps/api/test/conformance/**` (runner and shared helpers); `prisma/seed/poc/**` | PC-6 | Other lanes add their own scenarios in `apps/api/test/conformance/<domain>/` (new files only). |
+| `apps/api/src/modules/spm/**`; `prisma/schema/spm.prisma`; contract `spm/`; seed `spm`; `apps/api/test/spm/**` | PC-3 | BE-41 (M06). `spm_mock_exams` is not `exam_attempts` (BE-16, `exam.prisma`); the two never share rows or code. |
+| `apps/api/src/modules/{pksk,marketplace,sponsorship}/**`; `prisma/schema/{pksk,marketplace,sponsorship}.prisma`; contract `{pksk,marketplace,sponsorship}/`; seeds `pksk`, `marketplace` (BE-47 has none); `apps/api/test/{pksk,marketplace,sponsorship}/**` | PC-1 | BE-42, BE-46, BE-47. `.env.api.example`: BE-46 adds `MARKETPLACE_PLATFORM_WHATSAPP` in the PC-1 block. PKSK questions stay in `questions.prisma` (PC-2). |
+| `apps/api/src/modules/heatmap/**`; contract `heatmap/`; `apps/api/test/heatmap/**` (no Prisma file, no seed) | PC-2 | BE-48 (M25). It also adds one method, `PracticeRepository.chapterAnswerCounts`, inside BE-13's `apps/api/src/modules/practice/reads/**` (same lane, BE-13 merged first). |
+| `apps/api/src/modules/cikgu/**`; `prisma/schema/cikgu.prisma`; contract `cikgu/`; seed `cikgu`; `apps/api/test/cikgu/**` | PC-5 | BE-43 (M13). Calls BE-36's adapter (text generation, same lane); never edits `ai-extraction/**`. `.env.api.example`: new key only in the PC-5 block. |
+| `apps/api/src/modules/{battle,games}/**`; `prisma/schema/{battle,games}.prisma`; contract `{battle,games}/`; seeds `battle`, `games`; `apps/api/test/{battle,games}/**` | PC-7 | BE-44, BE-45 (M16). Wallet and XP only through the PC-2 services (BE-11, BE-23). The one cross-card read is `BattleReadService.hasBattled` (BE-45 reads BE-44, stub until BE-44 merges). |
 | `apps/api/test/<domain>/**` | the lane that owns the domain | |
 
 **Append-only shared files** (several lanes touch them, one line per addition, never reorder or reformat):
@@ -221,6 +237,7 @@ For every session: start with a fresh Claude Code run using the lane's prompt fr
 | PC-1/S5 | BE-06, then BE-24 | BE-04 and BE-05 merged | `be/BE-06-account-notifications`, `be/BE-24-content-support` | As cards | BE-24 feeds BE-29 |
 | PC-1/S6 | BE-32 (joint with LEAD) | S8 | `be/BE-32-http-switch-e2e` | Compose stack up, nginx proxy (upload size and timeouts), `@api` e2e green for carded modules | Lead flips domains to http (L5) |
 | PC-1/S7 | BE-33 | S9 | `be/BE-33-hardening-release` | Security checklist, ops runbook, review findings closed | Release gate G4 |
+| PC-1/S8 | BE-42, then BE-46 and BE-47 | BE-42: S7 + BE-10; BE-46, BE-47: BE-05 merged (P2: only when the Open list lists them) | `be/BE-42-pksk`, `be/BE-46-marketplace`, `be/BE-47-keluarga-angkat` | As cards; BE-47 security review (family data of minors) | |
 
 ### PC-2 Learning and Question bank
 
@@ -229,6 +246,7 @@ For every session: start with a fresh Claude Code run using the lane's prompt fr
 | PC-2/S1 | BE-08, then BE-09 | S3 for BE-08; BE-09 after BE-08 merged | `be/BE-08-curriculum`, `be/BE-09-question-bank-core` | Curriculum served; question schema per exam schema D47; `QuestionsService` exported with the ADR-0014 contract; seeds fictitious | S5, **S6** (unblocks PC-3, PC-5, BE-12) |
 | PC-2/S2 | BE-11, then BE-12 | BE-11: S3; BE-12: S6 + BE-11 + BE-25 | `be/BE-11-wallet-streak-core`, `be/BE-12-practice-sessions` | One-transaction answer, revision, mastery, wallet; idempotent `client_uuid`; migration columns on answers (snapshot dims, soft refs) | **S7** |
 | PC-2/S3 | BE-13, then BE-23 | S7 | `be/BE-13-practice-reads`, `be/BE-23-gamification-shop` | Read models; economy | feeds BE-19, BE-26, BE-29 |
+| PC-2/S4 | BE-48 | BE-12, BE-13 and BE-08 merged | `be/BE-48-heatmap-topik-lemah` | Read model only (no table); one method added to the practice reads | |
 
 ### PC-3 Bijak and Paper builder
 
@@ -237,6 +255,7 @@ For every session: start with a fresh Claude Code run using the lane's prompt fr
 | PC-3/S1 | BE-14 | S1 and OD-5 approved | `be/BE-14-exam-core-package` | `@pp/exam-core` extracted, UI imports it, root `typecheck` and `test` green, server and UI mark identically | Lead reviews the coordinated `src/` change |
 | PC-3/S2 | BE-15, then BE-16 | BE-15: S6 (BE-09) + BE-14; BE-16: BE-15 + BE-04 + BE-11 | `be/BE-15-bijak-papers`, `be/BE-16-bijak-attempts` | Papers and cover; attempts with server timer, autosave, marking, results; photos via FileStorage | S9 input |
 | PC-3/S3 | BE-39 | BE-15 and BE-10 merged | `be/BE-39-paper-builder-blueprints` | Builder, conformance, publish/withdraw, blueprint versions | S9 |
+| PC-3/S4 | BE-41 | S7 (BE-12), BE-13, BE-08, BE-09 merged | `be/BE-41-spm-hub` | SPM hub routes per card; `spm_mock_exams` separate from Bijak attempts | |
 
 ### PC-4 Migration and ETL
 
@@ -254,6 +273,7 @@ For every session: start with a fresh Claude Code run using the lane's prompt fr
 | PC-5/S1 | BE-36, then BE-37 | BE-36: S3 (+OD-20); BE-37: S4 | `be/BE-36-ai-extraction-service`, `be/BE-37-intake-files-ocr` | Adapters + mock, redaction canary, cost log, budget; upload, jobs, OCR, crops | |
 | PC-5/S2 | BE-10, then BE-38 | S6 (BE-09); BE-38 also needs BE-36 and BE-37 | `be/BE-10-question-workflow`, `be/BE-38-intake-workflow` | Lifecycle and gates; end-to-end intake with the mock provider; AI cannot approve | S9; unblocks BE-39 (via BE-10) |
 | PC-5/S3 | BE-40 | BE-36 and BE-38 merged | `be/BE-40-intake-dashboard-ai-usage` | AC-29.1 figures | |
+| PC-5/S4 | BE-43 | BE-36, BE-17, BE-12 merged (P2) | `be/BE-43-cikgu-alesa` | Chat, RPH, essay markings, PBD tags; text generation through the BE-36 adapter; security review | |
 
 ### PC-6 Teacher, Reports, Conformance and Seed
 
@@ -263,6 +283,12 @@ For every session: start with a fresh Claude Code run using the lane's prompt fr
 | PC-6/S2 | BE-19, then BE-18 | S7 (BE-12) + BE-17 | `be/BE-19-student-performance`, `be/BE-18-missions-remedial-sets` | Read models match mock figures; missions/remedial | feeds BE-20/21/22/26 |
 | PC-6/S3 | BE-21, then BE-22 | BE-19 merged | `be/BE-21-school-admin`, `be/BE-22-command-center-admin` | School scope enforced (other school 404); Command Center aggregates | |
 | PC-6/S4 | BE-20, then BE-26 | BE-19 (BE-20); BE-07, 12, 16, 17, 19, 23 (BE-26) | `be/BE-20-teacher-analytics-kirkpatrick`, `be/BE-26-seed-poc-profile` | Analytics; PoC seed profile across domains (can include one intake batch and one built paper) | S9 |
+
+### PC-7 Games and competitions
+
+| Session | Cards | Start condition | Branches | Definition of done | Hand-off |
+|---|---|---|---|---|---|
+| PC-7/S1 | BE-44, then BE-45 | BE-23 merged (plus BE-09, BE-12, BE-13); P2: only when the Open list lists them | `be/BE-44-battle`, `be/BE-45-papan-bijak-games-hub` | As cards; no direct write to wallets; BE-45 stub for `hasBattled` removed once BE-44 merges | Feeds the M11/M17 counters and Sekolah Bersaing |
 
 ### LEAD
 

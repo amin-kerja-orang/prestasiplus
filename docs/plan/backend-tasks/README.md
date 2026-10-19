@@ -4,7 +4,7 @@ One card per task. Each card is self-contained: goal, inputs (exact paths), outp
 
 Requirements and handbook: every card is traced to a requirement ID (BE-FR / BE-NFR / BE-MIG / BE-OPS) in [../../requirements/v2-backend-urs.md](../../requirements/v2-backend-urs.md) (section 9.2 lists the requirements per card); how to write the code is in [../backend-dev-guide.md](../backend-dev-guide.md).
 
-Programme view: status per card is in [../backend-tracker.md](../backend-tracker.md); lanes, order and sync points are in [../sessions.md](../sessions.md); paste-ready agent prompts per lane are in [../agent-kickoff/](../agent-kickoff/README.md). BE-34 to BE-40 were added on 2026-10-19 (migration-first design and the D52 SPM intake / paper builder); BE-41 to BE-48 on 2026-10-19 (D53(a): every module reachable in the prototype is B1).
+Programme view: status per card is in [../backend-tracker.md](../backend-tracker.md); lanes, order and sync points are in [../sessions.md](../sessions.md); paste-ready agent prompts per lane are in [../agent-kickoff/](../agent-kickoff/README.md). BE-34 to BE-40 were added on 2026-10-19 (migration-first design and the D52 SPM intake / paper builder); BE-41 to BE-48 on 2026-10-19 (D53(a): every module reachable in the prototype is B1). Lanes of BE-41 to BE-48 approved by the LEAD 2026-10-19: BE-41 PC-3 P1; BE-42, BE-46, BE-47 PC-1 P2; BE-43 PC-5 P2; BE-48 PC-2 P1; BE-44, BE-45 new lane PC-7 "Games and competitions" P2.
 
 Waves: 0 foundation, 1 identity and reference data, 2 learning loop, 3 Bijak attempts / teacher / reports / economy, 4 aggregates and integration, M = migration stream (independent of the API lanes, blocked only by OD-2 and OD-10).
 
@@ -61,7 +61,7 @@ Waves: 0 foundation, 1 identity and reference data, 2 learning loop, 3 Bijak att
 
 Totals: 48 cards. Sizes: S 5, M 24, L 19.
 
-## Parallel lanes (superseded by [../sessions.md](../sessions.md): six lanes plus the lead lane; the list below is the original one-collaborator view)
+## Parallel lanes (superseded by [../sessions.md](../sessions.md): seven lanes (PC-7 "Games and competitions" opened 2026-10-19) plus the lead lane; the list below is the original one-collaborator view)
 
 1. **Critical path:** BE-01, BE-02, BE-03, then BE-05, BE-09 (via BE-08), BE-12, BE-13, BE-19, then the wave 4 reports.
 2. **Bijak lane (starts at BE-01):** BE-14, then BE-15 (after BE-09), BE-16.

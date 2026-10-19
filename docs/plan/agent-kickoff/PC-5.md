@@ -1,6 +1,6 @@
 # PC-5 kickoff: AI intake
 
-Paste-ready prompt for Claude Code. How to start a PC: [README.md](README.md). Lane overview and sync points: [../sessions.md](../sessions.md). Cards: BE-36, BE-37, BE-10, BE-38, BE-40.
+Paste-ready prompt for Claude Code. How to start a PC: [README.md](README.md). Lane overview and sync points: [../sessions.md](../sessions.md). Cards: BE-36, BE-37, BE-10, BE-38, BE-40, BE-43.
 
 How to use: open Claude Code in the repo root on this PC (branch feature/v2-backend, `npm ci` done), then paste everything inside the block below as the first message. Start one fresh Claude Code session per session row of your lane in `../sessions.md` section 7; the prompt tells the agent which card to take next from the tracker.
 
@@ -23,14 +23,16 @@ YOUR LANE: PC-5, ordered card list (work strictly in this order; each card is it
 3. BE-10 Question workflow: reports, submissions, imports, quality, DSKP source | branch be/BE-10-question-workflow | depends on: BE-09 | card file: docs/plan/backend-tasks/BE-10-question-workflow.md
 4. BE-38 Intake batches, extraction orchestration, review workflow, accept-to-Draf, duplicates | branch be/BE-38-intake-workflow | depends on: BE-09, BE-10, BE-36, BE-37 | card file: docs/plan/backend-tasks/BE-38-intake-workflow.md
 5. BE-40 Intake dashboard, AI usage and budget endpoints | branch be/BE-40-intake-dashboard-ai-usage | depends on: BE-36, BE-38 | card file: docs/plan/backend-tasks/BE-40-intake-dashboard-ai-usage.md
+6. BE-43 Cikgu Alesa: chat, RPH, essay markings, PBD tags (M13) | branch be/BE-43-cikgu-alesa | depends on: BE-36, BE-03, BE-05, BE-08, BE-12, BE-17 | card file: docs/plan/backend-tasks/BE-43-cikgu-alesa.md
 
 FOLDERS YOU MAY EDIT (and only these)
-- apps/api/src/modules/{ai-extraction,ocr,jobs,intake}/**
+- apps/api/src/modules/{ai-extraction,ocr,jobs,intake,cikgu}/**
 - apps/api/src/modules/questions/workflow/** (after BE-09 merged; lane PC-2 agrees)
-- apps/api/prisma/schema/{ai,intake,questions-workflow}.prisma and migrations
-- packages/contract/src/{ai,intake,question-workflow}/**
-- apps/api/prisma/seed/intake.ts
-- apps/api/test/{ai,intake-files,intake-workflow,intake-dashboard,questions-workflow}/**
+- apps/api/prisma/schema/{ai,intake,questions-workflow,cikgu}.prisma and migrations
+- packages/contract/src/{ai,intake,question-workflow,cikgu}/**
+- apps/api/prisma/seed/{intake,cikgu}.ts
+- .env.api.example: only a new key in the PC-5 block (names only; BE-43)
+- apps/api/test/{ai,intake-files,intake-workflow,intake-dashboard,questions-workflow,cikgu}/** and new scenario files in apps/api/test/conformance/cikgu/ (after BE-31)
 Append-only shared files (add your own single lines only, never reorder or reformat): apps/api/src/modules/index.ts, apps/api/prisma/seed/index.ts, apps/api/prisma/migratable-models.json, the registrations in packages/contract/src/openapi.ts, docs/architecture/v2-backend-deviations.md, your own rows in docs/plan/backend-tracker.md, your own entity rows in the mapping matrix (plan section 14.7).
 
 NEVER EDIT

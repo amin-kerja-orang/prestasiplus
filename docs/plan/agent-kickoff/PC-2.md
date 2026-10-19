@@ -1,6 +1,6 @@
 # PC-2 kickoff: Learning and Question bank
 
-Paste-ready prompt for Claude Code. How to start a PC: [README.md](README.md). Lane overview and sync points: [../sessions.md](../sessions.md). Cards: BE-08, BE-09, BE-11, BE-12, BE-13, BE-23.
+Paste-ready prompt for Claude Code. How to start a PC: [README.md](README.md). Lane overview and sync points: [../sessions.md](../sessions.md). Cards: BE-08, BE-09, BE-11, BE-12, BE-13, BE-48, BE-23.
 
 How to use: open Claude Code in the repo root on this PC (branch feature/v2-backend, `npm ci` done), then paste everything inside the block below as the first message. Start one fresh Claude Code session per session row of your lane in `../sessions.md` section 7; the prompt tells the agent which card to take next from the tracker.
 
@@ -23,14 +23,15 @@ YOUR LANE: PC-2, ordered card list (work strictly in this order; each card is it
 3. BE-11 Wallet, ledger and streak core (M14 core) | branch be/BE-11-wallet-streak-core | depends on: BE-03 | card file: docs/plan/backend-tasks/BE-11-wallet-streak-core.md
 4. BE-12 Practice sessions and answer log (M05 write path) | branch be/BE-12-practice-sessions | depends on: BE-09, BE-11, BE-25 | card file: docs/plan/backend-tasks/BE-12-practice-sessions.md
 5. BE-13 Practice read models: dashboard, subjects, mastery, revision, targets | branch be/BE-13-practice-reads | depends on: BE-12 | card file: docs/plan/backend-tasks/BE-13-practice-reads.md
-6. BE-23 Gamification economy and rewards shop (M14 rest, M15) | branch be/BE-23-gamification-shop | depends on: BE-11, BE-12 | card file: docs/plan/backend-tasks/BE-23-gamification-shop.md
+6. BE-48 Heatmap Topik Lemah read model (M25) | branch be/BE-48-heatmap-topik-lemah | depends on: BE-12, BE-13, BE-08 | card file: docs/plan/backend-tasks/BE-48-heatmap-topik-lemah.md
+7. BE-23 Gamification economy and rewards shop (M14 rest, M15) | branch be/BE-23-gamification-shop | depends on: BE-11, BE-12 | card file: docs/plan/backend-tasks/BE-23-gamification-shop.md
 
 FOLDERS YOU MAY EDIT (and only these)
-- apps/api/src/modules/{curriculum,questions,practice,wallet,gamification,shop}/** EXCEPT apps/api/src/modules/questions/workflow/** (lane PC-5)
+- apps/api/src/modules/{curriculum,questions,practice,wallet,gamification,shop,heatmap}/** (BE-48 also adds one method, PracticeRepository.chapterAnswerCounts, inside apps/api/src/modules/practice/reads/**) EXCEPT apps/api/src/modules/questions/workflow/** (lane PC-5)
 - apps/api/prisma/schema/{curriculum,questions,practice,wallet,gamification}.prisma and migrations (never questions-workflow.prisma)
-- packages/contract/src/{curriculum,questions,practice,wallet,gamification}/**
+- packages/contract/src/{curriculum,questions,practice,wallet,gamification,heatmap}/**
 - apps/api/prisma/seed/{curriculum,questions,practice,wallet,gamification}.ts and apps/api/prisma/seed/curriculum-data/**
-- apps/api/test/{curriculum,questions,practice,wallet,gamification}/**
+- apps/api/test/{curriculum,questions,practice,wallet,gamification,heatmap}/** and new scenario files in apps/api/test/conformance/heatmap/ (after BE-31)
 Append-only shared files (add your own single lines only, never reorder or reformat): apps/api/src/modules/index.ts, apps/api/prisma/seed/index.ts, apps/api/prisma/migratable-models.json, the registrations in packages/contract/src/openapi.ts, docs/architecture/v2-backend-deviations.md, your own rows in docs/plan/backend-tracker.md, your own entity rows in the mapping matrix (plan section 14.7).
 
 NEVER EDIT

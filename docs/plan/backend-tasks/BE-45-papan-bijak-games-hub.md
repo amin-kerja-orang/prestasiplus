@@ -3,7 +3,7 @@
 | Field | Value |
 |---|---|
 | Size | L |
-| Lane | PC-7 (proposed new lane "Games and competitions"; if the lead keeps six PCs, PC-3 after BE-39). Folders: see "Files touched"; the lead adds the rows to sessions.md section 5 when merging this card |
+| Lane | PC-7 "Games and competitions" (new lane PC-7, opened by the LEAD); approved by the LEAD 2026-10-19 (folders: sessions.md section 5; the rows to add are in "Files touched") |
 | Priority | P2 (leaf feature: nothing in B1 waits for it except the M11 "Permainan" counter and the Admin Sekolah menu item Sekolah Bersaing; D53 puts it in B1, so it is built after the P0/P1 cards) |
 | Wave | 4 |
 | Depends on | BE-03, BE-05, BE-08, BE-09, BE-11, BE-13 (weekly practice ranking read), BE-23 (game settings and tier reward rates; the M14 `onGameResult` entry point, see Open question 1); BE-44 only for the hub chip `battled` (stubbed until BE-44 merges) |
@@ -176,7 +176,7 @@ Do not guess these; write your working assumption in the PR and ask the lead (is
 9. **`.cloud` migration choices.** Whether completed rooms, game sessions and `.cloud` leagues are migrated (data migration 4.10, Q13) is the lead's decision; the proposed matrix above migrates `game_sessions` only.
 10. **Data model docs.** M16 tables sit in data model section 3.13 (backlog). The lead moves them into a new section (proposed 3.14 "Battle and games"), adds them to the ownership table 2.2 and the Prisma file list, records the G-11 exception for `game_rooms.state`, and adds the lane row to sessions.md section 5. This card does not edit those files.
 11. **Consumers and Admin Sekolah.** BE-20 (M11) needs `GameReadService`; its card does not list it yet. The Admin Sekolah menu item "Sekolah Bersaing" (matrix row 45, D-RAM-2) calls `GET /api/sekolah-bersaing` with the admin-school session; the route has no school scope in the mock (national board), as the catalogue states.
-12. **Privacy of minors.** Lobby leaderboards, room players and the weekly competition show full names of pupils (OQ-API-B4-4; SEC-M16-07 recommends first name + initial and opt-out). Working assumption: replicate; the `anonymous` flag of Sekolah Bersaing rows is honoured when set.
+12. **Privacy of minors (for the user to confirm).** Lobby leaderboards, room players and the weekly competition show full names of pupils (OQ-API-B4-4; SEC-M16-07 recommends first name + initial and opt-out). LEAD decision 2026-10-19 (default, user to confirm): replicate the live/mock behaviour, so classmates see each other's display names on leaderboards as the old system does; seeds and fixtures use fictitious names only; the `anonymous` flag of Sekolah Bersaing rows is honoured when set.
 
 ## Prompt for Claude Code
 

@@ -3,14 +3,14 @@
 | Field | Value |
 |---|---|
 | Size | M |
-| Lane | PC-3 (proposed; lane table: sessions.md section 5; reason below) |
+| Lane | PC-3; approved by the LEAD 2026-10-19 (folders: sessions.md section 5; the rows to add are in "Files touched") |
 | Priority | P1 |
 | Wave | 3 |
 | Depends on | BE-03, BE-08, BE-09, BE-12, BE-13 |
 | Parallel with | BE-16, BE-18, BE-19, BE-23, BE-42 |
 | Owner module | M06 (Tracking A sets, SPM subject config, SPM mock exams, Duta cards hosted for M24) |
 
-Lane and priority reason (proposal for the LEAD, per D53): the folders `apps/api/src/modules/spm/**`, `prisma/schema/spm.prisma` and `packages/contract/src/spm/**` belong to no lane today, so no file clashes with any PC. PC-3 already owns the other SPM surface (Bijak SPM, `exam/`) and has the lightest P1 load; PC-2 is full with P0 cards and PC-6 owns reports. P1 because the student menu row 13 "SPM" is reachable in the prototype and the `ramalan` start of BE-12 needs this card's set service; nothing else is blocked by it.
+Lane and priority reason (approved by the LEAD 2026-10-19): the folders `apps/api/src/modules/spm/**`, `prisma/schema/spm.prisma` and `packages/contract/src/spm/**` belong to no lane today, so no file clashes with any PC. PC-3 already owns the other SPM surface (Bijak SPM, `exam/`) and has the lightest P1 load; PC-2 is full with P0 cards and PC-6 owns reports. P1 because the student menu row 13 "SPM" is reachable in the prototype and the `ramalan` start of BE-12 needs this card's set service; nothing else is blocked by it.
 
 This card is **not replaced by Bijak SPM** (M28, BE-15/BE-16). Both live under `/spm`: M06 is the classic hub (Tahun Lepas, Latih Tubi, Tracking A, Subjektif, mock exam), M28 is the paper-based flow.
 
