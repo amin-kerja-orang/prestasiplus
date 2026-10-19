@@ -16,6 +16,7 @@ import { readFileSync } from 'node:fs'
 import type pg from 'pg'
 
 import { DDL_FILE } from '../ddl/generate'
+import { renderDdl } from '../ddl/render'
 import { columnNames, schemaOf, TABLES, type TableSpec } from '../ddl/spec'
 import { hashRow, quoteIdent, toJson } from '../kit/sql'
 import { silentLogger, type Logger } from './log'
@@ -41,6 +42,11 @@ export interface LoadOptions {
   allowExtraColumns?: boolean
   batchSize?: number
   log?: Logger
+  /**
+   * Load only these spec tables, with DDL rendered for just them (tests that exercise failure paths
+   * and do not need all 118 tables). Default: every table, with `ddl/staging_cloud.sql`.
+   */
+  tables?: readonly TableSpec[]
 }
 
 export interface TableLoad {
@@ -160,11 +166,11 @@ export async function loadStaging(pool: pg.Pool, reader: TableReader, options: L
   try {
     await client.query('begin')
     try {
-      await client.query(readFileSync(cfg.ddlFile, 'utf8'))
+      await client.query(options.tables ? renderDdl(options.tables) : readFileSync(cfg.ddlFile, 'utf8'))
     } catch (e) {
       throw new LoaderError(`Creating the staging schemas failed (SQLSTATE ${sqlState(e)}).`)
     }
-    for (const spec of TABLES) {
+    for (const spec of options.tables ?? TABLES) {
       const loaded = await loadTable(client, reader, spec, opts)
       tables.push(loaded)
       if (loaded.rowsRead > 0) log.info(`Loaded ${loaded.schema}.${loaded.table}: ${loaded.rowsRead} rows.`)

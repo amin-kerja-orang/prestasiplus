@@ -1,4 +1,6 @@
 import { randomBytes } from 'node:crypto'
+import { readFileSync } from 'node:fs'
+import { join } from 'node:path'
 
 import pg from 'pg'
 import { afterAll, beforeAll, describe, expect, it, inject, vi } from 'vitest'
@@ -175,10 +177,9 @@ describe('loading from the read-only source (same path as a dump)', () => {
       const result = await loadStaging(target.pool, new PgReader(source))
       expect(result.inputKind).toBe('pg')
       expect(result.inputHash).toBeNull()
-      const viaDir = await loadStaging(target.pool, new DirReader(FIXTURE_DIR))
-      const fromSource = Object.fromEntries(result.tables.map((t) => [t.table, t.rowsLoaded]))
-      const fromDir = Object.fromEntries(viaDir.tables.map((t) => [t.table, t.rowsLoaded]))
-      expect(fromSource).toEqual(fromDir)
+      const manifest = JSON.parse(readFileSync(join(FIXTURE_DIR, 'manifest.json'), 'utf8')) as { tables: Record<string, { rows: number }> }
+      for (const t of result.tables) expect(t.rowsLoaded, t.table).toBe(manifest.tables[t.table]?.rows)
+      expect(result.totalRows).toBeGreaterThan(100)
     } finally {
       await source.close()
     }

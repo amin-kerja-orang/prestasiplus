@@ -3,7 +3,7 @@ import { join } from 'node:path'
 
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest'
 
-import { TABLES } from '../../../src/migration/ddl/spec'
+import { findTable, TABLES, type TableSpec } from '../../../src/migration/ddl/spec'
 import { DirReader, DumpFormatError } from '../../../src/migration/staging/readers'
 import { LoaderError, loadStaging, SourceNotImplementedError } from '../../../src/migration/staging/load'
 import { runStagingCli, STAGING_EXIT } from '../../../src/migration/staging/cli'
@@ -11,6 +11,9 @@ import { capture, countAll, createStagingDb, FIXTURE_DIR, tempDir, writeDump, ty
 
 // Creating the 118 raw tables takes seconds on a Docker-on-Windows Postgres; allow for it.
 vi.setConfig({ testTimeout: 120_000 })
+
+/** Two tables are enough for failure paths: each load otherwise re-creates all 118 tables (seconds). */
+const SUBSET = ['users', 'schools'].map((n) => findTable(n) as TableSpec)
 
 let env: StagingDb
 beforeAll(async () => {
@@ -68,7 +71,7 @@ describe('staging:load on the synthetic fixture (AC1, AC7)', () => {
     const dir = tempDir()
     try {
       writeDump(dir.path, { schools: [{ id: 1, name: 'x' }], users: [{ id: 1, surprise_col: 'v' }] })
-      await expect(loadStaging(env.pool, new DirReader(dir.path))).rejects.toBeInstanceOf(LoaderError)
+      await expect(loadStaging(env.pool, new DirReader(dir.path), { tables: SUBSET })).rejects.toBeInstanceOf(LoaderError)
     } finally {
       dir.cleanup()
     }
@@ -77,11 +80,11 @@ describe('staging:load on the synthetic fixture (AC1, AC7)', () => {
 })
 
 describe('loader strictness', () => {
-  const run = async (tables: Parameters<typeof writeDump>[1], opts: Parameters<typeof loadStaging>[2] = {}, rows?: Record<string, number>) => {
+  const run = async (tables: Parameters<typeof writeDump>[1], opts: NonNullable<Parameters<typeof loadStaging>[2]> = {}, rows?: Record<string, number>) => {
     const dir = tempDir()
     try {
       writeDump(dir.path, tables, rows)
-      return await loadStaging(env.pool, new DirReader(dir.path), opts)
+      return await loadStaging(env.pool, new DirReader(dir.path), { tables: SUBSET, ...opts })
     } finally {
       dir.cleanup()
     }
