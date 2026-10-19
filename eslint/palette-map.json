@@ -1,4 +1,0 @@
-{
-  "_comment": "CM-1 (f): palette utility -> token utility, ONLY where the rendered colour is identical. No palette colour equals a token today, so the map is empty and every palette hit is reported, not rewritten. Add an entry here when a token with the exact value exists.",
-  "map": {}
-}

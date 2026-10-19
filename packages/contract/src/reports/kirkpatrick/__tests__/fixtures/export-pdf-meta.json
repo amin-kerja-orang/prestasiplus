@@ -1,8 +1,0 @@
-{
-  "status": 200,
-  "headers": {
-    "content-type": "application/pdf",
-    "content-disposition": "attachment; filename=\"laporan-kirkpatrick.pdf\"; filename*=UTF-8''laporan-kirkpatrick.pdf"
-  },
-  "head": "%PDF-1.4"
-}
