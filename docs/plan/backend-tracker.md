@@ -53,7 +53,7 @@ Single source of truth for the **state of every backend card**. The lead's proje
 | BE-28 | .cloud migration: ETL for reference data, identity and classes | PC-4 | P1 | BE-27, BE-05, BE-08, BE-17, BE-25 | L | todo | - | `be/BE-28-migration-etl-core` | - | Needs OD-10. Security review. |
 | BE-29 | .cloud migration: ETL for activity, wallet, content and operations | PC-4 | P2 | BE-28, BE-11, BE-12, BE-16, BE-23, BE-24 | L | todo | - | `be/BE-29-migration-etl-activity` | - | Needs OD-10. |
 | BE-30 | .cloud migration: reconciliation, rehearsal and cutover scripts | PC-4 | P2 | BE-29, BE-35 | M | todo | - | `be/BE-30-migration-reconcile-rehearsal` | - | Go/no-go gate for rehearsal. |
-| BE-31 | Contract conformance suite and OpenAPI breaking-change gate | PC-6 | P0 | BE-03 | M | todo | - | `be/BE-31-conformance-suite` | - | Starts as skeleton; grows with every domain. Idle-time card for PC-6. |
+| BE-31 | Contract conformance suite and OpenAPI breaking-change gate | PC-6 | P0 | BE-03 | M | todo | - | `be/BE-31-conformance-suite` | - | Harness merged 2026-10-19 (runner, known-mismatch list, coverage gate, oasdiff job; mock run via npm run conformance: 121 scenarios, 0 failing, 19 known). Remaining: API target (Nest supertest) and auth scenarios after BE-03. |
 | BE-32 | Compose stack, nginx proxy, Vite dev proxy and Playwright e2e against the real API | PC-1 + LEAD | P1 | BE-03, BE-07, BE-31 | M | todo | - | `be/BE-32-http-switch-e2e` | - | Joint with LEAD (V2-T31 hybrid transport). Raise nginx body size for uploads. |
 | BE-33 | Security hardening, observability and release readiness | PC-1 | P2 | BE-32, BE-16, BE-38, BE-39 | M | todo | - | `be/BE-33-hardening-release` | - | Final security pass: uploads, AI keys, SSRF, migration data handling. Release gate. |
 | BE-34 | Migration kit: legacy-column convention, ETL control tables, upsert helper, dry-run runner | PC-4 | P0 | BE-02 | M | todo | - | `be/BE-34-migration-kit` | - | Parallel with BE-03. Blocks BE-27/28. |
@@ -99,6 +99,7 @@ Newest first. The lead appends a line when a card merges, a decision is made or 
 
 | Date | Entry |
 |---|---|
+| 2026-10-19 | LEAD merged **BE-31 harness-only** (packages/contract-tests: runner, coverage gate, known-mismatch list, oasdiff breaking-change job gated by `contract-breaking`). Review: Approve after one fix (mock run excluded from the unit project). The API target follows BE-03. |
 | 2026-10-19 | LEAD merged contract-only PRs: BE-06(#4) BE-16(#10) BE-21(#6) BE-44(#12) BE-46(#14) BE-47(#15) after code review (Approve). Append-only conflicts resolved; openapi.json regenerated; contract:check, contract tests and tsc green. Cards back to `todo` for their full implementation. |
 | 2026-10-19 | LEAD merged contract-only PRs: BE-20(-) after code review (Approve). Append-only conflicts resolved; openapi.json regenerated; contract:check, contract tests and tsc green. Cards back to `todo` for their full implementation. |
 | 2026-10-19 | LEAD merged contract-only PRs: BE-13(#21) BE-43(#22) after code review (Approve). Append-only conflicts resolved; openapi.json regenerated; contract:check, contract tests and tsc green. Cards back to `todo` for their full implementation. |
