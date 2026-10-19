@@ -13,8 +13,46 @@ async function parentUser(query: FixtureQuery): Promise<string> {
   return (rows[0] as { id: string }).id
 }
 
+let seq = 0
+const next = (prefix: string): string => `${prefix}${(seq += 1)}`
+
+/** BE-08: curriculum parents (codes are stored upper-case, a CHECK enforces it; fictitious names). */
+async function parentLevel(query: FixtureQuery): Promise<string> {
+  const rows = await query<{ id: string }>(
+    `insert into education_levels (code, name, name_en, stage, curriculum) values ($1, 'Tahap Contoh', 'Sample Level', 'primary', 'KSSR') returning id::text as id`,
+    [next('FXL')],
+  )
+  return (rows[0] as { id: string }).id
+}
+
+async function parentSubject(query: FixtureQuery): Promise<string> {
+  const rows = await query<{ id: string }>(
+    `insert into subjects (code, name, name_en, color) values ($1, 'Subjek Contoh', 'Sample Subject', '#4f46e5') returning id::text as id`,
+    [next('FXS')],
+  )
+  return (rows[0] as { id: string }).id
+}
+
+async function parentChapter(query: FixtureQuery): Promise<string> {
+  const rows = await query<{ id: string }>(
+    `insert into chapters (subject_id, education_level_id, name) values ($1, $2, 'Bab Contoh') returning id::text as id`,
+    [await parentSubject(query), await parentLevel(query)],
+  )
+  return (rows[0] as { id: string }).id
+}
+
 export const MODEL_FIXTURES: Record<string, Fixture> = {
+  // chapters: an in-tree chapter needs a name and a level (ck_chapters_in_tree_complete).
+  chapters: async (query) => ({ subject_id: await parentSubject(query), education_level_id: await parentLevel(query), name: 'Bab Contoh' }),
+  // education_levels: code must be upper-case, stage one of three.
+  education_levels: async () => ({ code: next('FXL'), stage: 'primary' }),
   // schools: name (text) is generated; nothing else is required.
+  // subject_levels: both parents must exist.
+  subject_levels: async (query) => ({ subject_id: await parentSubject(query), education_level_id: await parentLevel(query) }),
+  // subjects: code must be upper-case.
+  subjects: async () => ({ code: next('FXS') }),
+  // topics: the chapter must exist.
+  topics: async (query) => ({ chapter_id: await parentChapter(query) }),
   user_roles: async (query) => ({ user_id: await parentUser(query), role: 'student' }),
   user_scopes: async (query) => ({ user_id: await parentUser(query), role: 'student', level: 'self' }),
   // users: name (text) is generated; nothing else is required.

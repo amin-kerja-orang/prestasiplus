@@ -2,6 +2,7 @@ import { CurriculumTopicsQuerySchema } from '@pp/contract'
 import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from 'vitest'
 
 import { AuditService } from '../../src/common/audit'
+import { ApiError } from '../../src/common/errors/api-error'
 import { CurriculumRepository } from '../../src/modules/curriculum/curriculum.repository'
 import { translateDbError } from '../../src/modules/curriculum/errors'
 import { CurriculumPorts } from '../../src/modules/curriculum/providers'
@@ -195,11 +196,11 @@ describe('curriculum write hardening', () => {
   describe('check-then-write races (Prisma P2025 to 404, P2003 to 422)', () => {
     it('translateDbError maps the codes and rethrows everything else', () => {
       const e = (code: string) => Object.assign(new Error(code), { code })
-      expect(() => translateDbError(e('P2025'), { notFound: () => Object.assign(new Error('nf'), { code: 'NF' }) })).toThrow('nf')
+      expect(() => translateDbError(e('P2025'), { notFound: () => ApiError.of('NOT_FOUND', { message: 'nf' }) })).toThrow('nf')
       expect(() => translateDbError(e('P2025'), {})).toThrow('P2025')
-      expect(() => translateDbError(e('P2003'), { fkField: 'chapterId' })).toThrow(/Validation|invalid|VALIDATION/i)
-      expect(() => translateDbError(e('P2002'), { uniqueField: 'code' })).toThrow()
-      expect(() => translateDbError(new Error('boom'), { notFound: () => new Error('x') })).toThrow('boom')
+      expect(() => translateDbError(e('P2003'), { fkField: 'chapterId' })).toThrow(ApiError)
+      expect(() => translateDbError(e('P2002'), { uniqueField: 'code' })).toThrow(ApiError)
+      expect(() => translateDbError(new Error('boom'), { notFound: () => ApiError.of('NOT_FOUND') })).toThrow('boom')
     })
 
     const gone = async (table: string, id: string) => {

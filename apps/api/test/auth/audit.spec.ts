@@ -53,8 +53,8 @@ describe('AuditService', () => {
     await db.drop()
   })
 
-  it('exports the six action names', () => {
-    expect(AUDIT_ACTIONS).toEqual({
+  it('exports the six BE-03 action names (the registry is append-only: later cards add their own lines)', () => {
+    expect(AUDIT_ACTIONS).toMatchObject({
       LOGIN_FAILED: 'auth.login.failed',
       LOGIN_SUCCEEDED: 'auth.login.succeeded',
       LOGOUT: 'auth.logout',
