@@ -58,8 +58,8 @@ export const UploadFileMultipartSchema = z
 
 export const FileRefSchema = z
   .object({
-    id: IdSchema,
-    url: z.string().min(1).meta({ description: 'Relative URL of the download route, `/api/files/{id}`.', example: '/api/files/42' }),
+    id: IdSchema.meta({ description: 'Opaque public token (random, 22 characters). It is the only id the API shows for a file; never parse it.' }),
+    url: z.string().min(1).meta({ description: 'Relative URL of the download route, `/api/files/{id}`. Clients use this field and never build the URL.', example: '/api/files/Zk3Qx9vB2mLw7TnRa1YpUg' }),
     mime: z.enum(FILE_MIMES),
     size: z.number().int().min(1).meta({ description: 'Stored size in bytes (after metadata stripping).' }),
     purpose: FilePurposeSchema,

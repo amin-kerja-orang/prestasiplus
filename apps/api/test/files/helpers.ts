@@ -29,10 +29,14 @@ export interface FilesTestApp extends AuthTestApp {
 }
 
 /** Nest app with the auth and files modules on a private database, a temp storage folder and a fixed clock. */
-export async function bootFilesApp(env: Record<string, string | undefined> = {}): Promise<FilesTestApp> {
-  const db: TestDatabase = await createTestDatabase()
-  await runSeeds([identitySeed], { prisma: db.prisma })
-  const dir = await mkdtemp(join(tmpdir(), 'pp-files-test-'))
+export async function bootFilesApp(
+  env: Record<string, string | undefined> = {},
+  reuse?: { db: TestDatabase; dir: string },
+): Promise<FilesTestApp> {
+  // `reuse` boots a SECOND app on an existing database and storage folder (a restart); it drops neither on close.
+  const db: TestDatabase = reuse?.db ?? (await createTestDatabase())
+  if (!reuse) await runSeeds([identitySeed], { prisma: db.prisma })
+  const dir = reuse?.dir ?? (await mkdtemp(join(tmpdir(), 'pp-files-test-')))
 
   const full: Record<string, string | undefined> = {
     DATABASE_URL: db.url,
@@ -51,6 +55,7 @@ export async function bootFilesApp(env: Record<string, string | undefined> = {})
     MAX_UPLOAD_MB: undefined,
     INTAKE_MAX_FILE_MB: undefined,
     UPLOAD_RATE_PER_MINUTE: '1000',
+    FILE_READS_PER_MINUTE: '10000',
     ...env,
   }
   for (const [k, v] of Object.entries(full)) {
@@ -76,6 +81,7 @@ export async function bootFilesApp(env: Record<string, string | undefined> = {})
     agent: () => request.agent(app.getHttpServer()),
     async close() {
       await app.close()
+      if (reuse) return
       await db.drop()
       await rm(dir, { recursive: true, force: true })
     },
@@ -123,4 +129,20 @@ export function binary(res: Response, callback: (err: Error | null, body: Buffer
   const chunks: Buffer[] = []
   ;(res as unknown as NodeJS.ReadableStream).on('data', (c: Buffer) => chunks.push(c))
   ;(res as unknown as NodeJS.ReadableStream).on('end', () => callback(null, Buffer.concat(chunks)))
+}
+
+/** Adds a demo-password account with one role in a demo school (by code), for scope tests. */
+export async function addAccount(db: TestDatabase, email: string, role: string, schoolCode: string): Promise<void> {
+  const rows = await db.query<{ id: string }>(
+    `insert into users (name, email, password_hash, school_id)
+     select 'Akaun Ujian', $1, password_hash, (select id from schools where code = $2) from users where email = 'admin@demo.test'
+     returning id::text as id`,
+    [email, schoolCode],
+  )
+  await db.query('insert into user_roles (user_id, role) values ($1, $2)', [rows[0]?.id, role])
+}
+
+/** Internal bigint id of a file by its public token. */
+export async function internalId(db: TestDatabase, token: string): Promise<string> {
+  return (await db.query<{ id: string }>('select id::text as id from files where public_id = $1', [token]))[0]?.id as string
 }

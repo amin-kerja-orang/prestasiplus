@@ -48,6 +48,78 @@ describe('rate limit (D57a, 429)', () => {
     expectFieldError(await upload(me, 'question_image', Buffer.from('text')), 'The file field must be a file of type: jpeg, png, webp.')
     expectError(await upload(me, 'question_image', makePng()), 'RATE_LIMITED')
   })
+
+  it('refused 429 attempts are NOT counted: hammering a refused route does not extend the wait (F7)', async () => {
+    const me = await loginAs(t, 'pelajarmaju@demo.test')
+    t.clock.advance(120_000)
+    for (let i = 0; i < 3; i += 1) await uploadOk(me, 'avatar', makePng()) // 3 counted attempts at t0
+    t.clock.advance(30_000)
+    for (let i = 0; i < 5; i += 1) {
+      const res = await upload(me, 'avatar', makePng())
+      expect(expectError(res, 'RATE_LIMITED').retryAfter).toBe(30)
+    }
+    t.clock.advance(31_000) // t0 + 61 s: the three counted attempts have left the window, the five refused ones never entered it
+    await uploadOk(me, 'avatar', makePng())
+  })
+})
+
+describe('download rate limit (D57, separate counter)', () => {
+  let t: FilesTestApp
+  beforeAll(async () => {
+    t = await bootFilesApp({ FILE_READS_PER_MINUTE: '3' })
+  })
+  afterAll(async () => {
+    await t.close()
+  })
+
+  it('a signed-in user gets 429 with Retry-After on the 4th read; uploads and other users are unaffected', async () => {
+    const me = await loginAs(t, 'pelajar@demo.test')
+    const other = await loginAs(t, 'pelajar2@demo.test')
+    const ref = await uploadOk(me, 'avatar', makePng())
+    for (let i = 0; i < 3; i += 1) expect((await me.agent.get(ref.url)).status).toBe(200)
+    const res = await me.agent.get(ref.url)
+    const err = expectError(res, 'RATE_LIMITED', AUTH_ERROR_MESSAGES.RATE_LIMITED)
+    expect(err.retryAfter).toBeGreaterThan(0)
+    expect(res.headers['retry-after']).toBe(String(err.retryAfter))
+    // a refused read of an unknown token also counts as a read (and is limited the same way)
+    expectError(await me.agent.get('/api/files/AAAAAAAAAAAAAAAAAAAAAA'), 'RATE_LIMITED')
+    // separate counters: the write path still works, another user still reads
+    await uploadOk(me, 'avatar', makePng())
+    expectError(await other.agent.get(ref.url), 'NOT_FOUND')
+    t.clock.advance(61_000)
+    expect((await me.agent.get(ref.url)).status).toBe(200)
+  })
+
+  it('anonymous reads of the public cms_image are limited per address', async () => {
+    const admin = await loginAs(t, 'admin@demo.test')
+    const cms = await uploadOk(admin, 'cms_image', makePng())
+    t.clock.advance(61_000)
+    for (let i = 0; i < 3; i += 1) expect((await t.http().get(cms.url)).status).toBe(200)
+    const res = await t.http().get(cms.url)
+    expectError(res, 'RATE_LIMITED', AUTH_ERROR_MESSAGES.RATE_LIMITED)
+    expect(res.headers['retry-after']).toBeDefined()
+    // a signed-in user has their own counter
+    expect((await admin.agent.get(cms.url)).status).toBe(200)
+    t.clock.advance(61_000)
+    expect((await t.http().get(cms.url)).status).toBe(200)
+  })
+})
+
+describe('SlidingWindow housekeeping', () => {
+  it('sweeps idle keys at most once a minute instead of on every hit', async () => {
+    const { SlidingWindow } = await import('../../src/modules/files/upload-throttle')
+    const { FixedClock } = await import('../../src/db/clock')
+    const clock = new FixedClock('2026-10-20T09:00:00+08:00')
+    const w = new SlidingWindow(() => 5, clock)
+    for (let i = 0; i < 50; i += 1) w.hit(`k${i}`)
+    expect(w.size).toBe(50)
+    clock.advance(30_000)
+    w.hit('later') // inside the minute since the first sweep: nothing is swept, all 51 keys stay
+    expect(w.size).toBe(51)
+    clock.advance(61_000)
+    w.hit('later') // a minute passed: the 50 idle keys go
+    expect(w.size).toBe(1)
+  })
 })
 
 describe('MAX_UPLOAD_MB is the global ceiling', () => {
@@ -103,15 +175,15 @@ describe('derived files up to INTAKE_MAX_FILE_MB (AC 7)', () => {
 
     const admin = await loginAs(t, 'admin@demo.test')
     const other = await loginAs(t, 'pelajar@demo.test')
-    expect((await admin.agent.get(`/api/files/${atLimit.id}`)).status).toBe(200)
-    expectError(await other.agent.get(`/api/files/${atLimit.id}`), 'NOT_FOUND')
+    expect((await admin.agent.get(`/api/files/${atLimit.publicId}`)).status).toBe(200)
+    expectError(await other.agent.get(`/api/files/${atLimit.publicId}`), 'NOT_FOUND')
     expectError(await upload(admin, 'intake_original', makePdf()), 'VALIDATION_ERROR')
     expect((await files.readStored(page.id))?.bytes.length).toBeGreaterThan(0)
   })
 })
 
 describe('environment', () => {
-  const KEYS = ['NODE_ENV', 'FILE_STORAGE_DIR', 'MAX_UPLOAD_MB', 'INTAKE_MAX_FILE_MB', 'UPLOAD_RATE_PER_MINUTE']
+  const KEYS = ['NODE_ENV', 'FILE_STORAGE_DIR', 'MAX_UPLOAD_MB', 'INTAKE_MAX_FILE_MB', 'UPLOAD_RATE_PER_MINUTE', 'FILE_READS_PER_MINUTE']
   const saved: Record<string, string | undefined> = {}
   beforeEach(() => {
     for (const k of KEYS) saved[k] = process.env[k]
@@ -137,7 +209,7 @@ describe('environment', () => {
 
   it('defaults the limits (10 MB, 20 MB, 30 a minute) and the env schema bounds them', () => {
     const c = config({ NODE_ENV: 'test' })
-    expect([c.maxUploadBytes, c.intakeMaxBytes, c.ratePerMinute]).toEqual([10 * 1024 * 1024, 20 * 1024 * 1024, 30])
+    expect([c.maxUploadBytes, c.intakeMaxBytes, c.ratePerMinute, c.readsPerMinute]).toEqual([10 * 1024 * 1024, 20 * 1024 * 1024, 30, 120])
     const base = { NODE_ENV: 'test', DATABASE_URL: 'postgresql://u:p@db:5432/x' }
     expect(loadEnv({ ...base, MAX_UPLOAD_MB: '5' }).MAX_UPLOAD_MB).toBe(5)
     expect(() => loadEnv({ ...base, MAX_UPLOAD_MB: '0' })).toThrow(/MAX_UPLOAD_MB/)

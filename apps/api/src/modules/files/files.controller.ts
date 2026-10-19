@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   type CallHandler,
   type CanActivate,
   Controller,
@@ -21,13 +22,16 @@ import {
 } from '@nestjs/common'
 import { FileInterceptor } from '@nestjs/platform-express'
 import {
+  FILE_MESSAGES,
+  FILE_PURPOSES,
   FileRefSchema,
   UploadFileQuerySchema,
+  type FilePurpose,
   type FileRef,
   type UploadFileQuery,
 } from '@pp/contract'
 import type { Request, Response } from 'express'
-import { catchError, type Observable, throwError } from 'rxjs'
+import type { Observable } from 'rxjs'
 
 import { ApiError } from '../../common/errors/api-error'
 import { Public } from '../../common/guards/decorators'
@@ -38,8 +42,8 @@ import { AUTH_CONTEXT_KEY, type AuthContext, type RequestWithAuth } from '../../
 import { ZodValidationPipe } from '../../common/validation/zod-validation.pipe'
 import { EXTENSION_OF, type DetectedMime } from './content-inspect'
 import { FilesConfig } from './files.config'
-import { type CallerInfo, FilesService, isFilePurpose, mayUpload, sizeMessageFor } from './files.service'
-import { UploadThrottle } from './upload-throttle'
+import { type CallerInfo, FilesService, isFilePurpose, limitFor, mayUpload, sizeMessageFor } from './files.service'
+import { DownloadThrottle, UploadThrottle } from './upload-throttle'
 
 type AuthedRequest = Request & RequestWithAuth
 
@@ -54,8 +58,9 @@ function infoOf(req: Request): CallerInfo {
 }
 
 /**
- * Runs before the body is read: a role that may not upload the purpose is refused (403) and the
- * per-user rate limit is applied, so neither costs a 10 MB buffer. Global guards (session, CSRF) run first.
+ * Runs BEFORE the body is read, so a refused request costs no buffer. Global guards (session, CSRF) ran
+ * first. Order: rate limit (every attempt counts), then a known `purpose` (422 `fields.purpose`), then the
+ * role for that purpose (403).
  */
 @Injectable()
 export class UploadGuard implements CanActivate {
@@ -64,14 +69,17 @@ export class UploadGuard implements CanActivate {
   canActivate(ctx: ExecutionContext): boolean {
     const req = ctx.switchToHttp().getRequest<AuthedRequest>()
     const auth = authOf(req)
-    const purpose = req.query.purpose
     this.throttle.hit(auth.userId)
-    if (isFilePurpose(purpose) && !mayUpload(purpose, auth.active.role)) throw ApiError.of('FORBIDDEN')
+    const purpose = req.query.purpose
+    if (!isFilePurpose(purpose)) {
+      throw ApiError.of('VALIDATION_ERROR', { fields: { purpose: FILE_MESSAGES.purposeInvalid } })
+    }
+    if (!mayUpload(purpose, auth.active.role)) throw ApiError.of('FORBIDDEN')
     return true
   }
 }
 
-/** Rate limit for deletes (same per-user window as uploads). */
+/** Rate limit for deletes (the same per-user window as uploads). */
 @Injectable()
 export class DeleteGuard implements CanActivate {
   constructor(@Inject(UploadThrottle) private readonly throttle: UploadThrottle) {}
@@ -82,22 +90,45 @@ export class DeleteGuard implements CanActivate {
   }
 }
 
-/** Multer's "file too large" (413) becomes the contract's 422 `fields.file`; the other multer errors are 422 too. */
-@Injectable()
-export class UploadErrorInterceptor implements NestInterceptor {
-  constructor(@Inject(FilesConfig) private readonly config: FilesConfig) {}
+const MULTER_LIMITS = { files: 1, fields: 4, fieldSize: 1024, parts: 6, headerPairs: 50 } as const
 
-  intercept(ctx: ExecutionContext, next: CallHandler): Observable<unknown> {
+/**
+ * Reads the multipart body with a size limit PER PURPOSE (its own rule, capped by MAX_UPLOAD_MB), so a
+ * body over the limit is cut off at that size and never buffered whole. Multer errors become the
+ * contract's 422: too large gives the purpose's size message, anything else (wrong field name, extra
+ * file, malformed body) gives the "required" message on `fields.file`.
+ */
+@Injectable()
+export class UploadInterceptor implements NestInterceptor {
+  private readonly byPurpose = new Map<FilePurpose, NestInterceptor>()
+
+  constructor(@Inject(FilesConfig) private readonly config: FilesConfig) {
+    for (const purpose of FILE_PURPOSES) {
+      const Interceptor = FileInterceptor('file', {
+        limits: { ...MULTER_LIMITS, fileSize: limitFor(purpose, config.maxUploadBytes) },
+      })
+      this.byPurpose.set(purpose, new Interceptor({}))
+    }
+  }
+
+  async intercept(ctx: ExecutionContext, next: CallHandler): Promise<Observable<unknown>> {
     const req = ctx.switchToHttp().getRequest<Request>()
-    return next.handle().pipe(
-      catchError((err: unknown) => {
-        if (err instanceof PayloadTooLargeException) {
-          const purpose = isFilePurpose(req.query.purpose) ? req.query.purpose : 'avatar'
-          return throwError(() => ApiError.of('VALIDATION_ERROR', { fields: { file: sizeMessageFor(purpose, this.config.maxUploadBytes) } }))
-        }
-        return throwError(() => err)
-      }),
-    )
+    const purpose = req.query.purpose
+    const inner = isFilePurpose(purpose) ? this.byPurpose.get(purpose) : undefined
+    if (!inner || !isFilePurpose(purpose)) {
+      throw ApiError.of('VALIDATION_ERROR', { fields: { purpose: FILE_MESSAGES.purposeInvalid } })
+    }
+    try {
+      return await inner.intercept(ctx, next)
+    } catch (err) {
+      if (err instanceof PayloadTooLargeException) {
+        throw ApiError.of('VALIDATION_ERROR', { fields: { file: sizeMessageFor(purpose, this.config.maxUploadBytes) } })
+      }
+      if (err instanceof BadRequestException) {
+        throw ApiError.of('VALIDATION_ERROR', { fields: { file: FILE_MESSAGES.required } })
+      }
+      throw err
+    }
   }
 }
 
@@ -106,12 +137,13 @@ export class FilesController {
   constructor(
     @Inject(FilesService) private readonly files: FilesService,
     @Inject(SESSION_RESOLVER) private readonly resolver: SessionResolver,
+    @Inject(DownloadThrottle) private readonly reads: DownloadThrottle,
   ) {}
 
   @Post()
   @HttpCode(201)
   @UseGuards(UploadGuard)
-  @UseInterceptors(UploadErrorInterceptor, FileInterceptor('file'))
+  @UseInterceptors(UploadInterceptor)
   async upload(
     @Query(new ZodValidationPipe(UploadFileQuerySchema)) query: UploadFileQuery,
     @UploadedFile() file: { buffer?: Buffer } | undefined,
@@ -126,12 +158,14 @@ export class FilesController {
 
   /**
    * Public at the guard level because `cms_image` is public; every other purpose needs a session,
-   * which is resolved here (401 without one, 404 for a file the caller may not see).
+   * which is resolved here (401 without one, 404 for a file the caller may not see). The read is
+   * rate limited per user, or per address for an anonymous caller.
    */
   @Public()
   @Get(':id')
   async download(@Param('id') id: string, @Req() req: Request, @Res() res: Response): Promise<void> {
     const auth = await this.resolver.resolve(req)
+    this.reads.hit(auth ? { userId: auth.userId } : { ip: req.ip ?? req.socket.remoteAddress ?? 'unknown' })
     const file = await this.files.read(id, auth)
     const mime = file.mime as DetectedMime
     const inline = mime !== 'application/pdf'
@@ -141,9 +175,10 @@ export class FilesController {
         'Content-Type': mime,
         'Content-Length': String(file.bytes.length),
         'X-Content-Type-Options': 'nosniff',
-        'Cache-Control': 'private, max-age=300',
+        // Only the public purpose may be reused from the browser cache without asking; the rest revalidate.
+        'Cache-Control': file.purpose === 'cms_image' ? 'private, max-age=300' : 'private, no-cache',
         Vary: 'Cookie',
-        'Content-Disposition': `${inline ? 'inline' : 'attachment'}; filename="file-${file.id}.${EXTENSION_OF[mime]}"`,
+        'Content-Disposition': `${inline ? 'inline' : 'attachment'}; filename="file-${file.publicId}.${EXTENSION_OF[mime]}"`,
         // Defence in depth if a browser ever renders the bytes as a document.
         'Content-Security-Policy': "default-src 'none'; sandbox",
         'Cross-Origin-Resource-Policy': 'same-site',

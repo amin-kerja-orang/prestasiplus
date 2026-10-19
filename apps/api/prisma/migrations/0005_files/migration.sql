@@ -1,10 +1,12 @@
 -- 0005_files (BE-04): the `files` table behind FileStorage.
+-- `id` is internal (other tables reference it); the API only shows `public_id`, a random 128-bit base64url token.
 -- Hand-edited after Prisma: identity column, CHECK constraints (text + check), legacy check.
 -- Number 0004 belongs to BE-05 (allocated by the lead); the gap is intended.
 
 -- CreateTable
 CREATE TABLE "files" (
     "id" BIGINT GENERATED ALWAYS AS IDENTITY NOT NULL,
+    "public_id" TEXT NOT NULL,
     "owner_user_id" BIGINT,
     "purpose" TEXT NOT NULL,
     "mime" TEXT NOT NULL,
@@ -17,12 +19,16 @@ CREATE TABLE "files" (
     "legacy_id" TEXT,
 
     CONSTRAINT "files_pkey" PRIMARY KEY ("id"),
+    CONSTRAINT "ck_files_public_id" CHECK ("public_id" ~ '^[A-Za-z0-9_-]{22}$'),
     CONSTRAINT "ck_files_purpose" CHECK ("purpose" ~ '^[a-z][a-z0-9_]{1,39}$'),
     CONSTRAINT "ck_files_mime" CHECK ("mime" IN ('image/jpeg', 'image/png', 'image/webp', 'application/pdf')),
     CONSTRAINT "ck_files_size_bytes" CHECK ("size_bytes" > 0),
     CONSTRAINT "ck_files_sha256" CHECK ("sha256" ~ '^[0-9a-f]{64}$'),
     CONSTRAINT "ck_files_legacy_source" CHECK ("legacy_source" IS NULL OR "legacy_source" IN ('cloud', 'my'))
 );
+
+-- CreateIndex
+CREATE UNIQUE INDEX "uq_files_public_id" ON "files"("public_id");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "uq_files_storage_key" ON "files"("storage_key");

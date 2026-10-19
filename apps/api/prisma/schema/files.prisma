@@ -5,6 +5,8 @@
 
 model File {
   id           BigInt   @id @default(autoincrement())
+  /// The only id the API shows: random 128-bit base64url (22 chars). `id` never leaves the server.
+  publicId     String   @unique(map: "uq_files_public_id") @map("public_id")
   /// Uploader. Set null when the user is deleted (the object stays until cleaned up).
   ownerUserId  BigInt?  @map("owner_user_id")
   /// avatar, bijak_photo, question_image, cms_image, plus the derived intake_* purposes. Open list (format check only).

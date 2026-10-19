@@ -64,7 +64,7 @@ export function registerFilesPaths(registry: OpenAPIRegistry): void {
     tags: ['files'],
     summary: 'Download a file',
     description:
-      'Bytes with the stored Content-Type, `X-Content-Type-Options: nosniff`, `Cache-Control: private` and Content-Disposition. Visibility: avatar and question_image any signed-in user; cms_image public (open question 1); bijak_photo and derived intake files the owner only (intake files also admin). Anything else is 404.',
+      'Bytes with the stored Content-Type, `X-Content-Type-Options: nosniff`, `Cache-Control: private, no-cache` (cms_image: `private, max-age=300`) and Content-Disposition. The id is the opaque token from FileRef. Every read is checked by purpose AND ownership and fails closed: bijak_photo the owner only; question_image staff only (admin, teacher); avatar the owner, admin, and school_admin or ppd_officer whose scope covers the owner (a teacher gets 404 until class membership exists, BE-17; classmates are not entitled here); cms_image public (interim, until BE-24 publish gating); derived intake files the owner or admin. Anyone else, an unknown id and a malformed token are all 404 (never 403). Rate limited per user (anonymous cms_image reads per address): 429.',
     request: { params: idParam },
     responses: {
       200: {
@@ -73,6 +73,7 @@ export function registerFilesPaths(registry: OpenAPIRegistry): void {
       },
       401: unauthorized,
       404: notFound,
+      429: limited,
     },
   })
 
