@@ -13,9 +13,9 @@ Single source of truth for the **state of every backend card**. The lead's proje
 | Priority | Cards | Of which done |
 |---|---|---|
 | P0 | 13 | 4 |
-| P1 | 23 | 0 |
+| P1 | 23 | 1 |
 | P2 | 12 | 0 |
-| **Total** | **48** | **4** |
+| **Total** | **48** | **5** |
 
 (Done = implementation squash-merged into feature/v2-backend: BE-01, BE-02, BE-03. "Contract merged" rows are contract-only, not yet done.)
 
@@ -51,7 +51,7 @@ Single source of truth for the **state of every backend card**. The lead's proje
 | BE-24 | Content and support tickets (M09, M22) | PC-1 | P1 | BE-03, BE-04, BE-05, BE-06 | M | todo | - | `be/BE-24-content-support` | - | Contract merged 2026-10-19 (PR #2, be/BE-24-contract). Contract only (content, support): 47 routes, 103 components; PR ready. Needs BE-06 `NotificationsService` and BE-05 for school scoping. |
 | BE-25 | School subscriptions, packages, parent invites, complimentary students (M02 rest) | PC-1 | P0 | BE-05 | M | todo | - | `be/BE-25-subscriptions-parents` | - | Contract merged 2026-10-19 (PR -, be/BE-25-contract). Needed by BE-12; do before BE-07/06. |
 | BE-26 | Seed: PoC data profile across all carded domains | PC-6 | P2 | BE-07, BE-12, BE-16, BE-17, BE-19, BE-23, BE-24 | M | todo | - | `be/BE-26-seed-poc-profile` | - | May include intake/builder seed once BE-38/39 exist. Reads BE-24 content seed. |
-| BE-27 | .cloud migration: staging schema, loader and profiling report (read-only source) | PC-4 | P1 | BE-02, BE-34 | M | todo | - | `be/BE-27-migration-staging-profiling` | - | Needs OD-2 for real data; fixtures meanwhile. Security review. |
+| BE-27 | .cloud migration: staging schema, loader and profiling report (read-only source) | PC-4 | P1 | BE-02, BE-34 | M | done | s-aminfaudzi-e3m2 | `be/BE-27-migration-staging-profiling` | - (LEAD merges by git) | **Merged 2026-10-20 (squash), base 79e6679a.** LEAD independent verify: contract:check + be:lint:migration + be:verify PASS (35 files/335 passed, real Testcontainers); Runner-level apply guard verified (runner.spec 15 tests). Fixtures only (OD-2 deferred, no .cloud connection). Security review PASS, code review Approve. Deviations: archive_cloud 35 tables; remember_token + parent_invite_token NULLed at load (M4). Unblocks BE-28/29. |
 | BE-28 | .cloud migration: ETL for reference data, identity and classes | PC-4 | P1 | BE-27, BE-05, BE-08, BE-17, BE-25 | L | todo | - | `be/BE-28-migration-etl-core` | - | Needs OD-10. Security review. |
 | BE-29 | .cloud migration: ETL for activity, wallet, content and operations | PC-4 | P2 | BE-28, BE-11, BE-12, BE-16, BE-23, BE-24 | L | todo | - | `be/BE-29-migration-etl-activity` | - | Needs OD-10. |
 | BE-30 | .cloud migration: reconciliation, rehearsal and cutover scripts | PC-4 | P2 | BE-29, BE-35 | M | todo | - | `be/BE-30-migration-reconcile-rehearsal` | - | Go/no-go gate for rehearsal. |

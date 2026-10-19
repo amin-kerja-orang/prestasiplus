@@ -1,0 +1,3 @@
+{"id":1,"name":"Sekolah Contoh 1","code":"SC001","type":"sk","state":"Negeri B","district":"Daerah B1","join_code":"JOIN1","is_active":"1","created_at":"2026-01-01T00:00:00Z"}
+{"id":2,"name":"Sekolah Contoh 2","code":"SC002","type":"sk","state":"Negeri B","district":"Daerah B2","join_code":"JOIN2","is_active":"1","created_at":"2026-01-01T00:00:00Z"}
+{"id":3,"name":"Sekolah Contoh 3","code":"SC003","type":"smk","state":"negeri b","district":"Daerah B3","join_code":"JOIN3","is_active":"1","created_at":"2026-01-01T00:00:00Z"}
