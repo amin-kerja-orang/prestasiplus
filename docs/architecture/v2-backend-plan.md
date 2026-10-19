@@ -536,7 +536,7 @@ Legend. Match: **1:1** copy/rename, **T** transform (ids below), **split**, **dr
 
 | Entity | Old table (.cloud) | New table | Match | Transforms and key columns | Schema card | ETL card |
 |---|---|---|---|---|---|---|
-| Education level | `education_levels` | `education_levels` | 1:1 | `name_bm`->`name`, `name_en`->`name_en`, `sort_order`->`order`; `grade` derived (T-09); built by BE-08 (`0003_curriculum`, in `migratable-models.json`, seeded from observed values with `legacy_*` null) | BE-08 | BE-28 |
+| Education level | `education_levels` | `education_levels` | 1:1 | `name_bm`->`name`, `name_en`->`name_en`, `sort_order`->`order`; `grade` derived (T-09); built by BE-08 (`0004_curriculum`, in `migratable-models.json`, seeded from observed values with `legacy_*` null) | BE-08 | BE-28 |
 | Subject | `subjects` | `subjects` | 1:1 | `is_core`, `color`, `sort_order` kept; built by BE-08 (code stored upper-case; two DSKP-only subjects LNR, KNP are seeded inactive with no level links) | BE-08 | BE-28 |
 | Subject-level pivot | (derived from `chapters`) | `subject_levels` | T-09 | distinct (`subject_id`, `education_level_id`) of chapters; built by BE-08 (the seed keeps the 194 observed pairs, a superset of the 140 chapter-derived pairs) | BE-08 | BE-28 |
 | Chapter | `chapters` | `chapters` | 1:1 | `title`, `number`, `dskp_code`, `strand`; `in_tree` by rule; built by BE-08 (out-of-tree rows have null `education_level_id` and `name`, never shown; `strand` and `dskp_code` are null in the seed, read-only in the API) | BE-08 | BE-28 |

@@ -1,4 +1,4 @@
--- 0003_curriculum (BE-08): education_levels, subjects, subject_levels, chapters, topics, subtopics,
+-- 0004_curriculum (BE-08): education_levels, subjects, subject_levels, chapters, topics, subtopics,
 -- curriculum_nodes, curriculum_tp_descriptors (OD-28 / OWN-7), legacy_topics, legacy_subtopics.
 -- Written by hand in the style of 0002_identity: identity columns, CHECK constraints (enums are
 -- text + check), the functional unique index of curriculum_tp_descriptors. Data model 3.3.

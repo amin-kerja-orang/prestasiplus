@@ -13,6 +13,7 @@
     "start": "node dist/main.js",
     "lint": "eslint --ignore-pattern \"dist/**\" --ignore-pattern \"src/db/generated/**\" .",
     "prelint": "npm run db:generate",
+    "lint:migration": "tsx scripts/check-migratable.ts",
     "typecheck": "tsc --noEmit",
     "pretypecheck": "npm run db:generate",
     "test": "vitest run",

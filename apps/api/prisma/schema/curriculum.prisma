@@ -1,6 +1,6 @@
 // Curriculum tables (BE-08, owner module M03). Conventions: docs/architecture/v2-backend-plan.md
 // section 14.2, data model section 3.3.
-// Not expressible in Prisma and written by hand in migration 0003_curriculum: identity columns
+// Not expressible in Prisma and written by hand in migration 0004_curriculum: identity columns
 // (GENERATED ALWAYS), CHECK constraints (enums are text + check), the functional unique index of
 // `curriculum_tp_descriptors`.
 
