@@ -38,6 +38,8 @@ import { BATTLE_COMPONENT_SCHEMAS, registerBattlePaths } from './battle/paths'
 import { GAMES_COMPONENT_SCHEMAS, registerGamesPaths } from './games/paths'
 import { MARKETPLACE_COMPONENT_SCHEMAS, registerMarketplacePaths } from './marketplace/paths'
 import { SPONSORSHIP_COMPONENT_SCHEMAS, registerSponsorshipPaths } from './sponsorship/paths'
+import { SCHOOLS_COMPONENT_SCHEMAS, registerSchoolsPaths } from './schools/paths' // BE-05
+import { USERS_COMPONENT_SCHEMAS, registerUsersPaths } from './users/paths' // BE-05
 import { ACCOUNT_COMPONENT_SCHEMAS, registerAccountPaths } from './account/paths'
 import { NOTIFICATIONS_COMPONENT_SCHEMAS, registerNotificationsPaths } from './notifications/paths'
 import { MISSIONS_COMPONENT_SCHEMAS, registerMissionsPaths } from './classes/missions/paths'
@@ -86,6 +88,8 @@ export const COMPONENT_SCHEMAS = {
   ...GAMES_COMPONENT_SCHEMAS, // BE-45 (M16 games, leagues)
   ...MARKETPLACE_COMPONENT_SCHEMAS, // BE-46 (M20)
   ...SPONSORSHIP_COMPONENT_SCHEMAS, // BE-47 (M21 student side)
+  ...SCHOOLS_COMPONENT_SCHEMAS, // BE-05
+  ...USERS_COMPONENT_SCHEMAS, // BE-05
   ...ACCOUNT_COMPONENT_SCHEMAS, // BE-06 (M01 account)
   ...NOTIFICATIONS_COMPONENT_SCHEMAS, // BE-06 (M01 notifications)
   ...SCHOOL_ADMIN_COMPONENT_SCHEMAS, // BE-21 (M27 + M18 Amaran)
@@ -143,6 +147,8 @@ export function buildOpenApiDocument(): Record<string, unknown> {
   registerGamesPaths(registry) // BE-45 (M16 games, leagues)
   registerMarketplacePaths(registry) // BE-46 (M20)
   registerSponsorshipPaths(registry) // BE-47 (M21 student side)
+  registerSchoolsPaths(registry) // BE-05
+  registerUsersPaths(registry) // BE-05
   registerAccountPaths(registry) // BE-06 (M01 account)
   registerNotificationsPaths(registry) // BE-06 (M01 notifications)
   registerSchoolAdminPaths(registry) // BE-21 (M27 + M18 Amaran)

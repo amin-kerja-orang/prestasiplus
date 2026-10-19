@@ -27,7 +27,7 @@ Single source of truth for the **state of every backend card**. The lead's proje
 | BE-02 | PostgreSQL service, Prisma setup and test harness | PC-1 | P0 | BE-01 | M | done | pc-aminfaudzi/S2 | `be/BE-02-db-orm` | - (LEAD merges by git) | Merged 2026-10-19 (LEAD review Approve; be:verify green on the LEAD PC with Testcontainers Postgres 16). Open: migrations from the runtime image (one-shot migrate container vs prisma in deps). |
 | BE-03 | Authentication, session, roles, scope and Mod Pelajar | PC-1 | P0 | BE-02 | L | todo | - | `be/BE-03-auth-session` | - | Sync S3 (auth, scope). Security review. Users table already has legacy columns. |
 | BE-04 | File storage service and upload handling | PC-1 | P0 | BE-03 | S | todo | - | `be/BE-04-file-storage` | - | Sync S4. Security review (uploads). Also derived files for BE-37. |
-| BE-05 | Users and schools (M02): admin CRUD, search, import | PC-1 | P0 | BE-03 | L | todo | - | `be/BE-05-users-schools` | - | Sync S5. Security review (IC, passwords). Unblocks BE-17, BE-25. |
+| BE-05 | Users and schools (M02): admin CRUD, search, import | PC-1 | P0 | BE-03 | L | todo | - | `be/BE-05-users-schools` | - | Contract merged 2026-10-19 (PR -, be/BE-05-contract). Sync S5. Security review (IC, passwords). Unblocks BE-17, BE-25. |
 | BE-06 | Account basics (M01): register, password reset, profile, settings, notifications | PC-1 | P1 | BE-03, BE-04, BE-05 | M | todo | - | `be/BE-06-account-notifications` | - | Contract merged 2026-10-19 (PR #4, be/BE-06-contract). Reset e-mail logged, not sent. Review fixes + D57 applied. |
 | BE-07 | Seed: core population (schools, users, roles) for the PoC profile | PC-1 | P0 | BE-05 | S | todo | - | `be/BE-07-seed-core-accounts` | - | Demo accounts only (Demo1234). |
 | BE-08 | Curriculum (M03): levels, subjects, chapters, topics, DSKP tree | PC-2 | P0 | BE-03 | M | todo | - | `be/BE-08-curriculum` | - | Contract merged 2026-10-19 (PR -, be/BE-08-contract). Sync S5. Unblocks BE-09. |
@@ -99,6 +99,7 @@ Newest first. The lead appends a line when a card merges, a decision is made or 
 
 | Date | Entry |
 |---|---|
+| 2026-10-19 | LEAD merged contract-only PRs: BE-05(-) after code review (Approve). Append-only conflicts resolved; openapi.json regenerated; contract:check, contract tests and tsc green. Cards back to `todo` for their full implementation. |
 | 2026-10-19 | LEAD merged **BE-02** (Prisma 7 + adapter-pg, PrismaService with AsyncLocalStorage transactions, Clock/ids/prng, seed runner with --profile, Testcontainers template-database harness, compose db service, CI postgres). Review Approve; be:verify green. package-lock regenerated with --package-lock-only to keep the BE-31 workspace. Sync point S2 reached; **BE-03 opened**. |
 | 2026-10-19 | LEAD merged **BE-39** contract (PR #11) on the owner's instruction, with 2 Majors carried as follow-ups (preview ReviewQuestion shape, QuestionKind enum and status mapping). LEAD fix in the same merge: openapi.ts widens the component map type (TS2859 at 1000+ schemas). contract:check, 1107 tests and tsc green. |
 | 2026-10-19 | LEAD merged contract-only PRs: BE-43(#22) BE-45(#13) after code review (Approve). Append-only conflicts resolved; openapi.json regenerated; contract:check, contract tests and tsc green. Cards back to `todo` for their full implementation. |
