@@ -76,7 +76,8 @@ describe('WalletSummary (GET /gamification/wallet)', () => {
 
   it('rejects numeric ids, missing keys, extra keys and bad numbers', () => {
     expect(WalletSummarySchema.safeParse({ ...wallet, userId: 2 }).success).toBe(false)
-    const { streak: _streak, ...noStreak } = wallet
+    const noStreak: Record<string, unknown> = { ...wallet }
+    delete noStreak.streak
     expect(WalletSummarySchema.safeParse(noStreak).success).toBe(false)
     expect(WalletSummarySchema.safeParse({ ...wallet, hasWallet: true }).success).toBe(false)
     expect(WalletSummarySchema.safeParse({ ...wallet, currentSyiling: 1.5 }).success).toBe(false)
