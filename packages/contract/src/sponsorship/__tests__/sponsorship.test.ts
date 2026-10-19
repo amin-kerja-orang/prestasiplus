@@ -199,6 +199,22 @@ describe('openapi registration', () => {
     expect(Object.keys(op?.responses ?? {}).sort()).toEqual(['201', '401', '403', '422', '429', '500'])
   })
 
+  it('D57(a): 429 RATE_LIMITED on the write route carries retryAfter (ErrorBody) and a Retry-After header', () => {
+    const op = doc.paths['/mohon-keluarga-angkat']?.post
+    const r = op?.responses['429'] as { headers?: Record<string, unknown>; content?: Record<string, { schema?: unknown }> } | undefined
+    expect(r).toBeDefined()
+    expect(JSON.stringify(r)).toMatch(/RATE_LIMITED/)
+    expect(Object.keys(r?.headers ?? {})).toContain('Retry-After')
+    expect(JSON.stringify(r?.content?.['application/json']?.schema)).toMatch(/ErrorBody/)
+  })
+
+  it('D57(b): the 201 carries no credential or token, so it sets no Cache-Control', () => {
+    const op = doc.paths['/mohon-keluarga-angkat']?.post
+    for (const [status, r] of Object.entries(op?.responses ?? {})) {
+      expect(Object.keys((r as { headers?: Record<string, unknown> }).headers ?? {}), status).not.toContain('Cache-Control')
+    }
+  })
+
   it('contains every sponsorship component, all prefixed KeluargaAngkat', () => {
     for (const name of Object.keys(SPONSORSHIP_COMPONENT_SCHEMAS)) {
       expect(doc.components.schemas).toHaveProperty(name)
