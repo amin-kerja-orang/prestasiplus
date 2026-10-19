@@ -18,6 +18,7 @@ import { ClientUuidSchema, IdSchema } from './common/ids'
 import { SESSION_COMPONENT_SCHEMAS, registerSessionPaths } from './session/paths'
 import { CONTENT_COMPONENT_SCHEMAS, registerContentPaths } from './content/paths'
 import { SUPPORT_COMPONENT_SCHEMAS, registerSupportPaths } from './support/paths'
+import { GAMIFICATION_COMPONENT_SCHEMAS, registerGamificationPaths } from './gamification/paths'
 import { DateOnlySchema, TimestampInputSchema, TimestampSchema } from './common/time'
 import { WALLET_COMPONENT_SCHEMAS, registerWalletPaths } from './wallet/paths'
 
@@ -44,6 +45,7 @@ export const COMPONENT_SCHEMAS = {
   ...WALLET_COMPONENT_SCHEMAS, // BE-11
   ...CONTENT_COMPONENT_SCHEMAS, // BE-24 (M09)
   ...SUPPORT_COMPONENT_SCHEMAS, // BE-24 (M22)
+  ...GAMIFICATION_COMPONENT_SCHEMAS, // BE-23
   // V2-T08 access matrix
   AccessGroupId: AccessGroupIdSchema,
   AccessGroup: AccessGroupSchema,
@@ -66,6 +68,7 @@ export function buildOpenApiDocument(): Record<string, unknown> {
   registerWalletPaths(registry) // BE-11
   registerContentPaths(registry) // BE-24 (M09)
   registerSupportPaths(registry) // BE-24 (M22)
+  registerGamificationPaths(registry) // BE-23
   const generator = new OpenApiGeneratorV31(registry.definitions)
   return generator.generateDocument({
     openapi: '3.1.0',
