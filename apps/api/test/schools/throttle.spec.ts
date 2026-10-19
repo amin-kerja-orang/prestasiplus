@@ -15,10 +15,10 @@ describe('rate limits (D57a)', () => {
     })
 
     it('the 4th request in a minute is 429 RATE_LIMITED with retryAfter and the Retry-After header', async () => {
-      for (const path of ['/api/schools/search', '/api/jpn', '/api/schools/search']) {
+      for (const path of ['/api/jpn', '/api/jpn/1/ppd', '/api/jpn']) {
         expect((await t.http().get(path)).status).toBe(200)
       }
-      const res = await t.http().get('/api/jpn/1/ppd')
+      const res = await t.http().get('/api/jpn')
       const err = expectError(res, 'RATE_LIMITED', 'Too Many Attempts.')
       expect(err.retryAfter).toBe(60)
       expect(res.headers['retry-after']).toBe('60')
@@ -36,6 +36,35 @@ describe('rate limits (D57a)', () => {
       t.clock.advance(120_000)
       for (let i = 0; i < 3; i++) expect((await t.http().get('/api/jpn').set('X-Forwarded-For', `10.0.0.${String(i + 1)}`)).status).toBe(200)
       expectError(await t.http().get('/api/jpn').set('X-Forwarded-For', '10.9.9.9'), 'RATE_LIMITED', 'Too Many Attempts.')
+    })
+  })
+
+  describe('school search typeahead has its own, higher ceiling', () => {
+    let t: SchoolsTestApp
+    beforeAll(async () => {
+      t = await bootSchoolsApp({ env: { THROTTLE_PUBLIC_PER_MINUTE: '1', THROTTLE_PUBLIC_SEARCH_PER_MINUTE: '5' } })
+    })
+    afterAll(async () => {
+      await t.close()
+    })
+
+    it('search is counted apart from jpn/ppd: 5 searches pass although the lookup ceiling is 1', async () => {
+      expect((await t.http().get('/api/jpn')).status).toBe(200)
+      expectError(await t.http().get('/api/jpn'), 'RATE_LIMITED', 'Too Many Attempts.')
+      for (let i = 0; i < 5; i++) expect((await t.http().get('/api/schools/search?q=demo')).status).toBe(200)
+      expectError(await t.http().get('/api/schools/search?q=demo'), 'RATE_LIMITED', 'Too Many Attempts.')
+    })
+
+    it('the default for lookups is 60 per minute', async () => {
+      const t2 = await bootSchoolsApp()
+      try {
+        for (let i = 0; i < 61; i++) {
+          const res = await t2.http().get('/api/jpn')
+          expect(res.status, String(i)).toBe(i < 60 ? 200 : 429)
+        }
+      } finally {
+        await t2.close()
+      }
     })
   })
 

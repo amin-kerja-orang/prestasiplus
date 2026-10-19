@@ -123,3 +123,7 @@ CREATE INDEX "ix_users_name_lower" ON "users" (lower("name"));
 CREATE INDEX "ix_user_roles_role_user_id" ON "user_roles" ("role", "user_id");
 CREATE INDEX "ix_schools_name_lower" ON "schools" (lower("name"));
 CREATE INDEX "ix_schools_is_active" ON "schools" ("is_active");
+
+-- Case-insensitive school code (BE-05 review M1): "abc" and "ABC" are the same code. The app checks first
+-- (friendly 422 under an advisory lock); this index is the backstop and serves findByCode (lower(code) = ...).
+CREATE UNIQUE INDEX "uq_schools_code_lower" ON "schools" (lower("code"));

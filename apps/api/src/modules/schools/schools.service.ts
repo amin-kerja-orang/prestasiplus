@@ -22,9 +22,12 @@ import { PrismaService } from '../../db/prisma.service'
 import { JOIN_CODE_ALPHABET, JOIN_CODE_LENGTH, SCHOOL_AUDIT, STATE_NAMES } from './schools.constants'
 import {
   type MemberCounts,
+  type JpnRow,
+  type PpdRow,
   type SchoolRow,
   type SchoolSummaryRow,
   SchoolsRepository,
+  type SchoolUpdateInput,
   type SchoolWriteInput,
 } from './schools.repository'
 
@@ -74,6 +77,13 @@ function positiveInt(value: unknown): number | undefined {
   if (typeof value !== 'string' || !/^\d{1,15}$/.test(value.trim())) return undefined
   const n = Number(value.trim())
   return Number.isSafeInteger(n) && n > 0 ? n : undefined
+}
+
+/** The mock trims every string input before validation (including `type`, which the schema does not trim). */
+function trimStrings(body: Raw): Raw {
+  const out: Raw = {}
+  for (const [k, v] of Object.entries(body)) out[k] = typeof v === 'string' ? v.trim() : v
+  return out
 }
 
 function isPrismaUnique(e: unknown): boolean {
@@ -168,7 +178,8 @@ export class SchoolsService {
   // ---- admin writes ----
 
   async create(body: unknown, auth: AuthContext, meta: RequestMeta): Promise<{ data: AdminSchool; status: string }> {
-    const input = await this.validate(body, null, true)
+    const parsed = await this.validate(body, null)
+    const input: SchoolWriteInput = { ...parsed, isActive: parsed.isActive ?? true }
     for (let attempt = 0; ; attempt++) {
       try {
         const row = await this.prisma.transaction(async (tx) => {
@@ -188,7 +199,10 @@ export class SchoolsService {
         })
         return { data: toAdminSchool(row, undefined), status: SCHOOL_MESSAGES.saved }
       } catch (e) {
-        // A join-code collision (31^8 codes) is retried with a new code; a code collision is a 422.
+        // P2002 is a unique violation: either the code (a race the advisory lock missed, or the
+        // lower(code) index backstop) or the join code. If the code is now taken, assertCodeFree
+        // throws the 422; otherwise it was the join code (31^8 values) and the whole transaction is
+        // retried with a new one (the failed transaction was rolled back, so nothing is half-written).
         if (isPrismaUnique(e) && attempt < 4) {
           await this.assertCodeFree(input.code, null)
           continue
@@ -201,7 +215,8 @@ export class SchoolsService {
   async update(id: string, body: unknown, auth: AuthContext, meta: RequestMeta): Promise<{ data: AdminSchool; status: string }> {
     const current = await this.repo.get(id)
     if (!current) throw ApiError.of('NOT_FOUND')
-    const input = await this.validate(body, id, current.isActive)
+    // An absent isActive stays out of the UPDATE, so a toggle made after the read above is kept.
+    const input = await this.validate(body, id)
     try {
       const row = await this.prisma.transaction(async (tx) => {
         await this.repo.lockCodeWrites()
@@ -245,6 +260,16 @@ export class SchoolsService {
   }
 
   // ---- public lookups ----
+
+  jpnList(): Promise<JpnRow[]> {
+    return this.repo.jpnList()
+  }
+
+  async ppdList(jpnId: string): Promise<PpdRow[]> {
+    const rows = await this.repo.ppdList(jpnId)
+    if (!rows) throw ApiError.of('NOT_FOUND')
+    return rows
+  }
 
   async search(query: SearchQuery): Promise<SchoolSummary[]> {
     const id = text(query.id)
@@ -293,8 +318,8 @@ export class SchoolsService {
    * boolean) plus the two checks only the server can make (known state, unique code). Every failing
    * field is reported together, one message per field, in the mock's field order.
    */
-  private async validate(body: unknown, ignoreId: string | null, defaultActive: boolean): Promise<SchoolWriteInput> {
-    const raw = isPlainObject(body) ? body : {}
+  private async validate(body: unknown, ignoreId: string | null): Promise<SchoolUpdateInput> {
+    const raw = trimStrings(isPlainObject(body) ? body : {})
     const parsed = SchoolInputSchema.safeParse(raw)
     const errors: Record<string, string> = {}
     if (!parsed.success) {
@@ -327,7 +352,7 @@ export class SchoolsService {
       state: candidate.state,
       district: candidate.district ? candidate.district : null,
       city: candidate.city ? candidate.city : null,
-      isActive: asBoolean(candidate.isActive) ?? defaultActive,
+      ...(asBoolean(candidate.isActive) === undefined ? {} : { isActive: asBoolean(candidate.isActive) as boolean }),
     }
   }
 }

@@ -1,7 +1,7 @@
 import { Module } from '@nestjs/common'
 
 import { AuditModule } from '../../common/audit/audit.module'
-import { RateLimitGuard, RateLimiter } from './rate-limit'
+import { ThrottleModule } from '../../common/throttle'
 import { SchoolsAdminController, SchoolsPublicController } from './schools.controller'
 import { SchoolsRepository } from './schools.repository'
 import { SchoolsService } from './schools.service'
@@ -12,9 +12,9 @@ import { SchoolsService } from './schools.service'
  * `jpns` and `ppds` (ADR-0014).
  */
 @Module({
-  imports: [AuditModule],
+  imports: [AuditModule, ThrottleModule],
   controllers: [SchoolsAdminController, SchoolsPublicController],
-  providers: [SchoolsRepository, SchoolsService, RateLimiter, RateLimitGuard],
+  providers: [SchoolsRepository, SchoolsService],
   exports: [SchoolsRepository],
 })
 export class SchoolsModule {}

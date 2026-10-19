@@ -3,7 +3,9 @@ import { randomBytes } from 'node:crypto'
 import pg from 'pg'
 import { inject } from 'vitest'
 
-import { createPrismaClient, type PrismaClient } from '../../src/db/client'
+import { PrismaPg } from '@prisma/adapter-pg'
+
+import { PrismaClient } from '../../src/db/client'
 import { withDatabase } from './global-setup'
 
 export interface TestDatabase {
@@ -37,8 +39,9 @@ export async function createTestDatabase(): Promise<TestDatabase> {
   }
 
   const url = withDatabase(adminUrl, name)
-  const prisma = createPrismaClient(url)
-  const pool = new pg.Pool({ connectionString: url, max: 2 })
+  // Small pools: every test file has its own database and the files run in parallel.
+  const prisma = new PrismaClient({ adapter: new PrismaPg({ connectionString: url, max: 3, connectionTimeoutMillis: 5_000 }) })
+  const pool = new pg.Pool({ connectionString: url, max: 1 })
 
   return {
     name,

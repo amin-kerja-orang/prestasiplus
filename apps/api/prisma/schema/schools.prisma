@@ -68,6 +68,8 @@ model School {
   auditEvents AuditEvent[]
   importJobs  ImportJob[]
 
+  // uq_schools_code_lower (unique on lower(code)) and ix_schools_name_lower are hand-written in migration
+  // 0004 (Prisma cannot express functional indexes); `migrate diff` ignores them.
   @@unique([legacySource, legacyId], map: "uq_schools_legacy")
   @@index([state, district], map: "ix_schools_state_district")
   @@index([ppdId], map: "ix_schools_ppd_id")

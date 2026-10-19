@@ -91,6 +91,46 @@ describe('SchoolsRepository (the interface other modules use)', () => {
     expect(counts.get(ids[2] as string)).toEqual({ studentCount: 0, teacherCount: 0 })
   })
 
+  it('names are ordered in code-unit order (COLLATE "C"), like the mock string compare', async () => {
+    await db.query(`insert into schools (name, code) values ('sk alpha', 'ORD1'), ('SK Zeta', 'ORD2'), ('SK  Beta', 'ORD3')`)
+    const names = (await repo.options()).map((o) => o.name)
+    expect(names).toEqual([...names].sort())
+    expect(names.indexOf('SK Zeta')).toBeLessThan(names.indexOf('sk alpha'))
+    const list = (await repo.list({ page: 1, pageSize: 100 })).rows.map((x) => x.name)
+    expect(list).toEqual([...list].sort())
+  })
+
+  it('resolveRegion matches state and district trimmed and case-insensitively; free text gives no PPD', async () => {
+    const sgr = (await repo.jpnList()).find((j) => j.code === 'SGR')
+    const a = await repo.resolveRegion(' selangor ', ' GOMBAK ')
+    expect(String(a.jpnId)).toBe(sgr?.id)
+    expect(a.ppdId).not.toBeNull()
+    expect(await repo.resolveRegion('Selangor', 'PPD Gombak')).toEqual({ jpnId: BigInt(sgr?.id as string), ppdId: null })
+    expect(await repo.resolveRegion('Narnia', 'Gombak')).toEqual({ jpnId: null, ppdId: null })
+    expect(await repo.resolveRegion(null, null)).toEqual({ jpnId: null, ppdId: null })
+    expect(await repo.resolveRegion('S%', null)).toEqual({ jpnId: null, ppdId: null })
+  })
+
+  it('create stores the row with the region links; update changes fields, keeps the join code and omits an absent isActive', async () => {
+    const created = await repo.create(
+      { name: 'SK Repo', code: 'REPO1', type: 'SK', state: 'Selangor', district: 'Gombak', city: null, isActive: false, joinCode: 'REPOJ001' },
+      new Date('2026-10-19T01:00:00Z'),
+    )
+    expect(created).toMatchObject({ code: 'REPO1', isActive: false, joinCode: 'REPOJ001', city: null })
+    expect(created.jpnId).not.toBeNull()
+    expect(created.ppdId).not.toBeNull()
+    const updated = await repo.update(
+      created.id,
+      { name: 'SK Repo 2', code: 'REPO1', type: 'SMK', state: 'Johor', district: 'Nowhere', city: 'X' },
+      new Date('2026-10-19T02:00:00Z'),
+    )
+    expect(updated).toMatchObject({ name: 'SK Repo 2', type: 'SMK', state: 'Johor', isActive: false, joinCode: 'REPOJ001' })
+    expect(updated?.ppdId).toBeNull()
+    expect(updated?.jpnId).not.toBe(created.jpnId)
+    expect(updated?.updatedAt.toISOString()).toBe('2026-10-19T02:00:00.000Z')
+    expect(await repo.update('999999', { name: 'x', code: 'x', type: 'SK', state: 'Johor', district: null, city: null }, new Date())).toBeNull()
+  })
+
   it('ppdList returns null for an unknown JPN, [] is not confused with it', async () => {
     expect(await repo.ppdList('999999')).toBeNull()
     expect(await repo.ppdList('abc')).toBeNull()

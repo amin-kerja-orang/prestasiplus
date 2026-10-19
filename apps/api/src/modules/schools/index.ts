@@ -8,6 +8,7 @@ export type {
   SchoolOptionRow,
   SchoolRow,
   SchoolSearchInput,
+  SchoolUpdateInput,
   SchoolSummaryRow,
   SchoolWriteInput,
 } from './schools.repository'

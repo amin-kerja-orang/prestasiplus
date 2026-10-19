@@ -1,5 +1,6 @@
 import 'reflect-metadata'
 
+import type { INestApplication } from '@nestjs/common'
 import { Test } from '@nestjs/testing'
 import request from 'supertest'
 import type TestAgent from 'supertest/lib/agent'
@@ -21,6 +22,7 @@ import { cookieValue, DEMO_PASSWORD, START, type LoggedIn } from '../auth/helper
 export { cookieValue, DEMO_PASSWORD, expectError, type LoggedIn, schoolIdOf, START, userIdOf } from '../auth/helpers'
 
 export interface SchoolsTestApp {
+  app: INestApplication
   db: TestDatabase
   clock: FixedClock
   http(): TestAgent
@@ -46,6 +48,7 @@ export async function bootSchoolsApp(opts: BootOptions = {}): Promise<SchoolsTes
     COOKIE_DOMAIN: undefined,
     THROTTLE_LOGIN_PER_MINUTE: undefined,
     THROTTLE_PUBLIC_PER_MINUTE: undefined,
+    THROTTLE_PUBLIC_SEARCH_PER_MINUTE: undefined,
     THROTTLE_ADMIN_READ_PER_MINUTE: undefined,
     THROTTLE_ADMIN_WRITE_PER_MINUTE: undefined,
     TRUST_PROXY_HOPS: undefined,
@@ -68,6 +71,7 @@ export async function bootSchoolsApp(opts: BootOptions = {}): Promise<SchoolsTes
   await app.init()
 
   return {
+    app,
     db,
     clock,
     http: () => request(app.getHttpServer()) as unknown as TestAgent,

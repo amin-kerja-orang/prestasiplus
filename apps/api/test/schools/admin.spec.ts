@@ -7,6 +7,9 @@ import {
 } from '@pp/contract'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import { z } from 'zod'
+import { vi } from 'vitest'
+
+import { SchoolsRepository } from '../../src/modules/schools'
 
 import {
   bootSchoolsApp,
@@ -258,6 +261,31 @@ describe('admin school routes (AC 1, AC 8)', () => {
       expect((await post({ ...VALID, code: '%' })).status).toBe(201)
     })
 
+    it('two parallel creates of the same code in different case: exactly one 201, one 422', async () => {
+      const [x, y] = await Promise.all([post({ ...VALID, code: 'RACE001' }), post({ ...VALID, code: 'race001' })])
+      expect([x.status, y.status].sort()).toEqual([201, 422])
+      const loser = x.status === 422 ? x : y
+      expect(expectError(loser, 'VALIDATION_ERROR').fields).toEqual({ code: 'The code has already been taken.' })
+      const rows = await t.db.query(`select 1 from schools where lower(code) = 'race001'`)
+      expect(rows).toHaveLength(1)
+    })
+
+    it('the database refuses a second code that differs only in case (unique index on lower(code))', async () => {
+      await expect(t.db.query(`insert into schools (name, code) values ('X', 'demo001')`)).rejects.toThrow(/uq_schools_code_lower/)
+    })
+
+    it('type is trimmed before the enum check, as the mock does', async () => {
+      const res = await post({ ...VALID, code: 'TRIM001', type: '  SMK  ' })
+      expect(res.status).toBe(201)
+      expect(SavedBody.parse(res.body).data.type).toBe('SMK')
+    })
+
+    it('a strict-body 422 still carries Cache-Control: no-store', async () => {
+      const res = await post({ ...VALID, code: 'NOSTORE1', joinCode: 'X' })
+      expectError(res, 'VALIDATION_ERROR')
+      expect(res.headers['cache-control']).toBe('no-store')
+    })
+
     it('rejects unknown keys (joinCode, id, legacy columns) with 422 and writes nothing', async () => {
       const before = await t.db.query<{ n: number }>(`select count(*)::int as n from schools`)
       for (const extra of [{ joinCode: 'HACKED01' }, { id: '1' }, { legacyId: 'x' }, { studentCount: 9 }]) {
@@ -296,6 +324,27 @@ describe('admin school routes (AC 1, AC 8)', () => {
       const rest = Object.fromEntries(Object.entries(VALID).filter(([k]) => k !== 'isActive'))
       const res = await put(id, { ...rest, code: 'DEMO003' })
       expect(SavedBody.parse(res.body).data.isActive).toBe(false)
+    })
+
+    it('a PUT without isActive keeps a toggle made between its read and its write', async () => {
+      const id = await schoolIdOf(t.db, 'DEMO004')
+      const rowBefore = await t.db.query<{ is_active: boolean }>(`select is_active from schools where id = $1`, [id])
+      const before = rowBefore[0]?.is_active as boolean
+      const repo = t.app.get(SchoolsRepository)
+      const original = repo.get.bind(repo)
+      const spy = vi.spyOn(repo, 'get').mockImplementationOnce(async (sid: string) => {
+        const row = await original(sid)
+        await t.db.query(`update schools set is_active = not is_active where id = $1`, [sid])
+        return row
+      })
+      const rest = Object.fromEntries(Object.entries(VALID).filter(([k]) => k !== 'isActive'))
+      const res = await put(id, { ...rest, code: 'DEMO004' })
+      spy.mockRestore()
+      expect(res.status).toBe(200)
+      expect(SavedBody.parse(res.body).data.isActive).toBe(!before)
+      const rowAfter = await t.db.query<{ is_active: boolean }>(`select is_active from schools where id = $1`, [id])
+      expect(rowAfter[0]?.is_active).toBe(!before)
+      await t.db.query(`update schools set is_active = true where id = $1`, [id])
     })
 
     it('another school code is 422 (case-insensitive); a missing field is 422; 404 for an unknown school', async () => {

@@ -1,6 +1,6 @@
 import { Inject, Injectable } from '@nestjs/common'
 
-import type { Prisma, School } from '../../db/generated/client'
+import { Prisma, type School } from '../../db/generated/client'
 import { idFromString, idToString, isIdString } from '../../db/ids'
 import { PrismaService } from '../../db/prisma.service'
 
@@ -80,6 +80,9 @@ export interface SchoolWriteInput {
   isActive: boolean
 }
 
+/** Fields of an update: `isActive` is optional. */
+export type SchoolUpdateInput = Omit<SchoolWriteInput, 'isActive'> & { isActive?: boolean }
+
 export interface MemberCounts {
   studentCount: number
   teacherCount: number
@@ -125,20 +128,23 @@ function toSummary(s: SchoolRow): SchoolSummaryRow {
   return { id: s.id, name: s.name, code: s.code, type: s.type, state: s.state, district: s.district, city: s.city }
 }
 
-/** Ordering of every school list: name A to Z, ties by id (mock `schools.list`). */
-const BY_NAME: Prisma.SchoolOrderByWithRelationInput[] = [{ name: 'asc' }, { id: 'asc' }]
+/**
+ * Name order of every school list: code-unit order (`COLLATE "C"`), ties by id. The mock compares
+ * strings with `<`/`>` (src/mock/db/where.ts `compareValues`), which is code-unit order; the
+ * database default collation would order mixed case, spaces and punctuation differently.
+ */
+const ORDER = Prisma.sql`ORDER BY name COLLATE "C" ASC, id ASC`
 
-/** Prisma passes `contains` to LIKE unescaped, so `%`, `_` and the escape character are escaped here (they match themselves). */
+/** Escapes `%`, `_` and the escape character so a search term matches itself in LIKE. */
 const escapeLike = (term: string): string => term.replace(/[\\%_]/g, (c) => `\\${c}`)
 
-const textSearch = (term: string): Prisma.SchoolWhereInput => {
-  const safe = escapeLike(term)
-  return {
-    OR: [
-      { name: { contains: safe, mode: 'insensitive' } },
-      { code: { contains: safe, mode: 'insensitive' } },
-    ],
-  }
+/** `WHERE` clause from conditions (all must hold); no condition means every row. */
+const whereOf = (conds: Prisma.Sql[]): Prisma.Sql =>
+  conds.length === 0 ? Prisma.sql`TRUE` : Prisma.join(conds, ' AND ')
+
+const textCond = (term: string): Prisma.Sql => {
+  const like = `%${escapeLike(term)}%`
+  return Prisma.sql`(name ILIKE ${like} ESCAPE '\\' OR code ILIKE ${like} ESCAPE '\\')`
 }
 
 /**
@@ -175,10 +181,8 @@ export class SchoolsRepository {
 
   /** Every school (active and inactive) as `{id, name}`, name A to Z. */
   async options(): Promise<SchoolOptionRow[]> {
-    const rows = await this.prisma.client.school.findMany({
-      select: { id: true, name: true },
-      orderBy: BY_NAME,
-    })
+    const rows = await this.prisma.client.$queryRaw<{ id: bigint; name: string }[]>`
+      SELECT id, name FROM schools ${ORDER}`
     return rows.map((r) => ({ id: idToString(r.id), name: r.name }))
   }
 
@@ -192,36 +196,39 @@ export class SchoolsRepository {
       })
       return row ? [toSummary(toRow(row))] : []
     }
-    const and: Prisma.SchoolWhereInput[] = [{ isActive: true }]
-    if (input.state) and.push({ state: input.state })
-    if (input.q) and.push(textSearch(input.q))
-    const rows = await this.prisma.client.school.findMany({
-      where: { AND: and },
-      select: SELECT,
-      orderBy: BY_NAME,
-      take: input.limit,
-    })
-    return rows.map((r) => toSummary(toRow(r)))
+    const conds = [Prisma.sql`is_active`]
+    if (input.state) conds.push(Prisma.sql`state = ${input.state}`)
+    if (input.q) conds.push(textCond(input.q))
+    const ids = await this.prisma.client.$queryRaw<{ id: bigint }[]>`
+      SELECT id FROM schools WHERE ${whereOf(conds)} ${ORDER} LIMIT ${input.limit}`
+    return (await this.rowsInOrder(ids.map((r) => r.id))).map(toSummary)
   }
 
   /** A page of the admin list with the number of rows matching the filters. */
   async list(filter: SchoolListFilter): Promise<{ rows: SchoolRow[]; total: number }> {
-    const and: Prisma.SchoolWhereInput[] = []
-    if (filter.state) and.push({ state: filter.state })
-    if (filter.type) and.push({ type: filter.type })
-    if (filter.search) and.push(textSearch(filter.search))
-    const where: Prisma.SchoolWhereInput = and.length > 0 ? { AND: and } : {}
-    const [rows, total] = await Promise.all([
-      this.prisma.client.school.findMany({
-        where,
-        select: SELECT,
-        orderBy: BY_NAME,
-        skip: (filter.page - 1) * filter.pageSize,
-        take: filter.pageSize,
-      }),
-      this.prisma.client.school.count({ where }),
+    const conds: Prisma.Sql[] = []
+    if (filter.state) conds.push(Prisma.sql`state = ${filter.state}`)
+    if (filter.type) conds.push(Prisma.sql`type = ${filter.type}`)
+    if (filter.search) conds.push(textCond(filter.search))
+    const where = whereOf(conds)
+    const [ids, count] = await Promise.all([
+      this.prisma.client.$queryRaw<{ id: bigint }[]>`
+        SELECT id FROM schools WHERE ${where} ${ORDER}
+        LIMIT ${filter.pageSize} OFFSET ${(filter.page - 1) * filter.pageSize}`,
+      this.prisma.client.$queryRaw<{ n: number }[]>`SELECT count(*)::int AS n FROM schools WHERE ${where}`,
     ])
-    return { rows: rows.map(toRow), total }
+    return { rows: await this.rowsInOrder(ids.map((r) => r.id)), total: count[0]?.n ?? 0 }
+  }
+
+  /** Loads the rows of `ids` and returns them in the order of `ids`. */
+  private async rowsInOrder(ids: bigint[]): Promise<SchoolRow[]> {
+    if (ids.length === 0) return []
+    const rows = await this.prisma.client.school.findMany({ where: { id: { in: ids } }, select: SELECT })
+    const byId = new Map(rows.map((r) => [r.id, r]))
+    return ids.flatMap((id) => {
+      const r = byId.get(id)
+      return r ? [toRow(r)] : []
+    })
   }
 
   /** Stat cards: all schools, ignoring every filter. */
@@ -283,13 +290,23 @@ export class SchoolsRepository {
     await this.prisma.client.$executeRaw`SELECT pg_advisory_xact_lock(hashtext('schools.code'))`
   }
 
-  /** The JPN and PPD a school with this state and district belongs to (names and codes match exactly). */
+  /**
+   * The JPN and PPD a school with this state and district belongs to. Names and codes are compared
+   * trimmed and case-insensitively (exact, not LIKE); a district that is not a known PPD of that JPN
+   * (free text such as "PPD Gombak" for the code "Gombak") gives no PPD link.
+   */
   async resolveRegion(state: string | null, district: string | null): Promise<{ jpnId: bigint | null; ppdId: bigint | null }> {
-    const jpn = state ? await this.prisma.client.jpn.findFirst({ where: { name: state }, select: { id: true } }) : null
+    const st = state?.trim() ?? ''
+    const di = district?.trim() ?? ''
+    const jpn = st
+      ? (await this.prisma.client.$queryRaw<{ id: bigint }[]>`
+          SELECT id FROM jpns WHERE lower(name) = lower(${st}) ORDER BY id LIMIT 1`)[0]
+      : undefined
     const ppd =
-      district && jpn
-        ? await this.prisma.client.ppd.findFirst({ where: { code: district, jpnId: jpn.id }, select: { id: true } })
-        : null
+      di && jpn
+        ? (await this.prisma.client.$queryRaw<{ id: bigint }[]>`
+            SELECT id FROM ppds WHERE lower(code) = lower(${di}) AND jpn_id = ${jpn.id} ORDER BY id LIMIT 1`)[0]
+        : undefined
     return { jpnId: jpn?.id ?? null, ppdId: ppd?.id ?? null }
   }
 
@@ -305,8 +322,8 @@ export class SchoolsRepository {
     return toRow(row)
   }
 
-  /** Replaces every editable field; the join code is never changed here. Null when the school does not exist. */
-  async update(id: string, input: SchoolWriteInput, now: Date): Promise<SchoolRow | null> {
+  /** Replaces the editable fields; an absent `isActive` is left out of the UPDATE (so a concurrent toggle is not overwritten); the join code is never changed here. Null when the school does not exist. */
+  async update(id: string, input: SchoolUpdateInput, now: Date): Promise<SchoolRow | null> {
     if (!isIdString(id)) return null
     const region = await this.resolveRegion(input.state, input.district)
     const result = await this.prisma.client.school.updateMany({
