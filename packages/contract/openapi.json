@@ -80146,6 +80146,16 @@
                 }
               }
             }
+          },
+          "403": {
+            "description": "PASSWORD_CHANGE_REQUIRED (shared common code, 403): the account must change its password first (session.mustChangePassword).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
           }
         }
       }
@@ -80177,6 +80187,16 @@
           },
           "401": {
             "description": "UNAUTHORIZED \"Unauthenticated.\" (no valid session).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "PASSWORD_CHANGE_REQUIRED (shared common code, 403): the account must change its password first (session.mustChangePassword).",
             "content": {
               "application/json": {
                 "schema": {
@@ -80238,7 +80258,7 @@
             }
           },
           "403": {
-            "description": "CSRF_INVALID (missing or wrong X-CSRF-Token).",
+            "description": "CSRF_INVALID (missing or wrong X-CSRF-Token), or PASSWORD_CHANGE_REQUIRED (shared common code, 403) while session.mustChangePassword is set.",
             "content": {
               "application/json": {
                 "schema": {
@@ -80329,7 +80349,7 @@
             }
           },
           "403": {
-            "description": "CSRF_INVALID (missing or wrong X-CSRF-Token).",
+            "description": "CSRF_INVALID (missing or wrong X-CSRF-Token), or PASSWORD_CHANGE_REQUIRED (shared common code, 403) while session.mustChangePassword is set.",
             "content": {
               "application/json": {
                 "schema": {
@@ -80430,7 +80450,7 @@
             }
           },
           "403": {
-            "description": "CSRF_INVALID (missing or wrong X-CSRF-Token).",
+            "description": "CSRF_INVALID (missing or wrong X-CSRF-Token), or PASSWORD_CHANGE_REQUIRED (shared common code, 403) while session.mustChangePassword is set.",
             "content": {
               "application/json": {
                 "schema": {
@@ -80530,7 +80550,7 @@
             }
           },
           "403": {
-            "description": "CSRF_INVALID (missing or wrong X-CSRF-Token).",
+            "description": "CSRF_INVALID (missing or wrong X-CSRF-Token), or PASSWORD_CHANGE_REQUIRED (shared common code, 403) while session.mustChangePassword is set.",
             "content": {
               "application/json": {
                 "schema": {
@@ -80630,7 +80650,7 @@
             }
           },
           "403": {
-            "description": "CSRF_INVALID (missing or wrong X-CSRF-Token).",
+            "description": "CSRF_INVALID (missing or wrong X-CSRF-Token), or PASSWORD_CHANGE_REQUIRED (shared common code, 403) while session.mustChangePassword is set.",
             "content": {
               "application/json": {
                 "schema": {
