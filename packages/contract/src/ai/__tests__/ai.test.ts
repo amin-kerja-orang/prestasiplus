@@ -8,9 +8,16 @@ import { buildOpenApiDocument, COMPONENT_SCHEMAS } from '../../openapi'
 import { AI_COMPONENT_SCHEMAS, AI_TAG } from '../paths'
 import {
   AI_FAILURE_CODES,
+  AI_LEAF_KINDS,
   AI_MESSAGES,
+  AI_MOCK_MODEL_ID,
+  AI_POINT_CODES,
   AI_PROVIDER_IDS,
+  AI_PROVIDER_LABELS,
+  aiUnknownProviderMessage,
   AiCallContextSchema,
+  AiCurriculumTagSchema,
+  AiDraftPartSchema,
   AiExtractRequestSchema,
   AiExtractedPaperSchema,
   AiGenerateTextRequestSchema,
@@ -18,9 +25,12 @@ import {
   AiPageImageRefSchema,
   AiQuestionDraftSchema,
   AiRedactionSummarySchema,
+  AiSchemeDefSchema,
   AiSettingsSchema,
   AiSettingsUpdateSchema,
   AiStatusSchema,
+  AiStimulusDefSchema,
+  AiIntakeStimulusSchema,
   AiSuggestTagsRequestSchema,
   AiSuggestTagsResultSchema,
   AiTestRequestSchema,
@@ -33,34 +43,82 @@ import {
 
 const ok = (s: { safeParse: (v: unknown) => { success: boolean } }, v: unknown) => s.safeParse(v).success
 
-const usage = { provider: 'mock', model: 'heuristik-1', pages: 2, tokensIn: 1200, tokensOut: 800, costSen: 0 }
+const usage = { provider: 'mock', model: AI_MOCK_MODEL_ID, pages: 2, tokensIn: 1200, tokensOut: 800, costSen: 0 }
 const redaction = { applied: true, masked: [{ flag: 'school_name', count: 1 }, { flag: 'phone', count: 2 }] }
-const draft = {
+
+// Prototype-shaped fixtures: what `parsePaper` builds for a fictitious sample paper
+// (`admin/intake/ai/mock-extractor.ts` at 9af43134), plus the contract's server additions.
+const tag = { subject: 'MAT', level: 'T4', unit: 'MAT-T4-02', unitLabel: 'Asas Nombor', sp: ['02.1'], tp: 3, formOrigin: 'T4' }
+const emptyTag = { subject: 'MAT', level: 'T4+T5', unit: null, unitLabel: '', sp: [], tp: 3, formOrigin: 'T4' }
+const optionScheme = { kind: 'option', marks: 1, correct: 'B', reason: '' }
+const pointsScheme = {
+  kind: 'points',
+  marks: 2,
+  points: [
+    { id: 'pt1', code: 'K', marks: 1, label: '2x = 14 - 6', match: { type: 'step', accept: ['2x = 14 - 6'] } },
+    {
+      id: 'pt2',
+      code: 'N',
+      marks: 1,
+      label: 'x = 4',
+      match: { type: 'step', accept: ['x = 4', '4'] },
+      ecf: { fromPart: 'q-3-p1', rule: { op: 'same' }, note: 'Ikut jawapan sendiri' },
+    },
+  ],
+  groups: [{ id: 'g1', anyN: 2, pointIds: ['pt1', 'pt2'] }],
+}
+const server = {
   status: 'draft',
-  label: '1',
+  confirmed: [],
+  fieldConfidence: { stem: 0.97, marks: 0.9, 'tag.sp': 0.4 },
+  warnings: [{ code: 'low_confidence', field: 'tag.sp', message: 'Unit kurikulum tidak pasti.' }],
+}
+const draft = {
+  ...server,
+  id: 'q-2-3',
+  label: '2',
   type: 'mcq',
   stem: 'Nilai bagi 3 + 4 ialah',
   options: [
-    { key: 'A', text: '6' },
-    { key: 'B', text: '7' },
+    { id: 'A', text: '6' },
+    { id: 'B', text: '7' },
   ],
   marks: 1,
+  mode: 'short_text',
   parts: [],
-  scheme: { answer: 'B' },
-  tag: { unit: 'MAT-T4-02', unitLabel: 'Asas Nombor', level: 'T4', tp: 3 },
+  scheme: optionScheme,
+  tag,
   page: 1,
   region: { page: 1, x: 0.1, y: 0.2, w: 0.8, h: 0.1 },
-  fieldConfidence: { stem: 0.97, marks: 0.9, 'tag.unit': 0.4 },
-  lowFields: ['tag.unit'],
-  warnings: [{ code: 'low_confidence', field: 'tag.unit', message: 'Unit kurikulum tidak pasti.' }],
+  lowFields: ['tag.sp'],
 }
+const structured = {
+  ...server,
+  id: 'q-3-4',
+  label: '3',
+  type: 'structured',
+  stem: 'Rajah 1 menunjukkan sebuah segi tiga.',
+  options: [],
+  marks: 4,
+  mode: 'short_text',
+  parts: [
+    { id: '3-p1', label: '(a)', prompt: 'Hitung nilai x.', marks: 2, mode: 'working', scheme: pointsScheme },
+    { id: '3-p2', label: '(a)(i)', prompt: 'Nyatakan unit.', marks: 2, mode: 'short_text' },
+  ],
+  tag: emptyTag,
+  stimulusId: 'stim-1',
+  page: 2,
+  lowFields: ['tag.unit'],
+  needsManual: true,
+}
+const stimulus = { id: 'stim-1', kind: 'diagram', label: 'Rajah 1', caption: 'Segi tiga', alt: 'Segi tiga', page: 2 }
 const extracted = {
   provider: 'mock',
-  model: 'heuristik-1',
-  questions: [draft],
-  stimuli: [{ ref: 'S1', kind: 'rajah', title: 'Rajah 1', page: 1, region: { page: 1, x: 0, y: 0, w: 0.5, h: 0.3 } }],
-  unmatched: ['Jawapan 1-5'],
-  warnings: ['Tiada soalan dikesan dalam teks kertas.'],
+  model: AI_MOCK_MODEL_ID,
+  questions: [draft, structured],
+  stimuli: [stimulus, { id: 'stim-2', kind: 'passage', label: 'Petikan 1', alt: '', text: 'Teks petikan.', page: 3, region: { page: 3, x: 0, y: 0, w: 0.5, h: 0.3 } }],
+  unmatched: ['Jawapan 9-B', 'Skema 9(a)'],
+  warnings: [AI_MESSAGES.noQuestions],
   usage,
   redaction,
 }
@@ -73,17 +131,21 @@ describe('request types', () => {
         images: [{ page: 2, fileId: '9000012', width: 1240, height: 1754 }],
         subject: 'MAT',
         kertas: 2,
-        taxonomy: [{ code: 'MAT-T4-02', label: 'Asas Nombor' }],
+        taxonomy: [{ code: 'MAT-T4-02', label: 'Asas Nombor', form: 'T4' }],
         structure: [{ label: 'Bahagian A', type: 'mcq', questionCount: 40, marks: 40 }],
       }),
     ).toBe(true)
   })
 
-  it('rejects empty input, a bad kertas, an inline data URL image and extra keys', () => {
-    expect(ok(AiExtractRequestSchema, { pages: [], subject: 'MAT', kertas: 1 })).toBe(false)
+  it('accepts empty pages as the prototype does (the result then carries the no-question warning)', () => {
+    expect(ok(AiExtractRequestSchema, { pages: [], subject: 'MAT', kertas: 1 })).toBe(true)
+  })
+
+  it('rejects a bad kertas, an inline data URL image and extra keys', () => {
     expect(ok(AiExtractRequestSchema, { pages: [{ page: 1, text: 'x', source: 'ocr' }], subject: 'MAT', kertas: 3 })).toBe(false)
     expect(ok(AiPageImageRefSchema, { page: 1, dataUrl: 'data:image/png;base64,AAAA', width: 1, height: 1 })).toBe(false)
     expect(ok(AiPageImageRefSchema, { page: 1, fileId: '', width: 1, height: 1 })).toBe(false)
+    expect(ok(AiExtractRequestSchema, { pages: [{ page: 1, text: 'x', source: 'scan' }], subject: 'MAT', kertas: 1 })).toBe(false)
   })
 
   it('cannot carry a user, student, teacher or school identifier (AC-04.8)', () => {
@@ -119,7 +181,7 @@ describe('request types', () => {
 describe('result types: drafts only', () => {
   it('parses an extracted paper with confidence, region, warnings, usage and redaction flags', () => {
     expect(ok(AiExtractedPaperSchema, extracted)).toBe(true)
-    expect(ok(AiSuggestTagsResultSchema, { suggestions: [{ ref: 'a', tag: { unit: 'MAT-T4-02' }, confidence: 0.8 }], usage, redaction })).toBe(true)
+    expect(ok(AiSuggestTagsResultSchema, { suggestions: [{ ref: 'a', tag, confidence: 0.8 }], usage, redaction })).toBe(true)
   })
 
   it('has no status other than draft and no approval shape (AC-05.6)', () => {
@@ -127,8 +189,9 @@ describe('result types: drafts only', () => {
       expect(ok(AiQuestionDraftSchema, { ...draft, status })).toBe(false)
     }
     expectTypeOf<AiQuestionDraft['status']>().toEqualTypeOf<'draft'>()
-    // the service cannot confirm a low field: no `confirmed` key is accepted
-    expect(ok(AiQuestionDraftSchema, { ...draft, confirmed: ['tag.unit'] })).toBe(false)
+    // the service cannot confirm a low field: the prototype `confirmed` key exists but is always empty
+    expect(ok(AiQuestionDraftSchema, { ...draft, confirmed: ['tag.sp'] })).toBe(false)
+    expect(ok(AiQuestionDraftSchema, { ...draft, confirmed: undefined })).toBe(false)
     expect(ok(AiQuestionDraftSchema, { ...draft, approvedBy: '1' })).toBe(false)
   })
 
@@ -143,8 +206,10 @@ describe('result types: drafts only', () => {
     expect(ok(AiQuestionDraftSchema, { ...draft, fieldConfidence: { stem: 1.2 } })).toBe(false)
     expect(ok(AiQuestionDraftSchema, { ...draft, region: { page: 1, x: -0.1, y: 0, w: 1, h: 1 } })).toBe(false)
     expect(ok(AiQuestionDraftSchema, { ...draft, marks: -1 })).toBe(false)
-    expect(ok(AiQuestionDraftSchema, { ...draft, marks: null })).toBe(true)
-    expect(ok(AiQuestionDraftSchema, { ...draft, tag: { tp: 7 } })).toBe(false)
+    // the prototype `marks` is a number (0 when not found, with 'marks' in lowFields), never null
+    expect(ok(AiQuestionDraftSchema, { ...draft, marks: 0, lowFields: ['marks'] })).toBe(true)
+    expect(ok(AiQuestionDraftSchema, { ...draft, marks: null })).toBe(false)
+    expect(ok(AiQuestionDraftSchema, { ...draft, tag: { ...tag, tp: 7 } })).toBe(false)
   })
 
   it('rejects a usage with a negative or fractional cost and an unknown provider', () => {
@@ -168,11 +233,146 @@ describe('result types: drafts only', () => {
   })
 })
 
+describe('prototype parity (feature/student-prototype 9af43134)', () => {
+  // Key lists copied from `domain/types.ts` and `admin/intake/types.ts`; a change on either side must
+  // be a conscious one.
+  const keysOf = (schema: unknown): string[] => Object.keys((schema as { shape: object }).shape).sort()
+  const branchKeys = (schema: unknown, discriminator: string, value: string): string[] => {
+    const options = (schema as { options: { shape: Record<string, { value?: string }> }[] }).options
+    const branch = options.find((o) => o.shape[discriminator]?.value === value)
+    expect(branch, value).toBeDefined()
+    return Object.keys(branch!.shape).sort()
+  }
+
+  it('CurriculumTag has exactly the prototype fields, all required', () => {
+    expect(keysOf(AiCurriculumTagSchema)).toEqual(['formOrigin', 'level', 'sp', 'subject', 'tp', 'unit', 'unitLabel'])
+    expect(ok(AiCurriculumTagSchema, tag)).toBe(true)
+    expect(ok(AiCurriculumTagSchema, emptyTag)).toBe(true) // lib/dskp.ts emptyTag
+    expect(ok(AiCurriculumTagSchema, { ...tag, unit: 'x'.repeat(65) })).toBe(false)
+    expect(ok(AiCurriculumTagSchema, { ...tag, unitLabel: undefined })).toBe(false)
+    expect(ok(AiCurriculumTagSchema, { ...tag, level: 'T3' })).toBe(false)
+    expect(ok(AiCurriculumTagSchema, { ...tag, formOrigin: 'T6' })).toBe(false)
+    expect(ok(AiCurriculumTagSchema, { ...tag, sp: '02.1' })).toBe(false)
+    expect(ok(AiCurriculumTagSchema, { ...tag, tp: 0 })).toBe(false)
+    expect(ok(AiCurriculumTagSchema, { ...tag, tp: 3.5 })).toBe(false)
+    // T1-T3 content has no unit (exam schema Q-S2)
+    expect(ok(AiCurriculumTagSchema, { ...tag, formOrigin: 'T1-T3', unit: null })).toBe(true)
+  })
+
+  it('StimulusDef has exactly the prototype fields; IntakeStimulus adds page', () => {
+    expect(keysOf(AiStimulusDefSchema)).toEqual(['alt', 'caption', 'id', 'kind', 'label', 'svg', 'table', 'text'])
+    expect(keysOf(AiIntakeStimulusSchema)).toEqual(['alt', 'caption', 'id', 'kind', 'label', 'page', 'region', 'svg', 'table', 'text'])
+    for (const kind of ['diagram', 'passage', 'table']) {
+      expect(ok(AiStimulusDefSchema, { id: 's', kind, label: 'Rajah 1', alt: '' })).toBe(true)
+    }
+    // the mock's own kinds are `diagram | table | passage`, not the BM words
+    expect(ok(AiStimulusDefSchema, { id: 's', kind: 'rajah', label: 'Rajah 1', alt: '' })).toBe(false)
+    expect(ok(AiStimulusDefSchema, { id: 's', kind: 'table', label: 'Jadual 1', alt: 'x', table: { head: ['a'], rows: [['1'], ['2']] } })).toBe(true)
+    expect(ok(AiStimulusDefSchema, { id: 's', kind: 'table', label: 'Jadual 1', alt: 'x', table: { head: ['a'] } })).toBe(false)
+    expect(ok(AiStimulusDefSchema, { id: 's', kind: 'diagram', label: 'Rajah 1' })).toBe(false) // alt is required
+    expect(ok(AiStimulusDefSchema, { id: 's', kind: 'diagram', label: 'Rajah 1', alt: '', page: 1 })).toBe(false)
+    expect(ok(AiIntakeStimulusSchema, { id: 's', kind: 'diagram', label: 'Rajah 1', alt: '', page: 1 })).toBe(true)
+    expect(ok(AiIntakeStimulusSchema, { id: 's', kind: 'diagram', label: 'Rajah 1', alt: '', colour: 'red' })).toBe(false)
+  })
+
+  it('SchemeDef has the five prototype kinds with the prototype fields', () => {
+    const schema = AiSchemeDefSchema as unknown
+    expect(branchKeys(schema, 'kind', 'option')).toEqual(['correct', 'kind', 'marks', 'reason'])
+    expect(branchKeys(schema, 'kind', 'mapping')).toEqual(['kind', 'map', 'marks'])
+    expect(branchKeys(schema, 'kind', 'accepted')).toEqual(['caseSensitive', 'kind', 'marks', 'values'])
+    expect(branchKeys(schema, 'kind', 'points')).toEqual(['final', 'groups', 'kind', 'marks', 'model', 'points'])
+    expect(branchKeys(schema, 'kind', 'rubric')).toEqual(['bands', 'criteria', 'kind', 'marks', 'notes'])
+  })
+
+  it('parses every SchemeDef kind and rejects the wrong shapes', () => {
+    expect(ok(AiSchemeDefSchema, optionScheme)).toBe(true)
+    expect(ok(AiSchemeDefSchema, pointsScheme)).toBe(true)
+    expect(ok(AiSchemeDefSchema, { kind: 'mapping', marks: 2, map: { a: 'x', b: 'y' } })).toBe(true)
+    expect(ok(AiSchemeDefSchema, { kind: 'accepted', marks: 1, values: [{ v: '12', tol: 0.5, unit: 'cm' }], caseSensitive: false })).toBe(true)
+    expect(
+      ok(AiSchemeDefSchema, {
+        kind: 'rubric',
+        marks: 6,
+        criteria: [{ id: 'c1', name: 'Isi' }],
+        bands: [{ name: 'Baik', range: [4, 6], descriptor: 'Lengkap' }],
+        notes: ['n'],
+      }),
+    ).toBe(true)
+    expect(ok(AiSchemeDefSchema, { kind: 'essay', marks: 1 })).toBe(false)
+    expect(ok(AiSchemeDefSchema, { ...optionScheme, answer: 'B' })).toBe(false) // old proposed shape is gone
+    expect(ok(AiSchemeDefSchema, { kind: 'option', marks: 1, correct: 'B' })).toBe(false) // reason required
+    // every point match variant and every ecf rule of the prototype
+    const point = (match: unknown, extra: object = {}) => ({ ...pointsScheme, points: [{ id: 'p', code: 'M', marks: 1, label: 'l', match, ...extra }] })
+    for (const match of [
+      { type: 'step', accept: ['a'] },
+      { type: 'all_of', items: ['a', 'b'] },
+      { type: 'final' },
+      { type: 'unit' },
+      { type: 'keywords', anyOf: ['a'] },
+      { type: 'manual' },
+    ]) {
+      expect(ok(AiSchemeDefSchema, point(match)), JSON.stringify(match)).toBe(true)
+    }
+    expect(ok(AiSchemeDefSchema, point({ type: 'regex', pattern: '.' }))).toBe(false)
+    for (const rule of [{ op: 'same' }, { op: 'sub_from', k: 10 }, { op: 'add', k: 1 }, { op: 'mul', k: 2 }]) {
+      expect(ok(AiSchemeDefSchema, point({ type: 'final' }, { ecf: { fromPart: 'p1', rule, note: 'n' } }))).toBe(true)
+    }
+    expect(ok(AiSchemeDefSchema, point({ type: 'final' }, { ecf: { fromPart: 'p1', rule: { op: 'pow', k: 2 }, note: 'n' } }))).toBe(false)
+    expect(ok(AiSchemeDefSchema, point({ type: 'final' }, { code: 'Z' }))).toBe(false)
+    expect([...AI_POINT_CODES]).toEqual(['K', 'N', 'P', 'B', 'M', 'F', 'C'])
+  })
+
+  it('IntakeQuestion and IntakePart keep the prototype fields', () => {
+    expect(keysOf(AiQuestionDraftSchema)).toEqual(
+      [
+        'confirmed', 'fieldConfidence', 'id', 'label', 'lowFields', 'marks', 'mode', 'needsManual', 'options', 'page', 'parts',
+        'region', 'scheme', 'status', 'stem', 'stimulusId', 'tag', 'type', 'unit', 'warnings', 'wordRange',
+      ].sort(),
+    )
+    expect(keysOf(AiDraftPartSchema)).toEqual(['id', 'label', 'marks', 'mode', 'prompt', 'scheme', 'unit', 'wordRange'])
+    expect([...AI_LEAF_KINDS]).toEqual(['working', 'numeric', 'short_text', 'match_letter', 'essay', 'drawing', 'table_fill'])
+    // a structured question, "(a)(i)" part labels, needsManual and an empty-tag question
+    expect(ok(AiQuestionDraftSchema, structured)).toBe(true)
+    // MCQ options use `id`, not `key`
+    expect(ok(AiQuestionDraftSchema, { ...draft, options: [{ key: 'A', text: '6' }, { key: 'B', text: '7' }] })).toBe(false)
+    // an essay with a word range
+    expect(ok(AiQuestionDraftSchema, { ...draft, type: 'essay', options: [], mode: 'essay', wordRange: { min: 80, max: 120 }, scheme: undefined })).toBe(true)
+    expect(ok(AiQuestionDraftSchema, { ...draft, wordRange: { min: 120, max: 80 } })).toBe(false)
+    expect(ok(AiQuestionDraftSchema, { ...draft, mode: 'oral' })).toBe(false)
+    // the old `stimulusRef` key is gone
+    expect(ok(AiQuestionDraftSchema, { ...draft, stimulusRef: 'S1' })).toBe(false)
+    // `lead` belongs to bank editing, not to an extraction result
+    expect(ok(AiDraftPartSchema, { ...structured.parts[0], lead: [] })).toBe(false)
+  })
+
+  it('ExtractedPaper keeps provider, model, questions, stimuli, unmatched and warnings', () => {
+    expect(keysOf(AiExtractedPaperSchema)).toEqual(['model', 'provider', 'questions', 'redaction', 'stimuli', 'unmatched', 'usage', 'warnings'])
+    expect(ok(AiExtractedPaperSchema, extracted)).toBe(true)
+    expect(ok(AiExtractedPaperSchema, { ...extracted, questions: [], stimuli: [], unmatched: [], warnings: [AI_MESSAGES.noQuestions] })).toBe(true)
+  })
+
+  it('provider ids, labels and BM copy equal the prototype', () => {
+    expect(AI_PROVIDER_LABELS).toEqual({
+      mock: 'Contoh (mock, tanpa AI)',
+      anthropic: 'Anthropic Claude',
+      openai: 'OpenAI',
+      gemini: 'Google Gemini',
+      'openai-compatible': 'Serasi OpenAI',
+    })
+    expect(Object.keys(AI_PROVIDER_LABELS)).toEqual([...AI_PROVIDER_IDS])
+    expect(AI_MOCK_MODEL_ID).toBe('heuristik-1')
+    expect(AI_MESSAGES.notConfigured).toBe('Dikonfigurasi di pelayan')
+    expect(AI_MESSAGES.extractionFailed).toBe('Pengekstrakan gagal.')
+    expect(AI_MESSAGES.noQuestions).toBe('Tiada soalan dikesan dalam teks kertas.')
+    expect(aiUnknownProviderMessage('nope')).toBe('Penyedia AI tidak dikenali: nope')
+  })
+})
+
 describe('admin wire bodies', () => {
   const settings = { monthlyBudgetSen: 50000, notifyAt80: true, notifyAt100: true, updatedAt: '2026-10-19T10:00:00+08:00' }
   const status = {
     provider: 'mock',
-    model: 'heuristik-1',
+    model: AI_MOCK_MODEL_ID,
     configured: true,
     capabilities: { vision: false, jsonMode: true, maxPagesPerCall: 20 },
     month: '2026-10',
@@ -219,7 +419,7 @@ describe('admin wire bodies', () => {
   })
 
   it('usage rows carry no content', () => {
-    const row = { id: '1', createdAt: '2026-10-19T10:00:00+08:00', purpose: 'extract_paper', provider: 'mock', model: 'heuristik-1', runId: '3', batchId: null, actorId: '5', pages: 4, tokensIn: 10, tokensOut: 20, costSen: 0 }
+    const row = { id: '1', createdAt: '2026-10-19T10:00:00+08:00', purpose: 'extract_paper', provider: 'mock', model: AI_MOCK_MODEL_ID, runId: '3', batchId: null, actorId: '5', pages: 4, tokensIn: 10, tokensOut: 20, costSen: 0 }
     expect(ok(AiUsageRowSchema, row)).toBe(true)
     expect(ok(AiUsageRowSchema, { ...row, text: 'Soalan 1' })).toBe(false)
     expect(ok(AiUsageRowSchema, { ...row, prompt: 'x' })).toBe(false)
@@ -229,7 +429,7 @@ describe('admin wire bodies', () => {
   it('test request is an empty object; result parses', () => {
     expect(ok(AiTestRequestSchema, {})).toBe(true)
     expect(ok(AiTestRequestSchema, { text: 'user content' })).toBe(false)
-    const result = { ok: true, provider: 'mock', model: 'heuristik-1', latencyMs: 3, checkedAt: '2026-10-19T10:00:00+08:00', usage }
+    const result = { ok: true, provider: 'mock', model: AI_MOCK_MODEL_ID, latencyMs: 3, checkedAt: '2026-10-19T10:00:00+08:00', usage }
     expect(ok(AiTestResultSchema, result)).toBe(true)
     // a failed check is a 503, never a 200 with ok false
     expect(ok(AiTestResultSchema, { ...result, ok: false })).toBe(false)

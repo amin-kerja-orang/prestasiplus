@@ -12,12 +12,15 @@ import { TimestampSchema } from '../common/time'
  *     registered as components so BE-38 and BE-43 import one definition.
  *  2. The HTTP bodies of the four admin routes `/ai/status`, `/ai/usage`, `/ai/settings`, `/ai/test`.
  *
- * Sources: the card (docs/plan/backend-tasks/BE-36-ai-extraction-service.md), plan 15.2, the
- * catalogue entry IN-08 (docs/architecture/v2-api-catalogue/learning-exam.md section 11: the
- * frontend `QuestionExtractor`, `ExtractInput`, `ExtractedPaper`, `IntakeQuestion`, `lowFields`).
- * The frontend intake code is NOT on this branch (local commit b2e1033, not pushed), so the draft
- * item fields below follow the catalogue summary of `types.ts`. Anything the catalogue does not
- * state is marked [PROPOSED] and listed in the PR.
+ * SOURCE. The frontend intake prototype (branch `feature/student-prototype`, commit 9af43134,
+ * `src/modules/m28-bijak-spm/`) is the spec: `admin/intake/types.ts` (`ExtractInput`, `PageText`,
+ * `ExtractedPaper`, `IntakeQuestion`, `IntakePart`, `IntakeStimulus`), `admin/intake/ai/{registry,
+ * providers,mock-extractor}.ts` (provider ids and labels, copy) and `domain/types.ts` (`SchemeDef`,
+ * `StimulusDef`, `CurriculumTag`, `McqOption`, `LeafKind`, `PointDef`). Those shapes are copied
+ * field for field; each is quoted in the doc comment of the schema that carries it. The prototype
+ * has NO status, usage, settings or test-call surface and no per-field confidence, so those parts
+ * (plus the card additions) stay [PROPOSED]. Every deliberate difference from the prototype is a
+ * row in `docs/architecture/v2-backend-deviations.md`.
  *
  * Hard rules encoded in the types:
  *  - No credential field exists anywhere (BE-NFR-32): no API key, no base URL, no provider config.
@@ -32,7 +35,10 @@ import { TimestampSchema } from '../common/time'
 /* Constants and copy                                                                          */
 /* ------------------------------------------------------------------------------------------ */
 
-/** Provider ids of the registry (plan 15.2). An unknown id is a start-up error, never a fallback. */
+/**
+ * Provider ids of the registry, in the prototype order (`admin/intake/ai/registry.ts` line 11,
+ * `PROVIDER_IDS`). An unknown id is a start-up error, never a fallback (registry.ts lines 45-46).
+ */
 export const AI_PROVIDER_IDS = ['mock', 'anthropic', 'openai', 'gemini', 'openai-compatible'] as const
 export const AiProviderIdSchema = z.enum(AI_PROVIDER_IDS).meta({
   id: 'AiProviderId',
@@ -41,10 +47,28 @@ export const AiProviderIdSchema = z.enum(AI_PROVIDER_IDS).meta({
 export type AiProviderId = z.infer<typeof AiProviderIdSchema>
 
 /**
- * Machine codes of an AI failure. On the wire (the 503 and 429 of the admin routes) only
- * `AI_UNAVAILABLE`, `AI_BUDGET_EXHAUSTED` and `RATE_LIMITED` appear; `AI_PROVIDER_ERROR` and
- * `AI_TIMEOUT` are in-process only (they are stored on a failed run and mapped to `AI_UNAVAILABLE`
- * by any caller that answers HTTP).
+ * Display name of each provider, exactly as the prototype shows it (`QuestionExtractor.label`:
+ * `mock-extractor.ts` line 309 and `registry.ts` lines 33-36). The upload screen prints the mock
+ * label while extracting ("Mengekstrak soalan (Contoh (mock, tanpa AI))").
+ */
+export const AI_PROVIDER_LABELS = {
+  mock: 'Contoh (mock, tanpa AI)',
+  anthropic: 'Anthropic Claude',
+  openai: 'OpenAI',
+  gemini: 'Google Gemini',
+  'openai-compatible': 'Serasi OpenAI',
+} as const satisfies Record<(typeof AI_PROVIDER_IDS)[number], string>
+
+/** Model id the prototype mock reports (`mock-extractor.ts` line 304). */
+export const AI_MOCK_MODEL_ID = 'heuristik-1'
+
+/**
+ * Machine codes of an AI failure. The prototype has no codes: a failure is a thrown `Error` whose
+ * message the upload screen prints under "Pengekstrakan gagal" (`IntakeUploadPage.vue` lines
+ * 122, 139, 199). The codes below are the contract's machine form of those failures. On the wire
+ * (the 503 and 429 of the admin routes) only `AI_UNAVAILABLE`, `AI_BUDGET_EXHAUSTED` and
+ * `RATE_LIMITED` appear; `AI_PROVIDER_ERROR` and `AI_TIMEOUT` are in-process only (they are stored
+ * on a failed run and mapped to `AI_UNAVAILABLE` by any caller that answers HTTP).
  */
 export const AI_FAILURE_CODES = [
   'AI_UNAVAILABLE',
@@ -56,20 +80,37 @@ export const AI_FAILURE_CODES = [
 export const AiFailureCodeSchema = z.enum(AI_FAILURE_CODES).meta({
   id: 'AiFailureCode',
   description:
-    'AI_UNAVAILABLE: provider not configured or unreachable (same code as BE-43). AI_BUDGET_EXHAUSTED: monthly cap reached, the caller may queue (AC-29.2, AC6). RATE_LIMITED: D57a. These three are the only codes on the wire. AI_PROVIDER_ERROR and AI_TIMEOUT [PROPOSED] are in-process only: the run failed after the retries with backoff on 429/5xx (AC4); a caller that answers HTTP maps them to AI_UNAVAILABLE.',
+    'AI_UNAVAILABLE: provider not configured (prototype message "Dikonfigurasi di pelayan") or unreachable (same code as BE-43). AI_BUDGET_EXHAUSTED: monthly cap reached, the caller may queue (AC-29.2, AC6). RATE_LIMITED: D57a. These three are the only codes on the wire. AI_PROVIDER_ERROR and AI_TIMEOUT [PROPOSED] are in-process only: the run failed after the retries with backoff on 429/5xx (AC4); a caller that answers HTTP maps them to AI_UNAVAILABLE.',
 })
 export type AiFailureCode = z.infer<typeof AiFailureCodeSchema>
 
 /**
- * Admin-facing BM copy. `AI_UNAVAILABLE` follows the structure of the approved BE-43 sentence
- * ("... tidak dapat menjawab sekarang. Sila cuba sebentar lagi.") without the persona name. All
- * three are [PROPOSED] (no mock has an AI failure path); the LEAD aligns them at merge.
+ * BM copy. `notConfigured`, `extractionFailed` and `noQuestions` are copied from the prototype and
+ * are not [PROPOSED]. `unavailable`, `budgetExhausted` and `csrf` have no prototype source (the
+ * prototype has no AI failure path beyond the stub message); they are [PROPOSED]. `unavailable`
+ * follows the structure of the approved BE-43 sentence ("... tidak dapat menjawab sekarang. Sila
+ * cuba sebentar lagi.") without the persona name.
  */
 export const AI_MESSAGES = {
+  /** Prototype `NOT_CONFIGURED_MESSAGE` (`providers.ts` line 8): a real provider without server configuration. */
+  notConfigured: 'Dikonfigurasi di pelayan',
+  /** Prototype fallback when the thrown value is not an Error (`IntakeUploadPage.vue` lines 122, 139). */
+  extractionFailed: 'Pengekstrakan gagal.',
+  /** Prototype paper-level warning when no question was found (`mock-extractor.ts` line 212). */
+  noQuestions: 'Tiada soalan dikesan dalam teks kertas.',
+  /** [PROPOSED] */
   unavailable: 'Perkhidmatan AI tidak dapat dihubungi sekarang. Sila cuba sebentar lagi.',
+  /** [PROPOSED] */
   budgetExhausted: 'Had bajet AI bulanan telah dicapai. Pengekstrakan baharu ditunda sehingga had dinaikkan.',
+  /** [PROPOSED] */
   csrf: 'Sesi tidak sah. Sila muat semula halaman dan cuba lagi.',
 } as const
+
+/**
+ * Prototype start-up error for an unknown provider id (`registry.ts` line 46). Never sent over
+ * HTTP (the server refuses to start); kept here so the server and the prototype print one sentence.
+ */
+export const aiUnknownProviderMessage = (id: string): string => `Penyedia AI tidak dikenali: ${id}`
 
 /** Bounds (all [PROPOSED]; the limits are wire sanity caps, not business rules). */
 export const AI_MAX_PAGES = 200
@@ -183,22 +224,29 @@ export const AiCallContextSchema = z
   .meta({ id: 'AiCallContext', description: 'Audit context of a call. Never sent to a provider.' })
 export type AiCallContext = z.infer<typeof AiCallContextSchema>
 
-/** Text of one page, from the text layer or from OCR (frontend `PageText`). */
+/**
+ * Text of one page, from the text layer or from OCR. Prototype `PageText`
+ * (`admin/intake/types.ts` lines 17-24): page, text, source, confidence?.
+ */
 export const AiPageTextSchema = z
   .object({
     page: z.number().int().min(1),
     text: z.string().max(AI_MAX_PAGE_TEXT_CHARS),
-    source: z.enum(['text-layer', 'ocr']),
-    confidence: z.number().min(0).max(100).optional().meta({ description: 'OCR confidence 0..100 (frontend PageText.confidence).' }),
+    source: z.enum(['text-layer', 'ocr']).meta({
+      description: '`text-layer` = digital-born PDF, `ocr` = scanned page read by Tesseract.',
+    }),
+    confidence: z.number().min(0).max(100).optional().meta({ description: 'Mean OCR confidence 0-100 (OCR pages only).' }),
   })
   .strict()
-  .meta({ id: 'AiPageText', description: 'Page text before redaction.' })
+  .meta({ id: 'AiPageText', description: 'Page text before redaction (prototype PageText).' })
 export type AiPageText = z.infer<typeof AiPageTextSchema>
 
 /**
  * A page image is passed BY REFERENCE: a stored file id (BE-04 FileStorage page image), never a
- * data URL and never bytes (the frontend `PageImage.dataUrl` stays in the browser). The service
- * loads, redacts and sends the image; the id itself is not sent to the provider.
+ * data URL and never bytes. The prototype `PageImage` is `{page, dataUrl, width, height}`
+ * (`types.ts` lines 26-31); `dataUrl` stays in the browser and is replaced by `fileId` (deviation
+ * row in v2-backend-deviations.md). The service loads, redacts and sends the image; the id itself
+ * is not sent to the provider.
  */
 export const AiPageImageRefSchema = z
   .object({
@@ -211,11 +259,18 @@ export const AiPageImageRefSchema = z
   .meta({ id: 'AiPageImageRef', description: 'Reference to a stored page image (never inline bytes).' })
 export type AiPageImageRef = z.infer<typeof AiPageImageRefSchema>
 
-/** Curriculum taxonomy handed to the model so that it can only pick known units (AC-05.2). */
+/**
+ * Curriculum taxonomy handed to the model so that it can only pick known units (AC-05.2). The
+ * prototype keeps the list inside the mock (`DskpUnit`, `admin/intake/lib/dskp.ts` lines 7-14:
+ * code, label, subject, form, keywords). `subject` is the request subject and `keywords` is mock
+ * internal, so the wire carries `code`, `label` and `form`. The unit list as a request field is
+ * [PROPOSED] (plan 15.2).
+ */
 export const AiTaxonomyUnitSchema = z
   .object({
     code: z.string().min(1).max(64),
     label: z.string().min(1).max(200),
+    form: z.enum(['T4', 'T5']).optional().meta({ description: 'Tingkatan of the unit (DskpUnit.form); lets the model set the tag level.' }),
   })
   .strict()
   .meta({ id: 'AiTaxonomyUnit' })
@@ -234,23 +289,23 @@ export const AiStructureHintSchema = z
 export type AiStructureHint = z.infer<typeof AiStructureHintSchema>
 
 /**
- * Input of `extractPaper` (frontend `ExtractInput`: pages, images?, subject, kertas) plus the
- * taxonomy and structure hints named in plan 15.2. Strict: only these fields exist, so no user,
- * student, teacher or school identifier can be added (AC-04.8).
+ * Input of `extractPaper`. Prototype `ExtractInput` (`types.ts` lines 100-105): pages, images?,
+ * subject, kertas. `taxonomy` and `structure` are the extra inputs named in plan 15.2 [PROPOSED].
+ * Strict: only these fields exist, so no user, student, teacher or school identifier can be added
+ * (AC-04.8). `pages` may be empty as in the prototype (its `parsePaper` then answers with the
+ * warning "Tiada soalan dikesan dalam teks kertas."); a caller with neither text nor images gets
+ * that same empty result from the service without a provider call.
  */
 export const AiExtractRequestSchema = z
   .object({
     pages: z.array(AiPageTextSchema).max(AI_MAX_PAGES).meta({ description: 'Page text, in page order.' }),
     images: z.array(AiPageImageRefSchema).max(AI_MAX_PAGES).optional().meta({ description: 'Page images by reference, for vision-capable adapters.' }),
-    subject: z.string().min(1).max(32).meta({ description: 'Subject code, e.g. MAT.', example: 'MAT' }),
+    subject: z.string().min(1).max(32).meta({ description: 'Subject code (SubjectCode, an open dictionary), e.g. MAT.', example: 'MAT' }),
     kertas: z.union([z.literal(1), z.literal(2)]),
     taxonomy: z.array(AiTaxonomyUnitSchema).max(500).optional(),
     structure: z.array(AiStructureHintSchema).max(50).optional(),
   })
   .strict()
-  .refine((v) => v.pages.length > 0 || (v.images?.length ?? 0) > 0, {
-    message: 'Provide page text, page images or both.',
-  })
   .meta({ id: 'AiExtractRequest', description: 'Provider-neutral input of extractPaper (in-process, no HTTP route).' })
 export type AiExtractRequest = z.infer<typeof AiExtractRequestSchema>
 
@@ -258,7 +313,7 @@ export type AiExtractRequest = z.infer<typeof AiExtractRequestSchema>
 /* Output: drafts only                                                                         */
 /* ------------------------------------------------------------------------------------------ */
 
-/** Confidence of a field, 0 (guess) to 1 (certain). [PROPOSED scale; the mock only lists `lowFields`] */
+/** Confidence of a field, 0 (guess) to 1 (certain). [PROPOSED scale; the prototype only lists `lowFields`] */
 export const AiConfidenceSchema = z.number().min(0).max(1).meta({ id: 'AiConfidence', description: 'Confidence 0..1.' })
 export type AiConfidence = z.infer<typeof AiConfidenceSchema>
 
@@ -275,7 +330,7 @@ export const AiRegionSchema = z
   .refine((r) => r.x + r.w <= 1 && r.y + r.h <= 1, {
     message: 'Region must lie inside the page (x + w <= 1 and y + h <= 1).',
   })
-  .meta({ id: 'AiRegion', description: 'Source region of a field or figure, as page fractions.' })
+  .meta({ id: 'AiRegion', description: 'Source region of a field or figure, as page fractions. [PROPOSED]' })
 export type AiRegion = z.infer<typeof AiRegionSchema>
 
 export const AI_WARNING_CODES = [
@@ -289,7 +344,7 @@ export const AI_WARNING_CODES = [
 ] as const
 export const AiWarningCodeSchema = z.enum(AI_WARNING_CODES).meta({
   id: 'AiWarningCode',
-  description: '[PROPOSED] codes of per-item warnings; the mock expresses them as free BM strings and `lowFields`.',
+  description: '[PROPOSED] codes of per-item warnings; the prototype has no per-item warning, only `lowFields` and `needsManual`.',
 })
 export type AiWarningCode = z.infer<typeof AiWarningCodeSchema>
 
@@ -300,137 +355,364 @@ export const AiItemWarningSchema = z
     message: z.string().min(1).max(500).meta({ description: 'BM message for the reviewer.' }),
   })
   .strict()
-  .meta({ id: 'AiItemWarning' })
+  .meta({ id: 'AiItemWarning', description: '[PROPOSED] per-item warning.' })
 export type AiItemWarning = z.infer<typeof AiItemWarningSchema>
 
+/** Prototype `IntakeQType` (`types.ts` line 35). */
 export const AI_DRAFT_QUESTION_TYPES = ['mcq', 'structured', 'short', 'essay'] as const
 export const AiDraftQuestionTypeSchema = z.enum(AI_DRAFT_QUESTION_TYPES).meta({
   id: 'AiDraftQuestionType',
-  description: 'Frontend IntakeQuestion.type.',
+  description: 'Prototype IntakeQType.',
 })
 export type AiDraftQuestionType = z.infer<typeof AiDraftQuestionTypeSchema>
 
-export const AiDraftOptionSchema = z
-  .object({
-    key: z.string().min(1).max(8).meta({ description: 'Option label, e.g. "A".' }),
-    text: z.string().max(5000),
-  })
-  .strict()
-  .meta({ id: 'AiDraftOption', description: 'MCQ option. [PROPOSED] shape (frontend McqOption not on this branch).' })
-export type AiDraftOption = z.infer<typeof AiDraftOptionSchema>
+/**
+ * Leaf answer modes (prototype `LeafKind`, `domain/types.ts` lines 39-40; exam schema D2).
+ * `table_fill` is a typed stub in the prototype (no widget yet).
+ */
+export const AI_LEAF_KINDS = ['working', 'numeric', 'short_text', 'match_letter', 'essay', 'drawing', 'table_fill'] as const
+export const AiLeafKindSchema = z.enum(AI_LEAF_KINDS).meta({ id: 'AiLeafKind', description: 'Prototype LeafKind.' })
+export type AiLeafKind = z.infer<typeof AiLeafKindSchema>
 
-/** Mark-scheme point codes seen in the mock extractor: K, N, P, B, M, F, C (catalogue IN-08). */
-export const AI_SCHEME_POINT_CODES = ['K', 'N', 'P', 'B', 'M', 'F', 'C'] as const
-export const AiSchemePointCodeSchema = z.enum(AI_SCHEME_POINT_CODES).meta({ id: 'AiSchemePointCode' })
-export type AiSchemePointCode = z.infer<typeof AiSchemePointCodeSchema>
-
-export const AiSchemeDraftSchema = z
-  .object({
-    answer: z.string().max(5000).optional().meta({ description: 'Model answer or MCQ key (e.g. "B").' }),
-    points: z
-      .array(
-        z
-          .object({
-            code: AiSchemePointCodeSchema,
-            text: z.string().max(2000),
-            marks: z.number().int().min(0).max(100),
-          })
-          .strict(),
-      )
-      .max(50)
-      .optional(),
-    anyOf: z.number().int().min(1).max(50).optional().meta({ description: 'Scheme line "mana-mana N": award any N of the points.' }),
-  })
+/** `wordRange` of a leaf (`IntakeQuestion.wordRange`, `IntakePart.wordRange`, `types.ts` lines 47 and 69). */
+export const AiWordRangeSchema = z
+  .object({ min: z.number().int().min(0).max(5000), max: z.number().int().min(0).max(5000) })
   .strict()
-  .meta({ id: 'AiSchemeDraft', description: 'Answer key and mark-scheme points. [PROPOSED] shape of the Bijak SchemeDef.' })
-export type AiSchemeDraft = z.infer<typeof AiSchemeDraftSchema>
-
-export const AiDraftPartSchema = z
-  .object({
-    label: z.string().min(1).max(16).meta({ description: 'Printed part label, e.g. "(a)".' }),
-    prompt: z.string().max(10_000),
-    marks: z.number().int().min(0).max(100).nullable(),
-    scheme: AiSchemeDraftSchema.optional(),
-  })
-  .strict()
-  .meta({ id: 'AiDraftPart' })
-export type AiDraftPart = z.infer<typeof AiDraftPartSchema>
-
-export const AiDraftTagSchema = z
-  .object({
-    unit: z.string().min(1).max(64).optional().meta({ description: 'Curriculum unit code from the supplied taxonomy; never free text (AC-05.2).' }),
-    unitLabel: z.string().max(200).optional(),
-    level: z.enum(['T4', 'T5', 'T4+T5']).optional(),
-    tp: z.number().int().min(1).max(6).optional().meta({ description: 'Tahap penguasaan 1..6.' }),
-    sp: z.string().max(64).optional().meta({ description: 'Standard pembelajaran code.' }),
-  })
-  .strict()
-  .meta({ id: 'AiDraftTag', description: 'Suggested curriculum tag (frontend CurriculumTag subset). [PROPOSED] fields.' })
-export type AiDraftTag = z.infer<typeof AiDraftTagSchema>
+  .refine((r) => r.min <= r.max, { message: 'min must not exceed max.' })
+  .meta({ id: 'AiWordRange', description: 'Word range of an essay leaf.' })
+export type AiWordRange = z.infer<typeof AiWordRangeSchema>
 
 /**
- * One extracted question. `status` is the literal `draft`: the service cannot produce any other
- * state and has no approval operation (AC-05.6, BE-NFR-35). `lowFields` mirrors the frontend and
- * lists the fields whose confidence is below the review threshold; the service cannot confirm a
- * low field (AC-05.6), so there is no `confirmed` here.
+ * MCQ option, prototype `McqOption` (`domain/types.ts` lines 29-33): `{ id, text }`; `text` may
+ * contain `$latex$` spans. `id` is the option letter ("A") and is what an `option` scheme's
+ * `correct` names.
+ */
+export const AiMcqOptionSchema = z
+  .object({
+    id: z.string().min(1).max(16).meta({ description: 'Option letter, e.g. "A".' }),
+    text: z.string().max(5000).meta({ description: 'May contain `$latex$` spans.' }),
+  })
+  .strict()
+  .meta({ id: 'AiMcqOption', description: 'Prototype McqOption.' })
+export type AiMcqOption = z.infer<typeof AiMcqOptionSchema>
+
+/* SchemeDef (prototype `domain/types.ts` lines 90-175), field for field ---------------------- */
+
+/** `PointCode` (`domain/types.ts` line 122): K/N/P maths, M sciences, F/C Sejarah and BI, B independent. */
+export const AI_POINT_CODES = ['K', 'N', 'P', 'B', 'M', 'F', 'C'] as const
+export const AiPointCodeSchema = z.enum(AI_POINT_CODES).meta({ id: 'AiPointCode', description: 'Prototype PointCode.' })
+export type AiPointCode = z.infer<typeof AiPointCodeSchema>
+
+const matchText = z.string().max(2000)
+
+/** `PointMatch` (lines 104-113): how a mark point is recognised in a student answer. */
+export const AiPointMatchSchema = z
+  .discriminatedUnion('type', [
+    z.object({ type: z.literal('step'), accept: z.array(matchText).max(50) }).strict(),
+    z.object({ type: z.literal('all_of'), items: z.array(matchText).max(50) }).strict(),
+    z.object({ type: z.literal('final') }).strict(),
+    z.object({ type: z.literal('unit') }).strict(),
+    z.object({ type: z.literal('keywords'), anyOf: z.array(matchText).max(50) }).strict(),
+    z.object({ type: z.literal('manual') }).strict(),
+  ])
+  .meta({ id: 'AiPointMatch', description: 'Prototype PointMatch.' })
+export type AiPointMatch = z.infer<typeof AiPointMatchSchema>
+
+const ecfK = z.number().min(-1_000_000).max(1_000_000)
+/** `EcfRule` (lines 115-120): own figure carried forward, expected = f(previous final). */
+export const AiEcfRuleSchema = z
+  .discriminatedUnion('op', [
+    z.object({ op: z.literal('same') }).strict(),
+    z.object({ op: z.literal('sub_from'), k: ecfK }).strict(),
+    z.object({ op: z.literal('add'), k: ecfK }).strict(),
+    z.object({ op: z.literal('mul'), k: ecfK }).strict(),
+  ])
+  .meta({ id: 'AiEcfRule', description: 'Prototype EcfRule.' })
+export type AiEcfRule = z.infer<typeof AiEcfRuleSchema>
+
+/** `PointDef` (lines 124-137). The shown tag is `code` plus its sequence in the part (K1, K2, M1, F3). */
+export const AiPointDefSchema = z
+  .object({
+    id: z.string().min(1).max(64),
+    code: AiPointCodeSchema,
+    marks: z.number().int().min(0).max(100).meta({ description: 'Explicit marks: the digit of a tag is a sequence number, never the marks.' }),
+    label: matchText,
+    match: AiPointMatchSchema,
+    requires: z.array(z.string().min(1).max(64)).max(50).optional().meta({ description: 'Only awarded when every one of these other points was hit.' }),
+    ecf: z
+      .object({
+        fromPart: z.string().min(1).max(64),
+        rule: AiEcfRuleSchema,
+        note: z.string().max(200),
+      })
+      .strict()
+      .optional()
+      .meta({ description: 'Own figure carried forward from an earlier part.' }),
+  })
+  .strict()
+  .meta({ id: 'AiPointDef', description: 'Prototype PointDef.' })
+export type AiPointDef = z.infer<typeof AiPointDefSchema>
+
+/** `PointGroup` (lines 139-143): "[mana-mana n x k m]", at most `anyN` of these points count. */
+export const AiPointGroupSchema = z
+  .object({
+    id: z.string().min(1).max(64),
+    anyN: z.number().int().min(1).max(50),
+    pointIds: z.array(z.string().min(1).max(64)).max(50),
+  })
+  .strict()
+  .meta({ id: 'AiPointGroup', description: 'Prototype PointGroup.' })
+export type AiPointGroup = z.infer<typeof AiPointGroupSchema>
+
+/** `FinalDef` (lines 90-102): the accepted final answer of a points scheme. */
+export const AiFinalDefSchema = z
+  .object({
+    accept: z.array(matchText).max(50).meta({ description: 'Accepted equivalent forms (plain or LaTeX); any one matches.' }),
+    tolerance: z.number().min(0).optional().meta({ description: 'Absolute tolerance for numeric answers.' }),
+    unit: z.string().max(32).optional(),
+    mustContain: z.string().max(200).optional().meta({ description: 'The answer must contain this text, else it is wrong.' }),
+    formHint: z.string().max(500).optional().meta({ description: 'Reason shown when `mustContain` fails.' }),
+    display: z.string().max(2000).meta({ description: 'LaTeX shown in the revealed scheme.' }),
+  })
+  .strict()
+  .meta({ id: 'AiFinalDef', description: 'Prototype FinalDef.' })
+export type AiFinalDef = z.infer<typeof AiFinalDefSchema>
+
+/** `RubricBand` (lines 145-150). */
+export const AiRubricBandSchema = z
+  .object({
+    name: z.string().max(100),
+    range: z.tuple([z.number().min(0).max(1000), z.number().min(0).max(1000)]),
+    descriptor: z.string().max(2000),
+  })
+  .strict()
+  .meta({ id: 'AiRubricBand', description: 'Prototype RubricBand.' })
+export type AiRubricBand = z.infer<typeof AiRubricBandSchema>
+
+const schemeMarks = z.number().int().min(0).max(1000)
+
+/**
+ * Answer key, prototype `SchemeDef` (`domain/types.ts` lines 152-175, exam schema D3): a union on
+ * `kind` (option, mapping, accepted, points, rubric). Field for field; only string and array
+ * length caps are added. The mock extractor emits `option` and `points` (`mock-extractor.ts`
+ * lines 232-239 and 258).
+ */
+export const AiSchemeDefSchema = z
+  .discriminatedUnion('kind', [
+    z
+      .object({
+        kind: z.literal('option'),
+        marks: schemeMarks,
+        correct: z.string().max(16).meta({ description: 'Id of the correct McqOption (e.g. "B").' }),
+        reason: z.string().max(2000),
+      })
+      .strict(),
+    z
+      .object({
+        kind: z.literal('mapping'),
+        marks: schemeMarks,
+        map: z.record(z.string().max(64), z.string().max(500)),
+      })
+      .strict(),
+    z
+      .object({
+        kind: z.literal('accepted'),
+        marks: schemeMarks,
+        values: z
+          .array(
+            z
+              .object({
+                v: z.string().max(500),
+                tol: z.number().min(0).optional(),
+                unit: z.string().max(32).optional(),
+              })
+              .strict(),
+          )
+          .max(50),
+        caseSensitive: z.boolean().optional(),
+      })
+      .strict(),
+    z
+      .object({
+        kind: z.literal('points'),
+        marks: schemeMarks,
+        points: z.array(AiPointDefSchema).max(50),
+        groups: z.array(AiPointGroupSchema).max(20).optional(),
+        final: AiFinalDefSchema.optional(),
+        model: z.string().max(5000).optional(),
+      })
+      .strict(),
+    z
+      .object({
+        kind: z.literal('rubric'),
+        marks: schemeMarks,
+        criteria: z.array(z.object({ id: z.string().min(1).max(64), name: z.string().max(200) }).strict()).max(20),
+        bands: z.array(AiRubricBandSchema).max(20),
+        notes: z.array(z.string().max(2000)).max(20).optional(),
+      })
+      .strict(),
+  ])
+  .meta({ id: 'AiSchemeDef', description: 'Prototype SchemeDef (answer key and mark-scheme points).' })
+export type AiSchemeDef = z.infer<typeof AiSchemeDefSchema>
+
+/**
+ * Curriculum tag, prototype `CurriculumTag` (`domain/types.ts` lines 67-76, exam schema D9), field
+ * for field. All fields are required; the mock fills what it cannot determine with `emptyTag`
+ * (`lib/dskp.ts` line 45: level `T4+T5`, `unit` null, `unitLabel` "", `sp` [], `tp` 3, `formOrigin`
+ * `T4`) and lists the doubtful ones in `lowFields`. `tp` is a number in the prototype; the gate
+ * (`domain/validation.ts`: "Tahap Penguasaan (TP) mesti antara 1 dan 6.") limits it to 1..6, which
+ * the contract enforces as an integer range.
+ */
+export const AiCurriculumTagSchema = z
+  .object({
+    subject: z.string().min(1).max(32).meta({ description: 'SubjectCode (open dictionary), e.g. MAT.' }),
+    level: z.enum(['T4', 'T5', 'T4+T5']),
+    unit: z.string().min(1).max(64).nullable().meta({
+      description: 'Unit code from the supplied taxonomy (never free text, AC-05.2), or null when the content lies outside it.',
+    }),
+    unitLabel: z.string().max(200).meta({ description: 'Display name of the unit.' }),
+    sp: z.array(z.string().min(1).max(64)).max(20).meta({ description: 'Standard pembelajaran codes.' }),
+    tp: z.number().int().min(1).max(6).meta({ description: 'Tahap penguasaan 1..6.' }),
+    formOrigin: z.enum(['T1-T3', 'T4', 'T5']),
+  })
+  .strict()
+  .meta({ id: 'AiCurriculumTag', description: 'Prototype CurriculumTag.' })
+export type AiCurriculumTag = z.infer<typeof AiCurriculumTagSchema>
+
+/**
+ * Part of a structured question, prototype `IntakePart` (`types.ts` lines 37-53): id, label, prompt,
+ * marks, mode, scheme?, unit?, wordRange?. `lead` (ancestors of a nested part of a bank question
+ * being edited) is not part of an extraction result and is left out: the extractor emits a flat list
+ * with labels such as "(a)" and "(a)(i)" (`mock-extractor.ts` lines 147-159).
+ */
+export const AiDraftPartSchema = z
+  .object({
+    id: z.string().min(1).max(64).meta({ description: 'Local key within the result (not an entity id).' }),
+    label: z.string().min(1).max(16).meta({ description: 'Printed part label, e.g. "(a)" or "(a)(i)".' }),
+    prompt: z.string().max(10_000),
+    marks: z.number().int().min(0).max(100).meta({ description: '0 when the paper shows none (the gate then asks for it).' }),
+    mode: AiLeafKindSchema,
+    scheme: AiSchemeDefSchema.optional(),
+    unit: z.string().max(32).optional().meta({ description: 'Unit shown after a numeric answer.' }),
+    wordRange: AiWordRangeSchema.optional(),
+  })
+  .strict()
+  .meta({ id: 'AiDraftPart', description: 'Prototype IntakePart (extractor output).' })
+export type AiDraftPart = z.infer<typeof AiDraftPartSchema>
+
+/**
+ * One extracted question: the prototype `IntakeQuestion` (`types.ts` lines 55-83) plus the
+ * [PROPOSED] server additions `status`, `fieldConfidence`, `region` and `warnings`.
+ *
+ * `status` is the literal `draft`: the service cannot produce any other state and has no approval
+ * operation (AC-05.6, BE-NFR-35). `lowFields` is the prototype list of fields whose confidence is
+ * below the review threshold (names seen: `stem`, `marks`, `scheme`, `tag.unit`, `tag.sp`; the
+ * list is open, `domain/validation.ts` `fieldName`); a person confirms each one in the review
+ * screen. The service cannot confirm a low field (AC-05.6), so `confirmed` is the prototype key
+ * but is always empty here.
  */
 export const AiQuestionDraftSchema = z
   .object({
-    status: z.literal('draft'),
-    label: z.string().max(32).meta({ description: 'Printed question number, e.g. "12".' }),
+    status: z.literal('draft').meta({ description: '[PROPOSED] The only status. The prototype question has none.' }),
+    id: z.string().min(1).max(64).meta({ description: 'Local key within the result (the prototype mock builds `q-<label>-<n>`); not an entity id.' }),
+    label: z.string().max(32).meta({ description: 'Number label as printed on the paper, e.g. "12".' }),
     type: AiDraftQuestionTypeSchema,
     stem: z.string().max(AI_MAX_PAGE_TEXT_CHARS),
-    options: z.array(AiDraftOptionSchema).max(10),
-    marks: z.number().int().min(0).max(1000).nullable().meta({ description: 'Null when not found on the paper.' }),
-    parts: z.array(AiDraftPartSchema).max(50),
-    scheme: AiSchemeDraftSchema.optional(),
-    tag: AiDraftTagSchema,
-    stimulusRef: z.string().min(1).max(64).optional().meta({
-      description: 'Local key of an entry of `stimuli` in the same result (not an entity id).',
+    options: z.array(AiMcqOptionSchema).max(10).meta({ description: 'MCQ options; empty for every other type.' }),
+    marks: z.number().int().min(0).max(1000).meta({
+      description: 'Question marks. For a structured question it is the sum of the part marks; 0 when not found on the paper (the field is then in `lowFields`).',
     }),
-    page: z.number().int().min(1),
-    region: AiRegionSchema.optional(),
-    fieldConfidence: z.record(z.string(), AiConfidenceSchema).meta({ description: 'Field name to confidence.' }),
-    lowFields: z.array(z.string().min(1).max(64)).meta({ description: 'Fields below the review threshold.' }),
-    needsManual: z.boolean().optional().meta({ description: 'No stem and no parts were found (frontend needsManual).' }),
-    warnings: z.array(AiItemWarningSchema),
+    mode: AiLeafKindSchema.meta({ description: 'Leaf mode of a question without parts.' }),
+    unit: z.string().max(32).optional().meta({ description: 'Unit of a question without parts.' }),
+    wordRange: AiWordRangeSchema.optional(),
+    parts: z.array(AiDraftPartSchema).max(50),
+    scheme: AiSchemeDefSchema.optional().meta({
+      description: 'Answer key of a question without parts (MCQ key, short answer, essay points).',
+    }),
+    tag: AiCurriculumTagSchema,
+    stimulusId: z.string().min(1).max(64).optional().meta({
+      description: '`id` of an entry of `stimuli` in the same result (not an entity id).',
+    }),
+    page: z.number().int().min(1).meta({ description: 'Source page (1-based).' }),
+    lowFields: z.array(z.string().min(1).max(64)).max(50).meta({
+      description: 'Fields the extractor was unsure of; a person must confirm each (gate 4.8).',
+    }),
+    confirmed: z.array(z.string()).max(0).meta({
+      description: 'Always empty from the service (AC-05.6); the review screen fills it. Kept so the shape equals the prototype IntakeQuestion.',
+    }),
+    needsManual: z.boolean().optional().meta({ description: 'Extractor could not parse it: "Perlu semak manual".' }),
+    region: AiRegionSchema.optional().meta({ description: '[PROPOSED] Source region of the question.' }),
+    fieldConfidence: z.record(z.string(), AiConfidenceSchema).meta({ description: '[PROPOSED] Field name to confidence.' }),
+    warnings: z.array(AiItemWarningSchema).meta({ description: '[PROPOSED] Per-item warnings.' }),
   })
   .strict()
-  .meta({ id: 'AiQuestionDraft', description: 'Extracted question draft. The only status is draft.' })
+  .meta({ id: 'AiQuestionDraft', description: 'Extracted question draft (prototype IntakeQuestion). The only status is draft.' })
 export type AiQuestionDraft = z.infer<typeof AiQuestionDraftSchema>
 
-/** Rajah / Jadual / Petikan group shared by several questions (frontend IntakeStimulus). */
-export const AiStimulusDraftSchema = z
+/**
+ * Shared stimulus, prototype `StimulusDef` (`domain/types.ts` lines 15-27), field for field:
+ * Rajah (`diagram`), Petikan (`passage`) or Jadual (`table`). `label` is the short heading
+ * ("Rajah 2"), `alt` the accessible description (required string; the mock leaves it "" when the
+ * paper has none and the quality gate then asks for it).
+ *
+ * `svg` is inline markup that the prototype treats as bundled and trusted. A provider reply is NOT
+ * trusted: adapters never emit `svg` (the mock does not), and the intake worker must strip it from
+ * a provider result before it is stored or rendered.
+ */
+export const AiStimulusDefSchema = z
   .object({
-    ref: z.string().min(1).max(64).meta({ description: 'Local key, referenced by AiQuestionDraft.stimulusRef.' }),
-    kind: z.enum(['rajah', 'jadual', 'petikan', 'lain']).meta({ description: '[PROPOSED] kinds from the Rajah/Jadual/Petikan groups of the mock.' }),
-    title: z.string().max(300).optional(),
+    id: z.string().min(1).max(64).meta({ description: 'Local key within the result (the prototype mock builds `stim-<n>`); referenced by `stimulusId`.' }),
+    kind: z.enum(['diagram', 'passage', 'table']),
+    label: z.string().max(100).meta({ description: 'Short label used in headings and chips, e.g. "Rajah 2".' }),
+    caption: z.string().max(300).optional(),
+    alt: z.string().max(1000).meta({ description: 'Accessible description of the diagram.' }),
+    svg: z.string().max(AI_MAX_PAGE_TEXT_CHARS).optional().meta({
+      description: 'Inline SVG markup (prototype, bundled and trusted). Never emitted by an adapter; stripped by the intake worker.',
+    }),
     text: z.string().max(AI_MAX_PAGE_TEXT_CHARS).optional(),
-    page: z.number().int().min(1).optional(),
-    region: AiRegionSchema.optional().meta({ description: 'Figure crop region (BE-37 crops it server-side).' }),
+    table: z
+      .object({
+        head: z.array(z.string().max(500)).max(50),
+        rows: z.array(z.array(z.string().max(500)).max(50)).max(500),
+      })
+      .strict()
+      .optional(),
   })
   .strict()
-  .meta({ id: 'AiStimulusDraft' })
-export type AiStimulusDraft = z.infer<typeof AiStimulusDraftSchema>
+  .meta({ id: 'AiStimulusDef', description: 'Prototype StimulusDef.' })
+export type AiStimulusDef = z.infer<typeof AiStimulusDefSchema>
 
-/** Result of `extractPaper` (frontend `ExtractedPaper` plus `usage` and `redaction`). */
+/**
+ * Prototype `IntakeStimulus` (`types.ts` lines 85-88): `StimulusDef` plus the source `page`. The
+ * `region` (figure crop for BE-37) is a [PROPOSED] addition.
+ */
+export const AiIntakeStimulusSchema = AiStimulusDefSchema.extend({
+  page: z.number().int().min(1).optional().meta({ description: 'Source page the figure was cropped from.' }),
+  region: AiRegionSchema.optional().meta({ description: '[PROPOSED] Figure crop region (BE-37 crops it server-side).' }),
+}).meta({ id: 'AiIntakeStimulus', description: 'Prototype IntakeStimulus (StimulusDef plus page).' })
+export type AiIntakeStimulus = z.infer<typeof AiIntakeStimulusSchema>
+
+/**
+ * Result of `extractPaper`: prototype `ExtractedPaper` (`types.ts` lines 90-98: provider, model,
+ * questions, stimuli, unmatched, warnings) plus the [PROPOSED] `usage` and `redaction`.
+ */
 export const AiExtractedPaperSchema = z
   .object({
     provider: AiProviderIdSchema,
     model: z.string().min(1).max(128),
     questions: z.array(AiQuestionDraftSchema),
-    stimuli: z.array(AiStimulusDraftSchema),
-    unmatched: z.array(z.string()).meta({
-      description: 'Scheme entries with no question, e.g. "Jawapan 1-5" or "Skema 3a" (frontend `unmatched`).',
+    stimuli: z.array(AiIntakeStimulusSchema),
+    unmatched: z.array(z.string().max(200)).meta({
+      description: 'Scheme entries whose question number was not found (AC-04.2), e.g. "Jawapan 1-B" or "Skema 9(a)" (`mock-extractor.ts` lines 259 and 270).',
     }),
-    warnings: z.array(z.string()).meta({
-      description: 'Paper-level BM warnings, e.g. "Tiada soalan dikesan dalam teks kertas." (frontend `warnings`).',
+    warnings: z.array(z.string().max(500)).meta({
+      description: `Paper-level BM warnings, e.g. "${AI_MESSAGES.noQuestions}" (\`mock-extractor.ts\` line 212).`,
     }),
-    usage: AiUsageSchema,
-    redaction: AiRedactionSummarySchema,
+    usage: AiUsageSchema.meta({ description: '[PROPOSED] Cost summary of the call.' }),
+    redaction: AiRedactionSummarySchema.meta({ description: '[PROPOSED] What was masked, counts only.' }),
   })
   .strict()
-  .meta({ id: 'AiExtractedPaper', description: 'Drafts only. In-process result of extractPaper.' })
+  .meta({ id: 'AiExtractedPaper', description: 'Drafts only. In-process result of extractPaper (prototype ExtractedPaper).' })
 export type AiExtractedPaper = z.infer<typeof AiExtractedPaperSchema>
 
 /* suggestTags -------------------------------------------------------------------------------- */
@@ -442,7 +724,7 @@ export const AiTagSuggestItemSchema = z
     type: AiDraftQuestionTypeSchema.optional(),
   })
   .strict()
-  .meta({ id: 'AiTagSuggestItem' })
+  .meta({ id: 'AiTagSuggestItem', description: '[PROPOSED]' })
 
 export const AiSuggestTagsRequestSchema = z
   .object({
@@ -451,17 +733,19 @@ export const AiSuggestTagsRequestSchema = z
     taxonomy: z.array(AiTaxonomyUnitSchema).min(1).max(500),
   })
   .strict()
-  .meta({ id: 'AiSuggestTagsRequest', description: 'Input of suggestTags (in-process). Question text and taxonomy only.' })
+  .meta({ id: 'AiSuggestTagsRequest', description: '[PROPOSED] Input of suggestTags (in-process, plan 15.2). Question text and taxonomy only.' })
 export type AiSuggestTagsRequest = z.infer<typeof AiSuggestTagsRequestSchema>
 
 export const AiTagSuggestionSchema = z
   .object({
     ref: z.string().min(1).max(64),
-    tag: AiDraftTagSchema,
+    tag: AiCurriculumTagSchema.meta({
+      description: 'Suggested tag in the prototype CurriculumTag shape; `unit` is a taxonomy code or null, never free text.',
+    }),
     confidence: AiConfidenceSchema,
   })
   .strict()
-  .meta({ id: 'AiTagSuggestion' })
+  .meta({ id: 'AiTagSuggestion', description: '[PROPOSED] The prototype has no tag-suggestion call.' })
 
 export const AiSuggestTagsResultSchema = z
   .object({

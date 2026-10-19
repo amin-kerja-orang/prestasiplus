@@ -11,32 +11,40 @@ import {
   AiCallPurposeSchema,
   AiCapabilitiesSchema,
   AiConfidenceSchema,
-  AiDraftOptionSchema,
+  AiCurriculumTagSchema,
   AiDraftPartSchema,
   AiDraftQuestionTypeSchema,
-  AiDraftTagSchema,
+  AiEcfRuleSchema,
   AiExtractRequestSchema,
   AiExtractedPaperSchema,
   AiFailureCodeSchema,
   AiFailureSchema,
+  AiFinalDefSchema,
   AiGenerateTextRequestSchema,
   AiGenerateTextResultSchema,
   AiHealthSchema,
+  AiIntakeStimulusSchema,
   AiItemWarningSchema,
+  AiLeafKindSchema,
+  AiMcqOptionSchema,
   AiMonthSchema,
   AiPageImageRefSchema,
   AiPageTextSchema,
+  AiPointCodeSchema,
+  AiPointDefSchema,
+  AiPointGroupSchema,
+  AiPointMatchSchema,
   AiProviderIdSchema,
   AiQuestionDraftSchema,
   AiRedactionFlagSchema,
   AiRedactionSummarySchema,
   AiRegionSchema,
-  AiSchemeDraftSchema,
-  AiSchemePointCodeSchema,
+  AiRubricBandSchema,
+  AiSchemeDefSchema,
   AiSettingsSchema,
   AiSettingsUpdateSchema,
   AiStatusSchema,
-  AiStimulusDraftSchema,
+  AiStimulusDefSchema,
   AiStructureHintSchema,
   AiSuggestTagsRequestSchema,
   AiSuggestTagsResultSchema,
@@ -49,6 +57,7 @@ import {
   AiUsageRowSchema,
   AiUsageSchema,
   AiWarningCodeSchema,
+  AiWordRangeSchema,
 } from './schema'
 
 /**
@@ -79,13 +88,22 @@ export const AI_COMPONENT_SCHEMAS = {
   AiWarningCode: AiWarningCodeSchema,
   AiItemWarning: AiItemWarningSchema,
   AiDraftQuestionType: AiDraftQuestionTypeSchema,
-  AiDraftOption: AiDraftOptionSchema,
-  AiSchemePointCode: AiSchemePointCodeSchema,
-  AiSchemeDraft: AiSchemeDraftSchema,
+  AiLeafKind: AiLeafKindSchema,
+  AiWordRange: AiWordRangeSchema,
+  AiMcqOption: AiMcqOptionSchema,
+  AiPointCode: AiPointCodeSchema,
+  AiPointMatch: AiPointMatchSchema,
+  AiEcfRule: AiEcfRuleSchema,
+  AiPointDef: AiPointDefSchema,
+  AiPointGroup: AiPointGroupSchema,
+  AiFinalDef: AiFinalDefSchema,
+  AiRubricBand: AiRubricBandSchema,
+  AiSchemeDef: AiSchemeDefSchema,
+  AiCurriculumTag: AiCurriculumTagSchema,
   AiDraftPart: AiDraftPartSchema,
-  AiDraftTag: AiDraftTagSchema,
   AiQuestionDraft: AiQuestionDraftSchema,
-  AiStimulusDraft: AiStimulusDraftSchema,
+  AiStimulusDef: AiStimulusDefSchema,
+  AiIntakeStimulus: AiIntakeStimulusSchema,
   AiExtractedPaper: AiExtractedPaperSchema,
   AiTagSuggestItem: AiTagSuggestItemSchema,
   AiSuggestTagsRequest: AiSuggestTagsRequestSchema,
@@ -147,8 +165,10 @@ const body = (schema: z.ZodType) => ({ required: true as const, content: { 'appl
  * `generateText`) is invoked in-process by the intake worker (BE-38) and by BE-43; it has no
  * public route, and so the matching request and result schemas are components only.
  *
- * No mock route exists for any of these (catalogue OQ-API-B2-29): every shape is authored here
- * from the card and every BM string is [PROPOSED].
+ * No mock route exists for any of these (catalogue OQ-API-B2-29; the prototype at 9af43134 has no
+ * AI status, usage, settings or test surface): every shape is authored here from the card and is
+ * [PROPOSED]. The only copy taken from the prototype is the provider labels and the not-configured
+ * sentence `AI_MESSAGES.notConfigured`; `unavailable`, `budgetExhausted` and `csrf` are [PROPOSED].
  *
  * D57(a): `PUT /ai/settings` and `POST /ai/test` answer 429 RATE_LIMITED with retryAfter and
  * Retry-After (added by `registerRoute`). D57(b): no credential is ever returned; the figures are
@@ -203,7 +223,7 @@ export function registerAiPaths(registry: OpenAPIRegistry): void {
     path: '/ai/test',
     tags: [AI_TAG],
     summary: 'Admin health check of the configured provider on a built-in sample',
-    description: `Sends a fixed built-in sample (never user content) through the same redaction, rate limit, retry and budget guard as a real call, and writes one usage row (purpose health_check; cost 0 for the mock). 200 means the provider answered (ok is always true); an unreachable or unconfigured provider is 503 AI_UNAVAILABLE "${AI_MESSAGES.unavailable}" and a reached cap is 503 AI_BUDGET_EXHAUSTED "${AI_MESSAGES.budgetExhausted}". The body is an empty object; any field is 422. ${KEY_NOTE} ${ROLE_NOTE}`,
+    description: `Sends a fixed built-in sample (never user content) through the same redaction, rate limit, retry and budget guard as a real call, and writes one usage row (purpose health_check; cost 0 for the mock). 200 means the provider answered (ok is always true); a provider without server configuration is 503 AI_UNAVAILABLE "${AI_MESSAGES.notConfigured}" (prototype copy), an unreachable one is 503 AI_UNAVAILABLE "${AI_MESSAGES.unavailable}" and a reached cap is 503 AI_BUDGET_EXHAUSTED "${AI_MESSAGES.budgetExhausted}". The body is an empty object; any field is 422. ${KEY_NOTE} ${ROLE_NOTE}`,
     request: { headers: [csrf], body: body(AiTestRequestSchema) },
     responses: {
       200: noStore(envelopeOf(AiTestResultSchema), 'The provider answered.'),
@@ -211,7 +231,7 @@ export function registerAiPaths(registry: OpenAPIRegistry): void {
       403: FORBIDDEN_WRITE,
       422: err('VALIDATION_ERROR (the body is not an empty object).'),
       503: err(
-        `AI_UNAVAILABLE "${AI_MESSAGES.unavailable}" (provider not configured, unreachable or still failing after the retries) or AI_BUDGET_EXHAUSTED "${AI_MESSAGES.budgetExhausted}".`,
+        `AI_UNAVAILABLE "${AI_MESSAGES.notConfigured}" (provider not configured) or "${AI_MESSAGES.unavailable}" (unreachable or still failing after the retries) or AI_BUDGET_EXHAUSTED "${AI_MESSAGES.budgetExhausted}".`,
       ),
     },
   })

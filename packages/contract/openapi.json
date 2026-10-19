@@ -44142,7 +44142,7 @@
           "AI_PROVIDER_ERROR",
           "AI_TIMEOUT"
         ],
-        "description": "AI_UNAVAILABLE: provider not configured or unreachable (same code as BE-43). AI_BUDGET_EXHAUSTED: monthly cap reached, the caller may queue (AC-29.2, AC6). RATE_LIMITED: D57a. These three are the only codes on the wire. AI_PROVIDER_ERROR and AI_TIMEOUT [PROPOSED] are in-process only: the run failed after the retries with backoff on 429/5xx (AC4); a caller that answers HTTP maps them to AI_UNAVAILABLE."
+        "description": "AI_UNAVAILABLE: provider not configured (prototype message \"Dikonfigurasi di pelayan\") or unreachable (same code as BE-43). AI_BUDGET_EXHAUSTED: monthly cap reached, the caller may queue (AC-29.2, AC6). RATE_LIMITED: D57a. These three are the only codes on the wire. AI_PROVIDER_ERROR and AI_TIMEOUT [PROPOSED] are in-process only: the run failed after the retries with backoff on 429/5xx (AC4); a caller that answers HTTP maps them to AI_UNAVAILABLE."
       },
       "AiFailure": {
         "type": "object",
@@ -44372,13 +44372,14 @@
             "enum": [
               "text-layer",
               "ocr"
-            ]
+            ],
+            "description": "`text-layer` = digital-born PDF, `ocr` = scanned page read by Tesseract."
           },
           "confidence": {
             "type": "number",
             "minimum": 0,
             "maximum": 100,
-            "description": "OCR confidence 0..100 (frontend PageText.confidence)."
+            "description": "Mean OCR confidence 0-100 (OCR pages only)."
           }
         },
         "required": [
@@ -44387,7 +44388,7 @@
           "source"
         ],
         "additionalProperties": false,
-        "description": "Page text before redaction."
+        "description": "Page text before redaction (prototype PageText)."
       },
       "AiPageImageRef": {
         "type": "object",
@@ -44433,6 +44434,14 @@
             "type": "string",
             "minLength": 1,
             "maxLength": 200
+          },
+          "form": {
+            "type": "string",
+            "enum": [
+              "T4",
+              "T5"
+            ],
+            "description": "Tingkatan of the unit (DskpUnit.form); lets the model set the tag level."
           }
         },
         "required": [
@@ -44499,7 +44508,7 @@
             "type": "string",
             "minLength": 1,
             "maxLength": 32,
-            "description": "Subject code, e.g. MAT.",
+            "description": "Subject code (SubjectCode, an open dictionary), e.g. MAT.",
             "example": "MAT"
           },
           "kertas": {
@@ -44583,7 +44592,7 @@
           "h"
         ],
         "additionalProperties": false,
-        "description": "Source region of a field or figure, as page fractions."
+        "description": "Source region of a field or figure, as page fractions. [PROPOSED]"
       },
       "AiWarningCode": {
         "type": "string",
@@ -44596,7 +44605,7 @@
           "redacted_content",
           "truncated"
         ],
-        "description": "[PROPOSED] codes of per-item warnings; the mock expresses them as free BM strings and `lowFields`."
+        "description": "[PROPOSED] codes of per-item warnings; the prototype has no per-item warning, only `lowFields` and `needsManual`."
       },
       "AiItemWarning": {
         "type": "object",
@@ -44621,7 +44630,8 @@
           "code",
           "message"
         ],
-        "additionalProperties": false
+        "additionalProperties": false,
+        "description": "[PROPOSED] per-item warning."
       },
       "AiDraftQuestionType": {
         "type": "string",
@@ -44631,30 +44641,65 @@
           "short",
           "essay"
         ],
-        "description": "Frontend IntakeQuestion.type."
+        "description": "Prototype IntakeQType."
       },
-      "AiDraftOption": {
+      "AiLeafKind": {
+        "type": "string",
+        "enum": [
+          "working",
+          "numeric",
+          "short_text",
+          "match_letter",
+          "essay",
+          "drawing",
+          "table_fill"
+        ],
+        "description": "Prototype LeafKind."
+      },
+      "AiWordRange": {
         "type": "object",
         "properties": {
-          "key": {
-            "type": "string",
-            "minLength": 1,
-            "maxLength": 8,
-            "description": "Option label, e.g. \"A\"."
+          "min": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 5000
           },
-          "text": {
-            "type": "string",
-            "maxLength": 5000
+          "max": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 5000
           }
         },
         "required": [
-          "key",
+          "min",
+          "max"
+        ],
+        "additionalProperties": false,
+        "description": "Word range of an essay leaf."
+      },
+      "AiMcqOption": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 16,
+            "description": "Option letter, e.g. \"A\"."
+          },
+          "text": {
+            "type": "string",
+            "maxLength": 5000,
+            "description": "May contain `$latex$` spans."
+          }
+        },
+        "required": [
+          "id",
           "text"
         ],
         "additionalProperties": false,
-        "description": "MCQ option. [PROPOSED] shape (frontend McqOption not on this branch)."
+        "description": "Prototype McqOption."
       },
-      "AiSchemePointCode": {
+      "AiPointCode": {
         "type": "string",
         "enum": [
           "K",
@@ -44664,97 +44709,621 @@
           "M",
           "F",
           "C"
-        ]
+        ],
+        "description": "Prototype PointCode."
       },
-      "AiSchemeDraft": {
-        "type": "object",
-        "properties": {
-          "answer": {
-            "type": "string",
-            "maxLength": 5000,
-            "description": "Model answer or MCQ key (e.g. \"B\")."
-          },
-          "points": {
-            "type": "array",
-            "items": {
-              "type": "object",
-              "properties": {
-                "code": {
-                  "$ref": "#/components/schemas/AiSchemePointCode"
-                },
-                "text": {
+      "AiPointMatch": {
+        "oneOf": [
+          {
+            "type": "object",
+            "properties": {
+              "type": {
+                "type": "string",
+                "enum": [
+                  "step"
+                ]
+              },
+              "accept": {
+                "type": "array",
+                "items": {
                   "type": "string",
                   "maxLength": 2000
                 },
-                "marks": {
-                  "type": "integer",
-                  "minimum": 0,
-                  "maximum": 100
-                }
-              },
-              "required": [
-                "code",
-                "text",
-                "marks"
-              ],
-              "additionalProperties": false
+                "maxItems": 50
+              }
             },
-            "maxItems": 50
+            "required": [
+              "type",
+              "accept"
+            ],
+            "additionalProperties": false
           },
-          "anyOf": {
-            "type": "integer",
-            "minimum": 1,
-            "maximum": 50,
-            "description": "Scheme line \"mana-mana N\": award any N of the points."
+          {
+            "type": "object",
+            "properties": {
+              "type": {
+                "type": "string",
+                "enum": [
+                  "all_of"
+                ]
+              },
+              "items": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "maxLength": 2000
+                },
+                "maxItems": 50
+              }
+            },
+            "required": [
+              "type",
+              "items"
+            ],
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "properties": {
+              "type": {
+                "type": "string",
+                "enum": [
+                  "final"
+                ]
+              }
+            },
+            "required": [
+              "type"
+            ],
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "properties": {
+              "type": {
+                "type": "string",
+                "enum": [
+                  "unit"
+                ]
+              }
+            },
+            "required": [
+              "type"
+            ],
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "properties": {
+              "type": {
+                "type": "string",
+                "enum": [
+                  "keywords"
+                ]
+              },
+              "anyOf": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "maxLength": 2000
+                },
+                "maxItems": 50
+              }
+            },
+            "required": [
+              "type",
+              "anyOf"
+            ],
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "properties": {
+              "type": {
+                "type": "string",
+                "enum": [
+                  "manual"
+                ]
+              }
+            },
+            "required": [
+              "type"
+            ],
+            "additionalProperties": false
           }
-        },
-        "additionalProperties": false,
-        "description": "Answer key and mark-scheme points. [PROPOSED] shape of the Bijak SchemeDef."
+        ],
+        "description": "Prototype PointMatch."
       },
-      "AiDraftPart": {
+      "AiEcfRule": {
+        "oneOf": [
+          {
+            "type": "object",
+            "properties": {
+              "op": {
+                "type": "string",
+                "enum": [
+                  "same"
+                ]
+              }
+            },
+            "required": [
+              "op"
+            ],
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "properties": {
+              "op": {
+                "type": "string",
+                "enum": [
+                  "sub_from"
+                ]
+              },
+              "k": {
+                "type": "number",
+                "minimum": -1000000,
+                "maximum": 1000000
+              }
+            },
+            "required": [
+              "op",
+              "k"
+            ],
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "properties": {
+              "op": {
+                "type": "string",
+                "enum": [
+                  "add"
+                ]
+              },
+              "k": {
+                "type": "number",
+                "minimum": -1000000,
+                "maximum": 1000000
+              }
+            },
+            "required": [
+              "op",
+              "k"
+            ],
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "properties": {
+              "op": {
+                "type": "string",
+                "enum": [
+                  "mul"
+                ]
+              },
+              "k": {
+                "type": "number",
+                "minimum": -1000000,
+                "maximum": 1000000
+              }
+            },
+            "required": [
+              "op",
+              "k"
+            ],
+            "additionalProperties": false
+          }
+        ],
+        "description": "Prototype EcfRule."
+      },
+      "AiPointDef": {
         "type": "object",
         "properties": {
-          "label": {
+          "id": {
             "type": "string",
             "minLength": 1,
-            "maxLength": 16,
-            "description": "Printed part label, e.g. \"(a)\"."
+            "maxLength": 64
           },
-          "prompt": {
-            "type": "string",
-            "maxLength": 10000
+          "code": {
+            "$ref": "#/components/schemas/AiPointCode"
           },
           "marks": {
-            "type": [
-              "integer",
-              "null"
-            ],
+            "type": "integer",
             "minimum": 0,
-            "maximum": 100
+            "maximum": 100,
+            "description": "Explicit marks: the digit of a tag is a sequence number, never the marks."
           },
-          "scheme": {
-            "$ref": "#/components/schemas/AiSchemeDraft"
+          "label": {
+            "type": "string",
+            "maxLength": 2000
+          },
+          "match": {
+            "$ref": "#/components/schemas/AiPointMatch"
+          },
+          "requires": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 64
+            },
+            "maxItems": 50,
+            "description": "Only awarded when every one of these other points was hit."
+          },
+          "ecf": {
+            "type": "object",
+            "properties": {
+              "fromPart": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 64
+              },
+              "rule": {
+                "$ref": "#/components/schemas/AiEcfRule"
+              },
+              "note": {
+                "type": "string",
+                "maxLength": 200
+              }
+            },
+            "required": [
+              "fromPart",
+              "rule",
+              "note"
+            ],
+            "additionalProperties": false,
+            "description": "Own figure carried forward from an earlier part."
           }
         },
         "required": [
+          "id",
+          "code",
+          "marks",
           "label",
-          "prompt",
-          "marks"
+          "match"
         ],
-        "additionalProperties": false
+        "additionalProperties": false,
+        "description": "Prototype PointDef."
       },
-      "AiDraftTag": {
+      "AiPointGroup": {
         "type": "object",
         "properties": {
-          "unit": {
+          "id": {
             "type": "string",
             "minLength": 1,
-            "maxLength": 64,
-            "description": "Curriculum unit code from the supplied taxonomy; never free text (AC-05.2)."
+            "maxLength": 64
           },
-          "unitLabel": {
+          "anyN": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 50
+          },
+          "pointIds": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 64
+            },
+            "maxItems": 50
+          }
+        },
+        "required": [
+          "id",
+          "anyN",
+          "pointIds"
+        ],
+        "additionalProperties": false,
+        "description": "Prototype PointGroup."
+      },
+      "AiFinalDef": {
+        "type": "object",
+        "properties": {
+          "accept": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "maxLength": 2000
+            },
+            "maxItems": 50,
+            "description": "Accepted equivalent forms (plain or LaTeX); any one matches."
+          },
+          "tolerance": {
+            "type": "number",
+            "minimum": 0,
+            "description": "Absolute tolerance for numeric answers."
+          },
+          "unit": {
             "type": "string",
-            "maxLength": 200
+            "maxLength": 32
+          },
+          "mustContain": {
+            "type": "string",
+            "maxLength": 200,
+            "description": "The answer must contain this text, else it is wrong."
+          },
+          "formHint": {
+            "type": "string",
+            "maxLength": 500,
+            "description": "Reason shown when `mustContain` fails."
+          },
+          "display": {
+            "type": "string",
+            "maxLength": 2000,
+            "description": "LaTeX shown in the revealed scheme."
+          }
+        },
+        "required": [
+          "accept",
+          "display"
+        ],
+        "additionalProperties": false,
+        "description": "Prototype FinalDef."
+      },
+      "AiRubricBand": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "maxLength": 100
+          },
+          "range": {
+            "type": "array",
+            "prefixItems": [
+              {
+                "type": "number",
+                "minimum": 0,
+                "maximum": 1000
+              },
+              {
+                "type": "number",
+                "minimum": 0,
+                "maximum": 1000
+              }
+            ]
+          },
+          "descriptor": {
+            "type": "string",
+            "maxLength": 2000
+          }
+        },
+        "required": [
+          "name",
+          "range",
+          "descriptor"
+        ],
+        "additionalProperties": false,
+        "description": "Prototype RubricBand."
+      },
+      "AiSchemeDef": {
+        "oneOf": [
+          {
+            "type": "object",
+            "properties": {
+              "kind": {
+                "type": "string",
+                "enum": [
+                  "option"
+                ]
+              },
+              "marks": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 1000
+              },
+              "correct": {
+                "type": "string",
+                "maxLength": 16,
+                "description": "Id of the correct McqOption (e.g. \"B\")."
+              },
+              "reason": {
+                "type": "string",
+                "maxLength": 2000
+              }
+            },
+            "required": [
+              "kind",
+              "marks",
+              "correct",
+              "reason"
+            ],
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "properties": {
+              "kind": {
+                "type": "string",
+                "enum": [
+                  "mapping"
+                ]
+              },
+              "marks": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 1000
+              },
+              "map": {
+                "type": "object",
+                "additionalProperties": {
+                  "type": "string",
+                  "maxLength": 500
+                }
+              }
+            },
+            "required": [
+              "kind",
+              "marks",
+              "map"
+            ],
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "properties": {
+              "kind": {
+                "type": "string",
+                "enum": [
+                  "accepted"
+                ]
+              },
+              "marks": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 1000
+              },
+              "values": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "v": {
+                      "type": "string",
+                      "maxLength": 500
+                    },
+                    "tol": {
+                      "type": "number",
+                      "minimum": 0
+                    },
+                    "unit": {
+                      "type": "string",
+                      "maxLength": 32
+                    }
+                  },
+                  "required": [
+                    "v"
+                  ],
+                  "additionalProperties": false
+                },
+                "maxItems": 50
+              },
+              "caseSensitive": {
+                "type": "boolean"
+              }
+            },
+            "required": [
+              "kind",
+              "marks",
+              "values"
+            ],
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "properties": {
+              "kind": {
+                "type": "string",
+                "enum": [
+                  "points"
+                ]
+              },
+              "marks": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 1000
+              },
+              "points": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/AiPointDef"
+                },
+                "maxItems": 50
+              },
+              "groups": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/AiPointGroup"
+                },
+                "maxItems": 20
+              },
+              "final": {
+                "$ref": "#/components/schemas/AiFinalDef"
+              },
+              "model": {
+                "type": "string",
+                "maxLength": 5000
+              }
+            },
+            "required": [
+              "kind",
+              "marks",
+              "points"
+            ],
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "properties": {
+              "kind": {
+                "type": "string",
+                "enum": [
+                  "rubric"
+                ]
+              },
+              "marks": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 1000
+              },
+              "criteria": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 64
+                    },
+                    "name": {
+                      "type": "string",
+                      "maxLength": 200
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "name"
+                  ],
+                  "additionalProperties": false
+                },
+                "maxItems": 20
+              },
+              "bands": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/AiRubricBand"
+                },
+                "maxItems": 20
+              },
+              "notes": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "maxLength": 2000
+                },
+                "maxItems": 20
+              }
+            },
+            "required": [
+              "kind",
+              "marks",
+              "criteria",
+              "bands"
+            ],
+            "additionalProperties": false
+          }
+        ],
+        "description": "Prototype SchemeDef (answer key and mark-scheme points)."
+      },
+      "AiCurriculumTag": {
+        "type": "object",
+        "properties": {
+          "subject": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 32,
+            "description": "SubjectCode (open dictionary), e.g. MAT."
           },
           "level": {
             "type": "string",
@@ -44764,20 +45333,106 @@
               "T4+T5"
             ]
           },
+          "unit": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "minLength": 1,
+            "maxLength": 64,
+            "description": "Unit code from the supplied taxonomy (never free text, AC-05.2), or null when the content lies outside it."
+          },
+          "unitLabel": {
+            "type": "string",
+            "maxLength": 200,
+            "description": "Display name of the unit."
+          },
+          "sp": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 64
+            },
+            "maxItems": 20,
+            "description": "Standard pembelajaran codes."
+          },
           "tp": {
             "type": "integer",
             "minimum": 1,
             "maximum": 6,
             "description": "Tahap penguasaan 1..6."
           },
-          "sp": {
+          "formOrigin": {
             "type": "string",
-            "maxLength": 64,
-            "description": "Standard pembelajaran code."
+            "enum": [
+              "T1-T3",
+              "T4",
+              "T5"
+            ]
           }
         },
+        "required": [
+          "subject",
+          "level",
+          "unit",
+          "unitLabel",
+          "sp",
+          "tp",
+          "formOrigin"
+        ],
         "additionalProperties": false,
-        "description": "Suggested curriculum tag (frontend CurriculumTag subset). [PROPOSED] fields."
+        "description": "Prototype CurriculumTag."
+      },
+      "AiDraftPart": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 64,
+            "description": "Local key within the result (not an entity id)."
+          },
+          "label": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 16,
+            "description": "Printed part label, e.g. \"(a)\" or \"(a)(i)\"."
+          },
+          "prompt": {
+            "type": "string",
+            "maxLength": 10000
+          },
+          "marks": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 100,
+            "description": "0 when the paper shows none (the gate then asks for it)."
+          },
+          "mode": {
+            "$ref": "#/components/schemas/AiLeafKind"
+          },
+          "scheme": {
+            "$ref": "#/components/schemas/AiSchemeDef"
+          },
+          "unit": {
+            "type": "string",
+            "maxLength": 32,
+            "description": "Unit shown after a numeric answer."
+          },
+          "wordRange": {
+            "$ref": "#/components/schemas/AiWordRange"
+          }
+        },
+        "required": [
+          "id",
+          "label",
+          "prompt",
+          "marks",
+          "mode"
+        ],
+        "additionalProperties": false,
+        "description": "Prototype IntakePart (extractor output)."
       },
       "AiQuestionDraft": {
         "type": "object",
@@ -44786,12 +45441,19 @@
             "type": "string",
             "enum": [
               "draft"
-            ]
+            ],
+            "description": "[PROPOSED] The only status. The prototype question has none."
+          },
+          "id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 64,
+            "description": "Local key within the result (the prototype mock builds `q-<label>-<n>`); not an entity id."
           },
           "label": {
             "type": "string",
             "maxLength": 32,
-            "description": "Printed question number, e.g. \"12\"."
+            "description": "Number label as printed on the paper, e.g. \"12\"."
           },
           "type": {
             "$ref": "#/components/schemas/AiDraftQuestionType"
@@ -44803,18 +45465,37 @@
           "options": {
             "type": "array",
             "items": {
-              "$ref": "#/components/schemas/AiDraftOption"
+              "$ref": "#/components/schemas/AiMcqOption"
             },
-            "maxItems": 10
+            "maxItems": 10,
+            "description": "MCQ options; empty for every other type."
           },
           "marks": {
-            "type": [
-              "integer",
-              "null"
-            ],
+            "type": "integer",
             "minimum": 0,
             "maximum": 1000,
-            "description": "Null when not found on the paper."
+            "description": "Question marks. For a structured question it is the sum of the part marks; 0 when not found on the paper (the field is then in `lowFields`)."
+          },
+          "mode": {
+            "type": "string",
+            "enum": [
+              "working",
+              "numeric",
+              "short_text",
+              "match_letter",
+              "essay",
+              "drawing",
+              "table_fill"
+            ],
+            "description": "Leaf mode of a question without parts."
+          },
+          "unit": {
+            "type": "string",
+            "maxLength": 32,
+            "description": "Unit of a question without parts."
+          },
+          "wordRange": {
+            "$ref": "#/components/schemas/AiWordRange"
           },
           "parts": {
             "type": "array",
@@ -44824,30 +45505,238 @@
             "maxItems": 50
           },
           "scheme": {
-            "$ref": "#/components/schemas/AiSchemeDraft"
+            "oneOf": [
+              {
+                "type": "object",
+                "properties": {
+                  "kind": {
+                    "type": "string",
+                    "enum": [
+                      "option"
+                    ]
+                  },
+                  "marks": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 1000
+                  },
+                  "correct": {
+                    "type": "string",
+                    "maxLength": 16,
+                    "description": "Id of the correct McqOption (e.g. \"B\")."
+                  },
+                  "reason": {
+                    "type": "string",
+                    "maxLength": 2000
+                  }
+                },
+                "required": [
+                  "kind",
+                  "marks",
+                  "correct",
+                  "reason"
+                ],
+                "additionalProperties": false
+              },
+              {
+                "type": "object",
+                "properties": {
+                  "kind": {
+                    "type": "string",
+                    "enum": [
+                      "mapping"
+                    ]
+                  },
+                  "marks": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 1000
+                  },
+                  "map": {
+                    "type": "object",
+                    "additionalProperties": {
+                      "type": "string",
+                      "maxLength": 500
+                    }
+                  }
+                },
+                "required": [
+                  "kind",
+                  "marks",
+                  "map"
+                ],
+                "additionalProperties": false
+              },
+              {
+                "type": "object",
+                "properties": {
+                  "kind": {
+                    "type": "string",
+                    "enum": [
+                      "accepted"
+                    ]
+                  },
+                  "marks": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 1000
+                  },
+                  "values": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "v": {
+                          "type": "string",
+                          "maxLength": 500
+                        },
+                        "tol": {
+                          "type": "number",
+                          "minimum": 0
+                        },
+                        "unit": {
+                          "type": "string",
+                          "maxLength": 32
+                        }
+                      },
+                      "required": [
+                        "v"
+                      ],
+                      "additionalProperties": false
+                    },
+                    "maxItems": 50
+                  },
+                  "caseSensitive": {
+                    "type": "boolean"
+                  }
+                },
+                "required": [
+                  "kind",
+                  "marks",
+                  "values"
+                ],
+                "additionalProperties": false
+              },
+              {
+                "type": "object",
+                "properties": {
+                  "kind": {
+                    "type": "string",
+                    "enum": [
+                      "points"
+                    ]
+                  },
+                  "marks": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 1000
+                  },
+                  "points": {
+                    "type": "array",
+                    "items": {
+                      "$ref": "#/components/schemas/AiPointDef"
+                    },
+                    "maxItems": 50
+                  },
+                  "groups": {
+                    "type": "array",
+                    "items": {
+                      "$ref": "#/components/schemas/AiPointGroup"
+                    },
+                    "maxItems": 20
+                  },
+                  "final": {
+                    "$ref": "#/components/schemas/AiFinalDef"
+                  },
+                  "model": {
+                    "type": "string",
+                    "maxLength": 5000
+                  }
+                },
+                "required": [
+                  "kind",
+                  "marks",
+                  "points"
+                ],
+                "additionalProperties": false
+              },
+              {
+                "type": "object",
+                "properties": {
+                  "kind": {
+                    "type": "string",
+                    "enum": [
+                      "rubric"
+                    ]
+                  },
+                  "marks": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 1000
+                  },
+                  "criteria": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string",
+                          "minLength": 1,
+                          "maxLength": 64
+                        },
+                        "name": {
+                          "type": "string",
+                          "maxLength": 200
+                        }
+                      },
+                      "required": [
+                        "id",
+                        "name"
+                      ],
+                      "additionalProperties": false
+                    },
+                    "maxItems": 20
+                  },
+                  "bands": {
+                    "type": "array",
+                    "items": {
+                      "$ref": "#/components/schemas/AiRubricBand"
+                    },
+                    "maxItems": 20
+                  },
+                  "notes": {
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "maxLength": 2000
+                    },
+                    "maxItems": 20
+                  }
+                },
+                "required": [
+                  "kind",
+                  "marks",
+                  "criteria",
+                  "bands"
+                ],
+                "additionalProperties": false
+              }
+            ],
+            "description": "Answer key of a question without parts (MCQ key, short answer, essay points)."
           },
           "tag": {
-            "$ref": "#/components/schemas/AiDraftTag"
+            "$ref": "#/components/schemas/AiCurriculumTag"
           },
-          "stimulusRef": {
+          "stimulusId": {
             "type": "string",
             "minLength": 1,
             "maxLength": 64,
-            "description": "Local key of an entry of `stimuli` in the same result (not an entity id)."
+            "description": "`id` of an entry of `stimuli` in the same result (not an entity id)."
           },
           "page": {
             "type": "integer",
-            "minimum": 1
-          },
-          "region": {
-            "$ref": "#/components/schemas/AiRegion"
-          },
-          "fieldConfidence": {
-            "type": "object",
-            "additionalProperties": {
-              "$ref": "#/components/schemas/AiConfidence"
-            },
-            "description": "Field name to confidence."
+            "minimum": 1,
+            "description": "Source page (1-based)."
           },
           "lowFields": {
             "type": "array",
@@ -44856,66 +45745,20 @@
               "minLength": 1,
               "maxLength": 64
             },
-            "description": "Fields below the review threshold."
+            "maxItems": 50,
+            "description": "Fields the extractor was unsure of; a person must confirm each (gate 4.8)."
+          },
+          "confirmed": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "maxItems": 0,
+            "description": "Always empty from the service (AC-05.6); the review screen fills it. Kept so the shape equals the prototype IntakeQuestion."
           },
           "needsManual": {
             "type": "boolean",
-            "description": "No stem and no parts were found (frontend needsManual)."
-          },
-          "warnings": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/AiItemWarning"
-            }
-          }
-        },
-        "required": [
-          "status",
-          "label",
-          "type",
-          "stem",
-          "options",
-          "marks",
-          "parts",
-          "tag",
-          "page",
-          "fieldConfidence",
-          "lowFields",
-          "warnings"
-        ],
-        "additionalProperties": false,
-        "description": "Extracted question draft. The only status is draft."
-      },
-      "AiStimulusDraft": {
-        "type": "object",
-        "properties": {
-          "ref": {
-            "type": "string",
-            "minLength": 1,
-            "maxLength": 64,
-            "description": "Local key, referenced by AiQuestionDraft.stimulusRef."
-          },
-          "kind": {
-            "type": "string",
-            "enum": [
-              "rajah",
-              "jadual",
-              "petikan",
-              "lain"
-            ],
-            "description": "[PROPOSED] kinds from the Rajah/Jadual/Petikan groups of the mock."
-          },
-          "title": {
-            "type": "string",
-            "maxLength": 300
-          },
-          "text": {
-            "type": "string",
-            "maxLength": 100000
-          },
-          "page": {
-            "type": "integer",
-            "minimum": 1
+            "description": "Extractor could not parse it: \"Perlu semak manual\"."
           },
           "region": {
             "type": "object",
@@ -44953,14 +45796,245 @@
               "h"
             ],
             "additionalProperties": false,
-            "description": "Figure crop region (BE-37 crops it server-side)."
+            "description": "[PROPOSED] Source region of the question."
+          },
+          "fieldConfidence": {
+            "type": "object",
+            "additionalProperties": {
+              "$ref": "#/components/schemas/AiConfidence"
+            },
+            "description": "[PROPOSED] Field name to confidence."
+          },
+          "warnings": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AiItemWarning"
+            },
+            "description": "[PROPOSED] Per-item warnings."
           }
         },
         "required": [
-          "ref",
-          "kind"
+          "status",
+          "id",
+          "label",
+          "type",
+          "stem",
+          "options",
+          "marks",
+          "mode",
+          "parts",
+          "tag",
+          "page",
+          "lowFields",
+          "confirmed",
+          "fieldConfidence",
+          "warnings"
         ],
-        "additionalProperties": false
+        "additionalProperties": false,
+        "description": "Extracted question draft (prototype IntakeQuestion). The only status is draft."
+      },
+      "AiStimulusDef": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 64,
+            "description": "Local key within the result (the prototype mock builds `stim-<n>`); referenced by `stimulusId`."
+          },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "diagram",
+              "passage",
+              "table"
+            ]
+          },
+          "label": {
+            "type": "string",
+            "maxLength": 100,
+            "description": "Short label used in headings and chips, e.g. \"Rajah 2\"."
+          },
+          "caption": {
+            "type": "string",
+            "maxLength": 300
+          },
+          "alt": {
+            "type": "string",
+            "maxLength": 1000,
+            "description": "Accessible description of the diagram."
+          },
+          "svg": {
+            "type": "string",
+            "maxLength": 100000,
+            "description": "Inline SVG markup (prototype, bundled and trusted). Never emitted by an adapter; stripped by the intake worker."
+          },
+          "text": {
+            "type": "string",
+            "maxLength": 100000
+          },
+          "table": {
+            "type": "object",
+            "properties": {
+              "head": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "maxLength": 500
+                },
+                "maxItems": 50
+              },
+              "rows": {
+                "type": "array",
+                "items": {
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "maxLength": 500
+                  },
+                  "maxItems": 50
+                },
+                "maxItems": 500
+              }
+            },
+            "required": [
+              "head",
+              "rows"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "required": [
+          "id",
+          "kind",
+          "label",
+          "alt"
+        ],
+        "additionalProperties": false,
+        "description": "Prototype StimulusDef."
+      },
+      "AiIntakeStimulus": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 64,
+            "description": "Local key within the result (the prototype mock builds `stim-<n>`); referenced by `stimulusId`."
+          },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "diagram",
+              "passage",
+              "table"
+            ]
+          },
+          "label": {
+            "type": "string",
+            "maxLength": 100,
+            "description": "Short label used in headings and chips, e.g. \"Rajah 2\"."
+          },
+          "caption": {
+            "type": "string",
+            "maxLength": 300
+          },
+          "alt": {
+            "type": "string",
+            "maxLength": 1000,
+            "description": "Accessible description of the diagram."
+          },
+          "svg": {
+            "type": "string",
+            "maxLength": 100000,
+            "description": "Inline SVG markup (prototype, bundled and trusted). Never emitted by an adapter; stripped by the intake worker."
+          },
+          "text": {
+            "type": "string",
+            "maxLength": 100000
+          },
+          "table": {
+            "type": "object",
+            "properties": {
+              "head": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "maxLength": 500
+                },
+                "maxItems": 50
+              },
+              "rows": {
+                "type": "array",
+                "items": {
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "maxLength": 500
+                  },
+                  "maxItems": 50
+                },
+                "maxItems": 500
+              }
+            },
+            "required": [
+              "head",
+              "rows"
+            ],
+            "additionalProperties": false
+          },
+          "page": {
+            "type": "integer",
+            "minimum": 1,
+            "description": "Source page the figure was cropped from."
+          },
+          "region": {
+            "type": "object",
+            "properties": {
+              "page": {
+                "type": "integer",
+                "minimum": 1
+              },
+              "x": {
+                "type": "number",
+                "minimum": 0,
+                "maximum": 1
+              },
+              "y": {
+                "type": "number",
+                "minimum": 0,
+                "maximum": 1
+              },
+              "w": {
+                "type": "number",
+                "minimum": 0,
+                "maximum": 1
+              },
+              "h": {
+                "type": "number",
+                "minimum": 0,
+                "maximum": 1
+              }
+            },
+            "required": [
+              "page",
+              "x",
+              "y",
+              "w",
+              "h"
+            ],
+            "additionalProperties": false,
+            "description": "[PROPOSED] Figure crop region (BE-37 crops it server-side)."
+          }
+        },
+        "required": [
+          "id",
+          "kind",
+          "label",
+          "alt"
+        ],
+        "additionalProperties": false,
+        "description": "Prototype IntakeStimulus (StimulusDef plus page)."
       },
       "AiExtractedPaper": {
         "type": "object",
@@ -44982,28 +46056,106 @@
           "stimuli": {
             "type": "array",
             "items": {
-              "$ref": "#/components/schemas/AiStimulusDraft"
+              "$ref": "#/components/schemas/AiIntakeStimulus"
             }
           },
           "unmatched": {
             "type": "array",
             "items": {
-              "type": "string"
+              "type": "string",
+              "maxLength": 200
             },
-            "description": "Scheme entries with no question, e.g. \"Jawapan 1-5\" or \"Skema 3a\" (frontend `unmatched`)."
+            "description": "Scheme entries whose question number was not found (AC-04.2), e.g. \"Jawapan 1-B\" or \"Skema 9(a)\" (`mock-extractor.ts` lines 259 and 270)."
           },
           "warnings": {
             "type": "array",
             "items": {
-              "type": "string"
+              "type": "string",
+              "maxLength": 500
             },
-            "description": "Paper-level BM warnings, e.g. \"Tiada soalan dikesan dalam teks kertas.\" (frontend `warnings`)."
+            "description": "Paper-level BM warnings, e.g. \"Tiada soalan dikesan dalam teks kertas.\" (`mock-extractor.ts` line 212)."
           },
           "usage": {
-            "$ref": "#/components/schemas/AiUsage"
+            "type": "object",
+            "properties": {
+              "provider": {
+                "$ref": "#/components/schemas/AiProviderId"
+              },
+              "model": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 128,
+                "description": "Model id reported by the adapter (the mock reports its own id)."
+              },
+              "pages": {
+                "type": "integer",
+                "minimum": 0,
+                "description": "Pages sent; 0 for text-only operations."
+              },
+              "tokensIn": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "tokensOut": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "costSen": {
+                "type": "integer",
+                "minimum": 0,
+                "description": "Cost in sen from the configured price table (AI_PRICE_TABLE_JSON); 0 for the mock provider."
+              }
+            },
+            "required": [
+              "provider",
+              "model",
+              "pages",
+              "tokensIn",
+              "tokensOut",
+              "costSen"
+            ],
+            "additionalProperties": false,
+            "description": "[PROPOSED] Cost summary of the call."
           },
           "redaction": {
-            "$ref": "#/components/schemas/AiRedactionSummary"
+            "type": "object",
+            "properties": {
+              "applied": {
+                "type": "boolean",
+                "enum": [
+                  true
+                ],
+                "description": "The redaction step ran before the call (always true on a success)."
+              },
+              "masked": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "flag": {
+                      "$ref": "#/components/schemas/AiRedactionFlag"
+                    },
+                    "count": {
+                      "type": "integer",
+                      "minimum": 1,
+                      "description": "Number of spans masked."
+                    }
+                  },
+                  "required": [
+                    "flag",
+                    "count"
+                  ],
+                  "additionalProperties": false
+                },
+                "description": "One entry per flag that matched at least once. Never the masked text."
+              }
+            },
+            "required": [
+              "applied",
+              "masked"
+            ],
+            "additionalProperties": false,
+            "description": "[PROPOSED] What was masked, counts only."
           }
         },
         "required": [
@@ -45017,7 +46169,7 @@
           "redaction"
         ],
         "additionalProperties": false,
-        "description": "Drafts only. In-process result of extractPaper."
+        "description": "Drafts only. In-process result of extractPaper (prototype ExtractedPaper)."
       },
       "AiTagSuggestItem": {
         "type": "object",
@@ -45040,7 +46192,8 @@
           "ref",
           "stem"
         ],
-        "additionalProperties": false
+        "additionalProperties": false,
+        "description": "[PROPOSED]"
       },
       "AiSuggestTagsRequest": {
         "type": "object",
@@ -45073,7 +46226,7 @@
           "taxonomy"
         ],
         "additionalProperties": false,
-        "description": "Input of suggestTags (in-process). Question text and taxonomy only."
+        "description": "[PROPOSED] Input of suggestTags (in-process, plan 15.2). Question text and taxonomy only."
       },
       "AiTagSuggestion": {
         "type": "object",
@@ -45084,7 +46237,72 @@
             "maxLength": 64
           },
           "tag": {
-            "$ref": "#/components/schemas/AiDraftTag"
+            "type": "object",
+            "properties": {
+              "subject": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 32,
+                "description": "SubjectCode (open dictionary), e.g. MAT."
+              },
+              "level": {
+                "type": "string",
+                "enum": [
+                  "T4",
+                  "T5",
+                  "T4+T5"
+                ]
+              },
+              "unit": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "minLength": 1,
+                "maxLength": 64,
+                "description": "Unit code from the supplied taxonomy (never free text, AC-05.2), or null when the content lies outside it."
+              },
+              "unitLabel": {
+                "type": "string",
+                "maxLength": 200,
+                "description": "Display name of the unit."
+              },
+              "sp": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 64
+                },
+                "maxItems": 20,
+                "description": "Standard pembelajaran codes."
+              },
+              "tp": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 6,
+                "description": "Tahap penguasaan 1..6."
+              },
+              "formOrigin": {
+                "type": "string",
+                "enum": [
+                  "T1-T3",
+                  "T4",
+                  "T5"
+                ]
+              }
+            },
+            "required": [
+              "subject",
+              "level",
+              "unit",
+              "unitLabel",
+              "sp",
+              "tp",
+              "formOrigin"
+            ],
+            "additionalProperties": false,
+            "description": "Suggested tag in the prototype CurriculumTag shape; `unit` is a taxonomy code or null, never free text."
           },
           "confidence": {
             "$ref": "#/components/schemas/AiConfidence"
@@ -45095,7 +46313,8 @@
           "tag",
           "confidence"
         ],
-        "additionalProperties": false
+        "additionalProperties": false,
+        "description": "[PROPOSED] The prototype has no tag-suggestion call."
       },
       "AiSuggestTagsResult": {
         "type": "object",
@@ -96945,7 +98164,7 @@
           "ai"
         ],
         "summary": "Admin health check of the configured provider on a built-in sample",
-        "description": "Sends a fixed built-in sample (never user content) through the same redaction, rate limit, retry and budget guard as a real call, and writes one usage row (purpose health_check; cost 0 for the mock). 200 means the provider answered (ok is always true); an unreachable or unconfigured provider is 503 AI_UNAVAILABLE \"Perkhidmatan AI tidak dapat dihubungi sekarang. Sila cuba sebentar lagi.\" and a reached cap is 503 AI_BUDGET_EXHAUSTED \"Had bajet AI bulanan telah dicapai. Pengekstrakan baharu ditunda sehingga had dinaikkan.\". The body is an empty object; any field is 422. The response never contains an API key, a base URL or any provider setting (BE-NFR-32); `configured` is the only statement about credentials. Admin Pusat only (role code `admin`); Guru, Admin Sekolah, Pegawai PPD/JPN, Murid, Ibu Bapa and Penaja get 403.",
+        "description": "Sends a fixed built-in sample (never user content) through the same redaction, rate limit, retry and budget guard as a real call, and writes one usage row (purpose health_check; cost 0 for the mock). 200 means the provider answered (ok is always true); a provider without server configuration is 503 AI_UNAVAILABLE \"Dikonfigurasi di pelayan\" (prototype copy), an unreachable one is 503 AI_UNAVAILABLE \"Perkhidmatan AI tidak dapat dihubungi sekarang. Sila cuba sebentar lagi.\" and a reached cap is 503 AI_BUDGET_EXHAUSTED \"Had bajet AI bulanan telah dicapai. Pengekstrakan baharu ditunda sehingga had dinaikkan.\". The body is an empty object; any field is 422. The response never contains an API key, a base URL or any provider setting (BE-NFR-32); `configured` is the only statement about credentials. Admin Pusat only (role code `admin`); Guru, Admin Sekolah, Pegawai PPD/JPN, Murid, Ibu Bapa and Penaja get 403.",
         "parameters": [
           {
             "schema": {
@@ -97049,7 +98268,7 @@
             }
           },
           "503": {
-            "description": "AI_UNAVAILABLE \"Perkhidmatan AI tidak dapat dihubungi sekarang. Sila cuba sebentar lagi.\" (provider not configured, unreachable or still failing after the retries) or AI_BUDGET_EXHAUSTED \"Had bajet AI bulanan telah dicapai. Pengekstrakan baharu ditunda sehingga had dinaikkan.\".",
+            "description": "AI_UNAVAILABLE \"Dikonfigurasi di pelayan\" (provider not configured) or \"Perkhidmatan AI tidak dapat dihubungi sekarang. Sila cuba sebentar lagi.\" (unreachable or still failing after the retries) or AI_BUDGET_EXHAUSTED \"Had bajet AI bulanan telah dicapai. Pengekstrakan baharu ditunda sehingga had dinaikkan.\".",
             "content": {
               "application/json": {
                 "schema": {
