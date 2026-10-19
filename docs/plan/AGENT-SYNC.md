@@ -78,8 +78,9 @@ A PC may claim **only** cards listed here. A card that is not listed is closed, 
 | BE-34 | full | 2026-10-19 | Group A. Migration kit (branch `be/BE-34-migration-kit`). BE-02 is merged: merge origin/feature/v2-backend into the branch. |
 | BE-27 | full (stacked) | 2026-10-19 | Group A (PC-4). .cloud staging schema, loader and profiling report, stacked on `origin/be/BE-34-migration-kit`. Never connect to the .cloud DB: build against a staging schema and synthetic fixtures; the LEAD runs the real read-only profile. No real data, dumps or credentials in the repo. Adds the migration CLI npm script. |
 | BE-31 | harness-only | 2026-10-19 | Group A. Build the conformance harness (`packages/contract-tests/**` and its runner) and run it against the frontend mock now. Do not add the API-target wiring until BE-03 merges. Branch `be/BE-31-conformance-harness`. |
-| BE-05 | contract-only | 2026-10-19 | Users and schools: `packages/contract/src/{users,schools}/**`. |
-| BE-08 | contract-only | 2026-10-19 | Curriculum: `packages/contract/src/curriculum/**`. |
+| BE-04 | full | 2026-10-19 | Group A (PC-1). File storage service + upload handling (S). Opened after S3 (BE-03 merged). Security review (uploads). |
+| BE-05 | full | 2026-10-19 | Group A (PC-1). Users & schools (M02), full card. **CLAIMED** pc-aminfaudzi/S2, branch `be/BE-05-users-schools` from 41b4e6a9. Opened after S3; contract already merged (apply review feedback `docs/plan/reviews/BE-05.md`). Unblocks BE-17, BE-25. |
+| BE-08 | full | 2026-10-19 | Group B (PC-2). Curriculum (M03): levels, subjects, chapters, topics, DSKP tree. Opened after S3; contract already merged. Unblocks BE-09 full. |
 | BE-09 | contract-only | 2026-10-19 | Question bank core: `packages/contract/src/questions/**`. |
 | BE-11 | contract-only | 2026-10-19 | Wallet and streak: `packages/contract/src/wallet/**`. |
 | BE-12 | contract-only | 2026-10-19 | Practice write path: `packages/contract/src/practice/**`. |
@@ -121,6 +122,7 @@ Rules for `contract-only`:
 
 ### Lead notices (current instructions; newest first)
 
+- 2026-10-19 (S3): **BE-03 merged — gate S3 passed** (squash b85df54a, tracker 41b4e6a9). LEAD independent verify green (contract:check + be:verify, 24 files / 195 passed, real Testcontainers Postgres). **Full cards opened:** BE-04 (Group A/PC-1), BE-05 (Group A/PC-1, **CLAIMED** pc-aminfaudzi/S2), BE-08 (Group B/PC-2). BE-36 still waits on BE-06 (full). Rebase on origin/feature/v2-backend before starting.
 - 2026-10-19 18:15: **BE-02 merged (S2).** **BE-03 (auth) is open** for Group A, as a full card with a security review. BE-34 is no longer stacked; merge the base in.
 - 2026-10-19 17:45: **BE-39 mock reference is now on this branch:** `docs/reference/bijak-paper-builder-mock/` (read-only snapshot of the prototype paper-builder mock). BE-39 must match it. **D59a accepted risk:** IC self-reset for pupils was flagged High by security review; the user kept it (D59a) with the D55 limits plus notifications, recorded as an accepted risk.
 - 2026-10-19 17:00: **D59 (user):** IC reset stays for all roles (with D55 limits and a notification); initial passwords are random per account, shown once, with mustChangePassword (no shared default); Battle search covers all schools; the shared 429 response is coming to common/ (LEAD). **Reviewers are now read-only** (no worktrees, no npm); the LEAD runs the checks at merge.
