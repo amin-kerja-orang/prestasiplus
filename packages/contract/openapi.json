@@ -949,29 +949,33 @@
         "properties": {
           "name": {
             "type": "string",
-            "minLength": 1,
             "maxLength": 255
           },
           "nameEn": {
             "type": "string",
-            "minLength": 1,
             "maxLength": 255
           },
           "code": {
             "type": "string",
-            "minLength": 1,
             "maxLength": 10
           },
           "stage": {
-            "$ref": "#/components/schemas/CurriculumStage"
+            "type": "string",
+            "enum": [
+              "primary",
+              "lower_secondary",
+              "upper_secondary"
+            ]
           },
           "curriculum": {
             "type": "string",
-            "minLength": 1,
             "maxLength": 255
           },
           "order": {
-            "type": "integer",
+            "type": [
+              "integer",
+              "null"
+            ],
             "minimum": 0
           }
         },
@@ -1173,17 +1177,14 @@
         "properties": {
           "name": {
             "type": "string",
-            "minLength": 1,
             "maxLength": 255
           },
           "nameEn": {
             "type": "string",
-            "minLength": 1,
             "maxLength": 255
           },
           "code": {
             "type": "string",
-            "minLength": 1,
             "maxLength": 20
           },
           "icon": {
@@ -1194,20 +1195,30 @@
             "maxLength": 100
           },
           "color": {
-            "type": "string",
+            "type": [
+              "string",
+              "null"
+            ],
             "pattern": "^#[0-9a-fA-F]{6}$"
           },
           "isCore": {
             "type": "boolean"
           },
           "order": {
-            "type": "integer",
+            "type": [
+              "integer",
+              "null"
+            ],
             "minimum": 0
           },
           "educationLevelIds": {
-            "type": "array",
+            "type": [
+              "array",
+              "null"
+            ],
             "items": {
-              "$ref": "#/components/schemas/Id"
+              "type": "string",
+              "minLength": 1
             }
           }
         },
@@ -1842,10 +1853,14 @@
         "type": "object",
         "properties": {
           "subjectId": {
-            "$ref": "#/components/schemas/Id"
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 64
           },
           "educationLevelId": {
-            "$ref": "#/components/schemas/Id"
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 64
           }
         },
         "required": [
@@ -1857,14 +1872,17 @@
         "type": "object",
         "properties": {
           "subjectId": {
-            "$ref": "#/components/schemas/Id"
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 64
           },
           "educationLevelId": {
-            "$ref": "#/components/schemas/Id"
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 64
           },
           "name": {
             "type": "string",
-            "minLength": 1,
             "maxLength": 255
           },
           "nameEn": {
@@ -1898,14 +1916,17 @@
         "type": "object",
         "properties": {
           "subjectId": {
-            "$ref": "#/components/schemas/Id"
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 64
           },
           "educationLevelId": {
-            "$ref": "#/components/schemas/Id"
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 64
           },
           "name": {
             "type": "string",
-            "minLength": 1,
             "maxLength": 255
           },
           "nameEn": {
@@ -1942,11 +1963,12 @@
         "type": "object",
         "properties": {
           "chapterId": {
-            "$ref": "#/components/schemas/Id"
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 64
           },
           "name": {
             "type": "string",
-            "minLength": 1,
             "maxLength": 255
           },
           "nameEn": {
@@ -1986,7 +2008,6 @@
         "properties": {
           "name": {
             "type": "string",
-            "minLength": 1,
             "maxLength": 255
           },
           "nameEn": {
@@ -2027,11 +2048,12 @@
         "type": "object",
         "properties": {
           "topicId": {
-            "$ref": "#/components/schemas/Id"
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 64
           },
           "name": {
             "type": "string",
-            "minLength": 1,
             "maxLength": 255
           },
           "nameEn": {
@@ -2058,7 +2080,6 @@
         "properties": {
           "name": {
             "type": "string",
-            "minLength": 1,
             "maxLength": 255
           },
           "nameEn": {
@@ -4257,19 +4278,21 @@
         "parameters": [
           {
             "schema": {
-              "$ref": "#/components/schemas/Id"
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 64
             },
             "required": true,
-            "description": "Opaque entity id (string). Never parse or construct on the client.",
             "name": "subjectId",
             "in": "query"
           },
           {
             "schema": {
-              "$ref": "#/components/schemas/Id"
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 64
             },
             "required": true,
-            "description": "Opaque entity id (string). Never parse or construct on the client.",
             "name": "educationLevelId",
             "in": "query"
           }

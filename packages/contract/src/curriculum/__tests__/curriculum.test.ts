@@ -15,6 +15,7 @@ import {
   CurriculumSetActiveRequestSchema,
   CurriculumSubjectSchema,
   CurriculumSubjectWriteSchema,
+  CurriculumSubtopicCreateSchema,
   CurriculumTopicCardSchema,
   CurriculumTopicCreateSchema,
   CurriculumTopicUpdateSchema,
@@ -179,5 +180,98 @@ describe('curriculum contract: OpenAPI', () => {
     const text = JSON.stringify(doc)
     expect(text).not.toMatch(/legacy_(source|id)/)
     expect(JSON.stringify(doc.components.schemas.CurriculumChapter)).not.toContain('createdSeq')
+  })
+})
+
+/** First message per top-level field, like the mock's `fields`. */
+function fieldsOf(schema: { safeParse: (v: unknown) => { success: boolean; error?: { issues: { path: PropertyKey[]; message: string }[] } } }, input: unknown) {
+  const r = schema.safeParse(input)
+  const out: Record<string, string> = {}
+  for (const i of r.error?.issues ?? []) {
+    const k = String(i.path[0])
+    if (!(k in out)) out[k] = i.message
+  }
+  return out
+}
+
+describe('curriculum contract: mock coercion and exact 422 copy', () => {
+  it('trims strings, turns blanks into null and reads numbers as text', () => {
+    const r = CurriculumTopicCreateSchema.parse({ chapterId: ' 7 ', name: '  Topik  ', nameEn: '   ', topicNumber: 1.2 })
+    expect(r).toMatchObject({ chapterId: '7', name: 'Topik', nameEn: null, topicNumber: '1.2' })
+  })
+
+  it('accepts digit strings for integers and 1/0 for booleans', () => {
+    const r = CurriculumSubjectWriteSchema.parse({
+      name: 'S', nameEn: 'S', code: 'UJI', order: '3', isCore: '1', educationLevelIds: [1, '2'],
+    })
+    expect(r).toMatchObject({ order: 3, isCore: true, educationLevelIds: ['1', '2'] })
+    expect(CurriculumSetActiveRequestSchema.parse({ isActive: 0 })).toEqual({ isActive: false })
+    expect(CurriculumSetActiveRequestSchema.parse({ isActive: '1' })).toEqual({ isActive: true })
+    expect(CurriculumChapterCreateSchema.parse({ subjectId: 5, educationLevelId: '11', name: 'B', chapterNumber: '2' })).toMatchObject({
+      subjectId: '5', chapterNumber: 2,
+    })
+  })
+
+  it('level: required, string, max, stage and integer copy', () => {
+    expect(fieldsOf(CurriculumEducationLevelWriteSchema, {})).toEqual({
+      name: 'The name field is required.',
+      nameEn: 'The name en field is required.',
+      code: 'The code field is required.',
+      stage: 'The stage field is required.',
+      curriculum: 'The curriculum field is required.',
+    })
+    const bad = { name: 5, nameEn: 'x'.repeat(256), code: 'ABCDEFGHIJK', stage: 'tertiary', curriculum: '  ', order: -1 }
+    expect(fieldsOf(CurriculumEducationLevelWriteSchema, bad)).toEqual({
+      name: 'The name field must be a string.',
+      nameEn: 'The name en field must not be greater than 255 characters.',
+      code: 'The code field must not be greater than 10 characters.',
+      stage: 'The selected stage is invalid.',
+      curriculum: 'The curriculum field is required.',
+      order: 'The order field must be at least 0.',
+    })
+    expect(fieldsOf(CurriculumEducationLevelWriteSchema, { ...bad, order: 1.5 }).order).toBe('The order field must be an integer.')
+  })
+
+  it('subject: colour, boolean, array and invalid-level copy', () => {
+    const ok = { name: 'S', nameEn: 'S', code: 'UJI' }
+    expect(fieldsOf(CurriculumSubjectWriteSchema, { ...ok, color: 'blue', isCore: 'ya', educationLevelIds: 'x', icon: 3 })).toEqual({
+      color: 'The color field format is invalid.',
+      isCore: 'The is core field must be true or false.',
+      educationLevelIds: 'The education level ids field must be an array.',
+      icon: 'The icon field must be a string.',
+    })
+    expect(fieldsOf(CurriculumSubjectWriteSchema, { ...ok, educationLevelIds: [{}] }).educationLevelIds).toBe(
+      'The selected education level ids is invalid.',
+    )
+  })
+
+  it('active toggle, tree query, chapter, topic and subtopic copy', () => {
+    expect(fieldsOf(CurriculumSetActiveRequestSchema, {})).toEqual({ isActive: 'The is active field is required.' })
+    expect(fieldsOf(CurriculumSetActiveRequestSchema, { isActive: 'maybe' })).toEqual({
+      isActive: 'The is active field must be true or false.',
+    })
+    expect(fieldsOf(CurriculumTreeQuerySchema, {})).toEqual({
+      subjectId: 'The subject id field is required.',
+      educationLevelId: 'The education level id field is required.',
+    })
+    expect(fieldsOf(CurriculumChapterCreateSchema, { chapterNumber: 0, description: 4 })).toEqual({
+      subjectId: 'The subject id field is required.',
+      educationLevelId: 'The education level id field is required.',
+      name: 'The name field is required.',
+      chapterNumber: 'The chapter number field must be at least 1.',
+      description: 'The description field must be a string.',
+    })
+    expect(fieldsOf(CurriculumTopicCreateSchema, { topicNumber: 'x'.repeat(21) })).toEqual({
+      chapterId: 'The chapter id field is required.',
+      name: 'The name field is required.',
+      topicNumber: 'The topic number field must not be greater than 20 characters.',
+    })
+    expect(fieldsOf(CurriculumSubtopicCreateSchema, {})).toEqual({
+      topicId: 'The topic id field is required.',
+      name: 'The name field is required.',
+    })
+    expect(fieldsOf(CurriculumTopicUpdateSchema, { name: 'T', isActive: 'x' })).toEqual({
+      isActive: 'The is active field must be true or false.',
+    })
   })
 })

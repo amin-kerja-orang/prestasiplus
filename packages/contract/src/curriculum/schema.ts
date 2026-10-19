@@ -1,4 +1,5 @@
 import { z } from '../zod'
+import { boolField, enumField, hexColorField, idField, idListField, intField, textField } from './fields'
 import { IdSchema } from '../common/ids'
 import { TimestampSchema } from '../common/time'
 
@@ -24,9 +25,6 @@ export const CurriculumStageSchema = z
 export function curriculumStatusEnvelopeOf<T extends z.ZodType>(data: T) {
   return z.object({ data, status: z.string().min(1) })
 }
-
-const optionalText = (max?: number) =>
-  (max === undefined ? z.string() : z.string().max(max)).nullish()
 
 // --- Exact BM copy (mock admin-common.ts, BR-18, SRS section 8) --------------------------------
 
@@ -56,17 +54,7 @@ export const CURRICULUM_FLASH_MESSAGES = {
   },
 } as const
 
-/** Laravel-style 422 copy of the mock (`fields` values); `:attribute` is the humanised field name. */
-export const CURRICULUM_VALIDATION_MESSAGES = {
-  required: 'The :attribute field is required.',
-  string: 'The :attribute field must be a string.',
-  integer: 'The :attribute field must be an integer.',
-  boolean: 'The :attribute field must be true or false.',
-  array: 'The :attribute field must be an array.',
-  exists: 'The selected :attribute is invalid.',
-  unique: 'The :attribute has already been taken.',
-  regex: 'The :attribute field format is invalid.',
-} as const
+export { CURRICULUM_VALIDATION_MESSAGES } from './fields'
 
 // --- Education levels --------------------------------------------------------------------------
 
@@ -94,12 +82,12 @@ export const CurriculumEducationLevelListItemSchema = CurriculumEducationLevelSc
 /** POST and PUT body. The code is stored upper-case and unique case-insensitively. */
 export const CurriculumEducationLevelWriteSchema = z
   .object({
-    name: z.string().min(1).max(255),
-    nameEn: z.string().min(1).max(255),
-    code: z.string().min(1).max(10),
-    stage: CurriculumStageSchema,
-    curriculum: z.string().min(1).max(255),
-    order: z.int().min(0).optional(),
+    name: textField('name', { max: 255, required: true }),
+    nameEn: textField('nameEn', { max: 255, required: true }),
+    code: textField('code', { max: 10, required: true }),
+    stage: enumField('stage', ['primary', 'lower_secondary', 'upper_secondary']),
+    curriculum: textField('curriculum', { max: 255, required: true }),
+    order: intField('order', { min: 0 }),
   })
   .meta({ id: 'CurriculumEducationLevelWrite' })
 
@@ -148,14 +136,14 @@ export const CurriculumSubjectListItemSchema = CurriculumSubjectSchema.extend({
  */
 export const CurriculumSubjectWriteSchema = z
   .object({
-    name: z.string().min(1).max(255),
-    nameEn: z.string().min(1).max(255),
-    code: z.string().min(1).max(20),
-    icon: optionalText(100),
-    color: z.string().regex(HEX_COLOR).optional(),
-    isCore: z.boolean().optional(),
-    order: z.int().min(0).optional(),
-    educationLevelIds: z.array(IdSchema).optional(),
+    name: textField('name', { max: 255, required: true }),
+    nameEn: textField('nameEn', { max: 255, required: true }),
+    code: textField('code', { max: 20, required: true }),
+    icon: textField('icon', { max: 100 }),
+    color: hexColorField('color'),
+    isCore: boolField('isCore'),
+    order: intField('order', { min: 0 }),
+    educationLevelIds: idListField('educationLevelIds'),
   })
   .meta({ id: 'CurriculumSubjectWrite' })
 
@@ -175,7 +163,7 @@ export const CurriculumSubjectLookupSchema = z
 
 /** PATCH body and response of `/active` toggles. */
 export const CurriculumSetActiveRequestSchema = z
-  .object({ isActive: z.boolean() })
+  .object({ isActive: boolField('isActive', { required: true }) })
   .meta({ id: 'CurriculumSetActiveRequest' })
 export const CurriculumActiveStateSchema = z
   .object({ id: IdSchema, isActive: z.boolean() })
@@ -266,45 +254,45 @@ export const CurriculumTreeSchema = z
 
 /** Query of `GET /admin/curriculum`: both required. */
 export const CurriculumTreeQuerySchema = z
-  .object({ subjectId: IdSchema, educationLevelId: IdSchema })
+  .object({ subjectId: idField('subjectId'), educationLevelId: idField('educationLevelId') })
   .meta({ id: 'CurriculumTreeQuery' })
 
 const chapterWriteShape = {
-  subjectId: IdSchema,
-  educationLevelId: IdSchema,
-  name: z.string().min(1).max(255),
-  nameEn: optionalText(255),
-  chapterNumber: z.int().min(1).nullish(),
-  description: optionalText(),
+  subjectId: idField('subjectId'),
+  educationLevelId: idField('educationLevelId'),
+  name: textField('name', { max: 255, required: true }),
+  nameEn: textField('nameEn', { max: 255 }),
+  chapterNumber: intField('chapterNumber', { min: 1 }),
+  description: textField('description'),
 }
 export const CurriculumChapterCreateSchema = z.object(chapterWriteShape).meta({ id: 'CurriculumChapterCreate' })
 /** PUT: an absent `isActive` keeps the stored value. */
 export const CurriculumChapterUpdateSchema = z
-  .object({ ...chapterWriteShape, isActive: z.boolean().optional() })
+  .object({ ...chapterWriteShape, isActive: boolField('isActive') })
   .meta({ id: 'CurriculumChapterUpdate' })
 
 const topicWriteShape = {
-  name: z.string().min(1).max(255),
-  nameEn: optionalText(255),
-  topicNumber: optionalText(20),
-  description: optionalText(),
-  learningStandard: optionalText(),
+  name: textField('name', { max: 255, required: true }),
+  nameEn: textField('nameEn', { max: 255 }),
+  topicNumber: textField('topicNumber', { max: 20, numberAsText: true }),
+  description: textField('description'),
+  learningStandard: textField('learningStandard'),
 }
 export const CurriculumTopicCreateSchema = z
-  .object({ chapterId: IdSchema, ...topicWriteShape })
+  .object({ chapterId: idField('chapterId'), ...topicWriteShape })
   .meta({ id: 'CurriculumTopicCreate' })
 /** PUT: `chapterId` is fixed after creation and ignored if sent. */
 export const CurriculumTopicUpdateSchema = z
-  .object({ ...topicWriteShape, isActive: z.boolean().optional() })
+  .object({ ...topicWriteShape, isActive: boolField('isActive') })
   .meta({ id: 'CurriculumTopicUpdate' })
 
 const subtopicWriteShape = {
-  name: z.string().min(1).max(255),
-  nameEn: optionalText(255),
-  learningObjective: optionalText(),
+  name: textField('name', { max: 255, required: true }),
+  nameEn: textField('nameEn', { max: 255 }),
+  learningObjective: textField('learningObjective'),
 }
 export const CurriculumSubtopicCreateSchema = z
-  .object({ topicId: IdSchema, ...subtopicWriteShape })
+  .object({ topicId: idField('topicId'), ...subtopicWriteShape })
   .meta({ id: 'CurriculumSubtopicCreate' })
 export const CurriculumSubtopicUpdateSchema = z.object(subtopicWriteShape).meta({ id: 'CurriculumSubtopicUpdate' })
 
