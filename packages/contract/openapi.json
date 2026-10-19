@@ -20826,10 +20826,6 @@
                 "statement": {
                   "type": "string"
                 },
-                "is_true": {
-                  "type": "boolean",
-                  "description": "ANSWER KEY shipped to the client by design (SEC-M16-01)."
-                },
                 "difficulty": {
                   "type": "integer",
                   "minimum": 1
@@ -20838,7 +20834,6 @@
               "required": [
                 "id",
                 "statement",
-                "is_true",
                 "difficulty"
               ],
               "additionalProperties": false
@@ -20894,16 +20889,11 @@
                       },
                       "text": {
                         "type": "string"
-                      },
-                      "correct": {
-                        "type": "boolean",
-                        "description": "ANSWER KEY shipped to the client by design (SEC-M16-01)."
                       }
                     },
                     "required": [
                       "id",
-                      "text",
-                      "correct"
+                      "text"
                     ],
                     "additionalProperties": false
                   }
@@ -20963,15 +20953,10 @@
                     "properties": {
                       "text": {
                         "type": "string"
-                      },
-                      "correct": {
-                        "type": "boolean",
-                        "description": "ANSWER KEY shipped to the client by design (SEC-M16-01)."
                       }
                     },
                     "required": [
-                      "text",
-                      "correct"
+                      "text"
                     ],
                     "additionalProperties": false
                   }
@@ -21020,10 +21005,6 @@
                 "question": {
                   "type": "string"
                 },
-                "answer": {
-                  "type": "string",
-                  "description": "ANSWER KEY shipped to the client by design (SEC-M16-01)."
-                },
                 "scrambled": {
                   "type": "array",
                   "items": {
@@ -21049,7 +21030,6 @@
               "required": [
                 "id",
                 "question",
-                "answer",
                 "scrambled",
                 "type",
                 "difficulty",
@@ -21087,48 +21067,56 @@
               "type": "object",
               "properties": {
                 "id": {
-                  "type": "integer",
-                  "minimum": 1,
-                  "maximum": 12
-                },
-                "pair_id": {
-                  "type": "integer",
-                  "minimum": 0,
-                  "maximum": 5,
-                  "description": "ANSWER KEY shipped to the client by design (SEC-M16-01)."
-                },
-                "type": {
                   "type": "string",
-                  "enum": [
-                    "question",
-                    "answer"
-                  ]
-                },
-                "content": {
-                  "type": "string"
-                },
-                "difficulty": {
-                  "type": "integer",
-                  "minimum": 1
+                  "minLength": 1,
+                  "maxLength": 64,
+                  "description": "Opaque card id of this session (not a pair index).",
+                  "example": "1042"
                 }
               },
               "required": [
-                "id",
-                "pair_id",
-                "type",
-                "content",
-                "difficulty"
+                "id"
               ],
               "additionalProperties": false
             },
             "maxItems": 12
+          },
+          "count": {
+            "type": "number",
+            "enum": [
+              12
+            ],
+            "description": "[PROPOSED] Number of cards (6 pairs)."
+          },
+          "layout": {
+            "type": "object",
+            "properties": {
+              "columns": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 12
+              },
+              "rows": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 12
+              }
+            },
+            "required": [
+              "columns",
+              "rows"
+            ],
+            "additionalProperties": false,
+            "description": "[PROPOSED] Default board grid (4 x 3); the client may reflow it responsively."
           }
         },
         "required": [
           "sessionId",
           "personalBest",
           "canEarnSyiling",
-          "cards"
+          "cards",
+          "count",
+          "layout"
         ],
         "additionalProperties": false
       },
@@ -21150,199 +21138,335 @@
             "$ref": "#/components/schemas/GamesKadMemoriPayload"
           }
         ],
-        "description": "The payload of the requested game: statements (betul-salah), questions (cabaran-kilat, tembak-jawapan), puzzles (susun-jawapan) or cards (kad-memori). A session row is created by the GET."
+        "description": "The keyless payload of the requested game: statements (betul-salah), questions (cabaran-kilat, tembak-jawapan), puzzles (susun-jawapan) or cards (kad-memori). A session row is created by the GET. No answer key is present (D58a)."
       },
-      "GamesBetulSalahSubmit": {
+      "GamesBetulSalahCheck": {
         "type": "object",
         "properties": {
           "session_id": {
             "$ref": "#/components/schemas/GamesSessionId"
           },
-          "correct_count": {
-            "type": "integer",
-            "minimum": 0
+          "item_id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 64,
+            "description": "Id of the statement, question or puzzle in the payload of this session.",
+            "example": "1042"
           },
-          "total_answered": {
-            "type": "integer",
-            "minimum": 0
-          },
-          "streak": {
-            "type": "integer",
-            "minimum": 0
-          },
-          "score": {
-            "type": "integer",
-            "minimum": 0
-          },
-          "syiling_earned": {
-            "type": "integer",
-            "minimum": 0
+          "answer": {
+            "type": "boolean"
           }
         },
         "required": [
           "session_id",
-          "correct_count",
-          "total_answered",
-          "streak",
-          "score",
-          "syiling_earned"
+          "item_id",
+          "answer"
         ]
       },
-      "GamesCabaranKilatSubmit": {
+      "GamesCabaranKilatCheck": {
         "type": "object",
         "properties": {
           "session_id": {
             "$ref": "#/components/schemas/GamesSessionId"
           },
-          "correct_count": {
-            "type": "integer",
-            "minimum": 0
+          "item_id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 64,
+            "description": "Id of the statement, question or puzzle in the payload of this session.",
+            "example": "1042"
           },
-          "total_answered": {
+          "option_id": {
             "type": "integer",
-            "minimum": 0
-          },
-          "max_combo": {
-            "type": "integer",
-            "minimum": 0
-          },
-          "score": {
-            "type": "integer",
-            "minimum": 0
-          },
-          "syiling_earned": {
-            "type": "integer",
-            "minimum": 0
+            "minimum": 0,
+            "maximum": 3,
+            "description": "The id (0..3) of the chosen option."
           }
         },
         "required": [
           "session_id",
-          "correct_count",
-          "total_answered",
-          "max_combo",
-          "score",
-          "syiling_earned"
+          "item_id",
+          "option_id"
         ]
       },
-      "GamesTembakJawapanSubmit": {
+      "GamesTembakJawapanCheck": {
         "type": "object",
         "properties": {
           "session_id": {
             "$ref": "#/components/schemas/GamesSessionId"
           },
-          "correct_count": {
-            "type": "integer",
-            "minimum": 0
+          "item_id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 64,
+            "description": "Id of the statement, question or puzzle in the payload of this session.",
+            "example": "1042"
           },
-          "total_answered": {
+          "option_index": {
             "type": "integer",
-            "minimum": 0
-          },
-          "max_level": {
-            "type": "integer",
-            "minimum": 1
-          },
-          "score": {
-            "type": "integer",
-            "minimum": 0
-          },
-          "syiling_earned": {
-            "type": "integer",
-            "minimum": 0
+            "minimum": 0,
+            "maximum": 3,
+            "description": "The position (0..3) of the chosen option."
           }
         },
         "required": [
           "session_id",
-          "correct_count",
-          "total_answered",
-          "max_level",
-          "score",
-          "syiling_earned"
+          "item_id",
+          "option_index"
         ]
       },
-      "GamesSusunJawapanSubmit": {
+      "GamesSusunJawapanCheck": {
         "type": "object",
         "properties": {
           "session_id": {
             "$ref": "#/components/schemas/GamesSessionId"
           },
-          "solved_count": {
-            "type": "integer",
-            "minimum": 0
+          "item_id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 64,
+            "description": "Id of the statement, question or puzzle in the payload of this session.",
+            "example": "1042"
           },
-          "total_puzzles": {
-            "type": "integer",
-            "minimum": 0
-          },
-          "score": {
-            "type": "integer",
-            "minimum": 0
-          },
-          "syiling_earned": {
-            "type": "integer",
-            "minimum": 0
+          "answer": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200
           }
         },
         "required": [
           "session_id",
-          "solved_count",
-          "total_puzzles",
-          "score",
-          "syiling_earned"
+          "item_id",
+          "answer"
         ]
       },
-      "GamesKadMemoriSubmit": {
+      "GamesKadMemoriCheck": {
         "type": "object",
         "properties": {
           "session_id": {
             "$ref": "#/components/schemas/GamesSessionId"
           },
-          "matches": {
-            "type": "number",
+          "card_id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 64,
+            "description": "Opaque card id from the payload.",
+            "example": "1042"
+          },
+          "other_card_id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 64,
+            "description": "The second flipped card (must differ).",
+            "example": "1042"
+          }
+        },
+        "required": [
+          "session_id",
+          "card_id",
+          "other_card_id"
+        ]
+      },
+      "GamesBetulSalahCheckResult": {
+        "type": "object",
+        "properties": {
+          "correct": {
+            "type": "boolean"
+          },
+          "is_true": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "correct",
+          "is_true"
+        ],
+        "additionalProperties": false
+      },
+      "GamesCabaranKilatCheckResult": {
+        "type": "object",
+        "properties": {
+          "correct": {
+            "type": "boolean"
+          },
+          "correct_option_id": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 3
+          }
+        },
+        "required": [
+          "correct",
+          "correct_option_id"
+        ],
+        "additionalProperties": false
+      },
+      "GamesTembakJawapanCheckResult": {
+        "type": "object",
+        "properties": {
+          "correct": {
+            "type": "boolean"
+          },
+          "correct_option_index": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 3
+          }
+        },
+        "required": [
+          "correct",
+          "correct_option_index"
+        ],
+        "additionalProperties": false
+      },
+      "GamesSusunJawapanCheckResult": {
+        "type": "object",
+        "properties": {
+          "correct": {
+            "type": "boolean"
+          },
+          "answer": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "correct",
+          "answer"
+        ],
+        "additionalProperties": false
+      },
+      "GamesKadMemoriCheckResult": {
+        "type": "object",
+        "properties": {
+          "correct": {
+            "type": "boolean",
+            "description": "true when the two cards are a pair."
+          },
+          "pair_id": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "minimum": 0,
+            "maximum": 5,
+            "description": "The pair id, only when the cards match; null on a mismatch."
+          },
+          "cards": {
+            "type": "array",
+            "prefixItems": [
+              {
+                "$ref": "#/components/schemas/GamesKadMemoriFace"
+              },
+              {
+                "$ref": "#/components/schemas/GamesKadMemoriFace"
+              }
+            ],
+            "description": "The faces of card_id and other_card_id, in that order."
+          }
+        },
+        "required": [
+          "correct",
+          "pair_id",
+          "cards"
+        ],
+        "additionalProperties": false
+      },
+      "GamesKadMemoriFace": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 64,
+            "description": "The opaque card id.",
+            "example": "1042"
+          },
+          "type": {
+            "type": "string",
             "enum": [
-              6
+              "question",
+              "answer"
             ]
           },
-          "total_pairs": {
-            "type": "number",
-            "enum": [
-              6
-            ]
+          "content": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "type",
+          "content"
+        ],
+        "additionalProperties": false
+      },
+      "GamesKadMemoriRevealRequest": {
+        "type": "object",
+        "properties": {
+          "session_id": {
+            "$ref": "#/components/schemas/GamesSessionId"
           },
-          "moves": {
-            "type": "integer",
-            "minimum": 6
-          },
-          "time_seconds": {
-            "type": "integer",
-            "minimum": 0
+          "card_id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 64,
+            "description": "Opaque card id from the payload.",
+            "example": "1042"
           }
         },
         "required": [
           "session_id",
-          "matches",
-          "total_pairs",
-          "moves",
-          "time_seconds"
+          "card_id"
         ]
       },
-      "GamesSoloSubmitRequest": {
+      "GamesSoloCheckRequest": {
         "anyOf": [
           {
-            "$ref": "#/components/schemas/GamesBetulSalahSubmit"
+            "$ref": "#/components/schemas/GamesBetulSalahCheck"
           },
           {
-            "$ref": "#/components/schemas/GamesCabaranKilatSubmit"
+            "$ref": "#/components/schemas/GamesCabaranKilatCheck"
           },
           {
-            "$ref": "#/components/schemas/GamesTembakJawapanSubmit"
+            "$ref": "#/components/schemas/GamesTembakJawapanCheck"
           },
           {
-            "$ref": "#/components/schemas/GamesSusunJawapanSubmit"
+            "$ref": "#/components/schemas/GamesSusunJawapanCheck"
           },
           {
-            "$ref": "#/components/schemas/GamesKadMemoriSubmit"
+            "$ref": "#/components/schemas/GamesKadMemoriCheck"
           }
+        ],
+        "description": "One of the per-game bodies; the path parameter `game` decides which: betul-salah = GamesBetulSalahCheck, cabaran-kilat = GamesCabaranKilatCheck, tembak-jawapan = GamesTembakJawapanCheck, susun-jawapan = GamesSusunJawapanCheck, kad-memori = GamesKadMemoriCheck. A body of another game is 422 \"Jawapan tidak sah.\" [PROPOSED]."
+      },
+      "GamesSoloCheckResponse": {
+        "anyOf": [
+          {
+            "$ref": "#/components/schemas/GamesBetulSalahCheckResult"
+          },
+          {
+            "$ref": "#/components/schemas/GamesCabaranKilatCheckResult"
+          },
+          {
+            "$ref": "#/components/schemas/GamesTembakJawapanCheckResult"
+          },
+          {
+            "$ref": "#/components/schemas/GamesSusunJawapanCheckResult"
+          },
+          {
+            "$ref": "#/components/schemas/GamesKadMemoriCheckResult"
+          }
+        ],
+        "description": "The result of the requested game: betul-salah = GamesBetulSalahCheckResult { correct, is_true }; cabaran-kilat = GamesCabaranKilatCheckResult { correct, correct_option_id }; tembak-jawapan = GamesTembakJawapanCheckResult { correct, correct_option_index }; susun-jawapan = GamesSusunJawapanCheckResult { correct, answer }; kad-memori = GamesKadMemoriCheckResult { correct, pair_id | null, cards: [face, face] }."
+      },
+      "GamesSoloSubmitRequest": {
+        "type": "object",
+        "properties": {
+          "session_id": {
+            "$ref": "#/components/schemas/GamesSessionId"
+          }
+        },
+        "required": [
+          "session_id"
         ]
       },
       "GamesSoloSubmitResponse": {
@@ -21356,11 +21480,29 @@
               "syiling_awarded": {
                 "type": "integer",
                 "minimum": 0
+              },
+              "score": {
+                "type": "integer",
+                "minimum": 0,
+                "description": "[PROPOSED] Server-computed score."
+              },
+              "correct_count": {
+                "type": "integer",
+                "minimum": 0,
+                "description": "[PROPOSED] Correct checks (solved puzzles for susun-jawapan)."
+              },
+              "total_answered": {
+                "type": "integer",
+                "minimum": 0,
+                "description": "[PROPOSED] Checks stored for the session."
               }
             },
             "required": [
               "is_new_record",
-              "syiling_awarded"
+              "syiling_awarded",
+              "score",
+              "correct_count",
+              "total_answered"
             ],
             "additionalProperties": false
           },
@@ -21379,11 +21521,23 @@
                     "minimum": 0,
                     "maximum": 100,
                     "description": "round(6 / moves * 100); coins 6."
+                  },
+                  "moves": {
+                    "type": "integer",
+                    "minimum": 6,
+                    "description": "[PROPOSED] Pair checks stored for the session."
+                  },
+                  "time_seconds": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "description": "[PROPOSED] Server clock: submit time minus session start."
                   }
                 },
                 "required": [
                   "syiling_earned",
-                  "accuracy"
+                  "accuracy",
+                  "moves",
+                  "time_seconds"
                 ],
                 "additionalProperties": false
               }
@@ -41364,7 +41518,7 @@
         "properties": {
           "message": {
             "type": "string",
-            "description": "The turn text. Blank after trim = 422 `{}`. No length cap in the mock (open question)."
+            "description": "The turn text. Blank after trim = 422 `{}`. At most 2000 characters (code points): longer = 422 \"Mesej terlalu panjang (maksimum 2000 aksara).\" (cap added by the security review; the mock has none)."
           },
           "thread_id": {
             "type": [
@@ -41475,7 +41629,8 @@
             "type": "string",
             "enum": [
               "RATE_LIMITED",
-              "AI_UNAVAILABLE"
+              "AI_UNAVAILABLE",
+              "VALIDATION_ERROR"
             ],
             "description": "Machine code."
           },
@@ -41916,7 +42071,8 @@
                 }
               ]
             },
-            "description": "Tag ids (decimal strings; integers also accepted). No size cap in the mock (open question)."
+            "maxItems": 100,
+            "description": "Tag ids (decimal strings; integers also accepted). At most 100 items: more = 422 \"Terlalu banyak item dipilih (maksimum 100).\" on fields.ids (cap added by the security review; the mock has none)."
           }
         }
       },
@@ -71380,10 +71536,21 @@
           "games"
         ],
         "summary": "Permainan hub: open rooms and chips (M16-22)",
-        "description": "Up to 6 newest waiting rooms with a free seat, newest first. chips.battled comes from the battle read service (BE-44).",
+        "description": "Up to 6 newest waiting rooms with a free seat, newest first. chips.battled comes from the battle read service (BE-44). Lists open room codes: Cache-Control: no-store.",
         "responses": {
           "200": {
-            "description": "Open rooms and chips.",
+            "description": "Open rooms and chips; Cache-Control: no-store.",
+            "headers": {
+              "Cache-Control": {
+                "description": "no-store: the body carries a join code or answer keys and must not be cached by browsers or proxies.",
+                "schema": {
+                  "type": "string",
+                  "enum": [
+                    "no-store"
+                  ]
+                }
+              }
+            },
             "content": {
               "application/json": {
                 "schema": {
@@ -71532,7 +71699,18 @@
         },
         "responses": {
           "201": {
-            "description": "Room created.",
+            "description": "Room created; the code is a join code, Cache-Control: no-store.",
+            "headers": {
+              "Cache-Control": {
+                "description": "no-store: the body carries a join code or answer keys and must not be cached by browsers or proxies.",
+                "schema": {
+                  "type": "string",
+                  "enum": [
+                    "no-store"
+                  ]
+                }
+              }
+            },
             "content": {
               "application/json": {
                 "schema": {
@@ -71581,6 +71759,25 @@
           },
           "422": {
             "description": "VALIDATION_ERROR with fields[x] = message and the same top-level message: \"Subjek tidak sah.\" (subject), \"Tahap soalan tidak sah.\" (grade_level), \"Julat tahap tidak sah.\" (match_mode or grade_min), \"Bilangan pemain tidak sah.\" (max_players).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "RATE_LIMITED (BM \"Terlalu banyak percubaan. Sila cuba sebentar lagi.\"): body error.retryAfter and the Retry-After header carry the seconds to wait.",
+            "headers": {
+              "Retry-After": {
+                "description": "Seconds until a retry is allowed (same value as error.retryAfter).",
+                "schema": {
+                  "type": "integer",
+                  "minimum": 0
+                }
+              }
+            },
             "content": {
               "application/json": {
                 "schema": {
@@ -71642,7 +71839,18 @@
         },
         "responses": {
           "200": {
-            "description": "Joined (or already a player).",
+            "description": "Joined (or already a player); Cache-Control: no-store.",
+            "headers": {
+              "Cache-Control": {
+                "description": "no-store: the body carries a join code or answer keys and must not be cached by browsers or proxies.",
+                "schema": {
+                  "type": "string",
+                  "enum": [
+                    "no-store"
+                  ]
+                }
+              }
+            },
             "content": {
               "application/json": {
                 "schema": {
@@ -71681,6 +71889,25 @@
           },
           "404": {
             "description": "NOT_FOUND \"Bilik tidak dijumpai.\" for every refusal, or \"Permainan tidak dijumpai.\" (unknown game).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "RATE_LIMITED (BM \"Terlalu banyak percubaan. Sila cuba sebentar lagi.\"): body error.retryAfter and the Retry-After header carry the seconds to wait.",
+            "headers": {
+              "Retry-After": {
+                "description": "Seconds until a retry is allowed (same value as error.retryAfter).",
+                "schema": {
+                  "type": "integer",
+                  "minimum": 0
+                }
+              }
+            },
             "content": {
               "application/json": {
                 "schema": {
@@ -71732,7 +71959,18 @@
         ],
         "responses": {
           "200": {
-            "description": "The room.",
+            "description": "The room; Cache-Control: no-store.",
+            "headers": {
+              "Cache-Control": {
+                "description": "no-store: the body carries a join code or answer keys and must not be cached by browsers or proxies.",
+                "schema": {
+                  "type": "string",
+                  "enum": [
+                    "no-store"
+                  ]
+                }
+              }
+            },
             "content": {
               "application/json": {
                 "schema": {
@@ -71879,6 +72117,25 @@
                 }
               }
             }
+          },
+          "429": {
+            "description": "RATE_LIMITED (BM \"Terlalu banyak percubaan. Sila cuba sebentar lagi.\"): body error.retryAfter and the Retry-After header carry the seconds to wait.",
+            "headers": {
+              "Retry-After": {
+                "description": "Seconds until a retry is allowed (same value as error.retryAfter).",
+                "schema": {
+                  "type": "integer",
+                  "minimum": 0
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
           }
         }
       }
@@ -72010,6 +72267,25 @@
                 }
               }
             }
+          },
+          "429": {
+            "description": "RATE_LIMITED (BM \"Terlalu banyak percubaan. Sila cuba sebentar lagi.\"): body error.retryAfter and the Retry-After header carry the seconds to wait.",
+            "headers": {
+              "Retry-After": {
+                "description": "Seconds until a retry is allowed (same value as error.retryAfter).",
+                "schema": {
+                  "type": "integer",
+                  "minimum": 0
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
           }
         }
       }
@@ -72081,6 +72357,25 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/GamesRawError"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "RATE_LIMITED (BM \"Terlalu banyak percubaan. Sila cuba sebentar lagi.\"): body error.retryAfter and the Retry-After header carry the seconds to wait.",
+            "headers": {
+              "Retry-After": {
+                "description": "Seconds until a retry is allowed (same value as error.retryAfter).",
+                "schema": {
+                  "type": "integer",
+                  "minimum": 0
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
                 }
               }
             }
@@ -72169,6 +72464,25 @@
                 }
               }
             }
+          },
+          "429": {
+            "description": "RATE_LIMITED (BM \"Terlalu banyak percubaan. Sila cuba sebentar lagi.\"): body error.retryAfter and the Retry-After header carry the seconds to wait.",
+            "headers": {
+              "Retry-After": {
+                "description": "Seconds until a retry is allowed (same value as error.retryAfter).",
+                "schema": {
+                  "type": "integer",
+                  "minimum": 0
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
           }
         }
       }
@@ -72179,7 +72493,7 @@
           "games"
         ],
         "summary": "Start a single-player game session (M16-32)",
-        "description": "Creates a session row and returns its items. SECURITY EXCEPTION (SEC-M16-01, BE-45 Open question 8): as in the mock, this payload carries the answer keys (is_true, correct, answer, pair_id).",
+        "description": "Creates a session row and returns its items. D58a: the payload is keyless; no answer key (is_true, correct, answer, pair_id) is sent before the answer. Each answer is checked by POST /games/solo/{game}/check. Kad Memori: the board has only opaque card ids, the count and the layout, face-down; a face comes only from the reveal route (first card of a move) and the check response.",
         "parameters": [
           {
             "schema": {
@@ -72213,7 +72527,7 @@
         ],
         "responses": {
           "200": {
-            "description": "The session id and the items of the game.",
+            "description": "The session id and the keyless items of the game.",
             "content": {
               "application/json": {
                 "schema": {
@@ -72259,6 +72573,407 @@
                 }
               }
             }
+          },
+          "429": {
+            "description": "RATE_LIMITED (BM \"Terlalu banyak percubaan. Sila cuba sebentar lagi.\"): body error.retryAfter and the Retry-After header carry the seconds to wait.",
+            "headers": {
+              "Retry-After": {
+                "description": "Seconds until a retry is allowed (same value as error.retryAfter).",
+                "schema": {
+                  "type": "integer",
+                  "minimum": 0
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/games/solo/{game}/check": {
+      "post": {
+        "tags": [
+          "games"
+        ],
+        "summary": "Check one single-player answer (D58a) [PROPOSED route, not in the mock]",
+        "description": "Modelled on the Bijak \"Semak\" check (/bijak/attempts/{id}/questions/{questionId}/check). Own session only. The path parameter `game` selects the body and the result: betul-salah = GamesBetulSalahCheck / GamesBetulSalahCheckResult, cabaran-kilat = GamesCabaranKilatCheck / GamesCabaranKilatCheckResult, tembak-jawapan = GamesTembakJawapanCheck / GamesTembakJawapanCheckResult, susun-jawapan = GamesSusunJawapanCheck / GamesSusunJawapanCheckResult, kad-memori = GamesKadMemoriCheck / GamesKadMemoriCheckResult (one named component each; request and response `examples` are keyed by game). A body of another game is 422. The server checks the answer against the stored key, stores the check, and returns correct/wrong plus the key of that item, revealed only now ({ data }). One check per item: a second check of the same item is 409 (so the key cannot be probed by retrying). Kad Memori: the body names two cards by opaque id; the response carries BOTH faces (the board never does), correct when they are a pair, and pair_id only on a match (null on a mismatch); a mismatch may be repeated, a card of an already matched pair is 409, and if another card is open (revealed, not checked) 409 \"Sila padankan kad yang dibuka dahulu.\" [PROPOSED]. Every stored check feeds the final submit (moves = number of Kad Memori checks). Standard `{ error }` bodies. All BM texts of this route are [PROPOSED] (the mock has no check route): 404 \"Sesi tidak dijumpai.\" and \"Soalan tidak dijumpai.\" (copy reused from Jutawan), 409 \"Soalan sudah dijawab.\", \"Kad sudah dipadankan.\", 422 \"Jawapan tidak sah.\" (reused). The response carries answer keys, so Cache-Control: no-store.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "enum": [
+                "betul-salah",
+                "cabaran-kilat",
+                "tembak-jawapan",
+                "susun-jawapan",
+                "kad-memori"
+              ],
+              "description": "Solo game key. Unknown: 404 \"Permainan tidak dijumpai.\"."
+            },
+            "required": true,
+            "description": "Solo game key. Unknown: 404 \"Permainan tidak dijumpai.\".",
+            "name": "game",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Value of Session.csrf; required on mutating requests."
+            },
+            "required": true,
+            "description": "Value of Session.csrf; required on mutating requests.",
+            "name": "X-CSRF-Token",
+            "in": "header"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "examples": {
+                "betul-salah": {
+                  "summary": "betul-salah (GamesXxxCheck)",
+                  "value": {
+                    "session_id": "3f2b8a6e-5c1d-4e7a-9b0f-1a2b3c4d5e6f",
+                    "item_id": "9001",
+                    "answer": true
+                  }
+                },
+                "cabaran-kilat": {
+                  "summary": "cabaran-kilat (GamesXxxCheck)",
+                  "value": {
+                    "session_id": "3f2b8a6e-5c1d-4e7a-9b0f-1a2b3c4d5e6f",
+                    "item_id": "9001",
+                    "option_id": 1
+                  }
+                },
+                "tembak-jawapan": {
+                  "summary": "tembak-jawapan (GamesXxxCheck)",
+                  "value": {
+                    "session_id": "3f2b8a6e-5c1d-4e7a-9b0f-1a2b3c4d5e6f",
+                    "item_id": "9001",
+                    "option_index": 0
+                  }
+                },
+                "susun-jawapan": {
+                  "summary": "susun-jawapan (GamesXxxCheck)",
+                  "value": {
+                    "session_id": "3f2b8a6e-5c1d-4e7a-9b0f-1a2b3c4d5e6f",
+                    "item_id": "9001",
+                    "answer": "KUALA LUMPUR"
+                  }
+                },
+                "kad-memori": {
+                  "summary": "kad-memori (GamesXxxCheck)",
+                  "value": {
+                    "session_id": "3f2b8a6e-5c1d-4e7a-9b0f-1a2b3c4d5e6f",
+                    "card_id": "c7",
+                    "other_card_id": "c2"
+                  }
+                }
+              },
+              "schema": {
+                "$ref": "#/components/schemas/GamesSoloCheckRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Correct or wrong plus the key of the item (per-game GamesXxxCheckResult); Cache-Control: no-store.",
+            "headers": {
+              "Cache-Control": {
+                "description": "no-store: the body carries a join code or answer keys and must not be cached by browsers or proxies.",
+                "schema": {
+                  "type": "string",
+                  "enum": [
+                    "no-store"
+                  ]
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "examples": {
+                  "betul-salah": {
+                    "summary": "betul-salah (GamesXxxCheckResult)",
+                    "value": {
+                      "data": {
+                        "correct": true,
+                        "is_true": true
+                      }
+                    }
+                  },
+                  "cabaran-kilat": {
+                    "summary": "cabaran-kilat (GamesXxxCheckResult)",
+                    "value": {
+                      "data": {
+                        "correct": true,
+                        "correct_option_id": 1
+                      }
+                    }
+                  },
+                  "tembak-jawapan": {
+                    "summary": "tembak-jawapan (GamesXxxCheckResult)",
+                    "value": {
+                      "data": {
+                        "correct": false,
+                        "correct_option_index": 1
+                      }
+                    }
+                  },
+                  "susun-jawapan": {
+                    "summary": "susun-jawapan (GamesXxxCheckResult)",
+                    "value": {
+                      "data": {
+                        "correct": true,
+                        "answer": "KUALA LUMPUR"
+                      }
+                    }
+                  },
+                  "kad-memori": {
+                    "summary": "kad-memori (GamesXxxCheckResult)",
+                    "value": {
+                      "data": {
+                        "correct": true,
+                        "pair_id": 3,
+                        "cards": [
+                          {
+                            "id": "c7",
+                            "type": "question",
+                            "content": "7 + 5"
+                          },
+                          {
+                            "id": "c2",
+                            "type": "answer",
+                            "content": "12"
+                          }
+                        ]
+                      }
+                    }
+                  }
+                },
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/GamesSoloCheckResponse"
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED \"Unauthenticated.\" (no valid session).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "CSRF_INVALID (missing or wrong X-CSRF-Token).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "NOT_FOUND \"Permainan tidak dijumpai.\" (unknown game), \"Sesi tidak dijumpai.\" [PROPOSED] (unknown or foreign session) or \"Soalan tidak dijumpai.\" [PROPOSED] (item or card not in the session).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "CONFLICT \"Keputusan sudah dihantar.\" (session already submitted), \"Soalan sudah dijawab.\" [PROPOSED] (item already checked), \"Kad sudah dipadankan.\" [PROPOSED] (Kad Memori: card already matched) or \"Sila padankan kad yang dibuka dahulu.\" [PROPOSED] (Kad Memori: another card is open).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "VALIDATION_ERROR \"Jawapan tidak sah.\" [PROPOSED] (answer, option or card value, a body of another game, or the same card twice).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "RATE_LIMITED (BM \"Terlalu banyak percubaan. Sila cuba sebentar lagi.\"): body error.retryAfter and the Retry-After header carry the seconds to wait.",
+            "headers": {
+              "Retry-After": {
+                "description": "Seconds until a retry is allowed (same value as error.retryAfter).",
+                "schema": {
+                  "type": "integer",
+                  "minimum": 0
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/games/solo/kad-memori/reveal": {
+      "post": {
+        "tags": [
+          "games"
+        ],
+        "summary": "Reveal one Kad Memori face (D58a) [PROPOSED route, LEAD decision pending]",
+        "description": "The mock page shows the face of the first flipped card at once, so the first card of a move needs a reveal; the second card comes with the check response. Static path: wins over `/games/solo/{game}/...`. At most one card may be open (revealed and not yet checked): a second reveal is 409 \"Sila padankan kad yang dibuka dahulu.\" [PROPOSED], and the open card is closed by the next check naming it, so reveals never outnumber moves by more than one and the faces cannot be read without playing. A matched card is 409 \"Kad sudah dipadankan.\" [PROPOSED]. If the LEAD prefers faces via the check response only, drop this route and the page shows the first card face-down until the second tap. Standard `{ error }` bodies; the face is not a key but is sent no-store.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Value of Session.csrf; required on mutating requests."
+            },
+            "required": true,
+            "description": "Value of Session.csrf; required on mutating requests.",
+            "name": "X-CSRF-Token",
+            "in": "header"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GamesKadMemoriRevealRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The face of the card; Cache-Control: no-store.",
+            "headers": {
+              "Cache-Control": {
+                "description": "no-store: the body carries a join code or answer keys and must not be cached by browsers or proxies.",
+                "schema": {
+                  "type": "string",
+                  "enum": [
+                    "no-store"
+                  ]
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/GamesKadMemoriFace"
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED \"Unauthenticated.\" (no valid session).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "CSRF_INVALID (missing or wrong X-CSRF-Token).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "NOT_FOUND \"Sesi tidak dijumpai.\" [PROPOSED] (unknown or foreign session) or \"Soalan tidak dijumpai.\" [PROPOSED] (card not in the session).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "CONFLICT \"Keputusan sudah dihantar.\", \"Kad sudah dipadankan.\" [PROPOSED] or \"Sila padankan kad yang dibuka dahulu.\" [PROPOSED].",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "VALIDATION_ERROR \"Jawapan tidak sah.\" [PROPOSED] (card id).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "RATE_LIMITED (BM \"Terlalu banyak percubaan. Sila cuba sebentar lagi.\"): body error.retryAfter and the Retry-After header carry the seconds to wait.",
+            "headers": {
+              "Retry-After": {
+                "description": "Seconds until a retry is allowed (same value as error.retryAfter).",
+                "schema": {
+                  "type": "integer",
+                  "minimum": 0
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
           }
         }
       }
@@ -72269,7 +72984,7 @@
           "games"
         ],
         "summary": "Submit a single-player result (M16-33)",
-        "description": "RAW live-shaped bodies; errors are raw `{ message }` (404, 409, 422), not the standard error body. Own session only, one submit per session. A first result is a record, later ones only if they exceed the stored best.",
+        "description": "D58a: the body is only the session id; the server computes score, counts, streak, combo, level and coins from the stored checks and ignores any value the client sends. RAW live-shaped bodies; errors are raw `{ message }` (404, 409, 422), not the standard error body. Own session only, one submit per session. A first result is a record, later ones only if they exceed the stored best. The response also returns the computed values ([PROPOSED] fields).",
         "parameters": [
           {
             "schema": {
@@ -72312,7 +73027,7 @@
         },
         "responses": {
           "200": {
-            "description": "{ is_new_record, syiling_awarded } or, for Kad Memori, { results }.",
+            "description": "{ is_new_record, syiling_awarded, score, correct_count, total_answered } or, for Kad Memori, { results: { syiling_earned, accuracy, moves, time_seconds } }.",
             "content": {
               "application/json": {
                 "schema": {
@@ -72362,11 +73077,30 @@
             }
           },
           "422": {
-            "description": "Raw `{ message: \"Keputusan tidak sah.\" }` (unknown or foreign session, or values beyond the bounds).",
+            "description": "Raw `{ message: \"Keputusan tidak sah.\" }` (unknown or foreign session, no stored check, or Kad Memori with fewer than 6 matched pairs).",
             "content": {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/GamesRawMessage"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "RATE_LIMITED (BM \"Terlalu banyak percubaan. Sila cuba sebentar lagi.\"): body error.retryAfter and the Retry-After header carry the seconds to wait.",
+            "headers": {
+              "Retry-After": {
+                "description": "Seconds until a retry is allowed (same value as error.retryAfter).",
+                "schema": {
+                  "type": "integer",
+                  "minimum": 0
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
                 }
               }
             }
@@ -72469,6 +73203,25 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/GamesSpinRefused"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "RATE_LIMITED (BM \"Terlalu banyak percubaan. Sila cuba sebentar lagi.\"): body error.retryAfter and the Retry-After header carry the seconds to wait.",
+            "headers": {
+              "Retry-After": {
+                "description": "Seconds until a retry is allowed (same value as error.retryAfter).",
+                "schema": {
+                  "type": "integer",
+                  "minimum": 0
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
                 }
               }
             }
@@ -72617,6 +73370,25 @@
                 }
               }
             }
+          },
+          "429": {
+            "description": "RATE_LIMITED (BM \"Terlalu banyak percubaan. Sila cuba sebentar lagi.\"): body error.retryAfter and the Retry-After header carry the seconds to wait.",
+            "headers": {
+              "Retry-After": {
+                "description": "Seconds until a retry is allowed (same value as error.retryAfter).",
+                "schema": {
+                  "type": "integer",
+                  "minimum": 0
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
           }
         }
       }
@@ -72730,6 +73502,25 @@
                 }
               }
             }
+          },
+          "429": {
+            "description": "RATE_LIMITED (BM \"Terlalu banyak percubaan. Sila cuba sebentar lagi.\"): body error.retryAfter and the Retry-After header carry the seconds to wait.",
+            "headers": {
+              "Retry-After": {
+                "description": "Seconds until a retry is allowed (same value as error.retryAfter).",
+                "schema": {
+                  "type": "integer",
+                  "minimum": 0
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
           }
         }
       }
@@ -72836,6 +73627,25 @@
           },
           "422": {
             "description": "VALIDATION_ERROR \"Bantuan tidak sah.\" (type).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "RATE_LIMITED (BM \"Terlalu banyak percubaan. Sila cuba sebentar lagi.\"): body error.retryAfter and the Retry-After header carry the seconds to wait.",
+            "headers": {
+              "Retry-After": {
+                "description": "Seconds until a retry is allowed (same value as error.retryAfter).",
+                "schema": {
+                  "type": "integer",
+                  "minimum": 0
+                }
+              }
+            },
             "content": {
               "application/json": {
                 "schema": {
@@ -73040,6 +73850,25 @@
                 }
               }
             }
+          },
+          "429": {
+            "description": "RATE_LIMITED (BM \"Terlalu banyak percubaan. Sila cuba sebentar lagi.\"): body error.retryAfter and the Retry-After header carry the seconds to wait.",
+            "headers": {
+              "Retry-After": {
+                "description": "Seconds until a retry is allowed (same value as error.retryAfter).",
+                "schema": {
+                  "type": "integer",
+                  "minimum": 0
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
           }
         }
       }
@@ -73122,6 +73951,25 @@
                 }
               }
             }
+          },
+          "429": {
+            "description": "RATE_LIMITED (BM \"Terlalu banyak percubaan. Sila cuba sebentar lagi.\"): body error.retryAfter and the Retry-After header carry the seconds to wait.",
+            "headers": {
+              "Retry-After": {
+                "description": "Seconds until a retry is allowed (same value as error.retryAfter).",
+                "schema": {
+                  "type": "integer",
+                  "minimum": 0
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
           }
         }
       }
@@ -73148,7 +73996,18 @@
         ],
         "responses": {
           "200": {
-            "description": "League detail.",
+            "description": "League detail with the invite code; Cache-Control: no-store.",
+            "headers": {
+              "Cache-Control": {
+                "description": "no-store: the body carries a join code or answer keys and must not be cached by browsers or proxies.",
+                "schema": {
+                  "type": "string",
+                  "enum": [
+                    "no-store"
+                  ]
+                }
+              }
+            },
             "content": {
               "application/json": {
                 "schema": {
@@ -73359,6 +74218,25 @@
           },
           "422": {
             "description": "VALIDATION_ERROR \"Nilai mesti antara 0 dan 38.\" (fields.boardgame_quiz_tiles).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "RATE_LIMITED (BM \"Terlalu banyak percubaan. Sila cuba sebentar lagi.\"): body error.retryAfter and the Retry-After header carry the seconds to wait.",
+            "headers": {
+              "Retry-After": {
+                "description": "Seconds until a retry is allowed (same value as error.retryAfter).",
+                "schema": {
+                  "type": "integer",
+                  "minimum": 0
+                }
+              }
+            },
             "content": {
               "application/json": {
                 "schema": {
@@ -88732,7 +89610,7 @@
             "description": "The reply. Raw snake_case body, no envelope.",
             "headers": {
               "Cache-Control": {
-                "description": "no-store: the body carries personal data of minors (chat text, essays, student names).",
+                "description": "no-store: the body carries personal data of minors (chat text, essays, student names, class and lesson plans).",
                 "schema": {
                   "type": "string",
                   "enum": [
@@ -88770,17 +89648,24 @@
             }
           },
           "422": {
-            "description": "Blank or non-string message: body exactly `{}`. Nothing stored.",
+            "description": "Blank or non-string message: body exactly `{}`. Message longer than 2000 characters: raw body `{error: \"Mesej terlalu panjang (maksimum 2000 aksara).\", code: \"VALIDATION_ERROR\"}`. Nothing stored.",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/CikguChatEmptyBody"
+                  "anyOf": [
+                    {
+                      "$ref": "#/components/schemas/CikguChatEmptyBody"
+                    },
+                    {
+                      "$ref": "#/components/schemas/CikguChatErrorBody"
+                    }
+                  ]
                 }
               }
             }
           },
           "429": {
-            "description": "Either the daily quota is used up (body exactly `{\"quota_exhausted\": true}`, nothing stored), or [PROPOSED] RATE_LIMITED (D57a; raw body with a BM string `error`, `code` RATE_LIMITED and `retryAfter`, plus the Retry-After header). Tell them apart by the `quota_exhausted` key.",
+            "description": "Two different bodies share this status. (1) Daily turn quota used up: body exactly `{\"quota_exhausted\": true}`, nothing stored, no Retry-After; the client shows its quota text. (2) Per-minute throttle (D57a): raw body `{error: <BM string>, code: \"RATE_LIMITED\", retryAfter}` plus the Retry-After header. A client tells them apart by the key: `quota_exhausted === true` is the daily quota; `code === \"RATE_LIMITED\"` is the throttle (retry after `retryAfter` seconds).",
             "headers": {
               "Retry-After": {
                 "description": "Seconds until a retry is allowed (same value as error.retryAfter).",
@@ -88806,7 +89691,7 @@
             }
           },
           "503": {
-            "description": "[PROPOSED] AI_UNAVAILABLE: raw body `{error: \"Cikgu Alesa tak boleh respon. Cuba lagi.\", code: \"AI_UNAVAILABLE\"}`. Nothing is stored and no quota turn is consumed.",
+            "description": "AI_UNAVAILABLE: raw body `{error: \"Cikgu Alesa tidak dapat menjawab sekarang. Sila cuba sebentar lagi.\", code: \"AI_UNAVAILABLE\"}`. Nothing is stored and no quota turn is consumed.",
             "content": {
               "application/json": {
                 "schema": {
@@ -88824,7 +89709,7 @@
           "cikgu"
         ],
         "summary": "My RPH list",
-        "description": "Teacher or admin. Only the caller's own RPHs, `lessonDate` descending then id descending, 20 per page. An admin sees only their own (normally empty) rows.",
+        "description": "Teacher or admin. Only the caller's own RPHs, `lessonDate` descending then id descending, 20 per page. An admin sees only their own (normally empty) rows. Rows name subjects and topics taught to a class: `Cache-Control: no-store`.",
         "parameters": [
           {
             "schema": {
@@ -88841,6 +89726,17 @@
         "responses": {
           "200": {
             "description": "One page of the caller's RPHs.",
+            "headers": {
+              "Cache-Control": {
+                "description": "no-store: the body carries personal data of minors (chat text, essays, student names, class and lesson plans).",
+                "schema": {
+                  "type": "string",
+                  "enum": [
+                    "no-store"
+                  ]
+                }
+              }
+            },
             "content": {
               "application/json": {
                 "schema": {
@@ -88984,7 +89880,7 @@
             }
           },
           "503": {
-            "description": "[PROPOSED] AI_UNAVAILABLE \"Cikgu Alesa tak boleh respon. Cuba lagi.\" (provider error, BE-36 rate limit or AI_BUDGET_EXHAUSTED). Nothing is stored.",
+            "description": "AI_UNAVAILABLE \"Cikgu Alesa tidak dapat menjawab sekarang. Sila cuba sebentar lagi.\" (provider error, BE-36 rate limit or AI_BUDGET_EXHAUSTED). Nothing is stored.",
             "content": {
               "application/json": {
                 "schema": {
@@ -89002,7 +89898,7 @@
           "cikgu"
         ],
         "summary": "RPH detail",
-        "description": "Teacher or admin. Own rows only; unknown, foreign or non-numeric id = 404 NOT_FOUND \"Not Found.\" (no existence leak).",
+        "description": "Teacher or admin. Own rows only; unknown, foreign or non-numeric id = 404 NOT_FOUND \"Not Found.\" (no existence leak). Carries class names and plan content: `Cache-Control: no-store`.",
         "parameters": [
           {
             "schema": {
@@ -89021,6 +89917,17 @@
         "responses": {
           "200": {
             "description": "The RPH.",
+            "headers": {
+              "Cache-Control": {
+                "description": "no-store: the body carries personal data of minors (chat text, essays, student names, class and lesson plans).",
+                "schema": {
+                  "type": "string",
+                  "enum": [
+                    "no-store"
+                  ]
+                }
+              }
+            },
             "content": {
               "application/json": {
                 "schema": {
@@ -89095,7 +90002,7 @@
             "description": "One page of the caller's markings.",
             "headers": {
               "Cache-Control": {
-                "description": "no-store: the body carries personal data of minors (chat text, essays, student names).",
+                "description": "no-store: the body carries personal data of minors (chat text, essays, student names, class and lesson plans).",
                 "schema": {
                   "type": "string",
                   "enum": [
@@ -89177,7 +90084,7 @@
             "description": "The marking.",
             "headers": {
               "Cache-Control": {
-                "description": "no-store: the body carries personal data of minors (chat text, essays, student names).",
+                "description": "no-store: the body carries personal data of minors (chat text, essays, student names, class and lesson plans).",
                 "schema": {
                   "type": "string",
                   "enum": [
@@ -89260,7 +90167,7 @@
             "description": "One page of the pending tags.",
             "headers": {
               "Cache-Control": {
-                "description": "no-store: the body carries personal data of minors (chat text, essays, student names).",
+                "description": "no-store: the body carries personal data of minors (chat text, essays, student names, class and lesson plans).",
                 "schema": {
                   "type": "string",
                   "enum": [
@@ -89412,7 +90319,7 @@
           "cikgu"
         ],
         "summary": "Approve PBD tags in bulk",
-        "description": "Teacher or admin. Only the caller's `pending` tags among `ids` become `approved` with `approvedAt` = now; foreign, unknown or non-pending ids are ignored silently; duplicates count once; non-array or empty `ids` = `{approved: 0}` (never 422). `approved` = how many changed.",
+        "description": "Teacher or admin. Only the caller's `pending` tags among `ids` become `approved` with `approvedAt` = now; foreign, unknown or non-pending ids are ignored silently; duplicates count once; non-array or empty `ids` = `{approved: 0}`; more than 100 items = 422. `approved` = how many changed.",
         "parameters": [
           {
             "schema": {
@@ -89475,6 +90382,16 @@
               }
             }
           },
+          "422": {
+            "description": "VALIDATION_ERROR, `fields.ids` = \"Terlalu banyak item dipilih (maksimum 100).\" when `ids` has more than 100 items.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
           "429": {
             "description": "RATE_LIMITED \"Terlalu banyak percubaan. Sila cuba sebentar lagi.\" The body carries retryAfter (seconds) and the Retry-After header carries the same value.",
             "headers": {
@@ -89503,7 +90420,7 @@
           "cikgu"
         ],
         "summary": "Export approved PBD tags as CSV (raw file)",
-        "description": "Teacher or admin. A file, not JSON: UTF-8 `text/csv; charset=utf-8`, attachment `pbd-approved.csv`, `Cache-Control: no-store`. First line `pelajar,kelas,sp,skor,tp,tarikh_lulus`; one line per approved tag of the caller ordered by approval time (else roll-up time), student name, id; `skor` with one decimal, `tarikh_lulus` = YYYY-MM-DD (Malaysia date of approval). A cell starting with `=`, `+`, `@` or `-` gets a leading `'`; a cell containing `\"`, `,`, CR or LF is double-quoted with inner quotes doubled; lines end with `\\n`, including the last; no approved tag = the header line only. Bulk child data: rate limited (D57, [PROPOSED] on a read).",
+        "description": "Teacher or admin. A file, not JSON: UTF-8 `text/csv; charset=utf-8`, attachment `pbd-approved.csv`, `Cache-Control: no-store`. First line `pelajar,kelas,sp,skor,tp,tarikh_lulus`; one line per approved tag of the caller ordered by approval time (else roll-up time), student name, id; `skor` with one decimal, `tarikh_lulus` = YYYY-MM-DD (Malaysia date of approval). A cell starting with `=`, `+`, `@` or `-` gets a leading `'`; a cell containing `\"`, `,`, CR or LF is double-quoted with inner quotes doubled; lines end with `\\n`, including the last; no approved tag = the header line only. Bulk child data: rate limited (D57, a read of bulk child data).",
         "x-envelope": "none",
         "responses": {
           "200": {
@@ -89516,7 +90433,7 @@
                 }
               },
               "Cache-Control": {
-                "description": "no-store: the body carries personal data of minors (chat text, essays, student names).",
+                "description": "no-store: the body carries personal data of minors (chat text, essays, student names, class and lesson plans).",
                 "schema": {
                   "type": "string",
                   "enum": [

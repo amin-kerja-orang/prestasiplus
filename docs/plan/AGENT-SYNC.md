@@ -120,6 +120,7 @@ Rules for `contract-only`:
 
 ### Lead notices (current instructions; newest first)
 
+- 2026-10-19 17:45: **BE-39 mock reference is now on this branch:** `docs/reference/bijak-paper-builder-mock/` (read-only snapshot of the prototype paper-builder mock). BE-39 must match it. **D59a accepted risk:** IC self-reset for pupils was flagged High by security review; the user kept it (D59a) with the D55 limits plus notifications, recorded as an accepted risk.
 - 2026-10-19 17:00: **D59 (user):** IC reset stays for all roles (with D55 limits and a notification); initial passwords are random per account, shown once, with mustChangePassword (no shared default); Battle search covers all schools; the shared 429 response is coming to common/ (LEAD). **Reviewers are now read-only** (no worktrees, no npm); the LEAD runs the checks at merge.
 - 2026-10-19 16:20: **Group A opened:** BE-02 (database, stacked on the BE-01 branch, for BE-01's holder) and BE-31 harness-only (conformance runner against the mock). New mode `harness-only` means only the parts that need no unmerged dependency.
 - 2026-10-19 16:05: **D58 (TRACKER)** covers BE-45 server-checked solo games, BE-39 [PROPOSED] copy, the BE-06 rate-limit copy, and the BE-05 and BE-25 rules. The base lint failure (`_stats` in the BE-12 test) is fixed here. **Worktree rule:** before `npm ci` or `npm install` in a worktree, check `(Get-Item node_modules -Force).LinkType`; if it is a junction, delete the link with `.Delete()` first. A junctioned install wiped the main node_modules today.

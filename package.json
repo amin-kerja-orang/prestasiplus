@@ -34,6 +34,7 @@
     "check:trace": "node scripts/check-e2e-trace.mjs",
     "contract:emit": "npm run emit -w @pp/contract",
     "contract:check": "npm run check -w @pp/contract",
+    "conformance": "npm run test:mock -w @pp/contract-tests",
     "be:dev": "npm run dev -w @pp/api",
     "be:build": "npm run build -w @pp/api",
     "be:lint": "npm run lint -w @pp/api",
