@@ -1,0 +1,11 @@
+{
+  "schools": [
+    {
+      "id": 900001,
+      "name": "SMK DEMO"
+    }
+  ],
+  "states": [
+    "Selangor"
+  ]
+}
