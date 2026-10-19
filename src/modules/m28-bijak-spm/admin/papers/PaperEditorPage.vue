@@ -9,11 +9,12 @@ import { useRoute } from 'vue-router'
 
 import { useApi } from '@/composables/useApi'
 import { useFlash } from '@/composables/useFlash'
-import { DsLoadError, DsPage, DsPanel, DsStatRow, DsStatusBadge, type StatItem } from '@/ds'
+import { DsCluster, DsLoadError, DsPage, DsPanel, DsStatRow, DsStatusBadge, type StatItem } from '@/ds'
 
 import RichText from '../../components/RichText.vue'
 import type { BuilderGroup, BuilderQuestion } from '../../domain/admin-types'
 import { addUnit, checkPaper, moveUnit, removeUnit, unitsOf } from '../../domain/paper-builder'
+import { INTAKE_MANUAL_PATH } from '../intake/lib/intake-routes'
 import { bijakServer } from '../../server/client'
 import QuestionPreview from './QuestionPreview.vue'
 import { ADMIN_ROUTES, KIND_LABEL, detailMessage } from './ui'
@@ -23,6 +24,17 @@ const route = useRoute()
 const flash = useFlash()
 
 const id = computed(() => String(route.params.id))
+/** Back from "Tulis soalan baharu": the new question is waiting for review. */
+const waitingNote = computed(() => route.query.menunggu === '1')
+/** Manual entry opens with this paper's subject and kertas filled in. */
+const manualLink = computed(() => ({
+  path: INTAKE_MANUAL_PATH,
+  query: {
+    subject: data.value?.paper.subject ?? '',
+    kertas: String(data.value?.paper.kertas ?? ''),
+    paper: id.value,
+  },
+}))
 const { data, error, reload } = useApi(() => server.getPaperEditor(id.value), id)
 
 const title = ref('')
@@ -245,6 +257,27 @@ const previewBlocks = computed(() => {
     <DsLoadError v-if="error" message="Tidak dapat memuatkan kertas." @retry="reload()" />
 
     <template v-else-if="data">
+      <UAlert
+        v-if="waitingNote"
+        color="info"
+        variant="subtle"
+        icon="i-ph-hourglass"
+        title="Soalan baharu menunggu semakan"
+        description="Soalan anda sudah dihantar. Ia mesti lulus semakan dan diterbitkan di Baris Gilir Semakan sebelum boleh ditambah ke kertas ini."
+        data-testid="paper-waiting-note"
+      >
+        <template #actions>
+          <UButton
+            :to="{ name: ADMIN_ROUTES.review }"
+            size="sm"
+            color="info"
+            variant="outline"
+            icon="i-ph-seal-check"
+          >
+            Buka Baris Gilir Semakan
+          </UButton>
+        </template>
+      </UAlert>
       <DsPanel>
         <div class="flex flex-wrap items-end justify-between gap-4">
           <div class="flex min-w-0 grow flex-col gap-2">
@@ -448,7 +481,7 @@ const previewBlocks = computed(() => {
             </li>
           </ul>
 
-          <div v-if="!readonly">
+          <DsCluster v-if="!readonly">
             <UButton
               icon="i-ph-plus"
               label="Tambah soalan dari bank"
@@ -458,7 +491,16 @@ const previewBlocks = computed(() => {
               :data-testid="`add-${si}`"
               @click="((pickerSection = s.id), (search = ''))"
             />
-          </div>
+            <UButton
+              icon="i-ph-pencil-simple-line"
+              label="Tulis soalan baharu"
+              color="neutral"
+              variant="soft"
+              class="min-h-11"
+              :to="manualLink"
+              :data-testid="`write-${si}`"
+            />
+          </DsCluster>
         </div>
       </DsPanel>
 

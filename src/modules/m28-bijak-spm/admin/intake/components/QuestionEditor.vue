@@ -6,6 +6,8 @@
  */
 import { computed } from 'vue'
 
+import { DsText } from '@/ds'
+
 import type { LeafKind } from '../../../domain/types'
 import RichText from '../../../components/RichText.vue'
 import { unitByCode, unitsFor, tagWithUnit } from '../lib/dskp'
@@ -13,7 +15,11 @@ import { fieldName } from '../domain/validation'
 import type { IntakePart, IntakeQType, IntakeQuestion } from '../types'
 import SchemeEditor from './SchemeEditor.vue'
 
-const props = defineProps<{ modelValue: IntakeQuestion }>()
+const props = defineProps<{
+  modelValue: IntakeQuestion
+  /** Bank questions have no printed number: hide the field. */
+  hideNumber?: boolean
+}>()
 const emit = defineEmits<{ 'update:modelValue': [IntakeQuestion] }>()
 
 const q = computed(() => props.modelValue)
@@ -141,8 +147,8 @@ function insertMath(field: 'stem'): void {
       </template>
     </UAlert>
 
-    <div class="grid gap-4 sm:grid-cols-3">
-      <label class="flex flex-col gap-1 text-sm">
+    <div class="grid gap-4" :class="hideNumber ? 'sm:grid-cols-2' : 'sm:grid-cols-3'">
+      <label v-if="!hideNumber" class="flex flex-col gap-1 text-sm">
         <span class="font-medium">Nombor soalan</span>
         <input
           :value="q.label"
@@ -291,6 +297,9 @@ function insertMath(field: 'stem'): void {
             @click="removePart(i)"
           />
         </div>
+        <DsText v-if="p.lead?.length" variant="caption" tone="muted" data-testid="part-lead">
+          Di bawah: <RichText :text="p.lead.map((l) => `${l.label} ${l.prompt}`).join(' ')" />
+        </DsText>
         <p v-if="p.prompt" class="mt-2 text-sm text-muted"><RichText :text="p.prompt" /></p>
         <div class="mt-3">
           <SchemeEditor

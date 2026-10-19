@@ -3,6 +3,7 @@
  * Statuses follow docs/requirements/v2-question-bank.md 4.1; the prototype folds Lulus and Terbit
  * into one action ("Lulus & Terbit") and keeps the reviewer's rejections as `ditolak`.
  */
+import type { IntakeQuestion, IntakeStimulus } from '../admin/intake/types'
 import type {
   CurriculumTag,
   GroupDef,
@@ -32,13 +33,24 @@ export interface HistoryEntry {
 export interface ReviewRec {
   status: QuestionStatus
   version: number
+  /** Highest version number ever issued, so a rejected revision's number is not reused. */
+  lastVersion?: number
   submittedAt: number
   reason?: string
   history: HistoryEntry[]
   /** "Sunting" on a Terbit question: version n+1 waits for review while the live one keeps serving. */
-  revision?: { version: number; stem: string; note: string; at: number }
+  revision?: { version: number; stem: string; note: string; at: number; content?: RevisionContent }
   /** Stem of the live version after an approved revision (replaces the seed stem). */
   liveStem?: string
+  /** Whole content of the live version after an approved full edit (replaces the seed content). */
+  live?: RevisionContent
+}
+
+/** A fully edited question: the bank question, its schemes and (for a group) the shared stimulus. */
+export interface RevisionContent {
+  question: QuestionDef
+  schemes: Record<string, SchemeDef>
+  stimulus?: StimulusDef
 }
 
 /** A question (or group) offered for review. The content is static; its state lives in `ReviewRec`. */
@@ -53,6 +65,8 @@ export interface ReviewSeed {
   ageDays: number
   /** `terbit` seeds are live from the start (the "few published questions"). */
   status: 'semakan' | 'terbit'
+  /** Intake batch this unit was made from (units built at submit time, stored in the state). */
+  batchId?: string
   questions: QuestionDef[]
   schemes: Record<string, SchemeDef>
   group?: { def: GroupDef; stimulus: StimulusDef }
@@ -117,6 +131,8 @@ export interface ReviewDetail {
   /** For a revision: the stem that is live now. */
   liveStem?: string
   revisionNote?: string
+  /** The revision changes more than the stem (options, scheme, tag): the preview is the new version. */
+  fullEdit?: boolean
 }
 
 export type DecisionAction = 'terbit' | 'tolak' | 'betulkan'
@@ -160,6 +176,17 @@ export interface BankStats {
     draf: number
     ditolak: number
   }[]
+}
+
+/** A bank question opened in the full editor (the intake editor shape). */
+export interface BankEditable {
+  row: BankRow
+  question: IntakeQuestion
+  stimulus?: IntakeStimulus
+  /** The live version is read-only while a newer one waits for review. */
+  pendingRevision: boolean
+  /** Whether the live question carries no SP (legacy seed): the SP check is waived on save. */
+  legacyTag: boolean
 }
 
 export interface BankDetail {

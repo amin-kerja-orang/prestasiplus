@@ -8,7 +8,7 @@ import { DsDataTable, DsFilterBar, DsNativeSelect, DsPage, DsStatusBadge } from 
 
 import { bijakServer } from '../../../server/client'
 import { formatDateTime } from '../../../lib/use-bijak'
-import { INTAKE_UPLOAD_PATH, intakeReviewPath } from '../lib/intake-routes'
+import { INTAKE_MANUAL_PATH, INTAKE_UPLOAD_PATH, intakeReviewPath } from '../lib/intake-routes'
 import type { IntakeStatus, IntakeSummary } from '../types'
 
 const server = bijakServer()
@@ -60,7 +60,7 @@ function removeChip(key: string): void {
 
 const COLUMNS: TableColumn<Row>[] = [
   { id: 'title', header: 'Kertas' },
-  { id: 'fileName', header: 'Fail' },
+  { id: 'fileName', header: 'Fail / sumber' },
   { id: 'questionCount', header: 'Soalan' },
   { id: 'groupCount', header: 'Kumpulan' },
   { id: 'lowCount', header: 'Perlu disahkan' },
@@ -79,6 +79,16 @@ const COLUMNS: TableColumn<Row>[] = [
     data-testid="intake-list-page"
   >
     <template #actions>
+      <UButton
+        :to="INTAKE_MANUAL_PATH"
+        icon="i-ph-pencil-simple-line"
+        size="lg"
+        variant="outline"
+        color="neutral"
+        data-testid="intake-manual"
+      >
+        Tulis soalan manual
+      </UButton>
       <UButton
         :to="INTAKE_UPLOAD_PATH"
         icon="i-ph-upload-simple"
@@ -101,9 +111,9 @@ const COLUMNS: TableColumn<Row>[] = [
         <UInput
           v-model="search"
           type="search"
-          placeholder="Cari nama fail"
+          placeholder="Cari nama fail atau sumber"
           icon="i-ph-magnifying-glass"
-          aria-label="Cari nama fail"
+          aria-label="Cari nama fail atau sumber"
           class="w-full"
         />
       </template>
@@ -128,7 +138,7 @@ const COLUMNS: TableColumn<Row>[] = [
       :error="error ? 'Tidak dapat memuatkan senarai ekstrak.' : undefined"
       :filtered="filtered"
       empty-title="Belum ada kertas dimuat naik"
-      empty-description="Muat naik PDF kertas SPM untuk mula."
+      empty-description="Muat naik PDF kertas SPM atau tulis soalan manual untuk mula."
       data-testid="intake-table"
       @retry="reload"
     >
@@ -139,6 +149,17 @@ const COLUMNS: TableColumn<Row>[] = [
         >
           {{ row.original.title }}
         </RouterLink>
+      </template>
+      <template #fileName-cell="{ row }">
+        <UBadge
+          v-if="row.original.sourceKind === 'manual'"
+          variant="subtle"
+          color="primary"
+          data-testid="source-manual"
+        >
+          Manual
+        </UBadge>
+        <span v-else>{{ row.original.fileName }}</span>
       </template>
       <template #status-cell="{ row }">
         <DsStatusBadge

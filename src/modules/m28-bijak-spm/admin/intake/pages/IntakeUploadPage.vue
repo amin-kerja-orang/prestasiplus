@@ -7,23 +7,24 @@
 import { computed, reactive, ref } from 'vue'
 import { useRouter } from 'vue-router'
 
-import { DsFileField, DsFormField, DsFormSection, DsNativeSelect, DsPage, DsPanel } from '@/ds'
+import { DsFileField, DsFormSection, DsPage, DsPanel } from '@/ds'
 
 import { bijakServer } from '../../../server/client'
 import { useBijakUser } from '../../../lib/use-bijak'
 import { createExtractor } from '../ai'
+import IntakeMetaFields, { type IntakeForm } from '../components/IntakeMetaFields.vue'
 import { INTAKE_LIST_PATH, intakeReviewPath } from '../lib/intake-routes'
 import { checkFile, readPaper, type OcrProgress } from '../lib/ocr'
 import { setPageImages } from '../lib/page-images'
 import { SAMPLE_PAGES } from '../lib/sample-paper'
-import { COPYRIGHT_OPTIONS, PAPER_TYPES, type PageImage, type PageText } from '../types'
+import { PAPER_TYPES, type PageImage, type PageText } from '../types'
 
 const router = useRouter()
 const server = bijakServer()
 const user = useBijakUser()
 const extractor = createExtractor()
 
-const form = reactive({
+const form = reactive<IntakeForm>({
   subject: 'MAT',
   kertas: '2',
   year: String(new Date().getFullYear() - 1),
@@ -40,7 +41,6 @@ const progress = ref<OcrProgress | null>(null)
 const donePages = ref<{ page: number; source: string }[]>([])
 const failure = ref('')
 
-const subjects = server.subjects()
 
 function onFile(v: File | File[] | null): void {
   const f = Array.isArray(v) ? (v[0] ?? null) : v
@@ -154,72 +154,7 @@ async function useSample(): Promise<void> {
     data-testid="intake-upload-page"
   >
     <form class="flex w-full min-w-0 flex-col gap-6" @submit.prevent="submit">
-      <DsFormSection
-        title="Maklumat kertas"
-        description="Subjek, kertas dan tahun. Tahap Tingkatan 4-5."
-        icon="file-text"
-        :columns="2"
-      >
-        <DsFormField native for="in-subject" label="Subjek" required>
-          <DsNativeSelect id="in-subject" v-model="form.subject" data-testid="intake-subject">
-            <option v-for="s in subjects" :key="s.code" :value="s.code">{{ s.name }}</option>
-          </DsNativeSelect>
-        </DsFormField>
-        <DsFormField native for="in-kertas" label="Kertas" required>
-          <DsNativeSelect id="in-kertas" v-model="form.kertas" data-testid="intake-kertas">
-            <option value="1">Kertas 1</option>
-            <option value="2">Kertas 2</option>
-          </DsNativeSelect>
-        </DsFormField>
-        <DsFormField native for="in-year" label="Tahun" required>
-          <UInput id="in-year" v-model="form.year" type="number" min="2000" max="2100" class="w-full" />
-        </DsFormField>
-        <DsFormField native for="in-type" label="Jenis kertas" required>
-          <DsNativeSelect id="in-type" v-model="form.paperType">
-            <option v-for="t in PAPER_TYPES" :key="t" :value="t">{{ t }}</option>
-          </DsNativeSelect>
-        </DsFormField>
-      </DsFormSection>
-
-      <DsFormSection
-        title="Sumber dan hak cipta"
-        description="Pengisytiharan wajib sebelum soalan boleh dihantar untuk semakan."
-        icon="shield-check"
-        :columns="2"
-      >
-        <div class="sm:col-span-2">
-          <DsFormField
-            native
-            for="in-source"
-            label="Sumber"
-            required
-            hint="cth. Percubaan SPM Negeri, kertas sekolah sendiri, KPM / LPM."
-          >
-            <UInput
-              id="in-source"
-              v-model="form.source"
-              class="w-full"
-              data-testid="intake-source"
-            />
-          </DsFormField>
-        </div>
-        <DsFormField native for="in-copy" label="Status hak cipta" required>
-          <DsNativeSelect
-            id="in-copy"
-            v-model="form.copyright"
-            blank
-            placeholder="Pilih"
-            data-testid="intake-copyright"
-          >
-            <option v-for="c in COPYRIGHT_OPTIONS" :key="c.value" :value="c.value">
-              {{ c.label }}
-            </option>
-          </DsNativeSelect>
-        </DsFormField>
-        <DsFormField native for="in-notes" label="Catatan">
-          <UInput id="in-notes" v-model="form.notes" class="w-full" />
-        </DsFormField>
-      </DsFormSection>
+      <IntakeMetaFields v-model="form" />
 
       <DsFormSection
         title="Fail kertas"

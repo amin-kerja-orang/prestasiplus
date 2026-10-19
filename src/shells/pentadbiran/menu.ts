@@ -1,6 +1,6 @@
 /**
  * Menu of the Portal Pentadbiran (D30; `docs/requirements/v2-portals.md` section 6): 9 groups and
- * 103 items for Admin Pusat. `PENTADBIRAN_FULL_MENU` keeps the whole definition as data for the
+ * 104 items for Admin Pusat. `PENTADBIRAN_FULL_MENU` keeps the whole definition as data for the
  * next round; `PENTADBIRAN_MENU` (rendered) holds built screens only and drops empty groups.
  * Unbuilt items are listed in `docs/requirements/v2-pentadbiran-backlog.md`.
  */
@@ -108,6 +108,7 @@ export const PENTADBIRAN_FULL_MENU: readonly PentadbiranGroup[] = [
     items: items([
       ['KS-01', 'Gambaran SPM'],
       ['KS-13', 'Muat Naik Kertas', '/admin/spm/soalan/muat-naik'],
+      ['KS-16', 'Tulis Soalan Manual', '/admin/spm/soalan/manual'],
       ['KS-14', 'Senarai Ekstrak', '/admin/spm/soalan/ekstrak'],
       ['KS-15', 'Baris Gilir Semakan', '/admin/spm/semakan'],
       ['KS-02', 'Bank Soalan SPM', '/admin/spm/soalan'],

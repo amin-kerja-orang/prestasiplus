@@ -37,6 +37,16 @@ const routes: RouteRecordRaw[] = [
     },
   },
   {
+    path: '/admin/spm/soalan/manual',
+    name: INTAKE_ROUTES.manual,
+    component: () => import('../admin/intake/pages/IntakeManualPage.vue'),
+    meta: {
+      ...base,
+      title: 'Tulis Soalan Manual - Admin PRESTASIPLUS',
+      header: { title: 'Tulis Soalan Manual', subtitle: 'Taip soalan sendiri tanpa PDF' },
+    },
+  },
+  {
     path: '/admin/spm/soalan/ekstrak/:batchId',
     name: INTAKE_ROUTES.review,
     component: () => import('../admin/intake/pages/IntakeReviewPage.vue'),

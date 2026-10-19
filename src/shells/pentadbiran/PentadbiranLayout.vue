@@ -13,6 +13,7 @@ import { RouterLink, useRoute, useRouter } from 'vue-router'
 
 import { FlashOutlet } from '@/components/feedback'
 import { useFlash } from '@/composables/useFlash'
+import { usePageMeta } from '@/composables/usePageMeta'
 import { DsBrandLogo, DsConfirmHost, DsIcon, DsPillNav, provideShellTitle } from '@/ds'
 import { useShellUser } from '@/shells/pembelajaran/useShellUser'
 import { useThemeMode } from '@/theme/color-mode'
@@ -35,8 +36,10 @@ const isLegacy = computed(() => route.meta.v2 !== true)
 const current = computed(() => activeItem(route.path))
 const activeId = computed(() => current.value?.id)
 const activeGroupDef = computed(() => (current.value ? groupOf(current.value.id) : undefined))
+const pageMeta = usePageMeta()
 const title = computed(() => {
-  const header = route.meta.header
+  // a page with a data-driven header (usePageMeta) wins over the route's static one
+  const header = pageMeta.state.header ?? route.meta.header
   if (header?.title) return header.title
   return current.value?.label ?? 'Pentadbiran'
 })

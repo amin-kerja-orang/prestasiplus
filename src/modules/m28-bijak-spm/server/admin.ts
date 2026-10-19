@@ -6,6 +6,9 @@
  * Published seed questions are copied into the shared in-memory `BANK` (idempotent) so the student
  * attempt code needs no change; the review records decide what is Terbit.
  */
+import { defToIntake, intakeToDef } from '../admin/intake/domain/convert'
+import { validateRevision } from '../admin/intake/domain/validation'
+import type { IntakeQuestion, IntakeStimulus } from '../admin/intake/types'
 import { BANK, BLUEPRINTS, PAPERS, SUBJECTS, subjectName } from '../data/registry'
 import { REVIEW_SEEDS } from '../data/review-seed'
 import { checkPaper, type PaperCheck } from '../domain/paper-builder'
@@ -13,6 +16,7 @@ import type {
   AdminPaper,
   AdminPaperSummary,
   BankDetail,
+  BankEditable,
   BankFilter,
   BankRow,
   BankStats,
@@ -33,6 +37,7 @@ import type {
   ReviewQuestion,
   ReviewRec,
   ReviewSeed,
+  RevisionContent,
   SchemeLine,
 } from '../domain/admin-types'
 import { leavesOf } from '../domain/paper-model'
@@ -51,6 +56,8 @@ export const ADMIN_NAME = 'Admin Pusat'
 /** The part of the persisted state the admin side owns. */
 export interface AdminSlice {
   review?: Record<string, ReviewRec>
+  /** Review units made from submitted intake batches (the seed units live in code). */
+  dynSeeds?: Record<string, ReviewSeed>
   adminPapers?: Record<string, AdminPaper>
   paperSeq?: number
 }
@@ -77,6 +84,21 @@ for (const s of REVIEW_SEEDS) {
   for (const [id, sc] of Object.entries(s.schemes)) SEED_SCHEMES.set(id, sc)
 }
 
+/** Question id to the key of the dynamic unit that owns it (units of other server instances are ignored). */
+const DYN_KEY_OF_Q = new Map<string, string>()
+
+function registerSeed(s: ReviewSeed): void {
+  SEED_BY_KEY.set(s.key, s)
+  for (const q of s.questions) {
+    SEED_OF_Q.set(q.id, s)
+    SEED_Q.set(q.id, q)
+    if (s.batchId) DYN_KEY_OF_Q.set(q.id, s.key)
+  }
+  for (const [id, sc] of Object.entries(s.schemes)) SEED_SCHEMES.set(id, sc)
+}
+
+const plain = <T>(v: T): T => JSON.parse(JSON.stringify(v)) as T
+
 const getQ = (id: string): QuestionDef | undefined => BANK.questions.get(id) ?? SEED_Q.get(id)
 const getScheme = (id: string): SchemeDef | undefined =>
   BANK.schemes.get(id) ?? SEED_SCHEMES.get(id)
@@ -90,9 +112,11 @@ const membersOf = (gid: string): string[] => getGroup(gid)?.questionIds ?? []
 const groupOf = (qid: string): string | undefined => getQ(qid)?.groupId
 
 function hydrate(seed: ReviewSeed): void {
-  for (const q of seed.questions) if (!BANK.questions.has(q.id)) BANK.questions.set(q.id, q)
+  // Units made from an intake batch always win: their ids repeat across server instances.
+  const force = !!seed.batchId
+  for (const q of seed.questions) if (force || !BANK.questions.has(q.id)) BANK.questions.set(q.id, q)
   for (const [id, sc] of Object.entries(seed.schemes))
-    if (!BANK.schemes.has(id)) BANK.schemes.set(id, sc)
+    if (force || !BANK.schemes.has(id)) BANK.schemes.set(id, sc)
   if (seed.group) {
     BANK.stimuli.set(seed.group.stimulus.id, seed.group.stimulus)
     BANK.groups.set(seed.group.def.id, seed.group.def)
@@ -104,10 +128,28 @@ function setLiveStem(qid: string, stem: string): void {
   if (q) BANK.questions.set(qid, { ...q, stem })
 }
 
+/** Puts a fully edited version on the shared bank: the old answer keys go, the new ones stay. */
+function applyLive(qid: string, c: RevisionContent): void {
+  const old = BANK.questions.get(qid) ?? SEED_Q.get(qid)
+  if (old) {
+    BANK.schemes.delete(qid)
+    for (const l of leavesOf(old.parts ?? [])) BANK.schemes.delete(l.id)
+  }
+  BANK.questions.set(qid, plain(c.question))
+  for (const [id, sc] of Object.entries(c.schemes)) BANK.schemes.set(id, plain(sc))
+  if (c.stimulus) BANK.stimuli.set(c.stimulus.id, plain(c.stimulus))
+}
+
+const allSeeds = (slice: AdminSlice): ReviewSeed[] => [
+  ...REVIEW_SEEDS,
+  ...Object.values(slice.dynSeeds ?? {}),
+]
+
 /** Seeds the admin slice on first load and re-applies published content to the shared bank. */
 export function seedAdminSlice(slice: AdminSlice, now: number): void {
   slice.review ??= {}
-  for (const seed of REVIEW_SEEDS) {
+  for (const seed of Object.values(slice.dynSeeds ?? {})) registerSeed(seed)
+  for (const seed of allSeeds(slice)) {
     for (const q of seed.questions) {
       if (slice.review[q.id]) continue
       const at = now - seed.ageDays * DAY
@@ -130,11 +172,13 @@ export function seedAdminSlice(slice: AdminSlice, now: number): void {
       }
     }
   }
-  for (const seed of REVIEW_SEEDS) {
+  for (const seed of allSeeds(slice)) {
     if (seed.questions.every((q) => slice.review![q.id]?.status === 'terbit')) hydrate(seed)
   }
-  for (const [qid, rec] of Object.entries(slice.review))
+  for (const [qid, rec] of Object.entries(slice.review)) {
     if (rec.liveStem) setLiveStem(qid, rec.liveStem)
+    if (rec.live) applyLive(qid, rec.live)
+  }
 
   slice.paperSeq ??= 1
   if (!slice.adminPapers) {
@@ -150,14 +194,14 @@ export function seedAdminSlice(slice: AdminSlice, now: number): void {
 
 /* ------------------------------------------------------------------------------- helpers */
 
-function kindOf(q: QuestionDef): QuestionKind {
+function kindOf(q: QuestionDef, schemeOf: SchemeLookup = getScheme): QuestionKind {
   if (q.mcq) return 'objektif'
-  const rubric = leavesOf(q.parts ?? []).some((l) => getScheme(l.id)?.kind === 'rubric')
+  const rubric = leavesOf(q.parts ?? []).some((l) => schemeOf(l.id)?.kind === 'rubric')
   return rubric ? 'esei' : 'berstruktur'
 }
 
-function marksOf(q: QuestionDef): number {
-  if (q.mcq) return getScheme(q.id)?.marks ?? 1
+function marksOf(q: QuestionDef, schemeOf: SchemeLookup = getScheme): number {
+  if (q.mcq) return schemeOf(q.id)?.marks ?? 1
   return leavesOf(q.parts ?? []).reduce((n, l) => n + l.marks, 0)
 }
 
@@ -216,11 +260,17 @@ function describeScheme(sc: SchemeDef): SchemeLine[] {
   }
 }
 
-function reviewQuestion(q: QuestionDef, stem = q.stem): ReviewQuestion {
+type SchemeLookup = (id: string) => SchemeDef | undefined
+
+function reviewQuestion(
+  q: QuestionDef,
+  stem = q.stem,
+  schemeOf: SchemeLookup = getScheme,
+): ReviewQuestion {
   const scheme: ReviewQuestion['scheme'] = {}
   let correct: string | undefined
   if (q.mcq) {
-    const sc = getScheme(q.id)
+    const sc = schemeOf(q.id)
     if (sc?.kind === 'option') {
       correct = sc.correct
       const letter = LETTERS[q.mcq.options.findIndex((o) => o.id === sc.correct)] ?? '?'
@@ -231,7 +281,7 @@ function reviewQuestion(q: QuestionDef, stem = q.stem): ReviewQuestion {
     } else scheme[q.id] = null
   } else {
     for (const l of leavesOf(q.parts ?? [])) {
-      const sc = getScheme(l.id)
+      const sc = schemeOf(l.id)
       scheme[l.id] = sc ? { marks: sc.marks, lines: describeScheme(sc) } : null
     }
   }
@@ -247,18 +297,21 @@ function reviewQuestion(q: QuestionDef, stem = q.stem): ReviewQuestion {
 }
 
 /** Publish gate (v2-question-bank 4.8): answer key present and consistent with the marks. */
-export function gateErrors(qs: readonly QuestionDef[]): string[] {
+export function gateErrors(
+  qs: readonly QuestionDef[],
+  schemeOf: SchemeLookup = getScheme,
+): string[] {
   const out: string[] = []
   qs.forEach((q, i) => {
     const n = `Soalan ${i + 1}`
     if (q.mcq) {
-      const sc = getScheme(q.id)
+      const sc = schemeOf(q.id)
       if (!sc) out.push(`${n}: skema jawapan belum ada`)
       else if (sc.kind !== 'option' || !q.mcq.options.some((o) => o.id === sc.correct))
         out.push(`${n}: pilihan jawapan betul tidak sah`)
     } else {
       for (const l of leavesOf(q.parts ?? [])) {
-        const sc = getScheme(l.id)
+        const sc = schemeOf(l.id)
         if (!sc) out.push(`${n} ${l.label}: skema markah belum ada`)
         else if (sc.marks !== l.marks)
           out.push(`${n} ${l.label}: markah skema ${sc.marks} tidak sama dengan markah ${l.marks}`)
@@ -335,6 +388,34 @@ export class AdminOps {
     return this.host.slice().adminPapers!
   }
 
+  /** A review unit of this server: a seed unit, or one made from a batch submitted here. */
+  private seed(key: string): ReviewSeed | undefined {
+    const s = SEED_BY_KEY.get(key)
+    if (!s) return undefined
+    return s.batchId && !this.host.slice().dynSeeds?.[key] ? undefined : s
+  }
+
+  /** Queues the units of a submitted intake batch for review (the gate already passed). */
+  enqueueSeeds(seeds: ReviewSeed[]): void {
+    const slice = this.host.slice()
+    slice.dynSeeds ??= {}
+    const at = this.host.now()
+    for (const seed of seeds) {
+      slice.dynSeeds[seed.key] = plain(seed)
+      registerSeed(slice.dynSeeds[seed.key]!)
+      for (const q of seed.questions) {
+        this.review[q.id] = {
+          status: 'semakan',
+          version: 1,
+          submittedAt: at,
+          history: [
+            { at, by: seed.uploader, version: 1, action: 'Dihantar untuk semakan', note: seed.source },
+          ],
+        }
+      }
+    }
+  }
+
   statusOf(qid: string): QuestionStatus {
     const rec = this.review[qid]
     if (rec) return rec.status
@@ -378,19 +459,22 @@ export class AdminOps {
     const q = getQ(qid)!
     const rec = this.review[qid]!
     const rev = rec.revision!
+    // A full edit carries its own question and answer keys; a stem-only edit reuses the live ones.
+    const nq = rev.content?.question ?? q
+    const lookup: SchemeLookup = rev.content ? (id) => rev.content!.schemes[id] : getScheme
     return {
       key: `v:${qid}`,
       isRevision: true,
       questionIds: [qid],
       ...(q.groupId ? { groupId: q.groupId } : {}),
-      subject: q.curriculum.subject,
-      subjectName: subjectName(q.curriculum.subject),
+      subject: nq.curriculum.subject,
+      subjectName: subjectName(nq.curriculum.subject),
       kertas: kertasOf(qid),
-      kind: kindOf(q),
-      topic: q.curriculum.unitLabel,
-      preview: previewOf(q, rev.stem),
-      previewPlain: plainMath(previewOf(q, rev.stem)),
-      marks: marksOf(q),
+      kind: kindOf(nq, lookup),
+      topic: nq.curriculum.unitLabel,
+      preview: previewOf(nq, rev.stem),
+      previewPlain: plainMath(previewOf(nq, rev.stem)),
+      marks: marksOf(nq, lookup),
       version: rev.version,
       source: `Sunting versi ${rec.version}`,
       uploader: ADMIN_NAME,
@@ -402,7 +486,7 @@ export class AdminOps {
 
   private allItems(): QueueItem[] {
     const items: QueueItem[] = []
-    for (const seed of REVIEW_SEEDS) {
+    for (const seed of allSeeds(this.host.slice())) {
       if (seed.questions.some((q) => this.review[q.id]?.status !== 'terbit' || !this.review[q.id]))
         items.push(this.unitItem(seed))
     }
@@ -441,17 +525,28 @@ export class AdminOps {
         throw this.host.error('not_found', 'Item semakan tidak ditemui')
       const q = getQ(qid)!
       const item = this.revisionItem(qid)
+      const rev = rec.revision
+      const content = rev.content
       return {
         item,
-        questions: [reviewQuestion(q, rec.revision.stem)],
+        questions: [
+          content
+            ? reviewQuestion(content.question, rev.stem, (id) => content.schemes[id])
+            : reviewQuestion(q, rev.stem),
+        ],
         ...(q.groupId ? this.groupParts(q.groupId) : {}),
+        ...(content?.stimulus ? { stimulus: content.stimulus } : {}),
+        ...(content ? { fullEdit: true } : {}),
         history: rec.history,
-        gate: rec.revision.stem.trim() ? [] : ['Teks soalan tidak boleh kosong'],
+        gate: [
+          ...(rev.stem.trim() ? [] : ['Teks soalan tidak boleh kosong']),
+          ...(content ? gateErrors([content.question], (id) => content.schemes[id]) : []),
+        ],
         liveStem: q.stem,
         revisionNote: rec.revision.note,
       }
     }
-    const seed = SEED_BY_KEY.get(key)
+    const seed = this.seed(key)
     if (!seed) throw this.host.error('not_found', 'Item semakan tidak ditemui')
     const rec = this.review[seed.questions[0]!.id]!
     return {
@@ -498,13 +593,27 @@ export class AdminOps {
       const rev = rec.revision
       if (d.action === 'terbit') {
         if (!rev.stem.trim()) return { ok: false, errors: ['Teks soalan tidak boleh kosong'] }
+        if (rev.content) {
+          const errors = gateErrors([rev.content.question], (id) => rev.content!.schemes[id])
+          if (errors.length) return { ok: false, errors }
+        }
         rec.history.push(
           entry(rev.version, 'Diterbitkan', rev.note),
           entry(rec.version, 'Diarkibkan (digantikan)'),
         )
         rec.version = rev.version
-        rec.liveStem = rev.stem
-        setLiveStem(qid, rev.stem)
+        if (rev.content) {
+          rec.live = plain(rev.content)
+          delete rec.liveStem
+          applyLive(qid, rev.content)
+        } else if (rec.live) {
+          // a stem-only edit on top of a fully edited live version: keep it in the live content
+          rec.live.question.stem = rev.stem
+          applyLive(qid, rec.live)
+        } else {
+          rec.liveStem = rev.stem
+          setLiveStem(qid, rev.stem)
+        }
       } else {
         rec.history.push(
           entry(rev.version, d.action === 'tolak' ? 'Ditolak' : 'Pembetulan diminta', reason),
@@ -515,7 +624,7 @@ export class AdminOps {
       return { ok: true, errors: [] }
     }
 
-    const seed = SEED_BY_KEY.get(key)
+    const seed = this.seed(key)
     if (!seed) return { ok: false, errors: ['Item tiada dalam baris gilir'] }
     const recs = seed.questions.map((q) => this.review[q.id]!)
     if (recs.some((r) => r.status !== 'semakan'))
@@ -545,7 +654,7 @@ export class AdminOps {
   /** The uploader fixed a returned or rejected item: it re-enters the queue. */
   async resubmit(key: string): Promise<DecisionResult> {
     await this.host.tick()
-    const seed = SEED_BY_KEY.get(key)
+    const seed = this.seed(key)
     if (!seed) return { ok: false, errors: ['Item tidak ditemui'] }
     const at = this.host.now()
     for (const q of seed.questions) {
@@ -580,7 +689,99 @@ export class AdminOps {
       history: [{ at, by: ADMIN_NAME, version: 1, action: 'Diterbitkan (asal)' }],
     })
     if (rec.revision) return { ok: false, errors: ['Sudah ada versi baharu menunggu semakan'] }
-    rec.revision = { version: rec.version + 1, stem: stem.trim(), note: note.trim(), at }
+    const next = Math.max(rec.version, rec.lastVersion ?? 0) + 1
+    rec.lastVersion = next
+    rec.revision = { version: next, stem: stem.trim(), note: note.trim(), at }
+    rec.history.push({
+      at,
+      by: ADMIN_NAME,
+      version: rec.revision.version,
+      action: `Versi ${rec.revision.version} dicipta (Draf, dihantar untuk semakan)`,
+      ...(note.trim() ? { note: note.trim() } : {}),
+    })
+    this.host.persist()
+    return { ok: true, errors: [] }
+  }
+
+  /** The question opened in the full editor ("Sunting" in the bank). */
+  async getEditable(qid: string): Promise<BankEditable> {
+    await this.host.tick()
+    const q = getQ(qid)
+    if (!q) throw this.host.error('not_found', 'Soalan tidak ditemui')
+    if (this.statusOf(qid) !== 'terbit')
+      throw this.host.error('bad_request', 'Hanya soalan Terbit boleh disunting')
+    const stimulus = q.groupId ? getStimulus(q.groupId) : undefined
+    return {
+      row: this.bankRow(qid),
+      question: defToIntake(q, getScheme, '1', stimulus?.id),
+      ...(stimulus ? { stimulus: plain(stimulus) } : {}),
+      pendingRevision: !!this.review[qid]?.revision,
+      legacyTag: q.curriculum.sp.length === 0,
+    }
+  }
+
+  /**
+   * "Sunting" with the whole question: stem, options and key, parts, scheme, DSKP tag and the
+   * caption / alt text of the shared stimulus. Version n+1 waits in the queue under the same gate
+   * as an extracted batch; the live version keeps serving until it is approved.
+   */
+  async reviseQuestionFull(
+    qid: string,
+    edited: IntakeQuestion,
+    stimulus: IntakeStimulus | undefined,
+    note: string,
+  ): Promise<DecisionResult> {
+    await this.host.tick()
+    const q = getQ(qid)
+    if (!q || this.statusOf(qid) !== 'terbit')
+      return { ok: false, errors: ['Hanya soalan Terbit boleh disunting'] }
+    if (this.review[qid]?.revision)
+      return { ok: false, errors: ['Sudah ada versi baharu menunggu semakan'] }
+
+    const live = q.groupId ? getStimulus(q.groupId) : undefined
+    const nextStimulus: StimulusDef | undefined = live
+      ? {
+          ...live,
+          alt: stimulus?.alt ?? live.alt,
+          ...(stimulus?.caption !== undefined ? { caption: stimulus.caption } : {}),
+          ...(live.kind === 'passage' && stimulus?.text !== undefined
+            ? { text: stimulus.text }
+            : {}),
+        }
+      : undefined
+    const issues = validateRevision(
+      plain(edited),
+      nextStimulus,
+      q.curriculum.sp.length === 0,
+    )
+    if (issues.length > 0) return { ok: false, errors: issues }
+
+    const at = this.host.now()
+    const content = intakeToDef(plain(edited), {
+      qid,
+      ...(q.groupId ? { groupId: q.groupId } : {}),
+      newPartId: (j) => `${qid}-n${at.toString(36)}${j}`,
+    })
+    const revision: RevisionContent = {
+      question: content.question,
+      schemes: content.schemes,
+      ...(nextStimulus ? { stimulus: nextStimulus } : {}),
+    }
+    const rec = (this.review[qid] ??= {
+      status: 'terbit',
+      version: 1,
+      submittedAt: at,
+      history: [{ at, by: ADMIN_NAME, version: 1, action: 'Diterbitkan (asal)' }],
+    })
+    const next = Math.max(rec.version, rec.lastVersion ?? 0) + 1
+    rec.lastVersion = next
+    rec.revision = {
+      version: next,
+      stem: content.question.stem,
+      note: note.trim(),
+      at,
+      content: revision,
+    }
     rec.history.push({
       at,
       by: ADMIN_NAME,
@@ -623,7 +824,12 @@ export class AdminOps {
   }
 
   private allQuestionIds(): string[] {
-    return [...new Set([...BANK.questions.keys(), ...SEED_Q.keys()])]
+    const dyn = this.host.slice().dynSeeds ?? {}
+    const mine = (id: string): boolean => {
+      const key = DYN_KEY_OF_Q.get(id)
+      return !key || !!dyn[key]
+    }
+    return [...new Set([...BANK.questions.keys(), ...SEED_Q.keys()])].filter(mine)
   }
 
   async listBank(f: BankFilter = {}): Promise<BankRow[]> {

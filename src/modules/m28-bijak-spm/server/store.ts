@@ -6,6 +6,8 @@
  * Reveal rules (US-15): an answer key or mark scheme leaves this class only inside a graded
  * result, i.e. after submit (exam) or after "Semak" on that one question (latihan).
  */
+import { blankQuestion } from '../admin/intake/domain/blank'
+import { batchToSeeds } from '../admin/intake/domain/convert'
 import { groupsOf } from '../admin/intake/domain/grouping'
 import { paperMarks } from '../admin/intake/domain/marks'
 import { validateBatch } from '../admin/intake/domain/validation'
@@ -15,8 +17,11 @@ import type {
   IntakeBatch,
   IntakeIssue,
   IntakeMeta,
+  IntakeQuestion,
   IntakeStatus,
+  IntakeStimulus,
   IntakeSummary,
+  ManualMeta,
   PageText,
   SaveExtractedPayload,
 } from '../admin/intake/types'
@@ -867,6 +872,7 @@ export class BijakServer {
       kertas: b.kertas,
       year: b.year,
       status: b.status,
+      sourceKind: b.sourceKind ?? 'pdf',
       fileName: b.fileName,
       questionCount: b.questions.length,
       groupCount: groupsOf(b.questions).length,
@@ -887,7 +893,13 @@ export class BijakServer {
     return Object.values(this.intakeStore())
       .filter((b) => !filter.status || b.status === filter.status)
       .filter((b) => !filter.subject || b.subject === filter.subject)
-      .filter((b) => !needle || b.fileName.toLowerCase().includes(needle))
+      .filter(
+        (b) =>
+          !needle ||
+          b.fileName.toLowerCase().includes(needle) ||
+          (b.sourceKind === 'manual' &&
+            `${subjectName(b.subject)} ${b.source} manual`.toLowerCase().includes(needle)),
+      )
       .sort((a, b) => b.updatedAt - a.updatedAt)
       .map((b) => this.intakeSummary(b))
   }
@@ -927,6 +939,40 @@ export class BijakServer {
     return jsonClone(batch)
   }
 
+  /**
+   * Draf batch typed by hand (no file): the same declaration as an upload, source kind "manual",
+   * one empty question ready to fill. It goes through the same review page and the same gate.
+   */
+  async createManualBatch(userId: number, meta: ManualMeta): Promise<IntakeBatch> {
+    await this.tick()
+    const store = this.intakeStore()
+    this.state.seq += 1
+    const now = this.now()
+    const { forPaperId, ...declared } = meta
+    const batch: IntakeBatch = {
+      ...declared,
+      fileName: '',
+      fileHash: '',
+      pageCount: 0,
+      id: `ek-${this.state.seq}`,
+      sourceKind: 'manual',
+      ...(forPaperId ? { forPaperId } : {}),
+      userId,
+      status: 'draf',
+      createdAt: now,
+      updatedAt: now,
+      provider: 'manual',
+      model: '-',
+      questions: [blankQuestion(meta.subject, 1)],
+      stimuli: [],
+      unmatched: [],
+      pages: [],
+    }
+    store[batch.id] = batch
+    this.persist()
+    return jsonClone(batch)
+  }
+
   /** Replace the edited content of a Draf batch. A batch under review is read-only. */
   async saveExtracted(id: string, payload: SaveExtractedPayload): Promise<IntakeBatch> {
     await this.tick()
@@ -951,6 +997,8 @@ export class BijakServer {
     b.status = 'semakan'
     b.submittedAt = this.now()
     b.updatedAt = b.submittedAt
+    // The questions enter the review queue: one unit per question, one per stimulus group.
+    this.ops.enqueueSeeds(batchToSeeds(b))
     this.persist()
     return { ok: true, batch: jsonClone(b) }
   }
@@ -971,6 +1019,18 @@ export class BijakServer {
   }
   reviseQuestion(qid: string, stem: string, note: string) {
     return this.ops.reviseQuestion(qid, stem, note)
+  }
+  /** Full edit of a Terbit question (options, key, parts, scheme, DSKP, stimulus text): version n+1. */
+  reviseQuestionFull(
+    qid: string,
+    edited: IntakeQuestion,
+    stimulus: IntakeStimulus | undefined,
+    note: string,
+  ) {
+    return this.ops.reviseQuestionFull(qid, edited, stimulus, note)
+  }
+  getBankEditable(qid: string) {
+    return this.ops.getEditable(qid)
   }
   listBank(f?: BankFilter) {
     return this.ops.listBank(f)

@@ -7,6 +7,7 @@ export const ADMIN_ROUTES = {
   review: 'm28.admin.review',
   reviewItem: 'm28.admin.review.item',
   bank: 'm28.admin.bank',
+  bankEdit: 'm28.admin.bank.edit',
   papers: 'm28.admin.papers',
   paperNew: 'm28.admin.papers.new',
   paperEdit: 'm28.admin.papers.edit',

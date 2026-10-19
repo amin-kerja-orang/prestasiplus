@@ -42,6 +42,14 @@ export interface IntakePart {
   marks: number
   mode: LeafKind
   scheme?: SchemeDef
+  /** Unit shown after a numeric answer (kept when a bank question is edited). */
+  unit?: string
+  wordRange?: { min: number; max: number }
+  /**
+   * Ancestors of a nested part (a bank question keeps its tree): the part is "(a)(i)" under the
+   * texts of "(a)". The editor shows one flat list; the nesting is rebuilt on save.
+   */
+  lead?: { id: string; label: string; prompt: string }[]
 }
 
 export interface IntakeQuestion {
@@ -56,6 +64,9 @@ export interface IntakeQuestion {
   marks: number
   /** Leaf mode of a question without parts. */
   mode: LeafKind
+  /** Unit and word range of a question without parts (carried through a full edit). */
+  unit?: string
+  wordRange?: { min: number; max: number }
   parts: IntakePart[]
   /** Answer key of a question without parts (MCQ key, short answer, essay points). */
   scheme?: SchemeDef
@@ -131,8 +142,20 @@ export interface IntakeMeta {
   pageCount: number
 }
 
+/** Where the questions of a batch came from: an uploaded paper or typed by hand (no file). */
+export type IntakeSourceKind = 'pdf' | 'manual'
+
+/** Declaration of a manual batch: the same metadata as an upload, without the file. */
+export type ManualMeta = Omit<IntakeMeta, 'fileName' | 'fileHash' | 'pageCount'> & {
+  /** Paper builder paper the admin came from (to return there after submitting). */
+  forPaperId?: string
+}
+
 export interface IntakeBatch extends IntakeMeta {
   id: string
+  /** Absent on batches saved before manual entry existed (= `pdf`). */
+  sourceKind?: IntakeSourceKind
+  forPaperId?: string
   userId: number
   status: IntakeStatus
   createdAt: number
@@ -154,6 +177,7 @@ export interface IntakeSummary {
   kertas: number
   year: number
   status: IntakeStatus
+  sourceKind: IntakeSourceKind
   fileName: string
   questionCount: number
   groupCount: number

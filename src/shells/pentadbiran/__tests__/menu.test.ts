@@ -19,12 +19,12 @@ const itemsOf = (label: string): string[] =>
   PENTADBIRAN_MENU.find((g) => g.label === label)?.items.map((i) => i.id) ?? []
 
 describe('Pentadbiran menu data', () => {
-  it('keeps the full 9-group, 103-item definition as data', () => {
+  it('keeps the full 9-group, 104-item definition as data', () => {
     expect(PENTADBIRAN_FULL_MENU.map((g) => g.items.length)).toEqual([
-      2, 28, 7, 15, 12, 6, 22, 6, 5,
+      2, 28, 7, 16, 12, 6, 22, 6, 5,
     ])
-    expect(FULL_ITEMS).toHaveLength(103)
-    expect(new Set(FULL_ITEMS.map((i) => i.id)).size).toBe(103)
+    expect(FULL_ITEMS).toHaveLength(104)
+    expect(new Set(FULL_ITEMS.map((i) => i.id)).size).toBe(104)
   })
 
   it('renders built screens only and drops empty groups', () => {
@@ -32,7 +32,14 @@ describe('Pentadbiran menu data', () => {
     expect(ALL_ITEMS.length).toBe(FULL_ITEMS.filter((i) => i.built).length)
     expect(PENTADBIRAN_MENU.every((g) => g.items.length > 0)).toBe(true)
     expect(PENTADBIRAN_MENU.map((g) => g.label)).toContain('Kertas & SPM')
-    expect(itemsOf('Kertas & SPM')).toEqual(['KS-13', 'KS-14', 'KS-15', 'KS-02', 'KS-09'])
+    expect(itemsOf('Kertas & SPM')).toEqual([
+      'KS-13',
+      'KS-16',
+      'KS-14',
+      'KS-15',
+      'KS-02',
+      'KS-09',
+    ])
   })
 
   it('never points a visible item at a placeholder route', () => {
@@ -43,6 +50,8 @@ describe('Pentadbiran menu data', () => {
     expect(activeItem('/admin/command-center/school/3')?.id).toBe('PM-01')
     expect(activeItem('/admin/command-center/daily-activity')?.id).toBe('PM-02')
     expect(activeItem('/admin/questions/import')?.id).toBe('BS-02')
+    expect(activeItem('/admin/spm/soalan/manual')?.id).toBe('KS-16')
+    expect(activeItem('/admin/spm/soalan/mat1-pub-1/sunting')?.id).toBe('KS-02')
   })
 })
 

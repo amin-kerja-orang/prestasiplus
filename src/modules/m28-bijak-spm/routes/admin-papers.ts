@@ -47,6 +47,17 @@ const routes: RouteRecordRaw[] = [
     },
   },
   {
+    path: '/admin/spm/soalan/:qid/sunting',
+    name: ADMIN_ROUTES.bankEdit,
+    component: () => import('../admin/papers/BankEditPage.vue'),
+    props: true,
+    meta: {
+      ...base,
+      title: 'Sunting Soalan - Admin PRESTASIPLUS',
+      header: { title: 'Sunting Soalan' },
+    },
+  },
+  {
     path: '/admin/spm/kertas',
     name: ADMIN_ROUTES.papers,
     component: () => import('../admin/papers/PaperListPage.vue'),

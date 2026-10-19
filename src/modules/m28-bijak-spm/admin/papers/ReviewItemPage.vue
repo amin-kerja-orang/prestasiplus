@@ -165,6 +165,16 @@ async function resubmit(): Promise<void> {
         </DsPanel>
       </div>
 
+      <UAlert
+        v-if="data.fullEdit"
+        color="info"
+        variant="subtle"
+        icon="i-ph-info"
+        title="Sunting penuh"
+        description="Soalan, pilihan, skema dan tag DSKP di bawah ialah versi cadangan. Versi semasa terus melayani pelajar sehingga ini diluluskan."
+        data-testid="revision-full-note"
+      />
+
       <p v-if="data.item.groupId" class="text-body text-muted" data-testid="group-note">
         Keputusan ini terpakai untuk semua {{ data.questions.length }} soalan dalam kumpulan
         rangsangan.

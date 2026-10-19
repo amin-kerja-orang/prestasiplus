@@ -7,6 +7,7 @@
  */
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 
+import { usePageMeta } from '@/composables/usePageMeta'
 import { DsPage, DsPanel, DsStateView, DsStatusBadge } from '@/ds'
 
 import StimulusView from '../../../components/StimulusView.vue'
@@ -22,17 +23,27 @@ import {
 } from '../domain/grouping'
 import { paperMarks, questionMarks } from '../domain/marks'
 import { validateBatch } from '../domain/validation'
-import { emptyTag } from '../lib/dskp'
+import { blankQuestion, nextLabel } from '../domain/blank'
 import { INTAKE_LIST_PATH } from '../lib/intake-routes'
 import { getPageImages } from '../lib/page-images'
 import type { IntakeBatch, IntakeIssue, IntakeQuestion, IntakeStimulus } from '../types'
 
 const props = defineProps<{ batchId: string }>()
+const pageMeta = usePageMeta()
 const server = bijakServer()
 
 const batch = ref<IntakeBatch | null>(null)
 const loadState = ref<'loading' | 'error' | 'missing' | 'ready'>('loading')
 const readonly = computed(() => batch.value?.status !== 'draf')
+/** A batch typed by hand has no file: no source panel, the editor takes the full width. */
+const isManual = computed(() => batch.value?.sourceKind === 'manual')
+const paperBack = computed(() =>
+  batch.value?.forPaperId ? `/admin/spm/kertas/${encodeURIComponent(batch.value.forPaperId)}?menunggu=1` : '',
+)
+// The shell header (breadcrumb title) matches the page for a manual batch.
+watch(isManual, (m) => {
+  if (m) pageMeta.setHeader({ title: 'Tulis Soalan Manual', subtitle: 'Taip soalan sendiri tanpa PDF' })
+})
 const mobileTab = ref<'soalan' | 'sumber'>('soalan')
 const pageNo = ref(1)
 const open = ref<Set<string>>(new Set())
@@ -129,21 +140,7 @@ function updateQuestion(id: string, q: IntakeQuestion): void {
 function addQuestion(): void {
   const b = batch.value
   if (!b) return
-  const n = b.questions.reduce((m, q) => Math.max(m, Number.parseInt(q.label, 10) || 0), 0) + 1
-  const q: IntakeQuestion = {
-    id: `q-${n}-${Date.now().toString(36)}`,
-    label: String(n),
-    type: 'short',
-    stem: '',
-    options: [],
-    marks: 1,
-    mode: 'short_text',
-    parts: [],
-    tag: emptyTag(b.subject),
-    page: pageNo.value,
-    lowFields: [],
-    confirmed: [],
-  }
+  const q = blankQuestion(b.subject, nextLabel(b.questions), pageNo.value)
   b.questions = [...b.questions, q]
   open.value = new Set([...open.value, q.id])
 }
@@ -246,8 +243,14 @@ async function submit(): Promise<void> {
 <template>
   <DsPage
     layout="report"
-    title="Semak Ekstrak"
-    :subtitle="batch ? `${batch.fileName} · ${batch.year}` : undefined"
+    :title="isManual ? 'Tulis Soalan Manual' : 'Semak Ekstrak'"
+    :subtitle="
+      batch
+        ? isManual
+          ? `Soalan manual · ${batch.source} · ${batch.year}`
+          : `${batch.fileName} · ${batch.year}`
+        : undefined
+    "
     back-label="Kembali ke Senarai Ekstrak"
     :back-to="INTAKE_LIST_PATH"
     data-testid="intake-review-page"
@@ -274,7 +277,12 @@ async function submit(): Promise<void> {
               <span>{{ batch.questions.length }} soalan</span>
               <span>{{ total }} markah</span>
               <span>{{ groups.length }} kumpulan rajah</span>
-              <span class="text-muted">Pengekstrak: {{ batch.provider }} ({{ batch.model }})</span>
+              <UBadge v-if="isManual" variant="subtle" color="primary" data-testid="manual-badge">
+                Manual
+              </UBadge>
+              <span v-else class="text-muted">
+                Pengekstrak: {{ batch.provider }} ({{ batch.model }})
+              </span>
               <span
                 class="text-muted"
                 aria-live="polite"
@@ -314,7 +322,31 @@ async function submit(): Promise<void> {
             title="Dihantar untuk semakan"
             description="Kumpulan ini kini dalam status Semakan dan tidak boleh disunting. Pelajar tidak melihatnya sehingga diluluskan dan diterbitkan."
             data-testid="submitted-note"
-          />
+          >
+            <template #actions>
+              <UButton
+                to="/admin/spm/semakan"
+                size="sm"
+                color="success"
+                variant="outline"
+                icon="i-ph-seal-check"
+                data-testid="goto-queue"
+              >
+                Buka Baris Gilir Semakan
+              </UButton>
+              <UButton
+                v-if="paperBack"
+                :to="paperBack"
+                size="sm"
+                color="neutral"
+                variant="outline"
+                icon="i-ph-stack"
+                data-testid="back-to-paper"
+              >
+                Kembali ke Pembina Kertas
+              </UButton>
+            </template>
+          </UAlert>
           <template v-else>
             <button
               type="button"
@@ -361,7 +393,7 @@ async function submit(): Promise<void> {
         </DsPanel>
 
         <!-- mobile switch -->
-        <div class="flex gap-2 lg:hidden" role="tablist" aria-label="Paparan">
+        <div v-if="!isManual" class="flex gap-2 lg:hidden" role="tablist" aria-label="Paparan">
           <UButton
             v-for="t in [
               { v: 'soalan', l: 'Soalan' },
@@ -379,15 +411,25 @@ async function submit(): Promise<void> {
           </UButton>
         </div>
 
-        <div class="grid min-w-0 gap-6 lg:grid-cols-[minmax(0,5fr)_minmax(0,7fr)] lg:items-start">
-          <!-- source -->
+        <div
+          class="grid min-w-0 gap-6"
+          :class="isManual ? '' : 'lg:grid-cols-[minmax(0,5fr)_minmax(0,7fr)] lg:items-start'"
+        >
+          <!-- source (stimuli only for a manual batch) -->
           <aside
-            :class="mobileTab === 'sumber' ? 'block' : 'hidden lg:block'"
-            class="flex min-w-0 flex-col gap-3 lg:sticky lg:top-4 lg:max-h-[calc(100vh-2rem)] lg:overflow-auto"
-            aria-label="Sumber kertas"
+            :class="
+              isManual
+                ? 'block'
+                : [
+                    mobileTab === 'sumber' ? 'block' : 'hidden lg:block',
+                    'lg:sticky lg:top-4 lg:max-h-[calc(100vh-2rem)] lg:overflow-auto',
+                  ]
+            "
+            class="flex min-w-0 flex-col gap-3"
+            :aria-label="isManual ? 'Rajah dan petikan' : 'Sumber kertas'"
             data-testid="source-panel"
           >
-            <DsPanel>
+            <DsPanel v-if="!isManual">
               <div class="flex flex-col gap-3">
                 <div class="flex flex-wrap items-center gap-2">
                   <p class="font-semibold">Halaman sumber</p>
@@ -507,6 +549,7 @@ async function submit(): Promise<void> {
                 </div>
                 <div class="flex flex-wrap gap-2">
                   <UButton
+                    v-if="!isManual"
                     size="sm"
                     variant="outline"
                     color="neutral"
@@ -532,7 +575,7 @@ async function submit(): Promise<void> {
 
           <!-- questions -->
           <section
-            :class="mobileTab === 'soalan' ? 'block' : 'hidden lg:block'"
+            :class="isManual || mobileTab === 'soalan' ? 'block' : 'hidden lg:block'"
             class="flex min-w-0 flex-col gap-4"
             aria-label="Soalan diekstrak"
             data-testid="questions-panel"

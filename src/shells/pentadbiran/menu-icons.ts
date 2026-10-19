@@ -15,6 +15,7 @@ export const ITEM_ICON: Readonly<Record<string, string>> = {
   'BS-06': 'i-ph-exam',
   'BS-07': 'i-ph-headphones',
   'KS-13': 'i-ph-file-arrow-up',
+  'KS-16': 'i-ph-pencil-simple-line',
   'KS-14': 'i-ph-list-magnifying-glass',
   'KS-15': 'i-ph-seal-check',
   'KS-02': 'i-ph-database',

@@ -5,13 +5,12 @@
  * waits in the review queue while the live version keeps serving.
  */
 import type { TableColumn } from '@nuxt/ui'
-import { computed, reactive, ref, watch } from 'vue'
+import { computed, reactive, ref } from 'vue'
+import { useRoute } from 'vue-router'
 
 import { useApi } from '@/composables/useApi'
-import { useFlash } from '@/composables/useFlash'
 import {
   DsDataTable,
-  DsDialog,
   DsFilterBar,
   DsLoadError,
   DsNativeSelect,
@@ -27,19 +26,12 @@ import type { BankRow, QuestionStatus } from '../../domain/admin-types'
 import { formatDateTime } from '../../lib/use-bijak'
 import { bijakServer } from '../../server/client'
 import QuestionPreview from './QuestionPreview.vue'
-import {
-  ADMIN_ROUTES,
-  KERTAS_ITEMS,
-  KIND_ITEMS,
-  KIND_LABEL,
-  STATUS_BADGE,
-  detailMessage,
-} from './ui'
+import { ADMIN_ROUTES, KERTAS_ITEMS, KIND_ITEMS, KIND_LABEL, STATUS_BADGE } from './ui'
 
 type Row = BankRow & Record<string, unknown>
 
 const server = bijakServer()
-const flash = useFlash()
+const route = useRoute()
 const subjects = server.subjects()
 
 const draft = reactive<{
@@ -138,7 +130,10 @@ const columns: TableColumn<Row>[] = [
 ]
 
 /* ----------------------------------------------------------------------- preview drawer */
-const selectedId = ref<string | null>(null)
+// `?buka=<id>` opens the drawer (after a "Sunting" is sent for review, to show the versions).
+const selectedId = ref<string | null>(
+  typeof route.query.buka === 'string' ? route.query.buka : null,
+)
 const drawer = computed({
   get: () => selectedId.value !== null,
   set: (v: boolean) => {
@@ -153,51 +148,14 @@ const {
   () => (selectedId.value ? server.getBankDetail(selectedId.value) : Promise.resolve(null)),
   selectedId,
 )
-
-/* ------------------------------------------------------------------------ revise dialog */
-const reviseOpen = ref(false)
-const reviseStem = ref('')
-const reviseNote = ref('')
-const reviseError = ref('')
-const busy = ref(false)
-
-watch(reviseOpen, (o) => {
-  if (o) {
-    reviseStem.value = detail.value?.question.stem ?? ''
-    reviseNote.value = ''
-    reviseError.value = ''
-  }
-})
-
-async function submitRevision(): Promise<void> {
-  if (!selectedId.value) return
-  busy.value = true
-  try {
-    const res = await server.reviseQuestion(selectedId.value, reviseStem.value, reviseNote.value)
-    if (!res.ok) {
-      reviseError.value = res.errors[0] ?? ''
-      return
-    }
-    reviseOpen.value = false
-    flash.show({
-      type: 'success',
-      message: 'Versi baharu dihantar untuk semakan. Versi semasa terus melayani pelajar.',
-    })
-    await Promise.all([reloadDetail(), reload()])
-  } catch (e) {
-    reviseError.value = detailMessage(e)
-  } finally {
-    busy.value = false
-  }
-}
 </script>
 
 <template>
   <DsPage layout="list" data-testid="bank-page">
     <template #subtitle>
       <p class="text-body text-muted">
-        Soalan SPM yang sudah diterbitkan. Pratonton, semak penggunaan dan sunting sebagai versi
-        baharu.
+        Soalan SPM yang sudah diterbitkan. Pratonton, semak penggunaan dan sunting penuh sebagai
+        versi baharu.
       </p>
     </template>
     <template #actions>
@@ -395,8 +353,8 @@ async function submitRevision(): Promise<void> {
             "
             :disabled="detail.pendingRevision"
             class="min-h-11"
+            :to="{ name: ADMIN_ROUTES.bankEdit, params: { qid: detail.row.id } }"
             data-testid="bank-revise"
-            @click="reviseOpen = true"
           />
           <UButton
             color="neutral"
@@ -408,37 +366,5 @@ async function submitRevision(): Promise<void> {
         </div>
       </template>
     </USlideover>
-
-    <DsDialog
-      v-model:open="reviseOpen"
-      title="Sunting soalan"
-      description="Mencipta versi baharu yang perlu disemak. Versi semasa terus melayani pelajar sehingga versi baharu diterbitkan."
-      :loading="busy"
-    >
-      <div class="flex flex-col gap-3">
-        <UFormField label="Teks soalan" :error="reviseError" required>
-          <UTextarea v-model="reviseStem" :rows="4" class="w-full" data-testid="revise-stem" />
-        </UFormField>
-        <UFormField label="Nota perubahan">
-          <UInput v-model="reviseNote" class="w-full" data-testid="revise-note" />
-        </UFormField>
-      </div>
-      <template #footer>
-        <UButton
-          color="neutral"
-          variant="ghost"
-          label="Batal"
-          class="min-h-11"
-          @click="reviseOpen = false"
-        />
-        <UButton
-          label="Hantar untuk semakan"
-          class="min-h-11"
-          :loading="busy"
-          data-testid="revise-confirm"
-          @click="submitRevision"
-        />
-      </template>
-    </DsDialog>
   </DsPage>
 </template>

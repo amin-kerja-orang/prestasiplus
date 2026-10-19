@@ -2,7 +2,7 @@
  * Quality gate "Hantar untuk semakan" (v2-question-bank 4.8): the same function runs in the review
  * screen (live list of what is missing) and in the server (no bypass, E9).
  */
-import type { IntakeBatch, IntakeIssue, IntakeQuestion } from '../types'
+import type { IntakeBatch, IntakeIssue, IntakeQuestion, IntakeStimulus } from '../types'
 import { groupsOf } from './grouping'
 import { questionMarks, schemeTotal } from './marks'
 
@@ -99,4 +99,23 @@ export function validateBatch(
     if (!s.alt.trim()) add(undefined, s.label, 'Teks alternatif (alt) bagi rajah diperlukan.')
   }
   return issues
+}
+
+/**
+ * The same gate for one question edited from the bank ("Sunting"): messages only, the question
+ * number is dropped. A legacy question that never carried an SP is not blocked on SP alone.
+ */
+export function validateRevision(
+  q: IntakeQuestion,
+  stimulus: IntakeStimulus | undefined,
+  legacyTag: boolean,
+): string[] {
+  return validateBatch({
+    questions: [{ ...q, ...(stimulus ? { stimulusId: stimulus.id } : {}) }],
+    stimuli: stimulus ? [stimulus] : [],
+    source: '-',
+    copyright: '-',
+  })
+    .filter((i) => !(legacyTag && i.message.startsWith('Standard Pembelajaran')))
+    .map((i) => (i.questionId ? `${i.where.replace(/^Soalan 1/, 'Soalan')}: ${i.message}` : i.message))
 }
