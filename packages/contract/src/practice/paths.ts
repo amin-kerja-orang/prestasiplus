@@ -114,7 +114,7 @@ export function registerPracticePaths(registry: OpenAPIRegistry): void {
     tags: ['practice'],
     summary: 'Submit (complete) a session',
     description:
-      'Grades the stored checks and, in one transaction, writes the answer rows, revision queue, mastery, session totals and wallet/streak credit. Only the session owner may call it.',
+      'Grades the stored checks and, in one transaction, writes the answer rows, revision queue, mastery, session totals and wallet/streak credit. timeSpent is coerced, never rejected: a non-number counts as 0 and the stored value is clamped to [0, 180 x questionCount]. Only the session owner may call it.',
     request: { params: PracticeSessionParamsSchema, headers: [csrf], body: body(SubmitSessionRequestSchema) },
     responses: {
       200: json(envelopeOf(SubmitSessionResponseSchema), 'Session completed.'),
@@ -122,7 +122,6 @@ export function registerPracticePaths(registry: OpenAPIRegistry): void {
       403: err(csrfInvalid),
       404: notYours,
       409: err('ALREADY_SUBMITTED "Sesi ini sudah dihantar." (second submit).'),
-      422: err('VALIDATION_ERROR (timeSpent is not a non-negative number).'),
     },
   })
 

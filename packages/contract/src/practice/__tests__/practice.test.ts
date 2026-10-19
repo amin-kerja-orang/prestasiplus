@@ -122,9 +122,13 @@ describe('submit', () => {
     expect(SubmitSessionResponseSchema.safeParse(res).success).toBe(true)
   })
 
-  it('rejects a negative time and an incomplete result', () => {
-    expect(SubmitSessionRequestSchema.safeParse({ timeSpent: -1 }).success).toBe(false)
-    expect(SubmitSessionRequestSchema.safeParse({ timeSpent: 'x' }).success).toBe(false)
+  it('does not reject timeSpent (the server coerces and clamps it, like the mock)', () => {
+    for (const timeSpent of [-1, 'x', null, 99999]) {
+      expect(SubmitSessionRequestSchema.safeParse({ timeSpent }).success).toBe(true)
+    }
+  })
+
+  it('rejects an incomplete result', () => {
     expect(SubmitSessionResponseSchema.safeParse({ results: { score: 1, total: 2 } }).success).toBe(false)
   })
 })

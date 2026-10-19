@@ -198,8 +198,9 @@ export type CheckAnswerResponse = z.infer<typeof CheckAnswerResponseSchema>
 
 export const SubmitSessionRequestSchema = z
   .object({
-    timeSpent: z.number().min(0).optional().meta({
-      description: 'Seconds. Stored as round(timeSpent) clamped to [0, 180 x questionCount]; default 0. Answers are not sent.',
+    timeSpent: z.unknown().optional().meta({
+      description:
+        'Seconds (number). Never rejected: a non-number counts as 0; the stored value is round(timeSpent) clamped to [0, 180 x questionCount]. Answers are not sent.',
     }),
   })
   .meta({ id: 'SubmitSessionRequest' })
