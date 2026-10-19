@@ -23215,6 +23215,837 @@
         ],
         "additionalProperties": false
       },
+      "AccountSelfRegisterRole": {
+        "type": "string",
+        "enum": [
+          "student",
+          "teacher",
+          "parent"
+        ]
+      },
+      "AccountSchoolSummary": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "name": {
+            "type": "string",
+            "minLength": 1
+          },
+          "code": {
+            "type": "string",
+            "description": "Empty string when the school has no code."
+          },
+          "type": {
+            "type": "string"
+          },
+          "state": {
+            "type": "string"
+          },
+          "district": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "city": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "code",
+          "type",
+          "state",
+          "district",
+          "city"
+        ],
+        "additionalProperties": false
+      },
+      "AccountUserMe": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "name": {
+            "type": "string",
+            "minLength": 1
+          },
+          "email": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "username": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "phone": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "bio": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "avatarUrl": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "grade": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "minimum": 1,
+            "maximum": 11,
+            "description": "Students only."
+          },
+          "schoolId": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/Id"
+              },
+              {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              }
+            ]
+          },
+          "school": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/AccountSchoolSummary"
+              },
+              {
+                "type": [
+                  "object",
+                  "null"
+                ]
+              }
+            ]
+          },
+          "role": {
+            "type": "string",
+            "enum": [
+              "admin",
+              "school_admin",
+              "ppd_officer",
+              "teacher",
+              "student",
+              "parent",
+              "sponsor"
+            ],
+            "description": "The ACTIVE role (equals Session.active.role)."
+          },
+          "roles": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/RoleCode"
+            },
+            "minItems": 1,
+            "description": "Every role of the account (equals the codes in Session.roles)."
+          },
+          "landingPath": {
+            "type": "string",
+            "description": "Server-computed, equals Session.landingPath (BR-07)."
+          },
+          "createdAt": {
+            "$ref": "#/components/schemas/Timestamp"
+          },
+          "updatedAt": {
+            "$ref": "#/components/schemas/Timestamp"
+          },
+          "lastLoginAt": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/Timestamp"
+              },
+              {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              }
+            ]
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "email",
+          "username",
+          "phone",
+          "bio",
+          "avatarUrl",
+          "grade",
+          "schoolId",
+          "school",
+          "role",
+          "roles",
+          "landingPath",
+          "createdAt",
+          "updatedAt",
+          "lastLoginAt"
+        ],
+        "additionalProperties": false
+      },
+      "AccountStatus": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "required": [
+          "status"
+        ],
+        "additionalProperties": false
+      },
+      "AccountRegisterRequest": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 255
+          },
+          "email": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 255,
+            "format": "email"
+          },
+          "phone": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "maxLength": 14
+          },
+          "role": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/AccountSelfRegisterRole"
+              },
+              {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              }
+            ]
+          },
+          "grade": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "description": "Student only, 1 to 11."
+          },
+          "icNumber": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "maxLength": 14,
+            "description": "Student only. Write-only: never returned."
+          },
+          "schoolId": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "minLength": 1,
+            "maxLength": 64,
+            "description": "School id. Must exist (422 \"The selected school id is invalid.\"). `null` or absent means no school.",
+            "example": "1042"
+          },
+          "password": {
+            "type": "string",
+            "minLength": 6
+          },
+          "passwordConfirmation": {
+            "type": "string"
+          },
+          "referralCode": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "name",
+          "email",
+          "password"
+        ]
+      },
+      "AccountPasswordEmailRequest": {
+        "type": "object",
+        "properties": {
+          "email": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 255,
+            "format": "email"
+          }
+        },
+        "required": [
+          "email"
+        ]
+      },
+      "AccountPasswordResetRequest": {
+        "type": "object",
+        "properties": {
+          "token": {
+            "type": "string",
+            "minLength": 1
+          },
+          "email": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 255,
+            "format": "email"
+          },
+          "password": {
+            "type": "string",
+            "minLength": 6
+          },
+          "passwordConfirmation": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "token",
+          "email",
+          "password"
+        ]
+      },
+      "AccountPasswordResetIcRequest": {
+        "type": "object",
+        "properties": {
+          "email": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 255,
+            "format": "email"
+          },
+          "icNumber": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 14
+          }
+        },
+        "required": [
+          "email",
+          "icNumber"
+        ]
+      },
+      "AccountResetToken": {
+        "type": "object",
+        "properties": {
+          "token": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Opaque reset token, at least 128 bits of randomness; only its hash is stored. Never logged, never cached."
+          }
+        },
+        "required": [
+          "token"
+        ],
+        "additionalProperties": false
+      },
+      "AccountPasswordResetResponse": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/Session"
+          },
+          "status": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "required": [
+          "data",
+          "status"
+        ]
+      },
+      "AccountProfileUpdateRequest": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 255
+          },
+          "phone": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "maxLength": 14
+          },
+          "bio": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "maxLength": 500
+          },
+          "grade": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "minimum": 1,
+            "maximum": 11
+          },
+          "schoolId": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "minLength": 1,
+            "maxLength": 64,
+            "description": "School id. Must exist (422 \"The selected school id is invalid.\"). `null` or absent means no school.",
+            "example": "1042"
+          }
+        },
+        "required": [
+          "name"
+        ]
+      },
+      "AccountPasswordChangeRequest": {
+        "type": "object",
+        "properties": {
+          "currentPassword": {
+            "type": "string",
+            "minLength": 1
+          },
+          "password": {
+            "type": "string",
+            "minLength": 6
+          },
+          "passwordConfirmation": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "currentPassword",
+          "password"
+        ]
+      },
+      "AccountPictureUploadRequest": {
+        "type": "object",
+        "properties": {
+          "profilePicture": {
+            "type": "string",
+            "format": "binary",
+            "description": "Image file, image/jpeg, image/png or image/webp, at most 2048 KB. Stored through BE-04."
+          }
+        },
+        "required": [
+          "profilePicture"
+        ]
+      },
+      "AccountPicture": {
+        "type": "object",
+        "properties": {
+          "avatarUrl": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "required": [
+          "avatarUrl"
+        ],
+        "additionalProperties": false
+      },
+      "AccountFaith": {
+        "type": "string",
+        "enum": [
+          "muslim",
+          "hindu",
+          "buddhist",
+          "christian",
+          "none"
+        ]
+      },
+      "AccountSettings": {
+        "type": "object",
+        "properties": {
+          "spiritualMode": {
+            "type": "boolean"
+          },
+          "showBismillahSplash": {
+            "type": "boolean"
+          },
+          "subuhPushEnabled": {
+            "type": "boolean"
+          },
+          "subuhPushTime": {
+            "type": "string",
+            "pattern": "^([01]\\d|2[0-3]):[0-5]\\d$",
+            "description": "HH:mm, default 05:30."
+          },
+          "ramadanModeEnabled": {
+            "type": "boolean"
+          },
+          "sahurPushTime": {
+            "type": "string",
+            "pattern": "^([01]\\d|2[0-3]):[0-5]\\d$",
+            "description": "HH:mm, default 04:30."
+          },
+          "faith": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "enum": [
+              "muslim",
+              "hindu",
+              "buddhist",
+              "christian",
+              "none",
+              null
+            ],
+            "description": "Personal preference, kept although the migration drops it (card open question 3)."
+          }
+        },
+        "required": [
+          "spiritualMode",
+          "showBismillahSplash",
+          "subuhPushEnabled",
+          "subuhPushTime",
+          "ramadanModeEnabled",
+          "sahurPushTime",
+          "faith"
+        ],
+        "additionalProperties": false
+      },
+      "AccountSettingsUpdateRequest": {
+        "type": "object",
+        "properties": {
+          "spiritualMode": {
+            "type": "boolean",
+            "default": false
+          },
+          "showBismillahSplash": {
+            "type": "boolean",
+            "default": false
+          },
+          "subuhPushEnabled": {
+            "type": "boolean",
+            "default": false
+          },
+          "subuhPushTime": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "HH:mm (24 hour). Blank or null gives the default time.",
+            "example": "05:30"
+          },
+          "ramadanModeEnabled": {
+            "type": "boolean",
+            "default": false
+          },
+          "sahurPushTime": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "HH:mm (24 hour). Blank or null gives the default time.",
+            "example": "05:30"
+          },
+          "faith": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/AccountFaith"
+              },
+              {
+                "type": "string",
+                "enum": [
+                  ""
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        }
+      },
+      "AccountPlatformStats": {
+        "type": "object",
+        "properties": {
+          "questionCount": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "subjectCount": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "levelCount": {
+            "type": "integer",
+            "minimum": 0
+          }
+        },
+        "required": [
+          "questionCount",
+          "subjectCount",
+          "levelCount"
+        ],
+        "additionalProperties": false
+      },
+      "NotificationCategory": {
+        "type": "string",
+        "enum": [
+          "system",
+          "reminder",
+          "milestone"
+        ]
+      },
+      "NotificationItem": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "userId": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 64,
+            "description": "Always the signed-in user.",
+            "example": "1042"
+          },
+          "type": {
+            "type": "string",
+            "minLength": 1
+          },
+          "category": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "enum": [
+              "system",
+              "reminder",
+              "milestone",
+              null
+            ],
+            "description": "null for the admin live items (they match no category filter)."
+          },
+          "title": {
+            "type": "string"
+          },
+          "body": {
+            "type": "string"
+          },
+          "readAt": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time",
+            "pattern": "\\+08:00$",
+            "description": "null while unread.",
+            "example": "2026-10-16T09:30:00+08:00"
+          },
+          "createdAt": {
+            "$ref": "#/components/schemas/Timestamp"
+          }
+        },
+        "required": [
+          "id",
+          "userId",
+          "type",
+          "category",
+          "title",
+          "body",
+          "readAt",
+          "createdAt"
+        ],
+        "additionalProperties": false
+      },
+      "NotificationListQuery": {
+        "type": "object",
+        "properties": {
+          "filter": {
+            "type": "string",
+            "description": "`unread` or `read`; any other value is ignored."
+          },
+          "type": {
+            "type": "string",
+            "description": "A NotificationCategory (system, reminder, milestone); any other value is ignored."
+          },
+          "page": {
+            "type": "string",
+            "description": "Page number, 1-based; invalid means 1. Page size is fixed at 20."
+          }
+        }
+      },
+      "NotificationCounts": {
+        "type": "object",
+        "properties": {
+          "all": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "unread": {
+            "type": "integer",
+            "minimum": 0
+          }
+        },
+        "required": [
+          "all",
+          "unread"
+        ],
+        "additionalProperties": false
+      },
+      "NotificationListMeta": {
+        "type": "object",
+        "properties": {
+          "page": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "pageSize": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "totalItems": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "totalPages": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "from": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "minimum": 1
+          },
+          "to": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "minimum": 1
+          },
+          "counts": {
+            "$ref": "#/components/schemas/NotificationCounts"
+          }
+        },
+        "required": [
+          "page",
+          "pageSize",
+          "totalItems",
+          "totalPages",
+          "counts"
+        ],
+        "additionalProperties": {}
+      },
+      "NotificationListResponse": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/NotificationItem"
+            },
+            "maxItems": 20
+          },
+          "meta": {
+            "$ref": "#/components/schemas/NotificationListMeta"
+          }
+        },
+        "required": [
+          "data",
+          "meta"
+        ]
+      },
+      "NotificationUnreadCount": {
+        "type": "object",
+        "properties": {
+          "count": {
+            "type": "integer",
+            "minimum": 0
+          }
+        },
+        "required": [
+          "count"
+        ],
+        "additionalProperties": false
+      },
+      "NotificationReadAllResult": {
+        "type": "object",
+        "properties": {
+          "updated": {
+            "type": "integer",
+            "minimum": 0
+          }
+        },
+        "required": [
+          "updated"
+        ],
+        "additionalProperties": false
+      },
+      "NotificationSuccess": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "enum": [
+              true
+            ]
+          }
+        },
+        "required": [
+          "success"
+        ],
+        "additionalProperties": false
+      },
+      "NotificationBulkRequest": {
+        "type": "object",
+        "properties": {
+          "ids": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Id"
+            },
+            "minItems": 1,
+            "description": "Non-empty. Foreign and unknown ids are silently ignored; duplicates count once."
+          }
+        },
+        "required": [
+          "ids"
+        ]
+      },
       "AccessGroupId": {
         "type": "string",
         "enum": [
@@ -45126,6 +45957,1438 @@
           },
           "500": {
             "description": "SERVER_ERROR. The client shows its own line \"Ralat berlaku. Sila cuba lagi.\" for any non-field failure.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/auth/register": {
+      "post": {
+        "tags": [
+          "account"
+        ],
+        "summary": "Self-registration (Murid, Guru, Ibu Bapa)",
+        "description": "Public. Roles are limited to student, teacher and parent (default student); any other role in the body is a 422. Creates an active account and logs it in: the response is the contract Session and the session cookie is set (not remembered). A duplicate e-mail (case-insensitive) is a 422 on `fields.email`. Rate limit (BE-06 AC6, D57a): per client IP, the BE-03 login numbers: 5 failed attempts per 60 seconds, then 429 until the window ends with doubling backoff on repeat; only refused attempts (422) count, so legitimate registrations are not slowed. The response is Cache-Control: no-store (it sets a session). Accepted residual risk (security review, by design as the mock and the UX): the 422 emailTaken lets a client learn whether an e-mail is registered; it is bounded only by the per-IP limit above. Log redaction (BE-NFR-10, BE-NFR-11): the request body, the IC number, the reset token, the e-mail and every password are never written to application logs, audit rows or error bodies (an e-mail may appear only masked, a token only as its id).",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AccountRegisterRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Registered and logged in.",
+            "headers": {
+              "Cache-Control": {
+                "description": "no-store (the body carries a credential or token).",
+                "schema": {
+                  "type": "string",
+                  "enum": [
+                    "no-store"
+                  ]
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/Session"
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "VALIDATION_ERROR with fields (one message per field, the first failing rule). Copy: name/email/password \"The <field> field is required.\"; email \"The email field must be a valid email address.\" / \"The email has already been taken.\"; phone and ic number max 14; role \"The selected role is invalid.\"; students: \"The grade field is required.\" / \"The selected grade is invalid.\"; school \"The selected school id is invalid.\"; password min 6 and \"The password field confirmation does not match.\". Top-level message is the first field message (+ \" (and N more error(s))\" when several).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "RATE_LIMITED, with retryAfter seconds in the body and the Retry-After header. \"Terlalu banyak percubaan. Sila cuba sebentar lagi.\" (card AC6; the mock has no registration throttle, so the mock tests cannot verify it).",
+            "headers": {
+              "Retry-After": {
+                "description": "Seconds until a retry is allowed (same value as error.retryAfter).",
+                "schema": {
+                  "type": "integer",
+                  "minimum": 1
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/auth/password/email": {
+      "post": {
+        "tags": [
+          "account"
+        ],
+        "summary": "Request a password reset link",
+        "description": "Public. Answers 200 \"We have emailed your password reset link.\" for a known AND an unknown e-mail alike (existence is never disclosed; approved deviation D55b from the mock 422 \"We can't find a user with that email address.\", card AC3). Token rules: The token is at least 128 bits from a CSPRNG; only its hash is stored; it is valid 60 minutes and single use; issuing a new token revokes every earlier unused token of that user (one active token); a successful reset consumes every outstanding token of the user; the stored hash is compared in constant time; an inactive account is never issued a token; the token is bound to the e-mail it was issued for and is redeemable only with that same e-mail. The e-mailed link carries the token in the URL fragment (/password/reset#token=...&email=...), never in the path or query, so it is not sent to servers, logs or Referer; the reset pages send Referrer-Policy: no-referrer. The mail goes through a MailPort; the dev MailPort logs only the masked e-mail and the token id, never the link or the token. Throttle (uniform, no enumeration): one request per 60 seconds per e-mail, keyed on the hash of the normalised e-mail for EVERY request whether the e-mail exists, is inactive or not (the state of an unknown e-mail is stored too, bounded by expiry); every reset-ic attempt (match or not) starts the same 60 second throttle, so a 429 here is never a match oracle. A second request inside the interval is 429 RATE_LIMITED with retryAfter and the Retry-After header; in addition 20 requests per client IP per 60 seconds across all e-mails. Do the same work for known and unknown e-mails (no timing difference). Log redaction (BE-NFR-10, BE-NFR-11): the request body, the IC number, the reset token, the e-mail and every password are never written to application logs, audit rows or error bodies (an e-mail may appear only masked, a token only as its id).",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AccountPasswordEmailRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Accepted. status = \"We have emailed your password reset link.\".",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/AccountStatus"
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "VALIDATION_ERROR with fields (one message per field, the first failing rule). email: \"The email field is required.\" / \"The email field must be a valid email address.\". Top-level message is the first field message (+ \" (and N more error(s))\" when several).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "RATE_LIMITED, with retryAfter seconds in the body and the Retry-After header. \"Please wait before retrying.\" with fields.email.",
+            "headers": {
+              "Retry-After": {
+                "description": "Seconds until a retry is allowed (same value as error.retryAfter).",
+                "schema": {
+                  "type": "integer",
+                  "minimum": 1
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/auth/password/reset": {
+      "post": {
+        "tags": [
+          "account"
+        ],
+        "summary": "Set a new password with a reset token",
+        "description": "Public. Replaces the password, consumes the token (single use) and invalidates the user's other sessions (card AC2), then logs the user in: the response is the contract Session plus the flash text, and the cookie is set (not remembered). An unknown, used, expired or other-e-mail token, and an unknown e-mail, all answer 422 \"This password reset token is invalid.\" on fields.email: the unknown e-mail never gets a user-not-found message (decided, D55b, no account enumeration; the mock answered \"We can't find a user with that email address.\"). An inactive account is refused with 403 ACCOUNT_INACTIVE and nothing changes (reachable only with a valid token, so not an oracle). Token rules: The token is at least 128 bits from a CSPRNG; only its hash is stored; it is valid 60 minutes and single use; issuing a new token revokes every earlier unused token of that user (one active token); a successful reset consumes every outstanding token of the user; the stored hash is compared in constant time; an inactive account is never issued a token; the token is bound to the e-mail it was issued for and is redeemable only with that same e-mail. Every wrong redemption counts as a failure: 5 failures per 60 seconds per (e-mail hash, client IP) and 20 per client IP, then 429 RATE_LIMITED with retryAfter and the Retry-After header (BE-03 login numbers, backoff doubling). A successful reset: invalidates the user's other sessions and remember tokens, re-hashes the password with argon2id, clears must-change-password, writes an audit event (without the token) and notifies the user in-app (proposed copy \"Kata laluan telah ditetapkan semula\"). The response sets the session cookie and is Cache-Control: no-store. Log redaction (BE-NFR-10, BE-NFR-11): the request body, the IC number, the reset token, the e-mail and every password are never written to application logs, audit rows or error bodies (an e-mail may appear only masked, a token only as its id).",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AccountPasswordResetRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Password reset and logged in. status = \"Your password has been reset.\".",
+            "headers": {
+              "Cache-Control": {
+                "description": "no-store (the body carries a credential or token).",
+                "schema": {
+                  "type": "string",
+                  "enum": [
+                    "no-store"
+                  ]
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AccountPasswordResetResponse"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "ACCOUNT_INACTIVE \"Akaun anda tidak aktif. Sila hubungi pentadbir.\".",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "VALIDATION_ERROR with fields (one message per field, the first failing rule). token/email/password required rules as register; \"This password reset token is invalid.\" on fields.email. Top-level message is the first field message (+ \" (and N more error(s))\" when several).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "RATE_LIMITED, with retryAfter seconds in the body and the Retry-After header. \"Terlalu banyak percubaan. Sila cuba sebentar lagi.\" (too many failed redemptions per (e-mail, IP) or per IP).",
+            "headers": {
+              "Retry-After": {
+                "description": "Seconds until a retry is allowed (same value as error.retryAfter).",
+                "schema": {
+                  "type": "integer",
+                  "minimum": 1
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/auth/password/reset-ic": {
+      "post": {
+        "tags": [
+          "account"
+        ],
+        "summary": "Reset by e-mail and IC number (returns a reset token)",
+        "description": "Public. The IC number is compared with its stored hash and is never returned. A match returns a reset token (data.token only, the e-mail is not echoed) bound to that e-mail: it can only be redeemed through /auth/password/reset together with the same e-mail, never for another account or any other way. Token rules: The token is at least 128 bits from a CSPRNG; only its hash is stored; it is valid 60 minutes and single use; issuing a new token revokes every earlier unused token of that user (one active token); a successful reset consumes every outstanding token of the user; the stored hash is compared in constant time; an inactive account is never issued a token; the token is bound to the e-mail it was issued for and is redeemable only with that same e-mail. The response is Cache-Control: no-store. An unknown e-mail, an inactive account, an account without a stored IC (teacher, parent) and a wrong IC number are indistinguishable in status, body and timing (equal work, dummy compare; no token is issued for an inactive account): 422 \"Email atau No Kad Pengenalan tidak sepadan.\" on fields.email. A match behaves no differently from a miss for throttling: EVERY attempt, match or not, also starts the 60 second per-e-mail throttle of /auth/password/email (keyed on the e-mail hash), so a 429 there never reveals a correct guess. A match is audited (without the IC or the token) and notifies the account owner in-app (NotificationsService.push, proposed copy \"Permintaan tetap semula kata laluan\"), so a takeover is visible. Open product question: whether IC-only self-service reset is acceptable for minors (PDPA) is a pending lead/user decision. Log redaction (BE-NFR-10, BE-NFR-11): the request body, the IC number, the reset token, the e-mail and every password are never written to application logs, audit rows or error bodies (an e-mail may appear only masked, a token only as its id). Attempt limit (D55a): at most 5 attempts per 15 minutes, counted separately per account (e-mail, whether or not it exists, so the limit does not reveal existence) and per client IP; every attempt counts, successful or not, and whichever limit is reached first answers 429 RATE_LIMITED with retryAfter seconds (also the Retry-After header).",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AccountPasswordResetIcRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Token issued.",
+            "headers": {
+              "Cache-Control": {
+                "description": "no-store (the body carries a credential or token).",
+                "schema": {
+                  "type": "string",
+                  "enum": [
+                    "no-store"
+                  ]
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/AccountResetToken"
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "VALIDATION_ERROR with fields (one message per field, the first failing rule). email required/valid; ic number required, max 14; mismatch \"Email atau No Kad Pengenalan tidak sepadan.\" on fields.email. Top-level message is the first field message (+ \" (and N more error(s))\" when several).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "RATE_LIMITED, with retryAfter seconds in the body and the Retry-After header. \"Terlalu banyak percubaan. Sila cuba lagi dalam 15 minit.\" (D55a: more than 5 attempts in 15 minutes for the same account or the same IP).",
+            "headers": {
+              "Retry-After": {
+                "description": "Seconds until a retry is allowed (same value as error.retryAfter).",
+                "schema": {
+                  "type": "integer",
+                  "minimum": 1
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/me": {
+      "get": {
+        "tags": [
+          "account"
+        ],
+        "summary": "The signed-in user",
+        "description": "Any signed-in role. Projection still used by pages not yet on /session. id, name, e-mail, username, avatarUrl, school, roles, active role and landingPath always equal the same fields of GET /session. No password, IC number or isActive.",
+        "responses": {
+          "200": {
+            "description": "The user.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/AccountUserMe"
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED \"Unauthenticated.\" (no valid session).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "account"
+        ],
+        "summary": "Update own profile",
+        "description": "Any signed-in role, own record only. `email` and any other key in the body are ignored (BR-13). An absent key keeps the stored value; null or blank clears phone, bio, grade, schoolId. schoolId is ignored for school_admin, ppd_officer and admin accounts. D57a: this write route is rate limited (RATE_LIMITED, retryAfter, Retry-After); the per-user limit is a platform setting of the implementation.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Value of Session.csrf; required on authenticated mutating requests."
+            },
+            "required": true,
+            "description": "Value of Session.csrf; required on authenticated mutating requests.",
+            "name": "X-CSRF-Token",
+            "in": "header"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AccountProfileUpdateRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Saved. status = \"Profil berjaya dikemaskini.\".",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/AccountUserMe"
+                    },
+                    "status": {
+                      "type": "string",
+                      "minLength": 1
+                    }
+                  },
+                  "required": [
+                    "data",
+                    "status"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED \"Unauthenticated.\" (no valid session).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "CSRF_INVALID (missing or wrong X-CSRF-Token).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "VALIDATION_ERROR with fields (one message per field, the first failing rule). name required, max 255; phone max 14; bio max 500; grade \"The selected grade is invalid.\"; school \"The selected school id is invalid.\". Top-level message is the first field message (+ \" (and N more error(s))\" when several).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "RATE_LIMITED, with retryAfter seconds in the body and the Retry-After header. \"Terlalu banyak percubaan. Sila cuba sebentar lagi.\" (D57a).",
+            "headers": {
+              "Retry-After": {
+                "description": "Seconds until a retry is allowed (same value as error.retryAfter).",
+                "schema": {
+                  "type": "integer",
+                  "minimum": 1
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/me/password": {
+      "put": {
+        "tags": [
+          "account"
+        ],
+        "summary": "Change own password",
+        "description": "Any signed-in role. The current password is required and re-hashed with argon2id on change. The session is kept (BR-16). A wrong current password counts as a failure: the BE-03 login numbers: 5 failed attempts per 60 seconds, then 429 until the window ends with doubling backoff on repeat, per user. D57a: this write route is rate limited (RATE_LIMITED, retryAfter, Retry-After); the per-user limit is a platform setting of the implementation. Log redaction (BE-NFR-10, BE-NFR-11): the request body, the IC number, the reset token, the e-mail and every password are never written to application logs, audit rows or error bodies (an e-mail may appear only masked, a token only as its id).",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Value of Session.csrf; required on authenticated mutating requests."
+            },
+            "required": true,
+            "description": "Value of Session.csrf; required on authenticated mutating requests.",
+            "name": "X-CSRF-Token",
+            "in": "header"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AccountPasswordChangeRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Changed. data.status = \"Kata laluan berjaya dikemaskini.\".",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/AccountStatus"
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED \"Unauthenticated.\" (no valid session).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "CSRF_INVALID (missing or wrong X-CSRF-Token).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "VALIDATION_ERROR with fields (one message per field, the first failing rule). current password required; password required, min 6, confirmed; a wrong current password is \"The password is incorrect.\" on fields.currentPassword. Top-level message is the first field message (+ \" (and N more error(s))\" when several).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "RATE_LIMITED, with retryAfter seconds in the body and the Retry-After header. \"Terlalu banyak percubaan. Sila cuba sebentar lagi.\" (repeated wrong current password, D57a).",
+            "headers": {
+              "Retry-After": {
+                "description": "Seconds until a retry is allowed (same value as error.retryAfter).",
+                "schema": {
+                  "type": "integer",
+                  "minimum": 1
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/me/picture": {
+      "post": {
+        "tags": [
+          "account"
+        ],
+        "summary": "Upload the profile picture",
+        "description": "Any signed-in role. multipart/form-data, part `profilePicture`: image/jpeg, image/png or image/webp, at most 2048 KB. Stored through BE-04; the response carries the file URL (the mock returned a data URL). D57a: this write route is rate limited (RATE_LIMITED, retryAfter, Retry-After); the per-user limit is a platform setting of the implementation.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Value of Session.csrf; required on authenticated mutating requests."
+            },
+            "required": true,
+            "description": "Value of Session.csrf; required on authenticated mutating requests.",
+            "name": "X-CSRF-Token",
+            "in": "header"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "$ref": "#/components/schemas/AccountPictureUploadRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Saved. status = \"Gambar profil berjaya dikemaskini.\".",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/AccountPicture"
+                    },
+                    "status": {
+                      "type": "string",
+                      "minLength": 1
+                    }
+                  },
+                  "required": [
+                    "data",
+                    "status"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED \"Unauthenticated.\" (no valid session).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "CSRF_INVALID (missing or wrong X-CSRF-Token).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "VALIDATION_ERROR with fields (one message per field, the first failing rule). profilePicture: \"The profile picture field is required.\" / \"The profile picture field must be a file of type: jpeg, png, webp.\" / \"The profile picture field must not be greater than 2048 kilobytes.\". Top-level message is the first field message (+ \" (and N more error(s))\" when several).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "RATE_LIMITED, with retryAfter seconds in the body and the Retry-After header. \"Terlalu banyak percubaan. Sila cuba sebentar lagi.\" (D57a).",
+            "headers": {
+              "Retry-After": {
+                "description": "Seconds until a retry is allowed (same value as error.retryAfter).",
+                "schema": {
+                  "type": "integer",
+                  "minimum": 1
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/me/settings": {
+      "get": {
+        "tags": [
+          "account"
+        ],
+        "summary": "Own personal settings",
+        "description": "Any signed-in role. A user who never saved reads the BR-17 defaults (booleans false, subuh 05:30, sahur 04:30, faith null).",
+        "responses": {
+          "200": {
+            "description": "The settings.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/AccountSettings"
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED \"Unauthenticated.\" (no valid session).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "account"
+        ],
+        "summary": "Save own personal settings",
+        "description": "Any signed-in role. Every save writes all seven fields (BR-17); see AccountSettingsUpdateRequest for the defaults of missing keys. D57a: this write route is rate limited (RATE_LIMITED, retryAfter, Retry-After); the per-user limit is a platform setting of the implementation.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Value of Session.csrf; required on authenticated mutating requests."
+            },
+            "required": true,
+            "description": "Value of Session.csrf; required on authenticated mutating requests.",
+            "name": "X-CSRF-Token",
+            "in": "header"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AccountSettingsUpdateRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Saved. status = \"Tetapan berjaya disimpan.\".",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/AccountSettings"
+                    },
+                    "status": {
+                      "type": "string",
+                      "minLength": 1
+                    }
+                  },
+                  "required": [
+                    "data",
+                    "status"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED \"Unauthenticated.\" (no valid session).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "CSRF_INVALID (missing or wrong X-CSRF-Token).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "VALIDATION_ERROR with fields (one message per field, the first failing rule). subuh push time / sahur push time: \"The <field> field must match the format H:i.\"; faith: \"The selected faith is invalid.\". Top-level message is the first field message (+ \" (and N more error(s))\" when several).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "RATE_LIMITED, with retryAfter seconds in the body and the Retry-After header. \"Terlalu banyak percubaan. Sila cuba sebentar lagi.\" (D57a).",
+            "headers": {
+              "Retry-After": {
+                "description": "Seconds until a retry is allowed (same value as error.retryAfter).",
+                "schema": {
+                  "type": "integer",
+                  "minimum": 1
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/public/stats": {
+      "get": {
+        "tags": [
+          "account"
+        ],
+        "summary": "Public platform counters (login page)",
+        "description": "Public, no session. Computed per request from the database: published and active questions, active subjects, active education levels. Nothing is stored or hard-coded (BR-21). Unauthenticated lookup, so rate limited per client IP (D57a).",
+        "responses": {
+          "200": {
+            "description": "The counters.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/AccountPlatformStats"
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "RATE_LIMITED, with retryAfter seconds in the body and the Retry-After header. \"Terlalu banyak percubaan. Sila cuba sebentar lagi.\" (D57a).",
+            "headers": {
+              "Retry-After": {
+                "description": "Seconds until a retry is allowed (same value as error.retryAfter).",
+                "schema": {
+                  "type": "integer",
+                  "minimum": 1
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/me/notifications": {
+      "get": {
+        "tags": [
+          "notifications"
+        ],
+        "summary": "Own notification inbox",
+        "description": "Any signed-in role, own items only, 20 per page, newest first (createdAt desc, then id desc). An out-of-range page returns data [] with the requested page. meta = ListMeta plus counts { all, unread } for the user, ignoring the filters.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "description": "`unread` or `read`; any other value is ignored."
+            },
+            "required": false,
+            "description": "`unread` or `read`; any other value is ignored.",
+            "name": "filter",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "description": "A NotificationCategory (system, reminder, milestone); any other value is ignored."
+            },
+            "required": false,
+            "description": "A NotificationCategory (system, reminder, milestone); any other value is ignored.",
+            "name": "type",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "description": "Page number, 1-based; invalid means 1. Page size is fixed at 20."
+            },
+            "required": false,
+            "description": "Page number, 1-based; invalid means 1. Page size is fixed at 20.",
+            "name": "page",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "One page with meta.counts.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NotificationListResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED \"Unauthenticated.\" (no valid session).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/me/notifications/unread-count": {
+      "get": {
+        "tags": [
+          "notifications"
+        ],
+        "summary": "Unread count (bell badge)",
+        "responses": {
+          "200": {
+            "description": "Unread count.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/NotificationUnreadCount"
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED \"Unauthenticated.\" (no valid session).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/me/notifications/read-all": {
+      "post": {
+        "tags": [
+          "notifications"
+        ],
+        "summary": "Mark every unread notification read",
+        "description": "Sets readAt on the caller unread items; `updated` is how many there were. Write route: rate limited per user (D57a).",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Value of Session.csrf; required on mutating requests."
+            },
+            "required": true,
+            "description": "Value of Session.csrf; required on mutating requests.",
+            "name": "X-CSRF-Token",
+            "in": "header"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Number of items updated.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/NotificationReadAllResult"
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED \"Unauthenticated.\" (no valid session).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "CSRF_INVALID (missing or wrong X-CSRF-Token).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "RATE_LIMITED \"Terlalu banyak percubaan. Sila cuba sebentar lagi.\", with retryAfter seconds in the body and the Retry-After header (D57a; the per-user limit is a platform setting of the implementation).",
+            "headers": {
+              "Retry-After": {
+                "description": "Seconds until a retry is allowed (same value as error.retryAfter).",
+                "schema": {
+                  "type": "integer",
+                  "minimum": 1
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/me/notifications/bulk-read": {
+      "post": {
+        "tags": [
+          "notifications"
+        ],
+        "summary": "Mark the listed notifications read",
+        "description": "Foreign and unknown ids are ignored silently; an item already read keeps its first readAt. Write route: rate limited per user (D57a).",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Value of Session.csrf; required on mutating requests."
+            },
+            "required": true,
+            "description": "Value of Session.csrf; required on mutating requests.",
+            "name": "X-CSRF-Token",
+            "in": "header"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/NotificationBulkRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "{ data: { success: true } }.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/NotificationSuccess"
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED \"Unauthenticated.\" (no valid session).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "CSRF_INVALID (missing or wrong X-CSRF-Token).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "VALIDATION_ERROR: fields.ids \"The ids field is required.\" (missing, not a list or empty).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "RATE_LIMITED \"Terlalu banyak percubaan. Sila cuba sebentar lagi.\", with retryAfter seconds in the body and the Retry-After header (D57a; the per-user limit is a platform setting of the implementation).",
+            "headers": {
+              "Retry-After": {
+                "description": "Seconds until a retry is allowed (same value as error.retryAfter).",
+                "schema": {
+                  "type": "integer",
+                  "minimum": 1
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/me/notifications/bulk-delete": {
+      "post": {
+        "tags": [
+          "notifications"
+        ],
+        "summary": "Delete the listed notifications",
+        "description": "Permanent. Foreign and unknown ids are ignored silently. Write route: rate limited per user (D57a).",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Value of Session.csrf; required on mutating requests."
+            },
+            "required": true,
+            "description": "Value of Session.csrf; required on mutating requests.",
+            "name": "X-CSRF-Token",
+            "in": "header"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/NotificationBulkRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "{ data: { success: true } }.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/NotificationSuccess"
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED \"Unauthenticated.\" (no valid session).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "CSRF_INVALID (missing or wrong X-CSRF-Token).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "VALIDATION_ERROR: fields.ids \"The ids field is required.\" (missing, not a list or empty).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "RATE_LIMITED \"Terlalu banyak percubaan. Sila cuba sebentar lagi.\", with retryAfter seconds in the body and the Retry-After header (D57a; the per-user limit is a platform setting of the implementation).",
+            "headers": {
+              "Retry-After": {
+                "description": "Seconds until a retry is allowed (same value as error.retryAfter).",
+                "schema": {
+                  "type": "integer",
+                  "minimum": 1
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/me/notifications/{id}/read": {
+      "post": {
+        "tags": [
+          "notifications"
+        ],
+        "summary": "Mark one notification read",
+        "description": "Reading twice keeps the first readAt. Write route: rate limited per user (D57a).",
+        "parameters": [
+          {
+            "schema": {
+              "$ref": "#/components/schemas/Id"
+            },
+            "required": true,
+            "description": "Opaque entity id (string). Never parse or construct on the client.",
+            "name": "id",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Value of Session.csrf; required on mutating requests."
+            },
+            "required": true,
+            "description": "Value of Session.csrf; required on mutating requests.",
+            "name": "X-CSRF-Token",
+            "in": "header"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "{ data: { success: true } }.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/NotificationSuccess"
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED \"Unauthenticated.\" (no valid session).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "CSRF_INVALID (missing or wrong X-CSRF-Token).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "NOT_FOUND \"Not Found.\" (unknown id, or the notification belongs to another user).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "RATE_LIMITED \"Terlalu banyak percubaan. Sila cuba sebentar lagi.\", with retryAfter seconds in the body and the Retry-After header (D57a; the per-user limit is a platform setting of the implementation).",
+            "headers": {
+              "Retry-After": {
+                "description": "Seconds until a retry is allowed (same value as error.retryAfter).",
+                "schema": {
+                  "type": "integer",
+                  "minimum": 1
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/me/notifications/{id}": {
+      "delete": {
+        "tags": [
+          "notifications"
+        ],
+        "summary": "Delete one notification",
+        "description": "Permanent. Answers 200 { data: { success: true } }, not 204. Write route: rate limited per user (D57a).",
+        "parameters": [
+          {
+            "schema": {
+              "$ref": "#/components/schemas/Id"
+            },
+            "required": true,
+            "description": "Opaque entity id (string). Never parse or construct on the client.",
+            "name": "id",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Value of Session.csrf; required on mutating requests."
+            },
+            "required": true,
+            "description": "Value of Session.csrf; required on mutating requests.",
+            "name": "X-CSRF-Token",
+            "in": "header"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "{ data: { success: true } }.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/NotificationSuccess"
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED \"Unauthenticated.\" (no valid session).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "CSRF_INVALID (missing or wrong X-CSRF-Token).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "NOT_FOUND \"Not Found.\" (unknown id, or the notification belongs to another user).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "RATE_LIMITED \"Terlalu banyak percubaan. Sila cuba sebentar lagi.\", with retryAfter seconds in the body and the Retry-After header (D57a; the per-user limit is a platform setting of the implementation).",
+            "headers": {
+              "Retry-After": {
+                "description": "Seconds until a retry is allowed (same value as error.retryAfter).",
+                "schema": {
+                  "type": "integer",
+                  "minimum": 1
+                }
+              }
+            },
             "content": {
               "application/json": {
                 "schema": {
