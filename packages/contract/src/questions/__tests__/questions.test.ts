@@ -262,7 +262,9 @@ describe('OpenAPI', () => {
   })
   it('contains every BE-09 component and no legacy field', () => {
     for (const name of Object.keys(QUESTIONS_COMPONENT_SCHEMAS)) expect(doc.components.schemas[name], name).toBeDefined()
-    expect(JSON.stringify(doc.components.schemas)).not.toMatch(/legacy_|pkskDomainId/)
+    // Only the BE-09 components: other lanes (e.g. PKSK pkskDomainId) may legitimately use these names.
+    const be09 = Object.fromEntries(Object.keys(QUESTIONS_COMPONENT_SCHEMAS).map((n) => [n, doc.components.schemas[n]]))
+    expect(JSON.stringify(be09)).not.toMatch(/legacy_|pkskDomainId/)
   })
 })
 

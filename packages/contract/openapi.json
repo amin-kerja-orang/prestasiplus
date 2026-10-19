@@ -39116,6 +39116,2298 @@
           "averages"
         ]
       },
+      "ParentInviteToken": {
+        "type": "string",
+        "pattern": "^[0-9a-f]{64}$",
+        "description": "Random single-use invite token. Returned in clear only by the response that issues it; the server stores a hash."
+      },
+      "ParentRelationship": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 50,
+        "description": "Free text (for example \"Ibu\"); value set undecided (OQ-DM-15)."
+      },
+      "ParentEmailMasked": {
+        "type": "string",
+        "pattern": "^.\\*{3}@.+$",
+        "example": "i***@example.test",
+        "description": "The parent e-mail is never shown in clear to the student."
+      },
+      "ParentInviteLinkedParent": {
+        "type": "object",
+        "properties": {
+          "linkId": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 64,
+            "description": "Id of the link; used to unlink.",
+            "example": "1042"
+          },
+          "id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 64,
+            "description": "Id of the parent user.",
+            "example": "1042"
+          },
+          "name": {
+            "type": "string",
+            "minLength": 1
+          },
+          "emailMasked": {
+            "$ref": "#/components/schemas/ParentEmailMasked"
+          },
+          "relationship": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Added in v2; null for links created without one."
+          },
+          "linkedAt": {
+            "$ref": "#/components/schemas/Timestamp"
+          }
+        },
+        "required": [
+          "linkId",
+          "id",
+          "name",
+          "emailMasked",
+          "relationship",
+          "linkedAt"
+        ]
+      },
+      "ParentInviteStatus": {
+        "type": "object",
+        "properties": {
+          "hasToken": {
+            "type": "boolean",
+            "description": "True while a live (unused, unexpired) token exists."
+          },
+          "createdAt": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/Timestamp"
+              },
+              {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              }
+            ]
+          },
+          "expiresAt": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time",
+            "pattern": "\\+08:00$",
+            "description": "At most 7 days after createdAt; null without a token.",
+            "example": "2026-10-16T09:30:00+08:00"
+          },
+          "parents": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ParentInviteLinkedParent"
+            }
+          }
+        },
+        "required": [
+          "hasToken",
+          "createdAt",
+          "expiresAt",
+          "parents"
+        ],
+        "additionalProperties": false
+      },
+      "ParentInviteGenerated": {
+        "type": "object",
+        "properties": {
+          "token": {
+            "$ref": "#/components/schemas/ParentInviteToken"
+          },
+          "createdAt": {
+            "$ref": "#/components/schemas/Timestamp"
+          },
+          "expiresAt": {
+            "$ref": "#/components/schemas/Timestamp"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "Link jemputan baru telah dijana!"
+            ]
+          }
+        },
+        "required": [
+          "token",
+          "createdAt",
+          "expiresAt",
+          "status"
+        ]
+      },
+      "ParentInviteTokenParam": {
+        "type": "object",
+        "properties": {
+          "token": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200,
+            "description": "Any non-empty string is routed; an unknown, used or expired token, or an inactive student, is one 404."
+          }
+        },
+        "required": [
+          "token"
+        ]
+      },
+      "ParentInviteViewer": {
+        "type": "string",
+        "enum": [
+          "guest",
+          "parent",
+          "other"
+        ]
+      },
+      "ParentInvitePreview": {
+        "type": "object",
+        "properties": {
+          "valid": {
+            "type": "boolean",
+            "enum": [
+              true
+            ]
+          },
+          "student": {
+            "type": "object",
+            "properties": {
+              "firstName": {
+                "type": "string",
+                "minLength": 1,
+                "description": "First given name only."
+              },
+              "schoolName": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              }
+            },
+            "required": [
+              "firstName",
+              "schoolName"
+            ]
+          },
+          "viewer": {
+            "$ref": "#/components/schemas/ParentInviteViewer"
+          }
+        },
+        "required": [
+          "valid",
+          "student",
+          "viewer"
+        ]
+      },
+      "ParentInviteAcceptRequest": {
+        "type": "object",
+        "properties": {
+          "relationship": {
+            "$ref": "#/components/schemas/ParentRelationship"
+          }
+        }
+      },
+      "ParentInviteAcceptResult": {
+        "type": "object",
+        "properties": {
+          "linked": {
+            "type": "boolean",
+            "enum": [
+              true
+            ]
+          },
+          "created": {
+            "type": "boolean"
+          },
+          "linkId": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "student": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "$ref": "#/components/schemas/Id"
+              },
+              "name": {
+                "type": "string",
+                "minLength": 1
+              },
+              "schoolName": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              }
+            },
+            "required": [
+              "id",
+              "name",
+              "schoolName"
+            ]
+          },
+          "parent": {
+            "type": "object",
+            "properties": {
+              "name": {
+                "type": "string",
+                "minLength": 1
+              }
+            },
+            "required": [
+              "name"
+            ]
+          },
+          "relationship": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "acceptedAt": {
+            "$ref": "#/components/schemas/Timestamp"
+          }
+        },
+        "required": [
+          "linked",
+          "created",
+          "linkId",
+          "student",
+          "parent",
+          "relationship",
+          "acceptedAt"
+        ]
+      },
+      "ParentLink": {
+        "type": "object",
+        "properties": {
+          "linkId": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "parent": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "$ref": "#/components/schemas/Id"
+              },
+              "name": {
+                "type": "string",
+                "minLength": 1
+              },
+              "emailMasked": {
+                "$ref": "#/components/schemas/ParentEmailMasked"
+              }
+            },
+            "required": [
+              "id",
+              "name",
+              "emailMasked"
+            ]
+          },
+          "student": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "$ref": "#/components/schemas/Id"
+              },
+              "name": {
+                "type": "string",
+                "minLength": 1
+              },
+              "schoolName": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              }
+            },
+            "required": [
+              "id",
+              "name",
+              "schoolName"
+            ]
+          },
+          "relationship": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "linkedAt": {
+            "$ref": "#/components/schemas/Timestamp"
+          }
+        },
+        "required": [
+          "linkId",
+          "parent",
+          "student",
+          "relationship",
+          "linkedAt"
+        ]
+      },
+      "ParentLinkIdParam": {
+        "type": "object",
+        "properties": {
+          "linkId": {
+            "$ref": "#/components/schemas/Id"
+          }
+        },
+        "required": [
+          "linkId"
+        ]
+      },
+      "ParentLinkListQuery": {
+        "type": "object",
+        "properties": {
+          "studentId": {
+            "type": "string",
+            "maxLength": 64
+          },
+          "parentId": {
+            "type": "string",
+            "maxLength": 64
+          },
+          "page": {
+            "type": "string",
+            "description": "Never rejected: a bad value is page 1. Fixed page size 50."
+          }
+        }
+      },
+      "SubscriptionSchool": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "name": {
+            "type": "string",
+            "minLength": 1
+          },
+          "code": {
+            "type": "string"
+          },
+          "type": {
+            "type": "string",
+            "minLength": 1
+          },
+          "state": {
+            "type": "string",
+            "minLength": 1
+          },
+          "district": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "city": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "code",
+          "type",
+          "state",
+          "district",
+          "city"
+        ]
+      },
+      "SubscriptionStatus": {
+        "type": "string",
+        "enum": [
+          "active",
+          "grace",
+          "expired",
+          "cancelled"
+        ]
+      },
+      "SubscriptionTier": {
+        "type": "string",
+        "enum": [
+          "basic",
+          "full"
+        ],
+        "description": "`basic` = Pemantauan (500 questions/month), `full` = Penuh."
+      },
+      "SchoolPackageFormLevel": {
+        "type": "string",
+        "enum": [
+          "t4",
+          "t5",
+          "d1_d6",
+          "t1_t3"
+        ]
+      },
+      "SchoolPackage": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "code": {
+            "type": "string",
+            "enum": [
+              "T4",
+              "T5",
+              "D1_D6",
+              "T1_T3"
+            ]
+          },
+          "name": {
+            "type": "string",
+            "minLength": 1
+          },
+          "slug": {
+            "type": "string",
+            "minLength": 1
+          },
+          "educationLevel": {
+            "type": "string",
+            "enum": [
+              "spm",
+              "primary",
+              "lower_secondary"
+            ]
+          },
+          "formLevel": {
+            "$ref": "#/components/schemas/SchoolPackageFormLevel"
+          },
+          "priceAnnual": {
+            "type": "string",
+            "pattern": "^\\d+\\.\\d{2}$"
+          },
+          "maxRenewals": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Term years = maxRenewals + 1."
+          },
+          "isActive": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "id",
+          "code",
+          "name",
+          "slug",
+          "educationLevel",
+          "formLevel",
+          "priceAnnual",
+          "maxRenewals",
+          "isActive"
+        ]
+      },
+      "SubscriptionListQuery": {
+        "type": "object",
+        "properties": {
+          "search": {
+            "type": "string",
+            "maxLength": 100,
+            "description": "Substring of school name or code (at most 100 characters)."
+          },
+          "status": {
+            "type": "string",
+            "description": "Exact status; an unknown value matches nothing."
+          },
+          "formLevel": {
+            "type": "string",
+            "description": "Exact form level; an unknown value matches nothing."
+          }
+        }
+      },
+      "SubscriptionListItem": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "school": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "$ref": "#/components/schemas/Id"
+              },
+              "name": {
+                "type": "string",
+                "minLength": 1
+              },
+              "code": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "id",
+              "name",
+              "code"
+            ]
+          },
+          "formLevel": {
+            "$ref": "#/components/schemas/SchoolPackageFormLevel"
+          },
+          "packageTier": {
+            "$ref": "#/components/schemas/SubscriptionTier"
+          },
+          "used": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Students of the school, active and inactive."
+          },
+          "studentQuota": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "status": {
+            "$ref": "#/components/schemas/SubscriptionStatus"
+          },
+          "startsAt": {
+            "$ref": "#/components/schemas/Timestamp"
+          },
+          "endsAt": {
+            "$ref": "#/components/schemas/Timestamp"
+          }
+        },
+        "required": [
+          "id",
+          "school",
+          "formLevel",
+          "packageTier",
+          "used",
+          "studentQuota",
+          "status",
+          "startsAt",
+          "endsAt"
+        ]
+      },
+      "SubscriptionListMeta": {
+        "type": "object",
+        "properties": {
+          "page": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "pageSize": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "totalItems": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "totalPages": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "from": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "minimum": 1
+          },
+          "to": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "minimum": 1
+          },
+          "counts": {
+            "type": "object",
+            "properties": {
+              "active": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "grace": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "expired": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "totalQuota": {
+                "type": "integer",
+                "minimum": 0
+              }
+            },
+            "required": [
+              "active",
+              "grace",
+              "expired",
+              "totalQuota"
+            ]
+          }
+        },
+        "required": [
+          "page",
+          "pageSize",
+          "totalItems",
+          "totalPages",
+          "counts"
+        ],
+        "additionalProperties": {}
+      },
+      "SubscriptionDetail": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "schoolId": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "schoolPackageId": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "packageTier": {
+            "$ref": "#/components/schemas/SubscriptionTier"
+          },
+          "studentQuota": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "used": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "status": {
+            "$ref": "#/components/schemas/SubscriptionStatus"
+          },
+          "startsAt": {
+            "$ref": "#/components/schemas/Timestamp"
+          },
+          "endsAt": {
+            "$ref": "#/components/schemas/Timestamp"
+          },
+          "questionLimit": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "minimum": 1,
+            "description": "500 for basic; null = unlimited."
+          },
+          "paymentReference": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "paymentNotes": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "notes": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "History lines, one per entry, newline-joined."
+          },
+          "createdAt": {
+            "$ref": "#/components/schemas/Timestamp"
+          },
+          "updatedAt": {
+            "$ref": "#/components/schemas/Timestamp"
+          },
+          "formLevel": {
+            "$ref": "#/components/schemas/SchoolPackageFormLevel"
+          },
+          "remaining": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "max(0, studentQuota - used)."
+          },
+          "usedPercent": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 100
+          },
+          "school": {
+            "$ref": "#/components/schemas/SubscriptionSchool"
+          },
+          "package": {
+            "$ref": "#/components/schemas/SchoolPackage"
+          }
+        },
+        "required": [
+          "id",
+          "schoolId",
+          "schoolPackageId",
+          "packageTier",
+          "studentQuota",
+          "used",
+          "status",
+          "startsAt",
+          "endsAt",
+          "questionLimit",
+          "paymentReference",
+          "paymentNotes",
+          "notes",
+          "createdAt",
+          "updatedAt",
+          "formLevel",
+          "remaining",
+          "usedPercent",
+          "school",
+          "package"
+        ]
+      },
+      "SubscriptionCreateRequest": {
+        "type": "object",
+        "properties": {
+          "schoolId": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 64,
+            "description": "Must be an ACTIVE school (422 fields.schoolId \"The selected school id is invalid.\"). Central admin only: schoolId is legitimate in the body only because the caller is admin."
+          },
+          "packageTier": {
+            "type": "string",
+            "enum": [
+              "basic",
+              "full"
+            ]
+          },
+          "schoolPackageId": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 64
+          },
+          "studentQuota": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 2000
+              },
+              {
+                "type": "string",
+                "pattern": "^\\d+$"
+              }
+            ],
+            "description": "Integer 1 to 2000; a digit string is accepted (the mock coerces it)."
+          },
+          "paymentReference": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "maxLength": 255
+          },
+          "paymentNotes": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "maxLength": 1000
+          }
+        },
+        "required": [
+          "schoolId",
+          "packageTier",
+          "schoolPackageId",
+          "studentQuota"
+        ]
+      },
+      "SubscriptionQuotaRequest": {
+        "type": "object",
+        "properties": {
+          "studentQuota": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 2000
+              },
+              {
+                "type": "string",
+                "pattern": "^\\d+$"
+              }
+            ],
+            "description": "Integer 1 to 2000; a digit string is accepted (the mock coerces it)."
+          },
+          "notes": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "maxLength": 1000,
+            "description": "Reason; appended to the history only when given."
+          }
+        },
+        "required": [
+          "studentQuota"
+        ]
+      },
+      "SubscriptionExtendRequest": {
+        "type": "object",
+        "properties": {
+          "days": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 365
+              },
+              {
+                "type": "string",
+                "pattern": "^\\d+$"
+              }
+            ],
+            "description": "Integer 1 to 365; a digit string is accepted (the mock coerces it)."
+          },
+          "reason": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "maxLength": 1000
+          }
+        },
+        "required": [
+          "days"
+        ]
+      },
+      "SubscriptionUpgradeRequest": {
+        "type": "object",
+        "properties": {
+          "paymentReference": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "maxLength": 255
+          },
+          "paymentNotes": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "maxLength": 1000
+          }
+        }
+      },
+      "SubscriptionStudentsQuery": {
+        "type": "object",
+        "properties": {
+          "perPage": {
+            "type": "string",
+            "description": "25, 50, 100 or 200. Never rejected: anything else (unknown or not a number) answers 50."
+          },
+          "page": {
+            "type": "string",
+            "description": "Never rejected: a missing, zero, negative or non-numeric value is page 1."
+          }
+        }
+      },
+      "SubscriptionStudent": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "name": {
+            "type": "string",
+            "minLength": 1
+          },
+          "idDelima": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "classLevel": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "idDelima",
+          "classLevel"
+        ]
+      },
+      "SubscriptionRenewalInvoice": {
+        "type": "object",
+        "properties": {
+          "ref": {
+            "type": "string",
+            "pattern": "^INV-.+-\\d{8}$",
+            "description": "INV-{subscription id}-{yyyymmdd of today}."
+          },
+          "date": {
+            "$ref": "#/components/schemas/Timestamp"
+          },
+          "school": {
+            "$ref": "#/components/schemas/SubscriptionSchool"
+          },
+          "packageName": {
+            "type": "string",
+            "minLength": 1
+          },
+          "currentPeriod": {
+            "type": "object",
+            "properties": {
+              "start": {
+                "$ref": "#/components/schemas/Timestamp"
+              },
+              "end": {
+                "$ref": "#/components/schemas/Timestamp"
+              }
+            },
+            "required": [
+              "start",
+              "end"
+            ]
+          },
+          "renewalPeriod": {
+            "type": "object",
+            "properties": {
+              "start": {
+                "$ref": "#/components/schemas/Timestamp"
+              },
+              "end": {
+                "$ref": "#/components/schemas/Timestamp"
+              }
+            },
+            "required": [
+              "start",
+              "end"
+            ],
+            "description": "endsAt to endsAt + 12 months."
+          },
+          "studentCount": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "pricePerStudent": {
+            "type": "string",
+            "pattern": "^\\d+\\.\\d{2}$"
+          },
+          "total": {
+            "type": "string",
+            "pattern": "^\\d+\\.\\d{2}$",
+            "description": "Enrolled students x price (not the quota), computed in integer cents."
+          }
+        },
+        "required": [
+          "ref",
+          "date",
+          "school",
+          "packageName",
+          "currentPeriod",
+          "renewalPeriod",
+          "studentCount",
+          "pricePerStudent",
+          "total"
+        ],
+        "description": "v2: no student roster and no idDelima (minors personal data); the roster is the paginated /students endpoint. Cache-Control: no-store."
+      },
+      "SchoolQuota": {
+        "oneOf": [
+          {
+            "type": "object",
+            "properties": {
+              "hasSubscription": {
+                "type": "boolean",
+                "enum": [
+                  false
+                ]
+              }
+            },
+            "required": [
+              "hasSubscription"
+            ]
+          },
+          {
+            "type": "object",
+            "properties": {
+              "hasSubscription": {
+                "type": "boolean",
+                "enum": [
+                  true
+                ]
+              },
+              "quota": {
+                "type": "integer",
+                "minimum": 1
+              },
+              "used": {
+                "type": "integer",
+                "minimum": 0,
+                "description": "Students of the school, active and inactive."
+              },
+              "remaining": {
+                "type": "integer",
+                "minimum": 0,
+                "description": "max(0, quota - used)."
+              }
+            },
+            "required": [
+              "hasSubscription",
+              "quota",
+              "used",
+              "remaining"
+            ]
+          }
+        ]
+      },
+      "SchoolPackageAdminFormLevel": {
+        "type": "string",
+        "enum": [
+          "t4",
+          "t5"
+        ]
+      },
+      "SchoolPackageCard": {
+        "type": "object",
+        "properties": {
+          "formLevel": {
+            "$ref": "#/components/schemas/SchoolPackageAdminFormLevel"
+          },
+          "packageId": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 64,
+            "description": "The t4 / t5 school package id (mock 1 and 2).",
+            "example": "1042"
+          },
+          "code": {
+            "type": "string",
+            "enum": [
+              "T4",
+              "T5"
+            ]
+          },
+          "name": {
+            "type": "string",
+            "minLength": 1
+          },
+          "priceLabel": {
+            "type": "string",
+            "minLength": 1,
+            "example": "RM 30/pelajar · 2 tahun"
+          },
+          "years": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "assigned": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "properties": {
+              "studentQuota": {
+                "type": "integer",
+                "minimum": 1
+              },
+              "assignedAt": {
+                "$ref": "#/components/schemas/Timestamp"
+              }
+            },
+            "required": [
+              "studentQuota",
+              "assignedAt"
+            ]
+          }
+        },
+        "required": [
+          "formLevel",
+          "packageId",
+          "code",
+          "name",
+          "priceLabel",
+          "years",
+          "assigned"
+        ]
+      },
+      "SchoolPackageUserView": {
+        "type": "object",
+        "properties": {
+          "user": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "$ref": "#/components/schemas/Id"
+              },
+              "name": {
+                "type": "string",
+                "minLength": 1
+              }
+            },
+            "required": [
+              "id",
+              "name"
+            ]
+          },
+          "school": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/SubscriptionSchool"
+              },
+              {
+                "type": [
+                  "object",
+                  "null"
+                ]
+              }
+            ]
+          },
+          "packages": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SchoolPackageCard"
+            }
+          },
+          "existingT5Count": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Students of the school with grade 11."
+          }
+        },
+        "required": [
+          "user",
+          "school",
+          "packages",
+          "existingT5Count"
+        ]
+      },
+      "SchoolPackageAssignRequest": {
+        "type": "object",
+        "properties": {
+          "formLevel": {
+            "type": "string",
+            "enum": [
+              "t4",
+              "t5"
+            ]
+          },
+          "packageId": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 64
+          },
+          "studentQuota": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 2000
+              },
+              {
+                "type": "string",
+                "pattern": "^\\d+$"
+              }
+            ],
+            "description": "Integer 1 to 2000; a digit string is accepted (the mock coerces it)."
+          }
+        },
+        "required": [
+          "formLevel",
+          "packageId",
+          "studentQuota"
+        ],
+        "description": "packageId must pair with formLevel (t4 first package, t5 second)."
+      },
+      "SchoolPackageAssignment": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "userId": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "formLevel": {
+            "$ref": "#/components/schemas/SchoolPackageAdminFormLevel"
+          },
+          "packageId": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "studentQuota": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "assignedAt": {
+            "$ref": "#/components/schemas/Timestamp"
+          }
+        },
+        "required": [
+          "id",
+          "userId",
+          "formLevel",
+          "packageId",
+          "studentQuota",
+          "assignedAt"
+        ]
+      },
+      "CompIcMasked": {
+        "type": "string",
+        "pattern": "^xxxxxx-xx-xx\\d{2}$",
+        "example": "xxxxxx-xx-xx34"
+      },
+      "CompStudentListQuery": {
+        "type": "object",
+        "properties": {
+          "page": {
+            "type": "string"
+          }
+        },
+        "description": "Page size is fixed at 50. `page` is never rejected: a missing, zero, negative or non-numeric value is page 1."
+      },
+      "CompStudentListItem": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "name": {
+            "type": "string",
+            "minLength": 1
+          },
+          "username": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Opaque login e-mail generated by the server (v2: not derived from the IC; the mock used \"{last 6 IC digits}@prestasiplus.my\"). Clients must not parse it."
+          },
+          "icMasked": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/CompIcMasked"
+              },
+              {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              }
+            ]
+          },
+          "schoolName": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "classLabel": {
+            "type": "string",
+            "description": "First active class name; \"\" when none."
+          },
+          "teacherName": {
+            "type": "string",
+            "description": "\"\" when none."
+          },
+          "isActive": {
+            "type": "boolean"
+          },
+          "coinsEnabled": {
+            "type": "boolean"
+          },
+          "packageExpiresAt": {
+            "$ref": "#/components/schemas/DateOnly"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "username",
+          "icMasked",
+          "schoolName",
+          "classLabel",
+          "teacherName",
+          "isActive",
+          "coinsEnabled",
+          "packageExpiresAt"
+        ]
+      },
+      "CompStudentListMeta": {
+        "type": "object",
+        "properties": {
+          "page": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "pageSize": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "totalItems": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "totalPages": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "from": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "minimum": 1
+          },
+          "to": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "minimum": 1
+          },
+          "counts": {
+            "type": "object",
+            "properties": {
+              "coinsOff": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "total": {
+                "type": "integer",
+                "minimum": 0
+              }
+            },
+            "required": [
+              "coinsOff",
+              "total"
+            ]
+          }
+        },
+        "required": [
+          "page",
+          "pageSize",
+          "totalItems",
+          "totalPages",
+          "counts"
+        ],
+        "additionalProperties": {}
+      },
+      "CompStudentClass": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "minLength": 1
+          },
+          "classCode": {
+            "type": "string",
+            "minLength": 1
+          },
+          "subjectName": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "teacherName": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "active",
+              "removed"
+            ]
+          }
+        },
+        "required": [
+          "name",
+          "classCode",
+          "subjectName",
+          "teacherName",
+          "status"
+        ]
+      },
+      "CompStudentDetail": {
+        "type": "object",
+        "properties": {
+          "userId": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "username": {
+            "type": "string",
+            "minLength": 1
+          },
+          "name": {
+            "type": "string",
+            "minLength": 1
+          },
+          "icMasked": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/CompIcMasked"
+              },
+              {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              }
+            ]
+          },
+          "classLevel": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "isActive": {
+            "type": "boolean"
+          },
+          "coinsEnabled": {
+            "type": "boolean"
+          },
+          "packageExpiresAt": {
+            "$ref": "#/components/schemas/DateOnly"
+          },
+          "originalSchoolName": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "classLabel": {
+            "type": "string"
+          },
+          "teacherName": {
+            "type": "string"
+          },
+          "syilingBalance": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Read-only here (wallet owner)."
+          },
+          "coinBalance": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "classes": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CompStudentClass"
+            }
+          }
+        },
+        "required": [
+          "userId",
+          "username",
+          "name",
+          "icMasked",
+          "classLevel",
+          "isActive",
+          "coinsEnabled",
+          "packageExpiresAt",
+          "originalSchoolName",
+          "classLabel",
+          "teacherName",
+          "syilingBalance",
+          "coinBalance",
+          "classes"
+        ]
+      },
+      "CompStudentRegisterRequest": {
+        "type": "object",
+        "properties": {
+          "classroomId": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 64,
+            "description": "Must be an active classroom (422 \"The selected classroom id is invalid.\")."
+          },
+          "packageExpiresAt": {
+            "type": "string",
+            "format": "date",
+            "description": "Calendar date YYYY-MM-DD."
+          },
+          "students": {
+            "type": "string",
+            "minLength": 1,
+            "description": "One \"NAMA, NOKP\" per line; the IC follows the last comma, non-digits stripped."
+          }
+        },
+        "required": [
+          "classroomId",
+          "packageExpiresAt",
+          "students"
+        ]
+      },
+      "CompBulkAction": {
+        "type": "string",
+        "enum": [
+          "coins_off",
+          "coins_on",
+          "deactivate",
+          "activate"
+        ]
+      },
+      "CompBulkActionRequest": {
+        "type": "object",
+        "properties": {
+          "action": {
+            "type": "string",
+            "enum": [
+              "coins_off",
+              "coins_on",
+              "deactivate",
+              "activate"
+            ]
+          },
+          "ids": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Id"
+            },
+            "minItems": 1,
+            "maxItems": 200
+          }
+        },
+        "required": [
+          "action",
+          "ids"
+        ],
+        "description": "Ids that are not complimentary students are ignored."
+      },
+      "CompBulkActionResult": {
+        "type": "object",
+        "properties": {
+          "updated": {
+            "type": "integer",
+            "minimum": 0
+          }
+        },
+        "required": [
+          "updated"
+        ]
+      },
+      "CompToggleCoinsResult": {
+        "type": "object",
+        "properties": {
+          "coinsEnabled": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "coinsEnabled"
+        ]
+      },
+      "CompToggleActiveResult": {
+        "type": "object",
+        "properties": {
+          "isActive": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "isActive"
+        ]
+      },
+      "StudentImportRowError": {
+        "type": "object",
+        "properties": {
+          "line": {
+            "type": "integer",
+            "minimum": 1,
+            "description": "1-based line of the file or paste."
+          },
+          "message": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "required": [
+          "line",
+          "message"
+        ]
+      },
+      "StudentImportResult": {
+        "type": "object",
+        "properties": {
+          "created": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "skipped": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "failed": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "errors": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/StudentImportRowError"
+            }
+          }
+        },
+        "required": [
+          "created",
+          "skipped",
+          "failed",
+          "errors"
+        ]
+      },
+      "StudentImportClassLevel": {
+        "type": "string",
+        "enum": [
+          "D1",
+          "D2",
+          "D3",
+          "D4",
+          "D5",
+          "D6",
+          "T1",
+          "T2",
+          "T3",
+          "T4",
+          "T5"
+        ]
+      },
+      "StudentImportMode": {
+        "type": "string",
+        "enum": [
+          "csv",
+          "paste"
+        ]
+      },
+      "StudentImportRequest": {
+        "type": "object",
+        "properties": {
+          "schoolId": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 64
+          },
+          "classLevel": {
+            "type": "string",
+            "enum": [
+              "D1",
+              "D2",
+              "D3",
+              "D4",
+              "D5",
+              "D6",
+              "T1",
+              "T2",
+              "T3",
+              "T4",
+              "T5"
+            ]
+          },
+          "importMode": {
+            "type": "string",
+            "enum": [
+              "csv",
+              "paste"
+            ]
+          },
+          "csvFile": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "maxLength": 1000000,
+            "description": "CSV text, used when importMode is csv (at most 1 MB and 1000 rows)."
+          },
+          "pasteContent": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "maxLength": 1000000,
+            "description": "Used when importMode is paste (same limits)."
+          }
+        },
+        "required": [
+          "schoolId",
+          "classLevel",
+          "importMode"
+        ]
+      },
+      "StudentImportMultipartRequest": {
+        "type": "object",
+        "properties": {
+          "schoolId": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 64
+          },
+          "classLevel": {
+            "type": "string",
+            "enum": [
+              "D1",
+              "D2",
+              "D3",
+              "D4",
+              "D5",
+              "D6",
+              "T1",
+              "T2",
+              "T3",
+              "T4",
+              "T5"
+            ]
+          },
+          "importMode": {
+            "type": "string",
+            "enum": [
+              "csv",
+              "paste"
+            ]
+          },
+          "csvFile": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "binary"
+          },
+          "pasteContent": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "maxLength": 1000000
+          }
+        },
+        "required": [
+          "schoolId",
+          "classLevel",
+          "importMode"
+        ]
+      },
+      "RateLimitedBody": {
+        "type": "object",
+        "properties": {
+          "error": {
+            "type": "object",
+            "properties": {
+              "code": {
+                "type": "string",
+                "enum": [
+                  "RATE_LIMITED"
+                ]
+              },
+              "message": {
+                "type": "string",
+                "minLength": 1,
+                "description": "BM message for direct display."
+              },
+              "fields": {
+                "type": "object",
+                "additionalProperties": {
+                  "type": "string"
+                },
+                "description": "Field name to BM message, for VALIDATION_ERROR."
+              },
+              "details": {
+                "type": "object",
+                "additionalProperties": {},
+                "description": "Structured extras (e.g. candidate schools for AMBIGUOUS_USERNAME)."
+              },
+              "retryAfter": {
+                "type": "integer",
+                "minimum": 0,
+                "description": "Seconds until a retry is allowed; equals the Retry-After header."
+              },
+              "requestId": {
+                "type": "string",
+                "description": "Correlation id, for support."
+              }
+            },
+            "required": [
+              "code",
+              "message",
+              "retryAfter"
+            ]
+          }
+        },
+        "required": [
+          "error"
+        ]
+      },
+      "StudentImportTooLarge": {
+        "type": "object",
+        "properties": {
+          "error": {
+            "type": "object",
+            "properties": {
+              "code": {
+                "type": "string",
+                "enum": [
+                  "PAYLOAD_TOO_LARGE"
+                ]
+              },
+              "message": {
+                "type": "string",
+                "enum": [
+                  "Fail import melebihi had yang dibenarkan."
+                ]
+              },
+              "fields": {
+                "type": "object",
+                "additionalProperties": {
+                  "type": "string"
+                },
+                "description": "Field name to BM message, for VALIDATION_ERROR."
+              },
+              "details": {
+                "type": "object",
+                "additionalProperties": {},
+                "description": "Structured extras (e.g. candidate schools for AMBIGUOUS_USERNAME)."
+              },
+              "retryAfter": {
+                "type": "integer",
+                "minimum": 0,
+                "description": "Seconds until a retry is allowed, for RATE_LIMITED."
+              },
+              "requestId": {
+                "type": "string",
+                "description": "Correlation id, for support."
+              }
+            },
+            "required": [
+              "code",
+              "message"
+            ]
+          }
+        },
+        "required": [
+          "error"
+        ]
+      },
+      "SubscriptionUpgradeRefusal": {
+        "type": "object",
+        "properties": {
+          "error": {
+            "type": "object",
+            "properties": {
+              "code": {
+                "type": "string",
+                "enum": [
+                  "VALIDATION_ERROR"
+                ]
+              },
+              "message": {
+                "type": "string",
+                "enum": [
+                  "Hanya langganan Pemantauan boleh dinaik taraf."
+                ]
+              },
+              "fields": {
+                "type": "object",
+                "properties": {
+                  "packageTier": {
+                    "type": "string",
+                    "enum": [
+                      "Hanya langganan Pemantauan boleh dinaik taraf."
+                    ]
+                  }
+                },
+                "required": [
+                  "packageTier"
+                ]
+              },
+              "details": {
+                "type": "object",
+                "additionalProperties": {},
+                "description": "Structured extras (e.g. candidate schools for AMBIGUOUS_USERNAME)."
+              },
+              "retryAfter": {
+                "type": "integer",
+                "minimum": 0,
+                "description": "Seconds until a retry is allowed, for RATE_LIMITED."
+              },
+              "requestId": {
+                "type": "string",
+                "description": "Correlation id, for support."
+              }
+            },
+            "required": [
+              "code",
+              "message",
+              "fields"
+            ]
+          }
+        },
+        "required": [
+          "error"
+        ]
+      },
+      "SubscriptionCancelRefusal": {
+        "type": "object",
+        "properties": {
+          "error": {
+            "type": "object",
+            "properties": {
+              "code": {
+                "type": "string",
+                "enum": [
+                  "VALIDATION_ERROR"
+                ]
+              },
+              "message": {
+                "type": "string",
+                "enum": [
+                  "Langganan ini sudah dibatalkan."
+                ]
+              },
+              "fields": {
+                "type": "object",
+                "properties": {
+                  "status": {
+                    "type": "string",
+                    "enum": [
+                      "Langganan ini sudah dibatalkan."
+                    ]
+                  }
+                },
+                "required": [
+                  "status"
+                ]
+              },
+              "details": {
+                "type": "object",
+                "additionalProperties": {},
+                "description": "Structured extras (e.g. candidate schools for AMBIGUOUS_USERNAME)."
+              },
+              "retryAfter": {
+                "type": "integer",
+                "minimum": 0,
+                "description": "Seconds until a retry is allowed, for RATE_LIMITED."
+              },
+              "requestId": {
+                "type": "string",
+                "description": "Correlation id, for support."
+              }
+            },
+            "required": [
+              "code",
+              "message",
+              "fields"
+            ]
+          }
+        },
+        "required": [
+          "error"
+        ]
+      },
+      "SchoolPackageNotAdminRefusal": {
+        "type": "object",
+        "properties": {
+          "error": {
+            "type": "object",
+            "properties": {
+              "code": {
+                "type": "string",
+                "enum": [
+                  "VALIDATION_ERROR"
+                ]
+              },
+              "message": {
+                "type": "string",
+                "enum": [
+                  "Pengguna ini bukan admin sekolah."
+                ]
+              },
+              "fields": {
+                "type": "object",
+                "properties": {
+                  "id": {
+                    "type": "string",
+                    "enum": [
+                      "Pengguna ini bukan admin sekolah."
+                    ]
+                  }
+                },
+                "required": [
+                  "id"
+                ]
+              },
+              "details": {
+                "type": "object",
+                "additionalProperties": {},
+                "description": "Structured extras (e.g. candidate schools for AMBIGUOUS_USERNAME)."
+              },
+              "retryAfter": {
+                "type": "integer",
+                "minimum": 0,
+                "description": "Seconds until a retry is allowed, for RATE_LIMITED."
+              },
+              "requestId": {
+                "type": "string",
+                "description": "Correlation id, for support."
+              }
+            },
+            "required": [
+              "code",
+              "message",
+              "fields"
+            ]
+          }
+        },
+        "required": [
+          "error"
+        ]
+      },
+      "StudentImportNoSubscriptionRefusal": {
+        "type": "object",
+        "properties": {
+          "error": {
+            "type": "object",
+            "properties": {
+              "code": {
+                "type": "string",
+                "enum": [
+                  "VALIDATION_ERROR"
+                ]
+              },
+              "message": {
+                "type": "string",
+                "enum": [
+                  "Sekolah ini tiada langganan aktif. Import pelajar tidak dibenarkan."
+                ]
+              },
+              "fields": {
+                "type": "object",
+                "properties": {
+                  "schoolId": {
+                    "type": "string",
+                    "enum": [
+                      "Sekolah ini tiada langganan aktif. Import pelajar tidak dibenarkan."
+                    ]
+                  }
+                },
+                "required": [
+                  "schoolId"
+                ]
+              },
+              "details": {
+                "type": "object",
+                "additionalProperties": {},
+                "description": "Structured extras (e.g. candidate schools for AMBIGUOUS_USERNAME)."
+              },
+              "retryAfter": {
+                "type": "integer",
+                "minimum": 0,
+                "description": "Seconds until a retry is allowed, for RATE_LIMITED."
+              },
+              "requestId": {
+                "type": "string",
+                "description": "Correlation id, for support."
+              }
+            },
+            "required": [
+              "code",
+              "message",
+              "fields"
+            ]
+          }
+        },
+        "required": [
+          "error"
+        ]
+      },
+      "StudentImportQuotaShortRefusal": {
+        "type": "object",
+        "properties": {
+          "error": {
+            "type": "object",
+            "properties": {
+              "code": {
+                "type": "string",
+                "enum": [
+                  "VALIDATION_ERROR"
+                ]
+              },
+              "message": {
+                "type": "string",
+                "enum": [
+                  "Kuota tidak mencukupi."
+                ]
+              },
+              "fields": {
+                "type": "object",
+                "properties": {
+                  "schoolId": {
+                    "type": "string",
+                    "enum": [
+                      "Kuota tidak mencukupi."
+                    ]
+                  }
+                },
+                "required": [
+                  "schoolId"
+                ]
+              },
+              "details": {
+                "type": "object",
+                "additionalProperties": {},
+                "description": "Structured extras (e.g. candidate schools for AMBIGUOUS_USERNAME)."
+              },
+              "retryAfter": {
+                "type": "integer",
+                "minimum": 0,
+                "description": "Seconds until a retry is allowed, for RATE_LIMITED."
+              },
+              "requestId": {
+                "type": "string",
+                "description": "Correlation id, for support."
+              }
+            },
+            "required": [
+              "code",
+              "message",
+              "fields"
+            ]
+          }
+        },
+        "required": [
+          "error"
+        ]
+      },
+      "StudentImportNoDataRefusal": {
+        "anyOf": [
+          {
+            "type": "object",
+            "properties": {
+              "error": {
+                "type": "object",
+                "properties": {
+                  "code": {
+                    "type": "string",
+                    "enum": [
+                      "VALIDATION_ERROR"
+                    ]
+                  },
+                  "message": {
+                    "type": "string",
+                    "enum": [
+                      "Tiada data untuk diimport."
+                    ]
+                  },
+                  "fields": {
+                    "type": "object",
+                    "properties": {
+                      "csvFile": {
+                        "type": "string",
+                        "enum": [
+                          "Tiada data untuk diimport."
+                        ]
+                      }
+                    },
+                    "required": [
+                      "csvFile"
+                    ]
+                  },
+                  "details": {
+                    "type": "object",
+                    "additionalProperties": {},
+                    "description": "Structured extras (e.g. candidate schools for AMBIGUOUS_USERNAME)."
+                  },
+                  "retryAfter": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "description": "Seconds until a retry is allowed, for RATE_LIMITED."
+                  },
+                  "requestId": {
+                    "type": "string",
+                    "description": "Correlation id, for support."
+                  }
+                },
+                "required": [
+                  "code",
+                  "message",
+                  "fields"
+                ]
+              }
+            },
+            "required": [
+              "error"
+            ]
+          },
+          {
+            "type": "object",
+            "properties": {
+              "error": {
+                "type": "object",
+                "properties": {
+                  "code": {
+                    "type": "string",
+                    "enum": [
+                      "VALIDATION_ERROR"
+                    ]
+                  },
+                  "message": {
+                    "type": "string",
+                    "enum": [
+                      "Tiada data untuk diimport."
+                    ]
+                  },
+                  "fields": {
+                    "type": "object",
+                    "properties": {
+                      "pasteContent": {
+                        "type": "string",
+                        "enum": [
+                          "Tiada data untuk diimport."
+                        ]
+                      }
+                    },
+                    "required": [
+                      "pasteContent"
+                    ]
+                  },
+                  "details": {
+                    "type": "object",
+                    "additionalProperties": {},
+                    "description": "Structured extras (e.g. candidate schools for AMBIGUOUS_USERNAME)."
+                  },
+                  "retryAfter": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "description": "Seconds until a retry is allowed, for RATE_LIMITED."
+                  },
+                  "requestId": {
+                    "type": "string",
+                    "description": "Correlation id, for support."
+                  }
+                },
+                "required": [
+                  "code",
+                  "message",
+                  "fields"
+                ]
+              }
+            },
+            "required": [
+              "error"
+            ]
+          }
+        ],
+        "description": "On fields.csvFile (csv mode) or fields.pasteContent (paste mode)."
+      },
       "AccessGroupId": {
         "type": "string",
         "enum": [
@@ -52144,6 +54436,25 @@
                 }
               }
             }
+          },
+          "429": {
+            "description": "RATE_LIMITED \"Terlalu banyak percubaan. Sila cuba sebentar lagi.\" The body carries retryAfter (seconds) and the Retry-After header carries the same value.",
+            "headers": {
+              "Retry-After": {
+                "description": "Seconds until a retry is allowed (same value as error.retryAfter).",
+                "schema": {
+                  "type": "integer",
+                  "minimum": 0
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
           }
         }
       }
@@ -52323,6 +54634,25 @@
                 }
               }
             }
+          },
+          "429": {
+            "description": "RATE_LIMITED \"Terlalu banyak percubaan. Sila cuba sebentar lagi.\" The body carries retryAfter (seconds) and the Retry-After header carries the same value.",
+            "headers": {
+              "Retry-After": {
+                "description": "Seconds until a retry is allowed (same value as error.retryAfter).",
+                "schema": {
+                  "type": "integer",
+                  "minimum": 0
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
           }
         }
       }
@@ -52428,6 +54758,25 @@
                 }
               }
             }
+          },
+          "429": {
+            "description": "RATE_LIMITED \"Terlalu banyak percubaan. Sila cuba sebentar lagi.\" The body carries retryAfter (seconds) and the Retry-After header carries the same value.",
+            "headers": {
+              "Retry-After": {
+                "description": "Seconds until a retry is allowed (same value as error.retryAfter).",
+                "schema": {
+                  "type": "integer",
+                  "minimum": 0
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
           }
         }
       }
@@ -52491,6 +54840,25 @@
           },
           "404": {
             "description": "NOT_FOUND \"Percubaan tidak ditemui\" (unknown attempt id).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "RATE_LIMITED \"Terlalu banyak percubaan. Sila cuba sebentar lagi.\" The body carries retryAfter (seconds) and the Retry-After header carries the same value.",
+            "headers": {
+              "Retry-After": {
+                "description": "Seconds until a retry is allowed (same value as error.retryAfter).",
+                "schema": {
+                  "type": "integer",
+                  "minimum": 0
+                }
+              }
+            },
             "content": {
               "application/json": {
                 "schema": {
@@ -52628,7 +54996,16 @@
             }
           },
           "429": {
-            "description": "RATE_LIMITED: check requests are rate-limited (NFR-05); the threshold is an open question of BE-16. Not in the mock.",
+            "description": "RATE_LIMITED \"Terlalu banyak percubaan. Sila cuba sebentar lagi.\" The body carries retryAfter (seconds) and the Retry-After header carries the same value.",
+            "headers": {
+              "Retry-After": {
+                "description": "Seconds until a retry is allowed (same value as error.retryAfter).",
+                "schema": {
+                  "type": "integer",
+                  "minimum": 0
+                }
+              }
+            },
             "content": {
               "application/json": {
                 "schema": {
@@ -52880,6 +55257,25 @@
           },
           "422": {
             "description": "VALIDATION_ERROR with fields.file \"Gambar mesti JPG atau PNG, maksimum 5 MB.\" or \"Maksimum 3 gambar bagi setiap bahagian.\", or fields.partId.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "RATE_LIMITED \"Terlalu banyak percubaan. Sila cuba sebentar lagi.\" The body carries retryAfter (seconds) and the Retry-After header carries the same value.",
+            "headers": {
+              "Retry-After": {
+                "description": "Seconds until a retry is allowed (same value as error.retryAfter).",
+                "schema": {
+                  "type": "integer",
+                  "minimum": 0
+                }
+              }
+            },
             "content": {
               "application/json": {
                 "schema": {
@@ -58696,6 +61092,25 @@
                 }
               }
             }
+          },
+          "429": {
+            "description": "RATE_LIMITED \"Terlalu banyak percubaan. Sila cuba sebentar lagi.\" The body carries retryAfter (seconds) and the Retry-After header carries the same value.",
+            "headers": {
+              "Retry-After": {
+                "description": "Seconds until a retry is allowed (same value as error.retryAfter).",
+                "schema": {
+                  "type": "integer",
+                  "minimum": 0
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
           }
         }
       }
@@ -58774,6 +61189,25 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/BattleEmptyBody"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "RATE_LIMITED \"Terlalu banyak percubaan. Sila cuba sebentar lagi.\" The body carries retryAfter (seconds) and the Retry-After header carries the same value.",
+            "headers": {
+              "Retry-After": {
+                "description": "Seconds until a retry is allowed (same value as error.retryAfter).",
+                "schema": {
+                  "type": "integer",
+                  "minimum": 0
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
                 }
               }
             }
@@ -58930,6 +61364,25 @@
                 }
               }
             }
+          },
+          "429": {
+            "description": "RATE_LIMITED \"Terlalu banyak percubaan. Sila cuba sebentar lagi.\" The body carries retryAfter (seconds) and the Retry-After header carries the same value.",
+            "headers": {
+              "Retry-After": {
+                "description": "Seconds until a retry is allowed (same value as error.retryAfter).",
+                "schema": {
+                  "type": "integer",
+                  "minimum": 0
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
           }
         }
       }
@@ -59004,6 +61457,25 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/BattleRawError"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "RATE_LIMITED \"Terlalu banyak percubaan. Sila cuba sebentar lagi.\" The body carries retryAfter (seconds) and the Retry-After header carries the same value.",
+            "headers": {
+              "Retry-After": {
+                "description": "Seconds until a retry is allowed (same value as error.retryAfter).",
+                "schema": {
+                  "type": "integer",
+                  "minimum": 0
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
                 }
               }
             }
@@ -59084,6 +61556,25 @@
                 }
               }
             }
+          },
+          "429": {
+            "description": "RATE_LIMITED \"Terlalu banyak percubaan. Sila cuba sebentar lagi.\" The body carries retryAfter (seconds) and the Retry-After header carries the same value.",
+            "headers": {
+              "Retry-After": {
+                "description": "Seconds until a retry is allowed (same value as error.retryAfter).",
+                "schema": {
+                  "type": "integer",
+                  "minimum": 0
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
           }
         }
       }
@@ -59140,7 +61631,7 @@
           "battle"
         ],
         "summary": "Search students by name to invite (M16-07)",
-        "description": "Query `q` shorter than 2 trimmed characters answers `{users: []}`. Otherwise students whose name contains `q` (case-insensitive), the caller excluded, sorted by name then id, at most 10.\nD54(d): classmates and opponents are shown by display name (and school) only; no IC, e-mail, phone or birth date is ever returned.",
+        "description": "Query `q` shorter than 2 trimmed characters answers `{users: []}`. Otherwise students whose name contains `q` (case-insensitive), the caller excluded, sorted by name then id, at most 10.\nD54(d): classmates and opponents are shown by display name (and school) only; no IC, e-mail, phone or birth date is ever returned. D57: this is a student-facing lookup, not the staff-only GET /students/search; it is rate-limited (429 RATE_LIMITED with retryAfter and Retry-After) because it can be used to enumerate students, and it never exposes more than the display fields above.",
         "parameters": [
           {
             "schema": {
@@ -59166,6 +61657,25 @@
           },
           "401": {
             "description": "UNAUTHORIZED \"Unauthenticated.\" (no valid session).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "RATE_LIMITED \"Terlalu banyak percubaan. Sila cuba sebentar lagi.\" The body carries retryAfter (seconds) and the Retry-After header carries the same value.",
+            "headers": {
+              "Retry-After": {
+                "description": "Seconds until a retry is allowed (same value as error.retryAfter).",
+                "schema": {
+                  "type": "integer",
+                  "minimum": 0
+                }
+              }
+            },
             "content": {
               "application/json": {
                 "schema": {
@@ -59254,6 +61764,25 @@
                 }
               }
             }
+          },
+          "429": {
+            "description": "RATE_LIMITED \"Terlalu banyak percubaan. Sila cuba sebentar lagi.\" The body carries retryAfter (seconds) and the Retry-After header carries the same value.",
+            "headers": {
+              "Retry-After": {
+                "description": "Seconds until a retry is allowed (same value as error.retryAfter).",
+                "schema": {
+                  "type": "integer",
+                  "minimum": 0
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
           }
         }
       }
@@ -59264,7 +61793,7 @@
           "battle"
         ],
         "summary": "Own pending invitations (M16-09)",
-        "description": "The caller's `pending` invitations younger than 24 h, newest first. D54(d): classmates and opponents are shown by display name (and school) only; no IC, e-mail, phone or birth date is ever returned.",
+        "description": "The caller's `pending` invitations younger than 24 h, newest first. D54(d): classmates and opponents are shown by display name (and school) only; no IC, e-mail, phone or birth date is ever returned. D57: this is a student-facing lookup, not the staff-only GET /students/search; it is rate-limited (429 RATE_LIMITED with retryAfter and Retry-After) because it can be used to enumerate students, and it never exposes more than the display fields above.",
         "responses": {
           "200": {
             "description": "Pending invitations.",
@@ -59368,6 +61897,25 @@
                 }
               }
             }
+          },
+          "429": {
+            "description": "RATE_LIMITED \"Terlalu banyak percubaan. Sila cuba sebentar lagi.\" The body carries retryAfter (seconds) and the Retry-After header carries the same value.",
+            "headers": {
+              "Retry-After": {
+                "description": "Seconds until a retry is allowed (same value as error.retryAfter).",
+                "schema": {
+                  "type": "integer",
+                  "minimum": 0
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
           }
         }
       }
@@ -59438,6 +61986,25 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/BattleRawError"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "RATE_LIMITED \"Terlalu banyak percubaan. Sila cuba sebentar lagi.\" The body carries retryAfter (seconds) and the Retry-After header carries the same value.",
+            "headers": {
+              "Retry-After": {
+                "description": "Seconds until a retry is allowed (same value as error.retryAfter).",
+                "schema": {
+                  "type": "integer",
+                  "minimum": 0
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
                 }
               }
             }
@@ -59521,6 +62088,25 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/BattleRawError"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "RATE_LIMITED \"Terlalu banyak percubaan. Sila cuba sebentar lagi.\" The body carries retryAfter (seconds) and the Retry-After header carries the same value.",
+            "headers": {
+              "Retry-After": {
+                "description": "Seconds until a retry is allowed (same value as error.retryAfter).",
+                "schema": {
+                  "type": "integer",
+                  "minimum": 0
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
                 }
               }
             }
@@ -59734,6 +62320,25 @@
                 }
               }
             }
+          },
+          "429": {
+            "description": "RATE_LIMITED \"Terlalu banyak percubaan. Sila cuba sebentar lagi.\" The body carries retryAfter (seconds) and the Retry-After header carries the same value.",
+            "headers": {
+              "Retry-After": {
+                "description": "Seconds until a retry is allowed (same value as error.retryAfter).",
+                "schema": {
+                  "type": "integer",
+                  "minimum": 0
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
           }
         }
       }
@@ -59744,7 +62349,7 @@
           "battle-standings"
         ],
         "summary": "Student ranking (M16-18)",
-        "description": "National, not paginated. Only finished and forfeited battles count; windows are weekly (from Monday) or monthly in Asia/Kuala_Lumpur. `skor` is the sum of round(score / 100) per side; `ketepatan` is round(correct / answered * 100); `streak` is consecutive wins from the newest battle. Order: skor desc, menang desc, user id. The internal school id is not in the body.\nD54(d): classmates and opponents are shown by display name (and school) only; no IC, e-mail, phone or birth date is ever returned.",
+        "description": "National, not paginated. Only finished and forfeited battles count; windows are weekly (from Monday) or monthly in Asia/Kuala_Lumpur. `skor` is the sum of round(score / 100) per side; `ketepatan` is round(correct / answered * 100); `streak` is consecutive wins from the newest battle. Order: skor desc, menang desc, user id. The internal school id is not in the body.\nD54(d): classmates and opponents are shown by display name (and school) only; no IC, e-mail, phone or birth date is ever returned. D57: this is a student-facing lookup, not the staff-only GET /students/search; it is rate-limited (429 RATE_LIMITED with retryAfter and Retry-After) because it can be used to enumerate students, and it never exposes more than the display fields above.",
         "parameters": [
           {
             "schema": {
@@ -59859,7 +62464,7 @@
           "battle-standings"
         ],
         "summary": "School battle page (M16-20)",
-        "description": "`fighters` are the top 5 weekly students of the school; `recent` the 10 latest finished battles. D54(d): classmates and opponents are shown by display name (and school) only; no IC, e-mail, phone or birth date is ever returned.",
+        "description": "`fighters` are the top 5 weekly students of the school; `recent` the 10 latest finished battles. D54(d): classmates and opponents are shown by display name (and school) only; no IC, e-mail, phone or birth date is ever returned. D57: this is a student-facing lookup, not the staff-only GET /students/search; it is rate-limited (429 RATE_LIMITED with retryAfter and Retry-After) because it can be used to enumerate students, and it never exposes more than the display fields above.",
         "parameters": [
           {
             "schema": {
@@ -60104,6 +62709,25 @@
           },
           "422": {
             "description": "VALIDATION_ERROR with fields.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "RATE_LIMITED \"Terlalu banyak percubaan. Sila cuba sebentar lagi.\" The body carries retryAfter (seconds) and the Retry-After header carries the same value.",
+            "headers": {
+              "Retry-After": {
+                "description": "Seconds until a retry is allowed (same value as error.retryAfter).",
+                "schema": {
+                  "type": "integer",
+                  "minimum": 0
+                }
+              }
+            },
             "content": {
               "application/json": {
                 "schema": {
@@ -62873,6 +65497,25 @@
                 }
               }
             }
+          },
+          "429": {
+            "description": "RATE_LIMITED (BM \"Terlalu banyak percubaan. Sila cuba sebentar lagi.\"): body error.retryAfter and the Retry-After header carry the seconds to wait.",
+            "headers": {
+              "Retry-After": {
+                "description": "Seconds until a retry is allowed (same value as error.retryAfter).",
+                "schema": {
+                  "type": "integer",
+                  "minimum": 0
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
           }
         }
       }
@@ -62948,6 +65591,25 @@
                 }
               }
             }
+          },
+          "429": {
+            "description": "RATE_LIMITED (BM \"Terlalu banyak percubaan. Sila cuba sebentar lagi.\"): body error.retryAfter and the Retry-After header carry the seconds to wait.",
+            "headers": {
+              "Retry-After": {
+                "description": "Seconds until a retry is allowed (same value as error.retryAfter).",
+                "schema": {
+                  "type": "integer",
+                  "minimum": 0
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
           }
         }
       }
@@ -63014,7 +65676,7 @@
           "sponsorship"
         ],
         "summary": "Apply for a foster family (Mohon Keluarga Angkat)",
-        "description": "Any signed-in role (student, parent, teacher, admin). The applicant user id and role come from the session; applicantUserId or applicantRole in the body are ignored. The studentEmail must be the e-mail of an existing user with role student (surrounding spaces trimmed; letter case as the user lookup treats it). Inserts one application with status `pending` and createdAt = now. No duplicate check (the same student and applicant may apply again), no notification, no e-mail. Write-only: the category, income range and reason of a minor are never returned by any route and never logged. The success text \"Permohonan anda telah dihantar. Admin akan menyemak permohonan dalam 1-3 hari bekerja.\" is shown by the client, not returned. Security note (OQ-API-B4-20): the studentEmail 422 tells a signed-in caller whether an e-mail belongs to a student, so the route is to be rate limited (RATE_LIMITED 429, BE-33).",
+        "description": "Any signed-in role (student, parent, teacher, admin). The applicant user id and role come from the session; applicantUserId or applicantRole in the body are ignored. The studentEmail must be the e-mail of an existing user with role student (surrounding spaces trimmed; letter case as the user lookup treats it). Inserts one application with status `pending` and createdAt = now. No duplicate check (the same student and applicant may apply again), no notification, no e-mail. Write-only: the category, income range and reason of a minor are never returned by any route and never logged. The success text \"Permohonan anda telah dihantar. Admin akan menyemak permohonan dalam 1-3 hari bekerja.\" is shown by the client, not returned. Security note (OQ-API-B4-20): the studentEmail 422 tells a signed-in caller whether an e-mail belongs to a student, so the route is rate limited (RATE_LIMITED 429 with retryAfter and Retry-After, D57(a), BE-33). D57(b): the response carries no credential or token, so no Cache-Control: no-store. D57(f) does not apply: the route has no parent or sponsor invite, link token or sponsor-facing view of a minor.",
         "parameters": [
           {
             "schema": {
@@ -63088,7 +65750,16 @@
             }
           },
           "429": {
-            "description": "RATE_LIMITED, with retryAfter (planned, BE-33; the mock has no limit).",
+            "description": "RATE_LIMITED (BM \"Terlalu banyak percubaan. Sila cuba sebentar lagi.\"): body error.retryAfter and the Retry-After header carry the seconds to wait. Planned (BE-33); the mock has no limit.",
+            "headers": {
+              "Retry-After": {
+                "description": "Seconds until a retry is allowed (same value as error.retryAfter).",
+                "schema": {
+                  "type": "integer",
+                  "minimum": 0
+                }
+              }
+            },
             "content": {
               "application/json": {
                 "schema": {
@@ -72242,6 +74913,2749 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/me/parent-invite": {
+      "get": {
+        "tags": [
+          "parent-invites"
+        ],
+        "summary": "Invite status and my linked parents (student only)",
+        "description": "Returns only whether a live token exists and its expiresAt; it never returns a token (the server keeps only a hash). Linked parents show a masked e-mail. Cache-Control: no-store.",
+        "responses": {
+          "200": {
+            "description": "The status.",
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string",
+                  "enum": [
+                    "no-store"
+                  ],
+                  "description": "Always \"no-store\"."
+                },
+                "required": true,
+                "description": "Always \"no-store\"."
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/ParentInviteStatus"
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED: no valid session.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN (wrong role) or CSRF_INVALID on mutations.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "parent-invites"
+        ],
+        "summary": "Issue a new invite token (student only); replaces the former /generate route",
+        "description": "Issues a new single-use token and invalidates the old one at once. The clear token appears only in this response. data.status is \"Link jemputan baru telah dijana!\". The token expires after at most 7 days. Needs X-CSRF-Token. Cache-Control: no-store. Rate limited (token churn).",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Value of Session.csrf; required on authenticated mutating requests."
+            },
+            "required": true,
+            "description": "Value of Session.csrf; required on authenticated mutating requests.",
+            "name": "X-CSRF-Token",
+            "in": "header"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "New token.",
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string",
+                  "enum": [
+                    "no-store"
+                  ],
+                  "description": "Always \"no-store\"."
+                },
+                "required": true,
+                "description": "Always \"no-store\"."
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/ParentInviteGenerated"
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED: no valid session.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN (wrong role) or CSRF_INVALID on mutations.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "RATE_LIMITED, with retryAfter and the Retry-After header.",
+            "headers": {
+              "Retry-After": {
+                "schema": {
+                  "type": "string",
+                  "pattern": "^\\d+$",
+                  "description": "Seconds until a retry is allowed."
+                },
+                "required": true,
+                "description": "Seconds until a retry is allowed."
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RateLimitedBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/parent-invites/{token}": {
+      "get": {
+        "tags": [
+          "parent-invites"
+        ],
+        "summary": "Preview an invite (public; session optional)",
+        "description": "Minimal disclosure: the child first name and school only. `viewer` is derived from the session role. Cache-Control: no-store. Rate limited per IP; the raw path is never logged.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 200,
+              "description": "Any non-empty string is routed; an unknown, used or expired token, or an inactive student, is one 404."
+            },
+            "required": true,
+            "description": "Any non-empty string is routed; an unknown, used or expired token, or an inactive student, is one 404.",
+            "name": "token",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The minimal child info.",
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string",
+                  "enum": [
+                    "no-store"
+                  ],
+                  "description": "Always \"no-store\"."
+                },
+                "required": true,
+                "description": "Always \"no-store\"."
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/ParentInvitePreview"
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "NOT_FOUND: unknown, used or expired token, or its student is not an active student (one indistinguishable 404).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "RATE_LIMITED, with retryAfter and the Retry-After header.",
+            "headers": {
+              "Retry-After": {
+                "schema": {
+                  "type": "string",
+                  "pattern": "^\\d+$",
+                  "description": "Seconds until a retry is allowed."
+                },
+                "required": true,
+                "description": "Seconds until a retry is allowed."
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RateLimitedBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/parent-invites/{token}/accept": {
+      "post": {
+        "tags": [
+          "parent-invites"
+        ],
+        "summary": "Accept an invite and link to the student (parent only)",
+        "description": "Consumes the token (single use): a replay is 404. Creates the link, or answers `created: false` when the pair already exists (the token is still consumed). The server notifies the student and the school. 401/403 are decided before the token is looked up. Cache-Control: no-store. Rate limited.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 200,
+              "description": "Any non-empty string is routed; an unknown, used or expired token, or an inactive student, is one 404."
+            },
+            "required": true,
+            "description": "Any non-empty string is routed; an unknown, used or expired token, or an inactive student, is one 404.",
+            "name": "token",
+            "in": "path"
+          }
+        ],
+        "requestBody": {
+          "required": false,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ParentInviteAcceptRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Linked.",
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string",
+                  "enum": [
+                    "no-store"
+                  ],
+                  "description": "Always \"no-store\"."
+                },
+                "required": true,
+                "description": "Always \"no-store\"."
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/ParentInviteAcceptResult"
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED: no valid session.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN (wrong role) or CSRF_INVALID on mutations.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "NOT_FOUND: unknown, used or expired token, or its student is not an active student (one indistinguishable 404).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "VALIDATION_ERROR with `fields.relationship`.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "RATE_LIMITED, with retryAfter and the Retry-After header.",
+            "headers": {
+              "Retry-After": {
+                "schema": {
+                  "type": "string",
+                  "pattern": "^\\d+$",
+                  "description": "Seconds until a retry is allowed."
+                },
+                "required": true,
+                "description": "Seconds until a retry is allowed."
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RateLimitedBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/me/parent-links": {
+      "get": {
+        "tags": [
+          "parent-links"
+        ],
+        "summary": "My parent-child links (student: my parents; parent: my children)",
+        "description": "Student view masks the parent e-mail. Cache-Control: no-store.",
+        "responses": {
+          "200": {
+            "description": "Own links.",
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string",
+                  "enum": [
+                    "no-store"
+                  ],
+                  "description": "Always \"no-store\"."
+                },
+                "required": true,
+                "description": "Always \"no-store\"."
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/ParentLink"
+                      }
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED: no valid session.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN (wrong role) or CSRF_INVALID on mutations.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/me/parent-links/{linkId}": {
+      "delete": {
+        "tags": [
+          "parent-links"
+        ],
+        "summary": "Unlink: the student or the parent removes their own link",
+        "description": "The link must belong to the caller, else 404. Audited (actor, link). Rate limited.",
+        "parameters": [
+          {
+            "schema": {
+              "$ref": "#/components/schemas/Id"
+            },
+            "required": true,
+            "description": "Opaque entity id (string). Never parse or construct on the client.",
+            "name": "linkId",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Removed. No body."
+          },
+          "401": {
+            "description": "UNAUTHORIZED: no valid session.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN (wrong role) or CSRF_INVALID on mutations.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "NOT_FOUND.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "RATE_LIMITED, with retryAfter and the Retry-After header.",
+            "headers": {
+              "Retry-After": {
+                "schema": {
+                  "type": "string",
+                  "pattern": "^\\d+$",
+                  "description": "Seconds until a retry is allowed."
+                },
+                "required": true,
+                "description": "Seconds until a retry is allowed."
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RateLimitedBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/parent-links": {
+      "get": {
+        "tags": [
+          "parent-links"
+        ],
+        "summary": "Parent-child links (admin: all; school_admin: students of the own school)",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "maxLength": 64
+            },
+            "required": false,
+            "name": "studentId",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "maxLength": 64
+            },
+            "required": false,
+            "name": "parentId",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "description": "Never rejected: a bad value is page 1. Fixed page size 50."
+            },
+            "required": false,
+            "description": "Never rejected: a bad value is page 1. Fixed page size 50.",
+            "name": "page",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "A page.",
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string",
+                  "enum": [
+                    "no-store"
+                  ],
+                  "description": "Always \"no-store\"."
+                },
+                "required": true,
+                "description": "Always \"no-store\"."
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/ParentLink"
+                      }
+                    },
+                    "meta": {
+                      "$ref": "#/components/schemas/ListMeta"
+                    }
+                  },
+                  "required": [
+                    "data",
+                    "meta"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED: no valid session.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN (wrong role) or CSRF_INVALID on mutations.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/parent-links/{linkId}": {
+      "delete": {
+        "tags": [
+          "parent-links"
+        ],
+        "summary": "Unlink as admin or school_admin",
+        "description": "A school_admin may remove only links of students of the own school; any other id is 404 (never 403). Audited (actor, role, link). Rate limited.",
+        "parameters": [
+          {
+            "schema": {
+              "$ref": "#/components/schemas/Id"
+            },
+            "required": true,
+            "description": "Opaque entity id (string). Never parse or construct on the client.",
+            "name": "linkId",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Removed. No body."
+          },
+          "401": {
+            "description": "UNAUTHORIZED: no valid session.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN (wrong role) or CSRF_INVALID on mutations.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "NOT_FOUND.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "RATE_LIMITED, with retryAfter and the Retry-After header.",
+            "headers": {
+              "Retry-After": {
+                "schema": {
+                  "type": "string",
+                  "pattern": "^\\d+$",
+                  "description": "Seconds until a retry is allowed."
+                },
+                "required": true,
+                "description": "Seconds until a retry is allowed."
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RateLimitedBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/school-packages": {
+      "get": {
+        "tags": [
+          "school-subscriptions"
+        ],
+        "summary": "The school packages (4 rows)",
+        "responses": {
+          "200": {
+            "description": "Packages.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/SchoolPackage"
+                      }
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED: no valid session.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN: only the central admin role may call this route (a school_admin gets 403), or CSRF_INVALID on mutations.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/school-subscriptions": {
+      "get": {
+        "tags": [
+          "school-subscriptions"
+        ],
+        "summary": "All school subscriptions, newest first (not paginated)",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "maxLength": 100,
+              "description": "Substring of school name or code (at most 100 characters)."
+            },
+            "required": false,
+            "description": "Substring of school name or code (at most 100 characters).",
+            "name": "search",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "description": "Exact status; an unknown value matches nothing."
+            },
+            "required": false,
+            "description": "Exact status; an unknown value matches nothing.",
+            "name": "status",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "description": "Exact form level; an unknown value matches nothing."
+            },
+            "required": false,
+            "description": "Exact form level; an unknown value matches nothing.",
+            "name": "formLevel",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Rows.",
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string",
+                  "enum": [
+                    "no-store"
+                  ],
+                  "description": "Always \"no-store\"."
+                },
+                "required": true,
+                "description": "Always \"no-store\"."
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/SubscriptionListItem"
+                      }
+                    },
+                    "meta": {
+                      "$ref": "#/components/schemas/SubscriptionListMeta"
+                    }
+                  },
+                  "required": [
+                    "data",
+                    "meta"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED: no valid session.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN: only the central admin role may call this route (a school_admin gets 403), or CSRF_INVALID on mutations.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "school-subscriptions"
+        ],
+        "summary": "Create a subscription",
+        "description": "status: \"Langganan berjaya dicipta.\". New row is active from now; basic ends in 1 month with questionLimit 500, full in 12 months with no limit.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SubscriptionCreateRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Created.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/SubscriptionDetail"
+                    },
+                    "status": {
+                      "type": "string",
+                      "minLength": 1,
+                      "description": "BM flash text for display."
+                    }
+                  },
+                  "required": [
+                    "data",
+                    "status"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED: no valid session.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN: only the central admin role may call this route (a school_admin gets 403), or CSRF_INVALID on mutations.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "VALIDATION_ERROR with `fields`.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "RATE_LIMITED, with retryAfter and the Retry-After header (D57a).",
+            "headers": {
+              "Retry-After": {
+                "schema": {
+                  "type": "string",
+                  "pattern": "^\\d+$",
+                  "description": "Seconds until a retry is allowed."
+                },
+                "required": true,
+                "description": "Seconds until a retry is allowed."
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RateLimitedBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/school-subscriptions/{id}": {
+      "get": {
+        "tags": [
+          "school-subscriptions"
+        ],
+        "summary": "One subscription with its school and package",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Opaque entity id."
+            },
+            "required": true,
+            "description": "Opaque entity id.",
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The subscription.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/SubscriptionDetail"
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED: no valid session.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN: only the central admin role may call this route (a school_admin gets 403), or CSRF_INVALID on mutations.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "NOT_FOUND.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/school-subscriptions/{id}/students": {
+      "get": {
+        "tags": [
+          "school-subscriptions"
+        ],
+        "summary": "Students of the subscription school (active and inactive, by name)",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Opaque entity id."
+            },
+            "required": true,
+            "description": "Opaque entity id.",
+            "name": "id",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "description": "25, 50, 100 or 200. Never rejected: anything else (unknown or not a number) answers 50."
+            },
+            "required": false,
+            "description": "25, 50, 100 or 200. Never rejected: anything else (unknown or not a number) answers 50.",
+            "name": "perPage",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "description": "Never rejected: a missing, zero, negative or non-numeric value is page 1."
+            },
+            "required": false,
+            "description": "Never rejected: a missing, zero, negative or non-numeric value is page 1.",
+            "name": "page",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "A page; meta.pageSize is the size used.",
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string",
+                  "enum": [
+                    "no-store"
+                  ],
+                  "description": "Always \"no-store\"."
+                },
+                "required": true,
+                "description": "Always \"no-store\"."
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/SubscriptionStudent"
+                      }
+                    },
+                    "meta": {
+                      "$ref": "#/components/schemas/ListMeta"
+                    }
+                  },
+                  "required": [
+                    "data",
+                    "meta"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED: no valid session.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN: only the central admin role may call this route (a school_admin gets 403), or CSRF_INVALID on mutations.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "NOT_FOUND.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/school-subscriptions/{id}/renewal-invoice": {
+      "get": {
+        "tags": [
+          "school-subscriptions"
+        ],
+        "summary": "Renewal invoice data",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Opaque entity id."
+            },
+            "required": true,
+            "description": "Opaque entity id.",
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The invoice.",
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string",
+                  "enum": [
+                    "no-store"
+                  ],
+                  "description": "Always \"no-store\"."
+                },
+                "required": true,
+                "description": "Always \"no-store\"."
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/SubscriptionRenewalInvoice"
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED: no valid session.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN: only the central admin role may call this route (a school_admin gets 403), or CSRF_INVALID on mutations.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "NOT_FOUND.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/school-subscriptions/{id}/quota": {
+      "put": {
+        "tags": [
+          "school-subscriptions"
+        ],
+        "summary": "Change the student quota",
+        "description": "status: \"Kuota berjaya dikemaskini.\". Works on any status; a history line is appended to notes only when a reason is given.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Opaque entity id."
+            },
+            "required": true,
+            "description": "Opaque entity id.",
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SubscriptionQuotaRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Updated subscription.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/SubscriptionDetail"
+                    },
+                    "status": {
+                      "type": "string",
+                      "minLength": 1,
+                      "description": "BM flash text for display."
+                    }
+                  },
+                  "required": [
+                    "data",
+                    "status"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED: no valid session.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN: only the central admin role may call this route (a school_admin gets 403), or CSRF_INVALID on mutations.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "NOT_FOUND.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "VALIDATION_ERROR with `fields` (mock English templates).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "RATE_LIMITED, with retryAfter and the Retry-After header (D57a).",
+            "headers": {
+              "Retry-After": {
+                "schema": {
+                  "type": "string",
+                  "pattern": "^\\d+$",
+                  "description": "Seconds until a retry is allowed."
+                },
+                "required": true,
+                "description": "Seconds until a retry is allowed."
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RateLimitedBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/school-subscriptions/{id}/extend": {
+      "post": {
+        "tags": [
+          "school-subscriptions"
+        ],
+        "summary": "Extend the period by days",
+        "description": "status: \"Tempoh langganan berjaya dilanjutkan.\". An expired or grace row whose new end is in the future becomes active; a cancelled row is never reactivated.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Opaque entity id."
+            },
+            "required": true,
+            "description": "Opaque entity id.",
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SubscriptionExtendRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Updated subscription.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/SubscriptionDetail"
+                    },
+                    "status": {
+                      "type": "string",
+                      "minLength": 1,
+                      "description": "BM flash text for display."
+                    }
+                  },
+                  "required": [
+                    "data",
+                    "status"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED: no valid session.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN: only the central admin role may call this route (a school_admin gets 403), or CSRF_INVALID on mutations.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "NOT_FOUND.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "VALIDATION_ERROR with `fields` (mock English templates).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "RATE_LIMITED, with retryAfter and the Retry-After header (D57a).",
+            "headers": {
+              "Retry-After": {
+                "schema": {
+                  "type": "string",
+                  "pattern": "^\\d+$",
+                  "description": "Seconds until a retry is allowed."
+                },
+                "required": true,
+                "description": "Seconds until a retry is allowed."
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RateLimitedBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/school-subscriptions/{id}/upgrade": {
+      "post": {
+        "tags": [
+          "school-subscriptions"
+        ],
+        "summary": "Upgrade a Pemantauan (basic) subscription to Penuh (full)",
+        "description": "status: \"Langganan berjaya dinaik taraf.\". Sets full, no question limit, 12 months from now, active.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Opaque entity id."
+            },
+            "required": true,
+            "description": "Opaque entity id.",
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "requestBody": {
+          "required": false,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SubscriptionUpgradeRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Updated subscription.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/SubscriptionDetail"
+                    },
+                    "status": {
+                      "type": "string",
+                      "minLength": 1,
+                      "description": "BM flash text for display."
+                    }
+                  },
+                  "required": [
+                    "data",
+                    "status"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED: no valid session.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN: only the central admin role may call this route (a school_admin gets 403), or CSRF_INVALID on mutations.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "NOT_FOUND.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "422 VALIDATION_ERROR: `fields.packageTier` \"Hanya langganan Pemantauan boleh dinaik taraf.\" unless the tier is basic.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "anyOf": [
+                    {
+                      "$ref": "#/components/schemas/SubscriptionUpgradeRefusal"
+                    },
+                    {
+                      "$ref": "#/components/schemas/ErrorBody"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "RATE_LIMITED, with retryAfter and the Retry-After header (D57a).",
+            "headers": {
+              "Retry-After": {
+                "schema": {
+                  "type": "string",
+                  "pattern": "^\\d+$",
+                  "description": "Seconds until a retry is allowed."
+                },
+                "required": true,
+                "description": "Seconds until a retry is allowed."
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RateLimitedBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/school-subscriptions/{id}/cancel": {
+      "post": {
+        "tags": [
+          "school-subscriptions"
+        ],
+        "summary": "Cancel a subscription",
+        "description": "status: \"Langganan berjaya dibatalkan.\".",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Opaque entity id."
+            },
+            "required": true,
+            "description": "Opaque entity id.",
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Updated subscription.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/SubscriptionDetail"
+                    },
+                    "status": {
+                      "type": "string",
+                      "minLength": 1,
+                      "description": "BM flash text for display."
+                    }
+                  },
+                  "required": [
+                    "data",
+                    "status"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED: no valid session.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN: only the central admin role may call this route (a school_admin gets 403), or CSRF_INVALID on mutations.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "NOT_FOUND.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "422 VALIDATION_ERROR: `fields.status` \"Langganan ini sudah dibatalkan.\" when already cancelled.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "anyOf": [
+                    {
+                      "$ref": "#/components/schemas/SubscriptionCancelRefusal"
+                    },
+                    {
+                      "$ref": "#/components/schemas/ErrorBody"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "RATE_LIMITED, with retryAfter and the Retry-After header (D57a).",
+            "headers": {
+              "Retry-After": {
+                "schema": {
+                  "type": "string",
+                  "pattern": "^\\d+$",
+                  "description": "Seconds until a retry is allowed."
+                },
+                "required": true,
+                "description": "Seconds until a retry is allowed."
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RateLimitedBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/schools/{id}/quota": {
+      "get": {
+        "tags": [
+          "school-subscriptions"
+        ],
+        "summary": "Student quota of a school",
+        "description": "quota = studentQuota of the latest-starting active (or grace) subscription; used counts active and inactive students.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Opaque entity id."
+            },
+            "required": true,
+            "description": "Opaque entity id.",
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The quota.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/SchoolQuota"
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED: no valid session.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN: only the central admin role may call this route (a school_admin gets 403), or CSRF_INVALID on mutations.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "NOT_FOUND.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/students/import": {
+      "post": {
+        "tags": [
+          "school-subscriptions"
+        ],
+        "summary": "Import students from DELIMa text (CSV or paste)",
+        "description": "status: \"Import selesai: {created} pelajar didaftarkan, {skipped} dilangkau.\". 422 `fields.schoolId`: \"Sekolah ini tiada langganan aktif. Import pelajar tidak dibenarkan.\" (no active or grace subscription) or \"Kuota tidak mencukupi.\" (new records exceed the remaining quota; the whole import is refused). 422 `fields.csvFile` / `fields.pasteContent`: \"Tiada data untuk diimport.\". Central admin only. v2 limits (security review): at most 1000 rows and 1 MB, else 413 PAYLOAD_TOO_LARGE. The server hashes the DELIMa passwords on arrival, never logs the body and never echoes a row or password (errors carry only line and message); the quota check and the inserts run in one transaction with a lock. Rate limited (bulk account creation).",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/StudentImportRequest"
+              }
+            },
+            "multipart/form-data": {
+              "schema": {
+                "$ref": "#/components/schemas/StudentImportMultipartRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Result.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/StudentImportResult"
+                    },
+                    "status": {
+                      "type": "string",
+                      "minLength": 1,
+                      "description": "BM flash text for display."
+                    }
+                  },
+                  "required": [
+                    "data",
+                    "status"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED: no valid session.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN: only the central admin role may call this route (a school_admin gets 403), or CSRF_INVALID on mutations.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "PAYLOAD_TOO_LARGE \"Fail import melebihi had yang dibenarkan.\": more than 1000 rows or 1 MB (v2 limits; the mock has none).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StudentImportTooLarge"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "VALIDATION_ERROR: the BM refusals above, or `fields` with the mock English templates (school id, class level, import mode).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "anyOf": [
+                    {
+                      "$ref": "#/components/schemas/StudentImportNoSubscriptionRefusal"
+                    },
+                    {
+                      "$ref": "#/components/schemas/StudentImportQuotaShortRefusal"
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "error": {
+                          "type": "object",
+                          "properties": {
+                            "code": {
+                              "type": "string",
+                              "enum": [
+                                "VALIDATION_ERROR"
+                              ]
+                            },
+                            "message": {
+                              "type": "string",
+                              "enum": [
+                                "Tiada data untuk diimport."
+                              ]
+                            },
+                            "fields": {
+                              "type": "object",
+                              "properties": {
+                                "csvFile": {
+                                  "type": "string",
+                                  "enum": [
+                                    "Tiada data untuk diimport."
+                                  ]
+                                }
+                              },
+                              "required": [
+                                "csvFile"
+                              ]
+                            },
+                            "details": {
+                              "type": "object",
+                              "additionalProperties": {},
+                              "description": "Structured extras (e.g. candidate schools for AMBIGUOUS_USERNAME)."
+                            },
+                            "retryAfter": {
+                              "type": "integer",
+                              "minimum": 0,
+                              "description": "Seconds until a retry is allowed, for RATE_LIMITED."
+                            },
+                            "requestId": {
+                              "type": "string",
+                              "description": "Correlation id, for support."
+                            }
+                          },
+                          "required": [
+                            "code",
+                            "message",
+                            "fields"
+                          ]
+                        }
+                      },
+                      "required": [
+                        "error"
+                      ]
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "error": {
+                          "type": "object",
+                          "properties": {
+                            "code": {
+                              "type": "string",
+                              "enum": [
+                                "VALIDATION_ERROR"
+                              ]
+                            },
+                            "message": {
+                              "type": "string",
+                              "enum": [
+                                "Tiada data untuk diimport."
+                              ]
+                            },
+                            "fields": {
+                              "type": "object",
+                              "properties": {
+                                "pasteContent": {
+                                  "type": "string",
+                                  "enum": [
+                                    "Tiada data untuk diimport."
+                                  ]
+                                }
+                              },
+                              "required": [
+                                "pasteContent"
+                              ]
+                            },
+                            "details": {
+                              "type": "object",
+                              "additionalProperties": {},
+                              "description": "Structured extras (e.g. candidate schools for AMBIGUOUS_USERNAME)."
+                            },
+                            "retryAfter": {
+                              "type": "integer",
+                              "minimum": 0,
+                              "description": "Seconds until a retry is allowed, for RATE_LIMITED."
+                            },
+                            "requestId": {
+                              "type": "string",
+                              "description": "Correlation id, for support."
+                            }
+                          },
+                          "required": [
+                            "code",
+                            "message",
+                            "fields"
+                          ]
+                        }
+                      },
+                      "required": [
+                        "error"
+                      ]
+                    },
+                    {
+                      "$ref": "#/components/schemas/ErrorBody"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "RATE_LIMITED, with retryAfter and the Retry-After header (D57a).",
+            "headers": {
+              "Retry-After": {
+                "schema": {
+                  "type": "string",
+                  "pattern": "^\\d+$",
+                  "description": "Seconds until a retry is allowed."
+                },
+                "required": true,
+                "description": "Seconds until a retry is allowed."
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RateLimitedBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/users/{id}/packages": {
+      "get": {
+        "tags": [
+          "school-subscriptions"
+        ],
+        "summary": "Package cards of a school admin",
+        "description": "422 `fields.id` \"Pengguna ini bukan admin sekolah.\" when the user is not a school admin.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Opaque entity id."
+            },
+            "required": true,
+            "description": "Opaque entity id.",
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Cards.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/SchoolPackageUserView"
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED: no valid session.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN: only the central admin role may call this route (a school_admin gets 403), or CSRF_INVALID on mutations.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "NOT_FOUND.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "422 `fields.id` \"Pengguna ini bukan admin sekolah.\".",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SchoolPackageNotAdminRefusal"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "school-subscriptions"
+        ],
+        "summary": "Assign a package quota to a school admin (upsert per user and form level)",
+        "description": "status: \"Pakej berjaya ditetapkan.\". 422 `fields.id` \"Pengguna ini bukan admin sekolah.\" when the user is not a school admin.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Opaque entity id."
+            },
+            "required": true,
+            "description": "Opaque entity id.",
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SchoolPackageAssignRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Assigned.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/SchoolPackageAssignment"
+                    },
+                    "status": {
+                      "type": "string",
+                      "minLength": 1,
+                      "description": "BM flash text for display."
+                    }
+                  },
+                  "required": [
+                    "data",
+                    "status"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED: no valid session.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN: only the central admin role may call this route (a school_admin gets 403), or CSRF_INVALID on mutations.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "NOT_FOUND.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Not a school admin (BM copy), or `fields` with the mock English templates.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "anyOf": [
+                    {
+                      "$ref": "#/components/schemas/SchoolPackageNotAdminRefusal"
+                    },
+                    {
+                      "$ref": "#/components/schemas/ErrorBody"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "RATE_LIMITED, with retryAfter and the Retry-After header (D57a).",
+            "headers": {
+              "Retry-After": {
+                "schema": {
+                  "type": "string",
+                  "pattern": "^\\d+$",
+                  "description": "Seconds until a retry is allowed."
+                },
+                "required": true,
+                "description": "Seconds until a retry is allowed."
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RateLimitedBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/comp-students": {
+      "get": {
+        "tags": [
+          "comp-students"
+        ],
+        "summary": "Complimentary students, newest first (50 per page)",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "required": false,
+            "name": "page",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "A page.",
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string",
+                  "enum": [
+                    "no-store"
+                  ],
+                  "description": "Always \"no-store\"."
+                },
+                "required": true,
+                "description": "Always \"no-store\"."
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/CompStudentListItem"
+                      }
+                    },
+                    "meta": {
+                      "$ref": "#/components/schemas/CompStudentListMeta"
+                    }
+                  },
+                  "required": [
+                    "data",
+                    "meta"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED: no valid session.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN: only the central admin role may call this route (a school_admin gets 403), or CSRF_INVALID on mutations.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "comp-students"
+        ],
+        "summary": "Register complimentary students from \"NAMA, NOKP\" lines",
+        "description": "status: \"{n} pelajar komplimen berjaya didaftarkan.\". Failed lines: \"Format baris tidak sah. Gunakan NAMA, NOKP.\" and \"No. KP mesti sekurang-kurangnya 6 digit.\". The login e-mail is generated by the server and is not derived from the IC (v2; the mock used the last 6 IC digits + @prestasiplus.my); the initial password is generated and must be changed at first login (must_reset_password); a login that already exists or repeats is skipped. Central admin only. Rate limited.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CompStudentRegisterRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Result.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/StudentImportResult"
+                    },
+                    "status": {
+                      "type": "string",
+                      "minLength": 1,
+                      "description": "BM flash text for display."
+                    }
+                  },
+                  "required": [
+                    "data",
+                    "status"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED: no valid session.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN: only the central admin role may call this route (a school_admin gets 403), or CSRF_INVALID on mutations.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "VALIDATION_ERROR with `fields`.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "RATE_LIMITED, with retryAfter and the Retry-After header (D57a).",
+            "headers": {
+              "Retry-After": {
+                "schema": {
+                  "type": "string",
+                  "pattern": "^\\d+$",
+                  "description": "Seconds until a retry is allowed."
+                },
+                "required": true,
+                "description": "Seconds until a retry is allowed."
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RateLimitedBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/comp-students/bulk-action": {
+      "post": {
+        "tags": [
+          "comp-students"
+        ],
+        "summary": "Bulk coins or active switch on complimentary students",
+        "description": "status: \"Tindakan berjaya dilaksanakan.\". Ids that are not complimentary students are ignored. Every change is audited with the actor.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CompBulkActionRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Applied.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/CompBulkActionResult"
+                    },
+                    "status": {
+                      "type": "string",
+                      "minLength": 1,
+                      "description": "BM flash text for display."
+                    }
+                  },
+                  "required": [
+                    "data",
+                    "status"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED: no valid session.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN: only the central admin role may call this route (a school_admin gets 403), or CSRF_INVALID on mutations.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "VALIDATION_ERROR with `fields`.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "RATE_LIMITED, with retryAfter and the Retry-After header (D57a).",
+            "headers": {
+              "Retry-After": {
+                "schema": {
+                  "type": "string",
+                  "pattern": "^\\d+$",
+                  "description": "Seconds until a retry is allowed."
+                },
+                "required": true,
+                "description": "Seconds until a retry is allowed."
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RateLimitedBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/comp-students/{id}": {
+      "get": {
+        "tags": [
+          "comp-students"
+        ],
+        "summary": "One complimentary student with enrolments",
+        "description": "404 unless the id is a complimentary student.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Opaque entity id."
+            },
+            "required": true,
+            "description": "Opaque entity id.",
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The student.",
+            "headers": {
+              "Cache-Control": {
+                "schema": {
+                  "type": "string",
+                  "enum": [
+                    "no-store"
+                  ],
+                  "description": "Always \"no-store\"."
+                },
+                "required": true,
+                "description": "Always \"no-store\"."
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/CompStudentDetail"
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED: no valid session.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN: only the central admin role may call this route (a school_admin gets 403), or CSRF_INVALID on mutations.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "NOT_FOUND.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/comp-students/{id}/toggle-coins": {
+      "post": {
+        "tags": [
+          "comp-students"
+        ],
+        "summary": "Flip coins on or off",
+        "description": "status: \"Tindakan berjaya dilaksanakan.\". Audited with the actor.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Opaque entity id."
+            },
+            "required": true,
+            "description": "Opaque entity id.",
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "New value.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/CompToggleCoinsResult"
+                    },
+                    "status": {
+                      "type": "string",
+                      "minLength": 1,
+                      "description": "BM flash text for display."
+                    }
+                  },
+                  "required": [
+                    "data",
+                    "status"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED: no valid session.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN: only the central admin role may call this route (a school_admin gets 403), or CSRF_INVALID on mutations.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "NOT_FOUND.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "RATE_LIMITED, with retryAfter and the Retry-After header (D57a).",
+            "headers": {
+              "Retry-After": {
+                "schema": {
+                  "type": "string",
+                  "pattern": "^\\d+$",
+                  "description": "Seconds until a retry is allowed."
+                },
+                "required": true,
+                "description": "Seconds until a retry is allowed."
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RateLimitedBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/comp-students/{id}/toggle-active": {
+      "post": {
+        "tags": [
+          "comp-students"
+        ],
+        "summary": "Flip the active flag",
+        "description": "status: \"Tindakan berjaya dilaksanakan.\". Audited with the actor.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Opaque entity id."
+            },
+            "required": true,
+            "description": "Opaque entity id.",
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "New value.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/CompToggleActiveResult"
+                    },
+                    "status": {
+                      "type": "string",
+                      "minLength": 1,
+                      "description": "BM flash text for display."
+                    }
+                  },
+                  "required": [
+                    "data",
+                    "status"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED: no valid session.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN: only the central admin role may call this route (a school_admin gets 403), or CSRF_INVALID on mutations.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "NOT_FOUND.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "RATE_LIMITED, with retryAfter and the Retry-After header (D57a).",
+            "headers": {
+              "Retry-After": {
+                "schema": {
+                  "type": "string",
+                  "pattern": "^\\d+$",
+                  "description": "Seconds until a retry is allowed."
+                },
+                "required": true,
+                "description": "Seconds until a retry is allowed."
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RateLimitedBody"
                 }
               }
             }

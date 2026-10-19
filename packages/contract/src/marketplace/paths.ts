@@ -63,6 +63,22 @@ const json = (schema: z.ZodType, description: string) => ({
 })
 const err = (description: string) => json(ErrorBodySchema, description)
 
+/**
+ * D57(a): every write route, and the product page GET that bumps `views`, can answer 429. Standard `{ error }`
+ * body; the mock has no limiter.
+ */
+const RATE_LIMITED = {
+  description:
+    'RATE_LIMITED (BM "Terlalu banyak percubaan. Sila cuba sebentar lagi."): body error.retryAfter and the Retry-After header carry the seconds to wait.',
+  headers: {
+    'Retry-After': {
+      description: 'Seconds until a retry is allowed (same value as error.retryAfter).',
+      schema: { type: 'integer' as const, minimum: 0 },
+    },
+  },
+  content: { 'application/json': { schema: ErrorBodySchema } },
+}
+
 const UNAUTHORIZED = err(`UNAUTHORIZED "${MARKETPLACE_ERRORS.UNAUTHORIZED.message}" (no valid session). Every role may call these routes.`)
 const NOT_FOUND_PRODUCT = err(
   `NOT_FOUND "${MARKETPLACE_ERRORS.NOT_FOUND.message}": unknown slug, or a hidden product (status other than active, or the seller is not active). Nothing is counted.`,
@@ -84,7 +100,8 @@ const csrf = z.object({
 
 /**
  * Registers the five buyer routes of M20 (BE-46). Bodies are `{ data }`, `{ data, meta }` or
- * `{ error }`. Seller and admin routes of the SRS have no mock route and are not registered.
+ * `{ error }`. No response carries a credential or token, so none sends Cache-Control: no-store (D57(b)).
+ * Seller and admin routes of the SRS have no mock route and are not registered.
  */
 export function registerMarketplacePaths(registry: OpenAPIRegistry): void {
   registry.registerPath({
@@ -115,7 +132,7 @@ export function registerMarketplacePaths(registry: OpenAPIRegistry): void {
     description:
       'Adds 1 to `views` on EVERY call (no de-duplication) and returns the new value. A hidden or unknown slug changes nothing.',
     request: { params: SlugParams },
-    responses: { 200: json(MarketplaceProductResponseSchema, 'The product.'), 401: UNAUTHORIZED, 404: NOT_FOUND_PRODUCT },
+    responses: { 429: RATE_LIMITED, 200: json(MarketplaceProductResponseSchema, 'The product.'), 401: UNAUTHORIZED, 404: NOT_FOUND_PRODUCT },
   })
 
   registry.registerPath({
@@ -127,6 +144,7 @@ export function registerMarketplacePaths(registry: OpenAPIRegistry): void {
       'No body. A seller product adds 1 to the seller\'s WhatsApp click counter and returns the seller\'s wa.me URL; a platform product counts nothing and returns the platform number (server configuration). The server never calls WhatsApp or sends a message (D14); the caller navigates to the URL.',
     request: { params: SlugParams, headers: [csrf] },
     responses: {
+      429: RATE_LIMITED,
       200: json(MarketplaceWhatsappResponseSchema, 'The hand-off URL.'),
       401: UNAUTHORIZED,
       403: FORBIDDEN_CSRF,
