@@ -17,6 +17,10 @@ import {
   UserListMetaSchema,
   UserListQuerySchema,
   ASSIGNABLE_ROLES,
+  BULK_IMPORT_ROLES_BY_CALLER,
+  ImportRoleForbiddenSchema,
+  LAST_ADMIN_MESSAGE,
+  LastAdminConflictSchema,
   USER_ACCESS,
   IMPORT_MAX_CHARS,
   IMPORT_MAX_ROWS,
@@ -337,6 +341,64 @@ describe('security review fixes (D55, D57)', () => {
   it('mustChangePassword is on the detail and the import report', () => {
     expect(AdminUserDetailSchema.safeParse({ ...detail, mustChangePassword: undefined }).success).toBe(false)
     expect(ImportResultSchema.safeParse({ created: 1, skipped: 0, failed: 0, errors: [] }).success).toBe(false)
+  })
+})
+
+describe('D58 decisions', () => {
+  type Resp = { content?: { 'application/json': { schema: { $ref?: string; anyOf?: { $ref?: string }[] } } } }
+  type Op = { description?: string; responses: Record<string, Resp> }
+  const doc = buildOpenApiDocument() as { paths: Record<string, Record<string, Op>> }
+  const op = (path: string, method: string) => doc.paths[path]![method]!
+
+  it('exports the last-admin message and pins it in the 409 of PUT, DELETE, bulk-delete and toggle', () => {
+    expect(LAST_ADMIN_MESSAGE).toBe('Admin terakhir tidak boleh dinyahaktifkan atau dipadam.')
+    const ok = { error: { code: 'CONFLICT', message: LAST_ADMIN_MESSAGE } }
+    expect(LastAdminConflictSchema.safeParse(ok).success).toBe(true)
+    expect(LastAdminConflictSchema.safeParse({ error: { code: 'CONFLICT', message: 'lain' } }).success).toBe(false)
+    expect(LastAdminConflictSchema.safeParse({ error: { code: 'FORBIDDEN', message: LAST_ADMIN_MESSAGE } }).success).toBe(false)
+    for (const [path, method] of [
+      ['/admin/users/{id}', 'put'],
+      ['/admin/users/{id}', 'delete'],
+      ['/admin/users/bulk-delete', 'post'],
+      ['/admin/users/{id}/toggle-active', 'post'],
+    ] as const) {
+      expect(op(path, method).responses['409']?.content?.['application/json'].schema.$ref, path + ' ' + method).toBe('#/components/schemas/LastAdminConflict')
+    }
+  })
+
+  it('a school_admin may import teachers only, never parents (typed 403, server-enforced)', () => {
+    expect([...BULK_IMPORT_ROLES_BY_CALLER.school_admin]).toEqual(['teacher'])
+    expect(BULK_IMPORT_ROLES_BY_CALLER.admin).toContain('parent')
+    expect(ASSIGNABLE_ROLES.school_admin).not.toContain('parent')
+    expect(USER_ACCESS['POST /admin/users/bulk-import'].scope).toMatch(/teacher only/)
+    expect(ImportRoleForbiddenSchema.safeParse({ error: { code: 'FORBIDDEN', message: 'x' } }).success).toBe(true)
+    expect(ImportRoleForbiddenSchema.safeParse({ error: { code: 'NOT_FOUND', message: 'x' } }).success).toBe(false)
+    const forbidden = op('/admin/users/bulk-import', 'post').responses['403']?.content?.['application/json'].schema
+    expect(JSON.stringify(forbidden)).toContain('ImportRoleForbidden')
+    expect(op('/admin/users/bulk-import', 'post').description).toMatch(/school_admin may import teachers only, never parents/)
+  })
+
+  it('every admin write route with a body is strict and documents BE-NFR-05', () => {
+    expect(CreateUserRequestSchema.safeParse({ ...create, extra: 1 }).success).toBe(false)
+    expect(UpdateUserRequestSchema.safeParse({ roles: ['teacher'], name: 'a', email: 'a@example.test', extra: 1 }).success).toBe(false)
+    expect(BulkDeleteRequestSchema.safeParse({ ids: ['1'], extra: 1 }).success).toBe(false)
+    expect(BulkImportRequestSchema.safeParse({ role: 'parent', importMode: 'paste', pasteContent: 'a, a@example.test', extra: 1 }).success).toBe(false)
+    expect(BulkImportMultipartSchema.safeParse({ role: 'parent', importMode: 'paste', pasteContent: 'a, a@example.test', extra: 1 }).success).toBe(false)
+    expect(SchoolInputSchema.safeParse({ name: 'a', code: 'b', type: 'SK', state: 'Johor', extra: 1 }).success).toBe(false)
+    for (const [path, method] of [
+      ['/admin/users', 'post'],
+      ['/admin/users/{id}', 'put'],
+      ['/admin/users/bulk-delete', 'post'],
+      ['/admin/users/bulk-import', 'post'],
+      ['/admin/schools', 'post'],
+      ['/admin/schools/{id}', 'put'],
+    ] as const)
+      expect(op(path, method).description, path + ' ' + method).toMatch(/BE-NFR-05/)
+  })
+
+  it('the defaults route keeps the clear values, admin only and no-store, and notes D58', () => {
+    expect(op('/admin/config/defaults', 'get').description).toMatch(/D58/)
+    expect(USER_ACCESS['GET /admin/config/defaults'].roles).toEqual(['admin'])
   })
 })
 

@@ -19,6 +19,8 @@ import {
   ImportModeSchema,
   ImportResultSchema,
   ImportRowErrorSchema,
+  ImportRoleForbiddenSchema,
+  LastAdminConflictSchema,
   RoleCountsSchema,
   StudentSearchItemSchema,
   StudentSearchQuerySchema,
@@ -55,6 +57,8 @@ export const USERS_COMPONENT_SCHEMAS = {
   BulkImportRequest: BulkImportRequestSchema,
   BulkImportMultipartRequest: BulkImportMultipartSchema,
   ImportRowError: ImportRowErrorSchema,
+  ImportRoleForbidden: ImportRoleForbiddenSchema,
+  LastAdminConflict: LastAdminConflictSchema,
   ImportResult: ImportResultSchema,
   TeacherOption: TeacherOptionSchema,
   TeacherClassroomOption: TeacherClassroomOptionSchema,
@@ -76,7 +80,7 @@ const idParam = z.object({ id: z.string().min(1).meta({ description: 'Opaque use
 export function registerUsersPaths(registry: OpenAPIRegistry): void {
   const unauthorized = err('UNAUTHORIZED: no valid session.')
   const forbidden = err('FORBIDDEN (role not allowed for this operation or role not assignable by the caller, see Access) or CSRF_INVALID on mutations.')
-  const conflict = err('CONFLICT: would remove, demote or deactivate the last active admin or the caller own admin role.')
+  const conflict = json(LastAdminConflictSchema, 'CONFLICT: would remove, demote or deactivate the last active admin or the caller own admin role (D58: message "Admin terakhir tidak boleh dinyahaktifkan atau dipadam.").')
   const limited = rateLimitedResponse
   const csrf = [csrfHeaders]
   const notFound = err('NOT_FOUND (also for an id outside the caller scope, so ids cannot be probed).')
@@ -122,7 +126,7 @@ export function registerUsersPaths(registry: OpenAPIRegistry): void {
     path: '/admin/users',
     tags,
     summary: 'Create a user',
-    description: `${access('POST /admin/users')} status: "Pengguna berjaya didaftarkan.". The IC is accepted as \`icNumber\` and stored as hash + mask only; a validation error never echoes it. Passwords are never echoed in \`fields\`, error bodies or logs. An account created here is flagged \`mustChangePassword\`. Unknown keys are rejected with 422. A role the caller may not assign is 403 FORBIDDEN; a \`schoolId\` outside the caller scope is 422 \`fields.schoolId\`. The distinct "has already been taken" message (e-mail, username) is shown to admin only; for school_admin the server must not reveal that the account belongs to another school.`,
+    description: `${access('POST /admin/users')} status: "Pengguna berjaya didaftarkan.". The IC is accepted as \`icNumber\` and stored as hash + mask only; a validation error never echoes it. Passwords are never echoed in \`fields\`, error bodies or logs. An account created here is flagged \`mustChangePassword\`. Unknown keys are rejected with 422 (BE-NFR-05, strict request bodies). A role the caller may not assign is 403 FORBIDDEN; a \`schoolId\` outside the caller scope is 422 \`fields.schoolId\`. The distinct "has already been taken" message (e-mail, username) is shown to admin only; for school_admin the server must not reveal that the account belongs to another school.`,
     request: { headers: csrf, body: body(CreateUserRequestSchema) },
     responses: {
       201: jsonNoStore(statusEnvelopeOf(AdminUserDetailSchema), 'Created.'),
@@ -138,7 +142,7 @@ export function registerUsersPaths(registry: OpenAPIRegistry): void {
     path: '/admin/users/{id}',
     tags,
     summary: 'Update a user',
-    description: `${access('PUT /admin/users/{id}')} status: "Pengguna berjaya dikemaskini.". Absent keys keep the stored value. Changing a password (\`newPassword\`) flags \`mustChangePassword\`; a password, role or status change revokes the target sessions. Unknown keys are rejected with 422. A role the caller may not assign is 403; the server refuses to demote, deactivate or remove the last active admin or the caller's own admin role (409 CONFLICT). Uniqueness copy as on create.`,
+    description: `${access('PUT /admin/users/{id}')} status: "Pengguna berjaya dikemaskini.". Absent keys keep the stored value. Changing a password (\`newPassword\`) flags \`mustChangePassword\`; a password, role or status change revokes the target sessions. Unknown keys are rejected with 422 (BE-NFR-05, strict request bodies). A role the caller may not assign is 403; the server refuses to demote, deactivate or remove the last active admin or the caller's own admin role (409 CONFLICT). Uniqueness copy as on create.`,
     request: { headers: csrf, params: idParam, body: body(UpdateUserRequestSchema) },
     responses: {
       200: jsonNoStore(statusEnvelopeOf(AdminUserDetailSchema), 'Updated.'),
@@ -174,7 +178,7 @@ export function registerUsersPaths(registry: OpenAPIRegistry): void {
     path: '/admin/users/bulk-delete',
     tags,
     summary: 'Delete several users',
-    description: `${access('POST /admin/users/bulk-delete')} status: "{n} pengguna berjaya dipadam.". Unknown ids are skipped. A list containing the own account is 422 \`fields.ids\` "Anda tidak boleh memadam akaun sendiri.". Unknown keys are rejected with 422.`,
+    description: `${access('POST /admin/users/bulk-delete')} status: "{n} pengguna berjaya dipadam.". Unknown ids are skipped. A list containing the own account is 422 \`fields.ids\` "Anda tidak boleh memadam akaun sendiri.". Unknown keys are rejected with 422 (BE-NFR-05, strict request bodies).`,
     request: { headers: csrf, body: body(BulkDeleteRequestSchema) },
     responses: {
       200: json(statusEnvelopeOf(DeletedResultSchema), 'Deleted.'),
@@ -208,7 +212,7 @@ export function registerUsersPaths(registry: OpenAPIRegistry): void {
     path: '/admin/users/bulk-import',
     tags,
     summary: 'Import teachers, parents, school admins or PPD officers from CSV text or a paste',
-    description: `${access('POST /admin/users/bulk-import')} Roles limited to teacher, parent, school_admin, ppd_officer; schoolId is required for teacher and school_admin. Rows are \`name, email, phone?, password?\`; the first line is a header when its second column is not an e-mail. Caps: 1,048,576 characters and 1000 non-blank rows (a multipart file over 1 MB is 413; more rows is 422 \`fields.csvFile\`/\`fields.pasteContent\`); a row password is at most 128 characters. Failed lines are reported in \`errors\`; duplicates are counted as skipped (for school_admin the server must not reveal e-mails of other schools). Accounts created with the default password are flagged \`mustChangePassword\` (see \`mustChangePasswordCount\`). No data rows is 422 "Tiada data untuk diimport." on \`fields.csvFile\` or \`fields.pasteContent\`. status: "Import selesai: {created} pengguna didaftarkan, {skipped} dilangkau, {failed} gagal.". Tightly rate limited. Unknown keys are rejected with 422.`,
+    description: `${access('POST /admin/users/bulk-import')} Roles limited to teacher, parent, school_admin, ppd_officer (BULK_IMPORT_ROLES_BY_CALLER: a school_admin may import teachers only, never parents: 403 FORBIDDEN, D58); schoolId is required for teacher and school_admin. Rows are \`name, email, phone?, password?\`; the first line is a header when its second column is not an e-mail. Caps: 1,048,576 characters and 1000 non-blank rows (a multipart file over 1 MB is 413; more rows is 422 \`fields.csvFile\`/\`fields.pasteContent\`); a row password is at most 128 characters. Failed lines are reported in \`errors\`; duplicates are counted as skipped (for school_admin the server must not reveal e-mails of other schools). Accounts created with the default password are flagged \`mustChangePassword\` (see \`mustChangePasswordCount\`). No data rows is 422 "Tiada data untuk diimport." on \`fields.csvFile\` or \`fields.pasteContent\`. status: "Import selesai: {created} pengguna didaftarkan, {skipped} dilangkau, {failed} gagal.". Tightly rate limited. Unknown keys are rejected with 422 (BE-NFR-05, strict request bodies).`,
     request: {
       headers: csrf,
       body: {
@@ -222,7 +226,10 @@ export function registerUsersPaths(registry: OpenAPIRegistry): void {
     responses: {
       200: jsonNoStore(statusEnvelopeOf(ImportResultSchema), 'Import report.'),
       401: unauthorized,
-      403: forbidden,
+      403: json(
+        z.union([ImportRoleForbiddenSchema, ErrorBodySchema]),
+        'FORBIDDEN: a school_admin importing any role but teacher (D58, server-enforced because the schema cannot see the caller), another role not allowed, or CSRF_INVALID.',
+      ),
       413: err('PAYLOAD_TOO_LARGE: multipart file over 1 MB.'),
       422: invalid,
       429: limited,
@@ -268,7 +275,7 @@ export function registerUsersPaths(registry: OpenAPIRegistry): void {
     path: '/admin/config/defaults',
     tags,
     summary: 'Configured default passwords shown on the admin forms',
-    description: `${access('GET /admin/config/defaults')} Credentials in the body: always \`Cache-Control: no-store\`; school_admin and every other role get 403. Accounts created with a default password are flagged \`mustChangePassword\` (D55c, D57c). OQ-API-B1-16: confirm that these values may be returned at all.`,
+    description: `${access('GET /admin/config/defaults')} Credentials in the body: always \`Cache-Control: no-store\`; school_admin and every other role get 403. Accounts created with a default password are flagged \`mustChangePassword\` (D55c, D57c). D58 keeps the clear values on this Admin-Pusat-only, no-store route.`,
     responses: { 200: jsonNoStore(envelopeOf(AdminDefaultsSchema), 'Defaults.'), 401: unauthorized, 403: forbidden },
   })
 }

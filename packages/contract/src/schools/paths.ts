@@ -101,7 +101,7 @@ export function registerSchoolsPaths(registry: OpenAPIRegistry): void {
     path: '/admin/schools',
     tags,
     summary: 'Create a school',
-    description: `${access('POST /admin/schools')} status: "Sekolah berjaya disimpan.". A duplicate code (case-insensitive) is 422 \`fields.code\`. Unknown keys (such as \`joinCode\`) are rejected with 422; the server generates the join code.`,
+    description: `${access('POST /admin/schools')} status: "Sekolah berjaya disimpan.". A duplicate code (case-insensitive) is 422 \`fields.code\`. Unknown keys (such as \`joinCode\`) are rejected with 422 (BE-NFR-05, strict request bodies); the server generates the join code.`,
     request: { headers: csrf, body: body(SchoolInputSchema) },
     responses: {
       201: jsonNoStore(statusEnvelopeOf(AdminSchoolSchema), 'Created.'),
@@ -117,7 +117,7 @@ export function registerSchoolsPaths(registry: OpenAPIRegistry): void {
     path: '/admin/schools/{id}',
     tags,
     summary: 'Update a school',
-    description: `${access('PUT /admin/schools/{id}')} status: "Sekolah berjaya disimpan.". The school own code is not a duplicate; absent \`isActive\` keeps the stored value. Unknown keys are rejected with 422.`,
+    description: `${access('PUT /admin/schools/{id}')} status: "Sekolah berjaya disimpan.". The school own code is not a duplicate; absent \`isActive\` keeps the stored value. Unknown keys are rejected with 422 (BE-NFR-05, strict request bodies).`,
     request: { headers: csrf, params: idParam, body: body(SchoolInputSchema) },
     responses: {
       200: jsonNoStore(statusEnvelopeOf(AdminSchoolSchema), 'Updated.'),

@@ -1,6 +1,7 @@
 import { z } from '../zod'
 import { ListMetaSchema } from '../common/envelope'
 import { ROLE_CODES } from '../common/enums'
+import { ErrorPayloadSchema } from '../common/error'
 import { IdSchema } from '../common/ids'
 import { TimestampSchema } from '../common/time'
 import { ClassLevelSchema, SchoolSummarySchema, V, enumField, mockOptionalText, mockRequiredText, type AccessRule } from '../schools/schema'
@@ -291,6 +292,30 @@ export const StudentSearchQuerySchema = z
 
 /** Roles the S4 bulk import can create (mock BULK_IMPORT_ROLES). */
 export const BULK_IMPORT_ROLES = ['teacher', 'parent', 'school_admin', 'ppd_officer'] as const
+/**
+ * D58: roles each caller may import. school_admin imports teachers only (no parents, no school_admin,
+ * no ppd_officer). The schema cannot see the caller, so the server enforces it with a typed 403.
+ */
+export const BULK_IMPORT_ROLES_BY_CALLER = {
+  admin: BULK_IMPORT_ROLES,
+  school_admin: ['teacher'],
+} as const
+
+/** D58: message of the 409 when a change would leave no active admin. */
+export const LAST_ADMIN_MESSAGE = 'Admin terakhir tidak boleh dinyahaktifkan atau dipadam.'
+
+/** 409 CONFLICT of PUT/DELETE/bulk-delete/toggle on the last active admin (message pinned). */
+export const LastAdminConflictSchema = z
+  .object({
+    error: ErrorPayloadSchema.extend({ code: z.literal('CONFLICT'), message: z.literal(LAST_ADMIN_MESSAGE) }),
+  })
+  .meta({ id: 'LastAdminConflict' })
+
+/** 403 of bulk-import when a school_admin asks for a role other than teacher (server-enforced). */
+export const ImportRoleForbiddenSchema = z
+  .object({ error: ErrorPayloadSchema.extend({ code: z.literal('FORBIDDEN') }) })
+  .meta({ id: 'ImportRoleForbidden' })
+
 export const BulkImportRoleSchema = z.enum(BULK_IMPORT_ROLES).meta({ id: 'BulkImportRole' })
 export const IMPORT_MODES = ['csv', 'paste'] as const
 export const ImportModeSchema = z.enum(IMPORT_MODES).meta({ id: 'ImportMode' })
