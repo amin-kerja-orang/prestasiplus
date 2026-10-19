@@ -21,6 +21,7 @@ import { SUPPORT_COMPONENT_SCHEMAS, registerSupportPaths } from './support/paths
 import { GAMIFICATION_COMPONENT_SCHEMAS, registerGamificationPaths } from './gamification/paths'
 import { DateOnlySchema, TimestampInputSchema, TimestampSchema } from './common/time'
 import { WALLET_COMPONENT_SCHEMAS, registerWalletPaths } from './wallet/paths'
+import { CURRICULUM_COMPONENT_SCHEMAS, registerCurriculumPaths } from './curriculum/paths'
 
 /** Every shared schema that becomes a component. Domain tasks (T07, T08, T24...) append here. */
 export const COMPONENT_SCHEMAS = {
@@ -56,6 +57,7 @@ export const COMPONENT_SCHEMAS = {
   LearningRole: LearningRoleSchema,
   LearningMenuGroup: LearningMenuGroupSchema,
   PrototypeItem: PrototypeItemSchema,
+  ...CURRICULUM_COMPONENT_SCHEMAS, // BE-08
 } as const
 
 export const CONTRACT_VERSION = '0.1.0'
@@ -69,6 +71,7 @@ export function buildOpenApiDocument(): Record<string, unknown> {
   registerContentPaths(registry) // BE-24 (M09)
   registerSupportPaths(registry) // BE-24 (M22)
   registerGamificationPaths(registry) // BE-23
+  registerCurriculumPaths(registry) // BE-08
   const generator = new OpenApiGeneratorV31(registry.definitions)
   return generator.generateDocument({
     openapi: '3.1.0',
