@@ -4,7 +4,7 @@
 |---|---|
 | Size | L |
 | Lane | PC-2 (folders: sessions.md section 5) |
-| Priority | P2 |
+| Priority | P1 |
 | Wave | 3 |
 | Depends on | BE-11, BE-12 |
 | Parallel with | BE-16, BE-18, BE-19 |
