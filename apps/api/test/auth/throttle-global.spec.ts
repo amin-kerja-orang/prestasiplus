@@ -79,7 +79,7 @@ describe('login throttle: global ceilings, proxy trust and timing', () => {
   describe('behind one proxy (TRUST_PROXY_HOPS=1)', () => {
     let t: AuthTestApp
     beforeAll(async () => {
-      t = await bootAuthApp({ env: { TRUST_PROXY_HOPS: '1' } })
+      t = await bootAuthApp({ env: { TRUST_PROXY_HOPS: '1', LOGIN_IDENTIFIER_FAIL_LIMIT: '6' } })
     })
     afterAll(async () => {
       await t.close()
@@ -93,10 +93,10 @@ describe('login throttle: global ceilings, proxy trust and timing', () => {
       expect((await post({ identifier: id, password: DEMO_PASSWORD }, '10.1.1.2')).status).toBe(200)
     })
 
-    it('M1: 20 failures for one identifier from different addresses block that identifier everywhere', async () => {
+    it('M1/N2: failures for one identifier from different addresses (limit 6 here, default 100) block that identifier everywhere', async () => {
       t.clock.advance(1_000_000)
       const id = 'pelajarmaju@demo.test'
-      for (let i = 0; i < 20; i++) {
+      for (let i = 0; i < 6; i++) {
         expectError(await post({ identifier: id, password: 'Salah-1234' }, `10.2.0.${i + 1}`), 'INVALID_CREDENTIALS')
       }
       const err = expectError(await post({ identifier: id, password: DEMO_PASSWORD }, '10.2.9.9'), 'RATE_LIMITED')
@@ -111,12 +111,12 @@ describe('login throttle: global ceilings, proxy trust and timing', () => {
 
   describe('L1 timing: an unknown identifier does the same kind of work as a migrated account', () => {
     it('runs a dummy legacy bcrypt of the configured cost', async () => {
-      const t = await bootAuthApp({ env: { LEGACY_BCRYPT_DUMMY_COST: '11' } })
+      const t = await bootAuthApp({ env: { LEGACY_BCRYPT_DUMMY_COST: '12' } })
       try {
         const started = Date.now()
         const res = await t.http().post('/api/auth/login').send({ identifier: 'tiada@demo.test', password: 'Salah-1234' })
         expectError(res, 'INVALID_CREDENTIALS')
-        expect(Date.now() - started).toBeGreaterThan(250) // cost 11 is about 0.5 s; argon2 alone is far less
+        expect(Date.now() - started).toBeGreaterThan(250) // cost 12 is about 1 s; argon2 alone is far less
       } finally {
         await t.close()
       }

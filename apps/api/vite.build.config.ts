@@ -25,6 +25,8 @@ export default defineConfig({
     emptyOutDir: true,
     target: 'node22',
     sourcemap: true,
+    // No keepNames and no minify: `bcryptCore` (modules/auth/legacy-bcrypt.ts) is stringified into worker
+    // threads, so it must stay one self-contained function. test/auth/bundle.spec.ts guards this.
     minify: false,
     // The banner keeps the root ESLint (which does not ignore apps/*/dist) away from the bundle.
     rollupOptions: {

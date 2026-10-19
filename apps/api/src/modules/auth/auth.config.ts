@@ -3,12 +3,17 @@ import { ConfigService } from '@nestjs/config'
 
 import {
   DEFAULT_COOKIE_NAME,
+  DEFAULT_FAILURE_FLOOR_MS,
+  DEFAULT_IDENTIFIER_FAIL_LIMIT,
   DEFAULT_LEGACY_DUMMY_COST,
   DEFAULT_LOGIN_LIMIT,
   DEFAULT_REMEMBER_DAYS,
   DEFAULT_REMEMBER_DAYS_STAFF,
 } from './auth.constants'
 import { MAX_LEGACY_COST, MIN_LEGACY_COST } from './legacy-bcrypt'
+
+/** Roles with the short remember cap (LEAD: admin, school_admin, ppd_officer; there is no jpn_officer role). */
+const STAFF_ROLES: readonly string[] = ['admin', 'school_admin', 'ppd_officer']
 
 function intOr(value: unknown, fallback: number, min: number, max = Number.MAX_SAFE_INTEGER): number {
   const n = Number.parseInt(String(value ?? ''), 10)
@@ -32,14 +37,18 @@ export class AuthConfig {
   readonly loginLimit: number
   /** "Remember me" lifetime in days for learner roles. */
   readonly rememberDays: number
-  /** "Remember me" days for accounts holding admin or school_admin; never above `rememberDays`; 0 turns remember off for them. */
+  /** "Remember me" days for accounts holding admin, school_admin or ppd_officer; never above `rememberDays`; 0 turns remember off for them. */
   readonly rememberDaysStaff: number
   /** Cost of the throw-away bcrypt hash that equalises timing for unknown accounts. */
   readonly legacyDummyCost: number
+  /** A failed login never answers sooner than this many ms. */
+  readonly failureFloorMs: number
+  /** Failed logins per 15 minutes for one identifier across all addresses. */
+  readonly identifierFailLimit: number
 
-  /** Remember lifetime for an account: the staff cap applies when it holds admin or school_admin. */
+  /** Remember lifetime for an account: the staff cap applies when it holds admin, school_admin or ppd_officer. */
   rememberDaysFor(roles: readonly string[]): number {
-    return roles.includes('admin') || roles.includes('school_admin') ? this.rememberDaysStaff : this.rememberDays
+    return roles.some((r) => STAFF_ROLES.includes(r)) ? this.rememberDaysStaff : this.rememberDays
   }
 
   constructor(@Inject(ConfigService) config: ConfigService) {
@@ -57,6 +66,8 @@ export class AuthConfig {
       this.rememberDays,
       intOr(config.get('SESSION_REMEMBER_DAYS_STAFF'), DEFAULT_REMEMBER_DAYS_STAFF, 0),
     )
+    this.failureFloorMs = intOr(config.get('LOGIN_FAILURE_FLOOR_MS'), DEFAULT_FAILURE_FLOOR_MS, 0, 10_000)
+    this.identifierFailLimit = intOr(config.get('LOGIN_IDENTIFIER_FAIL_LIMIT'), DEFAULT_IDENTIFIER_FAIL_LIMIT, 5)
     this.legacyDummyCost = intOr(
       config.get('LEGACY_BCRYPT_DUMMY_COST'),
       DEFAULT_LEGACY_DUMMY_COST,

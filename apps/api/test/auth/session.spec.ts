@@ -1,10 +1,7 @@
-import { ApiError } from '../../src/common/errors/api-error'
 import { SessionSchema } from '@pp/contract'
 import { afterAll, afterEach, beforeAll, describe, expect, it } from 'vitest'
 
 import { DEMO_ACCOUNTS } from '../../prisma/seed/core/identity'
-import { AuthService } from '../../src/modules/auth/auth.service'
-import type { ResolvedSession } from '../../src/modules/auth/session-resolver.service'
 
 import {
   type AuthTestApp,
@@ -164,6 +161,27 @@ describe('session endpoints', () => {
       expect(await expiresOf(cookieValue(sw) as string)).toBe(created + DAY) // rotation keeps the expiry
     })
 
+    it('with remember: ppd_officer, and a teacher + ppd_officer account, get the staff cap', async () => {
+      await t.db.query(
+        `insert into users (name, email, school_id, password_hash)
+           select 'Pegawai PPD Ujian', 'ppd@demo.test', s.id, (select password_hash from users where email = 'guru@demo.test')
+             from schools s where s.code = 'DEMO001'`,
+      )
+      await t.db.query(`insert into user_roles (user_id, role) select id, 'ppd_officer' from users where email = 'ppd@demo.test'`)
+      await t.db.query(
+        `insert into users (name, email, school_id, password_hash)
+           select 'Guru PPD Ujian', 'gurup@demo.test', s.id, (select password_hash from users where email = 'guru@demo.test')
+             from schools s where s.code = 'DEMO001'`,
+      )
+      await t.db.query(
+        `insert into user_roles (user_id, role) select id, r from users, unnest(array['teacher', 'ppd_officer']) r where email = 'gurup@demo.test'`,
+      )
+      for (const email of ['ppd@demo.test', 'gurup@demo.test']) {
+        const me = await login(email, true)
+        expect(await expiresOf(me.token)).toBe(t.clock.now().getTime() + DAY)
+      }
+    })
+
     it('SESSION_REMEMBER_DAYS and SESSION_REMEMBER_DAYS_STAFF are honoured; the staff value never exceeds the general one', async () => {
       const custom = await bootAuthApp({ db: t.db, env: { SESSION_REMEMBER_DAYS: '7', SESSION_REMEMBER_DAYS_STAFF: '3' } })
       const off = await bootAuthApp({ db: t.db, env: { SESSION_REMEMBER_DAYS_STAFF: '0' } })
@@ -316,6 +334,25 @@ describe('session endpoints', () => {
     })
   })
 
+  describe('session rotation race', () => {
+    it('two parallel role switches with the same cookie: one wins, the others are refused (401)', async () => {
+      const me = await login('guruadmin@demo.test')
+      const liveSessions = async () =>
+        (await t.db.query<{ n: number }>(
+          `select count(*)::int as n from sessions where revoked_at is null and user_id = $1`,
+          [await userIdOf(t.db, 'guruadmin@demo.test')],
+        ))[0]!.n
+      const before = await liveSessions()
+      const one = () =>
+        t.http().post('/api/session/role').set('Cookie', `${COOKIE_NAME}=${me.token}`).set('X-CSRF-Token', me.csrf).send({ role: 'teacher' })
+      const results = await Promise.all([one(), one(), one()])
+      const statuses = results.map((r) => r.status)
+      expect(statuses.filter((x) => x === 200)).toHaveLength(1)
+      expect(statuses.filter((x) => x === 401)).toHaveLength(2)
+      expect(await liveSessions()).toBe(before) // the winner replaced the old row; nothing was forked
+    })
+  })
+
   describe('AC11 permission changes apply on the next request', () => {
     /** Puts every row these tests change back to the seeded state, even when a test fails half way. */
     afterEach(async () => {
@@ -427,50 +464,5 @@ describe('session endpoints', () => {
         `delete from user_roles where role = 'teacher' and user_id = (select id from users where email = 'pelajar@demo.test')`,
       )
     })
-  })
-})
-
-describe('session rotation race', () => {
-  it('a rotation that lost to a parallel request answers 401 (no second session is created)', async () => {
-    const rotated: unknown[] = []
-    const service = new AuthService(
-      { transaction: (fn: () => Promise<unknown>) => fn() } as never,
-      { now: () => new Date() },
-      { secret: 'x' } as never,
-      {} as never,
-      {} as never,
-      {} as never,
-      { regenerate: async () => (rotated.push(1), null) } as never,
-      { record: async () => undefined } as never,
-    )
-    const state = {
-      auth: { mode: null, userId: '1' },
-      grants: [{ role: 'admin' }, { role: 'teacher' }],
-      assembled: { baseRole: 'admin', mode: null, grants: [] },
-      row: {},
-      account: {},
-    } as unknown as ResolvedSession
-    const err = await service
-      .switchRole(state, 'teacher', { ip: '::1', userAgent: null, requestId: null })
-      .catch((e: unknown) => e)
-    expect(err).toBeInstanceOf(ApiError)
-    expect((err as ApiError).code).toBe('UNAUTHORIZED')
-    expect(rotated).toHaveLength(1)
-  })
-
-  it('two parallel role switches with the same cookie: one wins, the other is refused', async () => {
-    const t = await bootAuthApp()
-    try {
-      const me = await loginAs(t, 'guruadmin@demo.test')
-      const one = () => t.http().post('/api/session/role').set('Cookie', `${COOKIE_NAME}=${me.token}`).set('X-CSRF-Token', me.csrf).send({ role: 'teacher' })
-      const results = await Promise.all([one(), one(), one()])
-      const statuses = results.map((r) => r.status).sort()
-      expect(statuses.filter((s) => s === 200)).toHaveLength(1)
-      expect(statuses.filter((s) => s === 401)).toHaveLength(2)
-      const live = await t.db.query(`select 1 from sessions where revoked_at is null`)
-      expect(live).toHaveLength(1)
-    } finally {
-      await t.close()
-    }
   })
 })

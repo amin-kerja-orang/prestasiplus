@@ -16,6 +16,18 @@ export const DEMO_PASSWORD = 'Demo1234'
 /** OWASP argon2id minimum (19 MiB, t=2, p=1). The auth module uses the same parameters. */
 const ARGON2_OPTIONS = { memoryCost: 19_456, timeCost: 2, parallelism: 1 } as const
 
+/**
+ * argon2id of the demo password, computed ONCE per process and shared by every demo account.
+ * All demo accounts use the same published password, so hashing it per account only burned CPU
+ * (about 10 hashes per seed run, which made the seed tests time out under load). Sharing one
+ * hash (one random salt) is fine for demo data; an account that already has a hash keeps it.
+ */
+let demoHash: Promise<string> | undefined
+function demoPasswordHash(): Promise<string> {
+  demoHash ??= hash(DEMO_PASSWORD, ARGON2_OPTIONS)
+  return demoHash
+}
+
 type RoleCode = 'admin' | 'school_admin' | 'ppd_officer' | 'teacher' | 'student' | 'parent' | 'sponsor'
 
 export interface DemoSchool {
@@ -165,11 +177,11 @@ export const identitySeed: SeedModule = {
 
       let userId: bigint
       if (existing) {
-        const passwordHash = existing.passwordHash ?? (await hash(DEMO_PASSWORD, ARGON2_OPTIONS))
+        const passwordHash = existing.passwordHash ?? (await demoPasswordHash())
         await prisma.user.update({ where: { id: existing.id }, data: { ...data, passwordHash } })
         userId = existing.id
       } else {
-        const passwordHash = await hash(DEMO_PASSWORD, ARGON2_OPTIONS)
+        const passwordHash = await demoPasswordHash()
         const row = await prisma.user.create({ data: { ...data, passwordHash, createdAt } })
         userId = row.id
       }

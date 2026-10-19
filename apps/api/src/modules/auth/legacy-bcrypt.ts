@@ -219,6 +219,7 @@ export class LegacyBcryptBusyError extends Error {
 
 interface Job {
   args: [string, string, number, string]
+  timer?: NodeJS.Timeout
   resolve(hash: string): void
   reject(err: Error): void
 }
@@ -238,6 +239,8 @@ export const LEGACY_POOL_OPTIONS = Symbol('LEGACY_POOL_OPTIONS')
 export interface PoolOptions {
   size?: number
   maxQueue?: number
+  /** A queued job that has not started after this many ms is refused (default 5000). */
+  queueTimeoutMs?: number
 }
 
 /** Small fixed pool of worker threads running `bcryptCore` (lazy start, bounded queue). */
@@ -246,6 +249,7 @@ export class LegacyBcryptPool implements OnModuleDestroy {
   private readonly logger = new Logger(LegacyBcryptPool.name)
   private readonly size: number
   private readonly maxQueue: number
+  private readonly queueTimeoutMs: number
   private readonly idle: Worker[] = []
   private readonly busy = new Map<Worker, { id: number; job: Job }>()
   private readonly queue: Job[] = []
@@ -255,7 +259,8 @@ export class LegacyBcryptPool implements OnModuleDestroy {
 
   constructor(@Optional() @Inject(LEGACY_POOL_OPTIONS) options: PoolOptions = {}) {
     this.size = options.size ?? Math.max(1, Math.min(2, availableParallelism() - 1))
-    this.maxQueue = options.maxQueue ?? 32
+    this.maxQueue = options.maxQueue ?? 8
+    this.queueTimeoutMs = options.queueTimeoutMs ?? 5000
   }
 
   /** The hash of `password` under a given salt and cost, computed off the main thread. */
@@ -266,6 +271,14 @@ export class LegacyBcryptPool implements OnModuleDestroy {
       const worker = this.takeWorker()
       if (worker) return this.dispatch(worker, job)
       if (this.queue.length >= this.maxQueue) return reject(new LegacyBcryptBusyError())
+      job.timer = setTimeout(() => {
+        const i = this.queue.indexOf(job)
+        if (i >= 0) {
+          this.queue.splice(i, 1)
+          reject(new LegacyBcryptBusyError())
+        }
+      }, this.queueTimeoutMs)
+      job.timer.unref()
       this.queue.push(job)
     })
   }
@@ -282,7 +295,10 @@ export class LegacyBcryptPool implements OnModuleDestroy {
 
   async onModuleDestroy(): Promise<void> {
     this.closed = true
-    for (const job of this.queue.splice(0)) job.reject(new Error('legacy bcrypt pool is closed'))
+    for (const job of this.queue.splice(0)) {
+      if (job.timer) clearTimeout(job.timer)
+      job.reject(new Error('legacy bcrypt pool is closed'))
+    }
     await Promise.all([...this.idle, ...this.busy.keys()].map((w) => w.terminate()))
   }
 
@@ -316,6 +332,7 @@ export class LegacyBcryptPool implements OnModuleDestroy {
   }
 
   private dispatch(worker: Worker, job: Job): void {
+    if (job.timer) clearTimeout(job.timer)
     const id = this.nextId++
     this.busy.set(worker, { id, job })
     worker.ref()

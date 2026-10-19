@@ -16,7 +16,8 @@ import { PrismaService } from '../../db/prisma.service'
 import { AccountRepository, type AccountRecord, type LoginCandidate } from './account.repository'
 import { AuthConfig } from './auth.config'
 import { authError, rateLimited } from './auth.errors'
-import { LegacyBcryptBusyError } from './legacy-bcrypt'
+import { MAX_LEGACY_CHECKS_PER_LOGIN } from './auth.constants'
+import { isLegacyBcrypt, LegacyBcryptBusyError } from './legacy-bcrypt'
 import { LoginThrottle } from './login-throttle.service'
 import { PasswordService } from './password.service'
 import type { ResolvedSession } from './session-resolver.service'
@@ -60,17 +61,47 @@ export class AuthService {
    * carried, if any; it is revoked so a login never keeps an earlier session id alive.
    */
   async login(body: LoginRequest, info: RequestInfo, oldToken?: string): Promise<SessionGrant> {
+    const started = performance.now()
+    try {
+      return await this.attemptLogin(body, info, oldToken)
+    } catch (err) {
+      // Timing oracle floor: every failed credential answer takes at least the floor, held with a
+      // timer (no CPU), so account type (argon2, legacy bcrypt, unknown) cannot be told by speed.
+      if (err instanceof ApiError && err.code === 'INVALID_CREDENTIALS') {
+        const wait = this.config.failureFloorMs - (performance.now() - started)
+        if (wait > 0) await new Promise((resolve) => setTimeout(resolve, wait))
+      }
+      throw err
+    }
+  }
+
+  private async attemptLogin(body: LoginRequest, info: RequestInfo, oldToken?: string): Promise<SessionGrant> {
     const now = this.clock.now()
     const keys = this.throttle.keys(body.identifier, info.ip)
     await this.throttle.begin(keys, now)
 
     const candidates = await this.accounts.findLoginCandidates(body.identifier, body.schoolId)
-    const checks = await this.checkAll(candidates, body.password)
+    let checks: Awaited<ReturnType<AuthService['checkAll']>>
+    try {
+      checks = await this.checkAll(candidates, body.password)
+    } catch (err) {
+      // The hashing queue is full or timed out: this attempt did not test a credential, give it back.
+      if (err instanceof LegacyBcryptBusyError) {
+        await this.throttle.refund(keys)
+        throw rateLimited(5)
+      }
+      throw err
+    }
     const matches = checks.filter((c) => c.ok && c.candidate)
 
     if (matches.length === 0) {
       const only = candidates.length === 1 ? (candidates[0] as LoginCandidate) : null
-      await this.throttle.fail(keys, now, checks.length)
+      try {
+        await this.throttle.fail(keys, now, checks.length)
+      } catch {
+        // Never turn a 401 into a 500 because the global counters could not be written.
+        this.logger.warn(`login throttle write failed (requestId=${info.requestId ?? '-'})`)
+      }
       await this.refuse(info, 'invalid_credentials', only?.id ?? null)
       throw authError('INVALID_CREDENTIALS')
     }
@@ -209,23 +240,27 @@ export class AuthService {
   }
 
   /**
-   * Password checks for every candidate (at most MAX_LOGIN_CANDIDATES). With no candidate one dummy
-   * check still runs, so an unknown identifier costs the same as a known one. A full legacy-bcrypt
-   * queue answers 429 instead of waiting.
+   * Password checks for every candidate (at most MAX_LOGIN_CANDIDATES, at most 3 of them legacy
+   * bcrypt). With no candidate one dummy check still runs, so an unknown identifier costs the same
+   * as a known one. A full or slow legacy-bcrypt queue throws `LegacyBcryptBusyError` (caller: 429).
    */
   private async checkAll(candidates: LoginCandidate[], password: string) {
     const out: { candidate: LoginCandidate | null; ok: boolean; needsRehash: boolean }[] = []
-    try {
-      if (candidates.length === 0) {
-        out.push({ candidate: null, ok: (await this.passwords.check(password, null)).ok, needsRehash: false })
+    if (candidates.length === 0) {
+      out.push({ candidate: null, ok: (await this.passwords.check(password, null)).ok, needsRehash: false })
+    }
+    let legacyChecks = 0
+    for (const candidate of candidates) {
+      if (candidate.passwordHash && isLegacyBcrypt(candidate.passwordHash)) {
+        // Each legacy check costs about a second of worker time; later ones count as failed unchecked.
+        if (legacyChecks >= MAX_LEGACY_CHECKS_PER_LOGIN) {
+          out.push({ candidate, ok: false, needsRehash: false })
+          continue
+        }
+        legacyChecks++
       }
-      for (const candidate of candidates) {
-        const check = await this.passwords.check(password, candidate.passwordHash)
-        out.push({ candidate, ok: check.ok, needsRehash: check.needsRehash })
-      }
-    } catch (err) {
-      if (err instanceof LegacyBcryptBusyError) throw rateLimited(5)
-      throw err
+      const check = await this.passwords.check(password, candidate.passwordHash)
+      out.push({ candidate, ok: check.ok, needsRehash: check.needsRehash })
     }
     return out
   }

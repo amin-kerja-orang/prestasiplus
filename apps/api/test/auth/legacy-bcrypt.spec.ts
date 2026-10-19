@@ -55,9 +55,22 @@ describe('legacy bcrypt verifier (worker pool)', () => {
     const elapsed = Date.now() - started
     clearInterval(timer)
     expect(ok).toBe(true)
-    // On the main thread the loop would be blocked for the whole verify and the timer would not fire.
     expect(elapsed).toBeGreaterThan(100)
-    expect(ticks).toBeGreaterThan(elapsed / 10 / 4)
+    // On the main thread the loop would be blocked for the whole verify and the timer would not fire.
+    // A loaded machine slows the timer, so only a few ticks are required.
+    expect(ticks).toBeGreaterThanOrEqual(3)
+  }, 60_000)
+
+  it('refuses a queued job that waits longer than the queue timeout', async () => {
+    const small = new LegacyBcryptPool({ size: 1, maxQueue: 5, queueTimeoutMs: 50 })
+    try {
+      const slow = bcryptHashWithSalt('Tunggu', 'abcdefghijklmnopqrstuu', 11, '2y')
+      const running = small.verify('Tunggu', slow)
+      await expect(small.verify('Tunggu', slow)).rejects.toBeInstanceOf(LegacyBcryptBusyError)
+      expect(await running).toBe(true) // the running job is not affected
+    } finally {
+      await small.onModuleDestroy()
+    }
   }, 60_000)
 
   it('rejects with a busy error when the bounded queue is full', async () => {

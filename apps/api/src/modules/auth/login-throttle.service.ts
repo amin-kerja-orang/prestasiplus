@@ -3,7 +3,6 @@ import { Inject, Injectable } from '@nestjs/common'
 import { PrismaService } from '../../db/prisma.service'
 import { AuthConfig } from './auth.config'
 import {
-  IDENTIFIER_FAIL_LIMIT,
   IDENTIFIER_FAIL_WINDOW_MS,
   IP_FAIL_LIMIT,
   IP_FAIL_WINDOW_MS,
@@ -36,12 +35,15 @@ function retryAfterOf(expiresAt: Date, now: Date): number {
  *    upsert, so parallel guesses cannot pass the limit. A success clears the row and a refusal that
  *    is not a credential failure (inactive account, ambiguous username) gives its count back. The
  *    attempt over the limit gets 429 even with the correct password.
- * 2. Per address (security review M1): 20 failed logins per minute across all identifiers.
- * 3. Per identifier (M1): 20 failed logins per 15 minutes across all addresses.
+ * 2. Per address (security review M1): 20 failed logins per minute across all identifiers. One unit
+ *    is RESERVED before the work and given back on success or a non-credential refusal, so a burst
+ *    of parallel requests cannot all pass the check (a failure keeps its unit).
+ * 3. Per identifier (M1, LEAD N2): `LOGIN_IDENTIFIER_FAIL_LIMIT` (default 100) failed logins per
+ *    15 minutes across all addresses.
  *    Layers 2 and 3 count failures only, weighted by the number of password hashes checked, and a
  *    success never resets them (otherwise one valid account would reset them for an attacker).
- *    They are read before the pair upsert and written after a failure, so under a burst of
- *    parallel requests they can overshoot by the burst size; the pair limit bounds one pair.
+ *    The identifier ceiling is read before and written after a failure, so a burst can overshoot it
+ *    by the burst size.
  *
  * The key is the identifier (NFKC, trimmed, lower-cased) and the address; it deliberately ignores
  * `schoolId`, as the mock keys on the e-mail only, so a username cannot be sprayed school by school.
@@ -77,19 +79,38 @@ export class LoginThrottle {
       },
     })
     for (const row of global) {
-      const limit = row.ipHash === ANY_IP ? IDENTIFIER_FAIL_LIMIT : IP_FAIL_LIMIT
-      if (row.attempts >= limit) throw rateLimited(retryAfterOf(row.expiresAt, now))
+      if (row.ipHash === ANY_IP && row.attempts >= this.config.identifierFailLimit) {
+        throw rateLimited(retryAfterOf(row.expiresAt, now))
+      }
     }
 
-    const rows = await this.upsert(keys, now, LOGIN_WINDOW_MS, 1)
-    const row = rows[0]
-    if (row && row.attempts > this.config.loginLimit) throw rateLimited(retryAfterOf(row.expires_at, now))
+    // Reserve one unit of the per-address ceiling before any work is done.
+    const ip = (await this.upsert(keys.ipOnly, now, IP_FAIL_WINDOW_MS, 1))[0]
+    if (ip && ip.attempts > IP_FAIL_LIMIT) {
+      await this.releaseIp(keys)
+      throw rateLimited(retryAfterOf(ip.expires_at, now))
+    }
+
+    const row = (await this.upsert(keys, now, LOGIN_WINDOW_MS, 1))[0]
+    if (row && row.attempts > this.config.loginLimit) {
+      await this.releaseIp(keys)
+      throw rateLimited(retryAfterOf(row.expires_at, now))
+    }
   }
 
-  /** A failed credential check: feeds the global ceilings. `weight` is the number of hashes checked. */
+  private async releaseIp(keys: ThrottleKeys): Promise<void> {
+    await this.prisma.client.$executeRaw`
+      UPDATE login_attempts SET attempts = GREATEST(attempts - 1, 0)
+       WHERE identifier_hash = ${keys.ipOnly.identifierHash} AND ip_hash = ${keys.ipOnly.ipHash}`
+  }
+
+  /**
+   * A failed credential check: feeds the global ceilings. `weight` is the number of hashes checked;
+   * the per-address ceiling already holds one reserved unit from `begin`.
+   */
   async fail(keys: ThrottleKeys, now: Date, weight: number): Promise<void> {
     const w = Math.max(1, weight)
-    await this.upsert(keys.ipOnly, now, IP_FAIL_WINDOW_MS, w)
+    if (w > 1) await this.upsert(keys.ipOnly, now, IP_FAIL_WINDOW_MS, w - 1)
     await this.upsert(keys.identifierOnly, now, IDENTIFIER_FAIL_WINDOW_MS, w)
   }
 
@@ -114,13 +135,15 @@ export class LoginThrottle {
 
   /** Gives one attempt back (a refusal that is not a failed credential check). */
   async refund(keys: ThrottleKeys): Promise<void> {
+    await this.releaseIp(keys)
     await this.prisma.client.$executeRaw`
       UPDATE login_attempts SET attempts = GREATEST(attempts - 1, 0)
        WHERE identifier_hash = ${keys.identifierHash} AND ip_hash = ${keys.ipHash}`
   }
 
-  /** A successful login resets the pair counter only. */
+  /** A successful login resets the pair counter and gives its address unit back; the failure ceilings stay. */
   async clear(keys: ThrottleKeys): Promise<void> {
+    await this.releaseIp(keys)
     await this.prisma.client.loginAttempt.deleteMany({
       where: { identifierHash: keys.identifierHash, ipHash: keys.ipHash },
     })

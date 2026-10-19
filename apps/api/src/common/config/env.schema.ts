@@ -28,9 +28,15 @@ export const EnvSchema = z.object({
   SESSION_REMEMBER_DAYS_STAFF: z.coerce.number().int().min(0).default(1),
   /** Allow seeding the demo accounts (never in production). */
   ALLOW_DEMO_SEED: z
-    .enum(['true', 'false'])
+    .enum(['true', 'false', '1', '0'])
     .default('false')
-    .transform((v) => v === 'true'),
+    .transform((v) => v === 'true' || v === '1'),
+  /** Cost (4..13) of the throw-away bcrypt hash that evens out login timing for unknown accounts. */
+  LEGACY_BCRYPT_DUMMY_COST: z.coerce.number().int().min(4).max(13).default(12),
+  /** A failed login (wrong password, unknown identifier) never answers sooner than this many ms (timing oracle floor). */
+  LOGIN_FAILURE_FLOOR_MS: z.coerce.number().int().min(0).max(10_000).default(1500),
+  /** Failed logins per 15 minutes for one identifier across all addresses, before 429. */
+  LOGIN_IDENTIFIER_FAIL_LIMIT: z.coerce.number().int().min(5).default(100),
 })
 export type Env = z.infer<typeof EnvSchema>
 

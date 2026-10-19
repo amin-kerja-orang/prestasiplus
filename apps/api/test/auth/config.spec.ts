@@ -28,10 +28,21 @@ describe('auth configuration', () => {
     expect(() => new AuthConfig({ get: () => undefined } as unknown as ConfigService)).toThrow(/SESSION_SECRET/)
   })
 
+  it('N1 and N2 defaults: failure floor 1500 ms, identifier ceiling 100', () => {
+    expect(config({})).toMatchObject({ failureFloorMs: 1500, identifierFailLimit: 100 })
+    expect(config({ LOGIN_FAILURE_FLOOR_MS: '0', LOGIN_IDENTIFIER_FAIL_LIMIT: '6' })).toMatchObject({
+      failureFloorMs: 0,
+      identifierFailLimit: 6,
+    })
+  })
+
   it('remember lifetimes: 30 days, staff 1 day, staff never above the general value', () => {
     expect(config({})).toMatchObject({ rememberDays: 30, rememberDaysStaff: 1, legacyDummyCost: 12 })
     expect(config({}).rememberDaysFor(['teacher', 'school_admin'])).toBe(1)
     expect(config({}).rememberDaysFor(['admin'])).toBe(1)
+    expect(config({}).rememberDaysFor(['ppd_officer'])).toBe(1)
+    expect(config({}).rememberDaysFor(['teacher', 'ppd_officer'])).toBe(1)
+    expect(config({}).rememberDaysFor(['parent', 'teacher'])).toBe(30)
     expect(config({}).rememberDaysFor(['teacher'])).toBe(30)
     expect(config({ SESSION_REMEMBER_DAYS: '2', SESSION_REMEMBER_DAYS_STAFF: '9' }).rememberDaysStaff).toBe(2)
     expect(config({ SESSION_REMEMBER_DAYS_STAFF: '0' }).rememberDaysFor(['admin'])).toBe(0)

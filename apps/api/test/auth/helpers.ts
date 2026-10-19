@@ -21,6 +21,7 @@ import { type AppModuleOptions, defineAppModule } from '../../src/app.module'
 import { configureApp } from '../../src/configure-app'
 import { CLOCK, FixedClock } from '../../src/db/clock'
 import { AuthModule } from '../../src/modules/auth'
+import { LegacyBcryptPool } from '../../src/modules/auth/legacy-bcrypt'
 import { createTestDatabase, type TestDatabase } from '../support/db'
 
 export const DEMO_PASSWORD = 'Demo1234'
@@ -46,6 +47,8 @@ export interface BootOptions extends AppModuleOptions {
   db?: TestDatabase
   /** Run the identity seed (default true). */
   seed?: boolean
+  /** Replace the legacy bcrypt pool (to saturate it in a test). */
+  pool?: LegacyBcryptPool
   /** Keep the cookie `Secure` flag on (default off so the plain-http test client keeps the cookie). */
   secureCookie?: boolean
 }
@@ -67,6 +70,9 @@ export async function bootAuthApp(opts: BootOptions = {}): Promise<AuthTestApp> 
     TRUST_PROXY_HOPS: undefined,
     // Cheap dummy bcrypt work in tests; the timing test raises it.
     LEGACY_BCRYPT_DUMMY_COST: '4',
+    // No artificial delay on failed logins in tests; the floor test raises it.
+    LOGIN_FAILURE_FLOOR_MS: '0',
+    LOGIN_IDENTIFIER_FAIL_LIMIT: undefined,
     ...opts.env,
   }
   for (const [k, v] of Object.entries(env)) {
@@ -76,12 +82,13 @@ export async function bootAuthApp(opts: BootOptions = {}): Promise<AuthTestApp> 
 
   const clock = new FixedClock(START)
   const appOptions: AppModuleOptions = opts.logStream ? { logStream: opts.logStream } : {}
-  const moduleRef = await Test.createTestingModule({
+  let builder = Test.createTestingModule({
     imports: [defineAppModule([AuthModule], appOptions)],
   })
     .overrideProvider(CLOCK)
     .useValue(clock)
-    .compile()
+  if (opts.pool) builder = builder.overrideProvider(LegacyBcryptPool).useValue(opts.pool)
+  const moduleRef = await builder.compile()
   const app = moduleRef.createNestApplication({ bufferLogs: false })
   configureApp(app)
   await app.init()
