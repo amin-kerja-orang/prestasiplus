@@ -11,13 +11,14 @@ const VALID = { NODE_ENV: 'test', PORT: '3000', LOG_LEVEL: 'info', DATABASE_URL:
 describe('env validation', () => {
   it('accepts a valid environment and applies defaults', () => {
     expect(
-      loadEnv({ NODE_ENV: 'production', DATABASE_URL: DB_URL, SESSION_SECRET: 'x'.repeat(32) }),
+      loadEnv({ NODE_ENV: 'production', DATABASE_URL: DB_URL, SESSION_SECRET: 'x'.repeat(32), IC_HASH_KEY: 'i'.repeat(32) }),
     ).toEqual({
       NODE_ENV: 'production',
       PORT: 3000,
       LOG_LEVEL: 'info',
       DATABASE_URL: DB_URL,
       SESSION_SECRET: 'x'.repeat(32),
+      IC_HASH_KEY: 'i'.repeat(32),
       TRUST_PROXY_HOPS: 0,
       SESSION_REMEMBER_DAYS: 30,
       SESSION_REMEMBER_DAYS_STAFF: 1,
@@ -25,6 +26,11 @@ describe('env validation', () => {
       LEGACY_BCRYPT_DUMMY_COST: 12,
       LOGIN_FAILURE_FLOOR_MS: 1500,
       LOGIN_IDENTIFIER_FAIL_LIMIT: 100,
+      THROTTLE_PUBLIC_PER_MINUTE: 60,
+      THROTTLE_PUBLIC_SEARCH_PER_MINUTE: 300,
+      THROTTLE_ADMIN_READ_PER_MINUTE: 300,
+      THROTTLE_ADMIN_WRITE_PER_MINUTE: 30,
+      THROTTLE_IMPORT_PER_HOUR: 10,
     })
   })
 
@@ -63,6 +69,17 @@ describe('env validation', () => {
     expect(() => loadEnv({ ...prod, SESSION_SECRET: 'short' })).toThrow(/SESSION_SECRET/)
     expect(loadEnv({ ...VALID }).SESSION_SECRET).toBe(DEV_SESSION_SECRET)
     expect(loadEnv({ ...VALID, SESSION_SECRET: 'abc' }).SESSION_SECRET).toBe('abc')
+  })
+
+  it('requires IC_HASH_KEY in production: 32+ chars, not the session secret; optional (min 16) elsewhere', () => {
+    const prod = { NODE_ENV: 'production', DATABASE_URL: DB_URL, SESSION_SECRET: 'p'.repeat(40) }
+    expect(() => loadEnv(prod)).toThrow(/IC_HASH_KEY/)
+    expect(() => loadEnv({ ...prod, IC_HASH_KEY: 'k'.repeat(31) })).toThrow(/IC_HASH_KEY/)
+    expect(() => loadEnv({ ...prod, IC_HASH_KEY: prod.SESSION_SECRET })).toThrow(/IC_HASH_KEY/)
+    expect(loadEnv({ ...prod, IC_HASH_KEY: 'k'.repeat(32) }).IC_HASH_KEY).toBe('k'.repeat(32))
+    expect(loadEnv({ ...VALID }).IC_HASH_KEY).toBeUndefined()
+    expect(loadEnv({ ...VALID, IC_HASH_KEY: '' }).IC_HASH_KEY).toBeUndefined()
+    expect(() => loadEnv({ ...VALID, IC_HASH_KEY: 'short' })).toThrow(/IC_HASH_KEY/)
   })
 
   const required = Object.entries(EnvSchema.shape)

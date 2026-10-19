@@ -8,6 +8,42 @@ import { isLegacyBcrypt, LegacyBcryptPool } from './legacy-bcrypt'
 const ARGON2_OPTIONS = { memoryCost: 19_456, timeCost: 2, parallelism: 1 } as const
 const DUMMY_SALT = 'abcdefghijklmnopqrstuu'
 
+/** Concurrent argon2id operations in the whole process (each needs about 19 MiB and a libuv thread). */
+export const ARGON2_SLOTS = 2
+
+/**
+ * Process-wide counting semaphore with two FIFO queues: login verification ("high") is served before
+ * hashing for bulk work ("low"), so a login never waits behind a 1000-row import for more than the
+ * operations already running. `peak` is the highest concurrency seen (tests read it).
+ */
+export class Argon2Gate {
+  private active = 0
+  private readonly high: (() => void)[] = []
+  private readonly low: (() => void)[] = []
+  peak = 0
+
+  constructor(private readonly slots: number) {}
+
+  async run<T>(priority: 'high' | 'low', fn: () => Promise<T>): Promise<T> {
+    if (this.active >= this.slots) {
+      await new Promise<void>((resolve) => (priority === 'high' ? this.high : this.low).push(resolve))
+    } else {
+      this.active++
+    }
+    this.peak = Math.max(this.peak, this.active)
+    try {
+      return await fn()
+    } finally {
+      const next = this.high.shift() ?? this.low.shift()
+      if (next) next() // the slot passes to the next waiter
+      else this.active--
+    }
+  }
+}
+
+/** Shared by every caller of `PasswordService` (login, rehash, admin-created accounts, imports). */
+export const argon2Gate = new Argon2Gate(ARGON2_SLOTS)
+
 export interface PasswordCheck {
   ok: boolean
   /** True when the stored hash is a legacy bcrypt hash that should be replaced by argon2id. */
@@ -21,9 +57,9 @@ export class PasswordService {
     @Inject(AuthConfig) private readonly config: AuthConfig,
   ) {}
 
-  /** argon2id hash for storing a new password. */
-  hash(plain: string): Promise<string> {
-    return hash(plain, ARGON2_OPTIONS)
+  /** argon2id hash for storing a new password. `high` is for a request that waits for it (login rehash); bulk work stays `low`. */
+  hash(plain: string, priority: 'high' | 'low' = 'low'): Promise<string> {
+    return argon2Gate.run(priority, () => hash(plain, ARGON2_OPTIONS))
   }
 
   /**
@@ -38,7 +74,7 @@ export class PasswordService {
    */
   async check(plain: string, stored: string | null): Promise<PasswordCheck> {
     if (stored?.startsWith('$argon2')) {
-      const ok = await verify(stored, plain).catch(() => false)
+      const ok = await argon2Gate.run('high', () => verify(stored, plain)).catch(() => false)
       return { ok, needsRehash: false }
     }
     if (stored && isLegacyBcrypt(stored)) {
