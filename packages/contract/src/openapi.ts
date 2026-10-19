@@ -21,6 +21,7 @@ import { SUPPORT_COMPONENT_SCHEMAS, registerSupportPaths } from './support/paths
 import { GAMIFICATION_COMPONENT_SCHEMAS, registerGamificationPaths } from './gamification/paths'
 import { DateOnlySchema, TimestampInputSchema, TimestampSchema } from './common/time'
 import { WALLET_COMPONENT_SCHEMAS, registerWalletPaths } from './wallet/paths'
+import { BIJAK_PAPERS_COMPONENT_SCHEMAS, registerBijakPapersPaths } from './bijak/papers/paths'
 
 /** Every shared schema that becomes a component. Domain tasks (T07, T08, T24...) append here. */
 export const COMPONENT_SCHEMAS = {
@@ -46,6 +47,7 @@ export const COMPONENT_SCHEMAS = {
   ...CONTENT_COMPONENT_SCHEMAS, // BE-24 (M09)
   ...SUPPORT_COMPONENT_SCHEMAS, // BE-24 (M22)
   ...GAMIFICATION_COMPONENT_SCHEMAS, // BE-23
+  ...BIJAK_PAPERS_COMPONENT_SCHEMAS, // BE-15
   // V2-T08 access matrix
   AccessGroupId: AccessGroupIdSchema,
   AccessGroup: AccessGroupSchema,
@@ -69,6 +71,7 @@ export function buildOpenApiDocument(): Record<string, unknown> {
   registerContentPaths(registry) // BE-24 (M09)
   registerSupportPaths(registry) // BE-24 (M22)
   registerGamificationPaths(registry) // BE-23
+  registerBijakPapersPaths(registry) // BE-15
   const generator = new OpenApiGeneratorV31(registry.definitions)
   return generator.generateDocument({
     openapi: '3.1.0',
