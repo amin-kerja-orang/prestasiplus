@@ -7776,6 +7776,107 @@
           "meta"
         ]
       },
+      "HeatmapBand": {
+        "type": "string",
+        "enum": [
+          "red",
+          "amber",
+          "green"
+        ],
+        "description": "Colour band on the rounded percent: red when percent < 50, amber when 50 <= percent <= 79, green when percent >= 80. Never gray."
+      },
+      "HeatmapTopic": {
+        "type": "object",
+        "properties": {
+          "chapterId": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Chapter name from the curriculum."
+          },
+          "attempts": {
+            "type": "integer",
+            "minimum": 5,
+            "description": "The caller's answers in this chapter (answers without a chapter are not counted). Always >= 5."
+          },
+          "correct": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Of those, the correct ones (<= attempts)."
+          },
+          "percent": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 100,
+            "description": "floor((200 x correct + attempts) / (2 x attempts)): round half up, integer 0..100."
+          },
+          "band": {
+            "$ref": "#/components/schemas/HeatmapBand"
+          }
+        },
+        "required": [
+          "chapterId",
+          "name",
+          "attempts",
+          "correct",
+          "percent",
+          "band"
+        ],
+        "additionalProperties": false
+      },
+      "HeatmapSubject": {
+        "type": "object",
+        "properties": {
+          "subjectId": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Subject name from the curriculum."
+          },
+          "topics": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/HeatmapTopic"
+            },
+            "minItems": 1,
+            "description": "Ordered by raw accuracy ascending (exact fractions: correct_a x attempts_b vs correct_b x attempts_a, not the rounded percent), then name ascending (code-unit comparison, as the mock), then chapter id ascending (numeric order of the bigint, not string order)."
+          }
+        },
+        "required": [
+          "subjectId",
+          "name",
+          "topics"
+        ],
+        "additionalProperties": false
+      },
+      "HeatmapResponse": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "object",
+            "properties": {
+              "subjects": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/HeatmapSubject"
+                }
+              }
+            },
+            "required": [
+              "subjects"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "required": [
+          "data"
+        ],
+        "additionalProperties": false
+      },
       "AccessGroupId": {
         "type": "string",
         "enum": [
@@ -14873,6 +14974,47 @@
           },
           "422": {
             "description": "VALIDATION_ERROR with fields (name -> Laravel-style English message, see REWARD_VALIDATION_MESSAGES); the top-level message is the first field message plus \" (and N more error(s))\" when several.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/buku-nota/heatmap": {
+      "get": {
+        "tags": [
+          "heatmap"
+        ],
+        "summary": "Own weak-topic heatmap (Heatmap Topik Lemah)",
+        "description": "Roles student and admin only; the data is always the session user's own. Any query parameter is ignored (no user parameter exists). No AI call, no stored copy: computed on every request.\nRules: (1) the caller's own answers that have a chapter are grouped by chapter id (never by name); answers without a chapter are not grouped. (2) A chapter is shown only with at least 5 attempts (HEATMAP_MIN_ATTEMPTS). (3) percent = floor((200 x correct + attempts) / (2 x attempts)), round half up. (4) band on the rounded percent: red < 50, amber 50..79, green >= 80. (5) Names come from the curriculum; a shown chapter whose chapter or subject is not found is skipped. (6) Topics inside a subject: raw accuracy ascending (exact integer cross-multiplication), then name ascending (code-unit comparison), then chapter id ascending (numeric). Subjects: curriculum order ascending, then subject id (numeric). (7) A subject with no shown chapter has no block; with none at all the body is { data: { subjects: [] } }.",
+        "responses": {
+          "200": {
+            "description": "Subjects with their shown topics; `subjects` is empty when no chapter reaches 5 attempts.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HeatmapResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED \"Unauthenticated.\" (no valid session).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN \"This action is unauthorized.\" (any role other than student or admin).",
             "content": {
               "application/json": {
                 "schema": {
