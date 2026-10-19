@@ -16,6 +16,8 @@ import { AccessModeSchema, PortalIdSchema, RoleCodeSchema, ScopeLevelSchema } fr
 import { ErrorBodySchema, ErrorCodeSchema, ErrorPayloadSchema } from './common/error'
 import { ClientUuidSchema, IdSchema } from './common/ids'
 import { SESSION_COMPONENT_SCHEMAS, registerSessionPaths } from './session/paths'
+import { CONTENT_COMPONENT_SCHEMAS, registerContentPaths } from './content/paths'
+import { SUPPORT_COMPONENT_SCHEMAS, registerSupportPaths } from './support/paths'
 import { DateOnlySchema, TimestampInputSchema, TimestampSchema } from './common/time'
 import { WALLET_COMPONENT_SCHEMAS, registerWalletPaths } from './wallet/paths'
 
@@ -40,6 +42,8 @@ export const COMPONENT_SCHEMAS = {
   IdListEnvelope: listEnvelopeOf(IdSchema).meta({ id: 'IdListEnvelope' }),
   ...SESSION_COMPONENT_SCHEMAS, // V2-T07
   ...WALLET_COMPONENT_SCHEMAS, // BE-11
+  ...CONTENT_COMPONENT_SCHEMAS, // BE-24 (M09)
+  ...SUPPORT_COMPONENT_SCHEMAS, // BE-24 (M22)
   // V2-T08 access matrix
   AccessGroupId: AccessGroupIdSchema,
   AccessGroup: AccessGroupSchema,
@@ -60,6 +64,8 @@ export function buildOpenApiDocument(): Record<string, unknown> {
   for (const [name, schema] of Object.entries(COMPONENT_SCHEMAS)) registry.register(name, schema)
   registerSessionPaths(registry) // V2-T07
   registerWalletPaths(registry) // BE-11
+  registerContentPaths(registry) // BE-24 (M09)
+  registerSupportPaths(registry) // BE-24 (M22)
   const generator = new OpenApiGeneratorV31(registry.definitions)
   return generator.generateDocument({
     openapi: '3.1.0',
