@@ -22,6 +22,7 @@ import { SUPPORT_COMPONENT_SCHEMAS, registerSupportPaths } from './support/paths
 import { GAMIFICATION_COMPONENT_SCHEMAS, registerGamificationPaths } from './gamification/paths'
 import { QUESTION_WORKFLOW_COMPONENT_SCHEMAS, registerQuestionWorkflowPaths } from './question-workflow/paths'
 import { CLASSES_COMPONENT_SCHEMAS, registerClassesPaths } from './classes/paths'
+import { SCHOOL_ADMIN_COMPONENT_SCHEMAS, registerSchoolAdminPaths } from './school-admin/paths'
 import { DateOnlySchema, TimestampInputSchema, TimestampSchema } from './common/time'
 import { WALLET_COMPONENT_SCHEMAS, registerWalletPaths } from './wallet/paths'
 import { BIJAK_PAPERS_COMPONENT_SCHEMAS, registerBijakPapersPaths } from './bijak/papers/paths'
@@ -70,6 +71,7 @@ export const COMPONENT_SCHEMAS = {
   ...GAMES_COMPONENT_SCHEMAS, // BE-45 (M16 games, leagues)
   ...MARKETPLACE_COMPONENT_SCHEMAS, // BE-46 (M20)
   ...SPONSORSHIP_COMPONENT_SCHEMAS, // BE-47 (M21 student side)
+  ...SCHOOL_ADMIN_COMPONENT_SCHEMAS, // BE-21 (M27 + M18 Amaran)
   // V2-T08 access matrix
   AccessGroupId: AccessGroupIdSchema,
   AccessGroup: AccessGroupSchema,
@@ -108,6 +110,7 @@ export function buildOpenApiDocument(): Record<string, unknown> {
   registerGamesPaths(registry) // BE-45 (M16 games, leagues)
   registerMarketplacePaths(registry) // BE-46 (M20)
   registerSponsorshipPaths(registry) // BE-47 (M21 student side)
+  registerSchoolAdminPaths(registry) // BE-21 (M27 + M18 Amaran)
   const generator = new OpenApiGeneratorV31(registry.definitions)
   return generator.generateDocument({
     openapi: '3.1.0',
