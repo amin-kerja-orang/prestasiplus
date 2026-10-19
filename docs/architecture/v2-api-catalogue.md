@@ -9,7 +9,7 @@ Snapshot: worktree `D:\Dev Projects\pp-docs`, branch `docs/v2-reference`, 2026-1
 | Part | File | Modules | Endpoint blocks |
 |---|---|---|---:|
 | 1 | [`core-identity-curriculum.md`](v2-api-catalogue/core-identity-curriculum.md) | core, M01, M02, M03 | 104 (100 mock + 4 contract-only) |
-| 2 | [`learning-exam.md`](v2-api-catalogue/learning-exam.md) | M04, M05, M06, M07, M13, M25 (+ M28 Bijak methods, SPM intake D52) | 99 routes + 16 Bijak methods |
+| 2 | [`learning-exam.md`](v2-api-catalogue/learning-exam.md) | M04, M05, M06, M07, M13, M25 (+ M28 Bijak methods, SPM intake D52 operations IN-01..IN-10) | 99 routes + 16 Bijak methods + 10 intake operations |
 | 3 | [`teacher-reports-admin.md`](v2-api-catalogue/teacher-reports-admin.md) | M08, M10, M11, M12, M17, M18, M27 | 127 |
 | 4 | [`economy-content-games.md`](v2-api-catalogue/economy-content-games.md) | M14, M15, M16, M09, M20, M21, M22 | 165 |
 | | **Total** | | **495 HTTP endpoints** (491 mock routes + 4 contract-only) + 16 Bijak methods |
@@ -41,7 +41,7 @@ Counts verified for this index with a multi-line-aware script (`scratchpad/docs-
 | M13 Cikgu Alesa | 2 | 10 | none (backlog) | 10 | 0 / 0 / 10 |
 | M25 AI Centre | 2 | 1 | none (backlog) | 1 | 0 / 0 / 1 |
 | M28 Bijak SPM (16 class methods, 0 routes) | 2 | 0 | BE-14, BE-15, BE-16 | 1 (BJ-04) | 0 / 0 / 15, 1 n/a (BJ-12 sweeper) |
-| SPM intake and paper builder D52 (no mock in snapshot) | 2 | 0 | BE-36..BE-40 | n/a | all missing |
+| SPM intake D52 (operations IN-01..IN-10, source commit b2e1033; no HTTP routes) | 2 | 0 | BE-36..BE-40 (+BE-26 seed) | 2 with no card endpoint (IN-05, IN-09), IN-04 partial | all missing |
 | M08 student performance | 3 | 30 | BE-19 | 0 | 0 / 0 / 30 |
 | M10 teacher and class | 3 | 39 | BE-09, BE-10, BE-17, BE-18, BE-22 | 3 | 0 / 0 / 39 |
 | M11 teacher analytics | 3 | 7 | BE-20 | 0 | 0 / 0 / 7 |
@@ -141,7 +141,7 @@ A further tier is inside a card's goal but only implied: part 3 marks 24 endpoin
 |---|---|---|
 | `GET /api/amaran/schools/:id`, `GET /api/amaran/summary`, `GET /api/amaran/effectiveness`, `GET /api/amaran/export/school/:id` | M18 | M18 PPD/JPN is wave-4 backlog, but M27 (BE-21 scope) calls the school page and CSV and its dashboard reads the same risk tally; BE-21 cannot reach parity without them. Decide: new M18 card, or fold the school family into BE-21. |
 
-Not HTTP, no card path: `BJ-04 subjects()` (Bijak subject dictionary, no endpoint); card-only endpoints without a mock (photo upload, admin papers and blueprints BE-39, intake BE-36..BE-38/40) are listed in part 2 sections 11 and 12.
+Not HTTP, no card endpoint: `BJ-04 subjects()` (Bijak subject dictionary), intake `IN-05 submitForReview` (batch Draf to Semakan; BE-10 owns submit, OQ B2-26) and `IN-09` DSKP units for the intake tag selector (OQ B2-30); `IN-04 saveExtracted` is only partly covered (BE-38 has item-level PATCH, no batch replace, OQ B2-25). IN-06 and IN-08 have no public endpoint of their own. Card-only endpoints without a mock (photo upload, admin papers and blueprints BE-39, AI status/usage BE-36, intake dashboard BE-40) are in part 2 sections 11 and 12. These do not change the 143 HTTP total.
 
 ## 6. Cross-cutting open questions
 
@@ -166,7 +166,7 @@ Deduplicated from the 4 parts. Part-local ids: `B1-n` = `OQ-API-B1-n` (part 1), 
 | CC-15 | **Files, uploads, exports.** Mock stores only metadata or data URLs; real endpoints need BE-04 storage, limits, magic-byte checks, CSV formula-injection guard, PDF export (`PdfPort`), multipart vs two-step upload. | B1-9, B2-22, B3-18, B3-6, B4 (section 3 Files) |
 | CC-16 | **Mock constants vs computed values.** Display constants and stored aggregates (M12 correlation, M17 engagement buckets, M08 GPS rows, SPM targets progress, Sekolah Bersaing snapshots, hub constants) have no computation rule; also performance of full-log scans. | B3-8, B3-17, B2-8, B2-9, B4-14 |
 | CC-17 | **Deletes, audit and side effects.** Cascade vs restrict on deletes, no `audit_events` for admin writes, GET endpoints that write (view counters, referral code). | B1-22, B4-6, B4-7, B4-28 |
-| CC-18 | **Scope boundaries.** External AI stubs (M13/M25), PKSK as tags, M06 retirement, teacher economy, parent routes, M18 card, M16 simulation, intake mock missing from the snapshot. | B2-10, B2-11, B2-17, B3-12, B4-11, B4-23, B4-25 |
+| CC-18 | **Scope boundaries.** External AI stubs (M13/M25), PKSK as tags, M06 retirement, teacher economy, parent routes, M18 card, M16 simulation, SPM intake (D52) documented as operations only, with no HTTP mock. | B2-10, B2-11, B2-17, B2-23..B2-30, B3-12, B4-11, B4-23, B4-25 |
 | CC-19 | **Hard-coded hosts and fixtures.** Share/referral links use `https://prestasiplus.my`; fixture ids/tokens must not be reproduced. | B4-5, B1-21 |
 
 Part-local questions that do not repeat elsewhere stay in the part (for example B3-3 weekly report 403, B3-4 headcount entry, B3-10 two Command Center families, B3-16 ranking order, B4-8 lucky draw, B4-13 league status).
@@ -187,8 +187,8 @@ Substantive conflicts and overlaps found while comparing the parts (formatting i
    - M14 wallet writes: M15 and M16 call the M14 wallet service in the caller's transaction (ADR-0014); M05/M06/Bijak submit calls also feed it (gamification result in M05-03).
 3. **Notation differences** (documented in the parts, not rewritten): envelope names (section 4 table); card column (`BE-nn`, `BE-nn*`, `**UNCOVERED** (BE-nn)`, `UNCOVERED`, "(implied)"); part 1 and part 4 count "uncovered" differently from part 3 (part 3 counts `*` implied separately, part 4 lists "not itemised" separately), so section 5 re-bases all four on "no card endpoint table lists it".
 4. **Contract vocabulary** is `exists / partial / missing` in all parts; part 1's `exists (no mock)` was normalised to `exists`; Bijak row BJ-12 uses `n/a` (scheduled job, no endpoint).
-5. **Part 2 section 11 (D52 intake)** is being edited by another agent: this index only links to it. Section 12 of part 2 still says intake has no mock shape; re-check after that edit (count of 99 routes is unaffected unless the edit adds a mock).
-6. **Fixes needed in part 2** (not edited here): none substantive. Re-read its section 1 intake note and section 12 ('52 of the 99 uncovered') after the D52 edit lands; cosmetic only: part 2 lists open questions in a table while parts 1 and 3 use bullets.
+5. **Part 2 section 11 (D52 intake)** is final: documented as 10 operations IN-01..IN-10 from commit b2e1033 (a browser-side domain/store, no HTTP routes), with OQ-API-B2-23..30. Route total stays 99; the 52 uncovered routes are unchanged. Operations without a card endpoint: IN-05, IN-09; partial: IN-04.
+6. **Part 2 state:** consistent with the index; no fixes outstanding. Cosmetic only: part 2 lists open questions in a table while parts 1 and 3 use bullets.
 7. **Edits made to parts 1, 3, 4 for consistency:** part 3 summary/headings now carry `Mnn-kk` ids (were bare numbers and bare headings); part 4 endpoint headings now put the method and path in backticks like parts 1 to 3; part 1 contract value `exists (no mock)` normalised to `exists`.
 
 ## 8. Verification
