@@ -90,6 +90,7 @@ Rules for `contract-only`:
 
 ### Lead notices (current instructions; newest first)
 
+- 2026-10-19: **Reserved for an external collaborator: BE-11 and BE-24 (contract-only), branches `be/BE-11-contract` and `be/BE-24-contract`.** Every session skips these two cards even before their branches appear on GitHub. BE-08 contract stays with the session that pushed `be/BE-08-contract` first.
 - 2026-10-19: **Decisions D54 (docs/TRACKER.md):** questions use the v2 lifecycle on the wire: Draf, Semakan, Lulus, Diterbitkan, Diarkib (codes draft, review, approved, published, archived); another student's Bijak attempt returns 403; BE-23 is now P1; M16 leaderboards show classmates' display names (fictitious names in seeds). Cards that conflict with these follow D54.
 - 2026-10-19: **Start now; do not wait for perfect docs.** Take cards only from the Open list above. If `docs/requirements/v2-backend-urs.md` or `docs/plan/backend-dev-guide.md` is not on the branch yet, follow `docs/architecture/v2-backend-plan.md` and the card file. Once they land, re-read them at your next session start.
 
