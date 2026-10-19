@@ -18,9 +18,6 @@ export const USERS_PAGE_SIZE = 25
 export const STUDENT_SEARCH_LIMIT = 15
 /** Raised from the mock value 2 (security review BE-05): a 2-letter query enumerates minors. */
 export const STUDENT_SEARCH_MIN_CHARS = 3
-export const PASSWORD_MIN = 6
-/** Upper bound for every password field (slow hash, DoS). Passwords are never echoed in `fields` or logged. */
-export const PASSWORD_MAX = 128
 /** Bulk-import caps (new in v2; the mock has none). */
 export const IMPORT_MAX_CHARS = 1_048_576
 export const IMPORT_MAX_ROWS = 1000
@@ -35,18 +32,29 @@ export const ASSIGNABLE_ROLES = {
   school_admin: ['student', 'teacher'],
 } as const
 
-const OWN = 'admin: all users; school_admin: own school only (an out-of-scope id is 404, never 403)'
+/**
+ * Roles a school_admin may read, update, delete or toggle (security review BE-05, role hierarchy):
+ * students and teachers of its own school, and parents linked to a child of its school. A target with any
+ * other role (another school_admin, ppd_officer, admin, sponsor) is 404, the same as out of scope.
+ */
+export const MANAGEABLE_TARGET_ROLES = {
+  admin: ['admin', 'school_admin', 'ppd_officer', 'teacher', 'student', 'parent', 'sponsor'],
+  school_admin: ['student', 'teacher', 'parent'],
+} as const
+
+const OWN =
+  'admin: all users; school_admin: own school only and only targets whose roles are all in MANAGEABLE_TARGET_ROLES.school_admin (student, teacher, parent linked to a child of the school). Any other target (another school_admin, ppd_officer, admin, another school) is 404, never 403, so nothing is given away'
 export const USER_ACCESS = {
-  'GET /admin/users': { roles: ['admin', 'school_admin'], scope: OWN + '; meta.roleCounts is scoped the same way' },
+  'GET /admin/users': { roles: ['admin', 'school_admin'], scope: OWN + '; rows of other roles and schools are hidden and meta.roleCounts is counted over the visible rows only' },
   'GET /admin/users/filters': { roles: ['admin', 'school_admin'], scope: 'admin: all schools with users; school_admin: own school only' },
   'GET /admin/users/{id}': { roles: ['admin', 'school_admin'], scope: OWN },
   'POST /admin/users': { roles: ['admin', 'school_admin'], scope: 'admin: any role; school_admin: student or teacher in own school (ASSIGNABLE_ROLES)' },
-  'PUT /admin/users/{id}': { roles: ['admin', 'school_admin'], scope: 'admin: any role; school_admin: student or teacher in own school, target in own school (ASSIGNABLE_ROLES)' },
+  'PUT /admin/users/{id}': { roles: ['admin', 'school_admin'], scope: 'admin: any role; school_admin: student or teacher in own school (ASSIGNABLE_ROLES); the target must be in the own school with roles in MANAGEABLE_TARGET_ROLES.school_admin (another school_admin, higher role or other school is 404, never 403)' },
   'DELETE /admin/users/{id}': { roles: ['admin', 'school_admin'], scope: OWN },
   'POST /admin/users/bulk-delete': { roles: ['admin', 'school_admin'], scope: OWN + '; ids outside scope are skipped as unknown' },
   'POST /admin/users/{id}/toggle-active': { roles: ['admin', 'school_admin'], scope: OWN },
   'POST /admin/users/bulk-import': { roles: ['admin', 'school_admin'], scope: 'admin: any import role; school_admin: teacher only, into own school' },
-  'GET /students/search': { roles: ['admin', 'school_admin', 'teacher'], scope: 'admin: all students; school_admin and teacher: own school only. student, parent, sponsor, ppd_officer: 403' },
+  'GET /students/search': { roles: ['admin', 'school_admin', 'teacher'], scope: 'admin: all students; school_admin: own school only; teacher: only students in its own classes. student, parent, sponsor, ppd_officer: 403' },
   'GET /admin/teachers': { roles: ['admin', 'school_admin'], scope: 'admin: all teachers; school_admin: own school only' },
   'GET /admin/teachers/{id}/classrooms': { roles: ['admin', 'school_admin'], scope: 'admin: any teacher; school_admin: own school teachers only' },
 } as const satisfies Record<string, AccessRule>
@@ -104,7 +112,7 @@ export const StudentSearchItemSchema = z
     id: IdSchema,
     name: z.string().min(1),
     classLevel: ClassLevelSchema.nullable(),
-    schoolName: z.string().nullable(),
+    schoolName: z.string().nullable().optional().meta({ description: 'Omitted for school-scoped callers (redundant); present for admin.' }),
   })
   .meta({ id: 'StudentSearchItem' })
 export type StudentSearchItem = z.infer<typeof StudentSearchItemSchema>
@@ -154,7 +162,7 @@ export const AdminUserDetailSchema = z
     mustChangePassword: z.boolean().meta({ description: 'True for an account with a server-generated initial password, or whose password an admin set (D55c, D59b). Cleared when the user changes it.' }),
     ppdState: z.string().nullable(),
     ppdDistrict: z.string().nullable(),
-    linkedStudents: z.array(StudentSearchItemSchema).meta({ description: 'Children of a parent; [] for every other account.' }),
+    linkedStudents: z.array(StudentSearchItemSchema).meta({ description: 'Children of a parent; [] for every other account. For a school_admin caller only children in the caller school are listed (children in other schools are hidden).' }),
   })
   .meta({ id: 'AdminUserDetail' })
 export type AdminUserDetail = z.infer<typeof AdminUserDetailSchema>
@@ -168,6 +176,15 @@ export const CreatedUserSchema = AdminUserDetailSchema.extend({
   generatedPassword: z.string().min(1).meta({ description: 'Random per account, shown once, never retrievable again. The response is no-store.' }),
 }).meta({ id: 'CreatedUser' })
 export type CreatedUser = z.infer<typeof CreatedUserSchema>
+
+/**
+ * Response of PUT /admin/users/:id. `generatedPassword` is present only when the request had
+ * `resetPassword: true` (then `mustChangePassword` is true and the target sessions are revoked).
+ */
+export const UpdatedUserSchema = AdminUserDetailSchema.extend({
+  generatedPassword: z.string().min(1).optional().meta({ description: 'Only after resetPassword: random, shown once, never logged, never retrievable again. The response is no-store.' }),
+}).meta({ id: 'UpdatedUser' })
+export type UpdatedUser = z.infer<typeof UpdatedUserSchema>
 
 /** `meta.roleCounts`: all users per role, ignoring the filters (the 7 stat cards). */
 export const RoleCountsSchema = z
@@ -254,7 +271,9 @@ export const CreateUserRequestSchema = z
 export type CreateUserRequest = z.infer<typeof CreateUserRequestSchema>
 
 /**
- * PUT /admin/users/:id. A key that is absent leaves the stored value unchanged; `null` clears
+ * PUT /admin/users/:id. D59: no password fields; `resetPassword: true` triggers a server-generated
+ * one-time password (the mock update route took `newPassword`; a boolean flag is the smallest shape
+ * that keeps the same route). A key that is absent leaves the stored value unchanged; `null` clears
  * `phone`, `schoolId`, `icNumber`. `roles` replaces the whole list. The subscription is derived
  * (BE-25) and is not accepted here.
  */
@@ -262,16 +281,10 @@ export const UpdateUserRequestSchema = z
   .strictObject({
     roles: UserRolesSchema,
     ...fields,
-    newPassword: z
-      .string()
-      .min(PASSWORD_MIN, { error: V.min('new password', PASSWORD_MIN) })
-      .max(PASSWORD_MAX, { error: V.max('new password', PASSWORD_MAX) })
-      .nullish(),
-    newPasswordConfirmation: z.string().nullish(),
-  })
-  .superRefine((v, ctx) => {
-    if (v.newPassword && v.newPassword !== v.newPasswordConfirmation)
-      ctx.addIssue({ code: 'custom', path: ['newPassword'], message: V.confirmed('new password') })
+    resetPassword: z.boolean().optional().meta({
+      description:
+        'D59: true asks the server to reset the password. There is no admin-chosen password; the server generates a random one-time password and returns it once as generatedPassword.',
+    }),
   })
   .meta({ id: 'UpdateUserRequest' })
 export type UpdateUserRequest = z.infer<typeof UpdateUserRequestSchema>

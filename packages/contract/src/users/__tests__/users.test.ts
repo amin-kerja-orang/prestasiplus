@@ -18,6 +18,7 @@ import {
   UserListMetaSchema,
   UserListQuerySchema,
   ASSIGNABLE_ROLES,
+  MANAGEABLE_TARGET_ROLES,
   BULK_IMPORT_ROLES_BY_CALLER,
   ImportRoleForbiddenSchema,
   IMPORT_ROLE_FORBIDDEN_MESSAGE,
@@ -26,7 +27,7 @@ import {
   USER_ACCESS,
   IMPORT_MAX_CHARS,
   IMPORT_MAX_ROWS,
-  PASSWORD_MAX,
+  UpdatedUserSchema,
   STUDENT_SEARCH_MIN_CHARS,
   UserRolesSchema,
   USER_MESSAGES,
@@ -158,14 +159,9 @@ describe('create request', () => {
 
 describe('update request', () => {
   const update = { roles: ['teacher'], name: 'Guru Ujian', email: 'guru@example.test' }
-  it('accepts partial bodies and a confirmed new password', () => {
+  it('accepts partial bodies and clearing optionals; roles are required', () => {
     expect(UpdateUserRequestSchema.safeParse(update).success).toBe(true)
     expect(UpdateUserRequestSchema.safeParse({ ...update, phone: null, schoolId: null, icNumber: null }).success).toBe(true)
-    expect(UpdateUserRequestSchema.safeParse({ ...update, newPassword: 'secret1', newPasswordConfirmation: 'secret1' }).success).toBe(true)
-  })
-  it('rejects an unconfirmed or short new password and no roles', () => {
-    expect(UpdateUserRequestSchema.safeParse({ ...update, newPassword: 'secret1', newPasswordConfirmation: 'x' }).success).toBe(false)
-    expect(UpdateUserRequestSchema.safeParse({ ...update, newPassword: '123' }).success).toBe(false)
     expect(UpdateUserRequestSchema.safeParse({ name: 'a', email: 'a@example.test' }).success).toBe(false)
   })
 })
@@ -245,11 +241,6 @@ describe('user validation copy (mock messages)', () => {
     for (const v of [true, 0, '1', 'yes', 'off']) expect(CreateUserRequestSchema.safeParse({ ...create, isActive: v }).success, String(v)).toBe(true)
     expect(CreateUserRequestSchema.safeParse({ ...create, phone: '', username: '', schoolId: '', ppdState: '' }).success).toBe(true)
   })
-  it('update: copy for new password', () => {
-    const update = { roles: ['teacher'], name: 'Guru Ujian', email: 'guru@example.test' }
-    expect(msg(UpdateUserRequestSchema.safeParse({ ...update, newPassword: '123' }), 'newPassword')).toBe('The new password field must be at least 6 characters.')
-    expect(msg(UpdateUserRequestSchema.safeParse({ ...update, newPassword: 'secret1', newPasswordConfirmation: 'x' }), 'newPassword')).toBe('The new password field confirmation does not match.')
-  })
   it('bulk delete copy', () => {
     expect(msg(BulkDeleteRequestSchema.safeParse({}), 'ids')).toBe('The ids field is required.')
     expect(msg(BulkDeleteRequestSchema.safeParse({ ids: [] }), 'ids')).toBe('The ids field is required.')
@@ -311,11 +302,6 @@ describe('security review fixes (D55, D57)', () => {
   })
   it('every operation states its access in the description', () => {
     for (const o of ops) expect(o.op.description ?? '', o.key).toMatch(/Access: /)
-  })
-  it('password fields are capped at 128', () => {
-    expect(PASSWORD_MAX).toBe(128)
-    const long = 'x'.repeat(129)
-    expect(msg(UpdateUserRequestSchema.safeParse({ roles: ['teacher'], name: 'a', newPassword: long, newPasswordConfirmation: long }), 'newPassword')).toBe('The new password field must not be greater than 128 characters.')
   })
   it('bulk import is capped in size and rows', () => {
     const base = { role: 'parent', importMode: 'paste' }
@@ -409,10 +395,102 @@ describe('D58 decisions', () => {
     expect(op('/admin/users', 'post').description).toMatch(/generatedPassword/)
   })
 
+  it('D59: update has no password fields; resetPassword triggers a generated one-time password', () => {
+    const update = { roles: ['teacher'], name: 'Guru Ujian', email: 'guru@example.test' }
+    expect(UpdateUserRequestSchema.safeParse(update).success).toBe(true)
+    expect(UpdateUserRequestSchema.safeParse({ ...update, resetPassword: true }).success).toBe(true)
+    expect(UpdateUserRequestSchema.safeParse({ ...update, resetPassword: 'yes' }).success).toBe(false)
+    for (const bad of [{ newPassword: 'secret1' }, { newPasswordConfirmation: 'secret1' }, { password: 'secret1' }])
+      expect(UpdateUserRequestSchema.safeParse({ ...update, ...bad }).success, JSON.stringify(bad)).toBe(false)
+    const reset = { ...detail, mustChangePassword: true, generatedPassword: 'Xk3pQ9vL2m' }
+    expect(UpdatedUserSchema.safeParse(reset).success).toBe(true)
+    expect(UpdatedUserSchema.safeParse(detail).success).toBe(true)
+    expect(UpdatedUserSchema.safeParse({ ...reset, generatedPassword: '' }).success).toBe(false)
+    expect(AdminUserDetailSchema.parse(reset)).not.toHaveProperty('generatedPassword')
+    const put = op('/admin/users/{id}', 'put')
+    expect((put.responses['200'] as { headers?: Record<string, unknown> }).headers?.['Cache-Control']).toBeDefined()
+    expect(put.description).toMatch(/resetPassword/)
+    expect(put.description).toMatch(/generatedPassword/)
+    expect(put.description).toMatch(/sessions are revoked/)
+    expect(put.description).toMatch(/never logged/)
+    expect(put.description).toMatch(/mustChangePassword/)
+  })
+
   it('D59: the import report carries one generated password per created account', () => {
     const cred = { line: 2, email: 'a@example.test', generatedPassword: 'Xk3pQ9vL2m', mustChangePassword: true }
     expect(ImportCredentialSchema.safeParse(cred).success).toBe(true)
     expect(ImportCredentialSchema.safeParse({ ...cred, mustChangePassword: false }).success).toBe(false)
+  })
+})
+
+describe('role hierarchy, scope and read limits (security re-review)', () => {
+  type Op = { responses: Record<string, unknown>; description?: string }
+  const doc = buildOpenApiDocument() as { paths: Record<string, Record<string, Op>> }
+  const op = (p: string, m: string) => doc.paths[p]![m]!
+
+  it('a school_admin can manage only students, teachers and parents, never a peer or higher role', () => {
+    expect([...MANAGEABLE_TARGET_ROLES.school_admin]).toEqual(['student', 'teacher', 'parent'])
+    for (const r of ['admin', 'school_admin', 'ppd_officer', 'sponsor']) expect(MANAGEABLE_TARGET_ROLES.school_admin).not.toContain(r)
+    expect(MANAGEABLE_TARGET_ROLES.admin).toContain('school_admin')
+  })
+
+  it('every id-targeting operation says out-of-scope and higher-role targets are 404', () => {
+    for (const k of [
+      'GET /admin/users/{id}',
+      'PUT /admin/users/{id}',
+      'DELETE /admin/users/{id}',
+      'POST /admin/users/{id}/toggle-active',
+      'POST /admin/users/bulk-delete',
+    ] as const) {
+      expect(USER_ACCESS[k].scope, k).toMatch(/MANAGEABLE_TARGET_ROLES|404/)
+      const [method, ...rest] = k.split(' ')
+      const o = op(rest.join(' '), method!.toLowerCase())
+      expect(o.description, k).toMatch(/another school_admin|higher or equal role|never 403|skipped as unknown/)
+    }
+    expect(USER_ACCESS['GET /admin/users/{id}'].scope).toMatch(/another school_admin/)
+    expect(USER_ACCESS['GET /admin/users/{id}'].scope).toMatch(/404, never 403/)
+  })
+
+  it('the list hides higher-role rows and scopes roleCounts', () => {
+    expect(USER_ACCESS['GET /admin/users'].scope).toMatch(/hidden/)
+    expect(USER_ACCESS['GET /admin/users'].scope).toMatch(/roleCounts/)
+    expect(op('/admin/users', 'get').description).toMatch(/hides every row outside its school/)
+  })
+
+  it('duplicate e-mail/username copy is generic for a school_admin (documented trade-off)', () => {
+    const d = op('/admin/users', 'post').description!
+    expect(d).toMatch(/The email has already been taken./)
+    expect(d).toMatch(/identical whether the existing account is in scope or in another school/)
+    expect(d).toMatch(/Trade-off/)
+    expect(op('/admin/users/bulk-import', 'post').description).toMatch(/counted identically/)
+  })
+
+  it('429 with Retry-After is documented on the read operations', () => {
+    for (const [p, m] of [
+      ['/admin/users', 'get'],
+      ['/admin/users/{id}', 'get'],
+      ['/admin/users/filters', 'get'],
+      ['/admin/teachers', 'get'],
+      ['/admin/teachers/{id}/classrooms', 'get'],
+    ] as const) {
+      const r = op(p, m).responses['429'] as { headers?: Record<string, unknown> } | undefined
+      expect(r, p).toBeDefined()
+      expect(r?.headers?.['Retry-After'], p).toBeDefined()
+    }
+  })
+
+  it('linkedStudents is limited to the caller school and the search item is minimal', () => {
+    const detailDoc = JSON.stringify(buildOpenApiDocument().components)
+    expect(detailDoc).toMatch(/only children in the caller school are listed/)
+    const item = StudentSearchItemSchema.parse({ id: '5', name: 'Murid Ujian', classLevel: 'D3', phone: '0123456789', avatarUrl: 'x' })
+    expect(item).not.toHaveProperty('phone')
+    expect(item).not.toHaveProperty('avatarUrl')
+    expect(item.schoolName).toBeUndefined()
+    expect(StudentSearchItemSchema.safeParse({ id: '5', name: 'a', classLevel: null, schoolName: 'SK Contoh' }).success).toBe(true)
+    const search = op('/students/search', 'get').description!
+    expect(search).toMatch(/name only/)
+    expect(search).toMatch(/teacher sees only students in its own classes/)
+    expect(USER_ACCESS['GET /students/search'].scope).toMatch(/teacher: only students in its own classes/)
   })
 })
 
