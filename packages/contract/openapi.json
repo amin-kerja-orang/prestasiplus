@@ -12986,6 +12986,634 @@
         ],
         "description": "201; `message` is \"Berjaya menyertai kelas {name}.\""
       },
+      "MarketplaceCondition": {
+        "type": "string",
+        "enum": [
+          "new",
+          "used"
+        ]
+      },
+      "MarketplaceStockStatus": {
+        "type": "string",
+        "enum": [
+          "available",
+          "out_of_stock"
+        ]
+      },
+      "MarketplaceShippingMethod": {
+        "type": "string",
+        "enum": [
+          "pickup",
+          "postage",
+          "cod",
+          "free"
+        ]
+      },
+      "MarketplaceSort": {
+        "type": "string",
+        "enum": [
+          "latest",
+          "price_low",
+          "price_high",
+          "popular"
+        ]
+      },
+      "MarketplaceMoney": {
+        "type": "string",
+        "pattern": "^\\d+\\.\\d{2}$",
+        "description": "RM amount, decimal string with 2 decimals.",
+        "example": "89.90"
+      },
+      "MarketplaceRatingStars": {
+        "type": "string",
+        "minLength": 5,
+        "maxLength": 5,
+        "pattern": "^★*☆*$",
+        "description": "Five characters, \"★\" then \"☆\".",
+        "example": "★★★★☆"
+      },
+      "MarketplaceWhatsappUrl": {
+        "type": "string",
+        "pattern": "^https:\\/\\/wa\\.me\\/\\d+\\?text=.+$",
+        "description": "wa.me hand-off URL with the encoded message."
+      },
+      "MarketplaceCategory": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "slug": {
+            "type": "string",
+            "minLength": 1
+          },
+          "name": {
+            "type": "string",
+            "minLength": 1
+          },
+          "icon": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "required": [
+          "id",
+          "slug",
+          "name",
+          "icon"
+        ],
+        "additionalProperties": false
+      },
+      "MarketplaceCardSeller": {
+        "type": "object",
+        "properties": {
+          "shopName": {
+            "type": "string",
+            "minLength": 1
+          },
+          "verified": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "shopName",
+          "verified"
+        ],
+        "additionalProperties": false
+      },
+      "MarketplaceProductCard": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "slug": {
+            "type": "string",
+            "minLength": 1
+          },
+          "name": {
+            "type": "string",
+            "minLength": 1
+          },
+          "price": {
+            "$ref": "#/components/schemas/MarketplaceMoney"
+          },
+          "originalPrice": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/MarketplaceMoney"
+              },
+              {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              }
+            ]
+          },
+          "discountPct": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "description": "round((original - price) / original x 100), half up; null without a positive original price (FR-M20-11)."
+          },
+          "condition": {
+            "$ref": "#/components/schemas/MarketplaceCondition"
+          },
+          "thumbnailUrl": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "minLength": 1,
+            "description": "Image at the lowest position; null without images."
+          },
+          "seller": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/MarketplaceCardSeller"
+              },
+              {
+                "type": [
+                  "object",
+                  "null"
+                ]
+              }
+            ]
+          },
+          "shippingLine": {
+            "type": "string",
+            "minLength": 1,
+            "description": "BR-M20-17: \"Pos / Kurier (RM8.00)\" (postage with fee), \"Pos / Kurier\" (postage without fee), \"Penghantaran Percuma 🎉\" (free), \"Cash on Delivery (COD)\" (cod), \"Ambil Sendiri (Pickup)\" (pickup)."
+          }
+        },
+        "required": [
+          "id",
+          "slug",
+          "name",
+          "price",
+          "originalPrice",
+          "discountPct",
+          "condition",
+          "thumbnailUrl",
+          "seller",
+          "shippingLine"
+        ],
+        "additionalProperties": false
+      },
+      "MarketplaceProductImage": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "position": {
+            "type": "integer",
+            "minimum": 1,
+            "description": "1 = \"Utama\"."
+          },
+          "url": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "required": [
+          "id",
+          "position",
+          "url"
+        ],
+        "additionalProperties": false
+      },
+      "MarketplaceSellerCard": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "shopName": {
+            "type": "string",
+            "minLength": 1
+          },
+          "initial": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 2,
+            "description": "First character of the shop name, upper case (\"?\" if empty)."
+          },
+          "verified": {
+            "type": "boolean",
+            "description": "verified_at is not null."
+          },
+          "ratingStars": {
+            "$ref": "#/components/schemas/MarketplaceRatingStars"
+          },
+          "activeProductCount": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "The seller's visible products."
+          }
+        },
+        "required": [
+          "id",
+          "shopName",
+          "initial",
+          "verified",
+          "ratingStars",
+          "activeProductCount"
+        ],
+        "additionalProperties": false
+      },
+      "MarketplaceProductReview": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "userId": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "rating": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 5
+          },
+          "text": {
+            "type": "string"
+          },
+          "createdAt": {
+            "$ref": "#/components/schemas/Timestamp"
+          }
+        },
+        "required": [
+          "id",
+          "userId",
+          "rating",
+          "text",
+          "createdAt"
+        ],
+        "additionalProperties": false
+      },
+      "MarketplaceProductDetail": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "slug": {
+            "type": "string",
+            "minLength": 1
+          },
+          "name": {
+            "type": "string",
+            "minLength": 1
+          },
+          "categoryId": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "category": {
+            "$ref": "#/components/schemas/MarketplaceCategory"
+          },
+          "price": {
+            "$ref": "#/components/schemas/MarketplaceMoney"
+          },
+          "originalPrice": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/MarketplaceMoney"
+              },
+              {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              }
+            ]
+          },
+          "discountPct": {
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "description": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "condition": {
+            "$ref": "#/components/schemas/MarketplaceCondition"
+          },
+          "stockStatus": {
+            "$ref": "#/components/schemas/MarketplaceStockStatus"
+          },
+          "shippingMethod": {
+            "$ref": "#/components/schemas/MarketplaceShippingMethod"
+          },
+          "shippingFee": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/MarketplaceMoney"
+              },
+              {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              }
+            ]
+          },
+          "shippingLine": {
+            "type": "string",
+            "minLength": 1
+          },
+          "location": {
+            "type": "string",
+            "description": "Empty string when none."
+          },
+          "views": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "createdAt": {
+            "$ref": "#/components/schemas/Timestamp"
+          },
+          "images": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/MarketplaceProductImage"
+            },
+            "description": "By position ascending."
+          },
+          "seller": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "properties": {
+              "id": {
+                "$ref": "#/components/schemas/Id"
+              },
+              "shopName": {
+                "type": "string",
+                "minLength": 1
+              },
+              "initial": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 2,
+                "description": "First character of the shop name, upper case (\"?\" if empty)."
+              },
+              "verified": {
+                "type": "boolean",
+                "description": "verified_at is not null."
+              },
+              "ratingStars": {
+                "$ref": "#/components/schemas/MarketplaceRatingStars"
+              },
+              "activeProductCount": {
+                "type": "integer",
+                "minimum": 0,
+                "description": "The seller's visible products."
+              }
+            },
+            "required": [
+              "id",
+              "shopName",
+              "initial",
+              "verified",
+              "ratingStars",
+              "activeProductCount"
+            ],
+            "additionalProperties": false,
+            "description": "null for a platform product."
+          },
+          "reviews": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/MarketplaceProductReview"
+            },
+            "description": "Newest first."
+          },
+          "reviewCount": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "related": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/MarketplaceProductCard"
+            },
+            "maxItems": 4,
+            "description": "Visible products of the same category, not the product itself, id ascending, at most 4."
+          }
+        },
+        "required": [
+          "id",
+          "slug",
+          "name",
+          "categoryId",
+          "category",
+          "price",
+          "originalPrice",
+          "discountPct",
+          "description",
+          "condition",
+          "stockStatus",
+          "shippingMethod",
+          "shippingFee",
+          "shippingLine",
+          "location",
+          "views",
+          "createdAt",
+          "images",
+          "seller",
+          "reviews",
+          "reviewCount",
+          "related"
+        ],
+        "additionalProperties": false
+      },
+      "MarketplaceWhatsappHandoff": {
+        "type": "object",
+        "properties": {
+          "url": {
+            "$ref": "#/components/schemas/MarketplaceWhatsappUrl"
+          }
+        },
+        "required": [
+          "url"
+        ],
+        "additionalProperties": false
+      },
+      "MarketplaceShop": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "shopName": {
+            "type": "string",
+            "minLength": 1
+          },
+          "initial": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 2
+          },
+          "description": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "verified": {
+            "type": "boolean"
+          },
+          "ratingStars": {
+            "$ref": "#/components/schemas/MarketplaceRatingStars"
+          },
+          "reviewCount": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "productCount": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "createdAt": {
+            "$ref": "#/components/schemas/Timestamp"
+          }
+        },
+        "required": [
+          "id",
+          "shopName",
+          "initial",
+          "description",
+          "verified",
+          "ratingStars",
+          "reviewCount",
+          "productCount",
+          "createdAt"
+        ],
+        "additionalProperties": false
+      },
+      "MarketplaceShopView": {
+        "type": "object",
+        "properties": {
+          "shop": {
+            "$ref": "#/components/schemas/MarketplaceShop"
+          },
+          "products": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/MarketplaceProductCard"
+            }
+          }
+        },
+        "required": [
+          "shop",
+          "products"
+        ],
+        "additionalProperties": false
+      },
+      "MarketplaceSearchQuery": {
+        "type": "object",
+        "properties": {
+          "q": {
+            "type": "string",
+            "description": "Case-insensitive substring of the product name. Blank = no filter."
+          },
+          "category": {
+            "type": "string",
+            "description": "Category slug. Unknown slug = empty result; blank = any."
+          },
+          "condition": {
+            "type": "string",
+            "description": "new | used, exact. Any other non-blank value matches nothing; blank = any."
+          },
+          "sort": {
+            "type": "string",
+            "description": "latest (default, and for any unknown value) | price_low | price_high | popular. `latest` is created_at desc, ties id ascending, but id descending when a valid category is set (DV-M20-07)."
+          },
+          "page": {
+            "type": "string",
+            "description": "Positive integer; missing or invalid = 1. An out-of-range page answers an empty page."
+          }
+        }
+      },
+      "MarketplaceCategoryListResponse": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/MarketplaceCategory"
+            }
+          }
+        },
+        "required": [
+          "data"
+        ],
+        "additionalProperties": false
+      },
+      "MarketplaceProductListResponse": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/MarketplaceProductCard"
+            },
+            "maxItems": 20
+          },
+          "meta": {
+            "$ref": "#/components/schemas/ListMeta"
+          }
+        },
+        "required": [
+          "data",
+          "meta"
+        ],
+        "additionalProperties": false
+      },
+      "MarketplaceProductResponse": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/MarketplaceProductDetail"
+          }
+        },
+        "required": [
+          "data"
+        ],
+        "additionalProperties": false
+      },
+      "MarketplaceWhatsappResponse": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/MarketplaceWhatsappHandoff"
+          }
+        },
+        "required": [
+          "data"
+        ],
+        "additionalProperties": false
+      },
+      "MarketplaceShopResponse": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/MarketplaceShopView"
+          }
+        },
+        "required": [
+          "data"
+        ],
+        "additionalProperties": false
+      },
       "AccessGroupId": {
         "type": "string",
         "enum": [
@@ -28860,6 +29488,305 @@
           },
           "422": {
             "description": "VALIDATION_ERROR fields.classCode \"Sila masukkan kod kelas.\"",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/marketplace/categories": {
+      "get": {
+        "tags": [
+          "marketplace"
+        ],
+        "summary": "Marketplace categories",
+        "description": "The 6 constant categories (selects and chips), id ascending. No meta.",
+        "responses": {
+          "200": {
+            "description": "Categories.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MarketplaceCategoryListResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED \"Unauthenticated.\" (no valid session). Every role may call these routes.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/marketplace/products": {
+      "get": {
+        "tags": [
+          "marketplace"
+        ],
+        "summary": "Search products",
+        "description": "Visible products only (status active and the seller, if any, active; stock does not matter). Filters combine with AND. 20 per page (fixed). Never answers 422: unknown values degrade as described per parameter.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "description": "Case-insensitive substring of the product name. Blank = no filter."
+            },
+            "required": false,
+            "description": "Case-insensitive substring of the product name. Blank = no filter.",
+            "name": "q",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "description": "Category slug. Unknown slug = empty result; blank = any."
+            },
+            "required": false,
+            "description": "Category slug. Unknown slug = empty result; blank = any.",
+            "name": "category",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "description": "new | used, exact. Any other non-blank value matches nothing; blank = any."
+            },
+            "required": false,
+            "description": "new | used, exact. Any other non-blank value matches nothing; blank = any.",
+            "name": "condition",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "description": "latest (default, and for any unknown value) | price_low | price_high | popular. `latest` is created_at desc, ties id ascending, but id descending when a valid category is set (DV-M20-07)."
+            },
+            "required": false,
+            "description": "latest (default, and for any unknown value) | price_low | price_high | popular. `latest` is created_at desc, ties id ascending, but id descending when a valid category is set (DV-M20-07).",
+            "name": "sort",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "description": "Positive integer; missing or invalid = 1. An out-of-range page answers an empty page."
+            },
+            "required": false,
+            "description": "Positive integer; missing or invalid = 1. An out-of-range page answers an empty page.",
+            "name": "page",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "A page of product cards with ListMeta.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MarketplaceProductListResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED \"Unauthenticated.\" (no valid session). Every role may call these routes.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/marketplace/products/{slug}": {
+      "get": {
+        "tags": [
+          "marketplace"
+        ],
+        "summary": "Product page",
+        "description": "Adds 1 to `views` on EVERY call (no de-duplication) and returns the new value. A hidden or unknown slug changes nothing.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Product slug (unique)."
+            },
+            "required": true,
+            "description": "Product slug (unique).",
+            "name": "slug",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The product.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MarketplaceProductResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED \"Unauthenticated.\" (no valid session). Every role may call these routes.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "NOT_FOUND \"Not Found.\": unknown slug, or a hidden product (status other than active, or the seller is not active). Nothing is counted.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/marketplace/products/{slug}/whatsapp": {
+      "post": {
+        "tags": [
+          "marketplace"
+        ],
+        "summary": "WhatsApp hand-off",
+        "description": "No body. A seller product adds 1 to the seller's WhatsApp click counter and returns the seller's wa.me URL; a platform product counts nothing and returns the platform number (server configuration). The server never calls WhatsApp or sends a message (D14); the caller navigates to the URL.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Product slug (unique)."
+            },
+            "required": true,
+            "description": "Product slug (unique).",
+            "name": "slug",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Value of Session.csrf; required on mutating requests."
+            },
+            "required": true,
+            "description": "Value of Session.csrf; required on mutating requests.",
+            "name": "X-CSRF-Token",
+            "in": "header"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The hand-off URL.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MarketplaceWhatsappResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED \"Unauthenticated.\" (no valid session). Every role may call these routes.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "CSRF_INVALID \"Sesi tidak sah. Sila muat semula halaman dan cuba lagi.\" (missing or wrong X-CSRF-Token).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "NOT_FOUND \"Not Found.\": unknown slug, or a hidden product (status other than active, or the seller is not active). Nothing is counted.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/marketplace/sellers/{id}": {
+      "get": {
+        "tags": [
+          "marketplace"
+        ],
+        "summary": "Public shop page",
+        "description": "Active sellers only. `products` are the shop's visible products, newest first, not paginated.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 64,
+              "description": "Digits only; a non-numeric value answers 404 \"Not Found.\".",
+              "example": "1042"
+            },
+            "required": true,
+            "description": "Digits only; a non-numeric value answers 404 \"Not Found.\".",
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The shop and its products.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MarketplaceShopResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED \"Unauthenticated.\" (no valid session). Every role may call these routes.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "NOT_FOUND \"Not Found.\": unknown id, non-numeric id, or a seller whose status is not active.",
             "content": {
               "application/json": {
                 "schema": {
