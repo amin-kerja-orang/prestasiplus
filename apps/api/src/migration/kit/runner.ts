@@ -45,10 +45,14 @@ export interface EntityStep<Row = unknown> {
   expectedDelta?: number
 }
 
+/** A step of any row type (steps differ per entity, so the row type is erased here). */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export type AnyEntityStep = EntityStep<any>
+
 export interface RunOptions {
   /** Default `dry-run`. */
   mode?: RunMode
-  steps: readonly EntityStep<never>[]
+  steps: readonly AnyEntityStep[]
   /** Identifies the input (dump hash, entity list, ...). A dry-run and its apply must share it. */
   inputHash: string
   gitSha?: string | null

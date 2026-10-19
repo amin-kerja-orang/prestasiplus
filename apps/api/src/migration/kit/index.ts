@@ -37,6 +37,7 @@ export {
   RunInProgressError,
   Runner,
   type BatchContext,
+  type AnyEntityStep,
   type BatchResult,
   type EntityStep,
   type RunOptions,
