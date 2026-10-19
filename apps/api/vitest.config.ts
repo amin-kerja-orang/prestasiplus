@@ -22,6 +22,9 @@ export default defineConfig({
       // Importing app.module validates the env; a closed port keeps tests without a DB honest.
       DATABASE_URL: 'postgresql://test:test@127.0.0.1:1/none',
     },
+    // Every DB spec clones a database in the one Testcontainers Postgres; with one worker per CPU
+    // (24 here) CREATE DATABASE ... TEMPLATE alone took 22 s and specs timed out at random (BE-03).
+    maxWorkers: 8,
     testTimeout: 30_000,
     hookTimeout: 120_000, // first run pulls the Postgres image
   },

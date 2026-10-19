@@ -12,7 +12,7 @@ COPY apps/api/package.json apps/api/
 RUN --mount=type=cache,target=/root/.npm \
     npm ci --omit=dev --workspace @pp/api --include-workspace-root=false --no-audit --no-fund
 
-# ---- build ----
+# ---- build (also the target of the one-shot `migrate` compose service: full npm ci, Prisma CLI) ----
 FROM node:22.22.2-alpine AS build
 WORKDIR /app
 COPY package.json package-lock.json ./
