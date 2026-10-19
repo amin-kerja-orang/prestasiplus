@@ -9,6 +9,8 @@ import {
   ACCOUNT_MESSAGES,
   ACCOUNT_PICTURE_MAX_KB,
   ACCOUNT_PICTURE_MESSAGES,
+  ACCOUNT_RESET_IC_MAX_ATTEMPTS,
+  ACCOUNT_RESET_IC_WINDOW_MINUTES,
   ACCOUNT_SETTINGS_DEFAULTS,
   AccountPasswordChangeRequestSchema,
   AccountPasswordEmailRequestSchema,
@@ -227,6 +229,35 @@ describe('password reset', () => {
   })
 })
 
+describe('D55 decisions', () => {
+  it('exports the reset-ic attempt limit as 5 per 15 minutes', () => {
+    expect(ACCOUNT_RESET_IC_MAX_ATTEMPTS).toBe(5)
+    expect(ACCOUNT_RESET_IC_WINDOW_MINUTES).toBe(15)
+  })
+
+  it('reset-ic documents 429 RATE_LIMITED with the BM message and the per-account + per-IP rule', () => {
+    const doc = buildOpenApiDocument() as {
+      paths: Record<string, Record<string, { description?: string; responses: Record<string, { description?: string; content?: Record<string, { schema: unknown }> }> }>>
+    }
+    const op = doc.paths['/auth/password/reset-ic']?.post
+    const res = op?.responses['429']
+    expect(res?.description).toContain('RATE_LIMITED')
+    expect(res?.description).toContain(ACCOUNT_AUTH_MESSAGES.resetIcRateLimited)
+    expect(res?.content?.['application/json']).toBeDefined()
+    expect(ACCOUNT_AUTH_MESSAGES.resetIcRateLimited).toBe('Terlalu banyak percubaan. Sila cuba lagi dalam 15 minit.')
+    expect(op?.description).toContain('per account')
+    expect(op?.description).toContain('per client IP')
+    const limited = { error: { code: 'RATE_LIMITED', message: ACCOUNT_AUTH_MESSAGES.resetIcRateLimited, retryAfter: 900 } }
+    expect(ErrorBodySchema.safeParse(limited).success).toBe(true)
+  })
+
+  it('states no-enumeration as decided (D55b), not pending', () => {
+    const doc = buildOpenApiDocument() as { paths: Record<string, Record<string, { description?: string }>> }
+    expect(doc.paths['/auth/password/email']?.post?.description).toContain('D55b')
+    expect(doc.paths['/auth/password/reset']?.post?.description).toContain('D55b')
+  })
+})
+
 describe('profile', () => {
   it('requires name, ignores email and any other key', () => {
     expect(fields(AccountProfileUpdateRequestSchema, {})).toEqual({ name: 'The name field is required.' })
@@ -414,6 +445,7 @@ describe('openapi registration', () => {
     }
     expect(doc.paths['/auth/password/email']?.post?.responses['429']).toBeDefined()
     expect(doc.paths['/auth/register']?.post?.responses['429']).toBeDefined()
+    expect(doc.paths['/auth/password/reset-ic']?.post?.responses['429']).toBeDefined()
     expect(doc.paths['/auth/password/reset']?.post?.responses['403']).toBeDefined()
   })
 

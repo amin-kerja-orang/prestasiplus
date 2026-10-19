@@ -7,6 +7,8 @@ import { SessionSchema } from '../session/session'
 import {
   ACCOUNT_AUTH_MESSAGES,
   ACCOUNT_MESSAGES,
+  ACCOUNT_RESET_IC_MAX_ATTEMPTS,
+  ACCOUNT_RESET_IC_WINDOW_MINUTES,
   AccountFaithSchema,
   AccountPasswordChangeRequestSchema,
   AccountPasswordEmailRequestSchema,
@@ -91,7 +93,7 @@ export function registerAccountPaths(registry: OpenAPIRegistry): void {
     path: '/auth/password/email',
     tags: ['account'],
     summary: 'Request a password reset link',
-    description: `Public. Answers 200 "${ACCOUNT_AUTH_MESSAGES.resetSent}" for a known AND an unknown e-mail alike (existence is never disclosed; deviation from the mock 422 "${ACCOUNT_AUTH_MESSAGES.userNotFound}", card AC3). A token is valid 60 minutes and single use, stored hashed; the link goes through a MailPort that only logs in B1. A second request for the same e-mail within 60 seconds is 429 RATE_LIMITED with retryAfter (also the Retry-After header), whether or not the e-mail exists.`,
+    description: `Public. Answers 200 "${ACCOUNT_AUTH_MESSAGES.resetSent}" for a known AND an unknown e-mail alike (existence is never disclosed; approved deviation D55b from the mock 422 "${ACCOUNT_AUTH_MESSAGES.userNotFound}", card AC3). A token is valid 60 minutes and single use, stored hashed; the link goes through a MailPort that only logs in B1. A second request for the same e-mail within 60 seconds is 429 RATE_LIMITED with retryAfter (also the Retry-After header), whether or not the e-mail exists.`,
     request: { body: body(AccountPasswordEmailRequestSchema) },
     responses: {
       200: json(envelopeOf(AccountStatusSchema), `Accepted. status = "${ACCOUNT_AUTH_MESSAGES.resetSent}".`),
@@ -105,7 +107,7 @@ export function registerAccountPaths(registry: OpenAPIRegistry): void {
     path: '/auth/password/reset',
     tags: ['account'],
     summary: 'Set a new password with a reset token',
-    description: `Public. Replaces the password, consumes the token (single use) and invalidates the user's other sessions (card AC2), then logs the user in: the response is the contract Session plus the flash text, and the cookie is set (not remembered). An unknown, used, expired or other-e-mail token, and an unknown e-mail, all answer 422 "${ACCOUNT_AUTH_MESSAGES.tokenInvalid}" on fields.email (the mock answered an unknown e-mail with "${ACCOUNT_AUTH_MESSAGES.userNotFound}"). An inactive account is refused with 403 ACCOUNT_INACTIVE and nothing changes.`,
+    description: `Public. Replaces the password, consumes the token (single use) and invalidates the user's other sessions (card AC2), then logs the user in: the response is the contract Session plus the flash text, and the cookie is set (not remembered). An unknown, used, expired or other-e-mail token, and an unknown e-mail, all answer 422 "${ACCOUNT_AUTH_MESSAGES.tokenInvalid}" on fields.email: the unknown e-mail never gets a user-not-found message (decided, D55b, no account enumeration; the mock answered "${ACCOUNT_AUTH_MESSAGES.userNotFound}"). An inactive account is refused with 403 ACCOUNT_INACTIVE and nothing changes.`,
     request: { body: body(AccountPasswordResetRequestSchema) },
     responses: {
       200: json(AccountPasswordResetResponseSchema, `Password reset and logged in. status = "${ACCOUNT_AUTH_MESSAGES.resetDone}".`),
@@ -119,11 +121,14 @@ export function registerAccountPaths(registry: OpenAPIRegistry): void {
     path: '/auth/password/reset-ic',
     tags: ['account'],
     summary: 'Reset by e-mail and IC number (returns a reset token)',
-    description: `Public. The IC number is compared with its stored hash and is never returned. A match returns a reset token to use with /auth/password/reset (60 minutes, single use). An unknown e-mail and a wrong IC number are indistinguishable: 422 "${ACCOUNT_AUTH_MESSAGES.icMismatch}" on fields.email. Issuing a token also starts the 60 second throttle of /auth/password/email for that e-mail.`,
+    description: `Public. The IC number is compared with its stored hash and is never returned. A match returns a reset token to use with /auth/password/reset (60 minutes, single use). An unknown e-mail and a wrong IC number are indistinguishable: 422 "${ACCOUNT_AUTH_MESSAGES.icMismatch}" on fields.email. Issuing a token also starts the 60 second throttle of /auth/password/email for that e-mail. Attempt limit (D55a): at most ${String(ACCOUNT_RESET_IC_MAX_ATTEMPTS)} attempts per ${String(ACCOUNT_RESET_IC_WINDOW_MINUTES)} minutes, counted separately per account (e-mail, whether or not it exists, so the limit does not reveal existence) and per client IP; every attempt counts, successful or not, and whichever limit is reached first answers 429 RATE_LIMITED with retryAfter seconds (also the Retry-After header).`,
     request: { body: body(AccountPasswordResetIcRequestSchema) },
     responses: {
       200: json(envelopeOf(AccountResetTokenSchema), 'Token issued.'),
       422: validation(`email required/valid; ic number required, max 14; mismatch "${ACCOUNT_AUTH_MESSAGES.icMismatch}" on fields.email.`),
+      429: err(
+        `RATE_LIMITED "${ACCOUNT_AUTH_MESSAGES.resetIcRateLimited}" with retryAfter seconds (D55a: more than ${String(ACCOUNT_RESET_IC_MAX_ATTEMPTS)} attempts in ${String(ACCOUNT_RESET_IC_WINDOW_MINUTES)} minutes for the same account or the same IP).`,
+      ),
     },
   })
 

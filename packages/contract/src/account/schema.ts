@@ -22,7 +22,10 @@ import { SessionSchema, type Session } from '../session/session'
  * - Numeric `grade` is a JSON integer (the mock also accepted digit strings from multipart forms).
  * - Unknown e-mail on `password/email` is answered like a known one (BE-06 card AC3, security), and
  *   an unknown e-mail on `password/reset` gets the token-invalid message instead of the mock
- *   "We can't find a user with that email address.". Both are pending the lead (card open question 1).
+ *   "We can't find a user with that email address.". Both are APPROVED (user decision D55b, 2026-10-19):
+ *   no account enumeration.
+ * - D55a: `password/reset-ic` is attempt limited (5 per 15 minutes, per account and per IP), answered
+ *   with 429 RATE_LIMITED; the mock has no such limit.
  *
  * Validation copy is the mock copy: Laravel 11 English defaults (SRS M01 section 5, unverified
  * copy) except the observed BM texts. Text fields are trimmed and a blank text counts as absent
@@ -49,6 +52,8 @@ export const ACCOUNT_AUTH_MESSAGES = {
   resetThrottled: 'Please wait before retrying.',
   tokenInvalid: 'This password reset token is invalid.',
   icMismatch: 'Email atau No Kad Pengenalan tidak sepadan.',
+  /** D55a: BM message of the reset-ic attempt limit (proposed copy, no existing frontend string). */
+  resetIcRateLimited: 'Terlalu banyak percubaan. Sila cuba lagi dalam 15 minit.',
   accountInactive: 'Akaun anda tidak aktif. Sila hubungi pentadbir.',
   currentPasswordWrong: 'The password is incorrect.',
   emailTaken: 'The email has already been taken.',
@@ -56,6 +61,10 @@ export const ACCOUNT_AUTH_MESSAGES = {
   gradeRequired: 'The grade field is required.',
   gradeInvalid: 'The selected grade is invalid.',
 } as const
+
+/** D55a: `POST /auth/password/reset-ic` allows 5 attempts per 15 minutes, counted per account (e-mail) and per IP. */
+export const ACCOUNT_RESET_IC_MAX_ATTEMPTS = 5
+export const ACCOUNT_RESET_IC_WINDOW_MINUTES = 15
 
 /** Laravel validation templates with the attribute words filled in (mock `validate.ts`). */
 const msg = {
