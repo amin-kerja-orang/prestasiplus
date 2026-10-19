@@ -1,0 +1,33 @@
+{
+  "id": 2,
+  "name": "Pelajar Demo",
+  "firstName": "Pelajar",
+  "schoolName": "SMK DEMO",
+  "levelName": "Tingkatan 4",
+  "joinedAt": "2026-02-06T09:00:00+08:00",
+  "daysWith": 231,
+  "tier": {
+    "key": "bronze",
+    "name": "Gangsa",
+    "emoji": "🥉",
+    "level": 1,
+    "ordinal": 1,
+    "progressPct": 74,
+    "toNext": 130,
+    "nextName": "Perak",
+    "nextKey": "silver"
+  },
+  "syiling": 370,
+  "streak": {
+    "current": 2,
+    "best": 2
+  },
+  "accuracy": 0,
+  "activity": {
+    "sessions": 0,
+    "practiceDays": 0,
+    "correct": 0,
+    "bestStreak": 2
+  },
+  "posts": []
+}

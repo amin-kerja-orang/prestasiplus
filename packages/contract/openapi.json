@@ -35282,6 +35282,3781 @@
           "error"
         ]
       },
+      "PerformanceGrade": {
+        "type": "string",
+        "enum": [
+          "A+",
+          "A",
+          "A-",
+          "B+",
+          "B",
+          "C+",
+          "C",
+          "D",
+          "E",
+          "G"
+        ]
+      },
+      "PerformanceGpsBand": {
+        "type": "string",
+        "enum": [
+          "Cemerlang",
+          "Baik",
+          "Sederhana",
+          "Perlu Perhatian"
+        ]
+      },
+      "PerformanceLevelCode": {
+        "type": "string",
+        "enum": [
+          "t4",
+          "t5"
+        ]
+      },
+      "PerformanceDifficulty": {
+        "type": "string",
+        "enum": [
+          "Mudah",
+          "Sederhana",
+          "Sukar"
+        ]
+      },
+      "PerformanceRiskLevel": {
+        "type": "string",
+        "enum": [
+          "critical",
+          "high",
+          "medium",
+          "low"
+        ]
+      },
+      "PerformanceTrend": {
+        "type": "string",
+        "enum": [
+          "up",
+          "down",
+          "stable"
+        ]
+      },
+      "PerformanceUserRef": {
+        "type": "object",
+        "properties": {
+          "userId": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "name": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "userId",
+          "name"
+        ]
+      },
+      "PerformanceClassCard": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "name": {
+            "type": "string"
+          },
+          "subjectName": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "color": {
+            "type": "string"
+          },
+          "students": {
+            "type": "integer"
+          },
+          "year": {
+            "type": "integer"
+          },
+          "joinCode": {
+            "type": "string"
+          },
+          "isActive": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "subjectName",
+          "color",
+          "students",
+          "year",
+          "joinCode",
+          "isActive"
+        ]
+      },
+      "PerformanceSchool": {
+        "type": "object",
+        "properties": {
+          "scope": {
+            "type": "string",
+            "enum": [
+              "platform",
+              "school"
+            ]
+          },
+          "header": {
+            "type": "object",
+            "properties": {
+              "classCount": {
+                "type": "integer"
+              },
+              "studentCount": {
+                "type": "integer"
+              }
+            },
+            "required": [
+              "classCount",
+              "studentCount"
+            ]
+          },
+          "stats": {
+            "type": "object",
+            "properties": {
+              "students": {
+                "type": "integer"
+              },
+              "teachers": {
+                "type": "integer"
+              },
+              "classes": {
+                "type": "integer"
+              },
+              "subjects": {
+                "type": "integer"
+              },
+              "sessions": {
+                "type": "integer"
+              },
+              "answered": {
+                "type": "integer"
+              },
+              "accuracy": {
+                "type": "number"
+              }
+            },
+            "required": [
+              "students",
+              "teachers",
+              "classes",
+              "subjects",
+              "sessions",
+              "answered",
+              "accuracy"
+            ]
+          },
+          "gps": {
+            "type": "object",
+            "properties": {
+              "value": {
+                "type": [
+                  "number",
+                  "null"
+                ]
+              },
+              "band": {
+                "allOf": [
+                  {
+                    "$ref": "#/components/schemas/PerformanceGpsBand"
+                  },
+                  {
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  }
+                ]
+              },
+              "entries": {
+                "type": "integer"
+              }
+            },
+            "required": [
+              "value",
+              "band",
+              "entries"
+            ]
+          },
+          "distribution": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "grade": {
+                  "$ref": "#/components/schemas/PerformanceGrade"
+                },
+                "count": {
+                  "type": "integer"
+                },
+                "pct": {
+                  "type": "number"
+                }
+              },
+              "required": [
+                "grade",
+                "count",
+                "pct"
+              ]
+            }
+          },
+          "trend": {
+            "type": "object",
+            "properties": {
+              "years": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "year": {
+                      "type": "integer"
+                    },
+                    "gps": {
+                      "type": [
+                        "number",
+                        "null"
+                      ]
+                    },
+                    "band": {
+                      "allOf": [
+                        {
+                          "$ref": "#/components/schemas/PerformanceGpsBand"
+                        },
+                        {
+                          "type": [
+                            "string",
+                            "null"
+                          ]
+                        }
+                      ]
+                    },
+                    "candidates": {
+                      "type": [
+                        "integer",
+                        "null"
+                      ]
+                    },
+                    "source": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "change": {
+                      "type": [
+                        "number",
+                        "null"
+                      ]
+                    },
+                    "current": {
+                      "type": "boolean"
+                    }
+                  },
+                  "required": [
+                    "year",
+                    "gps",
+                    "band",
+                    "candidates",
+                    "source",
+                    "change",
+                    "current"
+                  ]
+                }
+              },
+              "chart": {
+                "type": "object",
+                "properties": {
+                  "labels": {
+                    "type": "array",
+                    "items": {
+                      "type": "integer"
+                    }
+                  },
+                  "overall": {
+                    "type": "array",
+                    "items": {
+                      "type": [
+                        "number",
+                        "null"
+                      ]
+                    }
+                  },
+                  "subjects": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "name": {
+                          "type": "string"
+                        },
+                        "color": {
+                          "type": "string"
+                        },
+                        "data": {
+                          "type": "array",
+                          "items": {
+                            "type": [
+                              "number",
+                              "null"
+                            ]
+                          }
+                        }
+                      },
+                      "required": [
+                        "name",
+                        "color",
+                        "data"
+                      ]
+                    }
+                  }
+                },
+                "required": [
+                  "labels",
+                  "overall",
+                  "subjects"
+                ]
+              }
+            },
+            "required": [
+              "years",
+              "chart"
+            ]
+          },
+          "subjects": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "subjectId": {
+                  "$ref": "#/components/schemas/Id"
+                },
+                "name": {
+                  "type": "string"
+                },
+                "gps": {
+                  "type": [
+                    "number",
+                    "null"
+                  ]
+                },
+                "grade": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/PerformanceGrade"
+                    },
+                    {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    }
+                  ]
+                },
+                "entries": {
+                  "type": "integer"
+                },
+                "onTrack": {
+                  "type": "integer"
+                },
+                "below": {
+                  "type": "integer"
+                },
+                "noTarget": {
+                  "type": "integer"
+                },
+                "achievementPct": {
+                  "type": [
+                    "number",
+                    "null"
+                  ]
+                }
+              },
+              "required": [
+                "subjectId",
+                "name",
+                "gps",
+                "grade",
+                "entries",
+                "onTrack",
+                "below",
+                "noTarget",
+                "achievementPct"
+              ]
+            }
+          },
+          "levels": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "code": {
+                  "$ref": "#/components/schemas/PerformanceLevelCode"
+                },
+                "accuracy": {
+                  "type": "number"
+                },
+                "classes": {
+                  "type": "integer"
+                },
+                "students": {
+                  "type": "integer"
+                },
+                "sessions": {
+                  "type": "integer"
+                }
+              },
+              "required": [
+                "code",
+                "accuracy",
+                "classes",
+                "students",
+                "sessions"
+              ]
+            }
+          },
+          "teachers": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "userId": {
+                  "$ref": "#/components/schemas/Id"
+                },
+                "name": {
+                  "type": "string"
+                },
+                "classCount": {
+                  "type": "integer"
+                },
+                "studentCount": {
+                  "type": "integer"
+                },
+                "accuracy": {
+                  "type": "number"
+                },
+                "onTrack": {
+                  "type": [
+                    "integer",
+                    "null"
+                  ]
+                },
+                "below": {
+                  "type": [
+                    "integer",
+                    "null"
+                  ]
+                }
+              },
+              "required": [
+                "userId",
+                "name",
+                "classCount",
+                "studentCount",
+                "accuracy",
+                "onTrack",
+                "below"
+              ]
+            }
+          }
+        },
+        "required": [
+          "scope",
+          "header",
+          "stats",
+          "gps",
+          "distribution",
+          "trend",
+          "subjects",
+          "levels",
+          "teachers"
+        ]
+      },
+      "PerformanceLevelCard": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "$ref": "#/components/schemas/PerformanceLevelCode"
+          },
+          "name": {
+            "type": "string"
+          },
+          "classes": {
+            "type": "integer"
+          },
+          "students": {
+            "type": "integer"
+          }
+        },
+        "required": [
+          "code",
+          "name",
+          "classes",
+          "students"
+        ]
+      },
+      "PerformanceLevelDetail": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "$ref": "#/components/schemas/PerformanceLevelCode"
+          },
+          "name": {
+            "type": "string"
+          },
+          "classes": {
+            "type": "integer"
+          },
+          "students": {
+            "type": "integer"
+          },
+          "subjects": {
+            "type": "integer"
+          },
+          "accuracy": {
+            "type": "number"
+          },
+          "sessions": {
+            "type": "integer"
+          },
+          "onTrack": {
+            "type": "integer"
+          },
+          "below": {
+            "type": "integer"
+          },
+          "onTrackPct": {
+            "type": "number"
+          },
+          "classRows": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "classId": {
+                  "$ref": "#/components/schemas/Id"
+                },
+                "kind": {
+                  "type": "string",
+                  "enum": [
+                    "classroom",
+                    "school_class"
+                  ]
+                },
+                "name": {
+                  "type": "string"
+                },
+                "subject": {
+                  "type": "string",
+                  "description": "\"Tiada Subjek\" without a subject; \"Kelas Sekolah\" for school classes."
+                },
+                "teacher": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "students": {
+                  "type": "integer"
+                },
+                "sessions": {
+                  "type": "integer"
+                },
+                "accuracy": {
+                  "type": "number"
+                },
+                "onTrack": {
+                  "type": "integer"
+                },
+                "below": {
+                  "type": "integer"
+                },
+                "href": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "description": "/prestasi/kelas/{id} for classrooms, null for school classes."
+                }
+              },
+              "required": [
+                "classId",
+                "kind",
+                "name",
+                "subject",
+                "teacher",
+                "students",
+                "sessions",
+                "accuracy",
+                "onTrack",
+                "below",
+                "href"
+              ]
+            }
+          },
+          "topStudents": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "userId": {
+                  "$ref": "#/components/schemas/Id"
+                },
+                "name": {
+                  "type": "string"
+                },
+                "sessions": {
+                  "type": "integer"
+                },
+                "answered": {
+                  "type": "integer"
+                },
+                "accuracy": {
+                  "type": "number"
+                }
+              },
+              "required": [
+                "userId",
+                "name",
+                "sessions",
+                "answered",
+                "accuracy"
+              ]
+            }
+          },
+          "atRisk": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "userId": {
+                  "$ref": "#/components/schemas/Id"
+                },
+                "name": {
+                  "type": "string"
+                },
+                "className": {
+                  "type": "string"
+                },
+                "checkpoint": {
+                  "type": "integer"
+                },
+                "ar": {
+                  "type": "number"
+                },
+                "target": {
+                  "type": "number"
+                },
+                "gap": {
+                  "type": "number"
+                }
+              },
+              "required": [
+                "userId",
+                "name",
+                "className",
+                "checkpoint",
+                "ar",
+                "target",
+                "gap"
+              ]
+            }
+          }
+        },
+        "required": [
+          "code",
+          "name",
+          "classes",
+          "students",
+          "subjects",
+          "accuracy",
+          "sessions",
+          "onTrack",
+          "below",
+          "onTrackPct",
+          "classRows",
+          "topStudents",
+          "atRisk"
+        ]
+      },
+      "PerformanceClassDashboard": {
+        "type": "object",
+        "properties": {
+          "class": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "$ref": "#/components/schemas/Id"
+              },
+              "name": {
+                "type": "string"
+              },
+              "school": {
+                "type": "string"
+              },
+              "subject": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "year": {
+                "type": "integer"
+              },
+              "joinCode": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "id",
+              "name",
+              "school",
+              "subject",
+              "year",
+              "joinCode"
+            ]
+          },
+          "stats": {
+            "type": "object",
+            "properties": {
+              "students": {
+                "type": "integer"
+              },
+              "accuracy": {
+                "type": "number"
+              },
+              "sessions": {
+                "type": "integer"
+              },
+              "answered": {
+                "type": "integer"
+              },
+              "avgMinutes": {
+                "type": "number"
+              },
+              "active7d": {
+                "type": "integer"
+              }
+            },
+            "required": [
+              "students",
+              "accuracy",
+              "sessions",
+              "answered",
+              "avgMinutes",
+              "active7d"
+            ]
+          },
+          "headcount": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "properties": {
+              "configId": {
+                "$ref": "#/components/schemas/Id"
+              },
+              "onTrack": {
+                "type": "integer"
+              },
+              "below": {
+                "type": "integer"
+              },
+              "noData": {
+                "type": "integer"
+              },
+              "pct": {
+                "type": "object",
+                "properties": {
+                  "on": {
+                    "type": "number"
+                  },
+                  "below": {
+                    "type": "number"
+                  },
+                  "none": {
+                    "type": "number"
+                  }
+                },
+                "required": [
+                  "on",
+                  "below",
+                  "none"
+                ]
+              },
+              "avgTov": {
+                "type": [
+                  "number",
+                  "null"
+                ]
+              },
+              "avgEtr": {
+                "type": [
+                  "number",
+                  "null"
+                ]
+              }
+            },
+            "required": [
+              "configId",
+              "onTrack",
+              "below",
+              "noData",
+              "pct",
+              "avgTov",
+              "avgEtr"
+            ]
+          },
+          "attention": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "userId": {
+                  "$ref": "#/components/schemas/Id"
+                },
+                "name": {
+                  "type": "string"
+                },
+                "sessions": {
+                  "type": "integer"
+                },
+                "accuracy": {
+                  "type": [
+                    "number",
+                    "null"
+                  ]
+                }
+              },
+              "required": [
+                "userId",
+                "name",
+                "sessions",
+                "accuracy"
+              ]
+            }
+          },
+          "trend": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "date": {
+                  "$ref": "#/components/schemas/DateOnly"
+                },
+                "sessions": {
+                  "type": "integer"
+                },
+                "avgAccuracy": {
+                  "type": "number"
+                },
+                "activeStudents": {
+                  "type": "integer"
+                }
+              },
+              "required": [
+                "date",
+                "sessions",
+                "avgAccuracy",
+                "activeStudents"
+              ]
+            }
+          },
+          "ranking": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "rank": {
+                  "type": "integer"
+                },
+                "userId": {
+                  "$ref": "#/components/schemas/Id"
+                },
+                "name": {
+                  "type": "string"
+                },
+                "sessions": {
+                  "type": "integer"
+                },
+                "answered": {
+                  "type": "integer"
+                },
+                "accuracy": {
+                  "type": [
+                    "number",
+                    "null"
+                  ]
+                },
+                "headcount": {
+                  "type": "string",
+                  "enum": [
+                    "on",
+                    "below",
+                    "na"
+                  ]
+                },
+                "lastActiveAt": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/Timestamp"
+                    },
+                    {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    }
+                  ]
+                }
+              },
+              "required": [
+                "rank",
+                "userId",
+                "name",
+                "sessions",
+                "answered",
+                "accuracy",
+                "headcount",
+                "lastActiveAt"
+              ]
+            }
+          }
+        },
+        "required": [
+          "class",
+          "stats",
+          "headcount",
+          "attention",
+          "trend",
+          "ranking"
+        ]
+      },
+      "PerformanceStudent": {
+        "type": "object",
+        "properties": {
+          "user": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "$ref": "#/components/schemas/Id"
+              },
+              "name": {
+                "type": "string"
+              },
+              "initial": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "id",
+              "name",
+              "initial"
+            ]
+          },
+          "heroAccuracy": {
+            "type": "number"
+          },
+          "streak": {
+            "type": "integer"
+          },
+          "stats": {
+            "type": "object",
+            "properties": {
+              "sessions": {
+                "type": "integer"
+              },
+              "accuracy": {
+                "type": "number"
+              },
+              "answered": {
+                "type": "integer"
+              },
+              "seconds": {
+                "type": "integer"
+              }
+            },
+            "required": [
+              "sessions",
+              "accuracy",
+              "answered",
+              "seconds"
+            ]
+          },
+          "headcount": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "configId": {
+                  "$ref": "#/components/schemas/Id"
+                },
+                "subject": {
+                  "type": "string"
+                },
+                "className": {
+                  "type": "string"
+                },
+                "year": {
+                  "type": "integer"
+                },
+                "status": {
+                  "type": "string",
+                  "enum": [
+                    "on",
+                    "below",
+                    "none"
+                  ]
+                },
+                "tov": {
+                  "type": [
+                    "number",
+                    "null"
+                  ]
+                },
+                "chips": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "label": {
+                        "type": "string"
+                      },
+                      "value": {
+                        "type": [
+                          "number",
+                          "null"
+                        ]
+                      },
+                      "tone": {
+                        "type": "string",
+                        "enum": [
+                          "on",
+                          "below",
+                          "none"
+                        ]
+                      }
+                    },
+                    "required": [
+                      "label",
+                      "value",
+                      "tone"
+                    ]
+                  }
+                },
+                "etr": {
+                  "type": [
+                    "number",
+                    "null"
+                  ]
+                }
+              },
+              "required": [
+                "configId",
+                "subject",
+                "className",
+                "year",
+                "status",
+                "tov",
+                "chips",
+                "etr"
+              ]
+            }
+          },
+          "mastery": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "subjectCode": {
+                  "type": "string"
+                },
+                "subjectName": {
+                  "type": "string"
+                },
+                "color": {
+                  "type": "string"
+                },
+                "accuracy": {
+                  "type": "number"
+                },
+                "sessions": {
+                  "type": "integer"
+                },
+                "answered": {
+                  "type": "integer"
+                }
+              },
+              "required": [
+                "subjectCode",
+                "subjectName",
+                "color",
+                "accuracy",
+                "sessions",
+                "answered"
+              ]
+            }
+          },
+          "activity": {
+            "type": "object",
+            "properties": {
+              "streakCurrent": {
+                "type": "integer"
+              },
+              "streakBest": {
+                "type": "integer"
+              },
+              "koinTotal": {
+                "type": "integer"
+              },
+              "practiceDays": {
+                "type": "integer"
+              }
+            },
+            "required": [
+              "streakCurrent",
+              "streakBest",
+              "koinTotal",
+              "practiceDays"
+            ]
+          },
+          "badges": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "icon": {
+                  "type": "string"
+                },
+                "name": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "icon",
+                "name"
+              ]
+            }
+          },
+          "heatmap": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "date": {
+                  "$ref": "#/components/schemas/DateOnly"
+                },
+                "sessions": {
+                  "type": "integer"
+                }
+              },
+              "required": [
+                "date",
+                "sessions"
+              ]
+            }
+          },
+          "weakTopics": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "spId": {
+                  "$ref": "#/components/schemas/Id"
+                },
+                "label": {
+                  "type": "string"
+                },
+                "code": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "subjectCode": {
+                  "type": "string"
+                },
+                "levelId": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/Id"
+                    },
+                    {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    }
+                  ]
+                },
+                "attempts": {
+                  "type": "integer"
+                },
+                "accuracy": {
+                  "type": "number"
+                },
+                "focusCount": {
+                  "type": "integer"
+                }
+              },
+              "required": [
+                "spId",
+                "label",
+                "code",
+                "subjectCode",
+                "levelId",
+                "attempts",
+                "accuracy",
+                "focusCount"
+              ]
+            }
+          },
+          "suggestions": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "kind": {
+                  "type": "string"
+                },
+                "text": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "kind",
+                "text"
+              ]
+            }
+          }
+        },
+        "required": [
+          "user",
+          "heroAccuracy",
+          "streak",
+          "stats",
+          "headcount",
+          "mastery",
+          "activity",
+          "badges",
+          "heatmap",
+          "weakTopics",
+          "suggestions"
+        ]
+      },
+      "PerformanceAnalytics": {
+        "type": "object",
+        "properties": {
+          "userLevelId": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/Id"
+              },
+              {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              }
+            ]
+          },
+          "topWeak": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "spId": {
+                  "$ref": "#/components/schemas/Id"
+                },
+                "code": {
+                  "type": "string"
+                },
+                "title": {
+                  "type": "string"
+                },
+                "subjectName": {
+                  "type": "string"
+                },
+                "subjectCode": {
+                  "type": "string"
+                },
+                "answered": {
+                  "type": "integer"
+                },
+                "accuracy": {
+                  "type": "number"
+                },
+                "available": {
+                  "type": "integer"
+                },
+                "focusCount": {
+                  "type": "integer"
+                }
+              },
+              "required": [
+                "spId",
+                "code",
+                "title",
+                "subjectName",
+                "subjectCode",
+                "answered",
+                "accuracy",
+                "available",
+                "focusCount"
+              ]
+            }
+          },
+          "subjects": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "subjectId": {
+                  "$ref": "#/components/schemas/Id"
+                },
+                "name": {
+                  "type": "string"
+                },
+                "code": {
+                  "type": "string"
+                },
+                "accuracy": {
+                  "type": "number"
+                },
+                "answered": {
+                  "type": "integer"
+                },
+                "trend": {
+                  "$ref": "#/components/schemas/PerformanceTrend"
+                },
+                "projection": {
+                  "type": "object",
+                  "properties": {
+                    "low": {
+                      "$ref": "#/components/schemas/PerformanceGrade"
+                    },
+                    "high": {
+                      "$ref": "#/components/schemas/PerformanceGrade"
+                    }
+                  },
+                  "required": [
+                    "low",
+                    "high"
+                  ]
+                },
+                "counts": {
+                  "type": "object",
+                  "properties": {
+                    "mahir": {
+                      "type": "integer"
+                    },
+                    "sederhana": {
+                      "type": "integer"
+                    },
+                    "lemah": {
+                      "type": "integer"
+                    },
+                    "belum": {
+                      "type": "integer"
+                    }
+                  },
+                  "required": [
+                    "mahir",
+                    "sederhana",
+                    "lemah",
+                    "belum"
+                  ]
+                },
+                "ringTotal": {
+                  "type": "integer"
+                },
+                "weak": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "spId": {
+                        "$ref": "#/components/schemas/Id"
+                      },
+                      "code": {
+                        "type": "string"
+                      },
+                      "title": {
+                        "type": "string"
+                      },
+                      "subjectName": {
+                        "type": "string"
+                      },
+                      "subjectCode": {
+                        "type": "string"
+                      },
+                      "answered": {
+                        "type": "integer"
+                      },
+                      "accuracy": {
+                        "type": "number"
+                      },
+                      "available": {
+                        "type": "integer"
+                      },
+                      "focusCount": {
+                        "type": "integer"
+                      }
+                    },
+                    "required": [
+                      "spId",
+                      "code",
+                      "title",
+                      "subjectName",
+                      "subjectCode",
+                      "answered",
+                      "accuracy",
+                      "available",
+                      "focusCount"
+                    ]
+                  }
+                },
+                "map": {
+                  "type": "object",
+                  "properties": {
+                    "caption": {
+                      "type": "string"
+                    },
+                    "tiles": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "spId": {
+                            "$ref": "#/components/schemas/Id"
+                          },
+                          "code": {
+                            "type": "string"
+                          },
+                          "title": {
+                            "type": "string"
+                          },
+                          "status": {
+                            "type": "string",
+                            "enum": [
+                              "mahir",
+                              "sederhana",
+                              "lemah",
+                              "belum"
+                            ]
+                          }
+                        },
+                        "required": [
+                          "spId",
+                          "code",
+                          "title",
+                          "status"
+                        ]
+                      }
+                    }
+                  },
+                  "required": [
+                    "caption",
+                    "tiles"
+                  ]
+                }
+              },
+              "required": [
+                "subjectId",
+                "name",
+                "code",
+                "accuracy",
+                "answered",
+                "trend",
+                "projection",
+                "counts",
+                "ringTotal",
+                "weak",
+                "map"
+              ]
+            }
+          }
+        },
+        "required": [
+          "userLevelId",
+          "topWeak",
+          "subjects"
+        ]
+      },
+      "PerformanceClassAnalytics": {
+        "type": "object",
+        "properties": {
+          "options": {
+            "type": "object",
+            "properties": {
+              "classes": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "$ref": "#/components/schemas/Id"
+                    },
+                    "name": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "name"
+                  ]
+                }
+              },
+              "subjects": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "$ref": "#/components/schemas/Id"
+                    },
+                    "name": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "name"
+                  ]
+                }
+              },
+              "selected": {
+                "type": "object",
+                "properties": {
+                  "classroomId": {
+                    "allOf": [
+                      {
+                        "$ref": "#/components/schemas/Id"
+                      },
+                      {
+                        "type": [
+                          "string",
+                          "null"
+                        ]
+                      }
+                    ]
+                  },
+                  "subjectId": {
+                    "allOf": [
+                      {
+                        "$ref": "#/components/schemas/Id"
+                      },
+                      {
+                        "type": [
+                          "string",
+                          "null"
+                        ]
+                      }
+                    ]
+                  },
+                  "riskLevel": {
+                    "anyOf": [
+                      {
+                        "$ref": "#/components/schemas/PerformanceRiskLevel"
+                      },
+                      {
+                        "type": "string",
+                        "enum": [
+                          ""
+                        ]
+                      }
+                    ]
+                  }
+                },
+                "required": [
+                  "classroomId",
+                  "subjectId",
+                  "riskLevel"
+                ]
+              }
+            },
+            "required": [
+              "classes",
+              "subjects",
+              "selected"
+            ]
+          },
+          "summary": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "properties": {
+              "students": {
+                "type": "integer"
+              },
+              "accuracy": {
+                "type": "number"
+              },
+              "atRisk": {
+                "type": "integer"
+              },
+              "good": {
+                "type": "integer"
+              }
+            },
+            "required": [
+              "students",
+              "accuracy",
+              "atRisk",
+              "good"
+            ]
+          },
+          "rows": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "userId": {
+                  "$ref": "#/components/schemas/Id"
+                },
+                "name": {
+                  "type": "string"
+                },
+                "accuracy": {
+                  "type": "number"
+                },
+                "answered": {
+                  "type": "integer"
+                },
+                "trend": {
+                  "$ref": "#/components/schemas/PerformanceTrend"
+                },
+                "projection": {
+                  "type": "object",
+                  "properties": {
+                    "low": {
+                      "$ref": "#/components/schemas/PerformanceGrade"
+                    },
+                    "high": {
+                      "$ref": "#/components/schemas/PerformanceGrade"
+                    }
+                  },
+                  "required": [
+                    "low",
+                    "high"
+                  ]
+                },
+                "riskLevel": {
+                  "$ref": "#/components/schemas/PerformanceRiskLevel"
+                }
+              },
+              "required": [
+                "userId",
+                "name",
+                "accuracy",
+                "answered",
+                "trend",
+                "projection",
+                "riskLevel"
+              ]
+            }
+          }
+        },
+        "required": [
+          "options",
+          "summary",
+          "rows"
+        ]
+      },
+      "PerformanceClassAnalyticsQuery": {
+        "type": "object",
+        "properties": {
+          "classroomId": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "subjectId": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "riskLevel": {
+            "type": "string",
+            "description": "critical | high | medium | low; anything else = all."
+          }
+        }
+      },
+      "PerformanceItemAnalysisQuery": {
+        "type": "object",
+        "properties": {
+          "tingkatan": {
+            "type": "string",
+            "description": "T4 or T5; any other value is ignored (null)."
+          }
+        }
+      },
+      "PerformanceSchoolItemAnalysis": {
+        "type": "object",
+        "properties": {
+          "school": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "$ref": "#/components/schemas/Id"
+              },
+              "name": {
+                "type": "string"
+              },
+              "code": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "type": {
+                "type": "string"
+              },
+              "district": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "state": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "id",
+              "name",
+              "code",
+              "type",
+              "district",
+              "state"
+            ]
+          },
+          "variant": {
+            "type": "string",
+            "enum": [
+              "own",
+              "byId"
+            ]
+          },
+          "tingkatan": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "enum": [
+              "T4",
+              "T5",
+              null
+            ]
+          },
+          "students": {
+            "type": "integer"
+          },
+          "answers": {
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "correct": {
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "accuracy": {
+            "type": [
+              "number",
+              "null"
+            ]
+          },
+          "difficulty": {
+            "type": "object",
+            "properties": {
+              "mudah": {
+                "type": "integer"
+              },
+              "sederhana": {
+                "type": "integer"
+              },
+              "sukar": {
+                "type": "integer"
+              }
+            },
+            "required": [
+              "mudah",
+              "sederhana",
+              "sukar"
+            ]
+          },
+          "gps": {
+            "type": "object",
+            "properties": {
+              "value": {
+                "type": [
+                  "number",
+                  "null"
+                ]
+              },
+              "band": {
+                "allOf": [
+                  {
+                    "$ref": "#/components/schemas/PerformanceGpsBand"
+                  },
+                  {
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  }
+                ]
+              },
+              "entries": {
+                "type": "integer"
+              },
+              "years": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "year": {
+                      "type": "integer"
+                    },
+                    "gps": {
+                      "type": "number"
+                    }
+                  },
+                  "required": [
+                    "year",
+                    "gps"
+                  ]
+                }
+              }
+            },
+            "required": [
+              "value",
+              "band",
+              "entries",
+              "years"
+            ]
+          },
+          "subjects": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "subjectId": {
+                  "$ref": "#/components/schemas/Id"
+                },
+                "name": {
+                  "type": "string"
+                },
+                "pupils": {
+                  "type": "integer"
+                },
+                "questions": {
+                  "type": "integer"
+                },
+                "accuracy": {
+                  "type": "number"
+                },
+                "wrong": {
+                  "type": "integer"
+                }
+              },
+              "required": [
+                "subjectId",
+                "name",
+                "pupils",
+                "questions",
+                "accuracy",
+                "wrong"
+              ]
+            }
+          },
+          "questions": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "rank": {
+                  "type": "integer"
+                },
+                "questionId": {
+                  "$ref": "#/components/schemas/Id"
+                },
+                "stem": {
+                  "type": "string"
+                },
+                "subjectName": {
+                  "type": "string"
+                },
+                "chips": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                "level": {
+                  "$ref": "#/components/schemas/PerformanceDifficulty"
+                },
+                "wrongPct": {
+                  "type": "number"
+                },
+                "attempts": {
+                  "type": "integer"
+                },
+                "pupils": {
+                  "type": "integer"
+                },
+                "pupilsPct": {
+                  "type": "number"
+                },
+                "wrongPupils": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "userId": {
+                        "$ref": "#/components/schemas/Id"
+                      },
+                      "name": {
+                        "type": "string"
+                      },
+                      "classLabel": {
+                        "type": "string"
+                      },
+                      "wrongOption": {
+                        "$ref": "#/components/schemas/PerformanceLetter"
+                      }
+                    },
+                    "required": [
+                      "userId",
+                      "name",
+                      "classLabel",
+                      "wrongOption"
+                    ]
+                  }
+                },
+                "correctOption": {
+                  "type": "object",
+                  "properties": {
+                    "letter": {
+                      "$ref": "#/components/schemas/PerformanceLetter"
+                    },
+                    "text": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "letter",
+                    "text"
+                  ]
+                },
+                "popularWrongOption": {
+                  "type": [
+                    "object",
+                    "null"
+                  ],
+                  "properties": {
+                    "letter": {
+                      "$ref": "#/components/schemas/PerformanceLetter"
+                    },
+                    "text": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "letter",
+                    "text"
+                  ]
+                },
+                "popularWrongCount": {
+                  "type": "integer"
+                }
+              },
+              "required": [
+                "rank",
+                "questionId",
+                "stem",
+                "subjectName",
+                "chips",
+                "level",
+                "wrongPct",
+                "attempts",
+                "pupils",
+                "pupilsPct",
+                "wrongPupils",
+                "correctOption",
+                "popularWrongOption",
+                "popularWrongCount"
+              ]
+            }
+          }
+        },
+        "required": [
+          "school",
+          "variant",
+          "tingkatan",
+          "students",
+          "answers",
+          "correct",
+          "accuracy",
+          "difficulty",
+          "gps",
+          "subjects",
+          "questions"
+        ]
+      },
+      "PerformanceLetter": {
+        "type": "string",
+        "enum": [
+          "A",
+          "B",
+          "C",
+          "D"
+        ]
+      },
+      "PerformanceClassItemAnalysis": {
+        "type": "object",
+        "properties": {
+          "class": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "$ref": "#/components/schemas/Id"
+              },
+              "name": {
+                "type": "string"
+              },
+              "subjectName": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "levelSlug": {
+                "type": "string"
+              },
+              "year": {
+                "type": "integer"
+              },
+              "students": {
+                "type": "integer"
+              }
+            },
+            "required": [
+              "id",
+              "name",
+              "subjectName",
+              "levelSlug",
+              "year",
+              "students"
+            ]
+          },
+          "analysis": {
+            "type": "object",
+            "properties": {
+              "questionCount": {
+                "type": "integer"
+              },
+              "summary": {
+                "type": "object",
+                "properties": {
+                  "mudah": {
+                    "type": "integer"
+                  },
+                  "sederhana": {
+                    "type": "integer"
+                  },
+                  "sukar": {
+                    "type": "integer"
+                  }
+                },
+                "required": [
+                  "mudah",
+                  "sederhana",
+                  "sukar"
+                ]
+              },
+              "difficulty": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "questionId": {
+                      "$ref": "#/components/schemas/Id"
+                    },
+                    "text": {
+                      "type": "string"
+                    },
+                    "subject": {
+                      "type": "string"
+                    },
+                    "topic": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "subtopic": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "attempts": {
+                      "type": "integer"
+                    },
+                    "students": {
+                      "type": "integer"
+                    },
+                    "accuracy": {
+                      "type": "number"
+                    },
+                    "index": {
+                      "type": "number"
+                    },
+                    "level": {
+                      "$ref": "#/components/schemas/PerformanceDifficulty"
+                    },
+                    "wrongStudents": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "userId": {
+                            "$ref": "#/components/schemas/Id"
+                          },
+                          "name": {
+                            "type": "string"
+                          },
+                          "times": {
+                            "type": "integer"
+                          }
+                        },
+                        "required": [
+                          "userId",
+                          "name",
+                          "times"
+                        ]
+                      }
+                    },
+                    "correctOption": {
+                      "type": "object",
+                      "properties": {
+                        "letter": {
+                          "$ref": "#/components/schemas/PerformanceLetter"
+                        },
+                        "text": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "letter",
+                        "text"
+                      ]
+                    },
+                    "popularWrong": {
+                      "type": [
+                        "object",
+                        "null"
+                      ],
+                      "properties": {
+                        "letter": {
+                          "$ref": "#/components/schemas/PerformanceLetter"
+                        },
+                        "text": {
+                          "type": "string"
+                        },
+                        "times": {
+                          "type": "integer"
+                        }
+                      },
+                      "required": [
+                        "letter",
+                        "text",
+                        "times"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "questionId",
+                    "text",
+                    "subject",
+                    "topic",
+                    "subtopic",
+                    "attempts",
+                    "students",
+                    "accuracy",
+                    "index",
+                    "level",
+                    "wrongStudents",
+                    "correctOption",
+                    "popularWrong"
+                  ]
+                }
+              },
+              "discrimination": {
+                "type": "object",
+                "properties": {
+                  "sufficient": {
+                    "type": "boolean"
+                  },
+                  "rows": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "questionId": {
+                          "$ref": "#/components/schemas/Id"
+                        },
+                        "text": {
+                          "type": "string"
+                        },
+                        "upperPct": {
+                          "type": "number"
+                        },
+                        "lowerPct": {
+                          "type": "number"
+                        },
+                        "index": {
+                          "type": "number"
+                        },
+                        "status": {
+                          "type": "string",
+                          "enum": [
+                            "Sangat Baik",
+                            "Baik",
+                            "Sederhana",
+                            "Lemah"
+                          ]
+                        }
+                      },
+                      "required": [
+                        "questionId",
+                        "text",
+                        "upperPct",
+                        "lowerPct",
+                        "index",
+                        "status"
+                      ]
+                    }
+                  }
+                },
+                "required": [
+                  "sufficient",
+                  "rows"
+                ]
+              }
+            },
+            "required": [
+              "questionCount",
+              "summary",
+              "difficulty",
+              "discrimination"
+            ]
+          }
+        },
+        "required": [
+          "class",
+          "analysis"
+        ]
+      },
+      "PerformanceTimelineCategory": {
+        "type": "string",
+        "enum": [
+          "sijil",
+          "pencapaian",
+          "aktiviti",
+          "cerita",
+          "lain"
+        ]
+      },
+      "PerformanceTimelinePost": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "userId": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "title": {
+            "type": "string"
+          },
+          "category": {
+            "$ref": "#/components/schemas/PerformanceTimelineCategory"
+          },
+          "eventDate": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/DateOnly"
+              },
+              {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              }
+            ]
+          },
+          "story": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "photos": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "url": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "caption": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                }
+              },
+              "required": [
+                "url",
+                "caption"
+              ]
+            }
+          },
+          "createdAt": {
+            "$ref": "#/components/schemas/Timestamp"
+          }
+        },
+        "required": [
+          "id",
+          "userId",
+          "title",
+          "category",
+          "eventDate",
+          "story",
+          "photos",
+          "createdAt"
+        ]
+      },
+      "PerformanceTimeline": {
+        "type": "object",
+        "properties": {
+          "profileUrl": {
+            "type": "string"
+          },
+          "posts": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PerformanceTimelinePost"
+            }
+          }
+        },
+        "required": [
+          "profileUrl",
+          "posts"
+        ]
+      },
+      "PerformanceTimelineCreateRequest": {
+        "type": "object",
+        "properties": {
+          "title": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 150
+          },
+          "category": {
+            "type": "string",
+            "enum": [
+              "sijil",
+              "pencapaian",
+              "aktiviti",
+              "cerita",
+              "lain"
+            ]
+          },
+          "eventDate": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  ""
+                ]
+              },
+              {
+                "type": "string",
+                "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+              }
+            ],
+            "description": "YYYY-MM-DD; empty string = no date (the mock does not check the calendar)."
+          },
+          "story": {
+            "type": "string",
+            "maxLength": 2000
+          },
+          "photos": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "binary"
+            },
+            "minItems": 1,
+            "maxItems": 5,
+            "description": "JPEG/PNG/WebP, max 2 MB each; a bad file gives photos: Gambar tidak sah (JPEG, PNG atau WebP, maks 2MB). (not expressible in zod)."
+          },
+          "captions": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "required": [
+          "title",
+          "category",
+          "photos"
+        ]
+      },
+      "PerformancePublicProfile": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "name": {
+            "type": "string"
+          },
+          "firstName": {
+            "type": "string"
+          },
+          "schoolName": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "levelName": {
+            "type": "string"
+          },
+          "joinedAt": {
+            "$ref": "#/components/schemas/Timestamp"
+          },
+          "daysWith": {
+            "type": "integer"
+          },
+          "tier": {
+            "type": "object",
+            "properties": {
+              "key": {
+                "type": "string"
+              },
+              "name": {
+                "type": "string"
+              },
+              "emoji": {
+                "type": "string"
+              },
+              "level": {
+                "type": "integer"
+              },
+              "ordinal": {
+                "type": "integer"
+              },
+              "progressPct": {
+                "type": "number"
+              },
+              "toNext": {
+                "type": [
+                  "integer",
+                  "null"
+                ]
+              },
+              "nextName": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "nextKey": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              }
+            },
+            "required": [
+              "key",
+              "name",
+              "emoji",
+              "level",
+              "ordinal",
+              "progressPct",
+              "toNext",
+              "nextName",
+              "nextKey"
+            ]
+          },
+          "syiling": {
+            "type": "integer"
+          },
+          "streak": {
+            "type": "object",
+            "properties": {
+              "current": {
+                "type": "integer"
+              },
+              "best": {
+                "type": "integer"
+              }
+            },
+            "required": [
+              "current",
+              "best"
+            ]
+          },
+          "accuracy": {
+            "type": "number"
+          },
+          "activity": {
+            "type": "object",
+            "properties": {
+              "sessions": {
+                "type": "integer"
+              },
+              "practiceDays": {
+                "type": "integer"
+              },
+              "correct": {
+                "type": "integer"
+              },
+              "bestStreak": {
+                "type": "integer"
+              }
+            },
+            "required": [
+              "sessions",
+              "practiceDays",
+              "correct",
+              "bestStreak"
+            ]
+          },
+          "posts": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PerformanceTimelinePost"
+            }
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "firstName",
+          "schoolName",
+          "levelName",
+          "joinedAt",
+          "daysWith",
+          "tier",
+          "syiling",
+          "streak",
+          "accuracy",
+          "activity",
+          "posts"
+        ]
+      },
+      "PerformanceRankingQuery": {
+        "type": "object",
+        "properties": {
+          "scope": {
+            "type": "string",
+            "description": "nasional (default) | negeri | daerah | sekolah; unknown gives scope null, rows unfiltered."
+          },
+          "subjectId": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "tingkatan": {
+            "type": "string",
+            "description": "T4 or T5."
+          },
+          "negeri": {
+            "type": "string",
+            "description": "State name; used when scope = negeri."
+          }
+        }
+      },
+      "PerformanceRanking": {
+        "type": "object",
+        "properties": {
+          "scope": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "enum": [
+              "nasional",
+              "negeri",
+              "daerah",
+              "sekolah",
+              null
+            ]
+          },
+          "title": {
+            "type": "string"
+          },
+          "showFooter": {
+            "type": "boolean"
+          },
+          "states": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "rows": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "rank": {
+                  "type": "integer"
+                },
+                "userId": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/Id"
+                    },
+                    {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    }
+                  ]
+                },
+                "name": {
+                  "type": "string"
+                },
+                "schoolName": {
+                  "type": "string"
+                },
+                "tahap": {
+                  "type": "integer"
+                },
+                "correct": {
+                  "type": "integer"
+                },
+                "accuracy": {
+                  "type": "number"
+                }
+              },
+              "required": [
+                "rank",
+                "userId",
+                "name",
+                "schoolName",
+                "tahap",
+                "correct",
+                "accuracy"
+              ]
+            }
+          },
+          "total": {
+            "type": "integer"
+          }
+        },
+        "required": [
+          "scope",
+          "title",
+          "showFooter",
+          "states",
+          "rows",
+          "total"
+        ]
+      },
+      "PerformanceLeaderboardQuery": {
+        "type": "object",
+        "properties": {
+          "period": {
+            "type": "string",
+            "description": "all | week | month; unknown = week."
+          }
+        }
+      },
+      "PerformanceLeaderboard": {
+        "type": "object",
+        "properties": {
+          "period": {
+            "type": "string",
+            "enum": [
+              "all",
+              "week",
+              "month"
+            ]
+          },
+          "me": {
+            "type": "object",
+            "properties": {
+              "rank": {
+                "type": [
+                  "integer",
+                  "null"
+                ]
+              },
+              "coins": {
+                "type": "integer"
+              },
+              "sessions": {
+                "type": "integer"
+              },
+              "accuracy": {
+                "type": "number"
+              }
+            },
+            "required": [
+              "rank",
+              "coins",
+              "sessions",
+              "accuracy"
+            ]
+          },
+          "rows": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "rank": {
+                  "type": "integer"
+                },
+                "userId": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/Id"
+                    },
+                    {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    }
+                  ]
+                },
+                "name": {
+                  "type": "string"
+                },
+                "avatarUrl": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "coins": {
+                  "type": "integer"
+                },
+                "sessions": {
+                  "type": "integer"
+                },
+                "accuracy": {
+                  "type": "number"
+                }
+              },
+              "required": [
+                "rank",
+                "userId",
+                "name",
+                "avatarUrl",
+                "coins",
+                "sessions",
+                "accuracy"
+              ]
+            }
+          },
+          "participants": {
+            "type": "integer"
+          }
+        },
+        "required": [
+          "period",
+          "me",
+          "rows",
+          "participants"
+        ]
+      },
+      "PerformanceHeadcountMode": {
+        "type": "string",
+        "enum": [
+          "auto",
+          "manual"
+        ]
+      },
+      "PerformanceHeadcountListItem": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "className": {
+            "type": "string"
+          },
+          "subjectName": {
+            "type": "string"
+          },
+          "levelName": {
+            "type": "string"
+          },
+          "year": {
+            "type": "integer"
+          },
+          "mode": {
+            "$ref": "#/components/schemas/PerformanceHeadcountMode"
+          },
+          "activeOtrs": {
+            "type": "integer"
+          },
+          "students": {
+            "type": "integer"
+          }
+        },
+        "required": [
+          "id",
+          "className",
+          "subjectName",
+          "levelName",
+          "year",
+          "mode",
+          "activeOtrs",
+          "students"
+        ]
+      },
+      "PerformanceHeadcountDashboard": {
+        "type": "object",
+        "properties": {
+          "configs": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "$ref": "#/components/schemas/Id"
+                },
+                "level": {
+                  "$ref": "#/components/schemas/Id"
+                },
+                "levelName": {
+                  "type": "string"
+                },
+                "className": {
+                  "type": "string"
+                },
+                "subjectName": {
+                  "type": "string"
+                },
+                "year": {
+                  "type": "integer"
+                },
+                "onTrack": {
+                  "type": "integer"
+                },
+                "offTrack": {
+                  "type": "integer"
+                },
+                "noData": {
+                  "type": "integer"
+                },
+                "totalStudents": {
+                  "type": "integer"
+                },
+                "chart": {
+                  "type": "object",
+                  "properties": {
+                    "labels": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    },
+                    "target": {
+                      "type": "array",
+                      "items": {
+                        "type": [
+                          "number",
+                          "null"
+                        ]
+                      }
+                    },
+                    "actual": {
+                      "type": "array",
+                      "items": {
+                        "type": [
+                          "number",
+                          "null"
+                        ]
+                      }
+                    }
+                  },
+                  "required": [
+                    "labels",
+                    "target",
+                    "actual"
+                  ]
+                }
+              },
+              "required": [
+                "id",
+                "level",
+                "levelName",
+                "className",
+                "subjectName",
+                "year",
+                "onTrack",
+                "offTrack",
+                "noData",
+                "totalStudents",
+                "chart"
+              ]
+            }
+          }
+        },
+        "required": [
+          "configs"
+        ]
+      },
+      "PerformanceHeadcountFormOptions": {
+        "type": "object",
+        "properties": {
+          "classes": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "$ref": "#/components/schemas/Id"
+                },
+                "name": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "id",
+                "name"
+              ]
+            }
+          },
+          "subjects": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "$ref": "#/components/schemas/Id"
+                },
+                "name": {
+                  "type": "string"
+                },
+                "code": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "id",
+                "name",
+                "code"
+              ]
+            }
+          },
+          "levels": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "$ref": "#/components/schemas/Id"
+                },
+                "name": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "id",
+                "name"
+              ]
+            }
+          },
+          "defaultYear": {
+            "type": "integer"
+          }
+        },
+        "required": [
+          "classes",
+          "subjects",
+          "levels",
+          "defaultYear"
+        ]
+      },
+      "PerformanceHeadcountCreateRequest": {
+        "type": "object",
+        "properties": {
+          "classroomId": {
+            "type": "string",
+            "minLength": 1
+          },
+          "subjectId": {
+            "type": "string",
+            "minLength": 1
+          },
+          "educationLevelId": {
+            "type": "string",
+            "minLength": 1
+          },
+          "academicYear": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "string",
+                "pattern": "^-?\\d+$"
+              }
+            ]
+          },
+          "activeOtrs": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "string",
+                "pattern": "^-?\\d+$"
+              }
+            ]
+          },
+          "mode": {
+            "type": "string",
+            "enum": [
+              "auto",
+              "manual"
+            ]
+          }
+        },
+        "required": [
+          "classroomId",
+          "subjectId",
+          "educationLevelId",
+          "academicYear",
+          "activeOtrs",
+          "mode"
+        ]
+      },
+      "PerformanceHeadcountAutoSetupRequest": {
+        "type": "object",
+        "properties": {
+          "levels": {
+            "type": "array",
+            "items": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "pattern": "^(\\d+|[DdTt][1-6])$"
+                },
+                {
+                  "type": "integer"
+                }
+              ]
+            },
+            "minItems": 1,
+            "description": "Level ids, or the codes D1..D6 / T1..T5 (T1..T5 = Tingkatan 1..5); the mock also takes numbers."
+          }
+        },
+        "required": [
+          "levels"
+        ]
+      },
+      "PerformanceHeadcountDropRequest": {
+        "type": "object",
+        "properties": {
+          "action": {
+            "type": "string",
+            "enum": [
+              "drop",
+              "restore"
+            ]
+          },
+          "studentIds": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1
+            },
+            "minItems": 1
+          }
+        },
+        "required": [
+          "action",
+          "studentIds"
+        ]
+      },
+      "PerformanceHeadcountSortQuery": {
+        "type": "object",
+        "properties": {
+          "sort": {
+            "type": "string",
+            "description": "ranking (default) | name; unknown = ranking."
+          }
+        }
+      },
+      "PerformanceHeadcountStudent": {
+        "type": "object",
+        "properties": {
+          "student": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "$ref": "#/components/schemas/Id"
+              },
+              "name": {
+                "type": "string"
+              },
+              "school": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              }
+            },
+            "required": [
+              "id",
+              "name",
+              "school"
+            ]
+          },
+          "sections": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "configId": {
+                  "$ref": "#/components/schemas/Id"
+                },
+                "subject": {
+                  "type": "string"
+                },
+                "school": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "levelName": {
+                  "type": "string"
+                },
+                "className": {
+                  "type": "string"
+                },
+                "year": {
+                  "type": "integer"
+                },
+                "status": {
+                  "type": "string",
+                  "enum": [
+                    "on",
+                    "below",
+                    "none"
+                  ]
+                },
+                "tov": {
+                  "type": [
+                    "number",
+                    "null"
+                  ]
+                },
+                "etr": {
+                  "type": [
+                    "number",
+                    "null"
+                  ]
+                },
+                "rs": {
+                  "type": [
+                    "object",
+                    "null"
+                  ],
+                  "properties": {
+                    "value": {
+                      "type": "number"
+                    },
+                    "recordedAt": {
+                      "allOf": [
+                        {
+                          "$ref": "#/components/schemas/Timestamp"
+                        },
+                        {
+                          "type": [
+                            "string",
+                            "null"
+                          ]
+                        }
+                      ]
+                    }
+                  },
+                  "required": [
+                    "value",
+                    "recordedAt"
+                  ]
+                },
+                "projection": {
+                  "type": [
+                    "object",
+                    "null"
+                  ],
+                  "properties": {
+                    "value": {
+                      "type": "number"
+                    },
+                    "variant": {
+                      "type": "string",
+                      "enum": [
+                        "green",
+                        "amber",
+                        "red"
+                      ]
+                    },
+                    "trend": {
+                      "type": "string",
+                      "enum": [
+                        "Meningkat",
+                        "Stabil",
+                        "Menurun"
+                      ]
+                    },
+                    "confidence": {
+                      "type": "string",
+                      "enum": [
+                        "Tinggi",
+                        "Sederhana",
+                        "Rendah"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "value",
+                    "variant",
+                    "trend",
+                    "confidence"
+                  ]
+                },
+                "rows": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "target": {
+                        "type": [
+                          "number",
+                          "null"
+                        ]
+                      },
+                      "targetGrade": {
+                        "allOf": [
+                          {
+                            "$ref": "#/components/schemas/PerformanceGrade"
+                          },
+                          {
+                            "type": [
+                              "string",
+                              "null"
+                            ]
+                          }
+                        ]
+                      },
+                      "ar": {
+                        "type": [
+                          "number",
+                          "null"
+                        ]
+                      },
+                      "arGrade": {
+                        "allOf": [
+                          {
+                            "$ref": "#/components/schemas/PerformanceGrade"
+                          },
+                          {
+                            "type": [
+                              "string",
+                              "null"
+                            ]
+                          }
+                        ]
+                      },
+                      "checkpoint": {
+                        "type": "integer"
+                      },
+                      "tone": {
+                        "type": "string",
+                        "enum": [
+                          "on",
+                          "below",
+                          "noAr",
+                          "noTarget"
+                        ]
+                      }
+                    },
+                    "required": [
+                      "target",
+                      "targetGrade",
+                      "ar",
+                      "arGrade",
+                      "checkpoint",
+                      "tone"
+                    ]
+                  }
+                },
+                "prediction": {
+                  "type": [
+                    "object",
+                    "null"
+                  ],
+                  "properties": {
+                    "etr": {
+                      "type": "number"
+                    },
+                    "rs": {
+                      "type": "number"
+                    },
+                    "diff": {
+                      "type": "number"
+                    },
+                    "verdict": {
+                      "type": "string",
+                      "enum": [
+                        "Ramalan Tepat",
+                        "Hampir Tepat",
+                        "Selisih Besar"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "etr",
+                    "rs",
+                    "diff",
+                    "verdict"
+                  ]
+                },
+                "chart": {
+                  "type": "object",
+                  "properties": {
+                    "labels": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    },
+                    "target": {
+                      "type": "array",
+                      "items": {
+                        "type": [
+                          "number",
+                          "null"
+                        ]
+                      }
+                    },
+                    "actual": {
+                      "type": "array",
+                      "items": {
+                        "type": [
+                          "number",
+                          "null"
+                        ]
+                      }
+                    },
+                    "projection": {
+                      "type": "array",
+                      "items": {
+                        "type": [
+                          "number",
+                          "null"
+                        ]
+                      }
+                    },
+                    "rs": {
+                      "type": [
+                        "number",
+                        "null"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "labels",
+                    "target",
+                    "actual",
+                    "projection",
+                    "rs"
+                  ]
+                }
+              },
+              "required": [
+                "configId",
+                "subject",
+                "school",
+                "levelName",
+                "className",
+                "year",
+                "status",
+                "tov",
+                "etr",
+                "rs",
+                "projection",
+                "rows",
+                "prediction",
+                "chart"
+              ]
+            }
+          }
+        },
+        "required": [
+          "student",
+          "sections"
+        ]
+      },
+      "PerformanceHeadcountSummary": {
+        "type": "object",
+        "properties": {
+          "config": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "$ref": "#/components/schemas/Id"
+              },
+              "subject": {
+                "type": "string"
+              },
+              "className": {
+                "type": "string"
+              },
+              "levelName": {
+                "type": "string"
+              },
+              "year": {
+                "type": "integer"
+              },
+              "activeOtrs": {
+                "type": "integer"
+              }
+            },
+            "required": [
+              "id",
+              "subject",
+              "className",
+              "levelName",
+              "year",
+              "activeOtrs"
+            ]
+          },
+          "students": {
+            "type": "integer"
+          },
+          "avgTov": {
+            "type": [
+              "number",
+              "null"
+            ]
+          },
+          "avgEtr": {
+            "type": [
+              "number",
+              "null"
+            ]
+          },
+          "otrs": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "n": {
+                  "type": "integer"
+                },
+                "above": {
+                  "type": "integer"
+                },
+                "onTrack": {
+                  "type": "integer"
+                },
+                "below": {
+                  "type": "integer"
+                },
+                "na": {
+                  "type": "integer"
+                }
+              },
+              "required": [
+                "n",
+                "above",
+                "onTrack",
+                "below",
+                "na"
+              ]
+            }
+          }
+        },
+        "required": [
+          "config",
+          "students",
+          "avgTov",
+          "avgEtr",
+          "otrs"
+        ]
+      },
+      "PerformanceHeadcountDetail": {
+        "type": "object",
+        "properties": {
+          "config": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "$ref": "#/components/schemas/Id"
+              },
+              "subject": {
+                "type": "string"
+              },
+              "className": {
+                "type": "string"
+              },
+              "levelName": {
+                "type": "string"
+              },
+              "year": {
+                "type": "integer"
+              },
+              "teacherName": {
+                "type": "string"
+              },
+              "status": {
+                "type": "string",
+                "enum": [
+                  "active"
+                ]
+              },
+              "activeOtrs": {
+                "type": "integer"
+              }
+            },
+            "required": [
+              "id",
+              "subject",
+              "className",
+              "levelName",
+              "year",
+              "teacherName",
+              "status",
+              "activeOtrs"
+            ]
+          },
+          "chips": {
+            "type": "object",
+            "properties": {
+              "onTrack": {
+                "type": "integer"
+              },
+              "below": {
+                "type": "integer"
+              },
+              "empty": {
+                "type": "integer"
+              },
+              "total": {
+                "type": "integer"
+              }
+            },
+            "required": [
+              "onTrack",
+              "below",
+              "empty",
+              "total"
+            ]
+          },
+          "rows": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "userId": {
+                  "$ref": "#/components/schemas/Id"
+                },
+                "name": {
+                  "type": "string"
+                },
+                "tov": {
+                  "type": [
+                    "number",
+                    "null"
+                  ]
+                },
+                "tovGrade": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/PerformanceGrade"
+                    },
+                    {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    }
+                  ]
+                },
+                "cells": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "target": {
+                        "type": [
+                          "number",
+                          "null"
+                        ]
+                      },
+                      "targetGrade": {
+                        "allOf": [
+                          {
+                            "$ref": "#/components/schemas/PerformanceGrade"
+                          },
+                          {
+                            "type": [
+                              "string",
+                              "null"
+                            ]
+                          }
+                        ]
+                      },
+                      "ar": {
+                        "type": [
+                          "number",
+                          "null"
+                        ]
+                      },
+                      "arGrade": {
+                        "allOf": [
+                          {
+                            "$ref": "#/components/schemas/PerformanceGrade"
+                          },
+                          {
+                            "type": [
+                              "string",
+                              "null"
+                            ]
+                          }
+                        ]
+                      },
+                      "tone": {
+                        "type": "string",
+                        "enum": [
+                          "above",
+                          "on",
+                          "below",
+                          "na"
+                        ]
+                      }
+                    },
+                    "required": [
+                      "target",
+                      "targetGrade",
+                      "ar",
+                      "arGrade",
+                      "tone"
+                    ]
+                  }
+                },
+                "etr": {
+                  "type": [
+                    "number",
+                    "null"
+                  ]
+                },
+                "etrGrade": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/PerformanceGrade"
+                    },
+                    {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    }
+                  ]
+                },
+                "dropped": {
+                  "type": "boolean"
+                }
+              },
+              "required": [
+                "userId",
+                "name",
+                "tov",
+                "tovGrade",
+                "cells",
+                "etr",
+                "etrGrade",
+                "dropped"
+              ]
+            }
+          },
+          "averages": {
+            "type": "object",
+            "properties": {
+              "tov": {
+                "type": [
+                  "number",
+                  "null"
+                ]
+              },
+              "otrs": {
+                "type": "array",
+                "items": {
+                  "type": [
+                    "number",
+                    "null"
+                  ]
+                }
+              },
+              "ars": {
+                "type": "array",
+                "items": {
+                  "type": [
+                    "number",
+                    "null"
+                  ]
+                }
+              },
+              "etr": {
+                "type": [
+                  "number",
+                  "null"
+                ]
+              }
+            },
+            "required": [
+              "tov",
+              "otrs",
+              "ars",
+              "etr"
+            ]
+          }
+        },
+        "required": [
+          "config",
+          "chips",
+          "rows",
+          "averages"
+        ]
+      },
       "AccessGroupId": {
         "type": "string",
         "enum": [
@@ -62925,6 +66700,1934 @@
           },
           "403": {
             "description": "FORBIDDEN (\"This action is unauthorized.\"): role is not teacher or admin; or CSRF_INVALID on a mutation.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/analytics/me": {
+      "get": {
+        "tags": [
+          "performance"
+        ],
+        "summary": "Own adaptive analytics (S7)",
+        "responses": {
+          "200": {
+            "description": "Own adaptive analytics (S7)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/PerformanceAnalytics"
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED: no valid session (\"Unauthenticated.\").",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/analytics/classes": {
+      "get": {
+        "tags": [
+          "performance"
+        ],
+        "summary": "Class analytics with risk filter (S8)",
+        "description": "Without classroomId a teacher gets the first own class; an unknown class id gives the empty payload (summary null, rows []).",
+        "parameters": [
+          {
+            "schema": {
+              "$ref": "#/components/schemas/Id"
+            },
+            "required": false,
+            "description": "Opaque entity id (string). Never parse or construct on the client.",
+            "name": "classroomId",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "$ref": "#/components/schemas/Id"
+            },
+            "required": false,
+            "description": "Opaque entity id (string). Never parse or construct on the client.",
+            "name": "subjectId",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "description": "critical | high | medium | low; anything else = all."
+            },
+            "required": false,
+            "description": "critical | high | medium | low; anything else = all.",
+            "name": "riskLevel",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Class analytics with risk filter (S8)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/PerformanceClassAnalytics"
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED: no valid session (\"Unauthenticated.\").",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN \"This action is unauthorized.\": role not admin or teacher, or a class the viewer may not open",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/performance/students/{userId}": {
+      "get": {
+        "tags": [
+          "performance"
+        ],
+        "summary": "Prestasi 360 of a student (S6)",
+        "description": "Admin any; teacher pupils of own classes; school_admin own school; student self; PPD/JPN officers in scope.",
+        "parameters": [
+          {
+            "schema": {
+              "$ref": "#/components/schemas/Id"
+            },
+            "required": true,
+            "description": "Opaque entity id (string). Never parse or construct on the client.",
+            "name": "userId",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Prestasi 360 of a student (S6)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/PerformanceStudent"
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED: no valid session (\"Unauthenticated.\").",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN \"This action is unauthorized.\": student not visible to the viewer",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "NOT_FOUND \"Not Found.\": unknown user id",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/performance/school": {
+      "get": {
+        "tags": [
+          "performance"
+        ],
+        "summary": "School (admin: platform) performance (S1)",
+        "description": "Admin sees the platform; every other role the own school (a user without a school gets an empty school scope).",
+        "responses": {
+          "200": {
+            "description": "School (admin: platform) performance (S1)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/PerformanceSchool"
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED: no valid session (\"Unauthenticated.\").",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/performance/levels": {
+      "get": {
+        "tags": [
+          "performance"
+        ],
+        "summary": "Level cards T4/T5 (S2)",
+        "responses": {
+          "200": {
+            "description": "Level cards T4/T5 (S2)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/PerformanceLevelCard"
+                      }
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED: no valid session (\"Unauthenticated.\").",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/performance/levels/{code}": {
+      "get": {
+        "tags": [
+          "performance"
+        ],
+        "summary": "Level detail (S3)",
+        "parameters": [
+          {
+            "schema": {
+              "$ref": "#/components/schemas/PerformanceLevelCode"
+            },
+            "required": true,
+            "name": "code",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Level detail (S3)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/PerformanceLevelDetail"
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED: no valid session (\"Unauthenticated.\").",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "NOT_FOUND \"Not Found.\": code is not t4 or t5",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/performance/classes": {
+      "get": {
+        "tags": [
+          "performance"
+        ],
+        "summary": "Own classes (S4)",
+        "description": "A teacher gets the own active classrooms; every other role gets [].",
+        "responses": {
+          "200": {
+            "description": "Own classes (S4)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/PerformanceClassCard"
+                      }
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED: no valid session (\"Unauthenticated.\").",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/performance/classes/{id}": {
+      "get": {
+        "tags": [
+          "performance"
+        ],
+        "summary": "Class dashboard (S5)",
+        "description": "Admin any classroom; teacher own; school_admin classrooms of the own school.",
+        "parameters": [
+          {
+            "schema": {
+              "$ref": "#/components/schemas/Id"
+            },
+            "required": true,
+            "description": "Opaque entity id (string). Never parse or construct on the client.",
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Class dashboard (S5)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/PerformanceClassDashboard"
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED: no valid session (\"Unauthenticated.\").",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "NOT_FOUND \"Not Found.\": unknown class, school class, or a class the viewer may not open",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/item-analysis/school": {
+      "get": {
+        "tags": [
+          "performance"
+        ],
+        "summary": "Item analysis of the own school (S9)",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "description": "T4 or T5; any other value is ignored (null)."
+            },
+            "required": false,
+            "description": "T4 or T5; any other value is ignored (null).",
+            "name": "tingkatan",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Item analysis of the own school (S9)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/PerformanceSchoolItemAnalysis"
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED: no valid session (\"Unauthenticated.\").",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN \"This action is unauthorized.\": role has no access (parent, sponsor)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "NOT_FOUND \"Not Found.\": viewer has no school, or no analysis",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/item-analysis/school/{schoolId}": {
+      "get": {
+        "tags": [
+          "performance"
+        ],
+        "summary": "Item analysis of a given school (S9, variant byId)",
+        "description": "Admin any school; PPD district / JPN state officers schools in scope; other roles own school. An unknown id answers the empty payload (FR-M08-143), not 404.",
+        "parameters": [
+          {
+            "schema": {
+              "$ref": "#/components/schemas/Id"
+            },
+            "required": true,
+            "description": "Opaque entity id (string). Never parse or construct on the client.",
+            "name": "schoolId",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "description": "T4 or T5; any other value is ignored (null)."
+            },
+            "required": false,
+            "description": "T4 or T5; any other value is ignored (null).",
+            "name": "tingkatan",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Item analysis of a given school (S9, variant byId)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/PerformanceSchoolItemAnalysis"
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED: no valid session (\"Unauthenticated.\").",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN \"This action is unauthorized.\": role has no access, or school outside the viewer scope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "NOT_FOUND \"Not Found.\": no analysis",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/item-analysis/classes": {
+      "get": {
+        "tags": [
+          "performance"
+        ],
+        "summary": "Class list for item analysis (S10)",
+        "description": "Admin every classroom (createdAt desc, then id); teacher own classrooms including inactive ones.",
+        "responses": {
+          "200": {
+            "description": "Class list for item analysis (S10)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/PerformanceClassCard"
+                      }
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED: no valid session (\"Unauthenticated.\").",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN \"This action is unauthorized.\": role not admin or teacher",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/item-analysis/classes/{id}": {
+      "get": {
+        "tags": [
+          "performance"
+        ],
+        "summary": "Class item analysis (S11)",
+        "parameters": [
+          {
+            "schema": {
+              "$ref": "#/components/schemas/Id"
+            },
+            "required": true,
+            "description": "Opaque entity id (string). Never parse or construct on the client.",
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Class item analysis (S11)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/PerformanceClassItemAnalysis"
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED: no valid session (\"Unauthenticated.\").",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN \"This action is unauthorized.\": unknown class OR a class the viewer may not open (live parity, FR-M08-08)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/rankings": {
+      "get": {
+        "tags": [
+          "performance"
+        ],
+        "summary": "Ranking table (S19)",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "description": "nasional (default) | negeri | daerah | sekolah; unknown gives scope null, rows unfiltered."
+            },
+            "required": false,
+            "description": "nasional (default) | negeri | daerah | sekolah; unknown gives scope null, rows unfiltered.",
+            "name": "scope",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "$ref": "#/components/schemas/Id"
+            },
+            "required": false,
+            "description": "Opaque entity id (string). Never parse or construct on the client.",
+            "name": "subjectId",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "description": "T4 or T5."
+            },
+            "required": false,
+            "description": "T4 or T5.",
+            "name": "tingkatan",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "description": "State name; used when scope = negeri."
+            },
+            "required": false,
+            "description": "State name; used when scope = negeri.",
+            "name": "negeri",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Ranking table (S19)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/PerformanceRanking"
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED: no valid session (\"Unauthenticated.\").",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/leaderboard": {
+      "get": {
+        "tags": [
+          "performance"
+        ],
+        "summary": "Coin leaderboard (S20)",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "description": "all | week | month; unknown = week."
+            },
+            "required": false,
+            "description": "all | week | month; unknown = week.",
+            "name": "period",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Coin leaderboard (S20)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/PerformanceLeaderboard"
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED: no valid session (\"Unauthenticated.\").",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/timeline": {
+      "get": {
+        "tags": [
+          "performance"
+        ],
+        "summary": "Own timeline (S16)",
+        "responses": {
+          "200": {
+            "description": "Own timeline (S16)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/PerformanceTimeline"
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED: no valid session (\"Unauthenticated.\").",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "performance"
+        ],
+        "summary": "Create a timeline post with 1 to 5 photos (S17)",
+        "description": "multipart/form-data. Photos are stored through file storage (BE-04); the response carries their URLs.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Value of Session.csrf."
+            },
+            "required": true,
+            "description": "Value of Session.csrf.",
+            "name": "X-CSRF-Token",
+            "in": "header"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "$ref": "#/components/schemas/PerformanceTimelineCreateRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Post created.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/PerformanceTimelinePost"
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED: no valid session (\"Unauthenticated.\").",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN \"This action is unauthorized.\", or CSRF_INVALID on a missing/invalid X-CSRF-Token.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "VALIDATION_ERROR with fields (title, category, eventDate, story, photos); message = first field message plus \"(and N more error(s))\".",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/public/students/{id}": {
+      "get": {
+        "tags": [
+          "performance"
+        ],
+        "summary": "Public student profile (S18), no session required",
+        "description": "Anonymous allowed (live parity). The mock does not check role or active state: see open question.",
+        "parameters": [
+          {
+            "schema": {
+              "$ref": "#/components/schemas/Id"
+            },
+            "required": true,
+            "description": "Opaque entity id (string). Never parse or construct on the client.",
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Public profile.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/PerformancePublicProfile"
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "NOT_FOUND \"Not Found.\": unknown user id",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/weekly-report": {
+      "get": {
+        "tags": [
+          "performance"
+        ],
+        "summary": "Weekly report (S21): always 403 by design",
+        "description": "Live parity (OQ-M08-01): every signed-in role gets 403, nobody gets a body.",
+        "responses": {
+          "401": {
+            "description": "UNAUTHORIZED: no valid session (\"Unauthenticated.\").",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN \"This action is unauthorized.\": always, for every role",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/headcounts": {
+      "get": {
+        "tags": [
+          "headcount"
+        ],
+        "summary": "Own headcount configs (S12), newest first",
+        "responses": {
+          "200": {
+            "description": "Own headcount configs (S12), newest first",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/PerformanceHeadcountListItem"
+                      }
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED: no valid session (\"Unauthenticated.\").",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN \"This action is unauthorized.\": role not admin, teacher or school_admin",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "headcount"
+        ],
+        "summary": "Create a headcount config (S14)",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Value of Session.csrf."
+            },
+            "required": true,
+            "description": "Value of Session.csrf.",
+            "name": "X-CSRF-Token",
+            "in": "header"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PerformanceHeadcountCreateRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Create a headcount config (S14)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "$ref": "#/components/schemas/Id"
+                        }
+                      },
+                      "required": [
+                        "id"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED: no valid session (\"Unauthenticated.\").",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN \"This action is unauthorized.\", or CSRF_INVALID on a missing/invalid X-CSRF-Token.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "CONFLICT: \"Headcount Auto|Manual untuk kelas, subjek dan tahun ini sudah wujud.\"",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "VALIDATION_ERROR with fields classroomId, subjectId, educationLevelId, academicYear, activeOtrs, mode.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/headcounts/dashboard": {
+      "get": {
+        "tags": [
+          "headcount"
+        ],
+        "summary": "Headcount dashboard (S13)",
+        "responses": {
+          "200": {
+            "description": "Headcount dashboard (S13)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/PerformanceHeadcountDashboard"
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED: no valid session (\"Unauthenticated.\").",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN \"This action is unauthorized.\": role not admin, teacher or school_admin",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/headcounts/form-options": {
+      "get": {
+        "tags": [
+          "headcount"
+        ],
+        "summary": "Create-form select options (S14)",
+        "responses": {
+          "200": {
+            "description": "Create-form select options (S14)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/PerformanceHeadcountFormOptions"
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED: no valid session (\"Unauthenticated.\").",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN \"This action is unauthorized.\": role not admin, teacher or school_admin",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/headcounts/students/{userId}": {
+      "get": {
+        "tags": [
+          "headcount"
+        ],
+        "summary": "Headcount sections of one student (S15)",
+        "parameters": [
+          {
+            "schema": {
+              "$ref": "#/components/schemas/Id"
+            },
+            "required": true,
+            "description": "Opaque entity id (string). Never parse or construct on the client.",
+            "name": "userId",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Headcount sections of one student (S15)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/PerformanceHeadcountStudent"
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED: no valid session (\"Unauthenticated.\").",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN \"This action is unauthorized.\": role not admin, teacher or school_admin, or a config/student outside the viewer scope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "NOT_FOUND \"Not Found.\": unknown id (checked before 403)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/headcounts/{id}/summary": {
+      "get": {
+        "tags": [
+          "headcount"
+        ],
+        "summary": "Class summary (S22)",
+        "parameters": [
+          {
+            "schema": {
+              "$ref": "#/components/schemas/Id"
+            },
+            "required": true,
+            "description": "Opaque entity id (string). Never parse or construct on the client.",
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Class summary (S22)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/PerformanceHeadcountSummary"
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED: no valid session (\"Unauthenticated.\").",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN \"This action is unauthorized.\": role not admin, teacher or school_admin, or a config/student outside the viewer scope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "NOT_FOUND \"Not Found.\": unknown id (checked before 403)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/headcounts/{id}": {
+      "get": {
+        "tags": [
+          "headcount"
+        ],
+        "summary": "Headcount table (S23)",
+        "parameters": [
+          {
+            "schema": {
+              "$ref": "#/components/schemas/Id"
+            },
+            "required": true,
+            "description": "Opaque entity id (string). Never parse or construct on the client.",
+            "name": "id",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "description": "ranking (default) | name; unknown = ranking."
+            },
+            "required": false,
+            "description": "ranking (default) | name; unknown = ranking.",
+            "name": "sort",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Headcount table (S23)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/PerformanceHeadcountDetail"
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED: no valid session (\"Unauthenticated.\").",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN \"This action is unauthorized.\": role not admin, teacher or school_admin, or a config/student outside the viewer scope",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "NOT_FOUND \"Not Found.\": unknown id (checked before 403)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "headcount"
+        ],
+        "summary": "Delete a config",
+        "parameters": [
+          {
+            "schema": {
+              "$ref": "#/components/schemas/Id"
+            },
+            "required": true,
+            "description": "Opaque entity id (string). Never parse or construct on the client.",
+            "name": "id",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Value of Session.csrf."
+            },
+            "required": true,
+            "description": "Value of Session.csrf.",
+            "name": "X-CSRF-Token",
+            "in": "header"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Delete a config",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "deleted": {
+                          "type": "boolean",
+                          "enum": [
+                            true
+                          ]
+                        }
+                      },
+                      "required": [
+                        "deleted"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED: no valid session (\"Unauthenticated.\").",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN \"This action is unauthorized.\", or CSRF_INVALID on a missing/invalid X-CSRF-Token.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "NOT_FOUND \"Not Found.\": unknown id",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/headcounts/{id}/export": {
+      "get": {
+        "tags": [
+          "headcount"
+        ],
+        "summary": "CSV download of the S23 table",
+        "description": "Content-Disposition filename headcount-{id}.csv.",
+        "parameters": [
+          {
+            "schema": {
+              "$ref": "#/components/schemas/Id"
+            },
+            "required": true,
+            "description": "Opaque entity id (string). Never parse or construct on the client.",
+            "name": "id",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "description": "ranking (default) | name; unknown = ranking."
+            },
+            "required": false,
+            "description": "ranking (default) | name; unknown = ranking.",
+            "name": "sort",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "CSV file.",
+            "content": {
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED: no valid session (\"Unauthenticated.\").",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN \"This action is unauthorized.\": role not admin, teacher or school_admin",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "NOT_FOUND \"Not Found.\": unknown id",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/headcounts/auto-setup": {
+      "post": {
+        "tags": [
+          "headcount"
+        ],
+        "summary": "Create Auto configs for the own classes of the chosen levels (idempotent)",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Value of Session.csrf."
+            },
+            "required": true,
+            "description": "Value of Session.csrf.",
+            "name": "X-CSRF-Token",
+            "in": "header"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PerformanceHeadcountAutoSetupRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Create Auto configs for the own classes of the chosen levels (idempotent)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "created": {
+                          "type": "integer",
+                          "minimum": 0
+                        }
+                      },
+                      "required": [
+                        "created"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED: no valid session (\"Unauthenticated.\").",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN \"This action is unauthorized.\", or CSRF_INVALID on a missing/invalid X-CSRF-Token.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "VALIDATION_ERROR with field levels.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/headcounts/{id}/drop-students": {
+      "post": {
+        "tags": [
+          "headcount"
+        ],
+        "summary": "Drop or restore students of a config",
+        "parameters": [
+          {
+            "schema": {
+              "$ref": "#/components/schemas/Id"
+            },
+            "required": true,
+            "description": "Opaque entity id (string). Never parse or construct on the client.",
+            "name": "id",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Value of Session.csrf."
+            },
+            "required": true,
+            "description": "Value of Session.csrf.",
+            "name": "X-CSRF-Token",
+            "in": "header"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PerformanceHeadcountDropRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Drop or restore students of a config",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "updated": {
+                          "type": "integer",
+                          "minimum": 0
+                        }
+                      },
+                      "required": [
+                        "updated"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED: no valid session (\"Unauthenticated.\").",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN \"This action is unauthorized.\", or CSRF_INVALID on a missing/invalid X-CSRF-Token.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "NOT_FOUND \"Not Found.\": unknown id",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "VALIDATION_ERROR with fields action, studentIds.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/headcounts/{id}/reset": {
+      "post": {
+        "tags": [
+          "headcount"
+        ],
+        "summary": "Reset all marks of a config",
+        "parameters": [
+          {
+            "schema": {
+              "$ref": "#/components/schemas/Id"
+            },
+            "required": true,
+            "description": "Opaque entity id (string). Never parse or construct on the client.",
+            "name": "id",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Value of Session.csrf."
+            },
+            "required": true,
+            "description": "Value of Session.csrf.",
+            "name": "X-CSRF-Token",
+            "in": "header"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Reset all marks of a config",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "reset": {
+                          "type": "boolean",
+                          "enum": [
+                            true
+                          ]
+                        }
+                      },
+                      "required": [
+                        "reset"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED: no valid session (\"Unauthenticated.\").",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN \"This action is unauthorized.\", or CSRF_INVALID on a missing/invalid X-CSRF-Token.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "NOT_FOUND \"Not Found.\": unknown id",
             "content": {
               "application/json": {
                 "schema": {
