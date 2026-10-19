@@ -12186,6 +12186,3462 @@
         ],
         "additionalProperties": false
       },
+      "CommandCenterMood": {
+        "type": "string",
+        "enum": [
+          "happy",
+          "okay",
+          "sad",
+          "stressed"
+        ]
+      },
+      "CommandCenterMoodCounts": {
+        "type": "object",
+        "properties": {
+          "happy": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "okay": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "sad": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "stressed": {
+            "type": "integer",
+            "minimum": 0
+          }
+        },
+        "required": [
+          "happy",
+          "okay",
+          "sad",
+          "stressed"
+        ]
+      },
+      "CommandCenterPeriod": {
+        "type": "string",
+        "enum": [
+          "today",
+          "week",
+          "month"
+        ]
+      },
+      "CommandCenterRef": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "name": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "name"
+        ]
+      },
+      "CommandCenterClassRef": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "name": {
+            "type": "string"
+          },
+          "level": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "level"
+        ]
+      },
+      "CommandCenterScope": {
+        "type": "string",
+        "enum": [
+          "platform",
+          "school"
+        ],
+        "description": "Admin sees the platform view; a school admin the school view."
+      },
+      "CommandCenterTopSchool": {
+        "type": "object",
+        "properties": {
+          "schoolId": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "schoolName": {
+            "type": "string"
+          },
+          "activeCount": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Pupils with at least one answer."
+          },
+          "totalAnswers": {
+            "type": "integer",
+            "minimum": 0
+          }
+        },
+        "required": [
+          "schoolId",
+          "schoolName",
+          "activeCount",
+          "totalAnswers"
+        ]
+      },
+      "CommandCenterTopStudent": {
+        "type": "object",
+        "properties": {
+          "studentId": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "name": {
+            "type": "string"
+          },
+          "schoolName": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Null for a pupil without a school."
+          },
+          "answersCount": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "accuracy": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 100
+          }
+        },
+        "required": [
+          "studentId",
+          "name",
+          "schoolName",
+          "answersCount",
+          "accuracy"
+        ]
+      },
+      "CommandCenterFeedRow": {
+        "type": "object",
+        "properties": {
+          "student": {
+            "type": "string"
+          },
+          "subject": {
+            "type": "string",
+            "description": "Short subject name."
+          },
+          "correct": {
+            "type": "boolean"
+          },
+          "time": {
+            "type": "string",
+            "pattern": "^\\d{2}:\\d{2}$",
+            "description": "HH:mm, Malaysia time."
+          },
+          "schoolId": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/Id"
+              },
+              {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              }
+            ]
+          },
+          "schoolName": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "student",
+          "subject",
+          "correct",
+          "time",
+          "schoolId",
+          "schoolName"
+        ]
+      },
+      "CommandCenterKirkpatrick": {
+        "type": "object",
+        "properties": {
+          "t1": {
+            "type": "object",
+            "properties": {
+              "value": {
+                "type": "number",
+                "minimum": 0,
+                "maximum": 5,
+                "description": "Satisfaction mean on a 1 to 5 scale; 0 when no responses."
+              },
+              "scale": {
+                "type": "number",
+                "enum": [
+                  5
+                ]
+              },
+              "count": {
+                "type": "integer",
+                "minimum": 0
+              }
+            },
+            "required": [
+              "value",
+              "scale",
+              "count"
+            ]
+          },
+          "t2Accuracy": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 100
+          },
+          "t3Active": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Pupils with an answer in the last 30 days."
+          },
+          "t4Gps": {
+            "type": "number",
+            "minimum": 0,
+            "description": "SPM subject GPS of the scope, 3 decimals; 0 when none."
+          }
+        },
+        "required": [
+          "t1",
+          "t2Accuracy",
+          "t3Active",
+          "t4Gps"
+        ]
+      },
+      "CommandCenterEngagementBuckets": {
+        "type": "object",
+        "properties": {
+          "champion": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "consistent": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "developing": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "minimum": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "disengaged": {
+            "type": "integer",
+            "minimum": 0
+          }
+        },
+        "required": [
+          "champion",
+          "consistent",
+          "developing",
+          "minimum",
+          "disengaged"
+        ],
+        "description": "Platform view: documented display constants (DC-M17-05). School view: zeros."
+      },
+      "CommandCenterCorrection": {
+        "type": "object",
+        "properties": {
+          "total": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "avgImprovement": {
+            "type": "number"
+          },
+          "improvedCount": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "topImprovers": {
+            "type": "array",
+            "items": {},
+            "maxItems": 0,
+            "description": "Always empty in the mock (no list data)."
+          }
+        },
+        "required": [
+          "total",
+          "avgImprovement",
+          "improvedCount",
+          "topImprovers"
+        ],
+        "description": "Platform view: documented display constants (DC-M17-03). School view: zeros."
+      },
+      "CommandCenterDailyPoint": {
+        "type": "object",
+        "properties": {
+          "date": {
+            "$ref": "#/components/schemas/DateOnly"
+          },
+          "label": {
+            "type": "string",
+            "description": "BM weekday abbreviation: Ahd, Isn, Sel, Rab, Kha, Jum, Sab."
+          },
+          "count": {
+            "type": "integer",
+            "minimum": 0
+          }
+        },
+        "required": [
+          "date",
+          "label",
+          "count"
+        ]
+      },
+      "CommandCenterLiveData": {
+        "type": "object",
+        "properties": {
+          "generatedAt": {
+            "$ref": "#/components/schemas/Timestamp"
+          },
+          "scope": {
+            "$ref": "#/components/schemas/CommandCenterScope"
+          },
+          "school": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "properties": {
+              "id": {
+                "$ref": "#/components/schemas/Id"
+              },
+              "name": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "id",
+              "name"
+            ],
+            "description": "The viewer school on the school view, else null."
+          },
+          "totalSchools": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Platform: subscribed schools outside fixture schools. School view: 1 or 0."
+          },
+          "totalStudents": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "activeStudents": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Pupils with at least one answer ever."
+          },
+          "totalAnswered": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "answeredToday": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "answeredWeek": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "answeredLastWeek": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "weekChange": {
+            "type": "integer",
+            "description": "Whole percent, half away from zero; 0 when last week is 0."
+          },
+          "accuracy": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 100
+          },
+          "topSchools": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CommandCenterTopSchool"
+            },
+            "maxItems": 5,
+            "description": "Platform view only; empty on the school view."
+          },
+          "topStudents": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CommandCenterTopStudent"
+            },
+            "maxItems": 5
+          },
+          "gpsOverall": {
+            "type": "number",
+            "minimum": 0,
+            "description": "Equals kirk.t4Gps."
+          },
+          "kirk": {
+            "$ref": "#/components/schemas/CommandCenterKirkpatrick"
+          },
+          "engagement": {
+            "$ref": "#/components/schemas/CommandCenterEngagementBuckets"
+          },
+          "dailyTrend": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CommandCenterDailyPoint"
+            },
+            "maxItems": 7,
+            "description": "School view: last 7 days; empty on the platform view."
+          },
+          "mood": {
+            "$ref": "#/components/schemas/CommandCenterMoodCounts"
+          },
+          "recentFeed": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CommandCenterFeedRow"
+            },
+            "maxItems": 10
+          },
+          "correction": {
+            "$ref": "#/components/schemas/CommandCenterCorrection"
+          }
+        },
+        "required": [
+          "generatedAt",
+          "scope",
+          "school",
+          "totalSchools",
+          "totalStudents",
+          "activeStudents",
+          "totalAnswered",
+          "answeredToday",
+          "answeredWeek",
+          "answeredLastWeek",
+          "weekChange",
+          "accuracy",
+          "topSchools",
+          "topStudents",
+          "gpsOverall",
+          "kirk",
+          "engagement",
+          "dailyTrend",
+          "mood",
+          "recentFeed",
+          "correction"
+        ]
+      },
+      "CommandCenterLiveDataResponse": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/CommandCenterLiveData"
+          }
+        },
+        "required": [
+          "data"
+        ]
+      },
+      "CommandCenterDailyQuery": {
+        "type": "object",
+        "properties": {
+          "period": {
+            "type": "string",
+            "description": "today, week or month. Absent or any other value gives today figures; the raw value is echoed in the response `period`."
+          }
+        }
+      },
+      "CommandCenterPackageChip": {
+        "type": "string",
+        "enum": [
+          "ADMIN",
+          "PARENT",
+          "AKTIF",
+          "PKSK",
+          "SEKOLAH",
+          "BEBAS",
+          "FREE"
+        ]
+      },
+      "CommandCenterLoginRow": {
+        "type": "object",
+        "properties": {
+          "userId": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "name": {
+            "type": "string"
+          },
+          "role": {
+            "type": "string",
+            "description": "Role code."
+          },
+          "lastLoginAt": {
+            "$ref": "#/components/schemas/Timestamp"
+          },
+          "schoolId": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/Id"
+              },
+              {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              }
+            ]
+          },
+          "schoolName": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Null for a user without a school."
+          },
+          "package": {
+            "$ref": "#/components/schemas/CommandCenterPackageChip"
+          },
+          "timeAgo": {
+            "type": "string",
+            "description": "Human-readable age (diffForHumans)."
+          }
+        },
+        "required": [
+          "userId",
+          "name",
+          "role",
+          "lastLoginAt",
+          "schoolId",
+          "schoolName",
+          "package",
+          "timeAgo"
+        ]
+      },
+      "CommandCenterBadgeRow": {
+        "type": "object",
+        "properties": {
+          "userId": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "name": {
+            "type": "string"
+          },
+          "badgeName": {
+            "type": "string"
+          },
+          "icon": {
+            "type": "string"
+          },
+          "awardedAt": {
+            "$ref": "#/components/schemas/Timestamp"
+          }
+        },
+        "required": [
+          "userId",
+          "name",
+          "badgeName",
+          "icon",
+          "awardedAt"
+        ]
+      },
+      "CommandCenterSchoolActivity": {
+        "type": "object",
+        "properties": {
+          "schoolId": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "schoolName": {
+            "type": "string"
+          },
+          "activeStudents": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "totalAnswers": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "accuracy": {
+            "type": [
+              "number",
+              "null"
+            ],
+            "minimum": 0,
+            "maximum": 100,
+            "description": "Null when the school has no answer in the period."
+          },
+          "activeTeachers": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "loginCount": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "lastActive": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/Timestamp"
+              },
+              {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              }
+            ]
+          },
+          "lastActiveHuman": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "schoolId",
+          "schoolName",
+          "activeStudents",
+          "totalAnswers",
+          "accuracy",
+          "activeTeachers",
+          "loginCount",
+          "lastActive",
+          "lastActiveHuman"
+        ]
+      },
+      "CommandCenterDailyTopStudent": {
+        "type": "object",
+        "properties": {
+          "userId": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "name": {
+            "type": "string"
+          },
+          "schoolId": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/Id"
+              },
+              {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              }
+            ]
+          },
+          "schoolName": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "answers": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "accuracy": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 100
+          }
+        },
+        "required": [
+          "userId",
+          "name",
+          "schoolId",
+          "schoolName",
+          "answers",
+          "accuracy"
+        ]
+      },
+      "CommandCenterSubjectBar": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "string"
+          },
+          "shortName": {
+            "type": "string"
+          },
+          "answers": {
+            "type": "integer",
+            "minimum": 0
+          }
+        },
+        "required": [
+          "code",
+          "shortName",
+          "answers"
+        ]
+      },
+      "CommandCenterDailyFeedRow": {
+        "type": "object",
+        "properties": {
+          "student": {
+            "type": "string"
+          },
+          "subject": {
+            "type": "string",
+            "description": "Short subject name."
+          },
+          "correct": {
+            "type": "boolean"
+          },
+          "time": {
+            "type": "string",
+            "pattern": "^\\d{2}:\\d{2}$",
+            "description": "HH:mm, Malaysia time."
+          },
+          "schoolId": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/Id"
+              },
+              {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              }
+            ]
+          },
+          "schoolName": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "studentId": {
+            "$ref": "#/components/schemas/Id"
+          }
+        },
+        "required": [
+          "student",
+          "subject",
+          "correct",
+          "time",
+          "schoolId",
+          "schoolName",
+          "studentId"
+        ]
+      },
+      "CommandCenterDailyActivity": {
+        "type": "object",
+        "properties": {
+          "period": {
+            "type": "string",
+            "description": "The raw `period` of the request (an unknown value is echoed, with today figures)."
+          },
+          "label": {
+            "type": "string",
+            "description": "\"Hari Ini (D Mon YYYY)\", \"Minggu Ini\" or \"Bulan Ini\"."
+          },
+          "scope": {
+            "$ref": "#/components/schemas/CommandCenterScope"
+          },
+          "school": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "properties": {
+              "id": {
+                "$ref": "#/components/schemas/Id"
+              },
+              "name": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "id",
+              "name"
+            ]
+          },
+          "logins": {
+            "type": "object",
+            "properties": {
+              "total": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "byRole": {
+                "type": "object",
+                "additionalProperties": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "description": "Role code to login count, only roles with at least one login."
+              },
+              "recent": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/CommandCenterLoginRow"
+                },
+                "maxItems": 10
+              }
+            },
+            "required": [
+              "total",
+              "byRole",
+              "recent"
+            ]
+          },
+          "practice": {
+            "type": "object",
+            "properties": {
+              "totalAnswers": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "correctAnswers": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "accuracy": {
+                "type": "number",
+                "minimum": 0,
+                "maximum": 100
+              },
+              "activeStudents": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "sessionsStarted": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "sessionsCompleted": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "avgSessionSeconds": {
+                "type": "integer",
+                "minimum": 0,
+                "description": "Mean time spent per completed session, seconds."
+              }
+            },
+            "required": [
+              "totalAnswers",
+              "correctAnswers",
+              "accuracy",
+              "activeStudents",
+              "sessionsStarted",
+              "sessionsCompleted",
+              "avgSessionSeconds"
+            ]
+          },
+          "engagement": {
+            "type": "object",
+            "properties": {
+              "moodCheckins": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "moodDist": {
+                "$ref": "#/components/schemas/CommandCenterMoodCounts"
+              },
+              "missionsCompleted": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "badgesEarned": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "recentBadges": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/CommandCenterBadgeRow"
+                }
+              },
+              "quizSetsCreated": {
+                "type": "integer",
+                "minimum": 0
+              }
+            },
+            "required": [
+              "moodCheckins",
+              "moodDist",
+              "missionsCompleted",
+              "badgesEarned",
+              "recentBadges",
+              "quizSetsCreated"
+            ]
+          },
+          "summary": {
+            "type": "object",
+            "properties": {
+              "activeSchools": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "totalSchools": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "activeStudents": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "totalStudents": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "totalLogins": {
+                "type": "integer",
+                "minimum": 0
+              }
+            },
+            "required": [
+              "activeSchools",
+              "totalSchools",
+              "activeStudents",
+              "totalStudents",
+              "totalLogins"
+            ]
+          },
+          "schools": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CommandCenterSchoolActivity"
+            },
+            "description": "Platform view only; omitted for a school admin."
+          },
+          "topStudents": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CommandCenterDailyTopStudent"
+            }
+          },
+          "subjectBreakdown": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CommandCenterSubjectBar"
+            }
+          },
+          "hourlyHeatmap": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "description": "Hour (MYT, \"0\" to \"23\") to answers; 24 hours on \"today\", empty object otherwise."
+          },
+          "liveFeed": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CommandCenterDailyFeedRow"
+            }
+          }
+        },
+        "required": [
+          "period",
+          "label",
+          "scope",
+          "school",
+          "logins",
+          "practice",
+          "engagement",
+          "summary",
+          "topStudents",
+          "subjectBreakdown",
+          "hourlyHeatmap",
+          "liveFeed"
+        ]
+      },
+      "CommandCenterDailyActivityResponse": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/CommandCenterDailyActivity"
+          }
+        },
+        "required": [
+          "data"
+        ]
+      },
+      "CommandCenterSchoolDrill": {
+        "type": "object",
+        "properties": {
+          "school": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "$ref": "#/components/schemas/Id"
+              },
+              "name": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "id",
+              "name"
+            ]
+          },
+          "period": {
+            "type": "string",
+            "description": "The raw `period` of the request."
+          },
+          "teachers": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "userId": {
+                  "$ref": "#/components/schemas/Id"
+                },
+                "name": {
+                  "type": "string"
+                },
+                "students": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "accuracy": {
+                  "type": "number",
+                  "minimum": 0,
+                  "maximum": 100
+                },
+                "lastActiveHuman": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "userId",
+                "name",
+                "students",
+                "accuracy",
+                "lastActiveHuman"
+              ]
+            }
+          },
+          "students": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "userId": {
+                  "$ref": "#/components/schemas/Id"
+                },
+                "name": {
+                  "type": "string"
+                },
+                "answers": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "accuracy": {
+                  "type": "number",
+                  "minimum": 0,
+                  "maximum": 100
+                },
+                "lastActiveHuman": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "userId",
+                "name",
+                "answers",
+                "accuracy",
+                "lastActiveHuman"
+              ]
+            }
+          },
+          "logins": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "userId": {
+                  "$ref": "#/components/schemas/Id"
+                },
+                "name": {
+                  "type": "string"
+                },
+                "role": {
+                  "type": "string"
+                },
+                "timeAgo": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "userId",
+                "name",
+                "role",
+                "timeAgo"
+              ]
+            }
+          }
+        },
+        "required": [
+          "school",
+          "period",
+          "teachers",
+          "students",
+          "logins"
+        ]
+      },
+      "CommandCenterSchoolDrillResponse": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/CommandCenterSchoolDrill"
+          }
+        },
+        "required": [
+          "data"
+        ]
+      },
+      "CommandCenterSchool": {
+        "type": "object",
+        "properties": {
+          "school": {
+            "$ref": "#/components/schemas/CommandCenterRef"
+          },
+          "cards": {
+            "type": "object",
+            "properties": {
+              "students": {
+                "type": "integer",
+                "minimum": 0,
+                "description": "Every student of the school, active or not."
+              },
+              "active": {
+                "type": "integer",
+                "minimum": 0,
+                "description": "Pupils with at least one answer."
+              },
+              "answers": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "accuracy": {
+                "type": "number",
+                "minimum": 0,
+                "maximum": 100
+              }
+            },
+            "required": [
+              "students",
+              "active",
+              "answers",
+              "accuracy"
+            ]
+          },
+          "teachers": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "userId": {
+                  "$ref": "#/components/schemas/Id"
+                },
+                "name": {
+                  "type": "string"
+                },
+                "subjectText": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "description": "Free text of the teacher profile."
+                },
+                "classes": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "students": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "active30d": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "ownerOnly": {
+                  "type": "boolean",
+                  "description": "A class owner at the school who is not one of its teachers."
+                }
+              },
+              "required": [
+                "userId",
+                "name",
+                "subjectText",
+                "classes",
+                "students",
+                "active30d",
+                "ownerOnly"
+              ]
+            }
+          }
+        },
+        "required": [
+          "school",
+          "cards",
+          "teachers"
+        ]
+      },
+      "CommandCenterSchoolResponse": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/CommandCenterSchool"
+          }
+        },
+        "required": [
+          "data"
+        ]
+      },
+      "CommandCenterTeacher": {
+        "type": "object",
+        "properties": {
+          "school": {
+            "$ref": "#/components/schemas/CommandCenterRef"
+          },
+          "teacher": {
+            "$ref": "#/components/schemas/CommandCenterRef"
+          },
+          "classes": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "$ref": "#/components/schemas/Id"
+                },
+                "name": {
+                  "type": "string"
+                },
+                "level": {
+                  "type": "string"
+                },
+                "students": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "active30d": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "answers": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "accuracy": {
+                  "type": "number",
+                  "minimum": 0,
+                  "maximum": 100
+                }
+              },
+              "required": [
+                "id",
+                "name",
+                "level",
+                "students",
+                "active30d",
+                "answers",
+                "accuracy"
+              ]
+            }
+          }
+        },
+        "required": [
+          "school",
+          "teacher",
+          "classes"
+        ]
+      },
+      "CommandCenterTeacherResponse": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/CommandCenterTeacher"
+          }
+        },
+        "required": [
+          "data"
+        ]
+      },
+      "CommandCenterPupilStatus": {
+        "type": "string",
+        "enum": [
+          "aktif",
+          "tidak_aktif"
+        ]
+      },
+      "CommandCenterClass": {
+        "type": "object",
+        "properties": {
+          "school": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/CommandCenterRef"
+              },
+              {
+                "type": [
+                  "object",
+                  "null"
+                ]
+              }
+            ]
+          },
+          "teacher": {
+            "$ref": "#/components/schemas/CommandCenterRef"
+          },
+          "class": {
+            "$ref": "#/components/schemas/CommandCenterClassRef"
+          },
+          "students": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "userId": {
+                  "$ref": "#/components/schemas/Id"
+                },
+                "name": {
+                  "type": "string"
+                },
+                "answers": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "accuracy": {
+                  "type": "number",
+                  "minimum": 0,
+                  "maximum": 100
+                },
+                "lastActiveAt": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "format": "date-time",
+                  "pattern": "\\+08:00$",
+                  "description": "Latest answer; null when the pupil never answered.",
+                  "example": "2026-10-16T09:30:00+08:00"
+                },
+                "status": {
+                  "$ref": "#/components/schemas/CommandCenterPupilStatus"
+                },
+                "mood": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "enum": [
+                    "happy",
+                    "okay",
+                    "sad",
+                    "stressed",
+                    null
+                  ],
+                  "description": "Latest mood check-in."
+                }
+              },
+              "required": [
+                "userId",
+                "name",
+                "answers",
+                "accuracy",
+                "lastActiveAt",
+                "status",
+                "mood"
+              ]
+            }
+          }
+        },
+        "required": [
+          "school",
+          "teacher",
+          "class",
+          "students"
+        ]
+      },
+      "CommandCenterClassResponse": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/CommandCenterClass"
+          }
+        },
+        "required": [
+          "data"
+        ]
+      },
+      "CommandCenterSubjectRow": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "string",
+            "description": "Subject code, or UMUM for mixed free practice."
+          },
+          "label": {
+            "type": "string",
+            "description": "\"Latihan Bebas\" for UMUM."
+          },
+          "correct": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "total": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "pct": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 100
+          }
+        },
+        "required": [
+          "code",
+          "label",
+          "correct",
+          "total",
+          "pct"
+        ]
+      },
+      "CommandCenterWeek": {
+        "type": "object",
+        "properties": {
+          "start": {
+            "type": "string",
+            "format": "date",
+            "description": "Monday.",
+            "example": "2026-10-16"
+          },
+          "end": {
+            "type": "string",
+            "format": "date",
+            "description": "Sunday.",
+            "example": "2026-10-16"
+          },
+          "label": {
+            "type": "string",
+            "pattern": "^\\d{2}\\/\\d{2}$",
+            "description": "dd/mm of the Monday."
+          },
+          "count": {
+            "type": "integer",
+            "minimum": 0
+          }
+        },
+        "required": [
+          "start",
+          "end",
+          "label",
+          "count"
+        ]
+      },
+      "CommandCenterMoodDot": {
+        "type": "object",
+        "properties": {
+          "date": {
+            "$ref": "#/components/schemas/DateOnly"
+          },
+          "mood": {
+            "$ref": "#/components/schemas/CommandCenterMood"
+          },
+          "reason": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "date",
+          "mood",
+          "reason"
+        ]
+      },
+      "CommandCenterHeadcountRow": {
+        "type": "object",
+        "properties": {
+          "configId": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "subject": {
+            "type": "string"
+          },
+          "tov": {
+            "type": [
+              "number",
+              "null"
+            ]
+          },
+          "etr": {
+            "type": [
+              "number",
+              "null"
+            ]
+          },
+          "rs": {
+            "type": [
+              "number",
+              "null"
+            ]
+          },
+          "grade": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "date": {
+            "$ref": "#/components/schemas/DateOnly"
+          }
+        },
+        "required": [
+          "configId",
+          "subject",
+          "tov",
+          "etr",
+          "rs",
+          "grade",
+          "date"
+        ]
+      },
+      "CommandCenterStudent": {
+        "type": "object",
+        "properties": {
+          "school": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/CommandCenterRef"
+              },
+              {
+                "type": [
+                  "object",
+                  "null"
+                ]
+              }
+            ]
+          },
+          "teacher": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/CommandCenterRef"
+              },
+              {
+                "type": [
+                  "object",
+                  "null"
+                ]
+              }
+            ]
+          },
+          "class": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "properties": {
+              "id": {
+                "$ref": "#/components/schemas/Id"
+              },
+              "name": {
+                "type": "string"
+              },
+              "level": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "id",
+              "name",
+              "level"
+            ],
+            "description": "First active class the viewer may open; null when none."
+          },
+          "student": {
+            "$ref": "#/components/schemas/CommandCenterRef"
+          },
+          "cards": {
+            "type": "object",
+            "properties": {
+              "answers": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "accuracy": {
+                "type": "number",
+                "minimum": 0,
+                "maximum": 100
+              },
+              "activeDays": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "streak": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "consistency": {
+                "type": "number",
+                "minimum": 0,
+                "maximum": 100,
+                "description": "round(days with an answer in the last 56 days / 56 * 100)."
+              }
+            },
+            "required": [
+              "answers",
+              "accuracy",
+              "activeDays",
+              "streak",
+              "consistency"
+            ]
+          },
+          "subjects": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CommandCenterSubjectRow"
+            }
+          },
+          "weeks": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CommandCenterWeek"
+            },
+            "description": "8 Monday-based weeks ending with the current one, oldest first."
+          },
+          "moodTrend": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CommandCenterMoodDot"
+            },
+            "description": "Check-ins of the last 30 days, oldest first."
+          },
+          "headcount": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CommandCenterHeadcountRow"
+            }
+          },
+          "insight": {
+            "type": "object",
+            "properties": {
+              "texts": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "source": {
+                "type": "string",
+                "enum": [
+                  "Rule-based Analysis"
+                ]
+              }
+            },
+            "required": [
+              "texts",
+              "source"
+            ]
+          }
+        },
+        "required": [
+          "school",
+          "teacher",
+          "class",
+          "student",
+          "cards",
+          "subjects",
+          "weeks",
+          "moodTrend",
+          "headcount",
+          "insight"
+        ]
+      },
+      "CommandCenterStudentResponse": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/CommandCenterStudent"
+          }
+        },
+        "required": [
+          "data"
+        ]
+      },
+      "CommandCenterSessionRow": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "completedAt": {
+            "$ref": "#/components/schemas/Timestamp"
+          },
+          "subjectLabel": {
+            "type": "string",
+            "description": "\"Umum\" for a free-practice session."
+          },
+          "topic": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Chapter name; \"Latihan Bebas\" for free practice; null when unknown."
+          },
+          "total": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "correct": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "accuracy": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 100,
+            "description": "2 decimals."
+          },
+          "minutes": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "floor(seconds / 60)."
+          }
+        },
+        "required": [
+          "id",
+          "completedAt",
+          "subjectLabel",
+          "topic",
+          "total",
+          "correct",
+          "accuracy",
+          "minutes"
+        ]
+      },
+      "CommandCenterSessionList": {
+        "type": "object",
+        "properties": {
+          "totalAnswers": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "totalSessions": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "accuracy": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 100,
+            "description": "1 decimal."
+          },
+          "timeSpentMinutes": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "sessions": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CommandCenterSessionRow"
+            }
+          }
+        },
+        "required": [
+          "totalAnswers",
+          "totalSessions",
+          "accuracy",
+          "timeSpentMinutes",
+          "sessions"
+        ]
+      },
+      "CommandCenterSessionListResponse": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/CommandCenterSessionList"
+          }
+        },
+        "required": [
+          "data"
+        ]
+      },
+      "CommandCenterSessionAnswer": {
+        "type": "object",
+        "properties": {
+          "no": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "correct": {
+            "type": "boolean"
+          },
+          "questionText": {
+            "type": "string",
+            "description": "Cut at 150 characters followed by \"...\"."
+          },
+          "selectedAnswer": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "\"{L}) {text}\", null when the item has no options."
+          },
+          "correctAnswer": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "answeredAt": {
+            "$ref": "#/components/schemas/Timestamp"
+          }
+        },
+        "required": [
+          "no",
+          "correct",
+          "questionText",
+          "selectedAnswer",
+          "correctAnswer",
+          "answeredAt"
+        ]
+      },
+      "CommandCenterSessionDetail": {
+        "type": "object",
+        "properties": {
+          "subjectLabel": {
+            "type": "string"
+          },
+          "topic": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "completedAt": {
+            "$ref": "#/components/schemas/Timestamp"
+          },
+          "total": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "correctCount": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "wrongCount": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "accuracy": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 100
+          },
+          "timeSpent": {
+            "type": "object",
+            "properties": {
+              "m": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "s": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 59
+              }
+            },
+            "required": [
+              "m",
+              "s"
+            ]
+          },
+          "difficulty": {
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "answers": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CommandCenterSessionAnswer"
+            }
+          }
+        },
+        "required": [
+          "subjectLabel",
+          "topic",
+          "completedAt",
+          "total",
+          "correctCount",
+          "wrongCount",
+          "accuracy",
+          "timeSpent",
+          "difficulty",
+          "answers"
+        ]
+      },
+      "CommandCenterSessionDetailResponse": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/CommandCenterSessionDetail"
+          }
+        },
+        "required": [
+          "data"
+        ]
+      },
+      "CommandCenterHeadcountDetail": {
+        "type": "object",
+        "properties": {
+          "subject": {
+            "type": "string"
+          },
+          "totalStudents": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "avgTov": {
+            "type": "number",
+            "minimum": 0,
+            "description": "1 decimal mean over non-null values; 0 when none."
+          },
+          "avgEtr": {
+            "type": "number",
+            "minimum": 0
+          },
+          "passRate": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 100,
+            "description": "Whole percent of graded entries with grade A+ to C (inferred); 0 when none graded."
+          },
+          "students": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "userId": {
+                  "$ref": "#/components/schemas/Id"
+                },
+                "name": {
+                  "type": "string"
+                },
+                "tov": {
+                  "type": [
+                    "number",
+                    "null"
+                  ]
+                },
+                "etr": {
+                  "type": [
+                    "number",
+                    "null"
+                  ]
+                },
+                "rs": {
+                  "type": [
+                    "number",
+                    "null"
+                  ]
+                },
+                "grade": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                }
+              },
+              "required": [
+                "userId",
+                "name",
+                "tov",
+                "etr",
+                "rs",
+                "grade"
+              ]
+            }
+          }
+        },
+        "required": [
+          "subject",
+          "totalStudents",
+          "avgTov",
+          "avgEtr",
+          "passRate",
+          "students"
+        ]
+      },
+      "CommandCenterHeadcountDetailResponse": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/CommandCenterHeadcountDetail"
+          }
+        },
+        "required": [
+          "data"
+        ]
+      },
+      "CommandCenterIdParams": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 64,
+            "description": "Entity id. Digits only; a non-digit segment does not match the route (404 \"Not Found.\").",
+            "example": "1042"
+          }
+        },
+        "required": [
+          "id"
+        ]
+      },
+      "CommandCenterTeacherParams": {
+        "type": "object",
+        "properties": {
+          "sid": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 64,
+            "description": "School id. Digits only; a non-digit segment does not match the route (404 \"Not Found.\").",
+            "example": "1042"
+          },
+          "uid": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 64,
+            "description": "Teacher user id. Digits only; a non-digit segment does not match the route (404 \"Not Found.\").",
+            "example": "1042"
+          }
+        },
+        "required": [
+          "sid",
+          "uid"
+        ]
+      },
+      "CommandCenterSessionParams": {
+        "type": "object",
+        "properties": {
+          "sessionId": {
+            "type": "string",
+            "pattern": "^[A-Za-z0-9_-]+$",
+            "description": "Practice session id (letters, digits, underscore, hyphen); anything else does not match the route (404)."
+          }
+        },
+        "required": [
+          "sessionId"
+        ]
+      },
+      "CommandCenterHeadcountParams": {
+        "type": "object",
+        "properties": {
+          "configId": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 64,
+            "description": "Headcount config id. Digits only; a non-digit segment does not match the route (404 \"Not Found.\").",
+            "example": "1042"
+          }
+        },
+        "required": [
+          "configId"
+        ]
+      },
+      "CommandCenterStudentWeekQuery": {
+        "type": "object",
+        "properties": {
+          "start": {
+            "$ref": "#/components/schemas/DateOnly"
+          },
+          "end": {
+            "$ref": "#/components/schemas/DateOnly"
+          }
+        },
+        "required": [
+          "start",
+          "end"
+        ]
+      },
+      "CommandCenterStudentSubjectQuery": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "string",
+            "description": "Subject code or UMUM (trimmed). An unknown or absent code gives an empty list (200)."
+          }
+        }
+      },
+      "ServerStatus": {
+        "type": "object",
+        "properties": {
+          "cpuPct": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 100
+          },
+          "ramPct": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 100
+          },
+          "diskPct": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 100
+          },
+          "uptime": {
+            "type": "string",
+            "pattern": "^\\d+d \\d+h$",
+            "description": "\"<days>d <hours>h\", e.g. \"204d 2h\"."
+          },
+          "load": {
+            "type": "number",
+            "minimum": 0
+          },
+          "cores": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "ramUsedGb": {
+            "type": "number",
+            "minimum": 0,
+            "description": "1 decimal."
+          },
+          "ramTotalGb": {
+            "type": "number",
+            "minimum": 0
+          },
+          "diskUsedGb": {
+            "type": "number",
+            "minimum": 0
+          },
+          "diskTotalGb": {
+            "type": "number",
+            "minimum": 0
+          }
+        },
+        "required": [
+          "cpuPct",
+          "ramPct",
+          "diskPct",
+          "uptime",
+          "load",
+          "cores",
+          "ramUsedGb",
+          "ramTotalGb",
+          "diskUsedGb",
+          "diskTotalGb"
+        ]
+      },
+      "ServerStatusResponse": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/ServerStatus"
+          }
+        },
+        "required": [
+          "data"
+        ]
+      },
+      "CommandCenterGuruEducationLevel": {
+        "type": "string",
+        "enum": [
+          "tahun-1",
+          "tahun-2",
+          "tahun-3",
+          "tahun-4",
+          "tahun-5",
+          "tahun-6",
+          "tingkatan-1",
+          "tingkatan-2",
+          "tingkatan-3",
+          "tingkatan-4",
+          "tingkatan-5"
+        ]
+      },
+      "CommandCenterGuruClassRow": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 64,
+            "description": "Class id.",
+            "example": "1042"
+          },
+          "name": {
+            "type": "string"
+          },
+          "educationLevel": {
+            "$ref": "#/components/schemas/CommandCenterGuruEducationLevel"
+          },
+          "studentCount": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "active": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Members with at least one answer in the last 7 days."
+          },
+          "accuracy": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Whole percent over all answers of the members; 0 when none."
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "educationLevel",
+          "studentCount",
+          "active",
+          "accuracy"
+        ]
+      },
+      "CommandCenterGuruStudentRank": {
+        "type": "object",
+        "properties": {
+          "studentId": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "name": {
+            "type": "string"
+          },
+          "answered": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "accuracy": {
+            "type": "integer",
+            "minimum": 0
+          }
+        },
+        "required": [
+          "studentId",
+          "name",
+          "answered",
+          "accuracy"
+        ]
+      },
+      "CommandCenterGuruFeedItem": {
+        "type": "object",
+        "properties": {
+          "studentId": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "time": {
+            "type": "string",
+            "pattern": "^\\d{2}:\\d{2}$",
+            "description": "HH:mm, Asia/Kuala_Lumpur."
+          },
+          "student": {
+            "type": "string"
+          },
+          "subject": {
+            "type": "string",
+            "description": "Subject name; \"-\" when the answer has no subject."
+          },
+          "isCorrect": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "studentId",
+          "time",
+          "student",
+          "subject",
+          "isCorrect"
+        ]
+      },
+      "CommandCenterGuruRecentBadge": {
+        "type": "object",
+        "properties": {
+          "studentId": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "student": {
+            "type": "string"
+          },
+          "badge": {
+            "type": "string"
+          },
+          "icon": {
+            "type": "string"
+          },
+          "awardedAt": {
+            "$ref": "#/components/schemas/Timestamp"
+          }
+        },
+        "required": [
+          "studentId",
+          "student",
+          "badge",
+          "icon",
+          "awardedAt"
+        ]
+      },
+      "CommandCenterGuruEngagement": {
+        "type": "object",
+        "properties": {
+          "champion": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "consistent": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "developing": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "minimum": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "disengaged": {
+            "type": "integer",
+            "minimum": 0
+          }
+        },
+        "required": [
+          "champion",
+          "consistent",
+          "developing",
+          "minimum",
+          "disengaged"
+        ]
+      },
+      "CommandCenterGuruMood": {
+        "type": "object",
+        "properties": {
+          "happy": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "okay": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "sad": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "stressed": {
+            "type": "integer",
+            "minimum": 0
+          }
+        },
+        "required": [
+          "happy",
+          "okay",
+          "sad",
+          "stressed"
+        ]
+      },
+      "CommandCenterGuruLiveData": {
+        "type": "object",
+        "properties": {
+          "teacherName": {
+            "type": "string"
+          },
+          "totalStudents": {
+            "type": "string",
+            "description": "Formatted count: digits with \",\" between thousands."
+          },
+          "totalStudentsRaw": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "activeStudents": {
+            "type": "string",
+            "description": "Students with an answer today (formatted)."
+          },
+          "activeStudentsRaw": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "totalAnswered": {
+            "type": "string"
+          },
+          "totalAnsweredRaw": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "answeredToday": {
+            "type": "string"
+          },
+          "answeredTodayRaw": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "answeredWeek": {
+            "type": "string",
+            "description": "Answers in the 7 calendar days ending today (formatted)."
+          },
+          "answeredWeekRaw": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "weekChange": {
+            "type": "integer",
+            "description": "round((week - previous 7 days) / previous * 100); 0 when the previous week has no answer."
+          },
+          "accuracy": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "round(correct / answered * 100) over all answers; 0 when none."
+          },
+          "gpsOverall": {
+            "type": [
+              "number",
+              "null"
+            ],
+            "description": "GPS over graded headcount entries (2 dp); null when none. Display constant 4.69 for the seed snapshot user."
+          },
+          "classes": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CommandCenterGuruClassRow"
+            }
+          },
+          "topStudents": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CommandCenterGuruStudentRank"
+            },
+            "description": "Top 5 by accuracy among students with >= 10 answers."
+          },
+          "leaderboardWeek": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CommandCenterGuruStudentRank"
+            },
+            "description": "Top 10 by answers in the last 7 days (ties: accuracy desc, id); students with none are not listed."
+          },
+          "recentBadges": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CommandCenterGuruRecentBadge"
+            },
+            "description": "Latest 5 awards to the viewer's students, newest first."
+          },
+          "engagement": {
+            "$ref": "#/components/schemas/CommandCenterGuruEngagement"
+          },
+          "recentFeed": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CommandCenterGuruFeedItem"
+            },
+            "description": "Last 10 answers, newest first."
+          },
+          "kirkT1": {
+            "type": "number",
+            "minimum": 0,
+            "description": "Mean reaction score 0-10 (NPS) of the students' feedback, 1 dp; 0 when none."
+          },
+          "kirkT1Count": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "kirkT2Accuracy": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Accuracy of the last 30 days."
+          },
+          "kirkT2Delta": {
+            "type": "integer",
+            "description": "Difference to the 30 days before."
+          },
+          "kirkT2Prev": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "kirkT3Active": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Students with an answer in the last 30 days."
+          },
+          "kirkT3Delta": {
+            "type": "integer"
+          },
+          "kirkT3Prev": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "kirkT4Gps": {
+            "type": "number",
+            "minimum": 0,
+            "description": "gpsOverall, or 0."
+          },
+          "mood": {
+            "$ref": "#/components/schemas/CommandCenterGuruMood"
+          },
+          "generatedAt": {
+            "$ref": "#/components/schemas/Timestamp"
+          }
+        },
+        "required": [
+          "teacherName",
+          "totalStudents",
+          "totalStudentsRaw",
+          "activeStudents",
+          "activeStudentsRaw",
+          "totalAnswered",
+          "totalAnsweredRaw",
+          "answeredToday",
+          "answeredTodayRaw",
+          "answeredWeek",
+          "answeredWeekRaw",
+          "weekChange",
+          "accuracy",
+          "gpsOverall",
+          "classes",
+          "topStudents",
+          "leaderboardWeek",
+          "recentBadges",
+          "engagement",
+          "recentFeed",
+          "kirkT1",
+          "kirkT1Count",
+          "kirkT2Accuracy",
+          "kirkT2Delta",
+          "kirkT2Prev",
+          "kirkT3Active",
+          "kirkT3Delta",
+          "kirkT3Prev",
+          "kirkT4Gps",
+          "mood",
+          "generatedAt"
+        ]
+      },
+      "CommandCenterGuruDrillType": {
+        "type": "string",
+        "enum": [
+          "students",
+          "today",
+          "subjects",
+          "gps",
+          "kirk",
+          "mood",
+          "engagement"
+        ]
+      },
+      "CommandCenterGuruDrillQuery": {
+        "type": "object",
+        "properties": {
+          "type": {
+            "type": "string",
+            "enum": [
+              "students",
+              "today",
+              "subjects",
+              "gps",
+              "kirk",
+              "mood",
+              "engagement"
+            ],
+            "description": "Required. Anything else: 422 fields.type \"Jenis drill tidak sah.\"."
+          },
+          "filter": {
+            "type": "string",
+            "description": "Trimmed; absent = empty. students: \"\" | active. today: \"\" | aktiviti. subjects and gps: \"\". kirk: t1|t2|t3|t4 (required). mood: \"\" | happy|okay|sad|stressed. engagement: \"\" | champion|consistent|developing|minimum|disengaged. Anything else: 422 fields.filter \"Penapis tidak sah.\"."
+          }
+        },
+        "required": [
+          "type"
+        ]
+      },
+      "CommandCenterGuruDrillStudentRow": {
+        "type": "object",
+        "properties": {
+          "studentId": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "name": {
+            "type": "string"
+          },
+          "className": {
+            "type": "string",
+            "description": "The viewer's classes the student is in, joined by \", \"."
+          },
+          "answered": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "accuracy": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "lastActiveAt": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/Timestamp"
+              },
+              {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              }
+            ]
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "Aktif",
+              "Login"
+            ],
+            "description": "\"Aktif\" when the student answered today, else \"Login\"."
+          }
+        },
+        "required": [
+          "studentId",
+          "name",
+          "className",
+          "answered",
+          "accuracy",
+          "lastActiveAt",
+          "status"
+        ]
+      },
+      "CommandCenterGuruDrillTodayRow": {
+        "type": "object",
+        "properties": {
+          "studentId": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "time": {
+            "type": "string",
+            "pattern": "^\\d{2}:\\d{2}$",
+            "description": "HH:mm of the last answer of the pair today."
+          },
+          "student": {
+            "type": "string"
+          },
+          "subject": {
+            "type": "string"
+          },
+          "answered": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "correct": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "accuracy": {
+            "type": "integer",
+            "minimum": 0
+          }
+        },
+        "required": [
+          "studentId",
+          "time",
+          "student",
+          "subject",
+          "answered",
+          "correct",
+          "accuracy"
+        ]
+      },
+      "CommandCenterGuruDrillSubjectRow": {
+        "type": "object",
+        "properties": {
+          "subject": {
+            "type": "string"
+          },
+          "answered": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "correct": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "accuracy": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "students": {
+            "type": "integer",
+            "minimum": 0
+          }
+        },
+        "required": [
+          "subject",
+          "answered",
+          "correct",
+          "accuracy",
+          "students"
+        ]
+      },
+      "CommandCenterGuruDrillGpsRow": {
+        "type": "object",
+        "properties": {
+          "subject": {
+            "type": "string"
+          },
+          "gps": {
+            "type": "number",
+            "minimum": 0
+          },
+          "grade": {
+            "type": "string",
+            "description": "The drill's own scale: <=1.5 A+, <=2.0 A, <=2.5 A-, <=3.0 B+, <=3.5 B, <=4.0 C+, <=4.5 C, <=5.0 D, else E."
+          },
+          "students": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "source": {
+            "type": "string",
+            "enum": [
+              "Anggaran OTR"
+            ]
+          }
+        },
+        "required": [
+          "subject",
+          "gps",
+          "grade",
+          "students",
+          "source"
+        ]
+      },
+      "CommandCenterGuruDrillKirkRow": {
+        "type": "object",
+        "properties": {
+          "studentId": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "name": {
+            "type": "string"
+          },
+          "average": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 10,
+            "description": "Reaction score 0-10."
+          },
+          "satisfaction": {
+            "type": "number",
+            "minimum": 1,
+            "maximum": 5
+          },
+          "relevance": {
+            "type": "null",
+            "description": "Not stored: always null."
+          },
+          "usefulness": {
+            "type": "null",
+            "description": "Not stored: always null."
+          },
+          "date": {
+            "type": "string",
+            "pattern": "^\\d{4}-\\d{2}$",
+            "description": "YYYY-MM month of the response."
+          }
+        },
+        "required": [
+          "studentId",
+          "name",
+          "average",
+          "satisfaction",
+          "relevance",
+          "usefulness",
+          "date"
+        ]
+      },
+      "CommandCenterGuruMoodName": {
+        "type": "string",
+        "enum": [
+          "happy",
+          "okay",
+          "sad",
+          "stressed"
+        ]
+      },
+      "CommandCenterGuruDrillMoodRow": {
+        "type": "object",
+        "properties": {
+          "studentId": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "name": {
+            "type": "string"
+          },
+          "mood": {
+            "$ref": "#/components/schemas/CommandCenterGuruMoodName"
+          },
+          "date": {
+            "$ref": "#/components/schemas/DateOnly"
+          },
+          "reason": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "studentId",
+          "name",
+          "mood",
+          "date",
+          "reason"
+        ]
+      },
+      "CommandCenterGuruEngagementBand": {
+        "type": "string",
+        "enum": [
+          "champion",
+          "consistent",
+          "developing",
+          "minimum",
+          "disengaged"
+        ]
+      },
+      "CommandCenterGuruDrillEngagementRow": {
+        "type": "object",
+        "properties": {
+          "studentId": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "name": {
+            "type": "string"
+          },
+          "band": {
+            "$ref": "#/components/schemas/CommandCenterGuruEngagementBand"
+          },
+          "days": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Distinct answer days in the last 7 days."
+          },
+          "answeredWeek": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "accuracy": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "lastActiveAt": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/Timestamp"
+              },
+              {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              }
+            ]
+          }
+        },
+        "required": [
+          "studentId",
+          "name",
+          "band",
+          "days",
+          "answeredWeek",
+          "accuracy",
+          "lastActiveAt"
+        ]
+      },
+      "CommandCenterGuruDrillVs": {
+        "type": "object",
+        "properties": {
+          "accuracyNow": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "accuracyPrev": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "accuracyChange": {
+            "type": "integer"
+          },
+          "answersNow": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "answersPrev": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "activeNow": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "activePrev": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "newStudents": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Students whose first answer is inside the last 30 days."
+          }
+        },
+        "required": [
+          "accuracyNow",
+          "accuracyPrev",
+          "accuracyChange",
+          "answersNow",
+          "answersPrev",
+          "activeNow",
+          "activePrev",
+          "newStudents"
+        ]
+      },
+      "CommandCenterGuruDrillRow": {
+        "anyOf": [
+          {
+            "$ref": "#/components/schemas/CommandCenterGuruDrillStudentRow"
+          },
+          {
+            "$ref": "#/components/schemas/CommandCenterGuruDrillTodayRow"
+          },
+          {
+            "$ref": "#/components/schemas/CommandCenterGuruDrillSubjectRow"
+          },
+          {
+            "$ref": "#/components/schemas/CommandCenterGuruDrillGpsRow"
+          },
+          {
+            "$ref": "#/components/schemas/CommandCenterGuruDrillKirkRow"
+          },
+          {
+            "$ref": "#/components/schemas/CommandCenterGuruDrillMoodRow"
+          },
+          {
+            "$ref": "#/components/schemas/CommandCenterGuruDrillEngagementRow"
+          }
+        ],
+        "description": "Row shape depends on the requested `type` (one of the seven row components)."
+      },
+      "CommandCenterGuruDrill": {
+        "type": "object",
+        "properties": {
+          "title": {
+            "type": "string",
+            "description": "Pelajar Berdaftar | Soalan Dijawab | Aktiviti Hari Ini | Ketepatan Purata | GPS Sekolah | Kirkpatrick T1..T4 | Mood Pelajar | Engagement Pelajar."
+          },
+          "students": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CommandCenterGuruDrillRow"
+            },
+            "description": "Rows (named `students` on the wire for every type); empty for kirk t2-t4."
+          },
+          "extra": {
+            "type": "object",
+            "properties": {
+              "accuracyNow": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "accuracyPrev": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "accuracyChange": {
+                "type": "integer"
+              },
+              "answersNow": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "answersPrev": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "activeNow": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "activePrev": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "newStudents": {
+                "type": "integer",
+                "minimum": 0,
+                "description": "Students whose first answer is inside the last 30 days."
+              }
+            },
+            "required": [
+              "accuracyNow",
+              "accuracyPrev",
+              "accuracyChange",
+              "answersNow",
+              "answersPrev",
+              "activeNow",
+              "activePrev",
+              "newStudents"
+            ],
+            "description": "Only kirk t2-t4."
+          },
+          "vsLabel": {
+            "type": "string",
+            "description": "\"Bulan Ini vs Bulan Lepas\"; only kirk t2-t4."
+          }
+        },
+        "required": [
+          "title",
+          "students"
+        ]
+      },
+      "CommandCenterGuruRisk": {
+        "type": "string",
+        "enum": [
+          "kritikal",
+          "tinggi",
+          "sederhana",
+          "rendah"
+        ]
+      },
+      "CommandCenterGuruTrendLabel": {
+        "type": "string",
+        "enum": [
+          "Naik",
+          "Turun",
+          "Stabil"
+        ]
+      },
+      "CommandCenterGuruGrade": {
+        "type": "string",
+        "enum": [
+          "A+",
+          "A",
+          "A-",
+          "B+",
+          "B",
+          "C+",
+          "C",
+          "D",
+          "E",
+          "G"
+        ]
+      },
+      "CommandCenterGuruPrediction": {
+        "type": "object",
+        "properties": {
+          "studentId": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "studentName": {
+            "type": "string"
+          },
+          "overallAccuracy": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "trend": {
+            "type": "integer",
+            "description": "Accuracy of the last 14 days minus the 14 before; 0 when either window has no answer."
+          },
+          "trendLabel": {
+            "type": "string",
+            "enum": [
+              "Naik",
+              "Turun",
+              "Stabil"
+            ],
+            "description": "> 5 Naik, < -5 Turun, else Stabil."
+          },
+          "consistency": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Distinct answer days in the last 30 / 30 * 100, whole percent."
+          },
+          "predictedGrade": {
+            "$ref": "#/components/schemas/CommandCenterGuruGrade"
+          },
+          "predictedGps": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9,
+            "description": "Grade points: A+ 0 ... G 9."
+          },
+          "risk": {
+            "type": "string",
+            "enum": [
+              "kritikal",
+              "tinggi",
+              "sederhana",
+              "rendah"
+            ],
+            "description": "E/G kritikal, D tinggi, C/C+ sederhana, else rendah."
+          }
+        },
+        "required": [
+          "studentId",
+          "studentName",
+          "overallAccuracy",
+          "trend",
+          "trendLabel",
+          "consistency",
+          "predictedGrade",
+          "predictedGps",
+          "risk"
+        ]
+      },
+      "CommandCenterGuruPredictive": {
+        "type": "object",
+        "properties": {
+          "predictions": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CommandCenterGuruPrediction"
+            },
+            "description": "Students with >= 10 answers only; accuracy ascending, then id."
+          },
+          "gradeDistribution": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "description": "All ten grades (A+ ... G) as keys, counts 0 allowed."
+          },
+          "avgPredictedGps": {
+            "type": "number",
+            "minimum": 0,
+            "description": "2 dp; 0 when nobody is predicted."
+          },
+          "atRiskCount": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "kritikal + tinggi."
+          },
+          "totalPredicted": {
+            "type": "integer",
+            "minimum": 0
+          }
+        },
+        "required": [
+          "predictions",
+          "gradeDistribution",
+          "avgPredictedGps",
+          "atRiskCount",
+          "totalPredicted"
+        ]
+      },
+      "CommandCenterGuruEvaluationRisk": {
+        "type": "string",
+        "enum": [
+          "critical",
+          "high",
+          "medium"
+        ]
+      },
+      "CommandCenterGuruEvaluationAlert": {
+        "type": "object",
+        "properties": {
+          "message": {
+            "type": "string"
+          },
+          "suggestion": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "message",
+          "suggestion"
+        ]
+      },
+      "CommandCenterGuruEvaluation": {
+        "type": "object",
+        "properties": {
+          "summary": {
+            "type": "object",
+            "properties": {
+              "totalStudents": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "atRisk": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "critical": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "high": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "medium": {
+                "type": "integer",
+                "minimum": 0
+              }
+            },
+            "required": [
+              "totalStudents",
+              "atRisk",
+              "critical",
+              "high",
+              "medium"
+            ]
+          },
+          "alerts": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "studentId": {
+                  "$ref": "#/components/schemas/Id"
+                },
+                "name": {
+                  "type": "string"
+                },
+                "riskLevel": {
+                  "type": "string",
+                  "enum": [
+                    "critical",
+                    "high",
+                    "medium"
+                  ],
+                  "description": "3 alerts critical, 2 high, 1 medium."
+                },
+                "alerts": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/CommandCenterGuruEvaluationAlert"
+                  },
+                  "minItems": 1
+                }
+              },
+              "required": [
+                "studentId",
+                "name",
+                "riskLevel",
+                "alerts"
+              ]
+            },
+            "description": "Students with at least one alert, riskiest first, then id."
+          }
+        },
+        "required": [
+          "summary",
+          "alerts"
+        ]
+      },
+      "CommandCenterGuruBadgeStat": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "name": {
+            "type": "string"
+          },
+          "icon": {
+            "type": "string"
+          },
+          "color": {
+            "type": "string",
+            "pattern": "^#[0-9a-fA-F]{6}$",
+            "description": "By holders: >= 20 Common #94a3b8, >= 10 Uncommon #22c55e, >= 5 Rare #3b82f6, >= 1 Epic #a855f7, 0 Legendary #f59e0b."
+          },
+          "holders": {
+            "type": "integer",
+            "minimum": 0
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "icon",
+          "color",
+          "holders"
+        ]
+      },
+      "CommandCenterGuruNewAward": {
+        "type": "object",
+        "properties": {
+          "studentId": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "name": {
+            "type": "string"
+          },
+          "badgeName": {
+            "type": "string"
+          },
+          "icon": {
+            "type": "string"
+          },
+          "awardedAt": {
+            "$ref": "#/components/schemas/Timestamp"
+          }
+        },
+        "required": [
+          "studentId",
+          "name",
+          "badgeName",
+          "icon",
+          "awardedAt"
+        ]
+      },
+      "CommandCenterGuruAchievements": {
+        "type": "object",
+        "properties": {
+          "totalStudents": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "totalNew": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Awards dated today."
+          },
+          "badgeStats": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CommandCenterGuruBadgeStat"
+            },
+            "description": "The whole badge catalogue."
+          },
+          "topCollectors": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "name": {
+                  "type": "string"
+                },
+                "count": {
+                  "type": "integer",
+                  "minimum": 1
+                }
+              },
+              "required": [
+                "name",
+                "count"
+              ]
+            },
+            "maxItems": 5,
+            "description": "Top 5 by badge count; students with none are not listed."
+          },
+          "newAwards": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CommandCenterGuruNewAward"
+            },
+            "description": "Awards dated today, newest first. Nothing is awarded on GET."
+          }
+        },
+        "required": [
+          "totalStudents",
+          "totalNew",
+          "badgeStats",
+          "topCollectors",
+          "newAwards"
+        ]
+      },
+      "CommandCenterGuruBadgeHoldersQuery": {
+        "type": "object",
+        "properties": {
+          "badgeId": {
+            "type": "string",
+            "pattern": "^[1-9]\\d*$",
+            "description": "Badge id (integer >= 1 as digits). Missing or not a positive integer: 422 fields.badgeId \"Lencana tidak sah.\"; unknown badge: 404 \"Lencana tidak dijumpai.\"."
+          }
+        },
+        "required": [
+          "badgeId"
+        ]
+      },
+      "CommandCenterGuruBadgeHolders": {
+        "type": "object",
+        "properties": {
+          "badge": {
+            "type": "object",
+            "properties": {
+              "name": {
+                "type": "string"
+              },
+              "description": {
+                "type": "string",
+                "description": "Always \"\" (the badge catalogue has no description)."
+              }
+            },
+            "required": [
+              "name",
+              "description"
+            ]
+          },
+          "holders": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "studentId": {
+                  "$ref": "#/components/schemas/Id"
+                },
+                "name": {
+                  "type": "string"
+                },
+                "accuracy": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "awardedAt": {
+                  "$ref": "#/components/schemas/Timestamp"
+                }
+              },
+              "required": [
+                "studentId",
+                "name",
+                "accuracy",
+                "awardedAt"
+              ]
+            },
+            "description": "Viewer's students holding the badge, by award time then id."
+          }
+        },
+        "required": [
+          "badge",
+          "holders"
+        ]
+      },
       "AccessGroupId": {
         "type": "string",
         "enum": [
@@ -21839,6 +25295,1114 @@
           },
           "403": {
             "description": "FORBIDDEN \"This action is unauthorized.\" (any role other than student or admin).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/command-center/live-data": {
+      "get": {
+        "tags": [
+          "command-center"
+        ],
+        "summary": "Live board (Command Center, admin and school admin)",
+        "description": "Roles admin and school_admin. Admin gets the platform view (students outside fixture schools 900001-900099); a school_admin gets every figure filtered to the session school (a client school id is ignored), topSchools empty, dailyTrend filled. Poll with ETag / If-None-Match; no websockets.\nengagement and correction are documented display constants on the platform view and zeros on the school view.",
+        "responses": {
+          "200": {
+            "description": "The live board.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CommandCenterLiveDataResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED \"Unauthenticated.\" (no valid session).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN \"This action is unauthorized.\" (role is not admin or school_admin, or a school_admin whose user has no school).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/command-center/daily-activity": {
+      "get": {
+        "tags": [
+          "command-center"
+        ],
+        "summary": "Daily activity board (Aktiviti Harian)",
+        "description": "Roles admin and school_admin (a school_admin is forced to the session school and `schools` is omitted). `period` is today, week or month; any other value answers with today figures and echoes the raw value in `period`.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "description": "today, week or month. Absent or any other value gives today figures; the raw value is echoed in the response `period`."
+            },
+            "required": false,
+            "description": "today, week or month. Absent or any other value gives today figures; the raw value is echoed in the response `period`.",
+            "name": "period",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The daily board for the period.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CommandCenterDailyActivityResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED \"Unauthenticated.\" (no valid session).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN \"This action is unauthorized.\" (role is not admin or school_admin, or a school_admin whose user has no school).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/command-center/daily-activity/school/{id}": {
+      "get": {
+        "tags": [
+          "command-center"
+        ],
+        "summary": "Daily activity drill of one school",
+        "description": "Role admin only (a school_admin or teacher gets 403). Unknown school answers 404; same `period` rule as the board.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 64,
+              "description": "Entity id. Digits only; a non-digit segment does not match the route (404 \"Not Found.\").",
+              "example": "1042"
+            },
+            "required": true,
+            "description": "Entity id. Digits only; a non-digit segment does not match the route (404 \"Not Found.\").",
+            "name": "id",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "description": "today, week or month. Absent or any other value gives today figures; the raw value is echoed in the response `period`."
+            },
+            "required": false,
+            "description": "today, week or month. Absent or any other value gives today figures; the raw value is echoed in the response `period`.",
+            "name": "period",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Teachers, pupils and logins of the school.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CommandCenterSchoolDrillResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED \"Unauthenticated.\" (no valid session).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN \"This action is unauthorized.\" (role is not admin).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "NOT_FOUND \"Not Found.\" (unknown school).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/command-center/school/{id}": {
+      "get": {
+        "tags": [
+          "command-center"
+        ],
+        "summary": "School page (S4)",
+        "description": "Scope (guard admin, teacher or school_admin): admin sees every id that exists; a teacher only the schools of own active classes, own page, own active classes, their active members and the headcount configs of those classes; a school_admin only the session school (never the request), its teachers, classes (class school, else owner school), pupils (active or not), their sessions and the headcount configs of those classes. Out of scope or unknown answers 404. GET only, so no CSRF header. Personal data: responses carry Cache-Control no-store; ETag / If-None-Match gives 304.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 64,
+              "description": "Entity id. Digits only; a non-digit segment does not match the route (404 \"Not Found.\").",
+              "example": "1042"
+            },
+            "required": true,
+            "description": "Entity id. Digits only; a non-digit segment does not match the route (404 \"Not Found.\").",
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Cards and teachers of the school.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CommandCenterSchoolResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED \"Unauthenticated.\" (no valid session).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN \"This action is unauthorized.\" (role is not admin, teacher or school_admin, or a school_admin whose user has no school).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "NOT_FOUND \"Not Found.\" for an unknown id and for an id outside the viewer scope (never 403, so ids cannot be probed).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/command-center/school/{sid}/teacher/{uid}": {
+      "get": {
+        "tags": [
+          "command-center"
+        ],
+        "summary": "Teacher page (S5)",
+        "description": "Scope (guard admin, teacher or school_admin): admin sees every id that exists; a teacher only the schools of own active classes, own page, own active classes, their active members and the headcount configs of those classes; a school_admin only the session school (never the request), its teachers, classes (class school, else owner school), pupils (active or not), their sessions and the headcount configs of those classes. Out of scope or unknown answers 404. GET only, so no CSRF header. Personal data: responses carry Cache-Control no-store; ETag / If-None-Match gives 304. A teacher may open only the own page.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 64,
+              "description": "School id. Digits only; a non-digit segment does not match the route (404 \"Not Found.\").",
+              "example": "1042"
+            },
+            "required": true,
+            "description": "School id. Digits only; a non-digit segment does not match the route (404 \"Not Found.\").",
+            "name": "sid",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 64,
+              "description": "Teacher user id. Digits only; a non-digit segment does not match the route (404 \"Not Found.\").",
+              "example": "1042"
+            },
+            "required": true,
+            "description": "Teacher user id. Digits only; a non-digit segment does not match the route (404 \"Not Found.\").",
+            "name": "uid",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Classes of the teacher at the school.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CommandCenterTeacherResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED \"Unauthenticated.\" (no valid session).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN \"This action is unauthorized.\" (role is not admin, teacher or school_admin, or a school_admin whose user has no school).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "NOT_FOUND \"Not Found.\" for an unknown id and for an id outside the viewer scope (never 403, so ids cannot be probed).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/command-center/classroom/{id}": {
+      "get": {
+        "tags": [
+          "command-center"
+        ],
+        "summary": "Class page (S6)",
+        "description": "Scope (guard admin, teacher or school_admin): admin sees every id that exists; a teacher only the schools of own active classes, own page, own active classes, their active members and the headcount configs of those classes; a school_admin only the session school (never the request), its teachers, classes (class school, else owner school), pupils (active or not), their sessions and the headcount configs of those classes. Out of scope or unknown answers 404. GET only, so no CSRF header. Personal data: responses carry Cache-Control no-store; ETag / If-None-Match gives 304.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 64,
+              "description": "Entity id. Digits only; a non-digit segment does not match the route (404 \"Not Found.\").",
+              "example": "1042"
+            },
+            "required": true,
+            "description": "Entity id. Digits only; a non-digit segment does not match the route (404 \"Not Found.\").",
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Pupils of the class.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CommandCenterClassResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED \"Unauthenticated.\" (no valid session).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN \"This action is unauthorized.\" (role is not admin, teacher or school_admin, or a school_admin whose user has no school).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "NOT_FOUND \"Not Found.\" for an unknown id and for an id outside the viewer scope (never 403, so ids cannot be probed).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/command-center/headcount/{configId}": {
+      "get": {
+        "tags": [
+          "command-center"
+        ],
+        "summary": "Headcount detail (S7 modal)",
+        "description": "Scope (guard admin, teacher or school_admin): admin sees every id that exists; a teacher only the schools of own active classes, own page, own active classes, their active members and the headcount configs of those classes; a school_admin only the session school (never the request), its teachers, classes (class school, else owner school), pupils (active or not), their sessions and the headcount configs of those classes. Out of scope or unknown answers 404. GET only, so no CSRF header. Personal data: responses carry Cache-Control no-store; ETag / If-None-Match gives 304. The class of the config must be in scope.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 64,
+              "description": "Headcount config id. Digits only; a non-digit segment does not match the route (404 \"Not Found.\").",
+              "example": "1042"
+            },
+            "required": true,
+            "description": "Headcount config id. Digits only; a non-digit segment does not match the route (404 \"Not Found.\").",
+            "name": "configId",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Means, pass rate and non-dropped entries.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CommandCenterHeadcountDetailResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED \"Unauthenticated.\" (no valid session).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN \"This action is unauthorized.\" (role is not admin, teacher or school_admin, or a school_admin whose user has no school).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "NOT_FOUND \"Not Found.\" for an unknown id and for an id outside the viewer scope (never 403, so ids cannot be probed).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/command-center/student/{id}": {
+      "get": {
+        "tags": [
+          "command-center"
+        ],
+        "summary": "Pupil page (S7)",
+        "description": "Scope (guard admin, teacher or school_admin): admin sees every id that exists; a teacher only the schools of own active classes, own page, own active classes, their active members and the headcount configs of those classes; a school_admin only the session school (never the request), its teachers, classes (class school, else owner school), pupils (active or not), their sessions and the headcount configs of those classes. Out of scope or unknown answers 404. GET only, so no CSRF header. Personal data: responses carry Cache-Control no-store; ETag / If-None-Match gives 304. The id must be a student.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 64,
+              "description": "Entity id. Digits only; a non-digit segment does not match the route (404 \"Not Found.\").",
+              "example": "1042"
+            },
+            "required": true,
+            "description": "Entity id. Digits only; a non-digit segment does not match the route (404 \"Not Found.\").",
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Cards, subjects, 8 weeks, mood trend, headcount and insight.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CommandCenterStudentResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED \"Unauthenticated.\" (no valid session).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN \"This action is unauthorized.\" (role is not admin, teacher or school_admin, or a school_admin whose user has no school).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "NOT_FOUND \"Not Found.\" for an unknown id and for an id outside the viewer scope (never 403, so ids cannot be probed).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/command-center/student/{id}/subject": {
+      "get": {
+        "tags": [
+          "command-center"
+        ],
+        "summary": "Completed sessions of one subject of a pupil",
+        "description": "Scope (guard admin, teacher or school_admin): admin sees every id that exists; a teacher only the schools of own active classes, own page, own active classes, their active members and the headcount configs of those classes; a school_admin only the session school (never the request), its teachers, classes (class school, else owner school), pupils (active or not), their sessions and the headcount configs of those classes. Out of scope or unknown answers 404. GET only, so no CSRF header. Personal data: responses carry Cache-Control no-store; ETag / If-None-Match gives 304. Newest first; code UMUM is free practice; an unknown code gives an empty list (200).",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 64,
+              "description": "Entity id. Digits only; a non-digit segment does not match the route (404 \"Not Found.\").",
+              "example": "1042"
+            },
+            "required": true,
+            "description": "Entity id. Digits only; a non-digit segment does not match the route (404 \"Not Found.\").",
+            "name": "id",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "description": "Subject code or UMUM (trimmed). An unknown or absent code gives an empty list (200)."
+            },
+            "required": false,
+            "description": "Subject code or UMUM (trimmed). An unknown or absent code gives an empty list (200).",
+            "name": "code",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The session list.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CommandCenterSessionListResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED \"Unauthenticated.\" (no valid session).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN \"This action is unauthorized.\" (role is not admin, teacher or school_admin, or a school_admin whose user has no school).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "NOT_FOUND \"Not Found.\" for an unknown id and for an id outside the viewer scope (never 403, so ids cannot be probed).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/command-center/student/{id}/week": {
+      "get": {
+        "tags": [
+          "command-center"
+        ],
+        "summary": "Completed sessions of a pupil in a date range",
+        "description": "Scope (guard admin, teacher or school_admin): admin sees every id that exists; a teacher only the schools of own active classes, own page, own active classes, their active members and the headcount configs of those classes; a school_admin only the session school (never the request), its teachers, classes (class school, else owner school), pupils (active or not), their sessions and the headcount configs of those classes. Out of scope or unknown answers 404. GET only, so no CSRF header. Personal data: responses carry Cache-Control no-store; ETag / If-None-Match gives 304. Scope is checked first (404), then the range. Sessions finished in [start 00:00, end + 1 day 00:00) Malaysia time, oldest first. The all-sessions modal uses start 2020-01-01 and end 2030-12-31.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 64,
+              "description": "Entity id. Digits only; a non-digit segment does not match the route (404 \"Not Found.\").",
+              "example": "1042"
+            },
+            "required": true,
+            "description": "Entity id. Digits only; a non-digit segment does not match the route (404 \"Not Found.\").",
+            "name": "id",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "$ref": "#/components/schemas/DateOnly"
+            },
+            "required": true,
+            "description": "Calendar date (YYYY-MM-DD) in Malaysia time.",
+            "name": "start",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "$ref": "#/components/schemas/DateOnly"
+            },
+            "required": true,
+            "description": "Calendar date (YYYY-MM-DD) in Malaysia time.",
+            "name": "end",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The session list.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CommandCenterSessionListResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED \"Unauthenticated.\" (no valid session).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN \"This action is unauthorized.\" (role is not admin, teacher or school_admin, or a school_admin whose user has no school).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "NOT_FOUND \"Not Found.\" for an unknown id and for an id outside the viewer scope (never 403, so ids cannot be probed).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "VALIDATION_ERROR with fields.start \"Julat tarikh tidak sah.\" (start or end missing, not a real YYYY-MM-DD date, or start after end); message is the same text.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/command-center/session/{sessionId}": {
+      "get": {
+        "tags": [
+          "command-center"
+        ],
+        "summary": "Session detail (S7 modal)",
+        "description": "Scope (guard admin, teacher or school_admin): admin sees every id that exists; a teacher only the schools of own active classes, own page, own active classes, their active members and the headcount configs of those classes; a school_admin only the session school (never the request), its teachers, classes (class school, else owner school), pupils (active or not), their sessions and the headcount configs of those classes. Out of scope or unknown answers 404. GET only, so no CSRF header. Personal data: responses carry Cache-Control no-store; ETag / If-None-Match gives 304. The pupil of the session must be in scope.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9_-]+$",
+              "description": "Practice session id (letters, digits, underscore, hyphen); anything else does not match the route (404)."
+            },
+            "required": true,
+            "description": "Practice session id (letters, digits, underscore, hyphen); anything else does not match the route (404).",
+            "name": "sessionId",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Per-question answers of the session.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CommandCenterSessionDetailResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED \"Unauthenticated.\" (no valid session).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN \"This action is unauthorized.\" (role is not admin, teacher or school_admin, or a school_admin whose user has no school).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "NOT_FOUND \"Not Found.\" for an unknown id and for an id outside the viewer scope (never 403, so ids cannot be probed).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/server-status": {
+      "get": {
+        "tags": [
+          "command-center"
+        ],
+        "summary": "Server health for the header pill",
+        "description": "Role admin only. Polled every 30 s. Host readings only (percentages, uptime, load, cores, GB figures); never connection strings, hostnames, paths or secrets. Thresholds (CPU 50/80, RAM 60/85, Disk 75/90) live in the frontend.",
+        "responses": {
+          "200": {
+            "description": "The readings.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ServerStatusResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED \"Unauthenticated.\" (no valid session).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN \"This action is unauthorized.\" (role is not admin).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/guru/command-center/live-data": {
+      "get": {
+        "tags": [
+          "command-center-guru"
+        ],
+        "summary": "Command Center live tiles and panels (polled every 10 s)",
+        "description": "Roles teacher and admin. Scope: the viewer's own students (distinct students with an active enrolment in an active class the viewer owns); admin sees only its own (normally empty) classes. The body is bare (no `{ data }` envelope). GET only, polling-friendly. Each count has a formatted string and a `...Raw` number. MYT day windows: week = 7 calendar days ending today.",
+        "responses": {
+          "200": {
+            "description": "Live data.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CommandCenterGuruLiveData"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED \"Unauthenticated.\" (no valid session).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN \"This action is unauthorized.\" (role is not teacher or admin; school_admin gets 403 here).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/guru/command-center/drill": {
+      "get": {
+        "tags": [
+          "command-center-guru"
+        ],
+        "summary": "Drill-down table behind a tile or panel",
+        "description": "Roles teacher and admin. Scope: the viewer's own students (distinct students with an active enrolment in an active class the viewer owns); admin sees only its own (normally empty) classes. The body is bare (no `{ data }` envelope). GET only, polling-friendly. Row shape depends on `type`; kirk t2-t4 return an empty `students` plus `extra` and `vsLabel`.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "enum": [
+                "students",
+                "today",
+                "subjects",
+                "gps",
+                "kirk",
+                "mood",
+                "engagement"
+              ],
+              "description": "Required. Anything else: 422 fields.type \"Jenis drill tidak sah.\"."
+            },
+            "required": true,
+            "description": "Required. Anything else: 422 fields.type \"Jenis drill tidak sah.\".",
+            "name": "type",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "description": "Trimmed; absent = empty. students: \"\" | active. today: \"\" | aktiviti. subjects and gps: \"\". kirk: t1|t2|t3|t4 (required). mood: \"\" | happy|okay|sad|stressed. engagement: \"\" | champion|consistent|developing|minimum|disengaged. Anything else: 422 fields.filter \"Penapis tidak sah.\"."
+            },
+            "required": false,
+            "description": "Trimmed; absent = empty. students: \"\" | active. today: \"\" | aktiviti. subjects and gps: \"\". kirk: t1|t2|t3|t4 (required). mood: \"\" | happy|okay|sad|stressed. engagement: \"\" | champion|consistent|developing|minimum|disengaged. Anything else: 422 fields.filter \"Penapis tidak sah.\".",
+            "name": "filter",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Title and rows.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CommandCenterGuruDrill"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED \"Unauthenticated.\" (no valid session).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN \"This action is unauthorized.\" (role is not teacher or admin; school_admin gets 403 here).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "VALIDATION_ERROR with fields.type \"Jenis drill tidak sah.\" or fields.filter \"Penapis tidak sah.\"; message = the same text.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/guru/command-center/evaluate": {
+      "get": {
+        "tags": [
+          "command-center-guru"
+        ],
+        "summary": "Risk evaluation alerts (read-only)",
+        "description": "Roles teacher and admin. Scope: the viewer's own students (distinct students with an active enrolment in an active class the viewer owns); admin sees only its own (normally empty) classes. The body is bare (no `{ data }` envelope). GET only, polling-friendly. Alerts: inactive >= 7 days, accuracy < 40%, trend < -10.",
+        "responses": {
+          "200": {
+            "description": "Summary and alerts.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CommandCenterGuruEvaluation"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED \"Unauthenticated.\" (no valid session).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN \"This action is unauthorized.\" (role is not teacher or admin; school_admin gets 403 here).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/guru/command-center/predictive": {
+      "get": {
+        "tags": [
+          "command-center-guru"
+        ],
+        "summary": "Predicted SPM grade per student",
+        "description": "Roles teacher and admin. Scope: the viewer's own students (distinct students with an active enrolment in an active class the viewer owns); admin sees only its own (normally empty) classes. The body is bare (no `{ data }` envelope). GET only, polling-friendly. Students with at least 10 answers only.",
+        "responses": {
+          "200": {
+            "description": "Predictions and aggregates.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CommandCenterGuruPredictive"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED \"Unauthenticated.\" (no valid session).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN \"This action is unauthorized.\" (role is not teacher or admin; school_admin gets 403 here).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/guru/command-center/achievements": {
+      "get": {
+        "tags": [
+          "command-center-guru"
+        ],
+        "summary": "Badge statistics of the viewer's students (read-only)",
+        "description": "Roles teacher and admin. Scope: the viewer's own students (distinct students with an active enrolment in an active class the viewer owns); admin sees only its own (normally empty) classes. The body is bare (no `{ data }` envelope). GET only, polling-friendly. Nothing is awarded on GET.",
+        "responses": {
+          "200": {
+            "description": "Achievements panel.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CommandCenterGuruAchievements"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED \"Unauthenticated.\" (no valid session).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN \"This action is unauthorized.\" (role is not teacher or admin; school_admin gets 403 here).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/guru/command-center/badge-holders": {
+      "get": {
+        "tags": [
+          "command-center-guru"
+        ],
+        "summary": "Holders of one badge among the viewer's students",
+        "description": "Roles teacher and admin. Scope: the viewer's own students (distinct students with an active enrolment in an active class the viewer owns); admin sees only its own (normally empty) classes. The body is bare (no `{ data }` envelope). GET only, polling-friendly.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "pattern": "^[1-9]\\d*$",
+              "description": "Badge id (integer >= 1 as digits). Missing or not a positive integer: 422 fields.badgeId \"Lencana tidak sah.\"; unknown badge: 404 \"Lencana tidak dijumpai.\"."
+            },
+            "required": true,
+            "description": "Badge id (integer >= 1 as digits). Missing or not a positive integer: 422 fields.badgeId \"Lencana tidak sah.\"; unknown badge: 404 \"Lencana tidak dijumpai.\".",
+            "name": "badgeId",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Badge and holders.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CommandCenterGuruBadgeHolders"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED \"Unauthenticated.\" (no valid session).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN \"This action is unauthorized.\" (role is not teacher or admin; school_admin gets 403 here).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "NOT_FOUND \"Lencana tidak dijumpai.\" (unknown badge).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "VALIDATION_ERROR fields.badgeId \"Lencana tidak sah.\" (missing or not an integer >= 1).",
             "content": {
               "application/json": {
                 "schema": {
