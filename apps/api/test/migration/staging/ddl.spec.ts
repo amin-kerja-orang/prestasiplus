@@ -9,9 +9,12 @@ import { findTable, TABLES } from '../../../src/migration/ddl/spec'
 import { generateTinyFixture } from '../fixtures/generate-tiny'
 import { FIXTURE_DIR } from './helpers'
 
+/** A Windows checkout may convert line endings (autocrlf); the content is what matters. */
+const lf = (text: string): string => text.split(String.fromCharCode(13, 10)).join(String.fromCharCode(10))
+
 describe('staging_cloud.sql', () => {
   it('is the exact output of the spec renderer (run npm run staging:ddl after editing the spec)', () => {
-    expect(readFileSync(DDL_FILE, 'utf8')).toBe(renderDdl())
+    expect(lf(readFileSync(DDL_FILE, 'utf8'))).toBe(renderDdl())
   })
 
   it('has 83 migrated or staged tables and 35 archived question tables, with the final paper table names', () => {
@@ -48,7 +51,7 @@ describe('synthetic fixture (apps/api/test/migration/fixtures/cloud-tiny)', () =
   it('is exactly what the generator produces (deterministic)', () => {
     const expected = generateTinyFixture()
     expect(readdirSync(FIXTURE_DIR).sort()).toEqual([...expected.keys()].sort())
-    for (const [name, content] of expected) expect(readFileSync(join(FIXTURE_DIR, name), 'utf8')).toBe(content)
+    for (const [name, content] of expected) expect(lf(readFileSync(join(FIXTURE_DIR, name), 'utf8'))).toBe(content)
   })
 
   it('keeps every file under 1 MB', () => {
