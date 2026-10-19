@@ -3,6 +3,8 @@
 #   docker compose build
 #   docker compose up -d     -> http://localhost:5192
 #   docker compose down
+# Real API (BE-32): docker compose -f compose.yaml -f compose.http.yaml up -d --build   (npm run stack:up)
+#   needs .env.api and .env.db (copy the .example files, set random secrets); see docs/ops/containers.md.
 # The older docker-compose.preview.yml (host-built dist-preview, port 5191) still works unchanged.
 name: pretasiplus
 
@@ -30,7 +32,7 @@ services:
     restart: 'no'
 
   # ---- NestJS API (BE-01). Guide: docs/ops/containers.md ----
-  # No host port by default (the frontend nginx proxies /api to api:3000 from BE-32).
+  # No host port by default (the frontend nginx proxies /api to api:3000, BE-32).
   # For local tooling add an uncommitted compose.override.yaml with ports: ['127.0.0.1:3000:3000'].
   api:
     build:
@@ -44,6 +46,9 @@ services:
     environment:
       NODE_ENV: production
       PORT: 3000
+      # One reverse proxy (the frontend nginx) sits in front: the client address for the login and
+      # public throttles comes from X-Forwarded-For. Set here (wins over .env.api) so it cannot be 0.
+      TRUST_PROXY_HOPS: 1
     depends_on:
       db:
         condition: service_healthy
@@ -63,6 +68,8 @@ services:
     restart: 'no'
 
   # ---- One-shot schema migration (BE-03). Runs `prisma migrate deploy` and exits before the api starts. ----
+  # Production never seeds: this base job only migrates and sets no ALLOW_DEMO_SEED. compose.http.yaml
+  # (dev and e2e only) adds the demo seed. Re-running is idempotent (`migrate deploy`, upserting seeds).
   # Built from the Dockerfile `build` stage because the Prisma CLI is a devDependency (not in the runtime image).
   migrate:
     build:

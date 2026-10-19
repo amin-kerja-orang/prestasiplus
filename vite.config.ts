@@ -62,6 +62,14 @@ export default defineConfig({
         },
       }
     : undefined,
+  // BE-32: `npm run dev` + `npm run be:dev` (API on 3000). Same origin from the browser's view, so the
+  // session cookie works and no CORS is configured. Needs VITE_API_MODE=http (e.g. a .env.local).
+  server: {
+    proxy: {
+      // VITE_API_PROXY_TARGET: only for a PC where port 3000 is taken by another project.
+      '/api': { target: process.env.VITE_API_PROXY_TARGET || 'http://localhost:3000' },
+    },
+  },
   preview: {
     port: 4173,
     strictPort: true,
