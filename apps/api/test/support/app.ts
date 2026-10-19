@@ -39,10 +39,19 @@ export class LogCapture extends Writable {
   }
 }
 
+/** Used when a test does not bring a database: the app boots (connections are lazy) but the health endpoint answers 503. */
+const UNREACHABLE_DATABASE_URL = 'postgresql://test:test@127.0.0.1:1/none'
+
 export async function createTestApp(
-  opts: AppModuleOptions & { modules?: Type<unknown>[]; controllers?: Type<unknown>[] } = {},
+  opts: AppModuleOptions & {
+    modules?: Type<unknown>[]
+    controllers?: Type<unknown>[]
+    /** Database from createTestDatabase(); sets DATABASE_URL for the app. */
+    db?: { url: string }
+  } = {},
 ): Promise<INestApplication> {
-  const { modules = [], controllers = [TestController], ...rest } = opts
+  const { modules = [], controllers = [TestController], db, ...rest } = opts
+  process.env.DATABASE_URL = db?.url ?? UNREACHABLE_DATABASE_URL
   const moduleRef = await Test.createTestingModule({
     imports: [defineAppModule(modules, rest)],
     controllers,
