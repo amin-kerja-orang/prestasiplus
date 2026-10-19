@@ -3,7 +3,7 @@
 | Field | Value |
 |---|---|
 | Size | M |
-| Lane | PC-1 (proposed: BE-24 content and BE-25 subscriptions are the same kind of small catalogue/read cards, and no file overlaps; folders: sessions.md section 5, to be extended with the rows in "Files touched") |
+| Lane | PC-1; approved by the LEAD 2026-10-19 (folders: sessions.md section 5; the rows to add are in "Files touched") |
 | Priority | P2 |
 | Wave | 3 |
 | Depends on | BE-03, BE-05 |

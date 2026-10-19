@@ -6,7 +6,7 @@
 | Lane | PC-1 + LEAD (folders: sessions.md section 5) |
 | Priority | P1 |
 | Wave | 4 (can start a first version after BE-03 + BE-07; repeat per domain) |
-| Depends on | BE-03, BE-07, BE-31 (domains as they land); **lead task V2-T31 (HttpTransport hardening + hybrid mode)** |
+| Depends on | BE-03, BE-07, BE-31 (domains as they land); **LEAD L1 / V2-T31 (HttpTransport hardening + HybridTransport; a lead task, not part of this card)** |
 | Parallel with | domain cards |
 | Owner module | integration (joint card: collaborator + lead) |
 

@@ -69,7 +69,8 @@ None yet (only extensions and Prisma's `_prisma_migrations`). Encode the convent
 5. `Clock` tests: with a fixed clock at 2026-10-19T23:59:59+08:00 and 00:00:01 the Malaysia day helper returns two different dates; the id helper maps a bigint to its decimal string and back.
 6. `docker compose up db api` starts both; `GET /api/health` reports `db: 'up'`; with `docker compose stop db` it returns 503 `SERVER_ERROR`; the `pgdata` volume survives `down` and `up`.
 7. The CI workflow from BE-01 runs the integration tests with a Postgres service container.
-8. No credentials in git; `docker compose config` shows credentials only as `${...}` variables read from `.env.db`.
+8. `.gitignore` ignores `.env.api`, `.env.db` and `compose.override.yaml` (today only `.env` is ignored): proof is `git check-ignore -v .env.api .env.db compose.override.yaml` printing a rule for each, and `git status` stays clean after creating the three files from the `.example` templates.
+9. No credentials in git; `docker compose config` shows credentials only as `${...}` variables read from `.env.db`.
 
 ## Test commands
 

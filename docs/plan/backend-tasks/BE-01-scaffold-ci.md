@@ -81,7 +81,7 @@ None.
 8. `docker build -f docker/api/Dockerfile -t pretasiplus-api:local .` succeeds; `docker run --rm --entrypoint id pretasiplus-api:local -u` prints a non-zero uid; the container starts with `--read-only --tmpfs /tmp` and its health check reports healthy.
 9. Registries exist and are wired: a test adds a dummy Nest module through one line in `apps/api/src/modules/index.ts` and a dummy seed through one line in `apps/api/prisma/seed/index.ts`; `.env.api.example` contains one commented block per lane (PC-1 to PC-6); `apps/api/test/conformance/README.md` exists.
 10. `npm run be:verify` from the root runs contract:check, lint, typecheck, test and build in that order and exits 0 on a clean clone.
-11. The GitHub workflow is valid and runs all listed steps; the secret scan is demonstrated on a throw-away branch (documented in the PR, nothing left in the repo).
+11. The folder `.github/workflows/` (it does not exist in the repo today) is created by this card with the backend workflow `.github/workflows/api.yml`; it is valid YAML, triggers on pull requests and pushes with the path filter of Outputs, and runs the same steps as `npm run be:verify` (`npm ci`, `contract:check`, lint, typecheck, test, build) plus the docker build and the secret scan; proof: the workflow run on the BE-01 PR;  the secret scan is demonstrated on a throw-away branch (documented in the PR, nothing left in the repo).
 12. No file contains a secret or a real person's name (gitleaks green).
 
 ## Test commands
@@ -105,7 +105,9 @@ docker run --rm --entrypoint id pretasiplus-api:local -u
 
 ## Open questions
 
-None known. If you meet a rule that neither the mock, the SRS nor this card states, do not invent it: write it under "Open questions" in the PR, and open a GitHub issue labelled `question` if it blocks you.
+Code edit to do in this PR (not a question): update the comment in `packages/contract/src/common/ids.ts` from `legacy_cloud_id` to `legacy_source` + `legacy_id` (plan section 14.2); done by whoever takes BE-01. It is a LEAD-owned contract file, so the PR must carry the label `contract`.
+
+Otherwise none known. If you meet a rule that neither the mock, the SRS nor this card states, do not invent it: write it under "Open questions" in the PR, and open a GitHub issue labelled `question` if it blocks you.
 
 ## Prompt for Claude Code
 
