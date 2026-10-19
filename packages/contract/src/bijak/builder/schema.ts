@@ -7,54 +7,49 @@ import {
   BijakBlueprintSourceSchema,
   BijakPaperReferencePanelSchema,
 } from '../papers/schema'
-import { BijakAttemptGroupSchema, BijakAttemptQuestionSchema } from '../attempts/schema'
+import {
+  BijakAttemptOptionSchema,
+  BijakAttemptQuestionSchema,
+  BijakAttemptStimulusSchema,
+} from '../attempts/schema'
 
 /**
  * Bijak SPM (M28) paper builder and blueprint admin: the write side of BE-15 (BE-39, contract
  * only). Admin Pusat only (D40a, D52).
  *
- * MOCK STATUS. The paper builder mock exists in the prototype
+ * MOCK STATUS. The paper builder mock lives in the prototype
  * (`src/modules/m28-bijak-spm/{server/admin.ts, domain/admin-types.ts, domain/paper-builder.ts,
- * admin/papers}`, student-prototype commit 1507044) but is NOT pushed to GitHub yet; it is pushed
- * after the owner approves the prototype. Until then the wire shapes follow the quotes of the LEAD
- * round-2 review (`docs/plan/reviews/BE-39.md`): `AdminPaperStatus` draf | terbit; `AdminPaper`
- * sections that carry `questionIds`, with the section structure fixed by the blueprint;
- * `PaperPatch` { title?, year?, durationMin?, sections?: [{ id, questionIds }] }; `createPaper`
- * { subject, kertas, title? } returning the new id; `SectionCheck` { label, count, need, marks,
- * budget, errors, notes, ok }; `publishPaper` returning { ok: false, errors } as a normal result;
- * `previewQuestions`; `getPaperEditor` with `questions` and `groups` (`BuilderQuestion`,
- * `BuilderGroup`); a slim `BlueprintView`; an idempotent `deletePaper`. Field lists the review does
- * not quote are marked [PROPOSED] in the description of the schema or route that carries them; the
- * LEAD aligns them once the prototype code is pushed.
- *
- * COPY (D58b). Every BM string of this card is [PROPOSED] until the prototype paper-builder code is
- * pushed. The strings quoted by the review are kept verbatim (see `BIJAK_BUILDER_MESSAGES`); any
- * other string was invented here and is also [PROPOSED].
- *
- * Questions are owned by M04 (BE-09/BE-10). The student-view preview reuses the BE-16 question and
- * group views (no answer key, no scheme). Deviations from the mock are in
+ * admin/papers}`, student-prototype commit 1507044). It is not on GitHub yet, so this contract was
+ * written from the field names, statuses and BM strings that the LEAD review (rounds 2 and 3,
+ * `docs/plan/reviews/BE-39.md`) quotes from it. Those quotes were checked by the LEAD against
+ * `server/admin.ts`: the BM strings of `BIJAK_BUILDER_MESSAGES` are confirmed verbatim. Shapes taken
+ * from the mock: `AdminPaperStatus` draf | terbit; `AdminPaper` (extends `PaperDef`, so it carries
+ * `instructions`, `reference`, `createdAt`, `publishedAt?` and a per-section `questionCount`);
+ * `AdminPaperSummary` (with `subjectName`, `code`, `budget`, `ok`); `PaperPatch`; `createPaper`;
+ * `publishPaper` `{ ok, errors }`; `PaperEditorData` `{ paper, blueprint, questions, groups }`
+ * (`BuilderQuestion`, `BuilderGroup`); `previewQuestions(ids)`; `BlueprintView`; idempotent
+ * `deletePaper`. What the review does not quote (the value set of `kind`, the field list of the
+ * preview `ReviewQuestion`, the HTTP mapping of the mock's `bad_request`, every route or string
+ * that has no mock) is marked [PROPOSED] where it appears; the LEAD aligns it when the mock is
+ * pushed. Every deliberate difference from the mock is a row in
  * `docs/architecture/v2-backend-deviations.md`.
+ *
+ * Questions are owned by M04 (BE-09/BE-10). The stimulus, option and question-view shapes of the
+ * preview reuse the BE-16 student views (no answer key, no scheme).
  */
 
 /**
- * BM messages. `paperNotFound` is the mock copy (BE-15). The six entries marked "quoted" are quoted
- * by the LEAD review from the mock and kept verbatim; they are [PROPOSED] per D58b until the
- * prototype code is pushed. The last three entries were invented for routes that have no mock
- * (blueprint admin) and are [PROPOSED] too.
+ * BM messages. Every entry except the last three is quoted from the mock `server/admin.ts` and
+ * confirmed by the LEAD round-3 review. The last three were invented for blueprint admin, which has
+ * no mock, and are [PROPOSED].
  */
 export const BIJAK_BUILDER_MESSAGES = {
   paperNotFound: BIJAK_PAPERS_MESSAGES.paperNotFound,
-  /** quoted [PROPOSED] */
   paperLocked: 'Kertas Terbit tidak boleh disunting. Tarik balik dahulu.',
-  /** quoted [PROPOSED] */
   deleteTerbit: 'Tarik balik kertas Terbit sebelum memadam',
-  /** quoted [PROPOSED] */
   titleRequired: 'Tajuk kertas diperlukan',
-  /** quoted [PROPOSED] */
   invalidQuestion: 'Soalan tidak sah untuk kertas ini',
-  /** quoted [PROPOSED] */
   invalidSection: 'Bahagian tidak sah',
-  /** quoted [PROPOSED] */
   noBlueprint: 'Tiada blueprint untuk subjek dan kertas ini',
   /** [PROPOSED] (blueprint admin has no mock) */
   blueprintNotFound: 'Kontrak tidak ditemui',
@@ -65,14 +60,19 @@ export const BIJAK_BUILDER_MESSAGES = {
 } as const
 
 /**
- * Example lines of `publishPaper` `errors` (built by the mock `checkPaper`), quoted by the review.
- * [PROPOSED] per D58b; the argument formats ("..." and X) are the review's placeholders. Further
- * lines come from `checkPaper` and are not known to this contract; clients show them verbatim.
+ * Lines of `publishPaper` `errors`, as built by the mock `checkPaper` (quoted by the LEAD review;
+ * N, X, Y, M, B, G are placeholders). The per-section lines are prefixed with `{label}: ` (the
+ * section label, e.g. "Bahagian A: "). Clients show every line verbatim, so this list is
+ * documentation, not a closed set.
  */
 export const BIJAK_BUILDER_CHECK_LINES = {
-  duplicateQuestion: (detail: string) => `Soalan berulang dalam kertas: ${detail}`,
-  groupSplit: (stimulusLabel: string) =>
-    `Kumpulan rangsangan ${stimulusLabel} dipecahkan antara dua bahagian`,
+  tooFew: 'Kurang N soalan (perlu X, ada Y)',
+  marksMismatch: 'Markah M tidak sama dengan bajet B',
+  notPublished: '{N} soalan belum Terbit',
+  groupNotConsecutive: 'Kumpulan rangsangan G tidak berturutan',
+  incomplete: 'tidak lengkap',
+  duplicateQuestion: 'Soalan berulang dalam kertas: ...',
+  groupSplit: 'Kumpulan rangsangan X dipecahkan antara dua bahagian',
 } as const
 
 /** CSRF failure of every mutation (copy of `AUTH_ERROR_MESSAGES.CSRF_INVALID`). */
@@ -80,26 +80,8 @@ export const BIJAK_BUILDER_CSRF_MESSAGE = AUTH_ERROR_MESSAGES.CSRF_INVALID
 
 /* -------------------------------------------------------------------------- shared vocabulary */
 
-/** Kertas number (paper definitions use 1 or 2; the dictionary is open, exam schema D5). */
+/** Kertas number (the mock types it 1 | 2; the dictionary is open in v2, exam schema D5). */
 const Kertas = z.number().int().min(1).meta({ description: 'Kertas number.', example: 2 })
-
-/** Leaf answer modes (exam schema D2): the vocabulary of a blueprint section `allowedModes`. */
-export const BIJAK_BUILDER_ANSWER_MODES = [
-  'mcq',
-  'match_letter',
-  'short_text',
-  'numeric',
-  'working',
-  'essay',
-  'drawing',
-  'table_fill',
-] as const
-export const BijakBuilderAnswerModeSchema = z.enum(BIJAK_BUILDER_ANSWER_MODES).meta({
-  id: 'BijakBuilderAnswerMode',
-  description:
-    'Leaf answer mode of a question part (exam schema D2). Used only by blueprint admin writes (no mock) [PROPOSED].',
-})
-export type BijakBuilderAnswerMode = z.infer<typeof BijakBuilderAnswerModeSchema>
 
 /** Section rule of `SectionDef` / `BlueprintSection`: answer all, or choose n. */
 export const BijakBuilderSectionRuleSchema = z
@@ -114,147 +96,216 @@ export const BijakBuilderSectionRuleSchema = z
   })
 export type BijakBuilderSectionRule = z.infer<typeof BijakBuilderSectionRuleSchema>
 
-/** Paper lifecycle of the mock (`AdminPaperStatus`, admin-types.ts:167 as quoted by the review). */
+/** Paper lifecycle of the mock (`AdminPaperStatus`, admin-types.ts:167). */
 export const BIJAK_BUILDER_PAPER_STATUSES = ['draf', 'terbit'] as const
 export const BijakBuilderPaperStatusSchema = z.enum(BIJAK_BUILDER_PAPER_STATUSES).meta({
   id: 'BijakBuilderPaperStatus',
   description:
-    'draf = being assembled (editable, can be deleted); terbit = published, visible in Kertas Pilihan and locked. Unpublish (tarik balik) sets the status back to draf; there is no ready or withdrawn state (deviation of the earlier contract, aligned to the mock). Mapping to BE-15 `papers.status` (draft, ready, published, withdrawn) is an implementation detail: draf = draft or withdrawn, terbit = published; the API does not expose ready.',
+    'draf = being assembled (editable, can be deleted); terbit = published, visible in Kertas Pilihan and locked. Unpublish (tarik balik) sets the status back to draf; there is no ready or withdrawn state. Mapping to BE-15 `papers.status` (draft, ready, published, withdrawn) is internal: draf = draft or withdrawn, terbit = published; ready is not exposed.',
 })
 export type BijakBuilderPaperStatus = z.infer<typeof BijakBuilderPaperStatusSchema>
+
+/** Question lifecycle codes of D54(a), as on every question wire shape; `BuilderQuestion.status`. */
+export const BIJAK_BUILDER_QUESTION_STATUSES = [
+  'draft',
+  'review',
+  'approved',
+  'published',
+  'archived',
+] as const
+export const BijakBuilderQuestionStatusSchema = z.enum(BIJAK_BUILDER_QUESTION_STATUSES).meta({
+  id: 'BijakBuilderQuestionStatus',
+  description:
+    'Question lifecycle code (D54a): draft, review, approved, published, archived. The mock status values are realigned to these codes at the http switch.',
+})
+export type BijakBuilderQuestionStatus = z.infer<typeof BijakBuilderQuestionStatusSchema>
 
 /* ------------------------------------------------------------------------------------ paper */
 
 /**
- * Conformance line of one blueprint section (`SectionCheck` of `checkPaper`, quoted by the review):
- * `count` questions placed against `need`, `marks` effective marks against `budget`. `errors` hold
- * the BM lines that block publishing (for example "Bahagian A: perlu 3 soalan, hanya 2 tersedia"),
- * `notes` hold non-blocking BM lines. The BM text of `errors` and `notes` is [PROPOSED] (D58b).
- */
-export const BijakBuilderSectionCheckSchema = z
-  .strictObject({
-    label: z.string().min(1).meta({ example: 'Bahagian A' }),
-    count: z.number().int().min(0).meta({ description: 'Questions placed in the section.' }),
-    need: z.number().int().min(0).meta({ description: 'Questions the blueprint section holds.' }),
-    marks: z
-      .number()
-      .int()
-      .min(0)
-      .meta({ description: 'Effective marks of the placements (choose-N applied).' }),
-    budget: z.number().int().min(0).meta({ description: 'Printed mark budget of the section.' }),
-    errors: z.array(z.string().min(1)),
-    notes: z.array(z.string().min(1)),
-    ok: z.boolean().meta({ description: 'True when `errors` is empty.' }),
-  })
-  .meta({ id: 'BijakBuilderSectionCheck' })
-export type BijakBuilderSectionCheck = z.infer<typeof BijakBuilderSectionCheckSchema>
-
-/**
- * One section of a paper (`SectionDef`). The structure (label, rule, budget) is fixed by the
- * blueprint of the paper's subject and kertas; only `questionIds` change. Optional keys are
- * omitted when absent, as in the mock.
+ * One section of a paper (`SectionDef`). The structure (label, rule, budget, count) is fixed by the
+ * blueprint of the paper's subject and kertas; only `questionIds` change. Optional keys are omitted
+ * when absent, as in the mock.
  */
 export const BijakBuilderPaperSectionSchema = z
   .strictObject({
     id: IdSchema,
     label: z.string().min(1).meta({ example: 'Bahagian A' }),
     title: z.string().optional(),
+    markBudget: z
+      .number()
+      .int()
+      .min(0)
+      .meta({ description: 'Marks after choose-N (printed budget).' }),
+    questionCount: z
+      .number()
+      .int()
+      .min(0)
+      .meta({
+        description: 'Questions the section holds on the paper (not the number to answer).',
+      }),
+    compulsory: z.boolean().optional().meta({ description: '"Soalan ini mesti dijawab".' }),
     instruction: z
       .string()
       .optional()
       .meta({ description: 'Authored instruction; absent means derived from the rule.' }),
-    compulsory: z.boolean().optional().meta({ description: '"Soalan ini mesti dijawab".' }),
     rule: BijakBuilderSectionRuleSchema,
-    markBudget: z.number().int().min(0),
     questionIds: z.array(IdSchema).meta({ description: 'Placed question ids, in order.' }),
   })
   .meta({ id: 'BijakBuilderPaperSection' })
 export type BijakBuilderPaperSection = z.infer<typeof BijakBuilderPaperSectionSchema>
 
-const paperSummaryShape = {
-  id: IdSchema,
-  title: z.string().min(1),
-  subject: z.string().min(1).meta({ description: 'Subject code.', example: 'MAT' }),
-  kertas: Kertas,
-  year: z.number().int(),
-  durationMin: z.number().int().min(1),
-  status: BijakBuilderPaperStatusSchema,
-  questionCount: z.number().int().min(0).meta({ description: 'Questions placed, all sections.' }),
-  marks: z.number().int().min(0).meta({ description: 'Total effective marks (derived).' }),
-  budget: z
-    .number()
-    .int()
-    .min(0)
-    .meta({ description: 'Total printed mark budget of the blueprint sections.' }),
-  ok: z.boolean().meta({
-    description:
-      'True when every section check is ok, so the paper can be published (the mock summary field).',
-  }),
-  updatedAt: TimestampSchema.meta({
-    description:
-      'Last change. The mock keeps updatedAt as an epoch number; the contract serialises a timestamp (UD-1 / ADR-0018, see the deviations log).',
-  }),
-}
+/** Reference-sheet panel of `PaperDef.reference` (same shape as the BE-15 cover panel). */
+const ReferencePanels = z.array(BijakPaperReferencePanelSchema)
 
-/** One row of the admin paper list (`AdminPaperSummary`; extra fields beyond budget/ok [PROPOSED]). */
-export const BijakBuilderPaperSummarySchema = z
-  .strictObject(paperSummaryShape)
-  .meta({ id: 'BijakBuilderPaperSummary' })
-export type BijakBuilderPaperSummary = z.infer<typeof BijakBuilderPaperSummarySchema>
-
-/** A paper with its sections (`AdminPaper`) and the live conformance lines. */
+/**
+ * A paper (`AdminPaper`, which extends `PaperDef`): header, cover instructions, reference sheet and
+ * sections. `createdAt`, `updatedAt` and `publishedAt` are numbers in the mock and timestamps here
+ * (deviations log). The mock keeps the conformance result (`checkOf`) server-side, so it is not
+ * part of this shape; `publishPaper` returns its lines as `errors`.
+ */
 export const BijakBuilderPaperSchema = z
   .strictObject({
-    ...paperSummaryShape,
-    code: z
-      .string()
-      .min(1)
-      .meta({
-        description: 'Printed paper code from the blueprint, read-only [PROPOSED].',
-        example: '1449/2',
-      }),
+    id: IdSchema,
+    title: z.string().min(1),
+    subject: z.string().min(1).meta({ description: 'Subject code.', example: 'MAT' }),
+    kertas: Kertas,
+    year: z.number().int(),
+    code: z.string().min(1).meta({ description: 'Printed paper code.', example: '1449/2' }),
+    durationMin: z.number().int().min(1),
+    instructions: z.array(z.string()).meta({ description: 'Cover instruction lines, verbatim.' }),
+    reference: ReferencePanels.optional().meta({
+      description: 'Reference-sheet panels; absent when the paper has none.',
+    }),
     sections: z.array(BijakBuilderPaperSectionSchema),
-    checks: z.array(BijakBuilderSectionCheckSchema).meta({
-      description:
-        'One `SectionCheck` per blueprint section (the `checkPaper` result that also feeds `publishPaper`). Where the mock exposes it is [PROPOSED].',
+    status: BijakBuilderPaperStatusSchema,
+    createdAt: TimestampSchema,
+    updatedAt: TimestampSchema,
+    publishedAt: TimestampSchema.optional().meta({
+      description: 'Time of the latest publish; absent while the paper has never been published.',
     }),
   })
   .meta({ id: 'BijakBuilderPaper' })
 export type BijakBuilderPaper = z.infer<typeof BijakBuilderPaperSchema>
 
+/** One row of the admin paper list (`AdminPaperSummary`: with `subjectName` and `code`, `budget` and `ok`). */
+export const BijakBuilderPaperSummarySchema = z
+  .strictObject({
+    id: IdSchema,
+    title: z.string().min(1),
+    subject: z.string().min(1).meta({ description: 'Subject code.', example: 'MAT' }),
+    subjectName: z.string().min(1).meta({ example: 'Matematik' }),
+    kertas: Kertas,
+    year: z.number().int(),
+    code: z.string().min(1).meta({ example: '1449/2' }),
+    durationMin: z.number().int().min(1),
+    status: BijakBuilderPaperStatusSchema,
+    questionCount: z.number().int().min(0).meta({ description: 'Questions placed, all sections.' }),
+    marks: z.number().int().min(0).meta({ description: 'Total effective marks (derived).' }),
+    budget: z
+      .number()
+      .int()
+      .min(0)
+      .meta({ description: 'Total printed mark budget of the blueprint sections.' }),
+    ok: z.boolean().meta({
+      description: 'True when the paper passes the publish check (no `errors` would be returned).',
+    }),
+    updatedAt: TimestampSchema,
+  })
+  .meta({ id: 'BijakBuilderPaperSummary' })
+export type BijakBuilderPaperSummary = z.infer<typeof BijakBuilderPaperSummarySchema>
+
 /**
- * Picker candidate (`BuilderQuestion`): a published question of the paper's subject that can be
- * placed. [PROPOSED] field list (the review names the type, not its fields): the minimum a picker
- * needs.
+ * Picker candidate (`BuilderQuestion`): a question of the paper's subject that can be placed. Fields
+ * exactly as quoted by the LEAD review: id, groupId?, stimulusLabel?, preview, marks, kind
+ * (QuestionKind), topic, status, kertas, subject. The value set of `kind` is not quoted [PROPOSED].
  */
 export const BijakBuilderQuestionSchema = z
   .strictObject({
     id: IdSchema,
-    stem: z.string().meta({ description: 'Question stem; may hold $latex$ spans.' }),
-    topic: z.string().meta({ description: 'Display name of the curriculum unit.' }),
-    marks: z.number().int().min(0).meta({ description: 'Total marks of the question.' }),
     groupId: IdSchema.optional().meta({ description: 'Stimulus group (D6), when it has one.' }),
+    stimulusLabel: z
+      .string()
+      .optional()
+      .meta({ description: 'Label of the group stimulus, e.g. "Rajah 2".' }),
+    preview: z
+      .string()
+      .meta({ description: 'Start of the stem for the picker; may hold $latex$ spans.' }),
+    marks: z.number().int().min(0).meta({ description: 'Total marks of the question.' }),
+    kind: z.string().min(1).meta({
+      description:
+        'QuestionKind of the mock (for example mcq or a structured kind). The value set is not quoted by the review [PROPOSED].',
+    }),
+    topic: z.string().meta({ description: 'Display name of the curriculum unit.' }),
+    status: BijakBuilderQuestionStatusSchema,
+    kertas: Kertas,
+    subject: z.string().min(1).meta({ example: 'MAT' }),
   })
   .meta({ id: 'BijakBuilderQuestion' })
 export type BijakBuilderQuestion = z.infer<typeof BijakBuilderQuestionSchema>
 
 /**
- * Stimulus group of the picker (`BuilderGroup`): its questions must stay together in one section
- * (D6). [PROPOSED] field list.
+ * Stimulus group of the picker (`BuilderGroup` = { id, stimulus: StimulusDef, questionIds }); its
+ * questions must stay together in one section (D6). `stimulus` reuses the BE-16 stimulus shape.
  */
 export const BijakBuilderGroupSchema = z
   .strictObject({
     id: IdSchema,
-    label: z.string().min(1).meta({ description: 'Stimulus label, e.g. "Rajah 2".' }),
-    questionIds: z.array(IdSchema).min(2).meta({ description: 'Question ids in published order.' }),
+    stimulus: BijakAttemptStimulusSchema,
+    questionIds: z.array(IdSchema).meta({ description: 'Question ids in published order.' }),
   })
   .meta({ id: 'BijakBuilderGroup' })
 export type BijakBuilderGroup = z.infer<typeof BijakBuilderGroupSchema>
 
-/** `GET /admin/papers/{id}` (`getPaperEditor`): the paper plus the picker candidates and groups. */
+/** One section of a blueprint as the builder reads it (`BlueprintView.sections[]`, fields as quoted). */
+export const BijakBlueprintViewSectionSchema = z
+  .strictObject({
+    label: z.string().min(1).meta({ example: 'Bahagian A' }),
+    markBudget: z.number().int().min(0),
+    questionCount: z.number().int().min(0).meta({ description: 'Questions the section holds.' }),
+    compulsory: z.boolean(),
+    instruction: z.string().meta({ description: 'Authored instruction; empty string when none.' }),
+    rule: BijakBuilderSectionRuleSchema,
+    pool: z.string().min(1).meta({
+      description:
+        'Pool tag the section draws from; the builder uses it to suggest questions (internal, never sent to students).',
+    }),
+  })
+  .meta({ id: 'BijakBlueprintViewSection' })
+
+/**
+ * Blueprint ("Kontrak") as the builder reads it: `BlueprintView` exactly as quoted by the review
+ * (subject, subjectName, kertas, source, code, durationMin, instructions, totalMarks, sections).
+ * It has no id, version or status: a blueprint is addressed by subject and kertas.
+ */
+export const BijakBlueprintViewSchema = z
+  .strictObject({
+    subject: z.string().min(1).meta({ example: 'MAT' }),
+    subjectName: z.string().min(1),
+    kertas: Kertas.meta({ description: 'Kertas number (the mock types it 1 | 2).' }),
+    source: BijakBlueprintSourceSchema.meta({
+      description: 'Provenance tag (Disahkan, Spec, Draf).',
+    }),
+    code: z.string().min(1).meta({ example: '1449/2' }),
+    durationMin: z.number().int().min(1),
+    instructions: z.array(z.string()),
+    totalMarks: z
+      .number()
+      .int()
+      .min(0)
+      .meta({ description: 'Sum of the section mark budgets (derived).' }),
+    sections: z.array(BijakBlueprintViewSectionSchema).min(1),
+  })
+  .meta({ id: 'BijakBlueprintView' })
+export type BijakBlueprintView = z.infer<typeof BijakBlueprintViewSchema>
+
+/** `GET /admin/papers/{id}` (`getPaperEditor`, `PaperEditorData`): paper, its blueprint, picker candidates and groups. */
 export const BijakBuilderEditorSchema = z
   .strictObject({
     paper: BijakBuilderPaperSchema,
+    blueprint: BijakBlueprintViewSchema.nullable().meta({
+      description: 'The blueprint of the paper subject and kertas; null when there is none.',
+    }),
     questions: z.array(BijakBuilderQuestionSchema),
     groups: z.array(BijakBuilderGroupSchema),
   })
@@ -314,8 +365,8 @@ export const BijakBuilderPaperPatchSchema = z
 export type BijakBuilderPaperPatch = z.infer<typeof BijakBuilderPaperPatchSchema>
 
 /**
- * Result of `DELETE` and of nothing else: `{ ok: true }`. The mock `deletePaper` is idempotent, so an
- * unknown id also answers success.
+ * Result of `DELETE` (and of retiring a blueprint): `{ ok: true }`. The mock `deletePaper` is
+ * idempotent, so an unknown id also answers success.
  */
 export const BijakBuilderOkSchema = z
   .strictObject({ ok: z.literal(true) })
@@ -323,28 +374,51 @@ export const BijakBuilderOkSchema = z
 export type BijakBuilderOk = z.infer<typeof BijakBuilderOkSchema>
 
 /**
- * `publishPaper` result: a normal 200 result, not an error. `ok: false` carries the BM lines built
- * from `checkPaper`, e.g. "Soalan berulang dalam kertas: ..." and "Kumpulan rangsangan X
- * dipecahkan antara dua bahagian". Nothing changes on `ok: false`.
+ * `publishPaper` result `{ ok: boolean, errors: string[] }`, a normal 200 result and not an error
+ * (server/admin.ts): `ok: true` comes with `errors: []`; `ok: false` carries the BM lines built by
+ * `checkPaper` (see `BIJAK_BUILDER_CHECK_LINES`, prefixed with the section label). Nothing changes on
+ * `ok: false`.
  */
 export const BijakBuilderPublishResultSchema = z
-  .discriminatedUnion('ok', [
-    z.strictObject({ ok: z.literal(true) }),
-    z.strictObject({ ok: z.literal(false), errors: z.array(z.string().min(1)).min(1) }),
-  ])
+  .strictObject({
+    ok: z.boolean(),
+    errors: z.array(z.string()).meta({ description: 'Empty when ok is true.' }),
+  })
   .meta({ id: 'BijakBuilderPublishResult' })
 export type BijakBuilderPublishResult = z.infer<typeof BijakBuilderPublishResultSchema>
 
+/** `POST /admin/papers/preview` body (`previewQuestions(ids)`): the ids currently in the editor, saved or not. */
+export const BijakBuilderPreviewRequestSchema = z
+  .strictObject({
+    ids: z
+      .array(IdSchema)
+      .max(500)
+      .meta({ description: 'Question ids to preview (may be unsaved edits).' }),
+  })
+  .meta({ id: 'BijakBuilderPreviewRequest' })
+export type BijakBuilderPreviewRequest = z.infer<typeof BijakBuilderPreviewRequestSchema>
+
 /**
- * `GET /admin/papers/{id}/preview` (`previewQuestions`): the saved questions of the paper as a
- * student sees them. Reuses the BE-16 student views, so every question carries its option bank and
- * every group its stimulus, and nothing carries an answer key or scheme. Shape [PROPOSED] (the
- * review names `previewQuestions`, not its result type).
+ * `ReviewQuestion` of the preview: a question as a student sees it, without number, section or option
+ * bank (the bank is in `optionBanks`, the stimulus in `stimuli`). The review names the type, not its
+ * fields, so the field list is derived from the BE-16 student question view [PROPOSED]. No answer key.
+ */
+export const BijakBuilderReviewQuestionSchema = BijakAttemptQuestionSchema.omit({
+  number: true,
+  sectionId: true,
+  optionBank: true,
+}).meta({ id: 'BijakBuilderReviewQuestion' })
+export type BijakBuilderReviewQuestion = z.infer<typeof BijakBuilderReviewQuestionSchema>
+
+/**
+ * `previewQuestions` result: `{ questions, stimuli, optionBanks }`, the last two keyed by group id
+ * (`Record<groupId, StimulusDef>` and `Record<groupId, McqOption[]>`).
  */
 export const BijakBuilderPreviewSchema = z
   .strictObject({
-    questions: z.array(BijakAttemptQuestionSchema),
-    groups: z.array(BijakAttemptGroupSchema),
+    questions: z.array(BijakBuilderReviewQuestionSchema),
+    stimuli: z.record(z.string(), BijakAttemptStimulusSchema),
+    optionBanks: z.record(z.string(), z.array(BijakAttemptOptionSchema)),
   })
   .meta({ id: 'BijakBuilderPreview' })
 export type BijakBuilderPreview = z.infer<typeof BijakBuilderPreviewSchema>
@@ -375,62 +449,19 @@ export const BijakBuilderCsrfErrorSchema = z
 /* ===================================================================== blueprint admin ===== */
 
 /**
- * Blueprint ("Kontrak") as read by the builder: the slim `BlueprintView` [PROPOSED field list]. The
- * internal `pool` tag and the cover texts are not part of the view. Read model of the five blueprint
- * routes; the blueprint WRITE routes have no mock and are kept only because the card requires them.
+ * Section of a blueprint as written by the admin (NO MOCK: the card requires blueprint writes). The
+ * field names are those of `BlueprintView.sections[]`; `compulsory` and `instruction` may be left
+ * out (defaults false and empty).
  */
-export const BijakBlueprintViewSchema = z
-  .strictObject({
-    id: IdSchema.meta({ description: 'Blueprint (family) id; stable over versions.' }),
-    subject: z.string().min(1).meta({ example: 'MAT' }),
-    subjectName: z.string().min(1),
-    kertas: Kertas,
-    version: z.number().int().min(1).meta({ description: 'Latest version (no mock).' }),
-    status: z.enum(['active', 'retired']).meta({
-      description:
-        'active = selectable by new papers; retired = no longer selectable (no mock, [PROPOSED]).',
-    }),
-    source: BijakBlueprintSourceSchema.meta({
-      description: 'Provenance tag (Disahkan, Spec, Draf).',
-    }),
-    code: z.string().min(1).meta({ example: '1449/2' }),
-    durationMin: z.number().int().min(1),
-    sections: z
-      .array(
-        z.strictObject({
-          label: z.string().min(1).meta({ example: 'Bahagian A' }),
-          rule: BijakBuilderSectionRuleSchema,
-          take: z.number().int().min(0).meta({ description: 'Questions the section holds.' }),
-          markBudget: z.number().int().min(0),
-          compulsory: z.boolean().optional(),
-          instruction: z.string().optional(),
-        }),
-      )
-      .min(1),
-  })
-  .meta({ id: 'BijakBlueprintView' })
-export type BijakBlueprintView = z.infer<typeof BijakBlueprintViewSchema>
-
-/** Section of a blueprint as written by the admin (NO MOCK: kept because the card requires blueprint writes). */
 export const BijakBlueprintAdminSectionInputSchema = z
   .strictObject({
     label: z.string().trim().min(1).max(100).meta({ example: 'Bahagian A' }),
-    rule: BijakBuilderSectionRuleSchema,
-    pool: z
-      .string()
-      .trim()
-      .min(1)
-      .max(64)
-      .meta({ description: 'Pool tag the section draws from (internal; not shown to students).' }),
-    take: z.number().int().min(1).max(500),
     markBudget: z.number().int().min(0).max(1000),
+    questionCount: z.number().int().min(1).max(500),
     compulsory: z.boolean().optional().meta({ description: 'Default: false.' }),
-    instruction: z.string().max(500).nullable().optional(),
-    allowedModes: z
-      .array(BijakBuilderAnswerModeSchema)
-      .max(8)
-      .optional()
-      .meta({ description: 'Leaf modes the section allows; omitted or empty = any mode.' }),
+    instruction: z.string().max(500).optional().meta({ description: 'Default: empty.' }),
+    rule: BijakBuilderSectionRuleSchema,
+    pool: z.string().trim().min(1).max(64),
   })
   .meta({ id: 'BijakBlueprintAdminSectionInput' })
 export type BijakBlueprintAdminSectionInput = z.infer<typeof BijakBlueprintAdminSectionInputSchema>
@@ -439,18 +470,17 @@ const blueprintVersionInputShape = {
   source: BijakBlueprintSourceSchema,
   code: z.string().trim().min(1).max(32).meta({ example: '1449/2' }),
   durationMin: z.number().int().min(1).max(600),
-  instructions: z
-    .array(z.string().max(500))
-    .max(30)
-    .optional()
-    .meta({ description: 'Cover instruction lines. Default: empty.' }),
-  reference: z.array(BijakPaperReferencePanelSchema).max(10).optional().meta({
-    description: 'Reference-sheet panels. Default: empty.',
+  instructions: z.array(z.string().max(500)).max(30).optional().meta({
+    description: 'Cover instruction lines. Default: empty.',
+  }),
+  reference: ReferencePanels.max(10).optional().meta({
+    description:
+      'Reference-sheet panels for papers made from this blueprint. Write-only here: `BlueprintView` does not carry it.',
   }),
   sections: z.array(BijakBlueprintAdminSectionInputSchema).min(1).max(20),
 }
 
-/** `POST /admin/blueprints/{id}/versions` body (NO MOCK): the full content of the new version. */
+/** `POST /admin/blueprints/{subject}/{kertas}/versions` body (NO MOCK): the full content of the new version. */
 export const BijakBlueprintAdminVersionInputSchema = z
   .strictObject(blueprintVersionInputShape)
   .meta({ id: 'BijakBlueprintAdminVersionInput' })
