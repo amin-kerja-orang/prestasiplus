@@ -22,6 +22,8 @@ Extract the pure TypeScript domain logic of Bijak SPM into a workspace package s
 - `src/modules/m28-bijak-spm/domain/{grading,math-expr,blueprint,paper-model,types}.ts` and their tests `src/modules/m28-bijak-spm/__tests__/{grading,equivalence,falsepositives,friendly,blueprint,schema}.test.ts`
 - `src/modules/m28-bijak-spm/server/store.ts` (how the domain functions are called) and every other importer of `m28-bijak-spm/domain/*` (find them with a search before the move)
 - Prerequisite: OD-5 answered by the lead and the lead told when the PR is opened (it touches frontend-owned folders).
+- Requirements: BE-FR-17 ([URS 9.2](../../requirements/v2-backend-urs.md))
+- API catalogue part B2 (learning, question bank, exam): [learning-exam.md](../../architecture/v2-api-catalogue/learning-exam.md) (endpoint list, wire conventions and open questions for this card's scope)
 
 ## Outputs
 

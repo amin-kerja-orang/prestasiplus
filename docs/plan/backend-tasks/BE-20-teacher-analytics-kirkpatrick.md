@@ -22,6 +22,9 @@ The Guru and Admin Sekolah analytics reports: teacher report and item analysis, 
 - Mock M12: `src/modules/m12-kirkpatrick/mock/handlers/{levels,students,feedback,interventions,export,pdf,common,index}.ts`, tables `kirkpatrick.*` (`feedback`, `interventions`, `schoolScores`, `studentConsistency`, `alesaPredictions`; `src/modules/m12-kirkpatrick/mock/tables/*`); mock tests `src/modules/m12-kirkpatrick/__tests__/mock/**`; clients `src/modules/m11-teacher-analytics/api/*`, `src/modules/m12-kirkpatrick/api/*`
 - `docs/architecture/v2-data-migration.md` section 4.6 and Q7 (do not migrate sensitive wellbeing data)
 - BE-19 `StatsService` and read models, BE-17 repository
+- Requirements: BE-FR-28; BE-NFR-38 ([URS 9.2](../../requirements/v2-backend-urs.md))
+- API catalogue part B3 (teacher, reports, admin): [teacher-reports-admin.md](../../architecture/v2-api-catalogue/teacher-reports-admin.md) (endpoint list, wire conventions and open questions for this card's scope)
+- Data model: [v2-data-model.md](../../architecture/v2-data-model.md) (tables, keys and indexes of this card; being written 2026-10-19)
 
 ## Outputs
 

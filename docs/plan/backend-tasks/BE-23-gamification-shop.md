@@ -22,6 +22,9 @@ Everything in M14/M15 beyond the wallet core: dashboard, daily challenges, achie
 - Mock M15: `src/modules/m15-rewards-shop/mock/handlers/{user,admin,input}.ts`, repository `src/modules/m15-rewards-shop/mock/repository/*`; client `src/modules/m15-rewards-shop/api/*`; mock tests `src/modules/m15-rewards-shop/__tests__/mock/**`
 - `docs/architecture/v2-data-migration.md` section 4.9 and Q10 (teacher wallets and contributor rewards are **out of v2 per D28c**: confirm before building teacher cash-out)
 - BE-11 `WalletService`, `tiers`, `StreakService`; BE-25 parent links (parent approvals)
+- Requirements: BE-FR-16; BE-NFR-08, BE-NFR-17, BE-NFR-18, BE-NFR-20 ([URS 9.2](../../requirements/v2-backend-urs.md))
+- API catalogue part B4 (economy, content, games): [economy-content-games.md](../../architecture/v2-api-catalogue/economy-content-games.md) (endpoint list, wire conventions and open questions for this card's scope)
+- Data model: [v2-data-model.md](../../architecture/v2-data-model.md) (tables, keys and indexes of this card; being written 2026-10-19)
 
 ## Outputs
 
@@ -104,6 +107,7 @@ Do not guess these; write your working assumption in the PR and ask the lead (is
 
 1. Teacher cash-out and contributor rewards are out of v2 per D28c (Q10). Working assumption: keep the routes returning the mock's disabled state and build no teacher wallet logic beyond what the mock shows.
 2. M15 table names are not fixed in the card; derive them from `src/modules/m15-rewards-shop/mock/repository/*` and record them in the mapping matrix.
+3. Pending LEAD decision: OQ-20 of the URS. The M15 routes include the parent approvals (`/api/parent/hadiah-approvals*`, catalogue M15-08 to M15-10) but the plan gives the parent role no endpoints; URS default: parent approval routes are not built in B1. (added 2026-10-19)
 
 ## Prompt for Claude Code
 

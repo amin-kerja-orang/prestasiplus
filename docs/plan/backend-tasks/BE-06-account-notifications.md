@@ -23,6 +23,9 @@ The rest of M01 beyond the session endpoints: self-registration, password reset 
 - `src/mock/core-data/me.ts` (the `GET /api/me` projection)
 - `docs/architecture/v2-data-migration.md` section 4.1, section 5 (reset forced for roster accounts)
 - BE-03, BE-04 and BE-05 outputs
+- Requirements: BE-FR-05, BE-FR-06, BE-FR-34; BE-NFR-06, BE-NFR-10, BE-NFR-29 ([URS 9.2](../../requirements/v2-backend-urs.md))
+- API catalogue part B1 (core, identity, curriculum): [core-identity-curriculum.md](../../architecture/v2-api-catalogue/core-identity-curriculum.md) (endpoint list, wire conventions and open questions for this card's scope)
+- Data model: [v2-data-model.md](../../architecture/v2-data-model.md) (tables, keys and indexes of this card; being written 2026-10-19)
 
 ## Outputs
 

@@ -22,6 +22,9 @@ The remaining M02 stores: school subscriptions (create, extend, upgrade, cancel,
 - Trial rule: `src/modules/m01-authentication/mock/repository/users.ts` (`TRIAL_LIMIT = 50`, `isSubscribed`, `trial`, `incrementTrialUsed`)
 - `docs/architecture/v2-data-migration.md` section 4.1, Q6 (how subscription status is derived: latest paid unexpired payment + school subscription + PKSK access; **confirm before the ETL**)
 - BE-05 repositories and import service
+- Requirements: BE-FR-04, BE-FR-34; BE-NFR-08 ([URS 9.2](../../requirements/v2-backend-urs.md))
+- API catalogue part B1 (core, identity, curriculum): [core-identity-curriculum.md](../../architecture/v2-api-catalogue/core-identity-curriculum.md) (endpoint list, wire conventions and open questions for this card's scope)
+- Data model: [v2-data-model.md](../../architecture/v2-data-model.md) (tables, keys and indexes of this card; being written 2026-10-19)
 
 ## Outputs
 

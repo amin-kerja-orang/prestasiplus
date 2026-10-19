@@ -22,6 +22,7 @@ Make the real stack runnable and testable: `docker compose up` brings up `db`, `
 - `playwright.config.ts`, `e2e/fixtures/*`, `e2e/support/*`, `scripts/e2e-module.mjs`, `docs/adr/0011-testing-strategy.md`
 - `docs/architecture/v2-frontend.md` task V2-T31 (HybridTransport)
 - Prerequisite: lead task L1 (V2-T31, tracker "Lead tasks") is done and the lead tells you to start
+- Requirements: BE-OPS-04, BE-OPS-05, BE-OPS-09 ([URS 9.2](../../requirements/v2-backend-urs.md))
 
 ## Outputs
 

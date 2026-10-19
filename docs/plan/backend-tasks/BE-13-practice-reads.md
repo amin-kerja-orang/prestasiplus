@@ -22,6 +22,9 @@ All M05 learner read endpoints and the small writes around them: dashboard, subj
 - `docs/architecture/v2-data-migration.md` section 4.4 (mastery and accuracy read the answer dimensions, not a question join; the revision queue only for rows with a question link)
 - `docs/adr/0014-store-ownership-and-repositories.md` (topic progress derived on read)
 - BE-12 outputs
+- Requirements: BE-FR-15; BE-NFR-15 ([URS 9.2](../../requirements/v2-backend-urs.md))
+- API catalogue part B2 (learning, question bank, exam): [learning-exam.md](../../architecture/v2-api-catalogue/learning-exam.md) (endpoint list, wire conventions and open questions for this card's scope)
+- Data model: [v2-data-model.md](../../architecture/v2-data-model.md) (tables, keys and indexes of this card; being written 2026-10-19)
 
 ## Outputs
 

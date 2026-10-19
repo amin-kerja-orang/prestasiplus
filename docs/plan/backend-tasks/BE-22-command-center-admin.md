@@ -23,6 +23,8 @@ The live monitoring views of Guru, Admin Sekolah and Admin Pusat: the Command Ce
 - Mock `src/mock/core-data/server-status.ts` (`GET /api/admin/server-status`)
 - `docs/architecture/v2-frontend.md` task V2-T33 description (shared Pemantauan > Langsung component) and `docs/requirements/v2-portals.md` (PM-01)
 - BE-17, BE-19, BE-23 outputs (badges and achievements come from BE-23's services)
+- Requirements: BE-FR-30, BE-FR-33; BE-NFR-15, BE-NFR-40 ([URS 9.2](../../requirements/v2-backend-urs.md))
+- API catalogue part B3 (teacher, reports, admin): [teacher-reports-admin.md](../../architecture/v2-api-catalogue/teacher-reports-admin.md) (endpoint list, wire conventions and open questions for this card's scope)
 
 ## Outputs
 
@@ -91,6 +93,7 @@ npm run be:test -- apps/api/test/conformance   # only after BE-31 is merged
 Do not guess these; write your working assumption in the PR and ask the lead (issue labelled `question`) if it blocks you.
 
 1. The v2 portals may merge the three Command Center views into one shared "Pemantauan > Langsung" component (V2-T33). Working assumption: keep the mock's route set; the lead may later add a combined route through a `contract` PR.
+2. Pending LEAD decision: OQ-24 of the URS. Plan 14.7 names `mood_checkins` under this card, but no card creates that table (BE-29 does not migrate mood data). Do not add the table until answered. (added 2026-10-19)
 
 ## Prompt for Claude Code
 

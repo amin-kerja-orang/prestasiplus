@@ -21,6 +21,7 @@ A deterministic, fictitious seed of the PoC population (D45: about 20 students, 
 - `src/mock/core-data/{accounts,users,schools}.ts`, `src/mock/dataset/data-profile.ts` (what "poc" keeps), `src/mock/server/__tests__/poc-boot.test.ts`
 - `docs/architecture/overview.md` (seed notes, if present), `docs/adr/0006-determinism-seeds-clock-ids.md`
 - BE-02 seed runner (`--profile`), BE-03 `seed/core/identity.ts`, BE-05 `seed/core/schools.ts`
+- Requirements: BE-FR-32 ([URS 9.2](../../requirements/v2-backend-urs.md))
 
 ## Outputs
 
@@ -52,7 +53,7 @@ None.
 
 1. `npm run be:db:reset && npm run be:db:seed` creates identical rows every run (same ids, names, e-mails, class labels; test compares a hash of the seeded tables across two fresh runs); a second `be:db:seed` on the seeded database changes nothing (row counts and hash unchanged).
 2. Counts, asserted by query: at least 20 students across at least 3 schools in 2 states, at least 4 teachers, exactly 1 school admin per school, 1 admin, 1 dual-role account; every account listed in `docs/AKAUN-DEMO.md` exists with the same role and the same e-mail/username as that file.
-3. Names are fictitious and obviously synthetic; e-mails use the reserved domain `example.test`; no IC or phone-shaped real data; passwords are the documented demo password `Demo1234` (hashed) only. A test scans the seed files for any e-mail domain other than `example.test` and fails on one.
+3. Names are fictitious and obviously synthetic; e-mails use the reserved domain `example.test`, plus `demo.test` for the canonical demo accounts of `docs/AKAUN-DEMO.md`; no IC or phone-shaped real data; passwords are the documented demo password `Demo1234` (hashed) only. A test scans the seed files for any e-mail domain other than `example.test` and fails on one.
 4. Logging in as each seeded role through `POST /api/auth/login` returns the expected `landingPath` and scope level (assert against the BE-03 table).
 5. The seed never sets `legacy_*` and re-running it after rows with `legacy_source = 'cloud'` exist does not touch them (test inserts one such row first).
 6. Optional guard: if a deny-list file path is set in `SEED_NAME_DENYLIST` (kept outside the repo by the lead), no seeded name matches it; when the variable is unset the test is skipped.

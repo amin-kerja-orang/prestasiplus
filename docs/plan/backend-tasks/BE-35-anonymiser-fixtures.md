@@ -22,6 +22,7 @@ Two things so that nobody except the lead ever touches real data: (a) an **anony
 - `docs/architecture/v2-data-migration.md` sections 1 (inventory), 4 (field differences), 5 (risks: PII, passwords, duplicates, orphans, date columns), 7
 - BE-27 outputs: `apps/api/src/migration/ddl/staging_cloud.sql`, the profile report generator, `docs/architecture/v2-migration-runbook.md`
 - BE-34 outputs (kit, `.gitignore` guard)
+- Requirements: BE-NFR-13; BE-MIG-14, BE-MIG-15 ([URS 9.2](../../requirements/v2-backend-urs.md))
 
 ## Outputs
 

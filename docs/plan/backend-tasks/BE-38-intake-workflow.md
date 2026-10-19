@@ -23,6 +23,9 @@
 - `docs/requirements/v2-exam-schema.md`: D1 to D12 (types, keys, mark-scheme points, stimulus groups, tags, duplicates D11, lifecycle D12)
 - BE-09 (`QuestionsService`, tables), BE-10 (lifecycle, quality gates, audit), BE-36 (extraction contract), BE-37 (batches, pages, figures, jobs)
 - The frontend review/queue screens and mock handlers: `src/modules/m28-bijak-spm/admin/intake/pages/{IntakeListPage,IntakeReviewPage,IntakeUploadPage}.vue`, `admin/intake/components/{QuestionEditor,SchemeEditor}.vue`, `admin/intake/domain/{grouping,marks,validation}.ts`, `admin/intake/types.ts` (`IntakeQuestion`, `IntakeStimulus`, `lowFields`, `confirmed`, `needsManual`), the store methods `listIntakeBatches`, `getIntakeBatch`, `saveExtracted`, `submitForReview` in `src/modules/m28-bijak-spm/server/store.ts` (messages "Kumpulan ekstrak tidak ditemui", "Kumpulan sudah dihantar untuk semakan"), and `src/modules/m28-bijak-spm/__tests__/intake.test.ts`
+- Requirements: BE-FR-23; BE-NFR-08, BE-NFR-14, BE-NFR-15, BE-NFR-17, BE-NFR-18, BE-NFR-33, BE-NFR-34, BE-NFR-36 ([URS 9.2](../../requirements/v2-backend-urs.md))
+- API catalogue part B2 (learning, question bank, exam): [learning-exam.md](../../architecture/v2-api-catalogue/learning-exam.md) (endpoint list, wire conventions and open questions for this card's scope)
+- Data model: [v2-data-model.md](../../architecture/v2-data-model.md) (tables, keys and indexes of this card; being written 2026-10-19)
 
 ## Outputs
 

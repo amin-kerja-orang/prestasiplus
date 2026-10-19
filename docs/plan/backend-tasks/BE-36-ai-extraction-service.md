@@ -24,6 +24,9 @@
 - The frontend extractor contract the output must equal (the review UI already consumes it): `src/modules/m28-bijak-spm/admin/intake/types.ts` (`QuestionExtractor`, `ExtractInput`, `ExtractedPaper`, `IntakeQuestion`, `IntakeStimulus`, `lowFields`), `src/modules/m28-bijak-spm/admin/intake/ai/{index,mock-extractor,providers,registry}.ts`, `src/modules/m28-bijak-spm/admin/intake/domain/{grouping,marks,validation}.ts`, and the mock test `src/modules/m28-bijak-spm/__tests__/intake.test.ts`
 - ADR-0019 (SPM intake, provider-agnostic AI) is being written by the lead and may not be in `docs/adr/` yet; follow the TRACKER D52 text and plan section 15 where it is silent
 - BE-06 `NotificationsService`, BE-03 guards
+- Requirements: BE-FR-21; BE-NFR-31, BE-NFR-32, BE-NFR-33, BE-NFR-34, BE-NFR-35, BE-NFR-36; BE-OPS-03 ([URS 9.2](../../requirements/v2-backend-urs.md))
+- API catalogue part B2 (learning, question bank, exam): [learning-exam.md](../../architecture/v2-api-catalogue/learning-exam.md) (endpoint list, wire conventions and open questions for this card's scope)
+- Data model: [v2-data-model.md](../../architecture/v2-data-model.md) (tables, keys and indexes of this card; being written 2026-10-19)
 
 ## Outputs
 

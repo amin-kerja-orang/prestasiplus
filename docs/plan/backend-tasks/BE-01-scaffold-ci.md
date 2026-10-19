@@ -23,6 +23,8 @@ Create `apps/api` (NestJS 11, TypeScript strict, ESM) as an npm workspace packag
 - `src/mock/server/respond.ts` (`DEFAULT_ERROR_MESSAGES`: the generic error copy to reproduce)
 - `compose.yaml`, `docker/frontend/Dockerfile`, `docs/ops/containers.md`, `.env.example`, `.gitignore`
 - Prerequisites: OD-1 (backend lives in this repo as a workspace) and OD-3 (NestJS 11 + Prisma + Vitest) are settled by the S0 defaults in the lead notice of `docs/plan/AGENT-SYNC.md`. If the lead changes them, stop and ask.
+- Requirements: BE-FR-31, BE-FR-34; BE-NFR-07, BE-NFR-09, BE-NFR-22, BE-NFR-27; BE-OPS-01, BE-OPS-03, BE-OPS-06, BE-OPS-08 ([URS 9.2](../../requirements/v2-backend-urs.md))
+- API catalogue part B1 (core, identity, curriculum): [core-identity-curriculum.md](../../architecture/v2-api-catalogue/core-identity-curriculum.md) (endpoint list, wire conventions and open questions for this card's scope)
 
 ## Outputs
 

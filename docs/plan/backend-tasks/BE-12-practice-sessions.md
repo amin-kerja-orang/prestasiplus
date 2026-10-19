@@ -22,6 +22,9 @@ The practice write path in one transaction, as specified by ADR-0014 section 2: 
 - Trial rule (mock): `src/modules/m01-authentication/mock/repository/users.ts` (`TRIAL_LIMIT = 50`, `trial()`, `incrementTrialUsed()`)
 - `docs/architecture/v2-data-migration.md` section 4.4 (M05 realign: nullable `questionId`, `selectedLabel`, `historical`, dimensions on the answer row, `clientUuid`) and section 3
 - BE-09 `QuestionsRepository`, BE-11 `WalletService`/`StreakService`, BE-25 `SubscriptionService` (trial and `isSubscribed`)
+- Requirements: BE-FR-14, BE-FR-33; BE-NFR-17, BE-NFR-18, BE-NFR-19, BE-NFR-20 ([URS 9.2](../../requirements/v2-backend-urs.md))
+- API catalogue part B2 (learning, question bank, exam): [learning-exam.md](../../architecture/v2-api-catalogue/learning-exam.md) (endpoint list, wire conventions and open questions for this card's scope)
+- Data model: [v2-data-model.md](../../architecture/v2-data-model.md) (tables, keys and indexes of this card; being written 2026-10-19)
 
 ## Outputs
 
@@ -105,6 +108,7 @@ Do not guess these; write your working assumption in the PR and ask the lead (is
 
 1. The trial limit of 50 and the +1-per-checked-answer rule are a provisional M19 rule in the mock (overview 6.7); the real subscription derivation is Q6. Working assumption: keep the mock rule.
 2. Points and coins per session come from the mock `sessionCoins` curve; confirm the v2 economy (BE-23 may change it).
+3. Later tables (URS 13.4 item 4): assigned-mode starts (`missionId`, `remedialTestId`, `questionSetId`) read tables created by BE-18, and quest rewards are credited through BE-23. Until those cards merge, keep the fields in the contract and put each behind a port with a no-op default (an unknown assignment returns the mock's not-found error; the quest reward port credits nothing). BE-18 and BE-23 enable them when they merge. (added 2026-10-19)
 
 ## Prompt for Claude Code
 

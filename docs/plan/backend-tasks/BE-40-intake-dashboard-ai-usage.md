@@ -21,6 +21,8 @@
 - `docs/requirements/v2-question-bank.md` US-29 and AC-29.1, AC-29.2, AC-29.3; NFR-03
 - BE-36 (`ai_usage_logs`, `ai_settings`), BE-38 (`intake_items`, `intake_item_events`, batches) outputs
 - No intake dashboard screen exists in `src/` yet (checked: `src/modules/m28-bijak-spm/admin/intake/pages/` has list, upload and review only); the wire shape is defined by this card's contract PR from AC-29.1 and the lead aligns the future screen through it.
+- Requirements: BE-FR-24; BE-NFR-19, BE-NFR-34 ([URS 9.2](../../requirements/v2-backend-urs.md))
+- API catalogue part B2 (learning, question bank, exam): [learning-exam.md](../../architecture/v2-api-catalogue/learning-exam.md) (endpoint list, wire conventions and open questions for this card's scope)
 
 ## Outputs
 

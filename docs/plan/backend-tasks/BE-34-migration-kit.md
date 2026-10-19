@@ -21,6 +21,8 @@ Make "migration-first" (plan section 14) enforceable: one shared convention for 
 - `docs/architecture/v2-backend-plan.md` section 14 (all of it), section 5, section 3
 - `docs/architecture/v2-data-migration.md` sections 5 (risks) and 6
 - BE-02 outputs (Prisma setup, test harness, the section 5 conventions helper, the empty `apps/api/prisma/migratable-models.json`)
+- Requirements: BE-NFR-13, BE-NFR-17, BE-NFR-18; BE-MIG-01, BE-MIG-02, BE-MIG-03, BE-MIG-04, BE-MIG-07; BE-OPS-06 ([URS 9.2](../../requirements/v2-backend-urs.md))
+- Data model: [v2-data-model.md](../../architecture/v2-data-model.md) (tables, keys and indexes of this card; being written 2026-10-19)
 
 ## Outputs
 

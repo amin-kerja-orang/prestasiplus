@@ -22,6 +22,9 @@ The performance and analytics reads that Murid, Guru and Admin Sekolah screens u
 - `docs/architecture/v2-data-migration.md` section 4.6 (derived data drift, headcount tables)
 - ADR-0013/0014 for what is derived vs stored; BE-11 note on `is_test` exclusion
 - BE-12 (`PracticeRepository`), BE-17 (`ClassesRepository`) outputs
+- Requirements: BE-FR-27, BE-FR-33; BE-NFR-15 ([URS 9.2](../../requirements/v2-backend-urs.md))
+- API catalogue part B3 (teacher, reports, admin): [teacher-reports-admin.md](../../architecture/v2-api-catalogue/teacher-reports-admin.md) (endpoint list, wire conventions and open questions for this card's scope)
+- Data model: [v2-data-model.md](../../architecture/v2-data-model.md) (tables, keys and indexes of this card; being written 2026-10-19)
 
 ## Outputs
 

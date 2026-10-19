@@ -21,6 +21,9 @@ Persist exam papers, sections, placements, blueprints ("Kontrak") and the PoC pa
 - `docs/requirements/v2-bijak-spm.md` (student stories on cover, Kertas Pilihan, Jana Kertas, shortages) and `docs/discovery/BIJAK-SPM-cloud.md`
 - `src/modules/m28-bijak-spm/server/store.ts` (`listPapers`, `getCover`, `listContracts`, `subjects`, `generatePaper` and the private `resolvePaper`), `domain/{types,blueprint,paper-model}.ts`, seeds `data/{mat-k1,mat-k2,sains-k2,sejarah-k2,registry,builders}.ts`; mock tests `__tests__/{server,blueprint,schema}.test.ts`
 - `packages/exam-core/` (created by BE-14), BE-09 question tables and `QuestionsService`
+- Requirements: BE-FR-18; BE-NFR-20 ([URS 9.2](../../requirements/v2-backend-urs.md))
+- API catalogue part B2 (learning, question bank, exam): [learning-exam.md](../../architecture/v2-api-catalogue/learning-exam.md) (endpoint list, wire conventions and open questions for this card's scope)
+- Data model: [v2-data-model.md](../../architecture/v2-data-model.md) (tables, keys and indexes of this card; being written 2026-10-19)
 
 ## Outputs
 

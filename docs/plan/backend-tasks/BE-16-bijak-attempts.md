@@ -22,6 +22,9 @@ The attempt lifecycle on the server: start/resume (exam and latihan modes), serv
 - `src/modules/m28-bijak-spm/server/store.ts` (all attempt methods: `findInProgress`, `startAttempt`, `getAttemptView`, `saveAnswers`, `submit`, `sweep`, `abandon`, `checkQuestion`, `getResult`, `history`; constants `GRACE_SECONDS`, `LATE_SYNC_WINDOW_MS`, `MAX_CHECKS_PER_QUESTION`, `FRESH_SECONDS`; the `BijakError` messages), `domain/types.ts` (Attempt, SavePayload, SubmitPayload, AttemptResult, ResultView, HistoryRow, QuestionCheck), `lib/autosave.ts`, `lib/photo-store.ts` (`MAX_PHOTO_BYTES`, `MAX_PHOTOS_PER_PART`, `MSG_PHOTO_TYPE`, `MSG_PHOTO_COUNT`)
 - Tests that define behaviour: `src/modules/m28-bijak-spm/__tests__/{server,server-late,autosave,grading,equivalence}.test.ts`
 - `packages/exam-core/` (BE-14), BE-15 tables, BE-04 files service, BE-11 wallet service (reward on completion only if the mock credits it; read `store.ts` first, otherwise none)
+- Requirements: BE-FR-19, BE-FR-33; BE-NFR-17, BE-NFR-18, BE-NFR-19, BE-NFR-21, BE-NFR-29 ([URS 9.2](../../requirements/v2-backend-urs.md))
+- API catalogue part B2 (learning, question bank, exam): [learning-exam.md](../../architecture/v2-api-catalogue/learning-exam.md) (endpoint list, wire conventions and open questions for this card's scope)
+- Data model: [v2-data-model.md](../../architecture/v2-data-model.md) (tables, keys and indexes of this card; being written 2026-10-19)
 
 ## Outputs
 

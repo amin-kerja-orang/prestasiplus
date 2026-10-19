@@ -25,6 +25,9 @@ Implement the six session endpoints of `@pp/contract`, the identity tables they 
 - Mock behaviour to port (rules only; the wire shape is the contract's): `src/modules/m01-authentication/mock/handlers/{auth,auth-deps,auth-input,auth-state}.ts`, `src/mock/auth/{sessions,middleware,landing}.ts`, `src/mock/core-data/{accounts,resolve-session,client-session}.ts`. The mock has `POST /api/auth/login` and `POST /api/auth/logout`; the four `/api/session*` routes have no mock route and come from the contract.
 - `docs/AKAUN-DEMO.md` (demo accounts, for seeds only)
 - `docs/architecture/v2-data-migration.md` section 4.1 and section 5 (password hashes, IC, roles)
+- Requirements: BE-FR-01, BE-FR-02, BE-FR-33; BE-NFR-01, BE-NFR-02, BE-NFR-03, BE-NFR-04, BE-NFR-05, BE-NFR-06, BE-NFR-08, BE-NFR-10, BE-NFR-39; BE-OPS-08 ([URS 9.2](../../requirements/v2-backend-urs.md))
+- API catalogue part B1 (core, identity, curriculum): [core-identity-curriculum.md](../../architecture/v2-api-catalogue/core-identity-curriculum.md) (endpoint list, wire conventions and open questions for this card's scope)
+- Data model: [v2-data-model.md](../../architecture/v2-data-model.md) (tables, keys and indexes of this card; being written 2026-10-19)
 
 ## Outputs
 
@@ -77,6 +80,7 @@ Rules to enforce (all from the contract and `v2-portals.md`): login by e-mail or
 8. A bcrypt `$2y$` hash (generated in the test, no real hashes) verifies and is rehashed to argon2id on the first successful login.
 9. A log-capture test proves no password, cookie value or IC number appears in the logs.
 10. Each seeded demo account logs in with the demo password and gets the `landingPath` and scope of its role; the inactive and the suspended account get 403 `ACCOUNT_INACTIVE`.
+11. Permission change on the next request (BE-NFR-39): after a user's role, scope, school or active flag is changed through the BE-05 service, the next request with the old cookie shows the new role, scope and capabilities, or returns 401 if the account was deactivated; role, scope and capabilities are derived from the account at each request (or the session is invalidated on change), never trusted from a stale session snapshot. Test with a changed school and a deactivated account. (added 2026-10-19)
 
 ## Test commands
 

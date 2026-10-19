@@ -24,6 +24,8 @@ Close the gap between "works" and "can be deployed": global security headers and
 - `docs/architecture/v2-data-migration.md` section 5 (PII)
 - OWASP ASVS L1 checklist (summarise what you covered; do not copy it)
 - The merged domain modules (BE-03 to BE-25 as available) for the sampled-route tests
+- Requirements: BE-FR-34; BE-NFR-01, BE-NFR-02, BE-NFR-03, BE-NFR-04, BE-NFR-07, BE-NFR-08, BE-NFR-09, BE-NFR-11, BE-NFR-21, BE-NFR-27, BE-NFR-28, BE-NFR-35, BE-NFR-40; BE-OPS-01, BE-OPS-07, BE-OPS-08, BE-OPS-10 ([URS 9.2](../../requirements/v2-backend-urs.md))
+- API catalogue part B1 (core, identity, curriculum): [core-identity-curriculum.md](../../architecture/v2-api-catalogue/core-identity-curriculum.md) (endpoint list, wire conventions and open questions for this card's scope)
 
 ## Outputs
 

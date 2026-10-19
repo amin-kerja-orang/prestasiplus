@@ -23,6 +23,9 @@
 - `docs/requirements/v2-exam-schema.md`: D5 (sections model), D6 (stimulus groups stay together), D7 (blueprints and provenance tags), section 6 (entities)
 - BE-15 (tables incl. `papers.status`, blueprint `version`/`status`; endpoints; generation), BE-09/BE-10 (question lifecycle, `QuestionsService`), BE-14 (`@pp/exam-core` blueprint engine)
 - No paper builder or blueprint admin screens exist in `src/` yet (checked: only `domain/blueprint.ts`, `domain/paper-model.ts`, `data/registry.ts` and the `BijakServer` read methods). The wire shapes are therefore defined by this card's contract PR from `src/modules/m28-bijak-spm/domain/{types,blueprint,paper-model}.ts` and the requirements above; the lead aligns the future UI through that PR.
+- Requirements: BE-FR-20; BE-NFR-08 ([URS 9.2](../../requirements/v2-backend-urs.md))
+- API catalogue part B2 (learning, question bank, exam): [learning-exam.md](../../architecture/v2-api-catalogue/learning-exam.md) (endpoint list, wire conventions and open questions for this card's scope)
+- Data model: [v2-data-model.md](../../architecture/v2-data-model.md) (tables, keys and indexes of this card; being written 2026-10-19)
 
 ## Outputs
 

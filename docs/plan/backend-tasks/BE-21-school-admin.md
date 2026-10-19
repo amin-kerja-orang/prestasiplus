@@ -23,6 +23,8 @@ Everything the Admin Sekolah role needs beyond the shared reports: school dashbo
 - Mock: `src/modules/m27-school-admin/mock/handlers/{dashboard,usage,activity,monthly,dskp-heatmap,classes,users-read,users-write,impersonate,index}.ts`, `src/modules/m02-users-schools/mock/school-admin-writes.ts` (messages `MSG_ACCOUNT_INACTIVE`, `MSG_USER_NOT_FOUND`, `MSG_ROLE_NOT_MANAGED`), read models `src/modules/m27-school-admin/mock/read-models/*`; client `src/modules/m27-school-admin/api/*`; mock tests under `src/modules/m27-school-admin/__tests__/{users,dashboard,classes,usage,monthly,activity,heatmap}/**`
 - `docs/requirements/v2-portals.md` (Admin Sekolah scope, Mod Pelajar US-15), contract session rules (BE-03)
 - BE-05 (users), BE-17 (classes), BE-19 (performance reads) outputs
+- Requirements: BE-FR-29; BE-NFR-38 ([URS 9.2](../../requirements/v2-backend-urs.md))
+- API catalogue part B3 (teacher, reports, admin): [teacher-reports-admin.md](../../architecture/v2-api-catalogue/teacher-reports-admin.md) (endpoint list, wire conventions and open questions for this card's scope)
 
 ## Outputs
 

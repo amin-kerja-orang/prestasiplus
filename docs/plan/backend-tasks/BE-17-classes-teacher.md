@@ -22,6 +22,9 @@ Classrooms and enrolments for Guru and Murid: teacher creates a class, students 
 - `docs/architecture/v2-data-migration.md` section 4.8 (classes: `classrooms`, `classroom_student`)
 - `docs/adr/0014-store-ownership-and-repositories.md` (M10 owns class stores; other modules use its repository)
 - BE-05 users/schools repositories, BE-08 curriculum repository, BE-03 `ScopeFilter`
+- Requirements: BE-FR-25 ([URS 9.2](../../requirements/v2-backend-urs.md))
+- API catalogue part B3 (teacher, reports, admin): [teacher-reports-admin.md](../../architecture/v2-api-catalogue/teacher-reports-admin.md) (endpoint list, wire conventions and open questions for this card's scope)
+- Data model: [v2-data-model.md](../../architecture/v2-data-model.md) (tables, keys and indexes of this card; being written 2026-10-19)
 
 ## Outputs
 

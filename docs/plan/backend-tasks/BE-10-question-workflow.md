@@ -21,6 +21,9 @@ The review lifecycle and the supporting M04 features: Draf, Semakan, Lulus, Terb
 - `docs/requirements/srs/M04-question-bank.md` (BR-M04-11 to BR-M04-16 reports, BR-M04-21/22 quality, BR-M04-23 master notes, BR-M04-24 AI explanation, BR-M04-25 DSKP)
 - Mock: `src/modules/m04-question-bank/mock/handlers/{workflow,workflow-common,reports,submissions,imports,quality,diagram-audit,dskp,dskp-source,master-notes,ai-explanation,structured}.ts`, `src/modules/m04-question-bank/mock/import/csv.ts` (import messages), `src/modules/m10-teacher-class/mock/handlers/{questions,csv}.ts` (Guru import/template); client `src/modules/m04-question-bank/api/*`; mock tests `src/modules/m04-question-bank/__tests__/mock/**`
 - BE-09 outputs (`QuestionsService.setStatus`, tables)
+- Requirements: BE-FR-12, BE-FR-35, BE-FR-36; BE-NFR-08, BE-NFR-38 ([URS 9.2](../../requirements/v2-backend-urs.md))
+- API catalogue part B2 (learning, question bank, exam): [learning-exam.md](../../architecture/v2-api-catalogue/learning-exam.md) (endpoint list, wire conventions and open questions for this card's scope)
+- Data model: [v2-data-model.md](../../architecture/v2-data-model.md) (tables, keys and indexes of this card; being written 2026-10-19)
 
 ## Outputs
 
@@ -75,6 +78,9 @@ The status-transition endpoint: the mock changes status through `POST /api/quest
 7. Quality audit (`POST /api/question-quality/audit`) scores only questions created at runtime in the mock; in v2 it scores every question and stores `quality_audits` rows. The score bands are SRS BR-M04-21 (Cemerlang 76 to 100, Baik 51 to 75, Lemah 26 to 50, Kritikal 0 to 25). The scoring function itself is the mock's `score(q)` (SRS 6.12); copy it, do not invent a new one.
 8. The AI explanation endpoint never calls the network. It returns the mock's deterministic explanation (without `force` an existing one is returned unchanged, with `force` it is replaced; SRS BR-M04-24) and the response and the OpenAPI description say it is a stub (OD-7).
 9. Roles: no session 401; missing CSRF 403 `CSRF_INVALID`; the student-facing report routes (`POST /api/question-reports`, `GET /api/question-reports/mine`) accept any signed-in user; all other routes need the role stated above.
+10. Versioning (BE-FR-35, `v2-question-bank.md` 4.6): publishing version n+1 archives version n as `Diarkib (digantikan)` in the same transaction, so there is never a moment with zero live version unless an admin withdraws (test: a forced failure after the archive step leaves n live); practice and Bijak answer rows keep the question id and version served, so history is unchanged after an edit (cross-card test with BE-12). (added 2026-10-19)
+11. Report fix loop (BE-FR-36, `v2-question-bank.md` 4.7): a report carries the question and its version; the reporter is notified (`NotificationsService`) on every status change; the status becomes Diperbaiki when the linked fixing version is Terbit; a comment of 501 characters is rejected 422. Create, list, mine and patch are tested per role. (added 2026-10-19)
+12. Quality gates of `v2-question-bank.md` 4.8 are enforced by name: "Submit for review", "Approve" (reviewer is not the AI service, tags valid, marks total equals part marks), "Publish" and "No bypass" (the same gate applies to single, paper-level and bulk actions; a bulk action reports a failing question and skips it). One test per gate for its failing rule. (added 2026-10-19)
 
 ## Test commands
 
@@ -108,6 +114,7 @@ Do not guess these; write your working assumption in the PR and ask the lead (is
 1. The mock reports deactivate an MCQ at the first report and a structured question at the third (SRS BR-M04-12); `v2-question-bank.md` Q7 says v2 unifies this. Which rule does the API implement? Working assumption: the mock's rule until Q7 is answered.
 2. The mock's status values differ from the v2 lifecycle; see BE-09 open question 1. The transition table above uses the v2 statuses.
 3. `source_papers` columns `natural_key` and `content_hash` are required by BE-30; confirm their definition (plan 14.7) before the migration.
+4. Pending LEAD decision: OQ-22 of the URS (auto-hide threshold for reported questions; URS default: pending review after 3 reports from different students, Admin Pusat can hide at once; this is the same question as item 1) and OQ-25 (CSV as the mock versus the Excel template of v2-question-bank 4.3). Build the mock behaviour until answered. (added 2026-10-19)
 
 ## Prompt for Claude Code
 

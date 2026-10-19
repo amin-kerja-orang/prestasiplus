@@ -21,6 +21,8 @@ Make the contract the acceptance test for both implementations: a suite of HTTP-
 - `packages/contract/**` (schemas, `openapi.json`, emit/check scripts), `src/api/transport.ts`, `src/api/http-transport.ts`, `src/mock/server/__tests__/server.test.ts`
 - Existing mock handler tests: `src/modules/*/__tests__/mock/**`
 - BE-03 outputs (auth scenarios), `.github/workflows/api.yml` (BE-01)
+- Requirements: BE-NFR-26; BE-OPS-06 ([URS 9.2](../../requirements/v2-backend-urs.md))
+- API catalogue part B1 (core, identity, curriculum): [core-identity-curriculum.md](../../architecture/v2-api-catalogue/core-identity-curriculum.md) (endpoint list, wire conventions and open questions for this card's scope)
 
 ## Outputs
 

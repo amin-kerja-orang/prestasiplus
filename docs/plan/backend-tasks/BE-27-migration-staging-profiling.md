@@ -22,6 +22,7 @@ Build the first stage of the ETL: copy the .cloud tables (raw) into a `staging_c
 - `docs/requirements/v2-cloud-gap.md`
 - `docs/architecture/v2-backend-plan.md` sections 9 (secrets and data protection), 13 (OD-2, OD-10, OD-13) and 14 (all)
 - BE-02 (Prisma, db harness) and BE-34 (`etl_*` tables, runner, `.gitignore` guard) outputs
+- Requirements: BE-NFR-13; BE-MIG-05, BE-MIG-06 ([URS 9.2](../../requirements/v2-backend-urs.md))
 
 ## Outputs
 

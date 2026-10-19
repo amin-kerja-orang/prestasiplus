@@ -25,6 +25,9 @@ Persist and serve the M02 user and school management used by Admin Pusat and Adm
 - `docs/architecture/v2-data-migration.md` section 4.1 (M01/M02 realignments), section 5 (IC, faith, roles)
 - `docs/architecture/v2-frontend.md` section 6 (M02 row: `roles[]`, `username`, nullable e-mail, two status flags, masked IC, `joinCode`)
 - BE-03 outputs (`identity.prisma`, `schools.prisma`, guards, `ScopeFilter`, `AuditService`)
+- Requirements: BE-FR-03, BE-FR-34; BE-NFR-10 ([URS 9.2](../../requirements/v2-backend-urs.md))
+- API catalogue part B1 (core, identity, curriculum): [core-identity-curriculum.md](../../architecture/v2-api-catalogue/core-identity-curriculum.md) (endpoint list, wire conventions and open questions for this card's scope)
+- Data model: [v2-data-model.md](../../architecture/v2-data-model.md) (tables, keys and indexes of this card; being written 2026-10-19)
 
 ## Outputs
 
@@ -112,6 +115,7 @@ Do not guess these; write your working assumption in the PR and ask the lead (is
 
 1. The mock keeps `faith` in user settings (M01 BR-17) while the data-migration plan drops `faith` from `users` (Q7). This card stores no `faith`; BE-06 asks the question for settings.
 2. Deleting a user with dependent rows: the working rule is the mock's (read `users-admin.ts`); confirm cascade versus block for real data.
+3. Pending LEAD decision: OQ-17 of the URS. AC9 builds `POST /api/admin/users/:id/impersonate` on the BE-03 session mode, but the URS default drops the route in favour of `POST /api/session/mode` (two mechanisms are forbidden; D31c: Mod Pelajar acts as the admin account itself). Do not implement act-as-another-user until answered. (added 2026-10-19)
 
 ## Prompt for Claude Code
 

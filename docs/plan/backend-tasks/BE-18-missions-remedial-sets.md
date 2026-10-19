@@ -21,6 +21,10 @@ Teacher-assigned work and its student side: class missions, remedial test genera
 - Mock: `src/modules/m10-teacher-class/mock/handlers/{command-center,command-center-remedial,questions,extras,csv,docx,lookups,student-side,dashboard}.ts`, repository `src/modules/m10-teacher-class/mock/repository/{missions,question-sets,remedial,dskp}.ts`, tables `src/modules/m10-teacher-class/mock/tables/tables.ts`: `m10.missions`, `m10.remedialTests`, `m10.questionSets`, `m10.dskpBidang`, `m10.dskpSk`, `m10.dskpSp`; M05 `src/modules/m05-practice/mock/handlers/assigned.ts` (the three assigned-work reads); client `src/modules/m10-teacher-class/api/*`, `src/modules/m10-teacher-class/api/command-center.ts`
 - Mock tests: `src/modules/m10-teacher-class/__tests__/mock/**`, `src/modules/m05-practice/__tests__/mock/structured-targets-assigned.test.ts`
 - BE-17, BE-12 outputs, BE-10 DSKP GET endpoints, BE-09 `QuestionsService`
+- Requirements: BE-FR-26; BE-NFR-20, BE-NFR-38 ([URS 9.2](../../requirements/v2-backend-urs.md))
+- API catalogue part B3 (teacher, reports, admin): [teacher-reports-admin.md](../../architecture/v2-api-catalogue/teacher-reports-admin.md) (endpoint list, wire conventions and open questions for this card's scope)
+- API catalogue part B2 (learning, question bank, exam): [learning-exam.md](../../architecture/v2-api-catalogue/learning-exam.md) (endpoint list, wire conventions and open questions for this card's scope)
+- Data model: [v2-data-model.md](../../architecture/v2-data-model.md) (tables, keys and indexes of this card; being written 2026-10-19)
 
 ## Outputs
 

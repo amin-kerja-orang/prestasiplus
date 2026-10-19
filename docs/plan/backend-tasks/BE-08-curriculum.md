@@ -24,6 +24,9 @@ Own the curriculum store: education levels, subjects, subject-levels (derived), 
 - `docs/reference/dskp/*.json` (13 subject files) and `docs/reference/dskp/README.md`
 - `docs/architecture/v2-data-migration.md` section 4.2 (M03 realign: `strand`, `dskpCode`, `inTree` rule, derived subject-levels)
 - BE-03 outputs (guards, `ScopeFilter`)
+- Requirements: BE-FR-08 ([URS 9.2](../../requirements/v2-backend-urs.md))
+- API catalogue part B1 (core, identity, curriculum): [core-identity-curriculum.md](../../architecture/v2-api-catalogue/core-identity-curriculum.md) (endpoint list, wire conventions and open questions for this card's scope)
+- Data model: [v2-data-model.md](../../architecture/v2-data-model.md) (tables, keys and indexes of this card; being written 2026-10-19)
 
 ## Outputs
 

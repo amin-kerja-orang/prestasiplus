@@ -22,6 +22,9 @@ CMS content (articles, banners, videos, notes, Perutusan messages, screenshots, 
 - Mock M22: `src/modules/m22-support-tickets/mock/handlers/tickets.ts` (4 routes; notifies every active admin through the M01 hook), table `src/modules/m22-support-tickets/mock/tables/*`; client and messages `src/modules/m22-support-tickets/api/types.ts`; mock tests `src/modules/m22-support-tickets/__tests__/mock/**`
 - `docs/requirements/v2-portals.md` (public articles/videos move to `awam`; signed-in learners reach the same content through a learner route: the API stays one set of endpoints)
 - BE-06 `NotificationsService`, BE-04 files service, BE-05 for school scoping
+- Requirements: BE-FR-09, BE-FR-10, BE-FR-34; BE-NFR-37 ([URS 9.2](../../requirements/v2-backend-urs.md))
+- API catalogue part B4 (economy, content, games): [economy-content-games.md](../../architecture/v2-api-catalogue/economy-content-games.md) (endpoint list, wire conventions and open questions for this card's scope)
+- Data model: [v2-data-model.md](../../architecture/v2-data-model.md) (tables, keys and indexes of this card; being written 2026-10-19)
 
 ## Outputs
 

@@ -23,6 +23,9 @@
 - `docs/requirements/v2-exam-schema.md` section 9 (sample PDFs: digital-born versus scans)
 - BE-04 outputs (`FileStorage`, `files`, upload pipeline, derived-file limit)
 - The frontend intake code that OCRs in the browser today, so the server output has the shape the review UI expects: `src/modules/m28-bijak-spm/admin/intake/lib/{ocr,page-images,sample-paper,seed,intake-routes}.ts`, `src/modules/m28-bijak-spm/admin/intake/types.ts` (`PageText`, `PageImage`, `IntakeMeta` with `PAPER_TYPES` and `COPYRIGHT_OPTIONS`, `IntakeBatch`), and the mock store methods `listIntakeBatches`, `getIntakeBatch`, `createIntakeBatch` in `src/modules/m28-bijak-spm/server/store.ts`
+- Requirements: BE-FR-22; BE-NFR-14, BE-NFR-15, BE-NFR-18, BE-NFR-21, BE-NFR-29, BE-NFR-30; BE-OPS-03 ([URS 9.2](../../requirements/v2-backend-urs.md))
+- API catalogue part B2 (learning, question bank, exam): [learning-exam.md](../../architecture/v2-api-catalogue/learning-exam.md) (endpoint list, wire conventions and open questions for this card's scope)
+- Data model: [v2-data-model.md](../../architecture/v2-data-model.md) (tables, keys and indexes of this card; being written 2026-10-19)
 
 ## Outputs
 

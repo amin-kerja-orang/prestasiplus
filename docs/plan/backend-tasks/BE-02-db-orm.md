@@ -21,6 +21,8 @@ Add the `db` service, wire Prisma (schema folder, one `.prisma` file per owner m
 - `docs/adr/0014-store-ownership-and-repositories.md`, `docs/adr/0006-determinism-seeds-clock-ids.md`
 - `compose.yaml` (commented `db`), `docs/ops/containers.md`, `src/mock/db/*` (the mock's table and transaction semantics), `src/mock/determinism/*` (seeded PRNG and clock the helpers mirror)
 - BE-01 outputs (registries, `.env.api.example`, workflow)
+- Requirements: BE-FR-31; BE-NFR-19, BE-NFR-20, BE-NFR-28; BE-OPS-02, BE-OPS-03, BE-OPS-04 ([URS 9.2](../../requirements/v2-backend-urs.md))
+- Data model: [v2-data-model.md](../../architecture/v2-data-model.md) (tables, keys and indexes of this card; being written 2026-10-19)
 
 ## Outputs
 
