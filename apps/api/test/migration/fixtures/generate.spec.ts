@@ -117,17 +117,19 @@ describe.each(['tiny', 'small'] as const)('fictitious data only (%s, AC6)', (siz
 
   it('no word of any value is a common real name (deny-list), and no real-looking e-mail, phone or IC appears', () => {
     let checked = 0
+    const offenders: string[] = []
+    const allowed = { allowedEmailDomains: [FICTITIOUS_DOMAIN] }
     for (const spec of TABLES) {
       for (const row of asRows(fx, spec.name)) {
         for (const value of Object.values(row)) {
           for (const s of strings(value)) {
             checked++
-            expect(DENY.test(s), `${spec.name}: ${s}`).toBe(false)
-            expect(patternKinds(s, { allowedEmailDomains: [FICTITIOUS_DOMAIN] }), `${spec.name}: ${s}`).toEqual([])
+            if (DENY.test(s) || patternKinds(s, allowed).length > 0) offenders.push(`${spec.name}: ${s}`)
           }
         }
       }
     }
+    expect(offenders.slice(0, 5)).toEqual([]) // one aggregated assertion for the whole fixture
     expect(checked).toBeGreaterThan(1000)
   })
 })
@@ -215,7 +217,8 @@ describe.each(['tiny', 'small'] as const)('planted anomalies match a scan of the
   })
 })
 
-describe('medium', () => {
+// Slow (20,000 users); run with PP_FIXTURE_MEDIUM=1.
+describe.skipIf(!process.env.PP_FIXTURE_MEDIUM)('medium', () => {
   it('generates the medium size without error and scales the planted counts', () => {
     const fx = generateFixture('medium', 9)
     expect(asRows(fx, 'users')).toHaveLength(20000)

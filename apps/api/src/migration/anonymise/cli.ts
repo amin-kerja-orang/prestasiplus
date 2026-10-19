@@ -13,7 +13,7 @@
  * (nothing was read), 4 default deny (a column has no rule, nothing was read), 5 the leak scan found
  * personal-looking data (the output was deleted).
  */
-import { existsSync, readFileSync, statSync } from 'node:fs'
+import { existsSync, readFileSync, rmSync, statSync } from 'node:fs'
 import { resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
@@ -25,14 +25,25 @@ import { DirReader, DumpFormatError, PgReader, type TableReader } from '../stagi
 import { AnonymiseUsageError, ConfigError, CoverageError, InputError, LeakScanError, OutputError } from './errors'
 import { loadHmacKey } from './key'
 import { LeakScanner, scanDumpDirectory } from './leak-scan'
-import { assertNotOverlapping, assertOutputUsable, runAnonymise } from './run'
+import { assertOutputUsable, runAnonymise } from './run'
 import { checkCoverage, parseConfig } from './rules'
 
 export const ANON_EXIT = { ok: 0, failed: 1, usage: 2, sourceRefused: 3, coverage: 4, leak: 5 } as const
 
+export const WINDOWS_WARNING =
+  'File permissions are not enforced on Windows; keep the key and the output in your user profile on an encrypted disk.'
+
+/** Applies the .migration-out guard to <out>.partial without creating anything. */
+function prepareOutputDirCheck(outDir: string): void {
+  const probe = prepareOutputDir(`${outDir}.partial`)
+  rmSync(probe, { recursive: true, force: true })
+}
+
 export const DEFAULT_CONFIG_PATH = fileURLToPath(new URL('./anon.config.json', import.meta.url))
 
 export interface AnonCliDeps {
+  /** Tests only: pretend to run on another platform (default process.platform). */
+  platform?: string
   env?: Readonly<Record<string, string | undefined>>
   out?: (line: string) => void
   err?: (line: string) => void
@@ -112,6 +123,10 @@ export async function runAnonymiseCli(argv: readonly string[], deps: AnonCliDeps
     const { key, origin } = loadHmacKey(env)
     secrets.push(key.toString('utf8'))
     log.info(`Pseudonymisation key loaded from ${origin === 'env' ? 'ANON_HMAC_KEY' : 'ANON_HMAC_KEY_FILE'}.`)
+    if ((deps.platform ?? process.platform) === 'win32') {
+      log.warn(WINDOWS_WARNING)
+    }
+    if (origin === 'env') log.warn('ANON_HMAC_KEY was set inline: it may be in your shell history. Prefer ANON_HMAC_KEY_FILE.')
 
     // 2. Rules and default deny, before the source or the output is touched.
     const config = loadConfigFile(resolve(flags.get('config') ?? DEFAULT_CONFIG_PATH))
@@ -131,9 +146,10 @@ export async function runAnonymiseCli(argv: readonly string[], deps: AnonCliDeps
     } else {
       sourceDir = resolve(source)
     }
-    assertNotOverlapping(resolve(outFlag), sourceDir) // before anything is created
-    const outDir = prepareOutputDir(resolve(outFlag))
+    // Nothing is created here. The run writes into <out>.partial (same .migration-out guard) and renames it.
+    const outDir = resolve(outFlag)
     assertOutputUsable(outDir, sourceDir)
+    prepareOutputDirCheck(outDir)
 
     if (source === 'pg') {
       const opened = await CloudSource.open({ url: env.CLOUD_SOURCE_URL, schema: flags.get('source-schema') })

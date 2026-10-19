@@ -27,10 +27,16 @@ export function dummyBcryptHash(prefix: '2a' | '2b' | '2y' = '2y'): string {
   return `$${prefix}$${BCRYPT_BODY}`
 }
 
-export function dummyPasswordHash(original: unknown): unknown {
+/**
+ * `locked` is for privileged accounts (admin, officers, sponsors, unknown roles): they get the unusable
+ * `not-a-hash-anonymised`, never the known dummy hash, so a leaked dump holds no known admin password.
+ * Only the roles in the config's `dummyPasswordRoles` (pelajar, guru, ibu_bapa) keep Demo1234 for developers.
+ */
+export function dummyPasswordHash(original: unknown, locked = false): unknown {
   if (original === null || original === undefined) return original ?? null
   if (typeof original !== 'string') return NOT_A_HASH
   if (original === '') return ''
+  if (locked) return NOT_A_HASH
   const bcrypt = /^\$(2[aby])\$/.exec(original)
   if (bcrypt) return dummyBcryptHash(bcrypt[1] as '2a' | '2b' | '2y')
   if (/^\$[0-9A-Za-z-]{1,10}\$/.test(original)) return DUMMY_ARGON2_HASH

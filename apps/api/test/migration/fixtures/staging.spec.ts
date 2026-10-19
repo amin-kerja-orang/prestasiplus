@@ -58,10 +58,30 @@ const orphansOf = (report: ProfileReport): Record<string, number> =>
 const table = (report: ProfileReport, name: string) => report.tables.find((t) => t.table === name)!
 const enumCount = (report: ProfileReport, tableName: string, column: string, value: string): number =>
   table(report, tableName).enums.find((e) => e.column === column)?.values.find((v) => v.value === value)?.count ?? 0
+/**
+ * M2: after anonymising, accounts whose role is not pelajar/guru/ibu_bapa hold the unusable value (class "(other)"),
+ * the others keep the class of their original hash (bcrypt, argon2id) or become "(other)" for plain text.
+ */
+function anonymisedPrefixes(): Record<string, number> {
+  const rows = readFileSync(join(fixtureDir, 'users.ndjson'), 'utf8').split('\n').filter(Boolean).map((l) => JSON.parse(l) as Record<string, unknown>)
+  const out: Record<string, number> = {}
+  for (const u of rows) {
+    const p = u.password
+    const role = typeof u.role === 'string' ? u.role.trim().toLowerCase() : ''
+    let key: string
+    if (p === null || p === undefined) key = '(null)'
+    else if (p === '') key = '(empty)'
+    else if (!['pelajar', 'guru', 'ibu_bapa'].includes(role)) key = '(other)'
+    else key = /^\$[0-9A-Za-z]{1,10}\$/.exec(String(p))?.[0] ?? '(other)'
+    out[key] = (out[key] ?? 0) + 1
+  }
+  return out
+}
 const nullRatio = (n: number, total: number) => Math.round((1 - (total - n) / total) * 10000) / 10000
 
 function expectPlanted(report: ProfileReport, opts: { anonymised: boolean }) {
-  const { planted, scanned } = anomalies
+  const expectedPrefixes = opts.anonymised ? anonymisedPrefixes() : anomalies.scanned.passwordPrefixes
+  const { planted } = anomalies
   // row counts of every table equal the manifest
   expect(Object.fromEntries(report.tables.map((t) => [t.table, t.rowCount]))).toEqual(anomalies.rows)
   // orphans, per declared foreign key
@@ -75,7 +95,7 @@ function expectPlanted(report: ProfileReport, opts: { anonymised: boolean }) {
   })
   // password hash prefixes
   const prefixes = Object.fromEntries((table(report, 'users').hashPrefixes[0]?.prefixes ?? []).map((p) => [p.prefix, p.count]))
-  expect(prefixes).toEqual(scanned.passwordPrefixes)
+  expect(prefixes).toEqual(expectedPrefixes)
   // unknown enum values
   expect(enumCount(report, 'users', 'role', UNKNOWN_ROLE)).toBe(planted.unknownEnums['users.role']?.[UNKNOWN_ROLE])
   expect(enumCount(report, 'coin_transactions', 'type', UNKNOWN_COIN_TYPE)).toBe(planted.unknownEnums['coin_transactions.type']?.[UNKNOWN_COIN_TYPE])

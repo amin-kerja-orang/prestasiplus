@@ -61,6 +61,27 @@ describe('default deny (AC1)', () => {
     expect(ruleFor(DEFAULT_CONFIG, 'users', 'parent_invite_token')?.rule).toBe('null')
   })
 
+  it('parses dummyPasswordRoles and leakScan.allow, and rejects bad ones', () => {
+    const base = { version: 1, tables: {} }
+    expect(parseConfig(base)).toMatchObject({ dummyPasswordRoles: ['pelajar', 'guru', 'ibu_bapa'], leakScan: { allow: [] } })
+    expect(parseConfig({ ...base, leakScan: { allow: ['users.kelas'] } }).leakScan.allow).toEqual(['users.kelas'])
+    expect(() => parseConfig({ ...base, leakScan: { allow: ['kelas'] } })).toThrow(/leakScan/)
+    expect(() => parseConfig({ ...base, dummyPasswordRoles: 'admin' })).toThrow(/dummyPasswordRoles/)
+    const cfg = { ...DEFAULT_CONFIG, leakScan: { allow: ['users.ghost'] } }
+    expect(findCoverageGaps(TABLES, cfg).unknown).toEqual(['users.ghost'])
+    expect(DEFAULT_CONFIG.leakScan.allow).toEqual([])
+  })
+
+  it('the shipped config covers the quasi-identifier and upload columns (M4)', () => {
+    const expected: [string, string, string][] = [
+      ['practice_sessions', 'client_uuid', 'pseudonym'], ['audit_logs', 'subject_id', 'pseudonym'], ['users', 'spm_targets', 'scrub-text'],
+      ['notifications', 'title', 'scrub-text'], ['notifications', 'target', 'scrub-text'], ['media_assets', 'path', 'pseudonym'],
+      ['paper_documents', 'path', 'pseudonym'], ['paper_document_pages', 'image_path', 'pseudonym'], ['banners', 'image_path', 'pseudonym'],
+      ['audio_kbat', 'audio_path', 'pseudonym'],
+    ]
+    for (const [t, c, r] of expected) expect(ruleFor(DEFAULT_CONFIG, t, c)?.rule, `${t}.${c}`).toBe(r)
+  })
+
   it('rejects a malformed config without echoing values', () => {
     expect(() => parseConfig(null)).toThrow(ConfigError)
     expect(() => parseConfig({ version: 2, tables: {} })).toThrow(/version/)
@@ -113,6 +134,10 @@ describe('pseudonyms (AC2)', () => {
     expect(p.apply('email', 'Some.One@Example.org')).toBe(p.apply('email', ' some.one@example.ORG '))
     expect(p.apply('name', 'Aaa  Bbb')).toBe(p.apply('name', 'aaa bbb'))
     expect(p.apply('phone', '012-345 6789')).toBe(p.apply('phone', '0123456789'))
+    // L5: the country code and the leading 0 are the same number
+    expect(p.apply('phone', '+60 12-345 6789')).toBe(p.apply('phone', '0123456789'))
+    expect(p.apply('phone', '60123456789')).toBe(p.apply('phone', '0123456789'))
+    expect(p.apply('phone', '0123456789')).not.toBe(p.apply('phone', '0123456780'))
     expect((p.apply('ic', '010101-01-0101') as string).replace(/\D/g, '')).toBe((p.apply('ic', '010101010101') as string).replace(/\D/g, ''))
     expect(p.apply('email', 'a@b.org')).not.toBe(p.apply('email', 'c@d.org'))
   })
@@ -131,7 +156,7 @@ describe('pseudonyms (AC2)', () => {
       expect(email).toMatch(/^anon-[a-z2-7]{12}@example\.test$/)
       expect(patternKinds(email)).toEqual([])
       const phone = p.apply('phone', `01${String(i).padStart(9, '4')}`) as string
-      expect(phone).toMatch(/^00\d{9}$/)
+      expect(phone).toMatch(/^00\d{13}$/)
       expect(patternKinds(phone), phone).toEqual([])
       const ic = p.apply('ic', String(i).padStart(12, '6')) as string
       expect(ic).toMatch(/^\d{2}00\d{2}00\d{4}$/)
@@ -150,6 +175,39 @@ describe('pseudonyms (AC2)', () => {
     expect(seen.size).toBe(5000) // distinct inputs stay distinct
   })
 
+  it('M1: 100,000 distinct ICs and 100,000 distinct phones never abort, stay distinct and never match a leak pattern', () => {
+    const p = new Pseudonymiser(key(TEST_KEY))
+    const ics = new Set<string>()
+    const phones = new Set<string>()
+    let bad = 0
+    for (let i = 0; i < 100_000; i++) {
+      const ic = p.apply('ic', String(100_000_000_000 + i * 7919)) as string
+      const phone = p.apply('phone', `01${String(i).padStart(9, '0')}`) as string
+      ics.add(ic)
+      phones.add(phone)
+      if (!/^\d{2}00\d{2}00\d{4}$/.test(ic) || !/^00\d{13}$/.test(phone) || patternKinds(ic).length > 0 || patternKinds(phone).length > 0) bad++
+    }
+    expect(ics.size).toBe(100_000)
+    expect(phones.size).toBe(100_000)
+    expect(bad).toBe(0)
+    expect(p.rehashed).toBeGreaterThan(0) // 100k of 10^8 ICs: collisions did happen and were resolved
+    // the choice is stable: asking again gives the same fake
+    const one = String(100_000_000_000 + 5 * 7919)
+    expect(p.apply('ic', one)).toBe(p.apply('ic', one))
+    // a second run over the same input in the same order reproduces the same fakes
+    const again = new Pseudonymiser(key(TEST_KEY))
+    for (let i = 0; i < 20_000; i++) again.apply('ic', String(100_000_000_000 + i * 7919))
+    for (let i = 0; i < 20_000; i += 997) expect(again.apply('ic', String(100_000_000_000 + i * 7919))).toBe(p.apply('ic', String(100_000_000_000 + i * 7919)))
+  }, 60_000)
+
+  it('path keeps the extension and hides the name', () => {
+    const p = new Pseudonymiser(key(TEST_KEY))
+    expect(p.apply('path', 'uploads/Ali Rapor.PDF')).toMatch(/^files\/[a-z2-7]{20}\.pdf$/)
+    expect(p.apply('path', 'x/y/photo.jpeg?v=2')).toMatch(/\.jpeg$/)
+    expect(p.apply('path', 'noext')).toMatch(/^files\/[a-z2-7]{20}$/)
+    expect(p.apply('path', 'uploads/Ali Rapor.PDF') as string).not.toMatch(/ali|rapor/i)
+  })
+
   it('refuses a key that is too short', () => {
     expect(() => new Pseudonymiser(key('short'))).toThrow(/too short/)
   })
@@ -164,6 +222,10 @@ describe('passwords (AC4)', () => {
     expect(dummyPasswordHash('$argon2id$v=19$m=1,t=1,p=1$c2FsdA$aGFzaA')).toBe(DUMMY_ARGON2_HASH)
     expect(dummyPasswordHash('$weird$thing')).toBe(DUMMY_ARGON2_HASH)
     expect(dummyPasswordHash('letmein')).toBe(NOT_A_HASH)
+    // M2: a locked (privileged) account never gets the known dummy hash
+    expect(dummyPasswordHash(`$2y$10$${'x'.repeat(53)}`, true)).toBe(NOT_A_HASH)
+    expect(dummyPasswordHash(null, true)).toBeNull()
+    expect(dummyPasswordHash('', true)).toBe('')
   })
 
   it('the documented dummy password verifies against the argon2 dummy', async () => {

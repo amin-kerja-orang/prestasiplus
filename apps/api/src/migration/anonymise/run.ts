@@ -11,14 +11,15 @@
  *     written is deleted again;
  *   - the log carries table names and counts only.
  */
-import { existsSync, readdirSync, realpathSync, rmSync } from 'node:fs'
+import { existsSync, readdirSync, realpathSync, renameSync, rmdirSync, rmSync } from 'node:fs'
 import { open, writeFile } from 'node:fs/promises'
 import { dirname, isAbsolute, join, relative, resolve } from 'node:path'
 
 import { columnNames, TABLES, type TableSpec } from '../ddl/spec'
 import { DUMP_FORMAT, type TableReader } from '../staging/readers'
 import { silentLogger, type Logger } from '../staging/log'
-import { InputError, LeakScanError, OutputError } from './errors'
+import { prepareOutputDir } from '../profile'
+import { InputError, LeakScanError, OutputError, type LeakHit } from './errors'
 import { LeakScanner, OriginalsIndex, scanDumpDirectory, type ScanResult } from './leak-scan'
 import { Pseudonymiser, type PseudonymKind } from './pseudonyms'
 import { applyRule, checkCoverage, ruleFor, type AnonConfig, type Rule } from './rules'
@@ -28,7 +29,11 @@ const PLAIN = /^[a-z0-9_]{1,63}$/
 
 export interface AnonymiseOptions {
   reader: TableReader
-  /** An existing, empty directory (see `assertOutputUsable`). */
+  /**
+   * The FINAL output path: it does not exist yet (or is an empty directory). The run writes into
+   * `<outDir>.partial` and renames it to `outDir` only after the leak scan passed; on any error the
+   * partial directory is removed entirely.
+   */
   outDir: string
   config: AnonConfig
   key: Uint8Array
@@ -79,11 +84,20 @@ export function assertNotOverlapping(outDir: string, sourceDir: string | undefin
   }
 }
 
-/** The output must be an existing, empty directory that does not overlap the source. */
+export const PARTIAL_SUFFIX = '.partial'
+
+/**
+ * The output must not exist (or be an empty directory), no stale `.partial` may exist, and neither may
+ * overlap the source. Creates nothing.
+ */
 export function assertOutputUsable(outDir: string, sourceDir?: string): void {
   assertNotOverlapping(outDir, sourceDir)
-  if (readdirSync(real(outDir)).length > 0) {
+  assertNotOverlapping(`${outDir}${PARTIAL_SUFFIX}`, sourceDir)
+  if (existsSync(outDir) && readdirSync(real(outDir)).length > 0) {
     throw new OutputError('The output directory is not empty. Use a new directory (an old dump is never overwritten or mixed).')
+  }
+  if (existsSync(`${outDir}${PARTIAL_SUFFIX}`)) {
+    throw new OutputError('A leftover ".partial" directory from an earlier run exists next to the output. Check it, delete it, and run again.')
   }
 }
 
@@ -101,18 +115,16 @@ export async function runAnonymise(options: AnonymiseOptions): Promise<Anonymise
   // Default deny, before the source or the output is touched.
   checkCoverage(tables, options.config)
   assertOutputUsable(options.outDir, options.sourceDir)
-  const outDir = real(options.outDir)
+  const finalDir = realEvenIfMissing(options.outDir)
+  const outDir = prepareOutputDir(`${finalDir}${PARTIAL_SUFFIX}`) // same .migration-out guard; created empty, mode 0700
 
   const pseudo = new Pseudonymiser(options.key)
   const index = new OriginalsIndex()
-  const written: string[] = []
   const manifestTables: Record<string, { rows: number; file?: string }> = {}
   const results: { table: string; rows: number }[] = []
 
-  const cleanup = (): void => {
-    for (const file of written) rmSync(file, { force: true })
-    written.length = 0
-  }
+  const cleanup = (): void => rmSync(outDir, { recursive: true, force: true })
+  const dummyRoles = new Set(options.config.dummyPasswordRoles.map((r) => r.toLowerCase()))
 
   try {
     for (const spec of tables) {
@@ -141,7 +153,8 @@ export async function runAnonymise(options: AnonymiseOptions): Promise<Anonymise
                   `Table ${spec.name}: the input has a column that the staging DDL does not define (${describe([column])}). Default deny: it is not copied. Add it to ddl/spec.ts and give it a rule.`,
                 )
               }
-              const result = applyRule(rule, value, pseudo)
+              const locked = rule.rule === 'hash-password-dummy' && !(typeof row.role === 'string' && dummyRoles.has(row.role.trim().toLowerCase()))
+              const result = applyRule(rule, value, pseudo, locked)
               index.record(rule, value, result)
               out[column] = result
             }
@@ -150,7 +163,6 @@ export async function runAnonymise(options: AnonymiseOptions): Promise<Anonymise
           if (lines.length === 0) continue
           if (!handle) {
             handle = await open(path, 'wx', 0o600)
-            written.push(path)
           }
           await handle.write(`${lines.join('\n')}\n`)
           rows += lines.length
@@ -173,14 +185,23 @@ export async function runAnonymise(options: AnonymiseOptions): Promise<Anonymise
       mode: 0o600,
       flag: 'wx',
     })
-    written.push(manifestPath)
 
     const scanner = new LeakScanner(index, { allowedEmailDomains: ['example.test', ...(options.extraAllowedEmailDomains ?? [])] })
     const scan = await scanDumpDirectory(outDir, scanner, tables, batchSize)
-    if (scan.hits.length > 0) throw new LeakScanError(scan.hits, true)
+    const allow = new Set(options.config.leakScan.allow)
+    const isOriginal = (h: LeakHit) => h.kind === 'original-value' || h.kind === 'original-name'
+    const tolerated = scan.hits.filter((h) => isOriginal(h) && allow.has(`${h.table}.${h.column}`))
+    const hits = scan.hits.filter((h) => !tolerated.includes(h))
+    for (const h of tolerated) log.warn(`Leak scan: ${h.count} original-value hit(s) in ${h.table}.${h.column} tolerated by leakScan.allow.`)
+    if (hits.length > 0) {
+      for (const h of hits) log.warn(`Leak scan hit: ${h.table}.${h.column} (${h.kind}) x${h.count}.`)
+      throw new LeakScanError(hits, true)
+    }
     log.info(`Leak scan: clean (${scan.rowsScanned} rows, ${scan.cellsScanned} cells checked).`)
 
     const totalRows = results.reduce((sum, t) => sum + t.rows, 0)
+    if (existsSync(finalDir)) rmdirSync(finalDir) // an empty directory the caller made
+    renameSync(outDir, finalDir)
     log.info(`Done: ${results.length} tables, ${totalRows} rows.`)
     return { tables: results, totalRows, scan, pseudonyms: pseudo.counts }
   } catch (e) {

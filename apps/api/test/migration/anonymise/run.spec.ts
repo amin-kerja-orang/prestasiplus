@@ -103,7 +103,7 @@ describe('anonymise:run on a fixture seeded with recognisable fake PII (AC3)', (
     expect(users[0]).toMatchObject({ role: 'pelajar', is_active: '1', created_at: '2026-01-01T00:00:00Z' })
     expect(users[0]?.name).toMatch(/^Nama Anon /)
     expect(users[0]?.email).toMatch(/@example\.test$/)
-    expect(users[0]?.phone).toMatch(/^00\d{9}$/)
+    expect(users[0]?.phone).toMatch(/^00\d{13}$/)
   })
 
   it('the same person gets the same fake across rows and tables; duplicates stay duplicates, distinct stay distinct', () => {
@@ -156,7 +156,7 @@ describe('anonymise:run on a fixture seeded with recognisable fake PII (AC3)', (
     expect(text).not.toMatch(/example\.test|Nama Anon/)
     for (const line of result.log.lines) {
       expect(line, line).toMatch(
-        /^(Pseudonymisation key loaded from ANON_HMAC_KEY\.|Anonymised [a-z_]+: \d+ rows\.|Table [a-z_]+ is absent from the input; nothing written for it\.|Leak scan: clean \(\d+ rows, \d+ cells checked\)\.|Done: \d+ tables, \d+ rows\.|Output: \d+ tables, \d+ rows in .+\. Share it out-of-band, encrypted, and delete it after the rehearsal\.)$/,
+        /^(Pseudonymisation key loaded from ANON_HMAC_KEY\.|ANON_HMAC_KEY was set inline: it may be in your shell history\. Prefer ANON_HMAC_KEY_FILE\.|File permissions are not enforced on Windows; keep the key and the output in your user profile on an encrypted disk\.|Anonymised [a-z_]+: \d+ rows\.|Table [a-z_]+ is absent from the input; nothing written for it\.|Leak scan: clean \(\d+ rows, \d+ cells checked\)\.|Done: \d+ tables, \d+ rows\.|Output: \d+ tables, \d+ rows in .+\. Share it out-of-band, encrypted, and delete it after the rehearsal\.)$/,
       )
     }
   })
@@ -221,7 +221,7 @@ describe('default deny through the CLI (AC1)', () => {
     expect(r.code).toBe(ANON_EXIT.failed)
     expect(r.log.text()).toContain('shoe_size_note')
     expect(r.log.text()).not.toContain(PII.name2)
-    expect(readdirSync(out)).toEqual([])
+    expect([existsSync(out), existsSync(`${out}.partial`)]).toEqual([false, false])
   })
 })
 
@@ -293,7 +293,7 @@ describe('the leak scan fails closed (AC3)', () => {
     expect(r.log.text()).toContain(kind)
     expect(r.log.text()).toMatch(/output was deleted/)
     for (const v of Object.values(patch)) expect(r.log.text().includes(String(v))).toBe(false)
-    expect(readdirSync(out)).toEqual([])
+    expect([existsSync(out), existsSync(`${out}.partial`)]).toEqual([false, false])
   })
 
   it('a copy of an original value in a kept column of ANOTHER table is found too', async () => {
@@ -319,5 +319,99 @@ describe('the leak scan fails closed (AC3)', () => {
     expect(await runAnonymiseCli(['anonymise:scan', '--dir', outA], { env: {}, out: log2.out, err: log2.err })).toBe(ANON_EXIT.ok)
     const log3 = capture()
     expect(await runAnonymiseCli(['anonymise:scan', '--dir', dirty, '--allow-email-domains', 'leak-check.invalid'], { env: {}, out: log3.out, err: log3.err })).toBe(ANON_EXIT.ok)
+  })
+})
+
+describe('M2: privileged accounts never get the known dummy password', () => {
+  it('admin, officer, sponsor, unknown and missing roles get the unusable value; pelajar, guru, ibu_bapa keep Demo1234', async () => {
+    const dump = work.out('roles-src')
+    const roles = ['admin', 'pegawai_ppd', 'admin_sekolah', 'penaja', 'penyelia_tidak_dikenali', null, 'pelajar', 'guru', 'ibu_bapa', ' GURU ']
+    writeDump(dump, {
+      users: roles.map((role, i) => ({ id: i + 1, name: 'X Y', username: `u${i}`, password: PII.bcryptHash1, role, school_id: 1 })),
+    })
+    const out = work.out('roles-out')
+    const r = await run(['--source', dump, '--out', out])
+    expect(r.code, r.log.text()).toBe(ANON_EXIT.ok)
+    const passwords = (readDump(out).users as Rows).map((u) => u.password)
+    expect(passwords).toEqual([NOT_A_HASH, NOT_A_HASH, NOT_A_HASH, NOT_A_HASH, NOT_A_HASH, NOT_A_HASH, ...Array(4).fill(dummyBcryptHash('2y'))])
+    expect(allText(out)).not.toContain(PII.bcryptHash1)
+  })
+})
+
+describe('L3: the output appears only after the leak scan passed', () => {
+  it('a successful run leaves only <out>, no <out>.partial', async () => {
+    expect(existsSync(`${outA}.partial`)).toBe(false)
+    expect(existsSync(join(outA, 'manifest.json'))).toBe(true)
+  })
+
+  it('a leftover .partial directory is refused and not touched', async () => {
+    const out = work.out('stale')
+    mkdirSync(`${out}.partial`)
+    writeFileSync(join(`${out}.partial`, 'keep.txt'), 'x')
+    const r = await run(['--source', source, '--out', out])
+    expect(r.code).toBe(ANON_EXIT.failed)
+    expect(r.log.text()).toMatch(/leftover/)
+    expect(readdirSync(`${out}.partial`)).toEqual(['keep.txt'])
+    expect(existsSync(out)).toBe(false)
+  })
+
+  it('an empty existing output directory is accepted and replaced by the finished dump', async () => {
+    const out = work.out('empty-existing')
+    mkdirSync(out)
+    expect((await run(['--source', source, '--out', out])).code).toBe(ANON_EXIT.ok)
+    expect(readdirSync(out)).toContain('manifest.json')
+  })
+})
+
+describe('F3: leakScan.allow tolerates original-value hits only', () => {
+  const configWith = (allow: string[]) => {
+    const config = JSON.parse(readFileSync(new URL('../../../src/migration/anonymise/anon.config.json', import.meta.url), 'utf8')) as Record<string, unknown>
+    config.leakScan = { allow }
+    const cfg = work.out(`allow-${allow.join('-') || 'none'}.json`)
+    writeFileSync(cfg, JSON.stringify(config))
+    return cfg
+  }
+  const withKelas = (kelas: string) => {
+    const tables = piiTables()
+    ;(tables.users as Rows)[3] = { ...(tables.users as Rows)[3], kelas }
+    const dump = work.out(`allow-src-${kelas.length}`)
+    writeDump(dump, tables)
+    return dump
+  }
+
+  it('an original value in an allowed column passes, is logged with its count, and a pattern hit still fails', async () => {
+    const ok = await run(['--source', withKelas(PII.name2), '--out', work.out('allow-ok'), '--config', configWith(['users.kelas'])])
+    expect(ok.code, ok.log.text()).toBe(ANON_EXIT.ok)
+    expect(ok.log.text()).toMatch(/1 original-value hit\(s\) in users\.kelas tolerated/)
+    expect(ok.log.text()).not.toContain(PII.name2)
+
+    const denied = await run(['--source', withKelas(PII.name2), '--out', work.out('allow-denied'), '--config', configWith([])])
+    expect(denied.code).toBe(ANON_EXIT.leak)
+    expect(denied.log.text()).toMatch(/Leak scan hit: users\.kelas \(original-value\) x1\./)
+
+    const pattern = await run(['--source', withKelas(`mail ${PII.email2}`), '--out', work.out('allow-pattern'), '--config', configWith(['users.kelas'])])
+    expect(pattern.code).toBe(ANON_EXIT.leak)
+    expect(pattern.log.text()).toContain('(email)')
+  })
+})
+
+describe('M3: Windows and inline keys', () => {
+  it('on win32 it warns about file permissions, never printing key content', async () => {
+    const log = capture()
+    const code = await runAnonymiseCli(['anonymise:run', '--source', source, '--out', work.out('win')], {
+      env: env(),
+      out: log.out,
+      err: log.err,
+      platform: 'win32',
+    })
+    expect(code).toBe(ANON_EXIT.ok)
+    expect(log.text()).toContain('File permissions are not enforced on Windows; keep the key and the output in your user profile on an encrypted disk.')
+    expect(log.text()).not.toContain(TEST_KEY)
+  })
+
+  it('warns when the key was given inline', async () => {
+    const r = await run(['--source', source, '--out', work.out('inline')])
+    expect(r.log.text()).toMatch(/set inline: it may be in your shell history/)
+    expect(r.log.text()).not.toContain(TEST_KEY)
   })
 })

@@ -35,7 +35,13 @@ export interface AnonConfig {
   version: 1
   global: Record<string, Rule>
   tables: Record<string, Record<string, Rule>>
+  /** Roles whose accounts get the usable dummy password hash. Every other role (or none) gets an unusable value. */
+  dummyPasswordRoles: string[]
+  /** `table.column` entries whose ORIGINAL-VALUE hits are tolerated (never pattern hits). Empty by default. */
+  leakScan: { allow: string[] }
 }
+
+export const DEFAULT_DUMMY_PASSWORD_ROLES = ['pelajar', 'guru', 'ibu_bapa'] as const
 
 export const SCRUBBED_TEXT = 'Teks anonim.'
 
@@ -60,7 +66,7 @@ function parseRule(raw: unknown, where: string): Rule {
 export function parseConfig(json: unknown): AnonConfig {
   if (!isObject(json)) throw new ConfigError('The config must be a JSON object.')
   if (json.version !== 1) throw new ConfigError('The config "version" must be 1.')
-  const extra = Object.keys(json).filter((k) => !['version', 'global', 'tables'].includes(k))
+  const extra = Object.keys(json).filter((k) => !['version', 'global', 'tables', 'dummyPasswordRoles', 'leakScan'].includes(k))
   if (extra.length > 0) throw new ConfigError(`The config has unknown top-level keys (${extra.filter((k) => PLAIN_NAME.test(k)).join(', ') || extra.length}).`)
   const parseMap = (raw: unknown, where: string): Record<string, Rule> => {
     if (!isObject(raw)) throw new ConfigError(`${where} must be an object.`)
@@ -78,7 +84,22 @@ export function parseConfig(json: unknown): AnonConfig {
     if (!PLAIN_NAME.test(table)) throw new ConfigError('The config has a table name that is not snake_case.')
     tables[table] = parseMap(cols, `tables.${table}`)
   }
-  return { version: 1, global, tables }
+  let dummyPasswordRoles: string[] = [...DEFAULT_DUMMY_PASSWORD_ROLES]
+  if (json.dummyPasswordRoles !== undefined) {
+    if (!Array.isArray(json.dummyPasswordRoles) || !json.dummyPasswordRoles.every((r) => typeof r === 'string' && PLAIN_NAME.test(r))) {
+      throw new ConfigError('dummyPasswordRoles must be a list of role codes (snake_case).')
+    }
+    dummyPasswordRoles = json.dummyPasswordRoles as string[]
+  }
+  let allow: string[] = []
+  if (json.leakScan !== undefined) {
+    const ls = json.leakScan
+    if (!isObject(ls) || Object.keys(ls).some((k) => k !== 'allow') || (ls.allow !== undefined && (!Array.isArray(ls.allow) || !ls.allow.every((e) => typeof e === 'string' && /^[a-z][a-z0-9_]*\.[a-z][a-z0-9_]*$/.test(e))))) {
+      throw new ConfigError('leakScan must be {"allow": ["table.column", ...]}.')
+    }
+    allow = (ls.allow as string[] | undefined) ?? []
+  }
+  return { version: 1, global, tables, dummyPasswordRoles, leakScan: { allow } }
 }
 
 export function ruleFor(config: AnonConfig, table: string, column: string): Rule | undefined {
@@ -107,6 +128,10 @@ export function findCoverageGaps(tables: readonly TableSpec[], config: AnonConfi
     }
     for (const c of Object.keys(cols)) if (!columns.has(c)) unknown.push(`${table}.${c}`)
   }
+  for (const entry of config.leakScan.allow) {
+    const [table, column] = entry.split('.')
+    if (!known.get(table as string)?.has(column as string)) unknown.push(entry)
+  }
   return { uncovered, unknown }
 }
 
@@ -129,7 +154,7 @@ function scrubJson(value: unknown): unknown {
 }
 
 /** Applies one rule to one value. `pseudo` is only needed for pseudonym rules. */
-export function applyRule(rule: Rule, value: unknown, pseudo: Pseudonymiser): unknown {
+export function applyRule(rule: Rule, value: unknown, pseudo: Pseudonymiser, lockPassword = false): unknown {
   switch (rule.rule) {
     case 'keep':
       return value
@@ -142,7 +167,7 @@ export function applyRule(rule: Rule, value: unknown, pseudo: Pseudonymiser): un
       if (typeof value === 'object') return scrubJson(value)
       return value === '' ? '' : SCRUBBED_TEXT
     case 'hash-password-dummy':
-      return dummyPasswordHash(value)
+      return dummyPasswordHash(value, lockPassword)
     case 'pseudonym':
       return pseudo.apply(rule.kind, value)
   }

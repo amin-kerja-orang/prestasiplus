@@ -1,5 +1,13 @@
 {
   "version": 1,
+  "dummyPasswordRoles": [
+    "pelajar",
+    "guru",
+    "ibu_bapa"
+  ],
+  "leakScan": {
+    "allow": []
+  },
   "global": {"id":"keep","created_at":"keep","updated_at":"keep"},
   "tables": {
     "users": {
@@ -13,7 +21,9 @@
       "role": "keep",
       "school_id": "keep",
       "kelas": "keep",
-      "faith": {"fixed":"tidak_dinyatakan"},
+      "faith": {
+        "fixed": "tidak_dinyatakan"
+      },
       "is_active": "keep",
       "is_suspended": "keep",
       "is_complimentary": "keep",
@@ -23,7 +33,7 @@
       "parent_invite_token": "null",
       "notifications_read_at": "keep",
       "bio": "scrub-text",
-      "spm_targets": "keep",
+      "spm_targets": "scrub-text",
       "teaching_subject": "keep",
       "teaching_experience_years": "keep",
       "teaching_qualification": "scrub-text",
@@ -96,7 +106,7 @@
       "mode": "keep",
       "paper": "keep",
       "question_set_id": "keep",
-      "client_uuid": "keep",
+      "client_uuid": "pseudonym:opaque",
       "total_questions": "keep",
       "correct": "keep",
       "accuracy": "keep",
@@ -360,7 +370,7 @@
       "title": "keep",
       "type": "keep",
       "target": "keep",
-      "image_path": "keep",
+      "image_path": "pseudonym:path",
       "starts_at": "keep",
       "ends_at": "keep",
       "sort_order": "keep",
@@ -389,12 +399,12 @@
     },
     "audio_kbat": {
       "title": "keep",
-      "audio_path": "keep",
+      "audio_path": "pseudonym:path",
       "status": "keep"
     },
     "notifications": {
-      "title": "keep",
-      "target": "keep",
+      "title": "scrub-text",
+      "target": "scrub-text",
       "recipients": "keep",
       "sent_at": "keep"
     },
@@ -436,7 +446,7 @@
       "user_id": "keep",
       "action": "keep",
       "subject_type": "keep",
-      "subject_id": "keep",
+      "subject_id": "pseudonym:opaque",
       "ip": "pseudonym:ip"
     },
     "packages": {
@@ -650,7 +660,7 @@
       "body": "keep"
     },
     "media_assets": {
-      "path": "keep",
+      "path": "pseudonym:path",
       "kind": "keep"
     },
     "question_revisions": {
@@ -687,12 +697,12 @@
     },
     "paper_documents": {
       "exam_paper_id": "keep",
-      "path": "keep"
+      "path": "pseudonym:path"
     },
     "paper_document_pages": {
       "paper_document_id": "keep",
       "page_number": "keep",
-      "image_path": "keep"
+      "image_path": "pseudonym:path"
     },
     "paper_blueprints": {
       "name": "keep",
@@ -705,7 +715,7 @@
     },
     "teacher_reference_documents": {
       "user_id": "keep",
-      "path": "scrub-text"
+      "path": "pseudonym:path"
     },
     "teacher_reference_papers": {
       "teacher_reference_document_id": "keep",
