@@ -13,7 +13,16 @@ import { computed, watch } from 'vue'
 import { RouterLink, useRoute, useRouter } from 'vue-router'
 
 import { useApi } from '@/composables'
-import { DsCharacterCard, DsIconChip, DsLoadError, DsPage } from '@/ds'
+import {
+  DsCharacterCard,
+  DsIconChip,
+  DsLoadError,
+  DsPage,
+  DsCluster,
+  DsStack,
+  DsHeading,
+  DsText,
+} from '@/ds'
 import { formatCount } from '@/lib/number'
 
 import { fetchPracticeSubjects } from '../api/practice'
@@ -48,7 +57,6 @@ watch(
     title-testid="practice-title"
     data-testid="practice-list-page"
   >
-
     <template v-if="data">
       <RouterLink to="/practice/chapter" class="block" data-testid="chapter-banner">
         <DsCharacterCard
@@ -64,7 +72,10 @@ watch(
         </DsCharacterCard>
       </RouterLink>
 
-      <ul class="grid grid-cols-1 gap-3 md:grid-cols-2 md:gap-4 xl:grid-cols-3" data-testid="subject-grid">
+      <ul
+        class="grid grid-cols-1 gap-3 md:grid-cols-2 md:gap-4 xl:grid-cols-3"
+        data-testid="subject-grid"
+      >
         <li v-for="(s, i) in subjects" :key="s.code" class="min-w-0">
           <RouterLink
             :to="`/practice/${s.code}`"
@@ -72,7 +83,7 @@ watch(
             :data-testid="`subject-card-${s.code}`"
           >
             <UCard class="h-full" :ui="{ body: 'flex h-full flex-col gap-3 p-4' }">
-              <div class="flex items-start justify-between gap-2">
+              <DsCluster gap="xs" align="start" justify="between" :wrap="false">
                 <DsIconChip
                   :icon="subjectGlyph(s.icon)"
                   :accent="subjectAccent(i)"
@@ -87,17 +98,22 @@ watch(
                   data-testid="subject-core"
                   >Teras</UBadge
                 >
-              </div>
-              <div class="flex min-w-0 flex-col gap-1">
-                <h2 class="text-subheading break-words text-highlighted" data-testid="subject-name">
+              </DsCluster>
+              <DsStack gap="2xs">
+                <DsHeading
+                  :level="2"
+                  variant="subheading"
+                  wrap="anywhere"
+                  data-testid="subject-name"
+                >
                   {{ s.name }}
-                </h2>
-                <p class="text-caption text-muted">{{ s.nameEn }}</p>
-              </div>
-              <p class="text-body text-default" data-testid="subject-count">
+                </DsHeading>
+                <DsText variant="caption">{{ s.nameEn }}</DsText>
+              </DsStack>
+              <DsText variant="body" data-testid="subject-count">
                 <span class="tabular text-highlighted">{{ formatCount(s.approvedCount) }}</span>
                 soalan
-              </p>
+              </DsText>
               <UButton
                 size="lg"
                 block

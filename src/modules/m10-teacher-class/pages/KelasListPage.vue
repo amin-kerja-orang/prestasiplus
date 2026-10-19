@@ -6,7 +6,7 @@
 import { computed, ref } from 'vue'
 
 import { useApi } from '@/composables'
-import { DsPage, DsPanel, DsLoadError } from '@/ds'
+import { DsPage, DsPanel, DsLoadError, DsGrid, DsHeading, DsText } from '@/ds'
 
 import { fetchGuruClasses } from '../api/guru'
 import ClassCard from '../components/kelas/ClassCard.vue'
@@ -42,20 +42,20 @@ const qrClassId = ref<number | null>(null)
       testid="kelas-error"
       @retry="reload"
     />
-    <div
+    <DsGrid
       v-else-if="!data"
-      class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3"
+      :cols="{ base: 1, sm: 2, lg: 3 }"
       aria-busy="true"
       data-testid="kelas-loading"
     >
       <USkeleton v-for="n in 3" :key="n" class="h-40 w-full" />
-    </div>
+    </DsGrid>
 
     <DsPanel v-else-if="classes.length === 0" data-testid="kelas-empty">
       <div class="flex flex-col items-center gap-2 py-6 text-center">
         <UIcon name="i-ph-chalkboard-teacher-duotone" class="size-12 text-dimmed" />
-        <h2 class="text-subheading text-highlighted">{{ KELAS_COPY.emptyTitle }}</h2>
-        <p class="text-body text-muted">{{ KELAS_COPY.emptyBody }}</p>
+        <DsHeading :level="2" variant="subheading">{{ KELAS_COPY.emptyTitle }}</DsHeading>
+        <DsText variant="body" tone="muted">{{ KELAS_COPY.emptyBody }}</DsText>
         <UButton
           to="/guru/kelas/cipta"
           icon="i-ph-plus-circle-duotone"
@@ -66,13 +66,9 @@ const qrClassId = ref<number | null>(null)
       </div>
     </DsPanel>
 
-    <ul
-      v-else
-      class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3"
-      data-testid="kelas-grid"
-    >
+    <DsGrid v-else :cols="{ base: 1, sm: 2, lg: 3 }" as="ul" data-testid="kelas-grid">
       <ClassCard v-for="item in classes" :key="item.id" :item="item" @qr="qrClassId = $event" />
-    </ul>
+    </DsGrid>
 
     <QrModal :class-id="qrClassId" @close="qrClassId = null" />
   </DsPage>

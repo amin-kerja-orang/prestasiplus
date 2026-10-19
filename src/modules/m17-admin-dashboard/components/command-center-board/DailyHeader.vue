@@ -7,7 +7,7 @@
  */
 import { computed } from 'vue'
 
-import { DsLiveBadge, DsPageHeader } from '@/ds'
+import { DsLiveBadge, DsPageHeader, DsStack, DsCluster, DsText } from '@/ds'
 
 import { ccDailyTitle } from '../../api/command-center-board'
 import { S2_COPY, S3_COPY, type BoardPaths } from './board-copy'
@@ -25,7 +25,7 @@ const subtitle = computed(() =>
 </script>
 
 <template>
-  <header class="flex min-w-0 flex-col gap-3" data-testid="cc-s3-header">
+  <DsStack as="header" gap="sm" data-testid="cc-s3-header">
     <DsPageHeader
       :title="S2_COPY.title"
       :subtitle="subtitle"
@@ -34,14 +34,16 @@ const subtitle = computed(() =>
       subtitle-testid="cc-s3-subtitle"
     >
       <template #actions>
-        <div class="flex flex-wrap items-center gap-2" data-testid="cc-s3-live">
+        <DsCluster gap="xs" data-testid="cc-s3-live">
           <DsLiveBadge :label="S2_COPY.live" data-testid="cc-live-badge" />
-          <span class="tabular text-label text-highlighted" data-testid="cc-clock">{{ clock }}</span>
-          <span class="text-caption text-muted">{{ S2_COPY.tz }}</span>
-        </div>
+          <DsText variant="label" tone="highlighted" tabular data-testid="cc-clock">{{
+            clock
+          }}</DsText>
+          <DsText variant="caption" as="span">{{ S2_COPY.tz }}</DsText>
+        </DsCluster>
       </template>
     </DsPageHeader>
-    <div class="flex flex-wrap items-center gap-2">
+    <DsCluster gap="xs">
       <UButton
         :to="paths.board"
         color="neutral"
@@ -59,6 +61,6 @@ const subtitle = computed(() =>
         :label="S3_COPY.report"
         data-testid="cc-s3-report"
       />
-    </div>
-  </header>
+    </DsCluster>
+  </DsStack>
 </template>

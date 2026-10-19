@@ -1,6 +1,6 @@
 <script setup lang="ts">
 /** "Lencana" shelf (lime card; FR-M05-16, 17): the earned badges, or the empty message. */
-import { DsCharacterCard } from '@/ds'
+import { DsCharacterCard, DsText } from '@/ds'
 
 import type { DashboardBadge } from '../../api/types'
 
@@ -20,8 +20,8 @@ defineProps<{ badges: DashboardBadge[] }>()
     <ul class="flex gap-3 overflow-x-auto pb-2">
       <li v-for="b in badges" :key="b.id" class="shrink-0" data-testid="dash-badge">
         <UCard :ui="{ body: 'flex w-24 flex-col items-center gap-1 p-3' }">
-          <span class="text-title" aria-hidden="true">{{ b.icon }}</span>
-          <p class="text-center text-caption text-highlighted">{{ b.name }}</p>
+          <DsText variant="title" as="span" aria-hidden="true">{{ b.icon }}</DsText>
+          <DsText variant="caption" tone="highlighted" align="center">{{ b.name }}</DsText>
         </UCard>
       </li>
     </ul>

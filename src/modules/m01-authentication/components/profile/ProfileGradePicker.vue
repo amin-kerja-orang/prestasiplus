@@ -8,6 +8,7 @@
 import { computed } from 'vue'
 
 import { DARJAH_GRADES, TINGKATAN_GRADES } from '../../lib/lookups'
+import { DsStack } from '@/ds'
 
 const props = defineProps<{
   modelValue: number | null
@@ -28,7 +29,7 @@ function onChange(value: unknown): void {
 </script>
 
 <template>
-  <div class="flex min-w-0 flex-col gap-2" data-testid="grade-picker">
+  <DsStack gap="xs" data-testid="grade-picker">
     <p class="flex items-center gap-2 text-label text-highlighted">
       <UIcon name="i-ph-graduation-cap" class="size-4" aria-hidden="true" />
       Tahap
@@ -57,5 +58,5 @@ function onChange(value: unknown): void {
       data-testid="grade-grid"
       @update:model-value="onChange"
     />
-  </div>
+  </DsStack>
 </template>

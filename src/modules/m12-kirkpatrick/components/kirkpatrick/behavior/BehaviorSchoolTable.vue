@@ -8,7 +8,7 @@ import { computed, ref } from 'vue'
 import type { TableColumn } from '@nuxt/ui'
 import { RouterLink } from 'vue-router'
 
-import { DsDataTable, DsPanel } from '@/ds'
+import { DsDataTable, DsPanel, DsText } from '@/ds'
 
 import type { BandKey, BehaviorSchoolRow } from '../../../api/types'
 import { BAND, count, mean, plain } from '../common/kirkpatrick-format'
@@ -98,9 +98,9 @@ const pageSize = ref(20)
             data-testid="beh-school-link"
             >{{ row.original.name }}</RouterLink
           >
-          <span class="text-body text-muted" data-testid="beh-school-code">{{
+          <DsText variant="body" as="span" tone="muted" data-testid="beh-school-code">{{
             row.original.code
-          }}</span>
+          }}</DsText>
         </span>
       </template>
       <template #students-cell="{ row }">

@@ -7,7 +7,7 @@ import { ref } from 'vue'
 
 import { ApiError } from '@/api'
 import { useApi } from '@/composables'
-import { DsPage, DsRewardChip } from '@/ds'
+import { DsPage, DsRewardChip, DsStack, DsCluster, DsGrid, DsHeading, DsText } from '@/ds'
 import { formatCount } from '@/lib/number'
 
 import { fetchConvertView, convertSyiling } from '../api'
@@ -53,42 +53,45 @@ async function onConvert(amount: number): Promise<void> {
       title="Ralat berlaku. Sila cuba lagi."
     />
 
-    <div
-      v-else-if="!info.data.value"
-      class="flex flex-col gap-4"
-      aria-busy="true"
-      data-testid="s12-loading"
-    >
+    <DsStack v-else-if="!info.data.value" aria-busy="true" data-testid="s12-loading">
       <USkeleton class="h-24 w-full" />
       <USkeleton class="h-64 w-full" />
-    </div>
+    </DsStack>
 
     <template v-else>
       <UCard data-testid="s12-hero">
-        <div class="flex flex-wrap items-center justify-between gap-4">
-          <div class="flex min-w-0 flex-col gap-1">
-            <h1 class="text-title text-highlighted">
-              Tukar Syiling → Token
-            </h1>
-            <p class="text-body text-muted">Tukar syiling anda kepada token untuk tebus hadiah</p>
-          </div>
-          <div class="flex shrink-0 gap-4 text-center">
-            <div class="flex flex-col items-center gap-1">
-              <DsRewardChip art="coin" :value="formatCount(syiling())" data-testid="s12-balance-syiling" />
-              <span class="text-caption text-muted">Baki Syiling</span>
-            </div>
-            <div class="flex flex-col items-center gap-1">
-              <DsRewardChip art="bolt" :value="formatCount(token())" data-testid="s12-balance-token" />
-              <span class="text-caption text-muted">Baki Token</span>
-            </div>
-          </div>
-        </div>
+        <DsCluster gap="md" justify="between">
+          <DsStack gap="2xs">
+            <DsHeading :level="1"> Tukar Syiling → Token </DsHeading>
+            <DsText variant="body" tone="muted"
+              >Tukar syiling anda kepada token untuk tebus hadiah</DsText
+            >
+          </DsStack>
+          <DsCluster gap="md" align="stretch" :wrap="false" class="shrink-0 text-center">
+            <DsStack gap="2xs" align="center">
+              <DsRewardChip
+                art="coin"
+                :value="formatCount(syiling())"
+                data-testid="s12-balance-syiling"
+              />
+              <DsText variant="caption" as="span">Baki Syiling</DsText>
+            </DsStack>
+            <DsStack gap="2xs" align="center">
+              <DsRewardChip
+                art="bolt"
+                :value="formatCount(token())"
+                data-testid="s12-balance-token"
+              />
+              <DsText variant="caption" as="span">Baki Token</DsText>
+            </DsStack>
+          </DsCluster>
+        </DsCluster>
       </UCard>
 
       <UAlert v-if="success" color="success" variant="subtle" :title="success" />
       <UAlert v-if="failure" color="error" variant="subtle" :title="failure" />
 
-      <div class="grid grid-cols-1 items-start gap-4 lg:grid-cols-2">
+      <DsGrid :cols="{ base: 1, lg: 2 }" align="start">
         <S12ConvertForm
           :balance="syiling()"
           :rate="info.data.value.rate"
@@ -97,7 +100,7 @@ async function onConvert(amount: number): Promise<void> {
           @convert="onConvert"
         />
         <S12TierRates :tiers="info.data.value.tiers" />
-      </div>
+      </DsGrid>
     </template>
   </DsPage>
 </template>

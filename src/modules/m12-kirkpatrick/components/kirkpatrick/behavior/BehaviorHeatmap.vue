@@ -4,7 +4,7 @@
  * The grid scrolls inside its card. α = max(0.15, n ÷ max) picks a step of a single kobalt ramp; a zero
  * cell is a flat layer with no number.
  */
-import { DsPanel } from '@/ds'
+import { DsPanel, DsText } from '@/ds'
 
 import type { Behavior } from '../../../api/types'
 import { HEAT_DAYS, HEAT_HOURS, heatClass, heatTitle } from './behavior-format'
@@ -27,9 +27,15 @@ defineProps<{ heat: Behavior['heat'] }>()
     >
       <div class="grid w-max grid-cols-19 gap-1">
         <span aria-hidden="true" />
-        <span v-for="h in HEAT_HOURS" :key="h" class="text-center text-body text-muted">{{
-          h
-        }}</span>
+        <DsText
+          v-for="h in HEAT_HOURS"
+          :key="h"
+          variant="body"
+          as="span"
+          tone="muted"
+          align="center"
+          >{{ h }}</DsText
+        >
         <template v-for="(day, d) in HEAT_DAYS" :key="day">
           <span class="pe-2 text-body whitespace-nowrap text-muted">{{ day }}</span>
           <span

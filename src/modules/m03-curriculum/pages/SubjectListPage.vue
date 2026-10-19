@@ -15,14 +15,7 @@ import type { TableColumn } from '@nuxt/ui'
 import { computed, ref, watch } from 'vue'
 
 import { alertNative, useApi, useFlash } from '@/composables'
-import {
-  type CardField,
-  DsDataTable,
-  DsPage,
-  DsPageHeader,
-  DsStatRow,
-  type StatItem,
-} from '@/ds'
+import { type CardField, DsDataTable, DsPage, DsPageHeader, DsStatRow, type StatItem } from '@/ds'
 
 import {
   deleteSubject,
@@ -30,7 +23,7 @@ import {
   setSubjectActive,
   type AdminSubjectListItem,
 } from '../api/admin-subjects-levels'
-import { DsLoadError, DsRowActions, type RowAction } from '@/ds'
+import { DsLoadError, DsRowActions, type RowAction, DsCluster, DsHeading, DsText } from '@/ds'
 import ColorSwatch from '../components/subjects-levels/ColorSwatch.vue'
 import SubjectIconTile from '../components/subjects-levels/SubjectIconTile.vue'
 import { COPY, SUBJECT_ROUTES, errorLines, isNetworkFailure } from '../lib/subjects-levels'
@@ -153,10 +146,10 @@ async function remove(row: AdminSubjectListItem): Promise<void> {
       <DsPageHeader>
         <template #subtitle>
           <div>
-            <h2 class="text-subheading text-highlighted">Senarai Subjek</h2>
-            <p class="text-body text-muted" data-testid="subjects-count">
+            <DsHeading :level="2" variant="subheading">Senarai Subjek</DsHeading>
+            <DsText variant="body" tone="muted" data-testid="subjects-count">
               Jumlah: {{ rows.length }} subjek
-            </p>
+            </DsText>
           </div>
         </template>
         <template #actions>
@@ -187,7 +180,7 @@ async function remove(row: AdminSubjectListItem): Promise<void> {
         </template>
         <template #name-cell="{ row }">
           <div class="max-w-40 min-w-32 whitespace-normal" data-testid="subject-name-cell">
-            <div class="text-label text-highlighted">{{ row.original.name }}</div>
+            <DsText variant="label" as="div" tone="highlighted">{{ row.original.name }}</DsText>
             <div
               v-if="row.original.levels.length > 0"
               class="mt-1 flex items-start gap-1 text-caption text-muted"
@@ -251,7 +244,7 @@ async function remove(row: AdminSubjectListItem): Promise<void> {
           <DsRowActions :actions="rowActions(row.original)" :inline="1" testid="subject-more" />
         </template>
         <template #card-actions="{ row }">
-          <div class="flex items-center gap-1">
+          <DsCluster gap="2xs" :wrap="false">
             <span class="inline-flex min-h-11 min-w-11 items-center justify-center">
               <USwitch
                 :model-value="row.isActive as boolean"
@@ -265,7 +258,7 @@ async function remove(row: AdminSubjectListItem): Promise<void> {
               :inline="1"
               testid="subject-more"
             />
-          </div>
+          </DsCluster>
         </template>
       </DsDataTable>
     </template>

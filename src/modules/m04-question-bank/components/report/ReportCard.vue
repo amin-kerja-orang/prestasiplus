@@ -9,14 +9,10 @@
 import { computed, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 
-import { DsStatusBadge } from '@/ds'
+import { DsStatusBadge, DsCluster, DsStack, DsText } from '@/ds'
 import { diffForHumans } from '@/lib/time'
 
-import {
-  updateQuestionReport,
-  type ReportUpdateInput,
-  type ReportView,
-} from '../../api/reports'
+import { updateQuestionReport, type ReportUpdateInput, type ReportView } from '../../api/reports'
 import {
   DEACTIVATE_NOTE,
   DISMISS_NOTE,
@@ -30,10 +26,7 @@ const emit = defineEmits<{ saved: [message: string]; failed: [error: unknown] }>
 
 const router = useRouter()
 
-const CATEGORY: Record<
-  ReportCategory,
-  { icon: string; color: 'warning' | 'error' | 'neutral' }
-> = {
+const CATEGORY: Record<ReportCategory, { icon: string; color: 'warning' | 'error' | 'neutral' }> = {
   'Lain-lain': { icon: 'i-ph-info', color: 'neutral' },
   'Tak Jelas': { icon: 'i-ph-question', color: 'warning' },
   'Jawapan Salah': { icon: 'i-ph-x-circle', color: 'error' },
@@ -99,7 +92,7 @@ const deactivate = () =>
   >
     <article class="flex min-w-0 flex-col gap-4 lg:flex-row">
       <div class="flex min-w-0 flex-1 flex-col gap-3">
-        <div class="flex flex-wrap items-center gap-2">
+        <DsCluster gap="xs">
           <DsStatusBadge
             :status="DISPLAY_STATUS_DS[r.displayStatus]"
             :label="DISPLAY_STATUS_LABEL[r.displayStatus]"
@@ -128,15 +121,15 @@ const deactivate = () =>
             :label="r.sourceSet"
             data-testid="report-source-set"
           />
-          <span class="text-caption text-muted" data-testid="report-reporter">
-            Oleh: <strong class="text-label">{{ r.reporter.name ?? '-' }}</strong>
-          </span>
-          <span class="text-caption text-muted" data-testid="report-time">{{
+          <DsText variant="caption" as="span" data-testid="report-reporter">
+            Oleh: <DsText variant="label" as="strong">{{ r.reporter.name ?? '-' }}</DsText>
+          </DsText>
+          <DsText variant="caption" as="span" data-testid="report-time">{{
             diffForHumans(r.createdAt)
-          }}</span>
-          <span v-if="r.roomCode" class="text-caption text-muted" data-testid="report-room">
+          }}</DsText>
+          <DsText v-if="r.roomCode" variant="caption" as="span" data-testid="report-room">
             Bilik: {{ r.roomCode }}
-          </span>
+          </DsText>
           <UBadge
             color="neutral"
             variant="outline"
@@ -144,9 +137,9 @@ const deactivate = () =>
             :label="`ID Soalan: ${String(r.questionId)}`"
             data-testid="report-question-id"
           />
-        </div>
+        </DsCluster>
 
-        <div class="flex flex-wrap gap-2" data-testid="report-reasons">
+        <DsCluster gap="xs" align="stretch" data-testid="report-reasons">
           <UBadge
             v-for="(label, i) in r.reasonLabels"
             :key="`${String(i)}-${label}`"
@@ -155,7 +148,7 @@ const deactivate = () =>
             :label="label"
             data-testid="report-reason"
           />
-        </div>
+        </DsCluster>
 
         <UCard variant="subtle" data-testid="report-question">
           <p class="flex items-start gap-2 text-label text-highlighted">
@@ -180,7 +173,7 @@ const deactivate = () =>
               </li>
             </ul>
             <p class="mt-2 text-caption text-muted">{{ q.subjectName }} — {{ q.levelName }}</p>
-            <p class="text-caption text-muted">Compliance: {{ q.complianceStatus }}</p>
+            <DsText variant="caption">Compliance: {{ q.complianceStatus }}</DsText>
           </template>
         </UCard>
 
@@ -211,9 +204,10 @@ const deactivate = () =>
         </UAlert>
       </div>
 
-      <div
+      <DsStack
         v-if="hasActions"
-        class="flex w-full flex-col gap-2 lg:w-64 lg:shrink-0"
+        gap="xs"
+        class="w-full lg:w-64 lg:shrink-0"
         data-testid="report-actions"
       >
         <UTextarea
@@ -290,7 +284,7 @@ const deactivate = () =>
         >
           Nyahaktif Segera
         </UButton>
-      </div>
+      </DsStack>
     </article>
   </UCard>
 </template>

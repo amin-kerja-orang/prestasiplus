@@ -7,7 +7,7 @@
  */
 import { useRoute } from 'vue-router'
 
-import { DsArt3D } from '@/ds'
+import { DsArt3D, DsCluster, DsText } from '@/ds'
 import type { Art3DName } from '@/ds'
 
 import { PICKER_DARJAH } from './solo-lib'
@@ -26,9 +26,9 @@ const route = useRoute()
       <div class="flex w-full max-w-lg flex-col items-center gap-4 py-6 text-center">
         <DsArt3D :name="art" size="hero" float />
         <h2 class="font-display text-title font-extrabold text-highlighted">{{ title }}</h2>
-        <p class="text-body text-muted">Pilih darjah / tingkatan kamu:</p>
-        <p class="text-overline text-toned">🏫 Sekolah Rendah</p>
-        <div class="flex flex-wrap justify-center gap-2">
+        <DsText variant="body" tone="muted">Pilih darjah / tingkatan kamu:</DsText>
+        <DsText variant="overline" as="p" tone="toned">🏫 Sekolah Rendah</DsText>
+        <DsCluster gap="xs" align="stretch" justify="center">
           <UButton
             v-for="n in PICKER_DARJAH"
             :key="n"
@@ -39,7 +39,7 @@ const route = useRoute()
             class="min-h-12 rounded-2xl px-6 font-bold"
             >Darjah {{ n }}</UButton
           >
-        </div>
+        </DsCluster>
         <UButton to="/permainan" color="neutral" variant="ghost" size="lg" class="min-h-11">
           ← Kembali ke Hub
         </UButton>

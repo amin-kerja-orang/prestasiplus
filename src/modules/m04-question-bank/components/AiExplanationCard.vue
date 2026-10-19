@@ -10,7 +10,7 @@
 import { ref } from 'vue'
 
 import { isApiError } from '@/api'
-import { useConfirm } from '@/ds'
+import { useConfirm, DsText } from '@/ds'
 
 import { generateAiExplanation, type AiExplanation } from '../api/questions'
 import { errorTextOf, REGENERATE_CONFIRM } from '../lib/question-list'
@@ -55,7 +55,6 @@ async function regenerate(): Promise<void> {
   if (!(await confirm({ message: REGENERATE_CONFIRM }))) return
   void run(true)
 }
-
 </script>
 
 <template>
@@ -65,15 +64,15 @@ async function regenerate(): Promise<void> {
         <UIcon name="i-ph-robot" class="size-5 text-primary-t" />
         Penjelasan AI
       </h2>
-      <span class="text-caption text-muted"
-        >Dijana AI · Boleh ada kesilapan, sahkan dengan cikgu</span
+      <DsText variant="caption" as="span"
+        >Dijana AI · Boleh ada kesilapan, sahkan dengan cikgu</DsText
       >
     </div>
 
     <MarkdownView v-if="explanation" :source="explanation.markdown" data-testid="ai-content" />
-    <p v-else-if="!loading" class="text-body text-muted" data-testid="ai-empty">
+    <DsText v-else-if="!loading" variant="body" tone="muted" data-testid="ai-empty">
       Belum ada Penjelasan AI untuk soalan ini. Klik butang untuk jana.
-    </p>
+    </DsText>
 
     <p v-if="loading" class="flex items-center gap-2 text-body text-muted" data-testid="ai-loading">
       <UIcon name="i-ph-spinner" class="size-4" />

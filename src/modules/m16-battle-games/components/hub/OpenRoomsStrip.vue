@@ -7,6 +7,7 @@
 import type { GamesHub } from '../../api'
 import { ROOM_GAME_META, roomPath } from '../lobby/lobby-config'
 import { HUB_NO_ROOMS } from './hub-cards'
+import { DsCluster, DsText } from '@/ds'
 
 defineProps<{ rooms: GamesHub['openRooms'] }>()
 </script>
@@ -14,11 +15,11 @@ defineProps<{ rooms: GamesHub['openRooms'] }>()
 <template>
   <UCard data-testid="hub-open-rooms">
     <div v-if="rooms.length === 0" class="py-2 text-center" data-testid="hub-open-rooms-empty">
-      <div class="text-title">{{ HUB_NO_ROOMS.emoji }}</div>
+      <DsText variant="title" as="div">{{ HUB_NO_ROOMS.emoji }}</DsText>
       <p class="mt-1 text-label text-toned">{{ HUB_NO_ROOMS.title }}</p>
-      <p class="text-body text-muted">{{ HUB_NO_ROOMS.hint }}</p>
+      <DsText variant="body" tone="muted">{{ HUB_NO_ROOMS.hint }}</DsText>
     </div>
-    <ul v-else class="flex flex-wrap gap-2">
+    <DsCluster v-else as="ul" gap="xs" align="stretch">
       <li v-for="room in rooms" :key="room.code">
         <UButton
           :to="roomPath(room.game, room.code)"
@@ -34,6 +35,6 @@ defineProps<{ rooms: GamesHub['openRooms'] }>()
           <span class="tabular">{{ room.players }}/{{ room.max }}</span>
         </UButton>
       </li>
-    </ul>
+    </DsCluster>
   </UCard>
 </template>

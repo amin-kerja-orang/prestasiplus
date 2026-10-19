@@ -9,7 +9,7 @@
 import { computed, ref } from 'vue'
 
 import { useApi } from '@/composables'
-import { DsPage, DsLoadError } from '@/ds'
+import { DsPage, DsLoadError, DsCluster, DsStack, DsGrid, DsHeading } from '@/ds'
 
 import { fetchShareCards } from '../../api'
 import KadCardFrame from '../../components/student-b/KadCardFrame.vue'
@@ -62,7 +62,13 @@ function whatsapp(text: string): void {
 <template>
   <DsPage data-testid="kad-page">
     <template v-if="data">
-      <div class="flex gap-2 overflow-x-auto" data-testid="kad-tabs">
+      <DsCluster
+        gap="xs"
+        align="stretch"
+        :wrap="false"
+        class="overflow-x-auto"
+        data-testid="kad-tabs"
+      >
         <UButton
           v-for="t in KAD_TABS"
           :key="t.id"
@@ -78,7 +84,7 @@ function whatsapp(text: string): void {
         >
           {{ t.label }}
         </UButton>
-      </div>
+      </DsCluster>
 
       <UCard data-testid="kad-panel">
         <KadCardFrame
@@ -103,11 +109,11 @@ function whatsapp(text: string): void {
           <KadKomboCard :data="data" />
         </KadCardFrame>
 
-        <div v-else-if="tab === 'penguasaan'" class="flex flex-col gap-4" data-testid="kad-penguasaan">
-          <h3 class="text-subheading text-highlighted">
+        <DsStack v-else-if="tab === 'penguasaan'" data-testid="kad-penguasaan">
+          <DsHeading :level="3">
             {{ KAD_COPY.penguasaanTitle }}
-          </h3>
-          <div class="grid grid-cols-1 gap-6 md:grid-cols-2">
+          </DsHeading>
+          <DsGrid :cols="{ base: 1, md: 2 }" gap="lg">
             <KadCardFrame
               v-for="(m, i) in data.mastery"
               :key="m.subjectName"
@@ -120,8 +126,8 @@ function whatsapp(text: string): void {
             >
               <KadMasteryCard :item="m" :name="data.name" />
             </KadCardFrame>
-          </div>
-        </div>
+          </DsGrid>
+        </DsStack>
 
         <KadCardFrame
           v-else
@@ -143,9 +149,9 @@ function whatsapp(text: string): void {
       retry-testid="kad-retry"
       @retry="reload()"
     />
-    <div v-else class="flex flex-col gap-3" aria-busy="true" data-testid="kad-loading">
+    <DsStack v-else gap="sm" aria-busy="true" data-testid="kad-loading">
       <USkeleton class="h-28 w-full" />
       <USkeleton class="h-64 w-full" />
-    </div>
+    </DsStack>
   </DsPage>
 </template>

@@ -23,6 +23,7 @@ import ShellLink from '@/shells/shared/ShellLink.vue'
 
 import type { ChipsMode } from './constants'
 import type { GamificationSummary } from './useGamificationSummary'
+import { DsCluster } from '@/ds'
 
 const props = defineProps<{
   header: PageHeader
@@ -47,7 +48,7 @@ const BELL_BADGE =
     class="topbar sticky top-0 z-30 px-3 py-2.5 sm:px-6 sm:py-4"
     data-testid="shell-user-header"
   >
-    <div class="mx-auto flex w-[95%] items-center justify-between">
+    <DsCluster gap="none" justify="between" :wrap="false" class="mx-auto w-[95%]">
       <!-- Sidebar Toggle + Page Title -->
       <div class="flex min-w-0 flex-1 items-center gap-3">
         <button
@@ -171,7 +172,7 @@ const BELL_BADGE =
           </ShellLink>
         </div>
       </div>
-    </div>
+    </DsCluster>
   </header>
 
   <!-- Mobile Gamification Stats — Student/Admin only (live comment) -->

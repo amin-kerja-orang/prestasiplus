@@ -1,12 +1,17 @@
 <script setup lang="ts">
+import { DsSurface } from '@/ds'
+
 /** One selected photo of the S17 form: the preview and its remove button (44px target). */
 defineProps<{ src: string }>()
 defineEmits<{ remove: [] }>()
 </script>
 
 <template>
-  <div
-    class="relative aspect-square overflow-hidden rounded-card bg-elevated"
+  <DsSurface
+    level="elevated"
+    radius="card"
+    padding="none"
+    class="relative aspect-square"
     data-testid="photo-preview"
   >
     <img :src="src" alt="Preview" class="size-full object-cover" />
@@ -20,5 +25,5 @@ defineEmits<{ remove: [] }>()
       data-testid="photo-remove"
       @click="$emit('remove')"
     />
-  </div>
+  </DsSurface>
 </template>

@@ -6,7 +6,7 @@
  */
 import { computed } from 'vue'
 
-import { DsIconChip } from '@/ds'
+import { DsIconChip, DsCluster, DsText } from '@/ds'
 
 import type { Overview } from '../../../api/types'
 import { count, gps, KirkpatrickLink, mean, pct, plain, type KirkpatrickPaths } from '../common'
@@ -90,17 +90,19 @@ const levels = computed<Level[]>(() => {
       :data-testid="`kirk-level-${l.key}`"
     >
       <UCard class="h-full">
-        <div class="flex items-start justify-between gap-2">
-          <p class="text-label text-muted">{{ l.label }}</p>
+        <DsCluster gap="xs" align="start" justify="between" :wrap="false">
+          <DsText variant="label" as="p" tone="muted">{{ l.label }}</DsText>
           <DsIconChip :icon="l.icon" size="sm" />
-        </div>
+        </DsCluster>
         <p
           :class="['tabular mt-2 text-title', l.muted ? 'text-dimmed' : 'text-highlighted']"
           data-testid="kirk-level-value"
         >
-          {{ l.value }}<span v-if="l.suffix" class="text-label text-muted">{{ l.suffix }}</span>
+          {{ l.value }}<DsText v-if="l.suffix" variant="label" tone="muted">{{ l.suffix }}</DsText>
         </p>
-        <p class="text-body text-muted" data-testid="kirk-level-caption">{{ l.caption }}</p>
+        <DsText variant="body" tone="muted" data-testid="kirk-level-caption">{{
+          l.caption
+        }}</DsText>
         <p v-if="detail" class="mt-2 flex items-center gap-1 text-body text-primary-t">
           Lihat detail <UIcon name="i-ph-arrow-right" class="size-4" />
         </p>

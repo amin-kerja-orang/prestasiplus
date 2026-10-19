@@ -6,15 +6,16 @@
 import type { RoomView } from '../../api'
 import { teamLabel } from './lobby-lib'
 import { markerClass, metricText } from './room-lib'
+import { DsHeading, DsText } from '@/ds'
 
 defineProps<{ room: RoomView; showMetric: boolean }>()
 </script>
 
 <template>
   <UCard data-testid="room-players">
-    <h2 class="text-subheading text-highlighted">
+    <DsHeading :level="2" variant="subheading">
       Pemain ({{ room.players.length }}/{{ room.settings.maxPlayers }})
-    </h2>
+    </DsHeading>
     <ul class="mt-3 flex flex-col gap-2">
       <li
         v-for="(p, i) in room.players"
@@ -28,10 +29,16 @@ defineProps<{ room: RoomView; showMetric: boolean }>()
           data-testid="room-player-marker"
         ></span>
         <div class="min-w-0 flex-1">
-          <p class="text-label break-words text-highlighted" data-testid="room-player-name">
+          <DsText
+            variant="label"
+            as="p"
+            tone="highlighted"
+            wrap="anywhere"
+            data-testid="room-player-name"
+          >
             {{ p.name }}
-          </p>
-          <p class="text-caption text-muted">
+          </DsText>
+          <DsText variant="caption">
             {{ p.grade }}
             <span v-if="p.team !== undefined" data-testid="room-player-team">
               · Pasukan {{ teamLabel(p.team) }}</span
@@ -39,7 +46,7 @@ defineProps<{ room: RoomView; showMetric: boolean }>()
             <span v-if="showMetric" data-testid="room-player-metric">
               · {{ metricText(room, p) }}</span
             >
-          </p>
+          </DsText>
         </div>
         <UBadge
           v-if="p.id === room.host.id"

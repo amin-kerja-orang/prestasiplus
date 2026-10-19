@@ -6,7 +6,18 @@
  */
 import { computed, ref } from 'vue'
 
-import { DsBreadcrumb, DsIconChip, DsLoadError, DsPage, DsStatRow, type StatItem } from '@/ds'
+import {
+  DsBreadcrumb,
+  DsIconChip,
+  DsLoadError,
+  DsPage,
+  DsStatRow,
+  type StatItem,
+  DsCluster,
+  DsStack,
+  DsHeading,
+  DsText,
+} from '@/ds'
 
 import { fetchStudentDetail } from '../api'
 import type { StudentAnswerRow } from '../api/types'
@@ -55,7 +66,8 @@ const tabs = computed<
   {
     key: 'wrong',
     label: 'Jawapan Salah',
-    icon: 'i-ph-x-circle', accent: 'heat',
+    icon: 'i-ph-x-circle',
+    accent: 'heat',
     chip: { n: data.value?.wrong.count ?? 0, color: 'error' },
   },
   {
@@ -83,13 +95,15 @@ const cards = computed<StatItem[]>(() => {
       key: 'answered',
       label: 'Soalan Dijawab',
       value: count(c.answered),
-      icon: 'i-ph-pencil-simple', accent: 'trial',
+      icon: 'i-ph-pencil-simple',
+      accent: 'trial',
     },
     {
       key: 'correct',
       label: 'Betul',
       value: count(c.correct),
-      icon: 'i-ph-check-circle', accent: 'win',
+      icon: 'i-ph-check-circle',
+      accent: 'win',
       tone: 'success',
       valueTone: 'success',
     },
@@ -105,7 +119,8 @@ const cards = computed<StatItem[]>(() => {
       key: 'accuracy',
       label: 'Ketepatan',
       value: accuracy.value,
-      icon: 'i-ph-target', accent: 'friend',
+      icon: 'i-ph-target',
+      accent: 'friend',
       valueClass: accuracyColour.value,
     },
   ]
@@ -141,20 +156,20 @@ const observations = computed(() =>
 
       <template v-if="data">
         <UCard data-testid="mon-student-header">
-          <div class="flex items-center gap-4">
+          <DsCluster gap="md" :wrap="false">
             <DsIconChip icon="graduation-cap" size="lg" />
-            <div class="flex min-w-0 flex-col gap-1">
-              <h2 class="text-title break-words text-highlighted" data-testid="mon-student-name">
+            <DsStack gap="2xs">
+              <DsHeading :level="2" variant="title" wrap="anywhere" data-testid="mon-student-name">
                 {{ data.student.name }}
-              </h2>
-              <p class="text-body break-all text-muted" data-testid="mon-student-meta">
+              </DsHeading>
+              <DsText variant="body" tone="muted" class="break-all" data-testid="mon-student-meta">
                 {{ data.student.email }} · {{ data.student.level }}
-              </p>
-              <p class="text-body text-muted" data-testid="mon-student-last">
+              </DsText>
+              <DsText variant="body" tone="muted" data-testid="mon-student-last">
                 Aktiviti Terakhir: {{ dmyHm(data.student.lastActivityAt) }}
-              </p>
-            </div>
-          </div>
+              </DsText>
+            </DsStack>
+          </DsCluster>
         </UCard>
 
         <DsStatRow
@@ -165,7 +180,7 @@ const observations = computed(() =>
           data-testid="mon-student-cards"
         />
 
-        <div class="flex flex-wrap gap-2" data-testid="mon-tabs">
+        <DsCluster gap="xs" align="stretch" data-testid="mon-tabs">
           <UButton
             v-for="t in tabs"
             :key="t.key"
@@ -188,7 +203,7 @@ const observations = computed(() =>
               :label="String(t.chip.n)"
             />
           </UButton>
-        </div>
+        </DsCluster>
 
         <StudentSubjects v-if="tab === 'subject'" :subjects="data.subjects" />
         <StudentTopics v-else-if="tab === 'topic'" :topics="data.topics" />
@@ -201,7 +216,7 @@ const observations = computed(() =>
         <StudentGaps v-else :gaps="data.gaps" />
 
         <UCard data-testid="mon-observations">
-          <div class="flex flex-col gap-4">
+          <DsStack>
             <h2 class="flex items-center gap-2 text-heading text-highlighted">
               <UIcon name="i-ph-lightbulb" class="size-6 text-info" />Pemerhatian
             </h2>
@@ -213,7 +228,7 @@ const observations = computed(() =>
             >
               {{ o }}
             </p>
-          </div>
+          </DsStack>
         </UCard>
 
         <StudentQuestionModal :row="modalRow" @close="modalRow = null" />

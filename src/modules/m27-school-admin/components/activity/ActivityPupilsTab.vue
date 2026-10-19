@@ -9,7 +9,17 @@
 import type { TableColumn } from '@nuxt/ui'
 import { computed, ref } from 'vue'
 
-import { DsDataTable, DsPillNav, DsStatRow, type CardField, type PillItem, type StatItem } from '@/ds'
+import {
+  DsDataTable,
+  DsPillNav,
+  DsStatRow,
+  type CardField,
+  type PillItem,
+  type StatItem,
+  DsStack,
+  DsHeading,
+  DsText,
+} from '@/ds'
 
 import type { SchoolActivityReport } from '../../api/school-admin'
 import { accuracy, count, duration, lastLogin, matches, NO_DATA } from './activity-format'
@@ -77,37 +87,58 @@ const cardFields: CardField[] = [
 ]
 
 const tiles = computed<StatItem[]>(() => [
-  { key: 'total', label: 'Jumlah Murid', value: count(t.value.total), icon: 'graduation-cap', accent: 'action' },
+  {
+    key: 'total',
+    label: 'Jumlah Murid',
+    value: count(t.value.total),
+    icon: 'graduation-cap',
+    accent: 'action',
+  },
   {
     key: 'practised',
     label: 'Pernah Latihan',
     value: count(t.value.practised),
-    icon: 'clipboard-text', accent: 'win',
+    icon: 'clipboard-text',
+    accent: 'win',
   },
-  { key: 'sessions', label: 'Jumlah Sesi', value: count(t.value.sessions), icon: 'list-numbers', accent: 'heat' },
+  {
+    key: 'sessions',
+    label: 'Jumlah Sesi',
+    value: count(t.value.sessions),
+    icon: 'list-numbers',
+    accent: 'heat',
+  },
   // "no attempts" is not "averaging zero" (S1 rule): the dash without a session (INFERRED)
   {
     key: 'accuracy',
     label: 'Purata Ketepatan',
     value: t.value.sessions > 0 ? accuracy(t.value.accuracy) : NO_DATA,
-    icon: 'target', accent: 'friend',
+    icon: 'target',
+    accent: 'friend',
   },
 ])
 </script>
 
 <template>
-  <section class="flex min-w-0 flex-col gap-4" data-testid="la-murid">
-    <h2 class="text-title text-highlighted" data-testid="la-murid-title">
+  <DsStack as="section" data-testid="la-murid">
+    <DsHeading :level="2" variant="title" data-testid="la-murid-title">
       Senarai Murid ({{ count(t.total) }}) — Top 200
-    </h2>
+    </DsHeading>
 
-    <DsStatRow :items="tiles" prefix="la-murid-tile" part-prefix="la-tile" data-testid="la-murid-tiles" :cols="4" />
+    <DsStatRow
+      :items="tiles"
+      prefix="la-murid-tile"
+      part-prefix="la-tile"
+      data-testid="la-murid-tiles"
+      :cols="4"
+    />
 
     <div class="flex min-w-0 flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
       <DsPillNav
         :items="PILLS"
         :active="filter"
-        testid-prefix="la-murid-pill" data-testid="la-murid-pills"
+        testid-prefix="la-murid-pill"
+        data-testid="la-murid-pills"
         label="Tapis murid"
         @select="filter = $event"
       />
@@ -134,9 +165,9 @@ const tiles = computed<StatItem[]>(() => [
       data-testid="la-murid-table"
     >
       <template #name-cell="{ row }">
-        <span class="text-label text-highlighted" data-testid="la-murid-name">{{
+        <DsText variant="label" tone="highlighted" data-testid="la-murid-name">{{
           row.original.name
-        }}</span>
+        }}</DsText>
       </template>
       <template #kelas-cell="{ row }">
         <span data-testid="la-murid-kelas">{{ row.original.kelas }}</span>
@@ -157,5 +188,5 @@ const tiles = computed<StatItem[]>(() => [
         <span class="whitespace-nowrap" data-testid="la-murid-last">{{ row.original.last }}</span>
       </template>
     </DsDataTable>
-  </section>
+  </DsStack>
 </template>

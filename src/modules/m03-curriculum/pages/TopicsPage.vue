@@ -8,7 +8,16 @@ import { computed } from 'vue'
 import { RouterLink, useRoute } from 'vue-router'
 
 import { useApi } from '@/composables'
-import { DsEmptyState, DsIconChip, DsPage } from '@/ds'
+import {
+  DsEmptyState,
+  DsIconChip,
+  DsPage,
+  DsSurface,
+  DsCluster,
+  DsGrid,
+  DsHeading,
+  DsText,
+} from '@/ds'
 
 import { topicAccent, topicGlyph } from '../lib/topic-accent'
 import { fetchTopics } from '../api/student-curriculum'
@@ -38,7 +47,7 @@ const loaded = computed(() => data.value !== null)
 <template>
   <DsPage data-testid="topics-page">
     <section class="flex flex-col gap-3 rounded-card bg-default p-4 shadow-lift sm:p-5">
-      <nav class="flex flex-wrap gap-2" aria-label="Darjah" data-testid="grade-chips">
+      <DsCluster as="nav" gap="xs" align="stretch" aria-label="Darjah" data-testid="grade-chips">
         <UButton
           v-for="chip in GRADE_CHIPS"
           :key="chip.label"
@@ -52,8 +61,8 @@ const loaded = computed(() => data.value !== null)
         >
           {{ chip.label }}
         </UButton>
-      </nav>
-      <nav class="flex flex-wrap gap-2" aria-label="Subjek" data-testid="subject-chips">
+      </DsCluster>
+      <DsCluster as="nav" gap="xs" align="stretch" aria-label="Subjek" data-testid="subject-chips">
         <UButton
           v-for="chip in SUBJECT_CHIPS"
           :key="chip.label"
@@ -67,7 +76,7 @@ const loaded = computed(() => data.value !== null)
         >
           {{ chip.label }}
         </UButton>
-      </nav>
+      </DsCluster>
     </section>
 
     <UAlert
@@ -80,19 +89,18 @@ const loaded = computed(() => data.value !== null)
     />
 
     <template v-else-if="loaded">
-      <div
+      <DsSurface
         v-if="topics.length === 0"
-        class="rounded-card bg-default p-6 shadow-lift"
+        radius="card"
+        shadow="lift"
+        padding="lg"
+        :clip="false"
         data-testid="topics-empty"
       >
         <DsEmptyState icon="books" :title="EMPTY_TOPICS" />
-      </div>
+      </DsSurface>
 
-      <div
-        v-else
-        class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3"
-        data-testid="topic-grid"
-      >
+      <DsGrid v-else :cols="{ base: 1, sm: 2, lg: 3 }" data-testid="topic-grid">
         <RouterLink
           v-for="t in topics"
           :key="t.id"
@@ -101,7 +109,7 @@ const loaded = computed(() => data.value !== null)
           data-testid="topic-card"
           :data-topic-id="t.id"
         >
-          <div class="flex items-start justify-between gap-2">
+          <DsCluster gap="xs" align="start" justify="between" :wrap="false">
             <DsIconChip :icon="topicGlyph(t.subject)" :accent="topicAccent(t.subject)" size="lg" />
             <span
               class="rounded-full bg-elevated px-3 py-1 text-caption font-bold text-default"
@@ -109,24 +117,26 @@ const loaded = computed(() => data.value !== null)
             >
               {{ t.subtopicCount }} Subtopik
             </span>
-          </div>
+          </DsCluster>
           <div class="min-w-0">
-            <h3 class="text-subheading break-words text-highlighted" data-testid="topic-name">
+            <DsHeading :level="3" wrap="anywhere" data-testid="topic-name">
               {{ t.name }}
-            </h3>
+            </DsHeading>
             <p class="text-caption font-semibold text-muted" data-testid="topic-subject">
               {{ t.subjectLabel }}
             </p>
           </div>
-          <p
+          <DsText
             v-if="t.description"
-            class="line-clamp-2 text-body text-muted"
+            variant="body"
+            tone="muted"
+            :clamp="2"
             data-testid="topic-description"
           >
             {{ t.description }}
-          </p>
+          </DsText>
           <div class="flex-1">
-            <p class="text-overline text-muted">Subtopik:</p>
+            <DsText variant="overline" as="p">Subtopik:</DsText>
             <ul class="mt-1 flex flex-col gap-1">
               <li
                 v-for="name in t.subtopicsPreview"
@@ -141,13 +151,15 @@ const loaded = computed(() => data.value !== null)
                 />
                 <span class="min-w-0 break-words">{{ name }}</span>
               </li>
-              <li
+              <DsText
                 v-if="moreSubtopics(t.subtopicCount, 3)"
-                class="text-body text-muted"
+                variant="body"
+                as="li"
+                tone="muted"
                 data-testid="topic-more"
               >
                 {{ moreSubtopics(t.subtopicCount, 3) }}
-              </li>
+              </DsText>
             </ul>
           </div>
           <span
@@ -157,7 +169,7 @@ const loaded = computed(() => data.value !== null)
             Lihat Topik
           </span>
         </RouterLink>
-      </div>
+      </DsGrid>
     </template>
   </DsPage>
 </template>

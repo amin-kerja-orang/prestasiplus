@@ -3,7 +3,7 @@
  * "Pemerhatian & Insight" (FN-M12-6.9.1; FR-M12-59; BR-M12-24; DV-M12-13): three info rows (the GPS sentence is omitted
  * when the scope has no SPM history) and the disclaimer.
  */
-import { DsPanel } from '@/ds'
+import { DsPanel, DsStack } from '@/ds'
 
 import type { Results } from '../../../api/types'
 import { gps, pct, plain } from '../common/kirkpatrick-format'
@@ -12,7 +12,7 @@ defineProps<{ insights: Results['insights'] }>()
 </script>
 
 <template>
-  <section class="flex min-w-0 flex-col gap-3" data-testid="res-insights">
+  <DsStack as="section" gap="sm" data-testid="res-insights">
     <DsPanel title="Pemerhatian & Insight" icon="i-ph-lightbulb">
       <ul class="flex flex-col gap-2 text-body text-default">
         <li class="flex items-start gap-3 bg-muted p-3" data-testid="insight-row">
@@ -50,5 +50,5 @@ defineProps<{ insights: Results['insights'] }>()
       description="Disclaimer: Data GPS Anggaran berdasarkan markah OTR headcount, bukan keputusan SPM sebenar."
       data-testid="insight-disclaimer"
     />
-  </section>
+  </DsStack>
 </template>

@@ -1,6 +1,6 @@
 <script setup lang="ts">
 /** S5 "📈 Headcount — Ringkasan Kelas" (discovery §2.22.2): shown only when the class has a config. */
-import { DsPanel, DsStatTile } from '@/ds'
+import { DsPanel, DsStatTile, DsStack, DsGrid, DsCluster, DsHeading, DsText } from '@/ds'
 import { RouterLink } from 'vue-router'
 
 import type { ClassDashboard } from '../../api/types'
@@ -14,9 +14,9 @@ const icon = usePhIcon()
 
 <template>
   <DsPanel data-testid="headcount-block">
-    <div class="flex flex-col gap-4">
-      <h2 class="text-subheading text-highlighted">📈 Headcount — Ringkasan Kelas</h2>
-      <ul class="grid grid-cols-1 gap-3 sm:grid-cols-3">
+    <DsStack>
+      <DsHeading :level="2" variant="subheading">📈 Headcount — Ringkasan Kelas</DsHeading>
+      <DsGrid :cols="{ base: 1, sm: 3 }" gap="sm" as="ul">
         <li>
           <DsStatTile
             :value="block.onTrack"
@@ -41,8 +41,8 @@ const icon = usePhIcon()
             data-testid="hc-none"
           />
         </li>
-      </ul>
-      <div class="flex flex-col gap-2" data-testid="hc-bar">
+      </DsGrid>
+      <DsStack gap="xs" data-testid="hc-bar">
         <UProgress
           :model-value="block.pct.on"
           :max="100"
@@ -50,20 +50,20 @@ const icon = usePhIcon()
           size="md"
           aria-label="On Track"
         />
-        <p class="tabular text-caption text-muted">
+        <DsText variant="caption" tabular>
           On Track {{ block.pct.on }}% · Below {{ block.pct.below }}% · Tiada Data
           {{ block.pct.none }}%
-        </p>
-      </div>
+        </DsText>
+      </DsStack>
       <div class="flex flex-wrap items-center justify-between gap-3 text-caption text-muted">
-        <span class="flex flex-wrap gap-4">
+        <DsCluster as="span" gap="md" align="stretch">
           <span data-testid="hc-tov"
             >Purata TOV: {{ block.avgTov === null ? '—' : pctTrim(block.avgTov) }}</span
           >
           <span data-testid="hc-etr"
             >Purata ETR: {{ block.avgEtr === null ? '—' : pctTrim(block.avgEtr) }}</span
           >
-        </span>
+        </DsCluster>
         <RouterLink
           :to="`/headcount/${block.configId}/summary`"
           class="inline-flex min-h-11 items-center text-label text-primary-t"
@@ -71,6 +71,6 @@ const icon = usePhIcon()
           >Lihat Penuh →</RouterLink
         >
       </div>
-    </div>
+    </DsStack>
   </DsPanel>
 </template>

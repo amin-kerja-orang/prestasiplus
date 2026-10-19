@@ -8,7 +8,7 @@ import { computed, watch } from 'vue'
 import { isApiError } from '@/api'
 import { setRouteOutcome } from '@/app/router/outcome'
 import { useApi } from '@/composables'
-import { DsPage, DsPanel, DsLoadError } from '@/ds'
+import { DsPage, DsPanel, DsLoadError, DsStack, DsHeading, DsText } from '@/ds'
 
 import { fetchEssay } from '../api'
 import { ESSAY_COPY as C } from '../components/teacher/copy'
@@ -47,41 +47,47 @@ watch(notFound, (is404) => {
       retry-testid="page-retry"
       @retry="reload"
     />
-    <div
+    <DsStack
       v-else-if="!(data !== null || notFound)"
-      class="flex flex-col gap-3"
+      gap="sm"
       aria-busy="true"
       data-testid="page-loading"
     >
       <USkeleton v-for="n in 3" :key="n" class="h-16 w-full" />
-    </div>
+    </DsStack>
     <template v-else>
       <DsPanel v-if="data" class="flex flex-col gap-4">
-        <h1 class="text-heading text-highlighted">{{ C.title }}</h1>
+        <DsHeading :level="1" variant="heading">{{ C.title }}</DsHeading>
         <dl class="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <div class="min-w-0">
-            <dt class="text-overline text-muted">{{ C.viewLabels.student }}</dt>
-            <dd class="text-body text-highlighted" data-testid="essay-view-student">
+            <DsText variant="overline" as="dt">{{ C.viewLabels.student }}</DsText>
+            <DsText variant="body" as="dd" tone="highlighted" data-testid="essay-view-student">
               {{ orDash(data.studentName) }}
-            </dd>
+            </DsText>
           </div>
           <div class="min-w-0">
-            <dt class="text-overline text-muted">{{ C.viewLabels.subject }}</dt>
-            <dd class="text-body text-highlighted" data-testid="essay-view-subject">
+            <DsText variant="overline" as="dt">{{ C.viewLabels.subject }}</DsText>
+            <DsText variant="body" as="dd" tone="highlighted" data-testid="essay-view-subject">
               {{ orDash(data.subjectName) }} / {{ rubricShort(data.rubricKey) }}
-            </dd>
+            </DsText>
           </div>
           <div class="min-w-0">
-            <dt class="text-overline text-muted">{{ C.viewLabels.tajuk }}</dt>
-            <dd class="text-body break-words text-highlighted" data-testid="essay-view-tajuk">
+            <DsText variant="overline" as="dt">{{ C.viewLabels.tajuk }}</DsText>
+            <DsText
+              variant="body"
+              as="dd"
+              tone="highlighted"
+              wrap="anywhere"
+              data-testid="essay-view-tajuk"
+            >
               {{ orDash(data.essayTitle) }}
-            </dd>
+            </DsText>
           </div>
           <div class="min-w-0">
-            <dt class="text-overline text-muted">{{ C.viewLabels.marks }}</dt>
-            <dd class="text-body text-highlighted" data-testid="essay-view-marks">
+            <DsText variant="overline" as="dt">{{ C.viewLabels.marks }}</DsText>
+            <DsText variant="body" as="dd" tone="highlighted" data-testid="essay-view-marks">
               {{ data.marks }}/{{ data.maxMarks }}
-            </dd>
+            </DsText>
           </div>
         </dl>
         <DsPanel

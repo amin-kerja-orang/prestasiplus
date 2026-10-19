@@ -6,7 +6,7 @@
 import { computed } from 'vue'
 
 import { useApi } from '@/composables'
-import { DsDialog, DsLoadError, DsStatRow } from '@/ds'
+import { DsDialog, DsLoadError, DsStatRow, DsStack, DsText } from '@/ds'
 
 import { fetchCcSession } from '../../api/command-center'
 import { dmyTime, hms, MODAL_ERROR_COPY, pct2, statItems } from './cc-format'
@@ -42,10 +42,10 @@ const stats = computed(() => {
 
 <template>
   <DsDialog v-model:open="open" :title="title" class="sm:max-w-2xl">
-    <div class="flex min-w-0 flex-col gap-4" data-testid="cc-session-modal">
-      <p v-if="subtitle" class="text-body text-muted" data-testid="cc-modal-subtitle">
+    <DsStack data-testid="cc-session-modal">
+      <DsText v-if="subtitle" variant="body" tone="muted" data-testid="cc-modal-subtitle">
         {{ subtitle }}
-      </p>
+      </DsText>
       <DsLoadError
         v-if="error"
         variant="inline"
@@ -53,19 +53,20 @@ const stats = computed(() => {
         testid="cc-modal-error"
         @retry="reload"
       />
-      <p v-else-if="!data" class="text-body text-muted" data-testid="cc-modal-loading">
+      <DsText v-else-if="!data" variant="body" tone="muted" data-testid="cc-modal-loading">
         Memuatkan soalan...
-      </p>
+      </DsText>
       <template v-else>
         <DsStatRow :items="statItems(stats)" data-testid="cc-modal-stats" />
-        <p
+        <DsText
           v-if="data.answers.length === 0"
-          class="text-body text-muted"
+          variant="body"
+          tone="muted"
           data-testid="cc-modal-empty"
         >
           Tiada data soalan
-        </p>
-        <ol v-else class="flex flex-col gap-2" data-testid="cc-session-answers">
+        </DsText>
+        <DsStack v-else as="ol" gap="xs" data-testid="cc-session-answers">
           <li
             v-for="a in data.answers"
             :key="a.no"
@@ -73,7 +74,9 @@ const stats = computed(() => {
             data-testid="cc-answer-row"
             :data-correct="a.correct"
           >
-            <span class="tabular w-6 shrink-0 text-end text-caption text-muted">{{ a.no }}</span>
+            <DsText variant="caption" as="span" align="end" tabular class="w-6 shrink-0">{{
+              a.no
+            }}</DsText>
             <UIcon
               :name="a.correct ? 'i-ph-check-circle' : 'i-ph-x-circle'"
               :class="['size-5 shrink-0', a.correct ? 'text-success' : 'text-error']"
@@ -95,16 +98,24 @@ const stats = computed(() => {
                 <div v-if="a.selectedAnswer" class="mt-1 text-caption break-words text-error">
                   Jawapan anda: {{ a.selectedAnswer }}
                 </div>
-                <div v-if="a.correctAnswer" class="text-caption break-words text-success">
+                <DsText
+                  v-if="a.correctAnswer"
+                  variant="caption"
+                  as="div"
+                  tone="success"
+                  wrap="anywhere"
+                >
                   Jawapan betul: {{ a.correctAnswer }}
-                </div>
+                </DsText>
               </template>
             </div>
-            <span class="tabular shrink-0 text-caption text-muted">{{ hms(a.answeredAt) }}</span>
+            <DsText variant="caption" as="span" tabular class="shrink-0">{{
+              hms(a.answeredAt)
+            }}</DsText>
           </li>
-        </ol>
+        </DsStack>
       </template>
-    </div>
+    </DsStack>
     <template #footer>
       <UButton
         color="neutral"

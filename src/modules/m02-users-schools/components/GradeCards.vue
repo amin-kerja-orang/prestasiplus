@@ -6,6 +6,7 @@
  * radio (arrow keys work), at least 44 px high.
  */
 import { PRIMARY_GRADES, SECONDARY_GRADES, type GradeOption } from '../lib/user-form-options'
+import { DsStack, DsText } from '@/ds'
 
 const model = defineModel<number | null>({ required: true })
 
@@ -29,10 +30,10 @@ function pick(value: unknown): void {
 </script>
 
 <template>
-  <div class="flex min-w-0 flex-col gap-2" data-testid="grade-cards">
-    <p class="text-label text-default">Tahap Pendidikan</p>
-    <div v-for="group in groups" :key="group.title" class="flex flex-col gap-1">
-      <p class="text-caption text-muted">{{ group.title }}</p>
+  <DsStack gap="xs" data-testid="grade-cards">
+    <DsText variant="label" as="p">Tahap Pendidikan</DsText>
+    <DsStack v-for="group in groups" :key="group.title" gap="2xs">
+      <DsText variant="caption">{{ group.title }}</DsText>
       <URadioGroup
         :model-value="current(group.grades)"
         :items="items(group.grades)"
@@ -50,6 +51,6 @@ function pick(value: unknown): void {
         }"
         @update:model-value="pick"
       />
-    </div>
-  </div>
+    </DsStack>
+  </DsStack>
 </template>

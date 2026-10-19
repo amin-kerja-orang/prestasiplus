@@ -9,6 +9,7 @@ import { shortSchool } from '../command-center/cc-format'
 import { S3_COPY } from './board-copy'
 import type { LoadStatus } from './composables'
 import DailyPanel from './DailyPanel.vue'
+import { DsStack, DsText } from '@/ds'
 
 const props = defineProps<{ data: CcDailyActivity | null; status: LoadStatus; basePath: string }>()
 const paths = ccPaths(props.basePath)
@@ -39,7 +40,7 @@ function link(row: CcLoginRow): string | null {
     >
       {{ S3_COPY.noLogins }}
     </p>
-    <ul v-else class="flex flex-col gap-1">
+    <DsStack v-else as="ul" gap="2xs">
       <li
         v-for="r in data.logins.recent"
         :key="r.userId"
@@ -63,32 +64,45 @@ function link(row: CcLoginRow): string | null {
           :label="r.name"
           data-testid="cc-login-name"
         />
-        <span
+        <DsText
           v-else
-          class="min-w-0 text-label break-words text-highlighted"
+          variant="label"
+          tone="highlighted"
+          wrap="anywhere"
+          class="min-w-0"
           data-testid="cc-login-name"
-          >{{ r.name }}</span
+          >{{ r.name }}</DsText
         >
-        <span
+        <DsText
           v-if="r.schoolName"
-          class="min-w-0 text-caption break-words text-muted"
+          variant="caption"
+          as="span"
+          wrap="anywhere"
+          class="min-w-0"
           data-testid="cc-login-school"
           :title="r.schoolName"
-          >{{ shortSchool(r.schoolName) }}</span
+          >{{ shortSchool(r.schoolName) }}</DsText
         >
-        <span
+        <DsText
           v-else-if="r.role === 'student'"
-          class="text-caption text-error"
+          variant="caption"
+          as="span"
+          tone="error"
           data-testid="cc-login-school"
-          >{{ S3_COPY.outsider }}</span
+          >{{ S3_COPY.outsider }}</DsText
         >
-        <span class="ms-auto shrink-0 text-caption text-toned" data-testid="cc-login-package">{{
-          r.package
-        }}</span>
-        <span class="shrink-0 text-caption text-muted" data-testid="cc-login-ago">{{
+        <DsText
+          variant="caption"
+          as="span"
+          tone="toned"
+          class="ms-auto shrink-0"
+          data-testid="cc-login-package"
+          >{{ r.package }}</DsText
+        >
+        <DsText variant="caption" as="span" class="shrink-0" data-testid="cc-login-ago">{{
           r.timeAgo
-        }}</span>
+        }}</DsText>
       </li>
-    </ul>
+    </DsStack>
   </DailyPanel>
 </template>

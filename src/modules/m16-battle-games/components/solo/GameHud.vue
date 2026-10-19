@@ -3,7 +3,7 @@
  * The game bar of S13 and S14: "Skor" tile, the ring clock, "Betul" tile. S14 sets the labels in
  * capitals (`caps`).
  */
-import { DsStatTile } from '@/ds'
+import { DsStatTile, DsCluster } from '@/ds'
 
 import RingTimer from './RingTimer.vue'
 
@@ -20,7 +20,7 @@ withDefaults(
 </script>
 
 <template>
-  <div class="flex items-center justify-between gap-3" data-testid="solo-bar">
+  <DsCluster justify="between" :wrap="false" data-testid="solo-bar">
     <DsStatTile
       class="min-w-24 flex-1"
       icon="trophy"
@@ -40,5 +40,5 @@ withDefaults(
       value-tone="success"
       value-testid="solo-correct"
     />
-  </div>
+  </DsCluster>
 </template>

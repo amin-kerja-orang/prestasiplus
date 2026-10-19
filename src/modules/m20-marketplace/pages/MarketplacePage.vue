@@ -10,7 +10,7 @@ import { computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 
 import { useApi } from '@/composables'
-import { DsEmptyState, DsPage, DsLoadError } from '@/ds'
+import { DsEmptyState, DsPage, DsLoadError, DsStack, DsCluster } from '@/ds'
 
 import { fetchMarketplaceCategories, searchMarketplaceProducts, type BuyerSort } from '../api'
 import CategoryChips from '../components/product/CategoryChips.vue'
@@ -79,7 +79,13 @@ const pagerQuery = computed(() => ({
 
 <template>
   <DsPage data-testid="marketplace-page">
-    <DsLoadError v-if="failed" :message="MARKETPLACE_COPY.loadFailed" testid="m20-load-error" retry-testid="m20-retry" @retry="retry" />
+    <DsLoadError
+      v-if="failed"
+      :message="MARKETPLACE_COPY.loadFailed"
+      testid="m20-load-error"
+      retry-testid="m20-retry"
+      @retry="retry"
+    />
     <template v-else>
       <ProductFilters
         v-if="categories.data.value"
@@ -93,15 +99,10 @@ const pagerQuery = computed(() => ({
         :active="query.category"
       />
 
-      <div
-        v-if="!ready"
-        class="flex flex-col gap-3"
-        aria-busy="true"
-        data-testid="marketplace-loading"
-      >
+      <DsStack v-if="!ready" gap="sm" aria-busy="true" data-testid="marketplace-loading">
         <USkeleton class="h-28 w-full" />
         <USkeleton class="h-40 w-full" />
-      </div>
+      </DsStack>
       <div v-else-if="rows.length === 0" data-testid="marketplace-empty">
         <DsEmptyState
           :title="MARKETPLACE_COPY.emptyTitle"
@@ -111,16 +112,18 @@ const pagerQuery = computed(() => ({
       </div>
       <template v-else>
         <ProductGrid :products="rows" />
-        <div class="flex justify-center">
+        <DsCluster gap="none" align="stretch" justify="center" :wrap="false">
           <UPagination
             v-if="meta && meta.totalPages > 1"
             :page="page"
             :total="meta.totalItems"
             :items-per-page="meta.pageSize"
-            :to="(p: number) => ({ path: '/marketplace', query: { ...pagerQuery, page: String(p) } })"
+            :to="
+              (p: number) => ({ path: '/marketplace', query: { ...pagerQuery, page: String(p) } })
+            "
             @update:page="goTo"
           />
-        </div>
+        </DsCluster>
       </template>
     </template>
   </DsPage>

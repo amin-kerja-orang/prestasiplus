@@ -5,6 +5,7 @@ import { computed } from 'vue'
 import type { CcEngagement } from '../../api/command-center-types'
 import BoardPanel from './BoardPanel.vue'
 import { BANDS, type DrillRequest, S2_COPY } from './copy'
+import { DsStack, DsText } from '@/ds'
 
 const props = defineProps<{ engagement: CcEngagement }>()
 const emit = defineEmits<{ drill: [req: DrillRequest] }>()
@@ -14,11 +15,16 @@ const share = (n: number) => (total.value === 0 ? 0 : Math.round((n / total.valu
 </script>
 
 <template>
-  <BoardPanel icon="users-three" accent="friend" title="Engagement Pelajar" testid="cc-panel-engagement">
+  <BoardPanel
+    icon="users-three"
+    accent="friend"
+    title="Engagement Pelajar"
+    testid="cc-panel-engagement"
+  >
     <p class="mb-2 text-end text-body text-muted" data-testid="cc-engagement-total">
       Jumlah: <b class="tabular text-highlighted">{{ total }}</b> pelajar
     </p>
-    <ul class="flex flex-col gap-1">
+    <DsStack as="ul" gap="2xs">
       <li v-for="b in BANDS" :key="b.key" class="min-w-0">
         <UButton
           color="neutral"
@@ -29,7 +35,7 @@ const share = (n: number) => (total.value === 0 ? 0 : Math.round((n / total.valu
           :data-testid="`cc-band-${b.key}`"
           @click="emit('drill', { type: 'engagement', filter: b.key, label: 'Engagement Pelajar' })"
         >
-          <span class="w-24 shrink-0 text-body text-toned">{{ b.label }}</span>
+          <DsText variant="body" as="span" tone="toned" class="w-24 shrink-0">{{ b.label }}</DsText>
           <UProgress
             class="min-w-6 flex-1"
             :model-value="share(engagement[b.key])"
@@ -37,13 +43,17 @@ const share = (n: number) => (total.value === 0 ? 0 : Math.round((n / total.valu
             :color="b.bar"
             aria-hidden="true"
           />
-          <span
-            class="tabular w-8 shrink-0 text-end text-label text-highlighted"
+          <DsText
+            variant="label"
+            tone="highlighted"
+            align="end"
+            tabular
+            class="w-8 shrink-0"
             data-testid="cc-band-count"
-            >{{ engagement[b.key] }}</span
+            >{{ engagement[b.key] }}</DsText
           >
         </UButton>
       </li>
-    </ul>
+    </DsStack>
   </BoardPanel>
 </template>

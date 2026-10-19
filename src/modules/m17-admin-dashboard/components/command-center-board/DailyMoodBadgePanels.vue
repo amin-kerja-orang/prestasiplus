@@ -9,6 +9,7 @@ import type { CcDailyActivity } from '../../api/command-center-board'
 import { MOODS, S3_COPY } from './board-copy'
 import type { LoadStatus } from './composables'
 import DailyPanel from './DailyPanel.vue'
+import { DsGrid, DsStack, DsText } from '@/ds'
 
 defineProps<{ data: CcDailyActivity | null; status: LoadStatus }>()
 </script>
@@ -21,14 +22,15 @@ defineProps<{ data: CcDailyActivity | null; status: LoadStatus }>()
       testid="cc-panel-daily-mood"
       :state="status"
     >
-      <p
+      <DsText
         v-if="!data || data.engagement.moodCheckins === 0"
-        class="text-body text-muted"
+        variant="body"
+        tone="muted"
         data-testid="cc-empty"
       >
         {{ S3_COPY.noData }}
-      </p>
-      <ul v-else class="grid grid-cols-2 gap-2">
+      </DsText>
+      <DsGrid v-else :cols="2" gap="xs" as="ul">
         <li
           v-for="m in MOODS"
           :key="m.key"
@@ -37,23 +39,27 @@ defineProps<{ data: CcDailyActivity | null; status: LoadStatus }>()
         >
           <UIcon :name="m.icon" class="size-5 shrink-0" aria-hidden="true" />
           <span>{{ m.label }}</span>
-          <span
-            class="tabular ms-auto text-label text-highlighted"
+          <DsText
+            variant="label"
+            tone="highlighted"
+            tabular
+            class="ms-auto"
             data-testid="cc-daily-mood-count"
-            >{{ formatCount(data.engagement.moodDist[m.key]) }}</span
+            >{{ formatCount(data.engagement.moodDist[m.key]) }}</DsText
           >
         </li>
-      </ul>
+      </DsGrid>
     </DailyPanel>
     <DailyPanel title="Badge Terkini" icon="i-ph-medal" testid="cc-panel-badges" :state="status">
-      <p
+      <DsText
         v-if="!data || data.engagement.recentBadges.length === 0"
-        class="text-body text-muted"
+        variant="body"
+        tone="muted"
         data-testid="cc-empty"
       >
         {{ S3_COPY.noBadges }}
-      </p>
-      <ul v-else class="flex flex-col gap-1">
+      </DsText>
+      <DsStack v-else as="ul" gap="2xs">
         <li
           v-for="(b, i) in data.engagement.recentBadges"
           :key="i"
@@ -61,10 +67,12 @@ defineProps<{ data: CcDailyActivity | null; status: LoadStatus }>()
           data-testid="cc-badge-row"
         >
           <UIcon name="i-ph-medal" class="size-5 shrink-0 text-primary-t" aria-hidden="true" />
-          <span class="min-w-0 text-label break-words text-highlighted">{{ b.name }}</span>
-          <span class="text-caption text-muted">{{ b.badgeName }}</span>
+          <DsText variant="label" tone="highlighted" wrap="anywhere" class="min-w-0">{{
+            b.name
+          }}</DsText>
+          <DsText variant="caption" as="span">{{ b.badgeName }}</DsText>
         </li>
-      </ul>
+      </DsStack>
     </DailyPanel>
   </div>
 </template>

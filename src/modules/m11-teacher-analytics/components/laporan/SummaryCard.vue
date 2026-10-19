@@ -4,7 +4,7 @@
  * "Klik untuk ..." hint with a chevron that turns when open. A card with a click handler, as live
  * (D10: no role, no tabindex). The open card takes the outlined variant (the single focus point).
  */
-import { type DsAccent, DsIconChip } from '@/ds'
+import { type DsAccent, DsIconChip, DsStack, DsCluster, DsText } from '@/ds'
 
 defineProps<{
   icon: string
@@ -26,21 +26,19 @@ defineEmits<{ toggle: [] }>()
     :data-open="open ? 'true' : 'false'"
     @click="$emit('toggle')"
   >
-    <div class="flex flex-col gap-2">
-      <div class="flex items-center justify-between gap-2">
+    <DsStack gap="xs">
+      <DsCluster gap="xs" justify="between" :wrap="false">
         <DsIconChip :icon="icon" :accent="accent" />
-        <span class="tabular text-heading text-highlighted" data-testid="card-value">{{
-          value
-        }}</span>
-      </div>
-      <p class="text-label text-highlighted" data-testid="card-title">
+        <DsText variant="heading" as="span" tabular data-testid="card-value">{{ value }}</DsText>
+      </DsCluster>
+      <DsText variant="label" as="p" tone="highlighted" data-testid="card-title">
         {{ title }}
-      </p>
+      </DsText>
       <slot />
       <p class="flex items-center gap-1 text-caption text-muted">
         <UIcon :name="open ? 'i-ph-caret-up' : 'i-ph-caret-down'" class="size-3 shrink-0" />
         {{ hint }}
       </p>
-    </div>
+    </DsStack>
   </UCard>
 </template>

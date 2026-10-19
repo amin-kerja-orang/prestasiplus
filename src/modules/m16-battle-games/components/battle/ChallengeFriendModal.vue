@@ -9,7 +9,7 @@
 import { onBeforeUnmount, ref, watch } from 'vue'
 
 import { alertNative, useDebounce } from '@/composables'
-import { DsDialog } from '@/ds'
+import { DsDialog, DsStack, DsText } from '@/ds'
 
 import {
   searchOpponent,
@@ -98,7 +98,7 @@ async function pick(user: OpponentSearchUser): Promise<void> {
     :dismissible="false"
     @update:open="emit('update:open', false)"
   >
-    <div class="flex flex-col gap-3" data-testid="battle-challenge-modal">
+    <DsStack gap="sm" data-testid="battle-challenge-modal">
       <UInput
         v-model="query"
         type="text"
@@ -109,7 +109,7 @@ async function pick(user: OpponentSearchUser): Promise<void> {
         data-testid="battle-challenge-input"
         @input="onInput"
       />
-      <div class="flex max-h-64 flex-col gap-2 overflow-y-auto">
+      <DsStack gap="xs" class="max-h-64 overflow-y-auto">
         <UButton
           v-for="u in results"
           :key="u.id"
@@ -122,8 +122,8 @@ async function pick(user: OpponentSearchUser): Promise<void> {
         >
           <UAvatar :text="u.name.charAt(0).toUpperCase()" size="md" />
           <span class="min-w-0 flex-1">
-            <span class="block truncate text-label text-highlighted">{{ u.name }}</span>
-            <span class="block truncate text-caption text-muted">{{ u.school }}</span>
+            <DsText variant="label" tone="highlighted" truncate class="block">{{ u.name }}</DsText>
+            <DsText variant="caption" as="span" truncate class="block">{{ u.school }}</DsText>
           </span>
           <UIcon name="i-ph-paper-plane-tilt-duotone" class="size-5 shrink-0" aria-hidden="true" />
         </UButton>
@@ -134,8 +134,8 @@ async function pick(user: OpponentSearchUser): Promise<void> {
         >
           Tiada pelajar dijumpai
         </p>
-      </div>
-    </div>
+      </DsStack>
+    </DsStack>
     <template #footer>
       <UButton
         color="neutral"

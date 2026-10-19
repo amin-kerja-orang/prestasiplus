@@ -6,7 +6,7 @@
  */
 import { computed } from 'vue'
 
-import { DsPanel } from '@/ds'
+import { DsPanel, DsStack, DsGrid, DsText } from '@/ds'
 
 import { formatPercent } from '@/lib/number'
 
@@ -60,46 +60,46 @@ const deltas = computed(() => {
     icon="i-ph-arrows-left-right"
     data-testid="kirk-comparison"
   >
-    <div class="flex flex-col gap-3">
-      <p class="text-body text-muted" data-testid="kirk-comparison-subtitle">
+    <DsStack gap="sm">
+      <DsText variant="body" tone="muted" data-testid="kirk-comparison-subtitle">
         {{ comparison.subtitle }}
-      </p>
-      <div class="grid grid-cols-1 gap-3 md:grid-cols-2">
+      </DsText>
+      <DsGrid :cols="{ base: 1, md: 2 }" gap="sm">
         <UCard variant="soft" class="min-w-0" data-testid="kirk-panel-before">
           <div class="mb-2 flex flex-wrap items-center justify-between gap-1">
-            <p class="text-label text-highlighted">SEBELUM</p>
-            <p class="text-body text-muted" data-testid="kirk-panel-range">
+            <DsText variant="label" as="p" tone="highlighted">SEBELUM</DsText>
+            <DsText variant="body" tone="muted" data-testid="kirk-panel-range">
               {{ range(comparison.before) }}
-            </p>
+            </DsText>
           </div>
-          <div class="grid grid-cols-2 gap-3 text-center">
+          <DsGrid :cols="2" gap="sm" class="text-center">
             <div v-for="m in metrics(comparison.before)" :key="m.key" class="min-w-0">
-              <p class="tabular text-heading text-highlighted" data-testid="kirk-panel-value">
+              <DsText variant="heading" tabular data-testid="kirk-panel-value">
                 {{ m.value }}
-              </p>
-              <p class="text-body text-muted">{{ m.label }}</p>
+              </DsText>
+              <DsText variant="body" tone="muted">{{ m.label }}</DsText>
             </div>
-          </div>
+          </DsGrid>
         </UCard>
         <UCard variant="soft" class="min-w-0" data-testid="kirk-panel-after">
           <div class="mb-2 flex flex-wrap items-center justify-between gap-1">
-            <p class="text-label text-primary-t">SELEPAS</p>
-            <p class="text-body text-muted" data-testid="kirk-panel-range">
+            <DsText variant="label" as="p" tone="primary">SELEPAS</DsText>
+            <DsText variant="body" tone="muted" data-testid="kirk-panel-range">
               {{ range(comparison.after) }}
-            </p>
+            </DsText>
           </div>
-          <div class="grid grid-cols-2 gap-3 text-center">
+          <DsGrid :cols="2" gap="sm" class="text-center">
             <div v-for="m in metrics(comparison.after)" :key="m.key" class="min-w-0">
-              <p class="tabular text-heading text-primary-t" data-testid="kirk-panel-value">
+              <DsText variant="heading" tone="primary" tabular data-testid="kirk-panel-value">
                 {{ m.value }}
-              </p>
-              <p class="text-body text-muted">{{ m.label }}</p>
+              </DsText>
+              <DsText variant="body" tone="muted">{{ m.label }}</DsText>
             </div>
-          </div>
+          </DsGrid>
         </UCard>
-      </div>
+      </DsGrid>
 
-      <div class="grid grid-cols-2 gap-3 md:grid-cols-4" data-testid="kirk-deltas">
+      <DsGrid :cols="{ base: 2, md: 4 }" gap="sm" data-testid="kirk-deltas">
         <UCard
           v-for="d in deltas"
           :key="d.key"
@@ -108,7 +108,7 @@ const deltas = computed(() => {
           :data-testid="`kirk-delta-${d.key}`"
           :data-tone="d.n >= 0 ? 'up' : 'down'"
         >
-          <div class="flex flex-col items-center gap-1 text-center">
+          <DsStack gap="2xs" align="center" class="text-center">
             <UIcon
               :name="d.n >= 0 ? 'i-ph-arrow-up' : 'i-ph-arrow-down'"
               :class="['size-5', d.n >= 0 ? 'text-success' : 'text-error']"
@@ -119,16 +119,16 @@ const deltas = computed(() => {
             >
               {{ d.text }}
             </p>
-            <p class="text-body text-muted">{{ d.label }}</p>
-          </div>
+            <DsText variant="body" tone="muted">{{ d.label }}</DsText>
+          </DsStack>
         </UCard>
-      </div>
+      </DsGrid>
 
       <UAlert color="primary" variant="soft" icon="i-ph-chart-line" data-testid="kirk-summary">
         <template #description>
           <strong>Ringkasan:</strong> {{ comparison.sentences.join(' ') }}
         </template>
       </UAlert>
-    </div>
+    </DsStack>
   </DsPanel>
 </template>

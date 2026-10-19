@@ -8,41 +8,46 @@
  */
 import { RouterLink } from 'vue-router'
 
-import { DsIconChip, DsPanel } from '@/ds'
+import { DsIconChip, DsPanel, DsCluster, DsStack, DsHeading, DsText } from '@/ds'
 
 import type { SchoolDashboard } from '../../api/dashboard'
 import GradeList from './GradeList.vue'
 import { barWidth, count, gps, PATHS, percent } from './dashboard-format'
 
 defineProps<{ performance: SchoolDashboard['performance'] }>()
-
 </script>
 
 <template>
   <DsPanel data-testid="sd-performance">
-    <div class="flex min-w-0 items-center gap-3">
+    <DsCluster :wrap="false">
       <DsIconChip icon="chart-bar" size="lg" />
       <div class="min-w-0">
-        <h2 class="text-subheading text-highlighted" data-testid="sd-performance-title">
+        <DsHeading :level="2" variant="subheading" data-testid="sd-performance-title">
           Ringkasan Prestasi
-        </h2>
-        <p class="text-caption text-muted" data-testid="sd-performance-subtitle">
+        </DsHeading>
+        <DsText variant="caption" data-testid="sd-performance-subtitle">
           GPS, risiko murid, ketepatan latihan &amp; perbandingan tingkatan
-        </p>
+        </DsText>
       </div>
-    </div>
+    </DsCluster>
 
     <div
       class="mt-4 grid min-w-0 grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-4"
       data-testid="sd-panels"
     >
       <DsPanel tone="inset" data-testid="sd-panel-gps">
-        <div class="flex flex-col items-center justify-center gap-1 text-center">
-          <p class="text-overline text-muted">GPS Sekolah</p>
+        <DsStack gap="2xs" align="center" justify="center" class="text-center">
+          <DsText variant="overline" as="p">GPS Sekolah</DsText>
           <p
             class="tabular text-display"
             :class="
-              performance.gps.band === 'Cemerlang' ? 'text-success' : performance.gps.band === 'Baik' ? 'text-info' : performance.gps.band === 'Perlu Perhatian' ? 'text-error' : 'text-cat-5'
+              performance.gps.band === 'Cemerlang'
+                ? 'text-success'
+                : performance.gps.band === 'Baik'
+                  ? 'text-info'
+                  : performance.gps.band === 'Perlu Perhatian'
+                    ? 'text-error'
+                    : 'text-cat-5'
             "
             data-testid="sd-gps-value"
           >
@@ -52,72 +57,78 @@ defineProps<{ performance: SchoolDashboard['performance'] }>()
             v-if="performance.gps.grade && performance.gps.band"
             class="text-label"
             :class="
-              performance.gps.band === 'Cemerlang' ? 'text-success' : performance.gps.band === 'Baik' ? 'text-info' : performance.gps.band === 'Perlu Perhatian' ? 'text-error' : 'text-cat-5'
+              performance.gps.band === 'Cemerlang'
+                ? 'text-success'
+                : performance.gps.band === 'Baik'
+                  ? 'text-info'
+                  : performance.gps.band === 'Perlu Perhatian'
+                    ? 'text-error'
+                    : 'text-cat-5'
             "
             data-testid="sd-gps-grade"
           >
             {{ performance.gps.grade }} · {{ performance.gps.band }}
           </p>
-          <p class="text-caption text-muted" data-testid="sd-gps-entries">
+          <DsText variant="caption" data-testid="sd-gps-entries">
             {{ count(performance.gps.entries) }} entri headcount
-          </p>
-        </div>
+          </DsText>
+        </DsStack>
       </DsPanel>
 
       <DsPanel v-if="performance.risk" tone="inset" data-testid="sd-panel-risk">
-        <div class="flex flex-col items-center justify-center gap-1 text-center">
-          <p class="text-overline text-muted">Amaran Awal</p>
+        <DsStack gap="2xs" align="center" justify="center" class="text-center">
+          <DsText variant="overline" as="p">Amaran Awal</DsText>
           <div class="mt-1 flex items-start justify-center gap-4">
             <div>
-              <p class="tabular text-heading text-success" data-testid="sd-risk-safe">
+              <DsText variant="heading" tone="success" tabular data-testid="sd-risk-safe">
                 {{ count(performance.risk.safe) }}
-              </p>
-              <p class="text-caption text-success">Selamat</p>
+              </DsText>
+              <DsText variant="caption" tone="success">Selamat</DsText>
             </div>
             <div>
-              <p class="tabular text-heading text-warning" data-testid="sd-risk-watch">
+              <DsText variant="heading" tone="warning" tabular data-testid="sd-risk-watch">
                 {{ count(performance.risk.watch) }}
-              </p>
-              <p class="text-caption text-warning">Berhati</p>
+              </DsText>
+              <DsText variant="caption" tone="warning">Berhati</DsText>
             </div>
             <div>
-              <p class="tabular text-heading text-error" data-testid="sd-risk-high">
+              <DsText variant="heading" tone="error" tabular data-testid="sd-risk-high">
                 {{ count(performance.risk.high) }}
-              </p>
-              <p class="text-caption text-error">Berisiko</p>
+              </DsText>
+              <DsText variant="caption" tone="error">Berisiko</DsText>
             </div>
           </div>
-          <p class="text-caption text-muted" data-testid="sd-risk-total">
+          <DsText variant="caption" data-testid="sd-risk-total">
             {{ count(performance.risk.total) }} murid dinilai
-          </p>
-        </div>
+          </DsText>
+        </DsStack>
       </DsPanel>
 
       <DsPanel tone="inset" data-testid="sd-panel-practice">
-        <div class="flex flex-col items-center justify-center gap-1 text-center">
-          <p class="text-overline text-muted">Latihan</p>
-          <p class="tabular text-display text-highlighted" data-testid="sd-practice-accuracy">
+        <DsStack gap="2xs" align="center" justify="center" class="text-center">
+          <DsText variant="overline" as="p">Latihan</DsText>
+          <DsText variant="display" tabular data-testid="sd-practice-accuracy">
             {{ percent(performance.practice.accuracy) }}
-          </p>
-          <p class="text-label text-muted">Purata Ketepatan</p>
-          <p class="text-caption text-muted" data-testid="sd-practice-counts">
+          </DsText>
+          <DsText variant="label" as="p" tone="muted">Purata Ketepatan</DsText>
+          <DsText variant="caption" data-testid="sd-practice-counts">
             {{ count(performance.practice.sessions) }} sesi ·
             {{ count(performance.practice.questions) }} soalan
-          </p>
-        </div>
+          </DsText>
+        </DsStack>
       </DsPanel>
 
       <RouterLink :to="PATHS.levels" class="block min-w-0" data-testid="sd-panel-levels">
         <DsPanel tone="inset" class="h-full hover:bg-elevated">
-          <p class="text-center text-overline text-muted">Tingkatan</p>
+          <DsText variant="overline" as="p" align="center">Tingkatan</DsText>
           <div
             v-for="level in performance.levels"
             :key="level.code"
             class="mt-2"
             data-testid="sd-level-row"
           >
-            <div class="flex items-baseline justify-between gap-2">
-              <span class="text-label text-highlighted">{{ level.name }}</span>
+            <DsCluster gap="xs" align="baseline" justify="between" :wrap="false">
+              <DsText variant="label" tone="highlighted">{{ level.name }}</DsText>
               <span
                 class="tabular text-label"
                 :class="
@@ -130,7 +141,7 @@ defineProps<{ performance: SchoolDashboard['performance'] }>()
                 data-testid="sd-level-pct"
                 >{{ percent(level.accuracy) }}</span
               >
-            </div>
+            </DsCluster>
             <UProgress
               :model-value="barWidth(level.accuracy)"
               :max="100"

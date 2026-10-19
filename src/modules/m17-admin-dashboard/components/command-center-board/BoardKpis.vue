@@ -6,7 +6,7 @@
  */
 import { computed } from 'vue'
 
-import { DsIconChip } from '@/ds'
+import { DsIconChip, DsGrid, DsStack, DsCluster, DsText } from '@/ds'
 import { formatCount, formatNumber } from '@/lib/number'
 
 import type { CcLiveData } from '../../api/command-center-board'
@@ -60,18 +60,18 @@ const tiles = computed<{ id: string; label: string; value: string; sub: string; 
 </script>
 
 <template>
-  <div class="grid grid-cols-2 gap-3 md:grid-cols-4" data-testid="cc-kpis" aria-live="off">
+  <DsGrid :cols="{ base: 2, md: 4 }" gap="sm" data-testid="cc-kpis" aria-live="off">
     <UCard v-for="(t, i) in tiles" :key="t.id" class="min-w-0" :data-testid="`cc-kpi-${t.id}`">
-      <div class="flex min-w-0 flex-col items-start gap-1">
-        <span class="flex w-full min-w-0 items-center gap-2">
+      <DsStack gap="2xs" align="start">
+        <DsCluster as="span" gap="xs" :wrap="false" class="w-full">
           <DsIconChip :icon="t.icon" :accent="accentAt(i)" size="sm" />
-          <span class="min-w-0 text-overline text-muted">{{ t.label }}</span>
-        </span>
-        <span class="tabular text-title break-words text-highlighted" data-testid="cc-kpi-value">{{
+          <DsText variant="overline" class="min-w-0">{{ t.label }}</DsText>
+        </DsCluster>
+        <DsText variant="title" as="span" wrap="anywhere" tabular data-testid="cc-kpi-value">{{
           t.value
-        }}</span>
-        <span class="text-caption text-muted" data-testid="cc-kpi-sub">{{ t.sub }}</span>
-      </div>
+        }}</DsText>
+        <DsText variant="caption" as="span" data-testid="cc-kpi-sub">{{ t.sub }}</DsText>
+      </DsStack>
     </UCard>
-  </div>
+  </DsGrid>
 </template>

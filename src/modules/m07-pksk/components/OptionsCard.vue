@@ -7,7 +7,7 @@
  * checkbox and the whole card are only hidden (`v-show`), never removed, so their state is kept. A
  * `disabled` card (Bahagian C on S6) is neither validated nor sent (DV-M07-05).
  */
-import { DsFormSection } from '@/ds'
+import { DsFormSection, DsStack, DsCluster } from '@/ds'
 
 import { MAX_OPTIONS, MIN_OPTIONS, newOption, optionLetter, type OptionRow } from '../lib/admin'
 
@@ -45,13 +45,8 @@ function remove(uid: number): void {
       icon="list-numbers"
       accent="win"
     >
-      <div class="flex flex-col gap-3">
-        <div
-          v-for="(opt, idx) in rows"
-          :key="opt.uid"
-          class="flex items-center gap-3"
-          data-testid="option-row"
-        >
+      <DsStack gap="sm">
+        <DsCluster v-for="(opt, idx) in rows" :key="opt.uid" :wrap="false" data-testid="option-row">
           <UBadge
             color="neutral"
             variant="soft"
@@ -92,8 +87,8 @@ function remove(uid: number): void {
             data-testid="option-remove"
             @click="remove(opt.uid)"
           />
-        </div>
-      </div>
+        </DsCluster>
+      </DsStack>
       <UButton
         v-show="rows.length < MAX_OPTIONS"
         type="button"

@@ -12,6 +12,7 @@ import NavIcon from '@/shells/shared/NavIcon.vue'
 import ShellLink from '@/shells/shared/ShellLink.vue'
 
 import AdminNavList from './AdminNavList.vue'
+import { DsCluster, DsStack } from '@/ds'
 
 defineProps<{
   entries: readonly AdminNavEntry[]
@@ -29,7 +30,7 @@ defineProps<{
     class="sidebar fixed top-0 left-0 z-40 hidden h-screen w-64 overflow-y-auto lg:block"
     data-testid="shell-admin-sidebar"
   >
-    <div class="flex min-h-full flex-col">
+    <DsStack gap="none" class="min-h-full">
       <!-- Logo -->
       <div class="p-5">
         <ShellLink :to="home" class="flex items-center" data-testid="shell-admin-sidebar-logo">
@@ -68,7 +69,7 @@ defineProps<{
 
       <!-- User block -->
       <div class="border-t border-slate-100 p-4" data-testid="shell-admin-user-block">
-        <div class="flex items-center gap-3">
+        <DsCluster :wrap="false">
           <img :src="avatarSrc(user)" alt="Avatar" class="avatar-ring h-10 w-10 rounded-full" />
           <div class="min-w-0 flex-1">
             <p class="truncate text-sm font-semibold text-slate-800">{{ user?.name }}</p>
@@ -82,8 +83,8 @@ defineProps<{
           >
             <NavIcon fa="fa-sign-out-alt" />
           </ShellLink>
-        </div>
+        </DsCluster>
       </div>
-    </div>
+    </DsStack>
   </aside>
 </template>

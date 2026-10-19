@@ -10,7 +10,7 @@ import type { TableColumn } from '@nuxt/ui'
 import { computed } from 'vue'
 import { RouterLink } from 'vue-router'
 
-import { DsDataTable, type CardField } from '@/ds'
+import { DsDataTable, type CardField, DsCluster, DsText } from '@/ds'
 
 import type { CellTone, HeadcountDetail } from '../../api/headcount-types'
 import { DASH, gradeOfPercent, num1 } from '../../lib/headcount/format'
@@ -167,9 +167,13 @@ const toneOf = (row: Row, i: number): CellTone => row[`tone${String(i)}`] as Cel
       />
     </template>
     <template #name-cell="{ row }">
-      <span v-if="row.original.average" class="text-label text-highlighted" data-testid="average-row">{{
-        row.original.name
-      }}</span>
+      <DsText
+        v-if="row.original.average"
+        variant="label"
+        tone="highlighted"
+        data-testid="average-row"
+        >{{ row.original.name }}</DsText
+      >
       <RouterLink
         v-else
         :to="`/headcount/student/${String(row.original.userId)}`"
@@ -182,13 +186,14 @@ const toneOf = (row: Row, i: number): CellTone => row[`tone${String(i)}`] as Cel
     </template>
     <template v-for="i in otrs" :key="i" #[`ar${String(i)}-cell`]="{ row }">
       <span
-:class="TONE[toneOf(row.original, i)]"
+        :class="TONE[toneOf(row.original, i)]"
         :data-testid="`ar-${String(row.original.userId)}-${String(i + 1)}`"
         :data-tone="toneOf(row.original, i)"
-        >{{ row.original[`ar${String(i)}`] }}</span>
+        >{{ row.original[`ar${String(i)}`] }}</span
+      >
     </template>
     <template #card-actions="{ row }">
-      <div class="flex items-center gap-2">
+      <DsCluster gap="xs" :wrap="false">
         <UCheckbox
           v-if="!row.average"
           :model-value="selected.includes(row.userId)"
@@ -204,7 +209,7 @@ const toneOf = (row: Row, i: number): CellTone => row[`tone${String(i)}`] as Cel
           icon="i-ph-arrow-right"
           :aria-label="`Buka ${row.name}`"
         />
-      </div>
+      </DsCluster>
     </template>
   </DsDataTable>
 </template>

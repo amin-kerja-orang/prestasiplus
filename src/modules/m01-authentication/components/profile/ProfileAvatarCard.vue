@@ -10,6 +10,7 @@ import { useFlash } from '@/composables/useFlash'
 
 import { uploadPicture } from '../../api'
 import { errorLines } from '../../lib/error-lines'
+import { DsCluster, DsStack, DsText } from '@/ds'
 
 const props = defineProps<{ name: string; avatarUrl: string | null }>()
 const emit = defineEmits<{
@@ -61,7 +62,7 @@ async function submit(): Promise<void> {
 
 <template>
   <UCard>
-    <form data-testid="picture-form" class="flex flex-col gap-4" @submit.prevent="submit">
+    <DsStack data-testid="picture-form" as="form" @submit.prevent="submit">
       <h2 class="flex items-center gap-2 text-subheading text-highlighted">
         <UIcon name="i-ph-camera" class="size-5" aria-hidden="true" />
         Gambar Profil
@@ -76,7 +77,7 @@ async function submit(): Promise<void> {
         />
 
         <div class="flex min-w-0 flex-1 flex-col gap-2">
-          <div class="flex flex-wrap items-center gap-2">
+          <DsCluster gap="xs">
             <UFileUpload
               v-model="file"
               variant="button"
@@ -101,10 +102,10 @@ async function submit(): Promise<void> {
               data-testid="picture-save"
               >Simpan</UButton
             >
-          </div>
-          <p class="text-caption text-muted">JPG, PNG atau WEBP. Maks 2MB.</p>
+          </DsCluster>
+          <DsText variant="caption">JPG, PNG atau WEBP. Maks 2MB.</DsText>
         </div>
       </div>
-    </form>
+    </DsStack>
   </UCard>
 </template>

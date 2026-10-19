@@ -16,6 +16,10 @@ import {
   DsPage,
   DsStatRow,
   type StatItem,
+  DsCluster,
+  DsStack,
+  DsHeading,
+  DsText,
 } from '@/ds'
 
 import { fetchTeacherDetail } from '../api'
@@ -57,27 +61,31 @@ const cards = computed<StatItem[]>(() => {
       key: 'students',
       label: 'Pelajar T4/T5',
       value: count(c.students),
-      icon: 'i-ph-graduation-cap', accent: 'friend',
+      icon: 'i-ph-graduation-cap',
+      accent: 'friend',
     },
     {
       key: 'engaged',
       label: 'Pelajar Aktif',
       value: count(c.engaged),
-      icon: 'i-ph-check-circle', accent: 'win',
+      icon: 'i-ph-check-circle',
+      accent: 'win',
       valueTone: 'success',
     },
     {
       key: 'pct',
       label: '% Aktif',
       value: pct(c.pct),
-      icon: 'i-ph-percent', accent: 'action',
+      icon: 'i-ph-percent',
+      accent: 'action',
       valueTone: 'primary',
     },
     {
       key: 'attention',
       label: 'Perlu Perhatian',
       value: count(c.needAttention),
-      icon: 'i-ph-warning', accent: 'heat',
+      icon: 'i-ph-warning',
+      accent: 'heat',
     },
   ]
 })
@@ -120,19 +128,26 @@ const columns: TableColumn<PupilRow>[] = [
 
       <template v-if="data">
         <UCard data-testid="mon-teacher-header">
-          <div class="flex flex-wrap items-center justify-between gap-4">
-            <div class="flex min-w-0 items-center gap-4">
+          <DsCluster gap="md" justify="between">
+            <DsCluster gap="md" :wrap="false">
               <DsIconChip icon="chalkboard-teacher" size="lg" />
-              <div class="flex min-w-0 flex-col gap-1">
-                <h2 class="text-title break-words text-highlighted" data-testid="mon-teacher-name">
+              <DsStack gap="2xs">
+                <DsHeading
+                  :level="2"
+                  variant="title"
+                  wrap="anywhere"
+                  data-testid="mon-teacher-name"
+                >
                   {{ data.teacher.name }}
-                </h2>
-                <p class="text-body break-all text-muted">{{ data.teacher.email }}</p>
-                <p class="text-body text-muted" data-testid="mon-teacher-last">
+                </DsHeading>
+                <DsText variant="body" tone="muted" class="break-all">{{
+                  data.teacher.email
+                }}</DsText>
+                <DsText variant="body" tone="muted" data-testid="mon-teacher-last">
                   Login Terakhir: {{ dmyHm(data.teacher.lastLoginAt) }}
-                </p>
-              </div>
-            </div>
+                </DsText>
+              </DsStack>
+            </DsCluster>
             <UBadge
               :color="data.teacher.lastLoginAt ? 'success' : 'neutral'"
               variant="subtle"
@@ -140,7 +155,7 @@ const columns: TableColumn<PupilRow>[] = [
               data-testid="mon-teacher-pill"
               :label="data.teacher.lastLoginAt ? 'Pernah Login' : 'Belum Login'"
             />
-          </div>
+          </DsCluster>
         </UCard>
 
         <DsStatRow
@@ -152,7 +167,7 @@ const columns: TableColumn<PupilRow>[] = [
         />
 
         <UCard data-testid="mon-teacher-students">
-          <div class="flex flex-col gap-6">
+          <DsStack gap="lg">
             <h2 class="flex items-center gap-2 text-heading text-highlighted">
               <UIcon name="i-ph-graduation-cap" class="size-6 text-primary-t" />Prestasi Pelajar
             </h2>
@@ -166,7 +181,9 @@ const columns: TableColumn<PupilRow>[] = [
                 caption="Prestasi pelajar"
               >
                 <template #no-cell="{ row }">
-                  <span class="tabular text-body text-muted">{{ row.original.rank }}</span>
+                  <DsText variant="body" as="span" tone="muted" tabular>{{
+                    row.original.rank
+                  }}</DsText>
                 </template>
                 <template #name-cell="{ row }">
                   <div
@@ -210,17 +227,17 @@ const columns: TableColumn<PupilRow>[] = [
                   />
                 </template>
                 <template #card="{ row }">
-                  <div class="flex flex-col gap-3">
-                    <div class="flex items-start justify-between gap-3">
+                  <DsStack gap="sm">
+                    <DsCluster align="start" justify="between" :wrap="false">
                       <RouterLink
                         v-if="(row as PupilRow).answers > 0"
                         :to="paths.student(schoolId, (row as PupilRow).id)"
                         class="line-clamp-2 text-label text-primary-t"
                         >{{ (row as PupilRow).name }}</RouterLink
                       >
-                      <span v-else class="line-clamp-2 text-label text-muted">{{
+                      <DsText v-else variant="label" tone="muted" :clamp="2">{{
                         (row as PupilRow).name
-                      }}</span>
+                      }}</DsText>
                       <UBadge
                         :color="statusColor((row as PupilRow).status)"
                         variant="subtle"
@@ -228,34 +245,34 @@ const columns: TableColumn<PupilRow>[] = [
                         class="whitespace-nowrap"
                         :label="statusLabel((row as PupilRow).status)"
                       />
-                    </div>
+                    </DsCluster>
                     <dl class="grid grid-cols-2 gap-3 text-body">
                       <div>
                         <dt class="text-muted">Tingkatan · Soalan</dt>
-                        <dd class="tabular text-label">
+                        <DsText variant="label" as="dd" tabular>
                           {{ (row as PupilRow).level }} · {{ count((row as PupilRow).answers) }}
-                        </dd>
+                        </DsText>
                       </div>
                       <div>
                         <dt class="text-muted">Ketepatan</dt>
-                        <dd class="tabular text-label">
+                        <DsText variant="label" as="dd" tabular>
                           {{
                             (row as PupilRow).accuracy === null
                               ? '-'
                               : pct((row as PupilRow).accuracy!)
                           }}
-                        </dd>
+                        </DsText>
                       </div>
                     </dl>
-                  </div>
+                  </DsStack>
                 </template>
               </DsDataTable>
             </div>
-          </div>
+          </DsStack>
         </UCard>
 
         <UCard data-testid="mon-teacher-suggestions">
-          <div class="flex flex-col gap-4">
+          <DsStack>
             <h2 class="flex items-center gap-2 text-heading text-highlighted">
               <UIcon name="i-ph-lightbulb" class="size-6 text-info" />Cadangan Tindakan
             </h2>
@@ -282,7 +299,7 @@ const columns: TableColumn<PupilRow>[] = [
               data-testid="mon-suggestion-answered"
               :description="`${data.suggestions.answered} pelajar telah mula menjawab soalan. Galakkan mereka kekalkan momentum.`"
             />
-          </div>
+          </DsStack>
         </UCard>
       </template>
     </template>

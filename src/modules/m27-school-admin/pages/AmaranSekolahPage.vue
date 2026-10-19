@@ -16,7 +16,7 @@ import { isApiError } from '@/api'
 import { setRouteOutcome } from '@/app/router/outcome'
 import { useApi, useFlash, useSession } from '@/composables'
 import { usePageMeta } from '@/composables/usePageMeta'
-import { DsLoadError, DsPage } from '@/ds'
+import { DsLoadError, DsPage, DsStack } from '@/ds'
 import { saveBlob } from '@/lib/save-blob'
 
 import { downloadSchoolRiskCsv, fetchSchoolRisk } from '../api/amaran'
@@ -96,9 +96,9 @@ async function download(): Promise<void> {
       testid="am-error"
       @retry="reload"
     />
-    <div v-else-if="loading" class="flex flex-col gap-4" aria-busy="true" data-testid="am-loading">
+    <DsStack v-else-if="loading" aria-busy="true" data-testid="am-loading">
       <USkeleton class="h-24 w-full" />
       <USkeleton class="h-64 w-full" />
-    </div>
+    </DsStack>
   </DsPage>
 </template>

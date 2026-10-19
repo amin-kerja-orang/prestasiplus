@@ -4,7 +4,7 @@
  * them (never logged in, teacher logged in without answers, active above 50%). Rendered only when there is at
  * least one item. No item has a button (DV-M12-01). Meaning is carried by icon and words, not colour alone.
  */
-import { DsPanel } from '@/ds'
+import { DsPanel, DsStack } from '@/ds'
 
 import type { BehaviorAlert } from '../../../api/types'
 import { pct, plain } from '../common/kirkpatrick-format'
@@ -27,7 +27,7 @@ function text(a: BehaviorAlert): string {
     icon="i-ph-bell"
     data-testid="beh-alerts"
   >
-    <ul class="flex flex-col gap-2">
+    <DsStack as="ul" gap="xs">
       <li v-for="(a, i) in alerts" :key="`${a.list}-${a.schoolId}-${i}`">
         <UAlert
           :color="a.kind === 'good' ? 'success' : 'error'"
@@ -41,6 +41,6 @@ function text(a: BehaviorAlert): string {
           </template>
         </UAlert>
       </li>
-    </ul>
+    </DsStack>
   </DsPanel>
 </template>

@@ -6,6 +6,7 @@
 import type { TeacherReport } from '../../api/types'
 import { LAPORAN_COPY } from './copy'
 import { bandOf, SCORE_COLOR, SCORE_TEXT, type ScoreKey } from './format'
+import { DsCluster, DsGrid, DsStack, DsText } from '@/ds'
 
 defineProps<{ score: TeacherReport['score'] }>()
 
@@ -20,26 +21,30 @@ const BARS: { key: ScoreKey; label: string; icon: string }[] = [
 
 <template>
   <UCard data-testid="panel-skor">
-    <div class="flex flex-col gap-4">
+    <DsStack>
       <h2 class="flex items-center gap-2 text-label text-highlighted">
-        <UIcon name="i-ph-chart-bar" class="size-4 text-primary-t" />{{ LAPORAN_COPY.scoreBreakdown }}
+        <UIcon name="i-ph-chart-bar" class="size-4 text-primary-t" />{{
+          LAPORAN_COPY.scoreBreakdown
+        }}
       </h2>
-      <div class="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-5">
+      <DsGrid :cols="{ base: 1, sm: 2, lg: 5 }" gap="sm">
         <div
           v-for="b in BARS"
           :key="b.key"
           class="flex min-w-0 flex-col gap-2 bg-soft p-3"
           :data-testid="`bar-${b.key}`"
         >
-          <div class="flex items-center justify-between gap-2">
+          <DsCluster gap="xs" justify="between" :wrap="false">
             <span class="flex min-w-0 items-center gap-1 text-label text-default">
               <UIcon :name="b.icon" class="size-4 shrink-0 text-muted" />{{ b.label }}
             </span>
-            <span
+            <DsText
               v-if="score.byType[b.key] === null"
-              class="tabular text-label text-error"
+              variant="label"
+              tone="error"
+              tabular
               data-testid="bar-value"
-              >{{ LAPORAN_COPY.noScore }}</span
+              >{{ LAPORAN_COPY.noScore }}</DsText
             >
             <span
               v-else
@@ -47,7 +52,7 @@ const BARS: { key: ScoreKey; label: string; icon: string }[] = [
               data-testid="bar-value"
               >{{ score.byType[b.key] }}%</span
             >
-          </div>
+          </DsCluster>
           <UProgress
             :model-value="score.byType[b.key] ?? 0"
             :color="
@@ -65,7 +70,7 @@ const BARS: { key: ScoreKey; label: string; icon: string }[] = [
             data-testid="bar-fill"
           />
         </div>
-      </div>
-    </div>
+      </DsGrid>
+    </DsStack>
   </UCard>
 </template>

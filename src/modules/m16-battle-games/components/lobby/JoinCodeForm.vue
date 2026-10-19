@@ -9,6 +9,7 @@
 import { ref } from 'vue'
 
 import type { RoomColor } from './lobby-config'
+import { DsHeading } from '@/ds'
 
 defineProps<{
   heading: string
@@ -38,7 +39,7 @@ function onSubmit(): void {
 
 <template>
   <UCard data-testid="join-card">
-    <h2 class="text-subheading text-highlighted">{{ heading }}</h2>
+    <DsHeading :level="2" variant="subheading">{{ heading }}</DsHeading>
     <form
       class="mt-4 flex gap-3"
       :class="variant === 'pb' ? 'flex-col' : 'items-end'"

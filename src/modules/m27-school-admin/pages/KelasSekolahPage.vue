@@ -17,7 +17,7 @@ import { setRouteOutcome } from '@/app/router/outcome'
 import { useApi } from '@/composables'
 import { usePageMeta } from '@/composables/usePageMeta'
 import { useSession } from '@/composables/useSession'
-import { DsBackLink, DsLoadError, DsPage, DsStatTile } from '@/ds'
+import { DsBackLink, DsLoadError, DsPage, DsStatTile, DsStack, DsText } from '@/ds'
 import { formatCount } from '@/lib/number'
 
 import { fetchSchoolClasses } from '../api/school-admin'
@@ -104,9 +104,9 @@ function goPage(page: number) {
             accent="win"
           />
         </div>
-        <p class="text-body text-muted" data-testid="kl-displayed">
+        <DsText variant="body" tone="muted" data-testid="kl-displayed">
           {{ formatCount(data.meta.displayed) }} kelas dipaparkan
-        </p>
+        </DsText>
       </div>
 
       <ClassFilters :levels="data.levels" :level="level" :search="search" @apply="apply" />
@@ -126,9 +126,9 @@ function goPage(page: number) {
       testid="kl-error"
       @retry="reload"
     />
-    <div v-else-if="loading" class="flex flex-col gap-3" aria-busy="true" data-testid="kl-loading">
+    <DsStack v-else-if="loading" gap="sm" aria-busy="true" data-testid="kl-loading">
       <USkeleton class="h-24 w-full" />
       <USkeleton class="h-48 w-full" />
-    </div>
+    </DsStack>
   </DsPage>
 </template>

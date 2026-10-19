@@ -24,13 +24,25 @@ const here = (p) => fileURLToPath(new URL(p, import.meta.url))
 /** Phosphor base names `DsIcon` can build (src/theme/ds-icons.ts + learn-icons.ts). */
 const ICON_BASES = new Set(
   [...readFileSync(here('../../src/theme/ds-icons.ts'), 'utf8').matchAll(/^\s+'([a-z0-9-]+)',?$/gm)]
-    .concat([...readFileSync(here('../../src/theme/learn-icons.ts'), 'utf8').matchAll(/'([a-z0-9-]+)'/g)])
+    .concat([
+      ...readFileSync(here('../../src/theme/learn-icons.ts'), 'utf8').matchAll(/'([a-z0-9-]+)'/g),
+    ])
     .map((m) => m[1]),
 )
 /** Ds components whose `icon` prop is a base name (DsIconProp). */
-const ICON_TAGS = new Set(
-  ['DsBadgeTile', 'DsCharacterCard', 'DsEmptyState', 'DsFileField', 'DsFormSection', 'DsGameTile', 'DsIconChip', 'DsPillNav', 'DsRewardChip', 'DsStatRow', 'DsStatTile'],
-)
+const ICON_TAGS = new Set([
+  'DsBadgeTile',
+  'DsCharacterCard',
+  'DsEmptyState',
+  'DsFileField',
+  'DsFormSection',
+  'DsGameTile',
+  'DsIconChip',
+  'DsPillNav',
+  'DsRewardChip',
+  'DsStatRow',
+  'DsStatTile',
+])
 const VALUE_TONES = {
   'text-highlighted': 'highlighted',
   'text-primary': 'primary',
@@ -79,7 +91,8 @@ const RULES = {
     const a = c.attr('tone')
     if (!a) return
     const v = literalValue(a)
-    if (v === 'win' || v === 'keep') c.replace(a, 'tone', `accent=${q(v === 'keep' ? 'action' : 'win')}`)
+    if (v === 'win' || v === 'keep')
+      c.replace(a, 'tone', `accent=${q(v === 'keep' ? 'action' : 'win')}`)
     else c.skip('tone', 'dynamic value')
   },
   DsFeedbackSheet: (c) => {
@@ -91,9 +104,14 @@ const RULES = {
     } else if (a.kind === 'bound' && /'(good|bad)'/.test(a.exp ?? '')) {
       const lits = [...a.exp.matchAll(/'([^']*)'/g)].map((m) => m[1])
       if (lits.every((l) => ['good', 'bad', 'success', 'error'].includes(l)))
-        c.replace(a, 'tone', `:${styleName(a.name, 'tone')}="${a.exp.replace(/'good'/g, "'success'").replace(/'bad'/g, "'error'")}"`)
+        c.replace(
+          a,
+          'tone',
+          `:${styleName(a.name, 'tone')}="${a.exp.replace(/'good'/g, "'success'").replace(/'bad'/g, "'error'")}"`,
+        )
       else c.skip('tone', 'dynamic value')
-    } else if (a.kind === 'bound' && !/'(success|error)'/.test(a.exp ?? '')) c.skip('tone', 'dynamic value')
+    } else if (a.kind === 'bound' && !/'(success|error)'/.test(a.exp ?? ''))
+      c.skip('tone', 'dynamic value')
   },
   DsLoadError: (c) => {
     const a = c.attr('inline')
@@ -120,8 +138,10 @@ const RULES = {
     if (t) {
       const v = literalValue(t)
       if (v === 'raised') c.remove(t, 'tone')
-      else if (v === 'bulk' || v === 'bar' || v === 'float') c.replace(t, 'tone', `behavior=${q(v)}`)
-      else if (v === 'inset' || v === 'tint') c.skip('tone', `tone="${v}" has no replacement prop (surface layer)`)
+      else if (v === 'bulk' || v === 'bar' || v === 'float')
+        c.replace(t, 'tone', `behavior=${q(v)}`)
+      else if (v === 'inset' || v === 'tint')
+        c.skip('tone', `tone="${v}" has no replacement prop (surface layer)`)
       else c.skip('tone', 'dynamic value')
     }
     const f = c.attr('flush')
@@ -144,14 +164,18 @@ function valueClass(c) {
   if (!a) return
   const tone = a.kind === 'static' ? VALUE_TONES[a.value] : undefined
   if (tone) c.replace(a, 'valueClass', `${styleName(a.name, 'valueTone')}=${q(tone)}`)
-  else c.skip('valueClass', a.kind === 'static' ? `class "${a.value}" has no tone` : 'dynamic value')
+  else
+    c.skip('valueClass', a.kind === 'static' ? `class "${a.value}" has no tone` : 'dynamic value')
 }
 
 function density(c) {
   const comp = c.attr('compact')
   const roomy = c.attr('roomy')
   if (comp && roomy) return c.skip('compact/roomy', 'both set')
-  for (const [a, name, val] of [[comp, 'compact', 'compact'], [roomy, 'roomy', 'roomy']]) {
+  for (const [a, name, val] of [
+    [comp, 'compact', 'compact'],
+    [roomy, 'roomy', 'roomy'],
+  ]) {
     if (!a) continue
     const b = boolValue(a)
     if (b === true) c.replace(a, name, `density="${val}"`)

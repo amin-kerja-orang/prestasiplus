@@ -13,7 +13,16 @@ import { computed, watch } from 'vue'
 import { useRouter } from 'vue-router'
 
 import { useApi, useFlash, usePageMeta } from '@/composables'
-import { DsLoadError, DsPage, DsPanel, DsStatusBadge } from '@/ds'
+import {
+  DsLoadError,
+  DsPage,
+  DsPanel,
+  DsStatusBadge,
+  DsStack,
+  DsCluster,
+  DsHeading,
+  DsText,
+} from '@/ds'
 
 import { fetchAdminArticle } from '../api/admin-articles-notes'
 import { ARTICLES_LIST_PATH, COPY, isNotFoundError, previewDate } from '../lib/admin-articles-notes'
@@ -69,8 +78,8 @@ const failed = computed(() => error.value !== null && !isNotFoundError(error.val
 
     <DsPanel v-else-if="article" data-testid="admin-article-card">
       <article class="flex min-w-0 flex-col gap-6 p-2 sm:p-4">
-        <div class="flex flex-col gap-3">
-          <div class="flex flex-wrap items-center gap-2">
+        <DsStack gap="sm">
+          <DsCluster gap="xs">
             <DsStatusBadge
               :status="article.isPublished ? 'published' : 'draft'"
               data-testid="status-pill"
@@ -83,10 +92,10 @@ const failed = computed(() => error.value !== null && !isNotFoundError(error.val
               label="Featured"
               data-testid="preview-featured"
             />
-          </div>
-          <h1 class="text-title break-words text-highlighted" data-testid="preview-title">
+          </DsCluster>
+          <DsHeading :level="1" wrap="anywhere" data-testid="preview-title">
             {{ article.title }}
-          </h1>
+          </DsHeading>
           <div class="flex flex-wrap items-center gap-x-6 gap-y-2 text-body text-muted">
             <span class="inline-flex items-center gap-2" data-testid="preview-author">
               <UIcon name="i-ph-user" class="size-5" aria-hidden="true" />{{ article.author?.name }}
@@ -101,22 +110,24 @@ const failed = computed(() => error.value !== null && !isNotFoundError(error.val
               tontonan
             </span>
           </div>
-        </div>
+        </DsStack>
 
-        <p
+        <DsText
           v-if="article.excerpt"
-          class="text-body break-words text-muted"
+          variant="body"
+          tone="muted"
+          wrap="anywhere"
           data-testid="preview-excerpt"
         >
           {{ article.excerpt }}
-        </p>
+        </DsText>
 
         <USeparator />
 
         <!-- Escaped text, never rendered (DV-M09-04); wraps anywhere (DV-M09-05). -->
-        <div class="text-body break-words" data-testid="preview-body">
+        <DsText variant="body" as="div" wrap="anywhere" data-testid="preview-body">
           {{ article.content }}
-        </div>
+        </DsText>
 
         <div>
           <UButton

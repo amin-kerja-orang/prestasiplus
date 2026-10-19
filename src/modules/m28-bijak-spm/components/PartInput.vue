@@ -13,6 +13,7 @@ import type { Leaf } from '../domain/paper-model'
 import type { McqOption, PartAnswer } from '../domain/types'
 import { checkPhoto, photoUrl, putPhoto, removePhoto } from '../lib/photo-store'
 import MathField from './MathField.vue'
+import { DsCluster, DsStack, DsText } from '@/ds'
 
 const props = defineProps<{
   leaf: Leaf
@@ -83,7 +84,7 @@ async function dropPhoto(key: string): Promise<void> {
 </script>
 
 <template>
-  <div class="flex flex-col gap-4" :data-testid="`part-input-${leaf.id}`">
+  <DsStack :data-testid="`part-input-${leaf.id}`">
     <template v-if="leaf.kind === 'short_text' || leaf.kind === 'essay'">
       <UFormField :label="`Jawapan ${leaf.label}`.trim()" class="w-full">
         <UTextarea
@@ -97,25 +98,15 @@ async function dropPhoto(key: string): Promise<void> {
           @update:model-value="update({ text: String($event ?? '') })"
         />
       </UFormField>
-      <p
-        v-if="leaf.kind === 'essay'"
-        class="text-caption text-muted"
-        role="status"
-        data-testid="word-count"
-      >
+      <DsText v-if="leaf.kind === 'essay'" variant="caption" role="status" data-testid="word-count">
         {{ words }} patah perkataan<template v-if="leaf.wordRange">
           · sasaran {{ leaf.wordRange.min }}–{{ leaf.wordRange.max }}</template
         >. Guru akan menilai esei ini mengikut band.
-      </p>
+      </DsText>
     </template>
 
     <template v-else-if="leaf.kind === 'match_letter'">
-      <div
-        class="flex flex-col gap-2"
-        role="group"
-        aria-label="Pilih huruf"
-        data-testid="match-bank"
-      >
+      <DsStack gap="xs" role="group" aria-label="Pilih huruf" data-testid="match-bank">
         <UButton
           v-for="o in optionBank ?? []"
           :key="o.id"
@@ -129,14 +120,14 @@ async function dropPhoto(key: string): Promise<void> {
           @click="update({ choice: answer.choice === o.id ? undefined : o.id })"
           >{{ o.id }} — {{ o.text }}</UButton
         >
-      </div>
+      </DsStack>
     </template>
 
     <template v-else-if="leaf.kind === 'drawing'">
-      <p class="text-body text-toned">
+      <DsText variant="body" tone="toned">
         Lukis jawapan anda pada kertas, kemudian ambil gambarnya. Guru menyemak senarai semak (garis
         lurus, titik betul, bentuk lengkung).
-      </p>
+      </DsText>
     </template>
 
     <template v-else-if="leaf.kind === 'table_fill'">
@@ -195,7 +186,7 @@ async function dropPhoto(key: string): Promise<void> {
       </UFormField>
     </template>
 
-    <div v-if="leaf.kind === 'working' || leaf.kind === 'drawing'" class="flex flex-col gap-2">
+    <DsStack v-if="leaf.kind === 'working' || leaf.kind === 'drawing'" gap="xs">
       <UInput
         ref="fileInput"
         type="file"
@@ -221,8 +212,16 @@ async function dropPhoto(key: string): Promise<void> {
           leaf.kind === 'drawing' ? 'Ambil gambar jawapan lukisan' : 'Ambil gambar jalan kerja'
         }}</UButton
       >
-      <p v-if="photoError" class="text-caption text-error" role="alert">{{ photoError }}</p>
-      <ul v-if="answer.photos?.length" class="flex flex-wrap gap-2" aria-label="Gambar jalan kerja">
+      <DsText v-if="photoError" variant="caption" tone="error" role="alert">{{
+        photoError
+      }}</DsText>
+      <DsCluster
+        v-if="answer.photos?.length"
+        as="ul"
+        gap="xs"
+        align="stretch"
+        aria-label="Gambar jalan kerja"
+      >
         <li
           v-for="p in answer.photos"
           :key="p.key"
@@ -234,7 +233,7 @@ async function dropPhoto(key: string): Promise<void> {
             :alt="`Gambar ${p.name}`"
             class="size-12 rounded-lg object-cover"
           />
-          <span class="text-caption text-toned">{{ p.name }}</span>
+          <DsText variant="caption" as="span" tone="toned">{{ p.name }}</DsText>
           <UButton
             type="button"
             color="neutral"
@@ -246,7 +245,7 @@ async function dropPhoto(key: string): Promise<void> {
             @click="dropPhoto(p.key)"
           />
         </li>
-      </ul>
-    </div>
-  </div>
+      </DsCluster>
+    </DsStack>
+  </DsStack>
 </template>

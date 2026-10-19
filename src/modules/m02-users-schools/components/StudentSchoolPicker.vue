@@ -10,7 +10,7 @@ import { computed, ref } from 'vue'
 
 import { useSearchPicker } from '@/composables'
 
-import { DsFormField, DsPanel } from '@/ds'
+import { DsFormField, DsPanel, DsText } from '@/ds'
 
 import { searchSchools, type SchoolSummary } from '../api/schools'
 import { SEARCH_MIN_CHARS } from '../lib/user-form-options'
@@ -53,7 +53,12 @@ function onInput(value: string): void {
           @update:model-value="onInput"
           @focus="picker.onFocus()"
         />
-        <DsPanel v-if="showDropdown" behavior="float" padding="none" data-testid="std-school-dropdown">
+        <DsPanel
+          v-if="showDropdown"
+          behavior="float"
+          padding="none"
+          data-testid="std-school-dropdown"
+        >
           <UButton
             v-for="item in results"
             :key="item.id"
@@ -69,9 +74,9 @@ function onInput(value: string): void {
           </UButton>
         </DsPanel>
       </div>
-      <p v-if="school" class="text-caption text-success" data-testid="std-school-chosen">
+      <DsText v-if="school" variant="caption" tone="success" data-testid="std-school-chosen">
         {{ school.name }}
-      </p>
+      </DsText>
     </DsFormField>
   </div>
 </template>

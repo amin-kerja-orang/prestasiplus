@@ -29,7 +29,9 @@ export function filesFor({ module, extra = [] } = {}) {
 
 export const kebab = (s) => s.replace(/([a-z0-9])([A-Z])/g, '$1-$2').toLowerCase()
 export const pascalTag = (tag) =>
-  /^[a-z]+(-[a-z0-9]+)+$/.test(tag) ? tag.replace(/(^|-)([a-z0-9])/g, (_, __, c) => c.toUpperCase()) : tag
+  /^[a-z]+(-[a-z0-9]+)+$/.test(tag)
+    ? tag.replace(/(^|-)([a-z0-9])/g, (_, __, c) => c.toUpperCase())
+    : tag
 
 /** Depth-first element walk of a parsed template. */
 export function walkElements(root, fn) {
@@ -138,7 +140,8 @@ export class Report {
     else {
       console.log(JSON.stringify(out, null, 2))
       const by = {}
-      for (const s of this.skipped) by[`${s.rule}: ${s.reason}`] = (by[`${s.rule}: ${s.reason}`] ?? 0) + 1
+      for (const s of this.skipped)
+        by[`${s.rule}: ${s.reason}`] = (by[`${s.rule}: ${s.reason}`] ?? 0) + 1
       for (const [k, v] of Object.entries(by)) console.log(`  skipped ${v}x ${k}`)
     }
   }

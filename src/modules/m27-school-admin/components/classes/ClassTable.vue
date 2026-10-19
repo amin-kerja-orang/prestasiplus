@@ -9,7 +9,7 @@ import type { TableColumn } from '@nuxt/ui'
 import { computed } from 'vue'
 import { useRouter } from 'vue-router'
 
-import { DsDataTable, DsEmptyState, DsPanel, DsStatusBadge, type CardField } from '@/ds'
+import { DsDataTable, DsEmptyState, DsPanel, DsStatusBadge, type CardField, DsCluster } from '@/ds'
 import { formatCount } from '@/lib/number'
 
 import type { SchoolClassRow } from '../../api/school-admin'
@@ -101,7 +101,7 @@ function open(row: Item): void {
       <span data-testid="kl-no">{{ row.original.no }}</span>
     </template>
     <template #name-cell="{ row }">
-      <div class="flex min-w-0 flex-wrap items-center gap-2" data-testid="kl-row">
+      <DsCluster gap="xs" data-testid="kl-row">
         <RouterLink
           :to="row.original.link"
           class="inline-flex min-h-11 items-center text-label text-highlighted"
@@ -114,7 +114,7 @@ function open(row: Item): void {
           label="Tidak Aktif"
           data-testid="kl-inactive"
         />
-      </div>
+      </DsCluster>
     </template>
     <template #subject-cell="{ row }">
       <span data-testid="kl-subject">{{ row.original.subject }}</span>

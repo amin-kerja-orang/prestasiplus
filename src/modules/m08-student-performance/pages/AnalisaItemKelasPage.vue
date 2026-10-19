@@ -7,7 +7,19 @@
 import { computed, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
 
-import { DsBreadcrumb, DsLoadError, DsPage, DsPageHeader, DsPanel, DsPillNav, type PillItem } from '@/ds'
+import {
+  DsBreadcrumb,
+  DsLoadError,
+  DsPage,
+  DsPageHeader,
+  DsPanel,
+  DsPillNav,
+  type PillItem,
+  DsCluster,
+  DsStack,
+  DsText,
+  DsHeading,
+} from '@/ds'
 import { usePrototypeScope } from '@/composables'
 
 import { fetchClassItemAnalysis, fetchItemAnalysisClasses } from '../api/performance'
@@ -80,41 +92,46 @@ const classPills = computed<PillItem<number>[]>(() =>
 
     <template v-else-if="data">
       <DsBreadcrumb
-        :items="[{ label: 'Papan Pemuka', to: home }, { label: 'Pilih Kelas', to: '/analisa-item/kelas' }, { label: data.class.name }]"
+        :items="[
+          { label: 'Papan Pemuka', to: home },
+          { label: 'Pilih Kelas', to: '/analisa-item/kelas' },
+          { label: data.class.name },
+        ]"
         aria-label="Breadcrumb"
         data-testid="breadcrumb"
       />
 
       <DsPanel data-testid="class-card">
-        <div class="flex flex-wrap items-center gap-4">
-          <div class="flex min-w-0 grow flex-col gap-1">
+        <DsCluster gap="md">
+          <DsStack gap="2xs" class="grow">
             <DsPageHeader
-              :show-title="true" :title="data.class.name"
+              :show-title="true"
+              :title="data.class.name"
               :subtitle="`${data.class.subjectName ?? 'Tiada Subjek'} • ${data.class.levelSlug} • Tahun ${data.class.year}`"
               title-testid="class-name"
             />
-          </div>
+          </DsStack>
           <dl class="flex gap-6 text-center">
             <div class="flex flex-col-reverse gap-1">
-              <dt class="text-caption text-muted">Pelajar</dt>
-              <dd class="tabular text-title text-highlighted" data-testid="class-students">
+              <DsText variant="caption" as="dt">Pelajar</DsText>
+              <DsText variant="title" as="dd" tabular data-testid="class-students">
                 {{ data.class.students }}
-              </dd>
+              </DsText>
             </div>
             <div class="flex flex-col-reverse gap-1">
-              <dt class="text-caption text-muted">Soalan Diuji</dt>
-              <dd class="tabular text-title text-highlighted" data-testid="class-questions">
+              <DsText variant="caption" as="dt">Soalan Diuji</DsText>
+              <DsText variant="title" as="dd" tabular data-testid="class-questions">
                 {{ data.analysis.questionCount }}
-              </dd>
+              </DsText>
             </div>
           </dl>
-        </div>
+        </DsCluster>
       </DsPanel>
 
       <ul class="grid grid-cols-3 gap-2 md:gap-4" data-testid="summary-cards">
         <li v-for="c in summary" :key="c.id" class="min-w-0" :data-testid="`summary-${c.id}`">
           <DsPanel class="h-full">
-            <div class="flex flex-col gap-2">
+            <DsStack gap="xs">
               <UBadge
                 :color="LEVEL_BADGE[c.level]"
                 variant="subtle"
@@ -122,13 +139,13 @@ const classPills = computed<PillItem<number>[]>(() =>
                 :label="c.label"
                 class="self-start"
               />
-              <p class="tabular text-title text-highlighted" data-testid="summary-count">
+              <DsText variant="title" tabular data-testid="summary-count">
                 {{ c.count }}
-              </p>
-              <p v-if="c.pct" class="text-caption text-muted" data-testid="summary-pct">
+              </DsText>
+              <DsText v-if="c.pct" variant="caption" data-testid="summary-pct">
                 {{ c.pct }}
-              </p>
-            </div>
+              </DsText>
+            </DsStack>
           </DsPanel>
         </li>
       </ul>
@@ -183,18 +200,23 @@ const classPills = computed<PillItem<number>[]>(() =>
       <DiscriminationTab v-else :discrimination="data.analysis.discrimination" />
 
       <DsPanel v-if="classes.data.value" data-testid="switch-class">
-        <div class="flex flex-col gap-3">
-          <h2 class="text-subheading text-highlighted">Tukar Kelas</h2>
+        <DsStack gap="sm">
+          <DsHeading :level="2" variant="subheading">Tukar Kelas</DsHeading>
           <DsPillNav
             :items="classPills"
             :active="data.class.id"
             label="Tukar Kelas"
             testid-prefix="switch"
           />
-        </div>
+        </DsStack>
       </DsPanel>
     </template>
-    <div v-else-if="!error" class="flex flex-col gap-4 md:gap-6" aria-busy="true" data-testid="page-loading">
+    <div
+      v-else-if="!error"
+      class="flex flex-col gap-4 md:gap-6"
+      aria-busy="true"
+      data-testid="page-loading"
+    >
       <USkeleton class="h-24 w-full" />
       <USkeleton class="h-64 w-full" />
     </div>

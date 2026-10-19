@@ -9,7 +9,7 @@ import { computed, reactive, ref } from 'vue'
 import { useRouter } from 'vue-router'
 
 import { isApiError } from '@/api'
-import { DsLoadError, DsPage, DsQuizHeader } from '@/ds'
+import { DsLoadError, DsPage, DsQuizHeader, DsStack, DsHeading } from '@/ds'
 
 import { fetchPkskPractice, submitPkskPractice } from '../api/pksk'
 import type { PkskAnswer, PkskLevel } from '../api/types'
@@ -68,16 +68,16 @@ async function submit(): Promise<void> {
   >
     <DsLoadError v-if="loadFailed" :message="LOAD_ERROR" testid="page-error" @retry="reload()" />
 
-    <form v-else-if="data" class="flex flex-col gap-4" novalidate @submit.prevent="submit">
+    <DsStack v-else-if="data" as="form" novalidate @submit.prevent="submit">
       <DsQuizHeader
         close-label="Kembali ke Domain"
         :progress="progress"
         progress-label="Kemajuan latihan"
         @close="router.push(`/pksk/level/${level}/domains`)"
       />
-      <h2 class="text-heading text-highlighted" data-testid="practice-title">
+      <DsHeading :level="2" data-testid="practice-title">
         {{ data.domain.name }}
-      </h2>
+      </DsHeading>
       <UAlert
         v-if="submitError"
         color="error"
@@ -104,6 +104,6 @@ async function submit(): Promise<void> {
         data-testid="practice-submit"
         >Hantar</UButton
       >
-    </form>
+    </DsStack>
   </DsPage>
 </template>

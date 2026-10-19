@@ -25,6 +25,9 @@ import {
   DsPanel,
   DsStatRow,
   type StatItem,
+  DsCluster,
+  DsStack,
+  DsText,
 } from '@/ds'
 import { formatNumber } from '@/lib/number'
 
@@ -161,11 +164,17 @@ const filterCount = computed(
 <template>
   <DsPage data-testid="diagrams-page">
     <!-- Stat cards: 2 across below md, 3 across from md. -->
-    <DsStatRow :items="statItems" :cols="3" :loading="!stats" density="roomy" prefix="diagrams-stat" />
+    <DsStatRow
+      :items="statItems"
+      :cols="3"
+      :loading="!stats"
+      density="roomy"
+      prefix="diagrams-stat"
+    />
 
     <!-- Top-10 subjects by flagged MCQ count (global). -->
     <DsPanel title="MCQ Perlu Gambar Mengikut Mata Pelajaran" data-testid="diagrams-by-subject">
-      <div class="flex flex-wrap gap-2">
+      <DsCluster gap="xs" align="stretch">
         <UBadge
           v-for="p in pills"
           :key="p.name"
@@ -174,7 +183,7 @@ const filterCount = computed(
           :label="`${p.name}: ${formatNumber(p.count)}`"
           data-testid="diagrams-pill"
         />
-      </div>
+      </DsCluster>
     </DsPanel>
 
     <!-- Filter (the URL is the state). -->
@@ -194,7 +203,9 @@ const filterCount = computed(
             data-testid="diagrams-subject"
           >
             <option value="">Semua Mata Pelajaran</option>
-            <option v-for="s in subjects ?? []" :key="s.id" :value="String(s.id)">{{ s.name }}</option>
+            <option v-for="s in subjects ?? []" :key="s.id" :value="String(s.id)">
+              {{ s.name }}
+            </option>
           </DsNativeSelect>
         </DsFormField>
       </div>
@@ -207,7 +218,9 @@ const filterCount = computed(
             data-testid="diagrams-school"
           >
             <option value="">Semua Sekolah</option>
-            <option v-for="s in schools ?? []" :key="s.id" :value="String(s.id)">{{ s.name }}</option>
+            <option v-for="s in schools ?? []" :key="s.id" :value="String(s.id)">
+              {{ s.name }}
+            </option>
           </DsNativeSelect>
         </DsFormField>
       </div>
@@ -221,18 +234,23 @@ const filterCount = computed(
       @retry="reload()"
     />
 
-    <div v-else-if="firstLoad" class="flex flex-col gap-3" data-testid="diagrams-skeleton">
+    <DsStack v-else-if="firstLoad" gap="sm" data-testid="diagrams-skeleton">
       <USkeleton v-for="n in 3" :key="n" class="h-24 w-full" />
-    </div>
+    </DsStack>
 
     <template v-else>
       <DsPanel v-if="allDone" data-testid="diagrams-empty">
-        <p class="text-center text-body text-success">
+        <DsText variant="body" tone="success" align="center">
           Semua soalan sudah lengkap dengan gambar rajah!
-        </p>
+        </DsText>
       </DsPanel>
 
-      <section v-if="mcq && mcq.meta.totalItems > 0" class="flex flex-col gap-3" data-testid="diagrams-mcq">
+      <DsStack
+        v-if="mcq && mcq.meta.totalItems > 0"
+        as="section"
+        gap="sm"
+        data-testid="diagrams-mcq"
+      >
         <h2 class="flex items-center gap-2 text-subheading text-highlighted">
           <UIcon name="i-ph-list-numbers" class="size-5 text-primary-t" />
           MCQ ({{ mcq.meta.totalItems }})
@@ -255,11 +273,12 @@ const filterCount = computed(
             @update:page="(p: number) => goToPage('mcq_page', p)"
           />
         </div>
-      </section>
+      </DsStack>
 
-      <section
+      <DsStack
         v-if="structured && structured.meta.totalItems > 0"
-        class="flex flex-col gap-3"
+        as="section"
+        gap="sm"
         data-testid="diagrams-structured"
       >
         <h2 class="flex items-center gap-2 text-subheading text-highlighted">
@@ -287,7 +306,7 @@ const filterCount = computed(
             @update:page="(p: number) => goToPage('str_page', p)"
           />
         </div>
-      </section>
+      </DsStack>
     </template>
   </DsPage>
 </template>

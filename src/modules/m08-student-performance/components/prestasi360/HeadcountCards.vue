@@ -4,7 +4,7 @@
  * BR-M08-08 rule (1), the chip row TOV → OTRn (AR chips only) → ETR joined by chevrons; the row wraps
  * on narrow screens (DV-M08-10). "Lihat Penuh" → `/headcount/student/{id}`.
  */
-import { DsPanel } from '@/ds'
+import { DsPanel, DsStack, DsGrid, DsCluster, DsHeading, DsText } from '@/ds'
 import type { StudentPerformance } from '../../api/types'
 import { usePhIcon } from '../../lib/icons'
 
@@ -33,30 +33,31 @@ const chipText = (chip: Chip): string =>
 
 <template>
   <DsPanel data-testid="headcount-block">
-    <div class="flex flex-col gap-4">
+    <DsStack>
       <h2 class="flex items-center gap-2 text-subheading text-highlighted">
-        <UIcon :name="icon('chart-line-up')" class="size-5 text-primary-t" />Headcount — Prestasi SPM
+        <UIcon :name="icon('chart-line-up')" class="size-5 text-primary-t" />Headcount — Prestasi
+        SPM
       </h2>
-      <div class="grid grid-cols-1 gap-3 lg:grid-cols-2">
+      <DsGrid :cols="{ base: 1, lg: 2 }" gap="sm">
         <article
           v-for="c in cards"
           :key="c.configId"
           class="flex min-w-0 flex-col gap-3 bg-soft p-4"
           :data-testid="`headcount-${c.configId}`"
         >
-          <div class="flex items-start justify-between gap-2">
-            <div class="flex min-w-0 flex-col">
-              <h3 class="text-label break-words text-highlighted">{{ c.subject }}</h3>
-              <p class="text-caption text-muted">{{ c.className }} · {{ c.year }}</p>
-            </div>
+          <DsCluster gap="xs" align="start" justify="between" :wrap="false">
+            <DsStack gap="none">
+              <DsHeading :level="3" variant="label" wrap="anywhere">{{ c.subject }}</DsHeading>
+              <DsText variant="caption">{{ c.className }} · {{ c.year }}</DsText>
+            </DsStack>
             <UBadge
               :color="STATUS[c.status].color"
               variant="subtle"
               :label="STATUS[c.status].text"
               data-testid="status-pill"
             />
-          </div>
-          <div class="flex flex-wrap items-center gap-1" data-testid="chip-row">
+          </DsCluster>
+          <DsCluster gap="2xs" data-testid="chip-row">
             <template v-for="(chip, i) in c.chips" :key="chip.label">
               <UIcon v-if="i > 0" :name="icon('caret-right')" class="size-4 shrink-0 text-dimmed" />
               <UBadge
@@ -66,7 +67,7 @@ const chipText = (chip: Chip): string =>
                 data-testid="chip"
               />
             </template>
-          </div>
+          </DsCluster>
           <UButton
             :to="`/headcount/student/${String(userId)}`"
             color="neutral"
@@ -76,7 +77,7 @@ const chipText = (chip: Chip): string =>
             label="Lihat Penuh"
           />
         </article>
-      </div>
-    </div>
+      </DsGrid>
+    </DsStack>
   </DsPanel>
 </template>

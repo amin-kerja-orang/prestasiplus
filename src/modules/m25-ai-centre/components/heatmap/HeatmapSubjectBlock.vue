@@ -10,14 +10,15 @@ import { RouterLink } from 'vue-router'
 import type { HeatmapSubject } from '../../api'
 
 import { bandCellClass, CELL_HREF, figuresLine } from './heatmap-copy'
+import { DsSurface, DsGrid, DsText } from '@/ds'
 
 defineProps<{ subject: HeatmapSubject }>()
 </script>
 
 <template>
-  <section class="rounded-card bg-default p-4 shadow-lift" data-testid="heatmap-subject">
+  <DsSurface as="section" radius="card" shadow="lift" :clip="false" data-testid="heatmap-subject">
     <h2 class="mb-3 text-heading text-highlighted">{{ subject.name }}</h2>
-    <div class="grid grid-cols-1 gap-2 md:grid-cols-3 xl:grid-cols-4" data-testid="heatmap-grid">
+    <DsGrid :cols="{ base: 1, md: 3, xl: 4 }" gap="xs" data-testid="heatmap-grid">
       <RouterLink
         v-for="topic in subject.topics"
         :key="topic.chapterId"
@@ -28,11 +29,11 @@ defineProps<{ subject: HeatmapSubject }>()
         :data-chapter-id="topic.chapterId"
         data-testid="heatmap-cell"
       >
-        <span class="block text-label break-words">{{ topic.name }}</span>
+        <DsText variant="label" wrap="anywhere" class="block">{{ topic.name }}</DsText>
         <span class="mt-1 block text-caption">{{
           figuresLine(topic.attempts, topic.percent)
         }}</span>
       </RouterLink>
-    </div>
-  </section>
+    </DsGrid>
+  </DsSurface>
 </template>

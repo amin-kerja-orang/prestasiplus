@@ -15,7 +15,17 @@ import { computed, nextTick, reactive, ref } from 'vue'
 import { useRouter } from 'vue-router'
 
 import { useApi, useFlash } from '@/composables'
-import { DsFormBar, DsFormField, DsFormSection, DsLoadError, DsNativeSelect, DsPage } from '@/ds'
+import {
+  DsFormBar,
+  DsFormField,
+  DsFormSection,
+  DsLoadError,
+  DsNativeSelect,
+  DsPage,
+  DsStack,
+  DsCluster,
+  DsGrid,
+} from '@/ds'
 
 import { createAudioSet, fetchLevelOptions, fetchSubjectOptions } from '../api/admin-media'
 import AudioQuestionBlock from '../components/admin-media/AudioQuestionBlock.vue'
@@ -109,13 +119,13 @@ async function submit(): Promise<void> {
       data-testid="audio-guide"
     >
       <template #description>
-        <div class="flex flex-col gap-3">
+        <DsStack gap="sm">
           <p v-for="text in CREATE_GUIDE.paragraphs" :key="text">{{ text }}</p>
-          <div class="flex flex-wrap gap-3">
+          <DsCluster align="stretch">
             <AudioTemplateLink kind="word" />
             <AudioTemplateLink kind="xlsx" />
-          </div>
-        </div>
+          </DsCluster>
+        </DsStack>
       </template>
     </UAlert>
 
@@ -126,11 +136,12 @@ async function submit(): Promise<void> {
       @retry="retryLookups"
     />
 
-    <form
+    <DsStack
       v-else
       method="post"
       enctype="multipart/form-data"
-      class="flex min-w-0 flex-col gap-6"
+      as="form"
+      gap="lg"
       data-testid="audio-form"
       @submit.prevent="submit"
     >
@@ -164,7 +175,7 @@ async function submit(): Promise<void> {
             data-testid="set-title"
           />
         </DsFormField>
-        <div class="grid grid-cols-1 gap-6 sm:grid-cols-2">
+        <DsGrid :cols="{ base: 1, sm: 2 }" gap="lg">
           <DsFormField native for="set-level" label="Tahap" :error="errors.educationLevelId">
             <DsNativeSelect
               id="set-level"
@@ -219,7 +230,7 @@ async function submit(): Promise<void> {
               data-testid="set-source"
             />
           </DsFormField>
-        </div>
+        </DsGrid>
         <DsFormField native for="set-instructions" label="Arahan Umum">
           <UTextarea
             id="set-instructions"
@@ -250,6 +261,6 @@ async function submit(): Promise<void> {
       </template>
 
       <DsFormBar submit-label="Simpan Set Audio KBAT" :show-cancel="false" :saving="saving" />
-    </form>
+    </DsStack>
   </DsPage>
 </template>

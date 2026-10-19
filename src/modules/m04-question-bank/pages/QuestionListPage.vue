@@ -30,6 +30,9 @@ import {
   useConfirm,
   type CardField,
   type RowAction,
+  DsStack,
+  DsCluster,
+  DsText,
 } from '@/ds'
 import { useMedia } from '@/ds/useMedia'
 
@@ -474,12 +477,7 @@ const cardFields: CardField[] = [
           :for="f.id"
           :label="f.label"
         >
-          <DsNativeSelect
-            :id="id"
-            v-model="draft[f.key]"
-            :name="f.key"
-            :data-testid="f.testid"
-          >
+          <DsNativeSelect :id="id" v-model="draft[f.key]" :name="f.key" :data-testid="f.testid">
             <option value="">{{ f.empty }}</option>
             <option v-for="o in f.options" :key="o.value" :value="o.value">{{ o.label }}</option>
           </DsNativeSelect>
@@ -511,17 +509,19 @@ const cardFields: CardField[] = [
       </DsEmptyState>
     </DsPanel>
 
-    <div v-else class="flex flex-col gap-4">
+    <DsStack v-else>
       <DsPanel v-if="selected.length > 0" behavior="bulk">
-        <form
+        <DsCluster
           method="post"
-          class="flex flex-wrap items-center gap-3"
+          as="form"
           data-testid="questions-bulk-bar"
           @submit.prevent="submitBulk"
         >
           <span class="inline-flex items-center gap-2 ps-2 text-label text-highlighted">
             <UIcon name="i-ph-check-square" class="size-5 text-primary-t" />
-            <span class="tabular" data-testid="questions-selected-count">{{ selected.length }}</span>
+            <span class="tabular" data-testid="questions-selected-count">{{
+              selected.length
+            }}</span>
             soalan dipilih
           </span>
           <div class="w-full min-w-0 sm:w-64">
@@ -546,7 +546,7 @@ const cardFields: CardField[] = [
           >
             Laksanakan
           </UButton>
-        </form>
+        </DsCluster>
       </DsPanel>
 
       <DsDataTable
@@ -572,14 +572,16 @@ const cardFields: CardField[] = [
         @update:page-size="setPageSize"
       >
         <template #id-cell="{ row }">
-          <span class="text-label text-dimmed" data-testid="question-id">{{ row.original.id }}</span>
+          <DsText variant="label" tone="dimmed" data-testid="question-id">{{
+            row.original.id
+          }}</DsText>
         </template>
         <template #excerptText-cell="{ row }">
-          <div class="flex min-w-0 flex-col gap-2">
+          <DsStack gap="xs">
             <p class="line-clamp-2 break-words text-highlighted" data-testid="question-text">
               {{ row.original.excerptText }}
             </p>
-            <div class="flex flex-wrap items-center gap-x-2 gap-y-2">
+            <DsCluster gap="xs">
               <UBadge
                 v-if="row.original.raw.dskpTagged"
                 color="success"
@@ -613,25 +615,24 @@ const cardFields: CardField[] = [
                 label="AI Verified"
                 data-testid="question-ai-verified"
               />
-            </div>
-            <p
-              class="truncate text-caption text-muted"
-              :title="row.original.raw.sourceFile ?? undefined"
-            >
+            </DsCluster>
+            <DsText variant="caption" truncate :title="row.original.raw.sourceFile ?? undefined">
               <span data-testid="question-source"
                 >Source: {{ sourceLabel(row.original.raw.sourceType) }}</span
               >
               <span v-if="row.original.raw.sourceFile" data-testid="question-source-file">
                 · {{ row.original.raw.sourceFile }}</span
               >
-            </p>
-          </div>
+            </DsText>
+          </DsStack>
         </template>
         <template #subjectName-cell="{ row }">
-          <div class="flex min-w-0 flex-col">
+          <DsStack gap="none">
             <span class="text-highlighted">{{ row.original.subjectName }}</span>
-            <span class="text-caption text-muted 2xl:hidden">{{ row.original.levelName }}</span>
-          </div>
+            <DsText variant="caption" as="span" class="2xl:hidden">{{
+              row.original.levelName
+            }}</DsText>
+          </DsStack>
         </template>
         <template #difficulty-cell="{ row }">
           <span
@@ -653,7 +654,7 @@ const cardFields: CardField[] = [
           </span>
         </template>
         <template #status-cell="{ row }">
-          <div class="flex flex-col items-start gap-2">
+          <DsStack gap="xs" align="start">
             <DsStatusBadge
               :status="statusDs(row.original.raw.status)"
               :label="statusLabel(row.original.raw.status, true)"
@@ -666,10 +667,14 @@ const cardFields: CardField[] = [
               :label="row.original.raw.isActive ? 'ACTIVE' : 'INACTIVE'"
               data-testid="question-active"
             />
-          </div>
+          </DsStack>
         </template>
         <template #actions-cell="{ row }">
-          <DsRowActions :actions="rowActions(row.original.raw)" :inline="2" testid="question-more" />
+          <DsRowActions
+            :actions="rowActions(row.original.raw)"
+            :inline="2"
+            testid="question-more"
+          />
         </template>
         <template #card-actions="{ row }">
           <DsRowActions
@@ -679,6 +684,6 @@ const cardFields: CardField[] = [
           />
         </template>
       </DsDataTable>
-    </div>
+    </DsStack>
   </DsPage>
 </template>

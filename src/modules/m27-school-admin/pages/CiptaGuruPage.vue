@@ -12,7 +12,16 @@ import { nextTick, reactive, ref } from 'vue'
 import { useRouter } from 'vue-router'
 
 import { useFlash, useSession } from '@/composables'
-import { DsFormBar, DsFormField, DsFormSection, DsPage, DsPanel } from '@/ds'
+import {
+  DsFormBar,
+  DsFormField,
+  DsFormSection,
+  DsPage,
+  DsPanel,
+  DsStack,
+  DsCluster,
+  DsText,
+} from '@/ds'
 
 import { createSchoolTeacher } from '../api/school-admin'
 import LockedSchoolLabel from '../components/users/LockedSchoolLabel.vue'
@@ -55,10 +64,11 @@ async function submit(): Promise<void> {
 
 <template>
   <DsPage class="max-w-4xl" data-testid="sg-create-page">
-    <form
+    <DsStack
       method="post"
       novalidate
-      class="flex min-w-0 flex-col gap-6"
+      as="form"
+      gap="lg"
       data-testid="user-form"
       @submit.prevent="submit"
     >
@@ -72,9 +82,9 @@ async function submit(): Promise<void> {
           data-testid="user-form-alert"
         >
           <template #description>
-            <ul class="flex flex-col gap-1">
+            <DsStack as="ul" gap="2xs">
               <li v-for="line in errors" :key="line">{{ line }}</li>
-            </ul>
+            </DsStack>
           </template>
         </UAlert>
       </div>
@@ -88,10 +98,12 @@ async function submit(): Promise<void> {
       >
         <DsFormField label="Peranan">
           <DsPanel tone="inset">
-<div class="flex min-h-11 items-center">
-            <p class="text-label text-highlighted" data-testid="user-role">Guru</p>
-          </div>
-</DsPanel>
+            <DsCluster gap="none" :wrap="false" class="min-h-11">
+              <DsText variant="label" as="p" tone="highlighted" data-testid="user-role"
+                >Guru</DsText
+              >
+            </DsCluster>
+          </DsPanel>
         </DsFormField>
 
         <LockedSchoolLabel v-if="me?.school" :school="me.school" />
@@ -172,6 +184,6 @@ async function submit(): Promise<void> {
         submit-icon="i-ph-user-plus"
         :saving="saving"
       />
-    </form>
+    </DsStack>
   </DsPage>
 </template>

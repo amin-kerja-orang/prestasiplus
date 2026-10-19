@@ -8,7 +8,7 @@ import type { TableColumn } from '@nuxt/ui'
 import { computed } from 'vue'
 
 import { useApi } from '@/composables'
-import { DsDialog, DsDrillTable, DsLoadError, DsStatRow } from '@/ds'
+import { DsDialog, DsDrillTable, DsLoadError, DsStatRow, DsStack, DsText } from '@/ds'
 
 import { fetchCcHeadcount } from '../../api/command-center'
 import type { CcHeadcountStudent } from '../../api/command-center-types'
@@ -47,11 +47,17 @@ const students = computed(() => data.value?.students ?? [])
 
 <template>
   <DsDialog v-model:open="open" :title="`HeadCount: ${subject}`" class="sm:max-w-2xl">
-    <div class="flex min-w-0 flex-col gap-4" data-testid="cc-headcount-modal">
-      <DsLoadError v-if="error" variant="inline" message="Ralat" testid="cc-modal-error" @retry="reload" />
-      <p v-else-if="!data" class="text-body text-muted" data-testid="cc-modal-loading">
+    <DsStack data-testid="cc-headcount-modal">
+      <DsLoadError
+        v-if="error"
+        variant="inline"
+        message="Ralat"
+        testid="cc-modal-error"
+        @retry="reload"
+      />
+      <DsText v-else-if="!data" variant="body" tone="muted" data-testid="cc-modal-loading">
         Memuatkan...
-      </p>
+      </DsText>
       <template v-else>
         <DsStatRow :items="statItems(stats)" data-testid="cc-modal-stats" />
         <div data-testid="cc-headcount-scroller">
@@ -82,7 +88,7 @@ const students = computed(() => data.value?.students ?? [])
           </DsDrillTable>
         </div>
       </template>
-    </div>
+    </DsStack>
     <template #footer>
       <UButton
         color="neutral"

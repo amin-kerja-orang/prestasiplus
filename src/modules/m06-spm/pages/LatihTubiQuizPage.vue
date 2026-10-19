@@ -16,6 +16,7 @@ import {
 
 import { parseLatihTubiQuery } from '../lib/latih-tubi'
 import { createSpmQuizApi, type SpmStartOutcome } from '../lib/quiz-api'
+import { DsStack } from '@/ds'
 
 const route = useRoute()
 const router = useRouter()
@@ -46,21 +47,17 @@ const headerTitle = (s: StartSessionResponse): string => s.subject?.name ?? ''
 </script>
 
 <template>
-  <div v-if="noQuestions" class="flex min-w-0 flex-col gap-4" data-testid="spm-no-questions">
+  <DsStack v-if="noQuestions" data-testid="spm-no-questions">
     <UAlert
       color="warning"
       variant="soft"
       icon="i-ph-warning-duotone"
       title="Tiada soalan untuk tetapan ini. Sila ubah tetapan kuiz."
     />
-    <UButton
-      :to="backUrl"
-      size="lg"
-      class="min-h-11 self-start"
-      data-testid="spm-no-questions-back"
+    <UButton :to="backUrl" size="lg" class="min-h-11 self-start" data-testid="spm-no-questions-back"
       >Kembali</UButton
     >
-  </div>
+  </DsStack>
   <QuizRunner
     v-else
     :key="`${code}?${JSON.stringify(query)}`"

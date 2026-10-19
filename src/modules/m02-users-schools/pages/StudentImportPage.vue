@@ -15,7 +15,17 @@
 import { computed, nextTick, ref, watch } from 'vue'
 
 import { useFlash } from '@/composables'
-import { DsFormBar, DsFormSection, DsIconChip, DsPage, DsPanel } from '@/ds'
+import {
+  DsFormBar,
+  DsFormSection,
+  DsIconChip,
+  DsPage,
+  DsPanel,
+  DsGrid,
+  DsStack,
+  DsCluster,
+  DsHeading,
+} from '@/ds'
 
 import {
   fetchSchoolQuota,
@@ -139,7 +149,7 @@ async function submit(): Promise<void> {
     :back-to="'/admin'"
     data-testid="student-import-page"
   >
-    <div class="grid grid-cols-1 items-start gap-6 xl:grid-cols-3">
+    <DsGrid :cols="{ base: 1, xl: 3 }" gap="lg" align="start">
       <form
         method="post"
         enctype="multipart/form-data"
@@ -159,9 +169,9 @@ async function submit(): Promise<void> {
             data-testid="student-alert"
           >
             <template #description>
-              <div class="flex flex-col gap-1">
+              <DsStack gap="2xs">
                 <p v-for="m in errors" :key="m">{{ m }}</p>
-              </div>
+              </DsStack>
             </template>
           </UAlert>
         </div>
@@ -195,11 +205,7 @@ async function submit(): Promise<void> {
         >
           <div class="flex min-w-0 flex-col gap-4 sm:col-span-2" data-testid="student-classes">
             <p class="sr-only">Darjah / Tingkatan <span class="text-error">*</span></p>
-            <div
-              v-if="groups.includes('primary')"
-              class="flex flex-col gap-3"
-              data-testid="class-group-primary"
-            >
+            <DsStack v-if="groups.includes('primary')" gap="sm" data-testid="class-group-primary">
               <p class="flex items-center gap-2 text-label text-muted">
                 <UIcon name="i-ph-buildings" class="size-4" aria-hidden="true" />
                 Sekolah Rendah
@@ -221,10 +227,10 @@ async function submit(): Promise<void> {
                 }"
                 @update:model-value="pickLevel"
               />
-            </div>
-            <div
+            </DsStack>
+            <DsStack
               v-if="groups.includes('secondary')"
-              class="flex flex-col gap-3"
+              gap="sm"
               data-testid="class-group-secondary"
             >
               <p class="flex items-center gap-2 text-label text-muted">
@@ -248,7 +254,7 @@ async function submit(): Promise<void> {
                 }"
                 @update:model-value="pickLevel"
               />
-            </div>
+            </DsStack>
           </div>
         </DsFormSection>
 
@@ -306,14 +312,14 @@ async function submit(): Promise<void> {
         />
       </form>
 
-      <aside class="flex min-w-0 flex-col gap-6">
+      <DsStack as="aside" gap="lg">
         <DsPanel padding="none" data-testid="student-hero">
           <div class="flex flex-col gap-4 p-4 sm:p-6">
-            <div class="flex items-center gap-4">
+            <DsCluster gap="md" :wrap="false">
               <DsIconChip icon="identification-card" accent="trial" size="lg" />
-              <h3 class="text-subheading text-highlighted">Login pelajar</h3>
-            </div>
-            <div class="flex flex-wrap gap-2">
+              <DsHeading :level="3">Login pelajar</DsHeading>
+            </DsCluster>
+            <DsCluster gap="xs" align="stretch">
               <UBadge
                 color="neutral"
                 variant="subtle"
@@ -328,7 +334,7 @@ async function submit(): Promise<void> {
                 icon="i-ph-envelope-simple"
                 label="Email DELIMa"
               />
-            </div>
+            </DsCluster>
           </div>
         </DsPanel>
 
@@ -348,7 +354,7 @@ async function submit(): Promise<void> {
             </ul>
           </div>
         </DsPanel>
-      </aside>
-    </div>
+      </DsStack>
+    </DsGrid>
   </DsPage>
 </template>

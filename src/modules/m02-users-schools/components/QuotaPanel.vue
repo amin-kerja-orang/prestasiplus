@@ -7,7 +7,7 @@
  */
 import { computed } from 'vue'
 
-import { DsPanel } from '@/ds'
+import { DsPanel, DsStack, DsCluster } from '@/ds'
 
 import type { SchoolQuota } from '../api/imports'
 import { quotaPercent } from '../lib/import-options'
@@ -40,8 +40,8 @@ const percent = computed(() => quotaPercent(used.value, total.value))
       :data-state="full ? 'full' : 'available'"
       data-testid="quota-summary"
     >
-      <div class="flex flex-col gap-2">
-        <div class="flex items-center justify-between gap-3">
+      <DsStack gap="xs">
+        <DsCluster justify="between" :wrap="false">
           <span class="flex items-center gap-2 text-label text-default">
             <UIcon name="i-ph-users" class="size-4" aria-hidden="true" />
             Kuota Pelajar
@@ -53,7 +53,7 @@ const percent = computed(() => quotaPercent(used.value, total.value))
           >
             {{ used }} / {{ total }}
           </span>
-        </div>
+        </DsCluster>
         <UProgress
           :model-value="percent"
           :color="full ? 'error' : 'success'"
@@ -68,7 +68,7 @@ const percent = computed(() => quotaPercent(used.value, total.value))
           <template v-if="!full">Baki kuota: {{ remaining }} pelajar</template>
           <template v-else>Kuota penuh! Sila tingkatkan kuota dahulu.</template>
         </p>
-      </div>
+      </DsStack>
     </DsPanel>
     <DsPanel v-else tone="inset" data-testid="quota-none">
       <p class="flex items-center gap-2 text-label text-warning">

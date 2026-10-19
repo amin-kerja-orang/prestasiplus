@@ -7,7 +7,7 @@
  * the "Mula" is plain text as live (D-5, replicated). Every query parameter is ignored.
  */
 import { useApi } from '@/composables'
-import { DsBackLink, DsIconChip, DsPage, DsLoadError } from '@/ds'
+import { DsBackLink, DsIconChip, DsPage, DsLoadError, DsCluster, DsHeading, DsText } from '@/ds'
 import { formatCount } from '@/lib/number'
 import { subjectAccent, subjectGlyph } from '@/modules/m05-practice'
 
@@ -38,9 +38,14 @@ const { data, error, reload } = useApi((signal) => fetchDatabank({ signal }))
       class="grid grid-cols-1 gap-3 md:grid-cols-2 md:gap-4 lg:grid-cols-3"
       data-testid="databank-grid"
     >
-      <li v-for="(s, i) in data" :key="s.code" class="min-w-0" :data-testid="`databank-card-${s.code}`">
+      <li
+        v-for="(s, i) in data"
+        :key="s.code"
+        class="min-w-0"
+        :data-testid="`databank-card-${s.code}`"
+      >
         <UCard class="h-full" :ui="{ body: 'flex h-full flex-col gap-3 p-4' }">
-          <div class="flex items-center gap-3">
+          <DsCluster :wrap="false">
             <DsIconChip
               :icon="subjectGlyph(s.icon)"
               :accent="subjectAccent(i)"
@@ -48,18 +53,23 @@ const { data, error, reload } = useApi((signal) => fetchDatabank({ signal }))
               data-testid="databank-icon"
             />
             <div class="min-w-0">
-              <h2 class="text-subheading break-words text-highlighted" data-testid="databank-name">
+              <DsHeading
+                :level="2"
+                variant="subheading"
+                wrap="anywhere"
+                data-testid="databank-name"
+              >
                 {{ s.name }}
-              </h2>
-              <p class="text-caption text-muted" data-testid="databank-name-en">{{ s.nameEn }}</p>
+              </DsHeading>
+              <DsText variant="caption" data-testid="databank-name-en">{{ s.nameEn }}</DsText>
             </div>
-          </div>
-          <p class="text-body text-default" data-testid="databank-count">
+          </DsCluster>
+          <DsText variant="body" data-testid="databank-count">
             <span class="tabular text-highlighted">{{ formatCount(s.databankCount) }}</span>
             soalan dalam databank
-          </p>
+          </DsText>
           <div class="mt-auto flex flex-wrap items-center gap-2 pt-1">
-            <span class="text-label text-muted">Pilih set:</span>
+            <DsText variant="label" tone="muted">Pilih set:</DsText>
             <UButton
               v-for="n in COUNTS"
               :key="n"
@@ -70,12 +80,20 @@ const { data, error, reload } = useApi((signal) => fetchDatabank({ signal }))
               :data-testid="`databank-set-${s.code}-${String(n)}`"
               >{{ n }}</UButton
             >
-            <span class="ms-auto text-label text-primary-t" data-testid="databank-mula">Mula</span>
+            <DsText variant="label" tone="primary" class="ms-auto" data-testid="databank-mula"
+              >Mula</DsText
+            >
           </div>
         </UCard>
       </li>
     </ul>
-    <DsLoadError v-else-if="error" :message="LOAD_ERROR" testid="spm-error" retry-testid="spm-retry" @retry="reload()" />
+    <DsLoadError
+      v-else-if="error"
+      :message="LOAD_ERROR"
+      testid="spm-error"
+      retry-testid="spm-retry"
+      @retry="reload()"
+    />
     <SkeletonCards v-else />
   </DsPage>
 </template>

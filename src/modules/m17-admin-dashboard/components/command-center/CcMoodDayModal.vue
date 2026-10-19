@@ -7,7 +7,7 @@
  */
 import { computed } from 'vue'
 
-import { DsDialog, DsStatRow } from '@/ds'
+import { DsDialog, DsStatRow, DsStack, DsText } from '@/ds'
 
 import type { Mood } from '../../api/command-center-types'
 import { MOOD, statItems } from './cc-format'
@@ -33,12 +33,12 @@ const stats = computed(() => [
 
 <template>
   <DsDialog v-model:open="open" :title="`${date} — Mood: ${label}`" class="sm:max-w-2xl">
-    <div class="flex min-w-0 flex-col gap-4" data-testid="cc-mood-modal">
+    <DsStack data-testid="cc-mood-modal">
       <DsStatRow :items="statItems(stats)" data-testid="cc-modal-stats" />
-      <p v-if="noSession" class="text-body text-muted" data-testid="cc-modal-empty">
+      <DsText v-if="noSession" variant="body" tone="muted" data-testid="cc-modal-empty">
         Tiada sesi latihan pada hari ini. Pelajar hanya checkin mood.
-      </p>
-    </div>
+      </DsText>
+    </DsStack>
     <template #footer>
       <UButton
         color="neutral"

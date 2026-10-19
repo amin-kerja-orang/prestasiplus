@@ -17,6 +17,9 @@ import {
   DsPanel,
   DsStatRow,
   type StatItem,
+  DsStack,
+  DsCluster,
+  DsText,
 } from '@/ds'
 
 import { fetchContributedQuestion } from '../api/guru'
@@ -33,9 +36,21 @@ const usageStats = computed<StatItem[]>(() => {
   const u = data.value?.usage
   if (!u) return []
   return [
-    { key: 'attempts', label: 'Kali Digunakan', value: u.attempts, icon: 'repeat', accent: 'action' },
+    {
+      key: 'attempts',
+      label: 'Kali Digunakan',
+      value: u.attempts,
+      icon: 'repeat',
+      accent: 'action',
+    },
     { key: 'correct', label: 'Jawab Betul', value: u.correct, icon: 'check-circle', accent: 'win' },
-    { key: 'accuracy', label: 'Ketepatan', value: `${String(u.accuracy)}%`, icon: 'target', accent: 'heat' },
+    {
+      key: 'accuracy',
+      label: 'Ketepatan',
+      value: `${String(u.accuracy)}%`,
+      icon: 'target',
+      accent: 'heat',
+    },
   ]
 })
 
@@ -54,13 +69,13 @@ watch(notFound, (is404) => {
       testid="detail-error"
       @retry="reload"
     />
-    <div v-else-if="!data && !notFound" class="flex flex-col gap-3" aria-busy="true">
+    <DsStack v-else-if="!data && !notFound" gap="sm" aria-busy="true">
       <USkeleton class="h-10 w-full" />
       <USkeleton class="h-48 w-full" />
-    </div>
+    </DsStack>
 
     <template v-else-if="data">
-      <div class="flex flex-wrap items-center justify-between gap-3">
+      <DsCluster justify="between">
         <DsBackLink to="/guru/soalan" data-testid="detail-back" />
         <UButton
           :to="`/guru/soalan/${String(data.id)}/edit`"
@@ -69,7 +84,7 @@ watch(notFound, (is404) => {
           data-testid="detail-edit"
           >Edit Soalan</UButton
         >
-      </div>
+      </DsCluster>
 
       <DsPanel data-testid="detail-card">
         <div class="mb-3 flex flex-wrap gap-2">
@@ -86,12 +101,14 @@ watch(notFound, (is404) => {
             data.questionType
           }}</UBadge>
         </div>
-        <p
-          class="min-w-0 text-body break-words whitespace-pre-wrap text-default"
+        <DsText
+          variant="body"
+          wrap="anywhere"
+          class="min-w-0 whitespace-pre-wrap"
           data-testid="detail-text"
         >
           {{ data.questionText }}
-        </p>
+        </DsText>
         <DsArt3D
           v-if="isLoadableImage(data.questionImage)"
           variant="plain"
@@ -108,28 +125,28 @@ watch(notFound, (is404) => {
             data-testid="detail-option"
           >
             <DsPanel tone="inset">
-<div class="flex min-w-0 items-center justify-between gap-2">
-              <span class="min-w-0 text-body break-words text-default"
-                ><strong>{{ OPTION_LETTERS[i] }})</strong> {{ opt }}</span
-              >
-              <UBadge
-                v-if="data.correctAnswer === i"
-                color="success"
-                variant="subtle"
-                icon="i-ph-check-circle-duotone"
-                >Betul</UBadge
-              >
-            </div>
-</DsPanel>
+              <DsCluster gap="xs" justify="between" :wrap="false">
+                <DsText variant="body" as="span" wrap="anywhere" class="min-w-0"
+                  ><strong>{{ OPTION_LETTERS[i] }})</strong> {{ opt }}</DsText
+                >
+                <UBadge
+                  v-if="data.correctAnswer === i"
+                  color="success"
+                  variant="subtle"
+                  icon="i-ph-check-circle-duotone"
+                  >Betul</UBadge
+                >
+              </DsCluster>
+            </DsPanel>
           </li>
         </ul>
       </DsPanel>
 
       <DsPanel v-if="data.explanation" data-testid="detail-explanation">
         <h2 class="mb-1 text-subheading text-highlighted">Penerangan</h2>
-        <p class="min-w-0 text-body break-words whitespace-pre-wrap text-default">
+        <DsText variant="body" wrap="anywhere" class="min-w-0 whitespace-pre-wrap">
           {{ data.explanation }}
-        </p>
+        </DsText>
       </DsPanel>
 
       <section data-testid="detail-stats">

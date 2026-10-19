@@ -26,6 +26,10 @@ import {
   DsStatusBadge,
   type StatItem,
   useConfirm,
+  DsStack,
+  DsCluster,
+  DsHeading,
+  DsText,
 } from '@/ds'
 import { formatNumber } from '@/lib/number'
 import { formatDate, formatDateTime } from '@/lib/time'
@@ -295,10 +299,10 @@ const tiles = computed<StatItem[]>(() => {
       @retry="reloadSub()"
     />
 
-    <div v-else-if="!sub" class="flex flex-col gap-4" data-testid="sub-skeleton">
+    <DsStack v-else-if="!sub" data-testid="sub-skeleton">
       <USkeleton class="h-64 w-full" />
       <USkeleton class="h-40 w-full" />
-    </div>
+    </DsStack>
 
     <template v-else>
       <div ref="alertBox">
@@ -311,9 +315,9 @@ const tiles = computed<StatItem[]>(() => {
           data-testid="sub-action-alert"
         >
           <template #description>
-            <div class="flex flex-col gap-1">
+            <DsStack gap="2xs">
               <p v-for="m in errors" :key="m">{{ m }}</p>
-            </div>
+            </DsStack>
           </template>
         </UAlert>
       </div>
@@ -321,17 +325,17 @@ const tiles = computed<StatItem[]>(() => {
       <!-- Summary card -->
       <DsPanel padding="none" data-testid="sub-summary-card">
         <div class="p-4 sm:p-6">
-          <div class="flex flex-col gap-4">
-            <div class="flex flex-wrap items-start justify-between gap-3">
+          <DsStack>
+            <DsCluster align="start" justify="between">
               <div class="min-w-0">
-                <h3 class="text-heading break-words text-highlighted" data-testid="sub-school">
+                <DsHeading :level="3" variant="heading" wrap="anywhere" data-testid="sub-school">
                   {{ sub.school.name }}
-                </h3>
-                <p class="text-label text-muted" data-testid="sub-code">
+                </DsHeading>
+                <DsText variant="label" as="p" tone="muted" data-testid="sub-code">
                   {{ sub.school.code }} · {{ sub.package.name }}
-                </p>
+                </DsText>
               </div>
-              <div class="flex flex-wrap gap-2">
+              <DsCluster gap="xs" align="stretch">
                 <UBadge
                   color="neutral"
                   variant="subtle"
@@ -344,10 +348,10 @@ const tiles = computed<StatItem[]>(() => {
                   :label="STATUS_BADGE[sub.status].label"
                   data-testid="sub-status"
                 />
-              </div>
-            </div>
+              </DsCluster>
+            </DsCluster>
 
-            <div class="flex flex-col gap-2">
+            <DsStack gap="xs">
               <div class="flex items-center justify-between gap-3 text-label">
                 <span class="flex items-center gap-2 text-default">
                   <UIcon name="i-ph-users" class="size-4 text-muted" aria-hidden="true" />
@@ -367,19 +371,19 @@ const tiles = computed<StatItem[]>(() => {
                 <span data-testid="sub-percent">{{ sub.usedPercent }}% digunakan</span>
                 <span data-testid="sub-remaining">Baki: {{ sub.remaining }} pelajar</span>
               </div>
-            </div>
+            </DsStack>
 
             <DsPanel v-if="sub.packageTier === 'basic'" tone="inset" data-testid="sub-basic-box">
-              <div class="flex items-center gap-3">
+              <DsCluster :wrap="false">
                 <UIcon name="i-ph-eye" class="size-6 shrink-0 text-muted" aria-hidden="true" />
-                <div class="min-w-0 text-label">
+                <DsText variant="label" as="div" class="min-w-0">
                   <p class="text-highlighted">Pakej Pemantauan</p>
                   <p class="break-words text-muted">
                     {{ sub.questionLimit ?? 500 }} soalan/bulan/pelajar · PERCUMA · Tamat
                     {{ formatDate(sub.endsAt) }}
                   </p>
-                </div>
-              </div>
+                </DsText>
+              </DsCluster>
             </DsPanel>
 
             <DsStatRow
@@ -403,19 +407,19 @@ const tiles = computed<StatItem[]>(() => {
                 >
               </div>
             </DsPanel>
-          </div>
+          </DsStack>
         </div>
       </DsPanel>
 
       <!-- Actions -->
       <DsPanel padding="none" data-testid="sub-actions">
         <div class="p-4 sm:p-6">
-          <div class="flex flex-col gap-4">
+          <DsStack>
             <h3 class="flex items-center gap-2 text-subheading text-highlighted">
               <UIcon name="i-ph-sliders-horizontal" class="size-5 text-muted" aria-hidden="true" />
               Tindakan
             </h3>
-            <div class="flex flex-wrap gap-2">
+            <DsCluster gap="xs" align="stretch">
               <UButton
                 type="button"
                 color="neutral"
@@ -460,7 +464,7 @@ const tiles = computed<StatItem[]>(() => {
                 data-testid="sub-toggle-extend"
                 @click="open.extend = !open.extend"
               />
-            </div>
+            </DsCluster>
 
             <!-- Ubah Kuota -->
             <DsPanel
@@ -471,9 +475,9 @@ const tiles = computed<StatItem[]>(() => {
               data-testid="sub-quota-form"
               @submit.prevent="saveQuota"
             >
-              <div class="flex flex-col gap-3">
-                <div class="flex flex-wrap items-center gap-3">
-                  <label for="sub-new-quota" class="text-label text-default">Kuota baru:</label>
+              <DsStack gap="sm">
+                <DsCluster>
+                  <DsText for="sub-new-quota" variant="label" as="label">Kuota baru:</DsText>
                   <UInput
                     id="sub-new-quota"
                     v-model="quotaForm.quota"
@@ -485,7 +489,7 @@ const tiles = computed<StatItem[]>(() => {
                     class="w-32"
                     data-testid="sub-quota-input"
                   />
-                </div>
+                </DsCluster>
                 <UInput
                   v-model="quotaForm.notes"
                   type="text"
@@ -504,7 +508,7 @@ const tiles = computed<StatItem[]>(() => {
                     data-testid="sub-quota-save"
                   />
                 </div>
-              </div>
+              </DsStack>
             </DsPanel>
 
             <!-- Lanjutkan Tempoh -->
@@ -516,7 +520,7 @@ const tiles = computed<StatItem[]>(() => {
               data-testid="sub-extend-form"
               @submit.prevent="extend"
             >
-              <div class="flex flex-col gap-3">
+              <DsStack gap="sm">
                 <p
                   class="flex items-center gap-2 text-label text-muted"
                   data-testid="sub-extend-current"
@@ -524,8 +528,8 @@ const tiles = computed<StatItem[]>(() => {
                   <UIcon name="i-ph-info" class="size-4 shrink-0" aria-hidden="true" />
                   Tamat semasa: {{ formatDateTime(sub.endsAt) }}
                 </p>
-                <div class="flex flex-wrap items-center gap-2">
-                  <span class="text-label text-default">Tambah:</span>
+                <DsCluster gap="xs">
+                  <DsText variant="label">Tambah:</DsText>
                   <UButton
                     v-for="preset in EXTEND_PRESETS"
                     :key="preset.days"
@@ -536,8 +540,8 @@ const tiles = computed<StatItem[]>(() => {
                     data-testid="sub-extend-preset"
                     @click="extendForm.days = String(preset.days)"
                   />
-                </div>
-                <div class="flex items-center gap-3">
+                </DsCluster>
+                <DsCluster :wrap="false">
                   <UInput
                     v-model="extendForm.days"
                     type="number"
@@ -549,8 +553,8 @@ const tiles = computed<StatItem[]>(() => {
                     class="w-28"
                     data-testid="sub-extend-days"
                   />
-                  <span class="text-label text-muted">hari</span>
-                </div>
+                  <DsText variant="label" tone="muted">hari</DsText>
+                </DsCluster>
                 <UInput
                   v-model="extendForm.reason"
                   type="text"
@@ -569,7 +573,7 @@ const tiles = computed<StatItem[]>(() => {
                     data-testid="sub-extend-submit"
                   />
                 </div>
-              </div>
+              </DsStack>
             </DsPanel>
 
             <!-- Naik Taraf ke Penuh -->
@@ -581,7 +585,7 @@ const tiles = computed<StatItem[]>(() => {
               data-testid="sub-upgrade-form"
               @submit.prevent="confirmUpgrade"
             >
-              <div class="flex flex-col gap-3">
+              <DsStack gap="sm">
                 <p
                   class="flex items-start gap-2 text-label text-default"
                   data-testid="sub-upgrade-text"
@@ -625,9 +629,9 @@ const tiles = computed<StatItem[]>(() => {
                     data-testid="sub-upgrade-submit"
                   />
                 </div>
-              </div>
+              </DsStack>
             </DsPanel>
-          </div>
+          </DsStack>
         </div>
       </DsPanel>
 
@@ -681,9 +685,13 @@ const tiles = computed<StatItem[]>(() => {
             <span class="text-nowrap">{{ row.original.classLevel }}</span>
           </template>
           <template #card="{ row }">
-            <p class="text-body text-highlighted" data-testid="sub-student-row">{{ row.name }}</p>
-            <p class="text-label break-all text-muted">{{ row.idDelima }}</p>
-            <p class="text-label text-muted">{{ row.classLevel }}</p>
+            <DsText variant="body" tone="highlighted" data-testid="sub-student-row">{{
+              row.name
+            }}</DsText>
+            <DsText variant="label" as="p" tone="muted" class="break-all">{{
+              row.idDelima
+            }}</DsText>
+            <DsText variant="label" as="p" tone="muted">{{ row.classLevel }}</DsText>
           </template>
         </DsDataTable>
         <div v-if="students && total > pageSize" class="p-3" data-testid="sub-pager">

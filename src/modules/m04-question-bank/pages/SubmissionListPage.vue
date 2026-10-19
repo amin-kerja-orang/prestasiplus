@@ -25,6 +25,7 @@ import {
   DsStatusBadge,
   type CardField,
   type StatItem,
+  DsText,
 } from '@/ds'
 import { formatNumber } from '@/lib/number'
 import { saveBlob } from '@/lib/save-blob'
@@ -65,8 +66,20 @@ const counts = computed(() => data.value?.meta.counts ?? null)
 const firstLoad = computed(() => data.value === null && error.value === null)
 
 const countItems = computed<StatItem[]>(() => [
-  { key: 'all', label: 'Jumlah', value: formatNumber(counts.value?.all ?? 0), icon: 'stack', accent: 'action' },
-  { key: 'pending', label: 'Pending', value: formatNumber(counts.value?.pending ?? 0), icon: 'clock', accent: 'trial' },
+  {
+    key: 'all',
+    label: 'Jumlah',
+    value: formatNumber(counts.value?.all ?? 0),
+    icon: 'stack',
+    accent: 'action',
+  },
+  {
+    key: 'pending',
+    label: 'Pending',
+    value: formatNumber(counts.value?.pending ?? 0),
+    icon: 'clock',
+    accent: 'trial',
+  },
   {
     key: 'processing',
     label: 'Processing',
@@ -74,7 +87,13 @@ const countItems = computed<StatItem[]>(() => [
     icon: 'gear',
     accent: 'friend',
   },
-  { key: 'done', label: 'Selesai', value: formatNumber(counts.value?.done ?? 0), icon: 'check-circle', accent: 'win' },
+  {
+    key: 'done',
+    label: 'Selesai',
+    value: formatNumber(counts.value?.done ?? 0),
+    icon: 'check-circle',
+    accent: 'win',
+  },
 ])
 
 async function submitFilter(): Promise<void> {
@@ -165,12 +184,7 @@ async function resetFilter(): Promise<void> {
     >
       <div class="w-full min-w-0 sm:w-56">
         <DsFormField v-slot="{ id }" native for="submissions-status" label="Status">
-          <DsNativeSelect
-            :id="id"
-            v-model="status"
-            name="status"
-            data-testid="submissions-status"
-          >
+          <DsNativeSelect :id="id" v-model="status" name="status" data-testid="submissions-status">
             <option value="">Semua Status</option>
             <option v-for="o in SUBMISSION_STATUS_OPTIONS" :key="o.value" :value="o.value">
               {{ o.label }}
@@ -207,14 +221,19 @@ async function resetFilter(): Promise<void> {
       </template>
       <template #teacherName-cell="{ row }">
         <div class="min-w-40">
-          <div class="text-label text-highlighted">{{ row.original.raw.teacher.name }}</div>
+          <DsText variant="label" as="div" tone="highlighted">{{
+            row.original.raw.teacher.name
+          }}</DsText>
           <ULink
             v-if="row.original.raw.teacher.email"
             :href="`mailto:${row.original.raw.teacher.email}`"
             class="block text-caption break-all text-muted"
             >{{ row.original.raw.teacher.email }}</ULink
           >
-          <div v-if="row.original.raw.teacher.school" class="mt-1 flex gap-1 text-caption text-muted">
+          <div
+            v-if="row.original.raw.teacher.school"
+            class="mt-1 flex gap-1 text-caption text-muted"
+          >
             <UIcon name="i-ph-buildings" class="mt-1 size-4 shrink-0" />
             <span>{{ row.original.raw.teacher.school }}</span>
           </div>
@@ -222,15 +241,17 @@ async function resetFilter(): Promise<void> {
       </template>
       <template #paperTitle-cell="{ row }">
         <div class="min-w-40">
-          <div class="text-label text-highlighted">
+          <DsText variant="label" as="div" tone="highlighted">
             {{ row.original.raw.subjectText }}
-            <span v-if="row.original.raw.levelCode" class="text-caption text-muted">{{
+            <DsText v-if="row.original.raw.levelCode" variant="caption" as="span">{{
               row.original.raw.levelCode
-            }}</span>
-            <span class="text-caption text-muted"> ({{ row.original.raw.year }})</span>
-          </div>
-          <div class="text-caption text-primary-t">{{ row.original.raw.paperType }}</div>
-          <div class="text-caption text-muted">Oleh: {{ row.original.raw.authorCredit }}</div>
+            }}</DsText>
+            <DsText variant="caption" as="span"> ({{ row.original.raw.year }})</DsText>
+          </DsText>
+          <DsText variant="caption" as="div" tone="primary">{{
+            row.original.raw.paperType
+          }}</DsText>
+          <DsText variant="caption" as="div">Oleh: {{ row.original.raw.authorCredit }}</DsText>
           <div v-if="row.original.raw.note" class="mt-1 line-clamp-2 text-caption text-muted">
             {{ row.original.raw.note }}
           </div>
@@ -245,7 +266,7 @@ async function resetFilter(): Promise<void> {
             color="neutral"
             variant="link"
             icon="i-ph-download-simple"
-            class="max-w-52 min-h-11 justify-start"
+            class="min-h-11 max-w-52 justify-start"
             data-testid="submission-file"
             @click="download(row.original.raw, file.index)"
           >
@@ -270,10 +291,10 @@ async function resetFilter(): Promise<void> {
         </div>
       </template>
       <template #dateText-cell="{ row }">
-        <div class="text-caption whitespace-nowrap text-muted">
+        <DsText variant="caption" as="div" class="whitespace-nowrap">
           <div>{{ formatEnDate(row.original.raw.createdAt) }}</div>
           <div>{{ formatTime(row.original.raw.createdAt) }}</div>
-        </div>
+        </DsText>
       </template>
       <template #actions-cell="{ row }">
         <SubmissionActions :submission="row.original.raw" @saved="onSaved" @failed="onFailed" />

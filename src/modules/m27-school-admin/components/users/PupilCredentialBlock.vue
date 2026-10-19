@@ -4,7 +4,7 @@
  * the `credential` of the create response in component memory only; it is never persisted or logged, and a reload
  * of the page shows nothing.
  */
-import { DsPanel } from '@/ds'
+import { DsPanel, DsText } from '@/ds'
 
 import type { CreatePupilResult } from '../../api/school-admin'
 
@@ -21,19 +21,19 @@ defineProps<{ credential: CreatePupilResult['credential'] }>()
       class="mb-4"
     />
     <dl class="grid grid-cols-1 gap-x-4 gap-y-2 text-body sm:grid-cols-2">
-      <dt class="text-label text-muted">Nama:</dt>
+      <DsText variant="label" as="dt" tone="muted">Nama:</DsText>
       <dd class="min-w-0 break-words text-highlighted" data-testid="credential-name">
         {{ credential.name }}
       </dd>
-      <dt class="text-label text-muted">Sekolah:</dt>
+      <DsText variant="label" as="dt" tone="muted">Sekolah:</DsText>
       <dd class="min-w-0 break-words text-highlighted" data-testid="credential-school">
         {{ credential.school }}
       </dd>
-      <dt class="text-label text-muted">Emel:</dt>
+      <DsText variant="label" as="dt" tone="muted">Emel:</DsText>
       <dd class="min-w-0 break-all text-highlighted" data-testid="credential-email">
         {{ credential.email }}
       </dd>
-      <dt class="text-label text-muted">Kata laluan:</dt>
+      <DsText variant="label" as="dt" tone="muted">Kata laluan:</DsText>
       <dd class="tabular min-w-0 break-all text-highlighted" data-testid="credential-password">
         {{ credential.password }}
       </dd>

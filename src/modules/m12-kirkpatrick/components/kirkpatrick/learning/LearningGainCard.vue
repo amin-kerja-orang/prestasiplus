@@ -1,6 +1,6 @@
 <script setup lang="ts">
 /** S3 static Learning Gain card (FN-M12-4.2.1; FR-M12-36): permanent, there are no pre/post tests. */
-import { DsEmptyState } from '@/ds'
+import { DsEmptyState, DsText } from '@/ds'
 </script>
 
 <template>
@@ -10,8 +10,8 @@ import { DsEmptyState } from '@/ds'
       title="Pre-Test / Post-Test belum dimulakan"
       description="Apabila ujian diagnostik dimulakan, Hake's Normalized Learning Gain akan dikira secara automatik."
     />
-    <p class="text-center text-body text-muted">
+    <DsText variant="body" tone="muted" align="center">
       g = (Post - Pre) / (100 - Pre) · High: g≥0.7 · Medium: 0.3≤g&lt;0.7 · Low: g&lt;0.3
-    </p>
+    </DsText>
   </UCard>
 </template>

@@ -1,6 +1,6 @@
 <script setup lang="ts">
 /** S11 wallet tiles (FN-M14-2.1.5; FR-M14-17, BR-M14-05, 07): syiling, token, level with its XP bar, total. */
-import { DsStatTile } from '@/ds'
+import { DsStatTile, DsGrid } from '@/ds'
 import { formatCount } from '@/lib/number'
 
 import type { GamificationWallet } from '../../api'
@@ -10,7 +10,7 @@ defineProps<{ wallet: GamificationWallet }>()
 </script>
 
 <template>
-  <div class="grid grid-cols-2 gap-3 md:grid-cols-4" data-testid="s11-stats">
+  <DsGrid :cols="{ base: 2, md: 4 }" gap="sm" data-testid="s11-stats">
     <DsStatTile
       art="coin"
       :value="formatCount(wallet.currentSyiling)"
@@ -55,5 +55,5 @@ defineProps<{ wallet: GamificationWallet }>()
       value-testid="s11-stat-total"
       sub-testid="s11-stat-week"
     />
-  </div>
+  </DsGrid>
 </template>

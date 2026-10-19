@@ -1,13 +1,14 @@
 <script setup lang="ts">
 /** Quick actions (FR-M05-18, 19): one primary button and four secondary links. */
 import { revisionBadge } from '../dashboard/dashboard-lib'
+import { DsGrid, DsStack } from '@/ds'
 
 defineProps<{ revisionTotal: number; isAdmin: boolean }>()
 </script>
 
 <template>
-  <nav class="flex flex-col gap-3" aria-label="Tindakan pantas">
-    <ul class="grid grid-cols-2 gap-3" data-testid="dash-quick">
+  <DsStack as="nav" gap="sm" aria-label="Tindakan pantas">
+    <DsGrid :cols="2" gap="sm" as="ul" data-testid="dash-quick">
       <li class="col-span-2">
         <UButton to="/practice" size="xl" block class="min-h-12" data-testid="dash-quick-practice"
           >🚀 Mula Latihan</UButton
@@ -69,7 +70,7 @@ defineProps<{ revisionTotal: number; isAdmin: boolean }>()
           >🏅 Papan Pendahulu</UButton
         >
       </li>
-    </ul>
+    </DsGrid>
     <UButton
       v-if="isAdmin"
       to="/admin"
@@ -82,5 +83,5 @@ defineProps<{ revisionTotal: number; isAdmin: boolean }>()
       data-testid="dash-quick-admin"
       >Panel Admin</UButton
     >
-  </nav>
+  </DsStack>
 </template>

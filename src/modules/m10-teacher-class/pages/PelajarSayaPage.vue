@@ -18,6 +18,8 @@ import {
   DsStatTile,
   useConfirm,
   type PillItem,
+  DsCluster,
+  DsStack,
 } from '@/ds'
 
 import {
@@ -52,7 +54,11 @@ const school = useApi(
 
 const tabs = computed<PillItem<StudentTab>[]>(() => [
   { key: 'school', label: PELAJAR_COPY.tabSchool, icon: 'i-ph-buildings' },
-  { key: 'mine', label: `${PELAJAR_COPY.tabMine} (${String(count.value)})`, icon: 'i-ph-user-check' },
+  {
+    key: 'mine',
+    label: `${PELAJAR_COPY.tabMine} (${String(count.value)})`,
+    icon: 'i-ph-user-check',
+  },
 ])
 
 const ownClasses = computed(() => (classes.data.value?.data ?? []).filter((c) => c.isActive))
@@ -118,7 +124,7 @@ async function remove(studentId: number, classId: number): Promise<void> {
 
 <template>
   <DsPage data-testid="pelajar-page">
-    <div class="flex flex-wrap items-center justify-between gap-3">
+    <DsCluster justify="between">
       <DsStatTile
         class="min-w-56"
         :value="count"
@@ -135,7 +141,7 @@ async function remove(studentId: number, classId: number): Promise<void> {
         data-testid="pelajar-create"
         >Cipta<span class="hidden sm:inline">&nbsp;Pelajar</span></UButton
       >
-    </div>
+    </DsCluster>
 
     <DsPillNav
       :items="tabs"
@@ -156,14 +162,9 @@ async function remove(studentId: number, classId: number): Promise<void> {
 
     <!-- Pelajar Saya -->
     <template v-else-if="tab === 'mine'">
-      <div
-        v-if="!mine.data.value"
-        class="flex flex-col gap-2"
-        aria-busy="true"
-        data-testid="pelajar-loading"
-      >
+      <DsStack v-if="!mine.data.value" gap="xs" aria-busy="true" data-testid="pelajar-loading">
         <USkeleton v-for="n in 3" :key="n" class="h-16 w-full" />
-      </div>
+      </DsStack>
       <DsPanel v-else-if="mineRows.length === 0" data-testid="pelajar-empty">
         <DsEmptyState
           :title="PELAJAR_COPY.emptyTitle"
@@ -181,7 +182,7 @@ async function remove(studentId: number, classId: number): Promise<void> {
           </template>
         </DsEmptyState>
       </DsPanel>
-      <ul v-else class="flex flex-col gap-2" data-testid="pelajar-mine-list">
+      <DsStack v-else as="ul" gap="xs" data-testid="pelajar-mine-list">
         <StudentRow
           v-for="s in mineRows"
           :key="s.id"
@@ -191,13 +192,13 @@ async function remove(studentId: number, classId: number): Promise<void> {
           :busy="busy"
           @remove="remove"
         />
-      </ul>
+      </DsStack>
     </template>
 
     <!-- Pelajar Sekolah -->
     <template v-else>
       <DsPanel data-testid="pelajar-add-bar">
-        <div class="flex flex-wrap items-center gap-3">
+        <DsCluster>
           <label for="pelajar-target" class="flex items-center gap-2 text-label text-highlighted">
             <UIcon name="i-ph-plus-circle-duotone" class="size-4 text-primary-t" />{{
               PELAJAR_COPY.addTo
@@ -212,7 +213,7 @@ async function remove(studentId: number, classId: number): Promise<void> {
             <option value="">{{ PELAJAR_COPY.chooseClass }}</option>
             <option v-for="c in ownClasses" :key="c.id" :value="String(c.id)">{{ c.name }}</option>
           </DsNativeSelect>
-        </div>
+        </DsCluster>
       </DsPanel>
 
       <DsPanel v-if="school.data.value && !schoolSet" data-testid="pelajar-no-school">
@@ -245,7 +246,7 @@ async function remove(studentId: number, classId: number): Promise<void> {
         <DsPanel v-if="schoolRows.length === 0" data-testid="pelajar-school-empty">
           <DsEmptyState :title="PELAJAR_COPY.schoolEmpty" icon="graduation-cap" size="sm" />
         </DsPanel>
-        <ul v-else class="flex flex-col gap-2" data-testid="pelajar-school-list">
+        <DsStack v-else as="ul" gap="xs" data-testid="pelajar-school-list">
           <StudentRow
             v-for="s in schoolRows"
             :key="s.id"
@@ -256,11 +257,11 @@ async function remove(studentId: number, classId: number): Promise<void> {
             :busy="busy"
             @add="add"
           />
-        </ul>
+        </DsStack>
       </template>
-      <div v-else class="flex flex-col gap-2" aria-busy="true" data-testid="pelajar-loading">
+      <DsStack v-else gap="xs" aria-busy="true" data-testid="pelajar-loading">
         <USkeleton v-for="n in 3" :key="n" class="h-16 w-full" />
-      </div>
+      </DsStack>
     </template>
   </DsPage>
 </template>

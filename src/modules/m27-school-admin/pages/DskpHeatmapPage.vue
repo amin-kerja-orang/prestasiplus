@@ -15,7 +15,7 @@ import { isApiError } from '@/api'
 import { setRouteOutcome } from '@/app/router/outcome'
 import { useApi } from '@/composables'
 import { usePageMeta } from '@/composables/usePageMeta'
-import { DsBreadcrumb, DsLoadError, DsPage } from '@/ds'
+import { DsBreadcrumb, DsLoadError, DsPage, DsStack } from '@/ds'
 
 import { fetchSchoolDskpHeatmap } from '../api/school-admin'
 import HeatmapFilters from '../components/heatmap/HeatmapFilters.vue'
@@ -118,9 +118,9 @@ function pickSubject(id: number) {
       testid="dh-error"
       @retry="reload"
     />
-    <div v-else-if="loading" class="flex flex-col gap-4" aria-busy="true" data-testid="dh-loading">
+    <DsStack v-else-if="loading" aria-busy="true" data-testid="dh-loading">
       <USkeleton class="h-24 w-full" />
       <USkeleton class="h-64 w-full" />
-    </div>
+    </DsStack>
   </DsPage>
 </template>

@@ -4,7 +4,7 @@
  * rank and the value ("{n} menang", "{n} kali MVP"). The server orders them (value desc, stable ties,
  * DV-M16-08). v2: `DsLeaderRow` with a 3D medal for ranks 1-3.
  */
-import { DsLeaderRow } from '@/ds'
+import { DsLeaderRow, DsHeading } from '@/ds'
 
 import type { GameLobby } from '../../api'
 
@@ -16,7 +16,7 @@ defineProps<{
 
 <template>
   <UCard data-testid="leaders-card">
-    <h2 class="text-subheading text-highlighted">🏆 Pendahulu</h2>
+    <DsHeading :level="2" variant="subheading">🏆 Pendahulu</DsHeading>
     <ul class="mt-3 flex flex-col gap-2" data-testid="leaders-list">
       <DsLeaderRow
         v-for="row in leaders"

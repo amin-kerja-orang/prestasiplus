@@ -7,7 +7,7 @@
 import { computed } from 'vue'
 
 import { useApi } from '@/composables'
-import { DsPage, DsLoadError } from '@/ds'
+import { DsPage, DsLoadError, DsStack, DsHeading, DsText } from '@/ds'
 
 import { fetchDigitalRedemptions } from '../api'
 import { MY_REDEMPTIONS_COPY } from '../components/copy'
@@ -21,9 +21,9 @@ const ready = computed(() => list.data.value !== null)
 <template>
   <DsPage class="max-w-3xl" data-testid="m15-redemptions-page">
     <section class="flex items-center justify-between gap-3">
-      <h1 class="min-w-0 text-title text-highlighted" data-testid="redemptions-title">
+      <DsHeading :level="1" class="min-w-0" data-testid="redemptions-title">
         {{ MY_REDEMPTIONS_COPY.heading }}
-      </h1>
+      </DsHeading>
       <UButton
         to="/cikgu/hadiah"
         size="lg"
@@ -34,23 +34,24 @@ const ready = computed(() => list.data.value !== null)
       </UButton>
     </section>
 
-    <DsLoadError v-if="list.error.value" :message="COMMON_COPY.loadFailed" testid="m15-load-error" retry-testid="m15-retry" @retry="list.reload()" />
+    <DsLoadError
+      v-if="list.error.value"
+      :message="COMMON_COPY.loadFailed"
+      testid="m15-load-error"
+      retry-testid="m15-retry"
+      @retry="list.reload()"
+    />
     <LoadSkeleton v-else-if="!ready" testid="redemptions-loading" />
     <UCard v-else data-testid="redemptions-empty">
-      <div class="flex flex-col items-center gap-3 text-center">
-        <span class="text-display" data-testid="redemptions-icon">
+      <DsStack gap="sm" align="center" class="text-center">
+        <DsText variant="display" as="span" data-testid="redemptions-icon">
           {{ MY_REDEMPTIONS_COPY.icon }}
-        </span>
-        <p class="text-body text-muted">{{ MY_REDEMPTIONS_COPY.empty }}</p>
-        <UButton
-          to="/cikgu/hadiah"
-          size="xl"
-          class="min-h-14"
-          data-testid="redemptions-browse"
-        >
+        </DsText>
+        <DsText variant="body" tone="muted">{{ MY_REDEMPTIONS_COPY.empty }}</DsText>
+        <UButton to="/cikgu/hadiah" size="xl" class="min-h-14" data-testid="redemptions-browse">
           {{ MY_REDEMPTIONS_COPY.browse }}
         </UButton>
-      </div>
+      </DsStack>
     </UCard>
   </DsPage>
 </template>

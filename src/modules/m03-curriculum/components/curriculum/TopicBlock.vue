@@ -11,6 +11,7 @@ import type { TopicNode } from '../../api/admin-curriculum'
 import { orNull, topicEditTo, topicHeading } from '../../lib/curriculum-paths'
 import { useTreeActions } from '../../lib/tree-actions'
 import SubtopicItem from './SubtopicItem.vue'
+import { DsStack, DsText } from '@/ds'
 
 const props = defineProps<{ topic: TopicNode }>()
 
@@ -94,7 +95,7 @@ async function submitAdd(): Promise<void> {
       class="mt-2 ml-2 flex flex-col gap-2 sm:ml-6"
       data-testid="topic-subtopics"
     >
-      <p v-if="topic.subtopics.length === 0" class="text-caption text-muted">Tiada subtopik</p>
+      <DsText v-if="topic.subtopics.length === 0" variant="caption">Tiada subtopik</DsText>
       <SubtopicItem
         v-for="s in topic.subtopics"
         :key="s.id"
@@ -118,10 +119,11 @@ async function submitAdd(): Promise<void> {
         </UButton>
       </div>
 
-      <form
+      <DsStack
         v-show="showAdd"
         method="post"
-        class="flex flex-col gap-2"
+        as="form"
+        gap="xs"
         data-testid="subtopic-add-form"
         @submit.prevent="submitAdd"
       >
@@ -163,7 +165,7 @@ async function submitAdd(): Promise<void> {
             Tambah Subtopik
           </UButton>
         </div>
-      </form>
+      </DsStack>
     </div>
   </UCard>
 </template>

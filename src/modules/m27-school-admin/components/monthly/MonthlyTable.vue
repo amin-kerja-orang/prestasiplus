@@ -8,7 +8,15 @@
 import type { TableColumn } from '@nuxt/ui'
 import { computed } from 'vue'
 
-import { DsDataTable, DsEmptyState, DsPanel, type CardField } from '@/ds'
+import {
+  DsDataTable,
+  DsEmptyState,
+  DsPanel,
+  type CardField,
+  DsStack,
+  DsHeading,
+  DsText,
+} from '@/ds'
 
 import type { MonthlyReport } from '../../api/school-admin'
 import { count, dec1, NO_DATA, pct1 } from './monthly-format'
@@ -64,14 +72,14 @@ const cardFields: CardField[] = [
 </script>
 
 <template>
-  <section class="flex min-w-0 flex-col gap-3" data-testid="lb-table-section">
+  <DsStack as="section" gap="sm" data-testid="lb-table-section">
     <div>
-      <h2 class="text-subheading text-highlighted" data-testid="lb-table-title">
+      <DsHeading :level="2" variant="subheading" data-testid="lb-table-title">
         Statistik Bulanan
-      </h2>
-      <p class="text-caption text-muted" data-testid="lb-table-subtitle">
+      </DsHeading>
+      <DsText variant="caption" data-testid="lb-table-subtitle">
         12 bulan terakhir — pecahan prestasi mengikut bulan
-      </p>
+      </DsText>
     </div>
     <DsPanel v-if="months.length === 0" data-testid="lb-table-empty">
       <DsEmptyState
@@ -90,5 +98,5 @@ const cardFields: CardField[] = [
       :page-size="rows.length"
       data-testid="lb-table"
     />
-  </section>
+  </DsStack>
 </template>

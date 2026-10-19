@@ -3,6 +3,7 @@
 import type { CcMood } from '../../api/command-center-types'
 import BoardPanel from './BoardPanel.vue'
 import { type DrillRequest, MOODS } from './copy'
+import { DsGrid, DsText } from '@/ds'
 
 defineProps<{ mood: CcMood }>()
 const emit = defineEmits<{ drill: [req: DrillRequest] }>()
@@ -10,7 +11,7 @@ const emit = defineEmits<{ drill: [req: DrillRequest] }>()
 
 <template>
   <BoardPanel icon="smiley" accent="friend" title="Mood Pelajar" testid="cc-panel-mood">
-    <ul class="grid grid-cols-2 gap-2">
+    <DsGrid :cols="2" gap="xs" as="ul">
       <li v-for="m in MOODS" :key="m.key" class="min-w-0">
         <UButton
           color="neutral"
@@ -21,12 +22,12 @@ const emit = defineEmits<{ drill: [req: DrillRequest] }>()
           :data-testid="`cc-mood-${m.key}`"
           @click="emit('drill', { type: 'mood', filter: m.key, label: 'Mood Pelajar' })"
         >
-          <span class="text-body">{{ m.label }}</span>
-          <span class="tabular text-label text-highlighted" data-testid="cc-mood-count">{{
+          <DsText variant="body" as="span">{{ m.label }}</DsText>
+          <DsText variant="label" tone="highlighted" tabular data-testid="cc-mood-count">{{
             mood[m.key]
-          }}</span>
+          }}</DsText>
         </UButton>
       </li>
-    </ul>
+    </DsGrid>
   </BoardPanel>
 </template>

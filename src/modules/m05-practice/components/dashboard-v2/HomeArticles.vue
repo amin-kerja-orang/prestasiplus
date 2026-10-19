@@ -3,6 +3,7 @@
 import { diffForHumans } from '@/lib/time'
 
 import type { DashboardArticle } from '../../api/types'
+import { DsCluster, DsStack, DsHeading, DsText } from '@/ds'
 
 defineProps<{ articles: DashboardArticle[] }>()
 
@@ -10,13 +11,9 @@ const when = (a: DashboardArticle): string => (a.publishedAt ? diffForHumans(a.p
 </script>
 
 <template>
-  <section
-    class="flex flex-col gap-3"
-    aria-labelledby="dash-articles-h"
-    data-testid="dash-articles"
-  >
-    <div class="flex items-center justify-between gap-3">
-      <h2 id="dash-articles-h" class="text-heading text-highlighted">📚 Artikel Untuk Kamu</h2>
+  <DsStack as="section" gap="sm" aria-labelledby="dash-articles-h" data-testid="dash-articles">
+    <DsCluster justify="between" :wrap="false">
+      <DsHeading id="dash-articles-h" :level="2">📚 Artikel Untuk Kamu</DsHeading>
       <UButton
         to="/artikel"
         color="neutral"
@@ -26,7 +23,7 @@ const when = (a: DashboardArticle): string => (a.publishedAt ? diffForHumans(a.p
         data-testid="dash-articles-all"
         >Lihat Semua</UButton
       >
-    </div>
+    </DsCluster>
     <ul class="flex gap-3 overflow-x-auto pb-2" data-testid="dash-articles-strip">
       <li v-for="a in articles" :key="a.slug" class="w-64 shrink-0">
         <UCard :ui="{ body: 'flex flex-col gap-2 p-4' }" data-testid="dash-article-card">
@@ -44,9 +41,9 @@ const when = (a: DashboardArticle): string => (a.publishedAt ? diffForHumans(a.p
             class="h-auto min-h-11 justify-start p-0 text-start text-subheading whitespace-normal text-highlighted"
             >{{ a.title }}</UButton
           >
-          <p class="text-caption text-muted">{{ when(a) }}</p>
+          <DsText variant="caption">{{ when(a) }}</DsText>
         </UCard>
       </li>
     </ul>
-  </section>
+  </DsStack>
 </template>

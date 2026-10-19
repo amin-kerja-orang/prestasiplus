@@ -7,7 +7,16 @@
 import { computed, ref, shallowRef } from 'vue'
 
 import { useApi, useFlash } from '@/composables'
-import { DsArt3D, DsPage, DsRewardChip, DsLoadError } from '@/ds'
+import {
+  DsArt3D,
+  DsPage,
+  DsRewardChip,
+  DsLoadError,
+  DsStack,
+  DsGrid,
+  DsHeading,
+  DsText,
+} from '@/ds'
 
 import {
   fetchMysteryBoxes,
@@ -65,24 +74,27 @@ async function open(boxId: number): Promise<void> {
 <template>
   <DsPage data-testid="m15-box-page">
     <UCard data-testid="box-hero">
-      <div class="flex flex-col items-center gap-3 text-center">
+      <DsStack gap="sm" align="center" class="text-center">
         <DsArt3D name="party" size="hero" float />
-        <h1 class="text-title text-highlighted" data-testid="box-title">{{ BOX_COPY.heading }}</h1>
-        <p class="text-body text-muted">{{ BOX_COPY.sub }}</p>
+        <DsHeading :level="1" data-testid="box-title">{{ BOX_COPY.heading }}</DsHeading>
+        <DsText variant="body" tone="muted">{{ BOX_COPY.sub }}</DsText>
         <p class="flex items-center gap-2" data-testid="box-chip">
-          <span class="text-label text-muted">{{ BOX_COPY.chip }}</span>
+          <DsText variant="label" tone="muted">{{ BOX_COPY.chip }}</DsText>
           <DsRewardChip :value="balance" art="bolt" data-testid="box-chip-value" />
         </p>
-      </div>
+      </DsStack>
     </UCard>
 
-    <DsLoadError v-if="view.error.value && !data" :message="COMMON_COPY.loadFailed" testid="m15-load-error" retry-testid="m15-retry" @retry="view.reload()" />
+    <DsLoadError
+      v-if="view.error.value && !data"
+      :message="COMMON_COPY.loadFailed"
+      testid="m15-load-error"
+      retry-testid="m15-retry"
+      @retry="view.reload()"
+    />
     <LoadSkeleton v-else-if="!data" testid="box-loading" />
     <template v-else>
-      <div
-        class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4"
-        data-testid="box-grid"
-      >
+      <DsGrid :cols="{ base: 1, sm: 2, xl: 4 }" data-testid="box-grid">
         <MysteryBoxCard
           v-for="b in boxes"
           :key="b.id"
@@ -91,22 +103,22 @@ async function open(boxId: number): Promise<void> {
           :busy="busy"
           @open="open"
         />
-      </div>
+      </DsGrid>
 
-      <section v-if="history.length > 0" class="flex flex-col gap-3" data-testid="box-history">
-        <h2 class="text-heading text-highlighted">{{ BOX_COPY.historyHeading }}</h2>
-        <ul class="flex flex-col gap-2">
+      <DsStack v-if="history.length > 0" as="section" gap="sm" data-testid="box-history">
+        <DsHeading :level="2">{{ BOX_COPY.historyHeading }}</DsHeading>
+        <DsStack as="ul" gap="xs">
           <li v-for="h in history" :key="h.id" data-testid="box-history-row">
             <UCard>
               <div class="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
-                <span class="text-label text-highlighted">Kotak Misteri: {{ h.boxName }}</span>
-                <span class="text-label text-primary-t">+{{ h.coins }} 🪙 · +{{ h.xp }} XP</span>
-                <span class="text-caption text-muted">{{ formatDayMonthTime(h.createdAt) }}</span>
+                <DsText variant="label" tone="highlighted">Kotak Misteri: {{ h.boxName }}</DsText>
+                <DsText variant="label" tone="primary">+{{ h.coins }} 🪙 · +{{ h.xp }} XP</DsText>
+                <DsText variant="caption" as="span">{{ formatDayMonthTime(h.createdAt) }}</DsText>
               </div>
             </UCard>
           </li>
-        </ul>
-      </section>
+        </DsStack>
+      </DsStack>
     </template>
 
     <MysteryResultModal :result="result" @close="result = null" />

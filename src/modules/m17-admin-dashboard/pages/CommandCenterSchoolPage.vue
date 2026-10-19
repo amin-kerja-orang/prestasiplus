@@ -8,7 +8,7 @@ import type { TableColumn } from '@nuxt/ui'
 import { computed } from 'vue'
 import { useRouter } from 'vue-router'
 
-import { DsDrillTable, DsLoadError, DsPanel, DsStatRow, type StatItem } from '@/ds'
+import { DsDrillTable, DsLoadError, DsPanel, DsStatRow, type StatItem, DsText } from '@/ds'
 
 import { fetchCcSchool } from '../api/command-center'
 import type { CcSchoolTeacher } from '../api/command-center-types'
@@ -41,15 +41,34 @@ const cards = computed<StatItem[]>(() => {
   const c = data.value?.cards
   if (!c) return []
   return [
-    { key: 'students', label: 'Jumlah Pelajar', value: count(c.students), icon: 'i-ph-student', accent: 'action' },
-    { key: 'active', label: 'Pelajar Aktif', value: count(c.active), icon: 'i-ph-users-three', accent: 'friend' },
+    {
+      key: 'students',
+      label: 'Jumlah Pelajar',
+      value: count(c.students),
+      icon: 'i-ph-student',
+      accent: 'action',
+    },
+    {
+      key: 'active',
+      label: 'Pelajar Aktif',
+      value: count(c.active),
+      icon: 'i-ph-users-three',
+      accent: 'friend',
+    },
     {
       key: 'answers',
       label: 'Jumlah Jawapan',
       value: count(c.answers),
-      icon: 'i-ph-clipboard-text', accent: 'trial',
+      icon: 'i-ph-clipboard-text',
+      accent: 'trial',
     },
-    { key: 'accuracy', label: 'Ketepatan', value: pct1(c.accuracy), icon: 'i-ph-target', accent: 'win' },
+    {
+      key: 'accuracy',
+      label: 'Ketepatan',
+      value: pct1(c.accuracy),
+      icon: 'i-ph-target',
+      accent: 'win',
+    },
   ]
 })
 const columns: TableColumn<Row>[] = [
@@ -82,7 +101,13 @@ function open(userId: number) {
       <UProgress class="w-16" aria-hidden="true" />Memuatkan...
     </p>
     <template v-else>
-      <DsStatRow :items="cards" prefix="cc-stat" :cols="4" density="roomy" data-testid="cc-school-cards" />
+      <DsStatRow
+        :items="cards"
+        prefix="cc-stat"
+        :cols="4"
+        density="roomy"
+        data-testid="cc-school-cards"
+      />
 
       <DsPanel icon="i-ph-chalkboard-teacher" :title="`Senarai Guru (${data.teachers.length})`">
         <div data-testid="cc-table-scroller">
@@ -94,7 +119,7 @@ function open(userId: number) {
             @drill="(t: Row) => open(t.userId)"
           >
             <template #no-cell="{ row }"
-              ><span class="tabular text-caption text-muted">{{ row.index + 1 }}</span></template
+              ><DsText variant="caption" as="span" tabular>{{ row.index + 1 }}</DsText></template
             >
             <template #name-cell="{ row }">
               <UButton

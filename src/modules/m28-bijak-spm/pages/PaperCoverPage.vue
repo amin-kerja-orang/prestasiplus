@@ -7,7 +7,7 @@
 import { computed, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 
-import { DsEmptyState, DsHeroCard } from '@/ds'
+import { DsEmptyState, DsHeroCard, DsStack, DsHeading } from '@/ds'
 import { useApi } from '@/composables/useApi'
 
 import RichText from '../components/RichText.vue'
@@ -81,10 +81,10 @@ async function begin(restart: boolean): Promise<void> {
       description="Kertas ini tidak tersedia atau bukan milik anda."
       icon="i-ph-file-x"
     />
-    <div v-else-if="!cover" class="flex flex-col gap-3" aria-busy="true">
+    <DsStack v-else-if="!cover" gap="sm" aria-busy="true">
       <USkeleton class="h-10 w-2/3" />
       <USkeleton class="h-32 w-full" />
-    </div>
+    </DsStack>
 
     <template v-else>
       <h1 class="sr-only" data-testid="cover-title">{{ cover.title }}</h1>
@@ -126,8 +126,8 @@ async function begin(restart: boolean): Promise<void> {
         </template>
       </UAlert>
 
-      <section class="flex flex-col gap-2" aria-labelledby="h-arahan">
-        <h2 id="h-arahan" class="text-heading text-highlighted">Arahan</h2>
+      <DsStack as="section" gap="xs" aria-labelledby="h-arahan">
+        <DsHeading id="h-arahan" :level="2">Arahan</DsHeading>
         <ol class="flex flex-col gap-1 text-body text-default" data-testid="instructions">
           <li v-for="(line, i) in cover.instructions" :key="i">{{ i + 1 }}. {{ line }}</li>
         </ol>
@@ -137,12 +137,13 @@ async function begin(restart: boolean): Promise<void> {
             {{ s.instruction }}<template v-if="s.compulsory"> (wajib)</template>
           </li>
         </ul>
-      </section>
+      </DsStack>
 
-      <section
+      <DsStack
         v-for="r in cover.reference"
         :key="r.title"
-        class="flex flex-col gap-2"
+        as="section"
+        gap="xs"
         data-testid="reference"
       >
         <UCollapsible :default-open="true">
@@ -160,10 +161,10 @@ async function begin(restart: boolean): Promise<void> {
             </ul>
           </template>
         </UCollapsible>
-      </section>
+      </DsStack>
 
-      <section v-if="!needsChoice" class="flex flex-col gap-3" aria-labelledby="h-mod">
-        <h2 id="h-mod" class="text-heading text-highlighted">Pilih mod</h2>
+      <DsStack v-if="!needsChoice" as="section" gap="sm" aria-labelledby="h-mod">
+        <DsHeading id="h-mod" :level="2">Pilih mod</DsHeading>
         <URadioGroup
           v-model="mode"
           :items="modeItems"
@@ -172,7 +173,7 @@ async function begin(restart: boolean): Promise<void> {
           data-testid="mode-choice"
         />
         <UAlert v-if="failure" color="error" variant="soft" :title="failure" role="alert" />
-      </section>
+      </DsStack>
     </template>
 
     <UModal

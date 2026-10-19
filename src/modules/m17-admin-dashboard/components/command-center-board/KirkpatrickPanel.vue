@@ -10,6 +10,7 @@ import { formatCount, formatNumber } from '@/lib/number'
 import { ccKirkpatrickBars, ccStars, type CcLiveData } from '../../api/command-center-board'
 import { S2_COPY } from './board-copy'
 import BoardPanel from './BoardPanel.vue'
+import { DsStack, DsText } from '@/ds'
 
 const props = defineProps<{ data: CcLiveData | null }>()
 
@@ -48,15 +49,15 @@ const rows = computed(() => {
 
 <template>
   <BoardPanel icon="i-ph-flask" title="Kirkpatrick" testid="cc-panel-kirkpatrick">
-    <p v-if="!data" class="text-body text-muted">{{ S2_COPY.loading }}</p>
-    <ul v-else class="flex flex-col gap-3">
+    <DsText v-if="!data" variant="body" tone="muted">{{ S2_COPY.loading }}</DsText>
+    <DsStack v-else as="ul" gap="sm">
       <li
         v-for="r in rows"
         :key="r.id"
         class="flex flex-wrap items-center gap-x-3 gap-y-1"
         :data-testid="`cc-kirk-${r.id}`"
       >
-        <span class="w-8 shrink-0 text-label text-primary-t">{{ r.label }}</span>
+        <DsText variant="label" tone="primary" class="w-8 shrink-0">{{ r.label }}</DsText>
         <UProgress
           class="min-w-24 flex-1"
           :model-value="r.width"
@@ -64,10 +65,17 @@ const rows = computed(() => {
           aria-hidden="true"
           data-testid="cc-kirk-bar"
         />
-        <span class="tabular shrink-0 text-end text-body text-toned" data-testid="cc-kirk-text">{{
-          r.text
-        }}</span>
+        <DsText
+          variant="body"
+          as="span"
+          tone="toned"
+          align="end"
+          tabular
+          class="shrink-0"
+          data-testid="cc-kirk-text"
+          >{{ r.text }}</DsText
+        >
       </li>
-    </ul>
+    </DsStack>
   </BoardPanel>
 </template>

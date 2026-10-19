@@ -10,7 +10,15 @@ import { useRoute, useRouter } from 'vue-router'
 
 import { useClickOutside } from '@/composables'
 import { usePageMeta } from '@/composables/usePageMeta'
-import { DsBackLink, DsLoadError, DsPage, DsPageHeader, DsPanel, DsStatusBadge } from '@/ds'
+import {
+  DsBackLink,
+  DsLoadError,
+  DsPage,
+  DsPageHeader,
+  DsPanel,
+  DsStatusBadge,
+  DsCluster,
+} from '@/ds'
 import { saveBlob } from '@/lib/save-blob'
 
 import {
@@ -58,9 +66,7 @@ useClickOutside(keyInRoot, () => (keyInOpen.value = false), { enabled: keyInOpen
 
 const subtitle = computed(() => {
   const c = data.value?.config
-  return c
-    ? `${c.className} · ${c.levelName} · ${String(c.year)} · Guru: ${c.teacherName}`
-    : ''
+  return c ? `${c.className} · ${c.levelName} · ${String(c.year)} · Guru: ${c.teacherName}` : ''
 })
 
 const chips = computed(() => {
@@ -127,10 +133,19 @@ const exportHref = computed(
 
 <template>
   <DsPage data-testid="headcount-table-page">
-    <DsLoadError v-if="isLoadError(error)" :message="LOAD_ERROR" testid="page-error" @retry="reload()" />
+    <DsLoadError
+      v-if="isLoadError(error)"
+      :message="LOAD_ERROR"
+      testid="page-error"
+      @retry="reload()"
+    />
 
     <template v-else-if="data">
-      <DsPageHeader :title="data.config.subject" :subtitle="subtitle" subtitle-testid="table-subtitle">
+      <DsPageHeader
+        :title="data.config.subject"
+        :subtitle="subtitle"
+        subtitle-testid="table-subtitle"
+      >
         <template #breadcrumb>
           <DsBackLink to="/headcount" label="Kembali" data-testid="back-link" />
         </template>
@@ -139,7 +154,7 @@ const exportHref = computed(
         </template>
       </DsPageHeader>
 
-      <div v-if="chips" class="flex flex-wrap gap-2" data-testid="chips">
+      <DsCluster v-if="chips" gap="xs" align="stretch" data-testid="chips">
         <UBadge
           color="success"
           variant="subtle"
@@ -172,9 +187,9 @@ const exportHref = computed(
           :label="chips.total"
           data-testid="chip-total"
         />
-      </div>
+      </DsCluster>
 
-      <div class="flex flex-wrap items-start gap-2" data-testid="actions">
+      <DsCluster gap="xs" align="start" data-testid="actions">
         <div ref="keyInRoot" class="flex flex-col gap-2">
           <UButton
             type="button"
@@ -187,7 +202,7 @@ const exportHref = computed(
             @click="keyInOpen = !keyInOpen"
           />
           <DsPanel v-if="keyInOpen" data-testid="key-in-menu">
-            <ul class="flex flex-wrap gap-2">
+            <DsCluster as="ul" gap="xs" align="stretch">
               <li v-for="n in data.config.activeOtrs" :key="n">
                 <UButton
                   :to="`/headcount/${String(id)}/results/${String(n)}`"
@@ -198,7 +213,7 @@ const exportHref = computed(
                   :data-testid="`key-in-${String(n)}`"
                 />
               </li>
-            </ul>
+            </DsCluster>
           </DsPanel>
         </div>
         <UButton
@@ -267,7 +282,7 @@ const exportHref = computed(
           data-testid="action-delete"
           @click="deleteOpen = true"
         />
-      </div>
+      </DsCluster>
 
       <UAlert
         v-if="actionError"
@@ -279,7 +294,7 @@ const exportHref = computed(
         data-testid="action-error"
       />
 
-      <div class="flex flex-wrap items-center gap-2" data-testid="sort-links">
+      <DsCluster gap="xs" data-testid="sort-links">
         <span class="inline-flex items-center gap-1 text-label text-muted"
           ><UIcon name="i-ph-arrows-down-up" class="size-5" />Susun:</span
         >
@@ -303,17 +318,17 @@ const exportHref = computed(
           label="A-Z"
           data-testid="sort-name"
         />
-      </div>
+      </DsCluster>
 
       <DsPanel v-if="selected.length > 0" data-testid="selection-bar">
-        <div class="flex flex-wrap items-center gap-3">
+        <DsCluster>
           <span class="inline-flex items-center gap-2 text-label text-highlighted">
             <UIcon name="i-ph-check-square" class="size-5" /><span data-testid="selection-count">{{
               selected.length
             }}</span>
             murid dipilih
           </span>
-          <div class="flex flex-wrap gap-2">
+          <DsCluster gap="xs" align="stretch">
             <UButton
               type="button"
               size="lg"
@@ -346,8 +361,8 @@ const exportHref = computed(
               data-testid="selection-cancel"
               @click="selected = []"
             />
-          </div>
-        </div>
+          </DsCluster>
+        </DsCluster>
       </DsPanel>
 
       <div data-testid="table-card">
@@ -365,7 +380,12 @@ const exportHref = computed(
         @confirm-delete="confirmDelete"
       />
     </template>
-    <div v-else-if="!error" class="flex flex-col gap-4 md:gap-6" aria-busy="true" data-testid="page-loading">
+    <div
+      v-else-if="!error"
+      class="flex flex-col gap-4 md:gap-6"
+      aria-busy="true"
+      data-testid="page-loading"
+    >
       <USkeleton class="h-24 w-full" />
       <USkeleton class="h-64 w-full" />
     </div>

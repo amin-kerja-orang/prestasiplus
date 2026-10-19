@@ -10,6 +10,7 @@ import { computed, reactive } from 'vue'
 
 import { actOnMasterNote, type MasterNoteAction, type MasterNoteRow } from '../api/master-notes'
 import { cutText } from '../lib/audit-format'
+import { DsText } from '@/ds'
 
 const props = defineProps<{ note: MasterNoteRow }>()
 
@@ -74,13 +75,13 @@ async function run(action: MasterNoteAction): Promise<void> {
           data-testid="note-conf"
         />
       </p>
-      <p class="text-body break-words text-muted" data-testid="note-question">
+      <DsText variant="body" tone="muted" wrap="anywhere" data-testid="note-question">
         <strong>Soalan:</strong> {{ cutText(note.questionText, 200) }}
-      </p>
+      </DsText>
       <UCard variant="subtle">
-        <p class="text-body break-words text-default" data-testid="note-text">
+        <DsText variant="body" wrap="anywhere" data-testid="note-text">
           {{ note.noteText }}
-        </p>
+        </DsText>
       </UCard>
       <UAlert color="warning" variant="subtle" icon="i-ph-warning" data-testid="note-trap">
         <template #description>

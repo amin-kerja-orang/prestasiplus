@@ -28,6 +28,7 @@ import {
   DsNativeSelect,
   DsPage,
   DsPanel,
+  DsStack,
 } from '@/ds'
 
 import {
@@ -238,15 +239,16 @@ async function submit(): Promise<void> {
     />
 
     <DsPanel v-else-if="!ready" data-testid="pksk-form-skeleton">
-      <div class="flex flex-col gap-6">
+      <DsStack gap="lg">
         <USkeleton v-for="n in 4" :key="n" class="h-11 w-full" />
-      </div>
+      </DsStack>
     </DsPanel>
 
-    <form
+    <DsStack
       v-else
       method="post"
-      class="flex min-w-0 flex-col gap-6"
+      as="form"
+      gap="lg"
       data-testid="pksk-question-form"
       @submit.prevent="submit"
     >
@@ -264,12 +266,7 @@ async function submit(): Promise<void> {
       </UAlert>
 
       <!-- Card 1: Bahagian & Domain (S6) / Domain, Sasaran, Status (S7). -->
-      <DsFormSection
-        title="Bahagian & Domain"
-        icon="squares-four"
-        accent="friend"
-        :columns="2"
-      >
+      <DsFormSection title="Bahagian & Domain" icon="squares-four" accent="friend" :columns="2">
         <DsFormField
           v-if="!editing"
           native
@@ -461,6 +458,6 @@ async function submit(): Promise<void> {
         :submit-label="editing ? 'Kemaskini' : 'Simpan Soalan'"
         :saving="saving"
       />
-    </form>
+    </DsStack>
   </DsPage>
 </template>

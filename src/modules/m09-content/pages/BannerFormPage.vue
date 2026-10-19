@@ -25,6 +25,9 @@ import {
   DsNativeSelect,
   DsPage,
   DsPanel,
+  DsStack,
+  DsGrid,
+  DsText,
 } from '@/ds'
 
 import { createBanner, fetchAdminBanner, updateBanner } from '../api/admin-media'
@@ -173,15 +176,16 @@ async function submit(): Promise<void> {
     />
 
     <DsPanel v-else-if="!ready" data-testid="banner-form-skeleton">
-      <div class="flex flex-col gap-6">
+      <DsStack gap="lg">
         <USkeleton v-for="n in 4" :key="n" class="h-11 w-full" />
-      </div>
+      </DsStack>
     </DsPanel>
 
-    <form
+    <DsStack
       v-else
       method="post"
-      class="flex min-w-0 flex-col gap-6"
+      as="form"
+      gap="lg"
       data-testid="banner-form"
       @submit.prevent="submit"
     >
@@ -199,7 +203,7 @@ async function submit(): Promise<void> {
       </UAlert>
 
       <DsFormSection title="Maklumat Banner" icon="i-ph-image" accent="action">
-        <div class="grid grid-cols-1 gap-6 lg:grid-cols-3">
+        <DsGrid :cols="{ base: 1, lg: 3 }" gap="lg">
           <div class="flex min-w-0 flex-col gap-6 lg:col-span-2">
             <DsFormField
               native
@@ -262,8 +266,8 @@ async function submit(): Promise<void> {
             </DsFormField>
           </div>
 
-          <div class="flex min-w-0 flex-col gap-2">
-            <span class="text-label text-default">Pratonton</span>
+          <DsStack gap="xs">
+            <DsText variant="label">Pratonton</DsText>
             <DsArt3D
               v-if="previewUrl"
               variant="plain"
@@ -279,12 +283,12 @@ async function submit(): Promise<void> {
             >
               <UIcon name="i-ph-image" class="size-10" />
             </div>
-          </div>
-        </div>
+          </DsStack>
+        </DsGrid>
       </DsFormSection>
 
       <DsFormSection title="Pautan & Sasaran" icon="link" accent="friend">
-        <div class="grid grid-cols-1 gap-6 md:grid-cols-2">
+        <DsGrid :cols="{ base: 1, md: 2 }" gap="lg">
           <DsFormField
             native
             for="banner-type"
@@ -352,7 +356,7 @@ async function submit(): Promise<void> {
                 </option>
               </DsNativeSelect>
             </DsFormField>
-            <div v-show="showExternal" class="flex flex-col gap-2">
+            <DsStack v-show="showExternal" gap="xs">
               <UInput
                 v-model="form.externalUrl"
                 type="url"
@@ -364,16 +368,16 @@ async function submit(): Promise<void> {
                 :color="invalid('externalUrl') ? 'error' : undefined"
                 data-testid="banner-external-url"
               />
-              <p v-if="showExternal && errors.externalUrl" class="text-caption text-error">
+              <DsText v-if="showExternal && errors.externalUrl" variant="caption" tone="error">
                 {{ errors.externalUrl }}
-              </p>
-            </div>
+              </DsText>
+            </DsStack>
           </div>
-        </div>
+        </DsGrid>
       </DsFormSection>
 
       <DsFormSection title="Jadual & Status" icon="i-ph-calendar-check" accent="heat">
-        <div class="grid grid-cols-1 gap-6 md:grid-cols-3">
+        <DsGrid :cols="{ base: 1, md: 3 }" gap="lg">
           <DsFormField
             native
             for="banner-order"
@@ -419,7 +423,7 @@ async function submit(): Promise<void> {
               data-testid="banner-end"
             />
           </DsFormField>
-        </div>
+        </DsGrid>
 
         <USwitch
           v-model="form.isActive"
@@ -436,6 +440,6 @@ async function submit(): Promise<void> {
         :submit-label="editing ? 'Kemaskini Banner' : 'Simpan Banner'"
         :saving="saving"
       />
-    </form>
+    </DsStack>
   </DsPage>
 </template>

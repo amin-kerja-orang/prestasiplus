@@ -9,7 +9,15 @@ import { computed, ref } from 'vue'
 import { useRouter } from 'vue-router'
 
 import { alertNative } from '@/composables'
-import { DsFormBar, DsFormField, DsFormSection, DsNativeSelect, DsPage } from '@/ds'
+import {
+  DsFormBar,
+  DsFormField,
+  DsFormSection,
+  DsNativeSelect,
+  DsPage,
+  DsStack,
+  DsText,
+} from '@/ds'
 
 import { RUBRICS } from '../api'
 import { PENDING_ESSAY_KEY } from '../components/chat/chat-lib'
@@ -68,7 +76,7 @@ function submitToChat(): void {
       {{ C.intro }} Klik <strong>{{ C.introBold }}</strong> {{ C.introAfter }}
     </template>
 
-    <form id="essay-form" class="flex flex-col gap-6" @submit.prevent>
+    <DsStack id="essay-form" as="form" gap="lg" @submit.prevent>
       <DsFormSection
         title="Maklumat Karangan"
         description="Rubric, subjek, tahap, nama pelajar dan tajuk."
@@ -128,7 +136,7 @@ function submitToChat(): void {
               :placeholder="C.essayPh"
               class="w-full"
             />
-            <p id="word-counter" class="text-caption text-muted">{{ words }} perkataan</p>
+            <DsText id="word-counter" variant="caption">{{ words }} perkataan</DsText>
           </template>
         </DsFormField>
       </DsFormSection>
@@ -151,6 +159,6 @@ function submitToChat(): void {
           />
         </template>
       </DsFormBar>
-    </form>
+    </DsStack>
   </DsPage>
 </template>

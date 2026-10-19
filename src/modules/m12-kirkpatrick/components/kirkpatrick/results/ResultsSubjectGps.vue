@@ -7,7 +7,7 @@
 import { computed, ref } from 'vue'
 import type { TableColumn } from '@nuxt/ui'
 
-import { DsDataTable, DsPanel } from '@/ds'
+import { DsDataTable, DsPanel, DsText } from '@/ds'
 
 import { gps } from '../common/kirkpatrick-format'
 import type { ResultsSubjectGps } from './results-types'
@@ -77,17 +77,17 @@ const pageSize = ref(20)
       :card-fields="cardFields"
     >
       <template #name-cell="{ row }">
-        <span class="text-label text-highlighted" data-testid="cell-subject">{{
+        <DsText variant="label" tone="highlighted" data-testid="cell-subject">{{
           row.original.name
-        }}</span>
+        }}</DsText>
       </template>
       <template #gpsText-cell="{ row }">
-        <span class="text-label text-highlighted" data-testid="cell-gps">{{
+        <DsText variant="label" tone="highlighted" data-testid="cell-gps">{{
           row.original.gpsText
-        }}</span>
+        }}</DsText>
       </template>
       <template #grade-cell="{ row }">
-        <span class="text-label" data-testid="cell-grade">{{ row.original.grade }}</span>
+        <DsText variant="label" data-testid="cell-grade">{{ row.original.grade }}</DsText>
       </template>
       <template #candidates-cell="{ row }">
         <span data-testid="cell-candidates">{{ row.original.candidates }}</span>

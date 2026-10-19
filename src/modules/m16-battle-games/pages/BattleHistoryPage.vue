@@ -5,7 +5,7 @@
  * battles newest first in the S4 "Battle Terkini" row format.
  */
 import { useApi } from '@/composables'
-import { DsEmptyState, DsPage, DsLoadError } from '@/ds'
+import { DsEmptyState, DsPage, DsLoadError, DsStack } from '@/ds'
 
 import { fetchBattleHistory } from '../api'
 import BattleRecentList from '../components/battle/BattleRecentList.vue'
@@ -21,9 +21,9 @@ const { data, error, reload } = useApi((signal) => fetchBattleHistory({ signal }
       testid="battle-load-error"
       @retry="reload()"
     />
-    <div v-else-if="!data" class="flex flex-col gap-2" aria-busy="true">
+    <DsStack v-else-if="!data" gap="xs" aria-busy="true">
       <USkeleton v-for="n in 3" :key="n" class="h-14 w-full" />
-    </div>
+    </DsStack>
     <DsEmptyState
       v-else-if="data.length === 0"
       title="Tiada sejarah battle"
@@ -32,16 +32,16 @@ const { data, error, reload } = useApi((signal) => fetchBattleHistory({ signal }
       data-testid="battle-history-empty"
     >
       <template #actions>
-      <UButton
-        to="/battle"
-        size="xl"
-        color="primary"
-        icon="i-ph-lightning-bold"
-        class="min-h-12"
-        data-testid="battle-history-start"
-      >
-        Mula Battle
-      </UButton>
+        <UButton
+          to="/battle"
+          size="xl"
+          color="primary"
+          icon="i-ph-lightning-bold"
+          class="min-h-12"
+          data-testid="battle-history-start"
+        >
+          Mula Battle
+        </UButton>
       </template>
     </DsEmptyState>
     <UCard v-else>

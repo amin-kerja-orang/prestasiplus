@@ -2,7 +2,7 @@
 /** S4 "Mengikut Tajuk" (FN-M11-4.2.5; FR-M11-66): topics grouped by subject with a Kuat / Sederhana / Lemah badge. */
 import type { TableColumn } from '@nuxt/ui'
 
-import { DsDrillTable } from '@/ds'
+import { DsDrillTable, DsStack, DsHeading, DsText } from '@/ds'
 
 import type { StudentDetail, TopicBadge } from '../../api/types'
 import { ACCURACY_TEXT, TOPIC_COLOR, accuracyBand, count, pct1 } from './monitoring-format'
@@ -27,22 +27,21 @@ const rowsOf = (g: StudentDetail['topics'][number]): Row[] => g.rows.map((r) => 
 
 <template>
   <UCard data-testid="mon-panel-topic">
-    <div class="flex flex-col gap-4">
+    <DsStack>
       <h2 class="flex items-center gap-2 text-label text-highlighted">
         <UIcon name="i-ph-stack" class="size-5 text-primary-t" />Mengikut Tajuk
       </h2>
-      <div
-        v-for="g in topics"
-        :key="g.subjectId"
-        class="flex flex-col gap-1"
-        data-testid="mon-topic-group"
-      >
-        <h3 class="text-overline text-primary-t">{{ g.subjectName }}</h3>
+      <DsStack v-for="g in topics" :key="g.subjectId" gap="2xs" data-testid="mon-topic-group">
+        <DsHeading :level="3" variant="overline" tone="primary">{{ g.subjectName }}</DsHeading>
         <DsDrillTable :data="rowsOf(g)" :columns="columns" :caption="g.subjectName">
           <template #bab-cell="{ row }">
-            <span class="text-caption whitespace-nowrap text-muted" data-testid="mon-topic-row">{{
-              row.original.bab === null ? '' : `Bab ${String(row.original.bab)}`
-            }}</span>
+            <DsText
+              variant="caption"
+              as="span"
+              class="whitespace-nowrap"
+              data-testid="mon-topic-row"
+              >{{ row.original.bab === null ? '' : `Bab ${String(row.original.bab)}` }}</DsText
+            >
           </template>
           <template #pct-cell="{ row }">
             <span
@@ -54,8 +53,8 @@ const rowsOf = (g: StudentDetail['topics'][number]): Row[] => g.rows.map((r) => 
             >
           </template>
           <template #score-cell="{ row }">
-            <span class="tabular text-caption whitespace-nowrap text-muted"
-              >{{ count(row.original.correct) }}/{{ count(row.original.total) }}</span
+            <DsText variant="caption" as="span" tabular class="whitespace-nowrap"
+              >{{ count(row.original.correct) }}/{{ count(row.original.total) }}</DsText
             >
           </template>
           <template #badge-cell="{ row }">
@@ -66,7 +65,7 @@ const rowsOf = (g: StudentDetail['topics'][number]): Row[] => g.rows.map((r) => 
             />
           </template>
         </DsDrillTable>
-      </div>
-    </div>
+      </DsStack>
+    </DsStack>
   </UCard>
 </template>

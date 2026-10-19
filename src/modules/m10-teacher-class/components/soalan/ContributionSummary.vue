@@ -6,7 +6,7 @@
  */
 import { computed } from 'vue'
 
-import { DsPanel, DsStatRow, type StatItem } from '@/ds'
+import { DsPanel, DsStatRow, type StatItem, DsStack, DsCluster } from '@/ds'
 import { formatCount } from '@/lib/number'
 
 import type { Contributions } from '../../api/types'
@@ -29,10 +29,34 @@ const tierIcon = (icon: string): string =>
 
 /** The four stat tiles, each with its own categorical accent. */
 const stats = computed<StatItem[]>(() => [
-  { key: 'total', label: '📝 Jumlah', value: props.summary.stats.total, icon: 'note-pencil', accent: 'action' },
-  { key: 'approved', label: '✅ Diluluskan', value: props.summary.stats.approved, icon: 'check-circle', accent: 'win' },
-  { key: 'pending', label: '⏳ Menunggu', value: props.summary.stats.pending, icon: 'hourglass', accent: 'heat' },
-  { key: 'used', label: '📊 Digunakan', value: props.summary.stats.used, icon: 'chart-bar', accent: 'trial' },
+  {
+    key: 'total',
+    label: '📝 Jumlah',
+    value: props.summary.stats.total,
+    icon: 'note-pencil',
+    accent: 'action',
+  },
+  {
+    key: 'approved',
+    label: '✅ Diluluskan',
+    value: props.summary.stats.approved,
+    icon: 'check-circle',
+    accent: 'win',
+  },
+  {
+    key: 'pending',
+    label: '⏳ Menunggu',
+    value: props.summary.stats.pending,
+    icon: 'hourglass',
+    accent: 'heat',
+  },
+  {
+    key: 'used',
+    label: '📊 Digunakan',
+    value: props.summary.stats.used,
+    icon: 'chart-bar',
+    accent: 'trial',
+  },
 ])
 
 /** FR-M10-93: all chips by count descending ("Lain" takes its count position, stable for ties). */
@@ -40,7 +64,7 @@ const chips = computed(() => [...props.summary.breakdown].sort((a, b) => b.count
 </script>
 
 <template>
-  <div class="flex min-w-0 flex-col gap-4" data-testid="contribution-summary">
+  <DsStack data-testid="contribution-summary">
     <DsStatRow :items="stats" prefix="stat" :cols="4" data-testid="stat-cards" />
 
     <UAlert
@@ -62,7 +86,7 @@ const chips = computed(() => [...props.summary.breakdown].sort((a, b) => b.count
         <UIcon name="i-ph-medal-duotone" class="size-5 text-primary-t" />
         Pencapaian Badge Penyumbang
       </h2>
-      <ul class="flex flex-wrap gap-2">
+      <DsCluster as="ul" gap="xs" align="stretch">
         <li
           v-for="tier in summary.tiers"
           :key="tier.name"
@@ -81,7 +105,7 @@ const chips = computed(() => [...props.summary.breakdown].sort((a, b) => b.count
             <span>({{ formatCount(tier.threshold) }})</span>
           </UBadge>
         </li>
-      </ul>
+      </DsCluster>
       <p v-if="summary.nextTier" class="mt-3 text-caption text-muted" data-testid="next-tier">
         Sasaran seterusnya: <strong class="text-highlighted">{{ summary.nextTier.name }}</strong> —
         {{ formatCount(summary.nextTier.threshold) }} soalan
@@ -93,13 +117,13 @@ const chips = computed(() => [...props.summary.breakdown].sort((a, b) => b.count
         <UIcon name="i-ph-chart-pie-duotone" class="size-5 text-primary-t" />
         Pecahan Subjek
       </h2>
-      <ul class="flex flex-wrap gap-2">
+      <DsCluster as="ul" gap="xs" align="stretch">
         <li v-for="row in chips" :key="row.label" data-testid="breakdown-chip">
           <UBadge color="neutral" variant="subtle" size="lg"
             >{{ row.label }} — {{ formatCount(row.count) }}</UBadge
           >
         </li>
-      </ul>
+      </DsCluster>
     </DsPanel>
-  </div>
+  </DsStack>
 </template>

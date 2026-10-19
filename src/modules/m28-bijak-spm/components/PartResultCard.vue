@@ -8,6 +8,7 @@ import { computed } from 'vue'
 
 import type { McqOption, PartResult, PartStatus } from '../domain/types'
 import RichText from './RichText.vue'
+import { DsCluster, DsStack, DsHeading, DsText } from '@/ds'
 
 const props = defineProps<{ result: PartResult; options?: McqOption[]; title?: string }>()
 
@@ -38,21 +39,21 @@ const steps = computed(() => (props.result.answer.steps ?? []).filter((s) => s.t
     :data-testid="`part-result-${result.partId}`"
     :data-status="result.status"
   >
-    <header class="flex flex-wrap items-center justify-between gap-2">
-      <h4 class="text-label text-highlighted">
+    <DsCluster as="header" gap="xs" justify="between">
+      <DsHeading :level="4">
         {{ title ?? (result.label ? `Bahagian ${result.label}` : 'Jawapan anda') }}
-      </h4>
-      <div class="flex items-center gap-2">
+      </DsHeading>
+      <DsCluster gap="xs" :wrap="false">
         <UBadge :color="status.color" variant="soft" size="md" data-testid="part-status">{{
           status.text
         }}</UBadge>
-        <span class="tabular text-label text-highlighted" data-testid="part-marks">
+        <DsText variant="label" tone="highlighted" tabular data-testid="part-marks">
           {{ result.awarded }} / {{ result.marks }}
-        </span>
-      </div>
-    </header>
+        </DsText>
+      </DsCluster>
+    </DsCluster>
 
-    <div v-if="options" class="text-body text-default">
+    <DsText v-if="options" variant="body" as="div">
       <p>
         Pilihan anda:
         <strong v-if="result.answer.choice">
@@ -67,14 +68,14 @@ const steps = computed(() => (props.result.answer.steps ?? []).filter((s) => s.t
           <RichText :text="optionText(result.scheme.correctOption)" />
         </strong>
       </p>
-    </div>
+    </DsText>
 
     <div v-else class="flex flex-col gap-1 text-body text-default">
       <template v-if="steps.length">
-        <p class="text-caption text-muted">Jalan kerja anda</p>
-        <ol class="flex flex-col gap-1">
+        <DsText variant="caption">Jalan kerja anda</DsText>
+        <DsStack as="ol" gap="2xs">
           <li v-for="(s, i) in steps" :key="i">{{ i + 1 }}. <RichText :text="s" math-only /></li>
-        </ol>
+        </DsStack>
       </template>
       <p v-if="result.answer.final?.trim()">
         Jawapan akhir:
@@ -85,25 +86,27 @@ const steps = computed(() => (props.result.answer.steps ?? []).filter((s) => s.t
         Pilihan anda: <strong>{{ result.answer.choice }}</strong>
       </p>
       <p v-if="result.answer.text?.trim()">{{ result.answer.text }}</p>
-      <p v-if="result.answer.photos?.length" class="text-caption text-muted">
+      <DsText v-if="result.answer.photos?.length" variant="caption">
         {{ result.answer.photos.length }} gambar jalan kerja dilampirkan (disimpan pada peranti
         ini).
-      </p>
+      </DsText>
       <p v-if="result.status === 'kosong'" class="text-muted">Tiada jawapan.</p>
     </div>
 
-    <p
+    <DsText
       v-if="result.status === 'belum_dimarkah'"
-      class="text-body text-info"
+      variant="body"
+      tone="info"
       role="status"
       data-testid="needs-review"
     >
       Belum dimarkah — perlu semakan. Markah di bawah ialah sementara; tiada markah sifar diberi
       secara automatik.
-    </p>
+    </DsText>
 
-    <ul
-      class="flex flex-col gap-2"
+    <DsStack
+      as="ul"
+      gap="xs"
       :aria-label="`Titik pemarkahan ${result.label}`.trim()"
       data-testid="points"
     >
@@ -125,17 +128,19 @@ const steps = computed(() => (props.result.answer.steps ?? []).filter((s) => s.t
           <UBadge color="neutral" variant="subtle" size="sm" class="me-2">{{ p.tag }}</UBadge>
           {{ p.label }}
           <span class="tabular text-muted"> [{{ p.awarded }}/{{ p.marks }}]</span>
-          <span class="block text-caption text-muted">{{ p.reason }}</span>
+          <DsText variant="caption" as="span" class="block">{{ p.reason }}</DsText>
         </span>
       </li>
-    </ul>
+    </DsStack>
 
-    <p v-if="result.ecf" class="text-caption text-info" data-testid="ecf-note">{{ result.ecf }}</p>
+    <DsText v-if="result.ecf" variant="caption" tone="info" data-testid="ecf-note">{{
+      result.ecf
+    }}</DsText>
 
     <div class="rounded-xl bg-elevated p-3 text-body text-default" data-testid="scheme">
-      <p class="text-label text-highlighted">
+      <DsText variant="label" as="p" tone="highlighted">
         Skema Pemarkahan · {{ result.scheme.marks }} markah
-      </p>
+      </DsText>
       <p v-if="result.scheme.explanation" class="mt-1">
         <RichText :text="result.scheme.explanation" />
       </p>
@@ -152,14 +157,14 @@ const steps = computed(() => (props.result.answer.steps ?? []).filter((s) => s.t
       </p>
       <div v-if="result.scheme.rubric" class="mt-1 flex flex-col gap-1" data-testid="scheme-rubric">
         <p>Kriteria: {{ result.scheme.rubric.criteria.join(', ') }}</p>
-        <ul class="flex flex-col gap-1">
+        <DsStack as="ul" gap="2xs">
           <li v-for="b in result.scheme.rubric.bands" :key="b.name">
             <strong>{{ b.name }}</strong> ({{ b.range[0] }}–{{ b.range[1] }}): {{ b.descriptor }}
           </li>
-        </ul>
-        <p v-for="n in result.scheme.rubric.notes ?? []" :key="n" class="text-caption text-muted">
+        </DsStack>
+        <DsText v-for="n in result.scheme.rubric.notes ?? []" :key="n" variant="caption">
           {{ n }}
-        </p>
+        </DsText>
       </div>
     </div>
   </section>

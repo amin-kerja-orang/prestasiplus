@@ -6,7 +6,7 @@
  */
 import { computed } from 'vue'
 
-import { DsEmptyState, usePersonality } from '@/ds'
+import { DsEmptyState, usePersonality, DsStack } from '@/ds'
 
 import {
   isPrototypeRole,
@@ -35,7 +35,7 @@ const home = computed(() => {
     data-page="prototype-unavailable"
     data-testid="prototype-unavailable"
   >
-    <div class="flex max-w-md flex-col items-center text-center">
+    <DsStack gap="none" align="center" class="max-w-md text-center">
       <DsEmptyState
         :title="SCOPE_PAGE_HEADING"
         :description="SCOPE_PAGE_MESSAGE"
@@ -51,6 +51,6 @@ const home = computed(() => {
           />
         </template>
       </DsEmptyState>
-    </div>
+    </DsStack>
   </main>
 </template>

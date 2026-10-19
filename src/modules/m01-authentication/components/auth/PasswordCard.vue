@@ -7,6 +7,7 @@ import { useThemeMode } from '@/theme/color-mode'
 
 import AuthBrandStrip from './AuthBrandStrip.vue'
 import AuthFooter from './AuthFooter.vue'
+import { DsHeading, DsText } from '@/ds'
 
 defineProps<{
   /** H1 text; the `icon` slot holds the large emoji or icon above it (🔑, 🔒, S5 id-card). */
@@ -32,10 +33,10 @@ useThemeMode('learner')
             >
               <slot name="icon" />
             </div>
-            <h1 class="text-heading text-highlighted" data-testid="password-heading">
+            <DsHeading :level="1" variant="heading" data-testid="password-heading">
               {{ heading }}
-            </h1>
-            <p class="text-label text-muted">{{ intro }}</p>
+            </DsHeading>
+            <DsText variant="label" as="p" tone="muted">{{ intro }}</DsText>
           </div>
           <slot />
         </UCard>

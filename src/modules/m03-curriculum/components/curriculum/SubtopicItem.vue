@@ -10,6 +10,7 @@ import { reactive } from 'vue'
 import type { CurriculumSubtopic } from '../../api/admin-curriculum'
 import { orNull } from '../../lib/curriculum-paths'
 import { useTreeActions } from '../../lib/tree-actions'
+import { DsCluster, DsStack } from '@/ds'
 
 const props = defineProps<{ subtopic: CurriculumSubtopic; editing: boolean }>()
 const emit = defineEmits<{ edit: []; cancel: [] }>()
@@ -29,7 +30,6 @@ async function save(): Promise<void> {
     learningObjective: orNull(form.learningObjective),
   })
 }
-
 </script>
 
 <template>
@@ -61,10 +61,11 @@ async function save(): Promise<void> {
       />
     </div>
 
-    <form
+    <DsStack
       v-show="editing"
       method="post"
-      class="flex flex-col gap-2"
+      as="form"
+      gap="xs"
       data-testid="subtopic-edit-form"
       @submit.prevent="save"
     >
@@ -96,8 +97,13 @@ async function save(): Promise<void> {
         class="w-full"
         data-testid="subtopic-edit-objective"
       />
-      <div class="flex gap-2">
-        <UButton type="submit" icon="i-ph-floppy-disk" class="min-h-11" data-testid="subtopic-edit-save">
+      <DsCluster gap="xs" align="stretch" :wrap="false">
+        <UButton
+          type="submit"
+          icon="i-ph-floppy-disk"
+          class="min-h-11"
+          data-testid="subtopic-edit-save"
+        >
           Simpan
         </UButton>
         <UButton
@@ -110,7 +116,7 @@ async function save(): Promise<void> {
         >
           Batal
         </UButton>
-      </div>
-    </form>
+      </DsCluster>
+    </DsStack>
   </div>
 </template>

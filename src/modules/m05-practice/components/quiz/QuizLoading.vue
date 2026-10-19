@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { DsHeading, DsText } from '@/ds'
+
 /** The loading card of the quiz (also shown while a chapter quiz looks up its level). Copy from the host. */
 defineProps<{ title: string; text: string }>()
 </script>
@@ -11,8 +13,8 @@ defineProps<{ title: string; text: string }>()
         class="size-12 animate-spin text-primary-t motion-reduce:animate-none"
         aria-hidden="true"
       />
-      <h1 class="text-heading text-highlighted">{{ title }}</h1>
-      <p class="text-body text-muted">{{ text }}</p>
+      <DsHeading :level="1" variant="heading">{{ title }}</DsHeading>
+      <DsText variant="body" tone="muted">{{ text }}</DsText>
     </div>
   </UCard>
 </template>

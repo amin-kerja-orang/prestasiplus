@@ -13,7 +13,7 @@
 import { computed, reactive, ref, watch } from 'vue'
 
 import { useApi } from '@/composables'
-import { DsLoadError, DsNativeSelect, DsPage, DsPanel } from '@/ds'
+import { DsLoadError, DsNativeSelect, DsPage, DsPanel, DsStack, DsCluster, DsText } from '@/ds'
 
 import { fetchSpmTargets, saveSpmTargets } from '../api/practice'
 import type { SpmGrade } from '../api/types'
@@ -111,7 +111,7 @@ async function save(): Promise<void> {
         >
       </template>
 
-      <ul class="flex flex-col gap-2">
+      <DsStack as="ul" gap="xs">
         <li v-for="r in rows" :key="r.id" class="min-w-0">
           <DsPanel
             tone="inset"
@@ -119,14 +119,23 @@ async function save(): Promise<void> {
             :data-testid="`target-row-${String(r.id)}`"
           >
             <div class="min-w-0 flex-1 sm:w-44 sm:flex-none">
-              <p class="text-label break-words text-highlighted" data-testid="target-name">
+              <DsText
+                variant="label"
+                as="p"
+                tone="highlighted"
+                wrap="anywhere"
+                data-testid="target-name"
+              >
                 {{ r.name }}
-              </p>
-              <p class="text-caption text-muted" data-testid="target-status">
+              </DsText>
+              <DsText variant="caption" data-testid="target-status">
                 {{ targetStatus(r) }}
-              </p>
+              </DsText>
             </div>
-            <div class="order-last basis-full sm:order-none sm:flex-1 sm:basis-auto" data-testid="target-track">
+            <div
+              class="order-last basis-full sm:order-none sm:flex-1 sm:basis-auto"
+              data-testid="target-track"
+            >
               <UProgress
                 v-if="r.band"
                 :model-value="targetBarWidth(r)"
@@ -155,7 +164,7 @@ async function save(): Promise<void> {
             />
           </DsPanel>
         </li>
-      </ul>
+      </DsStack>
     </DsPanel>
 
     <DsLoadError
@@ -167,11 +176,11 @@ async function save(): Promise<void> {
     />
 
     <DsPanel v-if="data" data-testid="targets-legend">
-      <div class="flex flex-wrap gap-2">
+      <DsCluster gap="xs" align="stretch">
         <UBadge color="success" variant="subtle">70%+ Ketepatan (On Track)</UBadge>
         <UBadge color="warning" variant="subtle">50-69% (Perlu Usaha)</UBadge>
         <UBadge color="error" variant="subtle">&lt;50% (Perlu Fokus)</UBadge>
-      </div>
+      </DsCluster>
       <p class="mt-3 flex items-start gap-2 text-caption text-primary-t sm:justify-end">
         <UIcon name="i-ph-lightbulb" class="mt-1 size-4 shrink-0" />
         Tip: Jawab lebih banyak soalan untuk ramalan gred yang lebih tepat

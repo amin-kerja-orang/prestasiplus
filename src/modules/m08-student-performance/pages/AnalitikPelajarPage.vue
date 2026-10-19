@@ -8,7 +8,17 @@
  */
 import { computed, ref } from 'vue'
 
-import { DsIconChip, DsLoadError, DsPage, DsPageHeader, DsPanel } from '@/ds'
+import {
+  DsIconChip,
+  DsLoadError,
+  DsPage,
+  DsPageHeader,
+  DsPanel,
+  DsStack,
+  DsGrid,
+  DsCluster,
+  DsText,
+} from '@/ds'
 
 import { fetchAnalytics } from '../api/performance'
 import SubjectPane from '../components/analitik/SubjectPane.vue'
@@ -70,12 +80,12 @@ function collapseLeave(el: Element, done: () => void): void {
     <DsLoadError v-if="loadFailed" :message="LOAD_ERROR" testid="page-error" @retry="reload()" />
 
     <template v-else-if="data">
-      <section class="flex min-w-0 flex-col gap-3" data-testid="top-weak">
+      <DsStack as="section" gap="sm" data-testid="top-weak">
         <h2 class="flex items-center gap-3 text-heading text-highlighted">
           <DsIconChip :icon="icon('warning')" accent="heat" />
           Topik Perlu Perhatian Utama ({{ data.topWeak.length }})
         </h2>
-        <div v-if="data.topWeak.length > 0" class="grid grid-cols-1 gap-3 md:grid-cols-2">
+        <DsGrid v-if="data.topWeak.length > 0" :cols="{ base: 1, md: 2 }" gap="sm">
           <WeakTopicCard
             v-for="sp in data.topWeak"
             :key="sp.spId"
@@ -84,15 +94,15 @@ function collapseLeave(el: Element, done: () => void): void {
             :level-id="data.userLevelId"
             :trend="trendOfCode(sp.subjectCode)"
           />
-        </div>
-      </section>
+        </DsGrid>
+      </DsStack>
 
       <DsPanel v-if="hasExtra" data-testid="more-weak">
-        <div class="flex flex-wrap items-center justify-between gap-3">
-          <p class="text-body text-default">
+        <DsCluster justify="between">
+          <DsText variant="body">
             Masih ada topik lemah lain untuk subjek ini.
             <strong data-testid="more-count">{{ extra }}</strong>
-          </p>
+          </DsText>
           <UButton
             type="button"
             color="neutral"
@@ -107,13 +117,14 @@ function collapseLeave(el: Element, done: () => void): void {
             data-testid="toggle-weak"
             @click="showAll = !showAll"
           />
-        </div>
+        </DsCluster>
       </DsPanel>
 
       <Transition :css="false" @enter="collapseEnter" @leave="collapseLeave">
-        <div
+        <DsGrid
           v-if="hasExtra && showAll && active"
-          class="grid grid-cols-1 gap-3 md:grid-cols-2"
+          :cols="{ base: 1, md: 2 }"
+          gap="sm"
           data-testid="all-weak"
         >
           <WeakTopicCard
@@ -123,7 +134,7 @@ function collapseLeave(el: Element, done: () => void): void {
             :max="100"
             :level-id="data.userLevelId"
           />
-        </div>
+        </DsGrid>
       </Transition>
 
       <template v-if="active">
@@ -147,7 +158,12 @@ function collapseLeave(el: Element, done: () => void): void {
         <SubjectPane :key="active.subjectId" :subject="active" />
       </template>
     </template>
-    <div v-else-if="!error" class="flex flex-col gap-4 md:gap-6" aria-busy="true" data-testid="page-loading">
+    <div
+      v-else-if="!error"
+      class="flex flex-col gap-4 md:gap-6"
+      aria-busy="true"
+      data-testid="page-loading"
+    >
       <USkeleton class="h-24 w-full" />
       <USkeleton class="h-64 w-full" />
     </div>

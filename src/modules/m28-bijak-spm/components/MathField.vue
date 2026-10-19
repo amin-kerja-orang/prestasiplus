@@ -10,6 +10,7 @@ import { computed, nextTick, ref, useId, watch } from 'vue'
 import { latexToFriendly, plainToLatex } from '../domain/math-expr'
 import MathKeyboard, { type KeyPress } from './MathKeyboard.vue'
 import RichText from './RichText.vue'
+import { DsCluster, DsText } from '@/ds'
 
 const props = withDefaults(
   defineProps<{
@@ -99,8 +100,8 @@ function toggleKeypad(): void {
 
 <template>
   <div ref="wrap" class="flex flex-col gap-2" data-testid="math-field">
-    <label v-if="!hideLabel" :for="id" class="text-label text-toned">{{ label }}</label>
-    <div class="flex items-center gap-2">
+    <DsText v-if="!hideLabel" :for="id" variant="label" as="label" tone="toned">{{ label }}</DsText>
+    <DsCluster gap="xs" :wrap="false">
       <UInput
         :id="id"
         :model-value="text"
@@ -140,7 +141,7 @@ function toggleKeypad(): void {
         :disabled="disabled"
         @click="emit('remove')"
       />
-    </div>
+    </DsCluster>
     <MathKeyboard
       v-if="keypad"
       label="Papan kekunci matematik"

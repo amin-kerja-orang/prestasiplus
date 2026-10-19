@@ -10,6 +10,7 @@ import { computed, onBeforeUnmount, ref } from 'vue'
 import { ARTIKEL_COPY, shareLinks } from '../../lib/artikel/artikel'
 import WhatsAppIcon from '../icons/WhatsAppIcon.vue'
 import ShareBrandIcon from './ShareBrandIcon.vue'
+import { DsCluster, DsStack, DsHeading, DsText } from '@/ds'
 
 const props = defineProps<{ title: string }>()
 
@@ -39,10 +40,12 @@ onBeforeUnmount(() => {
 
 <template>
   <UCard data-testid="artikel-share">
-    <div class="flex flex-col items-center gap-3 text-center">
-      <h2 class="text-subheading text-highlighted">{{ ARTIKEL_COPY.shareTitle }}</h2>
-      <p class="max-w-prose text-label text-muted">{{ ARTIKEL_COPY.shareBody }}</p>
-      <div class="flex flex-wrap items-center justify-center gap-3">
+    <DsStack gap="sm" align="center" class="text-center">
+      <DsHeading :level="2" variant="subheading">{{ ARTIKEL_COPY.shareTitle }}</DsHeading>
+      <DsText variant="label" as="p" tone="muted" class="max-w-prose">{{
+        ARTIKEL_COPY.shareBody
+      }}</DsText>
+      <DsCluster justify="center">
         <UButton
           :to="links.whatsapp"
           target="_blank"
@@ -84,10 +87,17 @@ onBeforeUnmount(() => {
           data-testid="share-copy"
           @click="copyLink"
         />
-      </div>
-      <p v-if="copied" class="text-label text-highlighted" role="status" data-testid="share-copied">
+      </DsCluster>
+      <DsText
+        v-if="copied"
+        variant="label"
+        as="p"
+        tone="highlighted"
+        role="status"
+        data-testid="share-copied"
+      >
         {{ ARTIKEL_COPY.copied }}
-      </p>
-    </div>
+      </DsText>
+    </DsStack>
   </UCard>
 </template>

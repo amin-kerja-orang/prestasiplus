@@ -8,7 +8,19 @@
 import { computed, ref } from 'vue'
 import { useRoute } from 'vue-router'
 
-import { DsBackLink, DsChart, DsLoadError, DsPage, DsPageHeader, DsPanel, DsStatRow } from '@/ds'
+import {
+  DsBackLink,
+  DsChart,
+  DsLoadError,
+  DsPage,
+  DsPageHeader,
+  DsPanel,
+  DsStatRow,
+  DsStack,
+  DsCluster,
+  DsHeading,
+  DsText,
+} from '@/ds'
 import { saveBlob } from '@/lib/save-blob'
 
 import { downloadHeadcountCsv, fetchHeadcountSummary } from '../api/headcount'
@@ -80,19 +92,28 @@ const series = computed(() => {
 
 <template>
   <DsPage data-testid="headcount-summary-page">
-    <DsLoadError v-if="isLoadError(error)" :message="LOAD_ERROR" testid="page-error" @retry="reload()" />
+    <DsLoadError
+      v-if="isLoadError(error)"
+      :message="LOAD_ERROR"
+      testid="page-error"
+      @retry="reload()"
+    />
 
     <template v-else-if="data">
       <DsPageHeader title="Ringkasan Kelas" :subtitle="subtitle" subtitle-testid="summary-subtitle">
         <template #breadcrumb>
-          <DsBackLink :to="`/headcount/${String(data.config.id)}`" label="Kembali" data-testid="back-link" />
+          <DsBackLink
+            :to="`/headcount/${String(data.config.id)}`"
+            label="Kembali"
+            data-testid="back-link"
+          />
         </template>
       </DsPageHeader>
 
       <DsStatRow :items="statItems(tiles)" data-testid="stat-cards" :cols="4" prefix="card" />
 
       <DsPanel data-testid="distribution">
-        <div class="flex flex-col gap-4">
+        <DsStack>
           <DsChart
             type="bar"
             title="Taburan Prestasi Per OTR"
@@ -100,14 +121,14 @@ const series = computed(() => {
             :labels="labels"
             :series="series"
           />
-          <ul class="flex flex-col gap-3">
+          <DsStack as="ul" gap="sm">
             <li
               v-for="o in data.otrs"
               :key="o.n"
               class="flex flex-wrap items-center gap-x-4 gap-y-1"
               :data-testid="`otr-${String(o.n)}`"
             >
-              <h3 class="text-label text-highlighted">OTR{{ o.n }}</h3>
+              <DsHeading :level="3" variant="label">OTR{{ o.n }}</DsHeading>
               <span class="inline-flex items-center gap-1 text-caption text-success"
                 ><UIcon name="i-ph-arrow-up" class="size-4" />Above: {{ o.above }}</span
               >
@@ -117,10 +138,10 @@ const series = computed(() => {
               <span class="inline-flex items-center gap-1 text-caption text-error"
                 ><UIcon name="i-ph-arrow-down" class="size-4" />Below: {{ o.below }}</span
               >
-              <span class="text-caption text-dimmed">N/A: {{ o.na }}</span>
+              <DsText variant="caption" as="span" tone="dimmed">N/A: {{ o.na }}</DsText>
             </li>
-          </ul>
-        </div>
+          </DsStack>
+        </DsStack>
       </DsPanel>
 
       <UAlert
@@ -133,7 +154,7 @@ const series = computed(() => {
         data-testid="action-error"
       />
 
-      <div class="flex flex-wrap gap-3">
+      <DsCluster align="stretch">
         <UButton
           :to="`/headcount/${String(data.config.id)}`"
           size="lg"
@@ -151,9 +172,14 @@ const series = computed(() => {
           data-testid="export-csv"
           @click.prevent="exportCsv"
         />
-      </div>
+      </DsCluster>
     </template>
-    <div v-else-if="!error" class="flex flex-col gap-4 md:gap-6" aria-busy="true" data-testid="page-loading">
+    <div
+      v-else-if="!error"
+      class="flex flex-col gap-4 md:gap-6"
+      aria-busy="true"
+      data-testid="page-loading"
+    >
       <USkeleton class="h-24 w-full" />
       <USkeleton class="h-64 w-full" />
     </div>

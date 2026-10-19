@@ -15,7 +15,7 @@ import { useRoute, useRouter } from 'vue-router'
 import { isApiError } from '@/api'
 import { setRouteOutcome } from '@/app/router/outcome'
 import { useApi, usePageMeta, usePrototypeScope } from '@/composables'
-import { DsIconChip, DsLoadError } from '@/ds'
+import { DsIconChip, DsLoadError, DsCluster, DsStack, DsHeading, DsText } from '@/ds'
 import { formatCount } from '@/lib/number'
 
 import { fetchSubjectConfig } from '../api/practice'
@@ -113,7 +113,8 @@ const TIPS = [
 ] as const
 
 /** A choice card is a solid primary button when picked, a tonal one otherwise. */
-const pick = (on: boolean) => ({ color: on ? 'primary' : 'neutral', variant: on ? 'solid' : 'soft' }) as const
+const pick = (on: boolean) =>
+  ({ color: on ? 'primary' : 'neutral', variant: on ? 'solid' : 'soft' }) as const
 </script>
 
 <template>
@@ -145,31 +146,35 @@ const pick = (on: boolean) => ({ color: on ? 'primary' : 'neutral', variant: on 
       </UAlert>
 
       <UCard data-testid="config-hero">
-        <div class="flex items-center gap-4">
+        <DsCluster gap="md" :wrap="false">
           <DsIconChip
             :icon="subjectGlyph(config.subject.icon)"
             size="lg"
             data-testid="config-icon"
           />
-          <div class="flex min-w-0 flex-col gap-1">
-            <h1 class="text-title break-words text-highlighted" data-testid="config-name">
+          <DsStack gap="2xs">
+            <DsHeading :level="1" wrap="anywhere" data-testid="config-name">
               {{ config.subject.name }}
-            </h1>
-            <p class="text-body text-muted" data-testid="config-total">
+            </DsHeading>
+            <DsText variant="body" tone="muted" data-testid="config-total">
               <span class="tabular text-highlighted">{{ formatCount(config.total) }}</span>
               soalan tersedia
-            </p>
-          </div>
-        </div>
+            </DsText>
+          </DsStack>
+        </DsCluster>
       </UCard>
 
       <div class="grid grid-cols-1 gap-4 md:gap-6 lg:grid-cols-12">
         <div class="flex min-w-0 flex-col gap-4 md:gap-6 lg:col-span-8">
           <!-- Level -->
           <UCard data-testid="config-levels">
-            <div class="flex flex-col gap-3">
+            <DsStack gap="sm">
               <h2 class="flex items-center gap-2 text-subheading text-highlighted">
-                <UIcon name="i-ph-graduation-cap-duotone" class="size-6 text-primary-t" aria-hidden="true" />
+                <UIcon
+                  name="i-ph-graduation-cap-duotone"
+                  class="size-6 text-primary-t"
+                  aria-hidden="true"
+                />
                 Pilih Tahap Pendidikan
               </h2>
               <div class="grid grid-cols-2 gap-2 sm:grid-cols-3 sm:gap-3">
@@ -182,7 +187,7 @@ const pick = (on: boolean) => ({ color: on ? 'primary' : 'neutral', variant: on 
                   @click="selectedLevel = null"
                 >
                   <span class="flex min-w-0 flex-col">
-                    <span class="text-label">Semua Tahap</span>
+                    <DsText variant="label">Semua Tahap</DsText>
                     <span class="text-caption">{{ formatCount(config.total) }} soalan</span>
                   </span>
                 </UButton>
@@ -197,19 +202,23 @@ const pick = (on: boolean) => ({ color: on ? 'primary' : 'neutral', variant: on 
                   @click="selectedLevel = l.id"
                 >
                   <span class="flex min-w-0 flex-col">
-                    <span class="text-label">{{ l.name }}</span>
+                    <DsText variant="label">{{ l.name }}</DsText>
                     <span class="text-caption">{{ formatCount(l.count) }} soalan</span>
                   </span>
                 </UButton>
               </div>
-            </div>
+            </DsStack>
           </UCard>
 
           <!-- Difficulty -->
           <UCard data-testid="config-difficulties">
-            <div class="flex flex-col gap-3">
+            <DsStack gap="sm">
               <h2 class="flex items-center gap-2 text-subheading text-highlighted">
-                <UIcon name="i-ph-chart-bar-duotone" class="size-6 text-primary-t" aria-hidden="true" />
+                <UIcon
+                  name="i-ph-chart-bar-duotone"
+                  class="size-6 text-primary-t"
+                  aria-hidden="true"
+                />
                 Pilih Tahap Kesukaran
               </h2>
               <div class="grid grid-cols-2 gap-2 sm:gap-3">
@@ -222,12 +231,12 @@ const pick = (on: boolean) => ({ color: on ? 'primary' : 'neutral', variant: on 
                   @click="selectedDifficulty = null"
                 >
                   <span class="flex min-w-0 flex-col">
-                    <span class="text-label">Semua</span>
+                    <DsText variant="label">Semua</DsText>
                     <span class="text-caption">Campuran</span>
                   </span>
-                  <span class="tabular text-label" data-testid="difficulty-count">
+                  <DsText variant="label" tabular data-testid="difficulty-count">
                     {{ formatCount(currentTotal(config, selectedLevel)) }}
-                  </span>
+                  </DsText>
                 </UButton>
                 <UButton
                   v-for="d in DIFFICULTY_OPTIONS"
@@ -240,22 +249,26 @@ const pick = (on: boolean) => ({ color: on ? 'primary' : 'neutral', variant: on 
                   @click="selectedDifficulty = d.value"
                 >
                   <span class="flex min-w-0 flex-col">
-                    <span class="text-label">{{ d.label }}</span>
+                    <DsText variant="label">{{ d.label }}</DsText>
                     <span class="text-caption">Level {{ d.value }}</span>
                   </span>
-                  <span class="tabular text-label" data-testid="difficulty-count">
+                  <DsText variant="label" tabular data-testid="difficulty-count">
                     {{ formatCount(diffCount(config, selectedLevel, d.value)) }}
-                  </span>
+                  </DsText>
                 </UButton>
               </div>
-            </div>
+            </DsStack>
           </UCard>
 
           <!-- Count -->
           <UCard data-testid="config-counts">
-            <div class="flex flex-col gap-3">
+            <DsStack gap="sm">
               <h2 class="flex items-center gap-2 text-subheading text-highlighted">
-                <UIcon name="i-ph-list-numbers-duotone" class="size-6 text-primary-t" aria-hidden="true" />
+                <UIcon
+                  name="i-ph-list-numbers-duotone"
+                  class="size-6 text-primary-t"
+                  aria-hidden="true"
+                />
                 Bilangan Soalan
               </h2>
               <div class="grid grid-cols-4 gap-2 sm:gap-3">
@@ -269,47 +282,71 @@ const pick = (on: boolean) => ({ color: on ? 'primary' : 'neutral', variant: on 
                   :data-testid="`count-${n}`"
                   @click="questionCount = n"
                 >
-                  <span class="tabular text-heading">{{ n }}</span>
+                  <DsText variant="heading" as="span" tabular>{{ n }}</DsText>
                   <span class="text-caption">soalan</span>
                 </UButton>
               </div>
-            </div>
+            </DsStack>
           </UCard>
         </div>
 
         <!-- Summary and tips -->
         <div class="flex min-w-0 flex-col gap-4 md:gap-6 lg:col-span-4">
           <UCard data-testid="config-summary">
-            <div class="flex flex-col gap-4">
+            <DsStack>
               <h2 class="flex items-center gap-2 text-subheading text-highlighted">
                 <UIcon name="i-ph-info-duotone" class="size-6 text-primary-t" aria-hidden="true" />
                 Ringkasan
               </h2>
               <dl class="flex flex-col gap-2">
-                <div class="flex items-center justify-between gap-3">
-                  <dt class="text-label text-muted">Tahap Pendidikan:</dt>
-                  <dd class="text-end text-label text-highlighted" data-testid="summary-level">
+                <DsCluster justify="between" :wrap="false">
+                  <DsText variant="label" as="dt" tone="muted">Tahap Pendidikan:</DsText>
+                  <DsText
+                    variant="label"
+                    as="dd"
+                    tone="highlighted"
+                    align="end"
+                    data-testid="summary-level"
+                  >
                     {{ levelName(config, selectedLevel) }}
-                  </dd>
-                </div>
-                <div class="flex items-center justify-between gap-3">
-                  <dt class="text-label text-muted">Kesukaran:</dt>
-                  <dd class="text-end text-label text-highlighted" data-testid="summary-difficulty">
+                  </DsText>
+                </DsCluster>
+                <DsCluster justify="between" :wrap="false">
+                  <DsText variant="label" as="dt" tone="muted">Kesukaran:</DsText>
+                  <DsText
+                    variant="label"
+                    as="dd"
+                    tone="highlighted"
+                    align="end"
+                    data-testid="summary-difficulty"
+                  >
                     {{ selectedDifficulty ? DIFFICULTY_NAMES[selectedDifficulty] : 'Semua Tahap' }}
-                  </dd>
-                </div>
-                <div class="flex items-center justify-between gap-3">
-                  <dt class="text-label text-muted">Bilangan Soalan:</dt>
-                  <dd class="tabular text-label text-highlighted" data-testid="summary-count">
+                  </DsText>
+                </DsCluster>
+                <DsCluster justify="between" :wrap="false">
+                  <DsText variant="label" as="dt" tone="muted">Bilangan Soalan:</DsText>
+                  <DsText
+                    variant="label"
+                    as="dd"
+                    tone="highlighted"
+                    tabular
+                    data-testid="summary-count"
+                  >
                     {{ questionCount }}
-                  </dd>
-                </div>
-                <div class="flex items-center justify-between gap-3">
-                  <dt class="text-label text-muted">Soalan Tersedia:</dt>
-                  <dd class="tabular text-heading text-primary-t" data-testid="summary-available">
+                  </DsText>
+                </DsCluster>
+                <DsCluster justify="between" :wrap="false">
+                  <DsText variant="label" as="dt" tone="muted">Soalan Tersedia:</DsText>
+                  <DsText
+                    variant="heading"
+                    as="dd"
+                    tone="primary"
+                    tabular
+                    data-testid="summary-available"
+                  >
                     {{ formatCount(available) }}
-                  </dd>
-                </div>
+                  </DsText>
+                </DsCluster>
               </dl>
 
               <UAlert
@@ -358,22 +395,34 @@ const pick = (on: boolean) => ({ color: on ? 'primary' : 'neutral', variant: on 
                 <UIcon name="i-ph-check-circle-duotone" class="size-5" aria-hidden="true" />
                 <span>Bersedia untuk bermula!</span>
               </p>
-            </div>
+            </DsStack>
           </UCard>
 
           <UCard data-testid="config-tips">
-            <div class="flex flex-col gap-3">
+            <DsStack gap="sm">
               <h2 class="flex items-center gap-2 text-subheading text-highlighted">
-                <UIcon name="i-ph-lightbulb-duotone" class="size-6 text-warning" aria-hidden="true" />
+                <UIcon
+                  name="i-ph-lightbulb-duotone"
+                  class="size-6 text-warning"
+                  aria-hidden="true"
+                />
                 Tips
               </h2>
-              <ul class="flex flex-col gap-2">
-                <li v-for="tip in TIPS" :key="tip" class="flex items-start gap-3 text-body text-default">
-                  <UIcon name="i-ph-check-circle-duotone" class="mt-1 size-5 shrink-0 text-success" aria-hidden="true" />
+              <DsStack as="ul" gap="xs">
+                <li
+                  v-for="tip in TIPS"
+                  :key="tip"
+                  class="flex items-start gap-3 text-body text-default"
+                >
+                  <UIcon
+                    name="i-ph-check-circle-duotone"
+                    class="mt-1 size-5 shrink-0 text-success"
+                    aria-hidden="true"
+                  />
                   <span>{{ tip }}</span>
                 </li>
-              </ul>
-            </div>
+              </DsStack>
+            </DsStack>
           </UCard>
         </div>
       </div>

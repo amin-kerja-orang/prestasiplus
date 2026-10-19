@@ -7,7 +7,7 @@
 import { computed, ref } from 'vue'
 
 import { useApi } from '@/composables'
-import { DsStatRow } from '@/ds'
+import { DsStatRow, DsCluster, DsStack, DsText, DsHeading } from '@/ds'
 
 import { fetchCommandCenterAchievements } from '../../api/command-center'
 import CcDialog from './CcDialog.vue'
@@ -45,15 +45,20 @@ const collectors = computed<DrillRow[]>(() =>
     wide
     @close="$emit('close')"
   >
-    <p v-if="error" class="text-body text-error">Ralat: {{ error.message }}</p>
-    <p v-else-if="!data" class="text-body text-muted" data-testid="cc-modal-loading">
+    <DsText v-if="error" variant="body" tone="error">Ralat: {{ error.message }}</DsText>
+    <DsText v-else-if="!data" variant="body" tone="muted" data-testid="cc-modal-loading">
       Mengimbas pencapaian semua pelajar...
-    </p>
+    </DsText>
     <template v-else>
-      <DsStatRow :items="statItems(cards)" prefix="cc-modal-card" :cols="3" data-testid="cc-modal-cards" />
+      <DsStatRow
+        :items="statItems(cards)"
+        prefix="cc-modal-card"
+        :cols="3"
+        data-testid="cc-modal-cards"
+      />
 
-      <h4 class="text-subheading text-highlighted">Senarai Lencana</h4>
-      <ul class="flex flex-wrap gap-2" data-testid="cc-badge-chips">
+      <DsHeading :level="4" variant="subheading">Senarai Lencana</DsHeading>
+      <DsCluster as="ul" gap="xs" align="stretch" data-testid="cc-badge-chips">
         <li v-for="b in data.badgeStats" :key="b.id" class="max-w-full min-w-0">
           <UButton
             color="neutral"
@@ -63,17 +68,19 @@ const collectors = computed<DrillRow[]>(() =>
             data-testid="cc-badge-chip"
             @click="chosen = b"
           >
-            <span class="min-w-0 text-label break-words text-highlighted">{{ b.name }}</span>
-            <span class="text-caption text-muted">{{ b.holders }} pelajar</span>
+            <DsText variant="label" tone="highlighted" wrap="anywhere" class="min-w-0">{{
+              b.name
+            }}</DsText>
+            <DsText variant="caption" as="span">{{ b.holders }} pelajar</DsText>
             <span :class="['text-caption', rarityOf(b.holders).tone]">{{
               rarityOf(b.holders).label
             }}</span>
           </UButton>
         </li>
-      </ul>
+      </DsCluster>
 
       <template v-if="data.topCollectors.length">
-        <h4 class="text-subheading text-highlighted">Top Pengumpul Lencana</h4>
+        <DsHeading :level="4" variant="subheading">Top Pengumpul Lencana</DsHeading>
         <CcTable
           :headers="COLLECTOR_HEADERS"
           :rows="collectors"
@@ -85,7 +92,7 @@ const collectors = computed<DrillRow[]>(() =>
 
       <template v-if="data.newAwards.length">
         <h4 class="text-subheading text-warning">Baru Dianugerahkan Hari Ini!</h4>
-        <ul class="flex flex-col gap-1" data-testid="cc-new-awards">
+        <DsStack as="ul" gap="2xs" data-testid="cc-new-awards">
           <li v-for="(a, i) in data.newAwards" :key="i" class="min-w-0">
             <UButton
               color="neutral"
@@ -95,11 +102,13 @@ const collectors = computed<DrillRow[]>(() =>
               class="h-auto justify-start gap-2 py-2 text-start"
               @click="openTab(studentPath(a.studentId))"
             >
-              <span class="min-w-0 text-label break-words text-highlighted">{{ a.name }}</span>
-              <span class="text-body text-muted">{{ a.badgeName }}</span>
+              <DsText variant="label" tone="highlighted" wrap="anywhere" class="min-w-0">{{
+                a.name
+              }}</DsText>
+              <DsText variant="body" as="span" tone="muted">{{ a.badgeName }}</DsText>
             </UButton>
           </li>
-        </ul>
+        </DsStack>
       </template>
     </template>
 

@@ -3,13 +3,14 @@
 import { computed } from 'vue'
 
 import { accuracyTone, pct1 } from './cc-format'
+import { DsCluster, DsText } from '@/ds'
 
 const props = defineProps<{ value: number }>()
 const width = computed(() => Math.max(0, Math.min(100, props.value)))
 </script>
 
 <template>
-  <div class="flex items-center gap-2">
+  <DsCluster gap="xs" :wrap="false">
     <UProgress
       class="w-14 shrink-0"
       :model-value="width"
@@ -17,6 +18,6 @@ const width = computed(() => Math.max(0, Math.min(100, props.value)))
       :color="accuracyTone(value)"
       aria-hidden="true"
     />
-    <span class="tabular text-body text-default" data-testid="cc-accuracy">{{ pct1(value) }}</span>
-  </div>
+    <DsText variant="body" as="span" tabular data-testid="cc-accuracy">{{ pct1(value) }}</DsText>
+  </DsCluster>
 </template>

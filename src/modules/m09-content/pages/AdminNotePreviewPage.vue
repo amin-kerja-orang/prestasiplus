@@ -11,7 +11,7 @@ import { computed, watch } from 'vue'
 import { useRouter } from 'vue-router'
 
 import { useApi, usePageMeta } from '@/composables'
-import { DsLoadError, DsPage, DsPanel, DsStatusBadge } from '@/ds'
+import { DsLoadError, DsPage, DsPanel, DsStatusBadge, DsStack, DsHeading, DsText } from '@/ds'
 
 import { fetchAdminNote } from '../api/admin-articles-notes'
 import {
@@ -72,16 +72,16 @@ const failed = computed(() => error.value !== null && !isNotFoundError(error.val
 
     <DsPanel v-else-if="note" data-testid="admin-note-card">
       <article class="flex min-w-0 flex-col gap-6 p-2 sm:p-4">
-        <div class="flex flex-col gap-3">
+        <DsStack gap="sm">
           <div>
             <DsStatusBadge
               :status="note.isPublished ? 'published' : 'draft'"
               data-testid="status-pill"
             />
           </div>
-          <h1 class="text-title break-words text-highlighted" data-testid="preview-title">
+          <DsHeading :level="1" wrap="anywhere" data-testid="preview-title">
             {{ note.title }}
-          </h1>
+          </DsHeading>
           <div class="flex flex-wrap items-center gap-x-6 gap-y-2 text-body text-muted">
             <span
               v-if="note.author"
@@ -105,43 +105,63 @@ const failed = computed(() => error.value !== null && !isNotFoundError(error.val
               muat turun
             </span>
           </div>
-        </div>
+        </DsStack>
 
-        <p
+        <DsText
           v-if="note.summary"
-          class="text-body break-words text-muted"
+          variant="body"
+          tone="muted"
+          wrap="anywhere"
           data-testid="preview-summary"
         >
           {{ note.summary }}
-        </p>
+        </DsText>
 
         <dl class="grid grid-cols-1 gap-4 sm:grid-cols-3" data-testid="preview-details">
-          <div class="flex min-w-0 flex-col gap-1">
-            <dt class="text-overline text-muted">Subjek</dt>
-            <dd class="text-label break-words text-highlighted" data-testid="preview-subject">
+          <DsStack gap="2xs">
+            <DsText variant="overline" as="dt">Subjek</DsText>
+            <DsText
+              variant="label"
+              as="dd"
+              tone="highlighted"
+              wrap="anywhere"
+              data-testid="preview-subject"
+            >
               {{ noteSubjectText(note.subject) }}
-            </dd>
-          </div>
-          <div class="flex min-w-0 flex-col gap-1">
-            <dt class="text-overline text-muted">Tahap</dt>
-            <dd class="text-label break-words text-highlighted" data-testid="preview-grade">
+            </DsText>
+          </DsStack>
+          <DsStack gap="2xs">
+            <DsText variant="overline" as="dt">Tahap</DsText>
+            <DsText
+              variant="label"
+              as="dd"
+              tone="highlighted"
+              wrap="anywhere"
+              data-testid="preview-grade"
+            >
               {{ noteGradeText(note.grade) }}
-            </dd>
-          </div>
-          <div class="flex min-w-0 flex-col gap-1">
-            <dt class="text-overline text-muted">Jenis</dt>
-            <dd class="text-label break-words text-highlighted" data-testid="preview-type">
+            </DsText>
+          </DsStack>
+          <DsStack gap="2xs">
+            <DsText variant="overline" as="dt">Jenis</DsText>
+            <DsText
+              variant="label"
+              as="dd"
+              tone="highlighted"
+              wrap="anywhere"
+              data-testid="preview-type"
+            >
               {{ note.noteType }}
-            </dd>
-          </div>
+            </DsText>
+          </DsStack>
         </dl>
 
         <USeparator />
 
         <!-- Escaped text, never rendered (DV-M09-04); wraps anywhere (DV-M09-05). -->
-        <div class="text-body break-words" data-testid="preview-body">
+        <DsText variant="body" as="div" wrap="anywhere" data-testid="preview-body">
           {{ note.content }}
-        </div>
+        </DsText>
 
         <div>
           <UButton

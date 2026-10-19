@@ -9,6 +9,7 @@ import { RouterLink } from 'vue-router'
 import type { DutaCard } from '../../api'
 
 import { HEATMAP_COPY, ratingText } from './heatmap-copy'
+import { DsHeading, DsText } from '@/ds'
 
 defineProps<{ card: DutaCard }>()
 
@@ -20,7 +21,7 @@ const PILL = 'rounded-full bg-elevated px-3 py-1 text-caption font-semibold text
     class="mx-auto flex w-full max-w-3xl min-w-0 flex-col gap-3 rounded-card bg-default p-4 shadow-lift"
     data-testid="cikgu-pakar"
   >
-    <p class="text-overline text-muted">{{ HEATMAP_COPY.cikguHeading }}</p>
+    <DsText variant="overline" as="p">{{ HEATMAP_COPY.cikguHeading }}</DsText>
     <RouterLink
       :to="`/bilik-duta/${card.slug}`"
       class="relative flex min-w-0 items-center gap-3 rounded-chip bg-heat/15 p-4 hover:bg-elevated"
@@ -35,12 +36,17 @@ const PILL = 'rounded-full bg-elevated px-3 py-1 text-caption font-semibold text
         >{{ card.initials }}</span
       >
       <span class="min-w-0 flex-1">
-        <h4 class="text-subheading break-words text-highlighted" data-testid="cikgu-name">
+        <DsHeading :level="4" variant="subheading" wrap="anywhere" data-testid="cikgu-name">
           {{ card.name }}
-        </h4>
-        <span class="block text-label break-words text-muted" data-testid="cikgu-tagline">{{
-          card.tagline
-        }}</span>
+        </DsHeading>
+        <DsText
+          variant="label"
+          tone="muted"
+          wrap="anywhere"
+          class="block"
+          data-testid="cikgu-tagline"
+          >{{ card.tagline }}</DsText
+        >
         <span class="mt-2 flex flex-wrap gap-1.5" data-testid="cikgu-pills">
           <span
             class="rounded-full bg-heat px-3 py-1 text-caption font-semibold text-on-highlight"

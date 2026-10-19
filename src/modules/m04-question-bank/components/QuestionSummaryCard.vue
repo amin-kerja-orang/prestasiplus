@@ -8,7 +8,7 @@
 import type { TableColumn } from '@nuxt/ui'
 import { computed, ref } from 'vue'
 
-import { DsPanel, DsStatRow, type StatItem } from '@/ds'
+import { DsPanel, DsStatRow, type StatItem, DsCluster } from '@/ds'
 import { formatCount } from '@/lib/number'
 
 import type { QuestionSummary, QuestionSummarySubject } from '../api/questions'
@@ -63,9 +63,9 @@ const sorted = computed(() => {
           ? a.name.localeCompare(b.name, 'ms')
           : key === 'group'
             ? a.group.localeCompare(b.group)
-          : key === 'rate'
-            ? rate(a) - rate(b)
-            : a[key] - b[key]
+            : key === 'rate'
+              ? rate(a) - rate(b)
+              : a[key] - b[key]
       return diff * dir || a.name.localeCompare(b.name, 'ms')
     })
     .map((s) => ({ ...s, rate: rate(s) }))
@@ -168,7 +168,7 @@ const pct = (s: Row): string => (s.total > 0 ? `${String(Math.round(s.rate * 100
 
       <DsPanel padding="none" title="Pecahan mengikut subjek" icon="i-ph-list-numbers">
         <template #actions>
-          <div class="flex flex-wrap items-center gap-2">
+          <DsCluster gap="xs">
             <UButton
               v-if="activeSubjectId !== null"
               :to="QUESTIONS_LIST_PATH"
@@ -189,7 +189,7 @@ const pct = (s: Row): string => (s.total > 0 ? `${String(Math.round(s.rate * 100
               @click="toggle"
               >{{ expanded ? 'Sembunyi' : `Tunjuk ${String(subjects.length)} subjek` }}</UButton
             >
-          </div>
+          </DsCluster>
         </template>
         <UTable
           v-if="expanded"
@@ -214,8 +214,8 @@ const pct = (s: Row): string => (s.total > 0 ? `${String(Math.round(s.rate * 100
             >
           </template>
           <template #name-cell="{ row }">
-            <div
-              class="flex flex-wrap items-center gap-2"
+            <DsCluster
+              gap="xs"
               data-testid="questions-tile"
               :data-subject-id="row.original.id"
               :aria-current="row.original.id === activeSubjectId ? 'true' : undefined"
@@ -232,7 +232,7 @@ const pct = (s: Row): string => (s.total > 0 ? `${String(Math.round(s.rate * 100
                 size="sm"
                 label="Dipilih"
               />
-            </div>
+            </DsCluster>
           </template>
           <template #total-cell="{ row }">
             <span data-testid="questions-tile-total">{{ formatCount(row.original.total) }}</span>

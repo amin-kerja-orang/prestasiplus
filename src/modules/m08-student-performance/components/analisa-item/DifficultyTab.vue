@@ -7,7 +7,7 @@
 import { computed, ref } from 'vue'
 import type { TableColumn } from '@nuxt/ui'
 
-import { DsDataTable, DsEmptyState, DsFilterBar, DsPanel } from '@/ds'
+import { DsDataTable, DsEmptyState, DsFilterBar, DsPanel, DsStack, DsCluster, DsText } from '@/ds'
 import { useMedia } from '@/ds/useMedia'
 import { formatNumber } from '@/lib/number'
 
@@ -23,7 +23,6 @@ import {
   topicLine,
   type SortKey,
 } from '../../lib/prestasi/item-analysis'
-
 
 import DifficultyDetail from './DifficultyDetail.vue'
 
@@ -97,7 +96,7 @@ function reset(): void {
 </script>
 
 <template>
-  <div class="flex min-w-0 flex-col gap-4" data-testid="difficulty-tab">
+  <DsStack data-testid="difficulty-tab">
     <div v-if="analysis.questionCount === 0" data-testid="difficulty-empty">
       <DsEmptyState
         title="Tiada Data Lagi"
@@ -138,8 +137,9 @@ function reset(): void {
         data-testid="difficulty-table"
       >
         <template #text-cell="{ row }">
-          <div
-            class="flex max-w-sm min-w-44 flex-col gap-3"
+          <DsStack
+            gap="sm"
+            class="max-w-sm min-w-44"
             :data-testid="`difficulty-group-${row.original.questionId}`"
           >
             <UButton
@@ -155,12 +155,17 @@ function reset(): void {
               @click="toggle(row.original.questionId)"
             >
               <span class="flex min-w-0 flex-col gap-1">
-                <span
-                  class="line-clamp-2 text-label break-words text-highlighted"
+                <DsText
+                  variant="label"
+                  tone="highlighted"
+                  :clamp="2"
+                  wrap="anywhere"
                   :data-testid="`difficulty-row-${row.original.questionId}`"
-                  >{{ row.original.text }}</span
+                  >{{ row.original.text }}</DsText
                 >
-                <span class="text-caption text-error">{{ row.original.wrongText }}</span>
+                <DsText variant="caption" as="span" tone="error">{{
+                  row.original.wrongText
+                }}</DsText>
               </span>
             </UButton>
             <div
@@ -169,15 +174,17 @@ function reset(): void {
             >
               <DifficultyDetail :row="row.original.source" />
             </div>
-          </div>
+          </DsStack>
         </template>
         <template #topic-cell="{ row }">
-          <span class="line-clamp-3 text-caption text-muted">{{ row.original.topic }}</span>
+          <DsText variant="caption" as="span" :clamp="3">{{ row.original.topic }}</DsText>
         </template>
         <template #attemptsText-cell="{ row }">
           <span class="flex flex-col">
             <span>{{ row.original.attemptsText }}</span>
-            <span class="text-caption text-dimmed">{{ row.original.studentsText }}</span>
+            <DsText variant="caption" as="span" tone="dimmed">{{
+              row.original.studentsText
+            }}</DsText>
           </span>
         </template>
         <template #accuracyText-cell="{ row }">
@@ -195,19 +202,19 @@ function reset(): void {
         </template>
       </DsDataTable>
 
-      <ul v-else class="flex flex-col gap-3" data-testid="difficulty-table">
+      <DsStack v-else as="ul" gap="sm" data-testid="difficulty-table">
         <li v-for="r in rows" :key="r.questionId" :data-testid="`difficulty-group-${r.questionId}`">
           <DsPanel>
-            <div class="flex flex-col gap-3">
-              <div class="flex flex-wrap items-center gap-2">
-                <span class="tabular text-label text-muted">#{{ r.index }}</span>
+            <DsStack gap="sm">
+              <DsCluster gap="xs">
+                <DsText variant="label" tone="muted" tabular>#{{ r.index }}</DsText>
                 <UBadge
                   :color="LEVEL_BADGE[r.level]"
                   variant="subtle"
                   :icon="icon(LEVEL_ICON[r.level])"
                   :label="r.level"
                 />
-              </div>
+              </DsCluster>
               <UButton
                 type="button"
                 color="neutral"
@@ -219,38 +226,40 @@ function reset(): void {
                 @click="toggle(r.questionId)"
               >
                 <span class="flex min-w-0 flex-col gap-1">
-                  <span
-                    class="text-label break-words text-highlighted"
+                  <DsText
+                    variant="label"
+                    tone="highlighted"
+                    wrap="anywhere"
                     :data-testid="`difficulty-row-${r.questionId}`"
-                    >{{ r.text }}</span
+                    >{{ r.text }}</DsText
                   >
-                  <span class="text-caption text-muted">{{ r.topic }}</span>
-                  <span class="text-caption text-error">{{ r.wrongText }}</span>
+                  <DsText variant="caption" as="span">{{ r.topic }}</DsText>
+                  <DsText variant="caption" as="span" tone="error">{{ r.wrongText }}</DsText>
                 </span>
               </UButton>
               <dl class="grid grid-cols-3 gap-2 text-center">
                 <div>
-                  <dt class="text-caption text-muted">Percubaan</dt>
-                  <dd class="tabular text-body">{{ r.attemptsText }}</dd>
+                  <DsText variant="caption" as="dt">Percubaan</DsText>
+                  <DsText variant="body" as="dd" tabular>{{ r.attemptsText }}</DsText>
                 </div>
                 <div>
-                  <dt class="text-caption text-muted">Ketepatan</dt>
-                  <dd class="tabular text-label">
+                  <DsText variant="caption" as="dt">Ketepatan</DsText>
+                  <DsText variant="label" as="dd" tabular>
                     <span :class="accuracyClass(r.accuracy)">{{ r.accuracyText }}</span>
-                  </dd>
+                  </DsText>
                 </div>
                 <div>
-                  <dt class="text-caption text-muted">Indeks</dt>
-                  <dd class="tabular text-body">{{ r.indexText }}</dd>
+                  <DsText variant="caption" as="dt">Indeks</DsText>
+                  <DsText variant="body" as="dd" tabular>{{ r.indexText }}</DsText>
                 </div>
               </dl>
               <div v-if="open.has(r.questionId)" :data-testid="`difficulty-detail-${r.questionId}`">
                 <DifficultyDetail :row="r.source" />
               </div>
-            </div>
+            </DsStack>
           </DsPanel>
         </li>
-      </ul>
+      </DsStack>
     </template>
-  </div>
+  </DsStack>
 </template>

@@ -23,7 +23,16 @@ import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 
 import { setRouteOutcome } from '@/app/router/outcome'
-import { DsFeedbackSheet, DsFloatScore, DsQuizHeader, DsQuizOption } from '@/ds'
+import {
+  DsFeedbackSheet,
+  DsFloatScore,
+  DsQuizHeader,
+  DsQuizOption,
+  DsStack,
+  DsCluster,
+  DsHeading,
+  DsText,
+} from '@/ds'
 import { ReportQuestionModal } from '@/modules/m04-question-bank'
 
 import { checkAnswer, startSession, submitSession } from '../../api/practice'
@@ -276,7 +285,7 @@ const feedbackExplanation = computed(() =>
 
         <!-- Quiz -->
         <template v-else-if="phase === 'quiz'">
-          <div class="flex flex-col gap-3" data-testid="quiz-body">
+          <DsStack gap="sm" data-testid="quiz-body">
             <DsQuizHeader
               close-label="Keluar latihan"
               :progress="progressPct"
@@ -286,24 +295,24 @@ const feedbackExplanation = computed(() =>
               data-testid="quiz-header"
               @close="leave"
             />
-            <div class="flex items-center justify-between gap-3">
-              <div class="flex min-w-0 flex-col gap-1">
-                <h1 class="text-subheading break-words text-highlighted" data-testid="quiz-title">
+            <DsCluster justify="between" :wrap="false">
+              <DsStack gap="2xs">
+                <DsHeading :level="1" variant="subheading" wrap="anywhere" data-testid="quiz-title">
                   {{ title }}
-                </h1>
-                <p class="text-caption text-muted" data-testid="quiz-progress-text">
+                </DsHeading>
+                <DsText variant="caption" data-testid="quiz-progress-text">
                   Soalan {{ index + 1 }} daripada {{ total }}
-                </p>
-              </div>
-              <div class="flex shrink-0 flex-col items-end">
-                <span class="tabular text-heading text-highlighted" data-testid="quiz-timer">{{
+                </DsText>
+              </DsStack>
+              <DsStack gap="none" align="end" class="shrink-0">
+                <DsText variant="heading" as="span" tabular data-testid="quiz-timer">{{
                   timeText
-                }}</span>
-                <span class="text-caption text-muted">Masa</span>
-              </div>
-            </div>
+                }}</DsText>
+                <DsText variant="caption" as="span">Masa</DsText>
+              </DsStack>
+            </DsCluster>
 
-            <div v-if="revisionChips" class="flex flex-wrap items-center gap-2">
+            <DsCluster v-if="revisionChips" gap="xs">
               <UBadge
                 color="warning"
                 variant="solid"
@@ -322,12 +331,12 @@ const feedbackExplanation = computed(() =>
                 >{{ revisionMeta.selected }} daripada {{ revisionMeta.totalWrong }} soalan
                 salah</UBadge
               >
-            </div>
-          </div>
+            </DsCluster>
+          </DsStack>
 
           <UCard v-if="current" data-testid="quiz-question">
-            <div class="flex flex-col gap-4">
-              <div class="flex flex-wrap items-center gap-2">
+            <DsStack>
+              <DsCluster gap="xs">
                 <UBadge color="primary" variant="solid" size="lg" icon="i-ph-question-bold"
                   >Soalan {{ index + 1 }}</UBadge
                 >
@@ -358,7 +367,7 @@ const feedbackExplanation = computed(() =>
                   data-testid="pill-extra"
                   >Latihan Tambahan</UBadge
                 >
-              </div>
+              </DsCluster>
 
               <h2
                 class="text-heading break-words text-highlighted"
@@ -389,7 +398,7 @@ const feedbackExplanation = computed(() =>
                 </span>
               </p>
 
-              <div class="flex flex-col gap-3" data-testid="question-options">
+              <DsStack gap="sm" data-testid="question-options">
                 <DsQuizOption
                   v-for="option in current.options"
                   :key="option.id"
@@ -401,7 +410,7 @@ const feedbackExplanation = computed(() =>
                   @select="run.select(option.id)"
                   >{{ option.text }}</DsQuizOption
                 >
-              </div>
+              </DsStack>
 
               <UButton
                 v-if="!result && selected !== null"
@@ -414,10 +423,10 @@ const feedbackExplanation = computed(() =>
                 @click="run.check()"
                 >Semak Jawapan</UButton
               >
-            </div>
+            </DsStack>
           </UCard>
 
-          <div v-if="result && current" class="relative flex flex-col gap-3">
+          <DsStack v-if="result && current" gap="sm" class="relative">
             <div
               v-if="showFly"
               :key="flyKey"
@@ -452,7 +461,7 @@ const feedbackExplanation = computed(() =>
               @click="openReport(current.id)"
               >Lapor Soalan</UButton
             >
-          </div>
+          </DsStack>
         </template>
 
         <!-- Results -->

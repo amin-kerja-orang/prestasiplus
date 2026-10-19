@@ -7,26 +7,29 @@
  */
 import { computed } from 'vue'
 
-import { DsArt3D, DsSticker } from '@/ds'
+import { DsArt3D, DsSticker, DsGrid, DsText } from '@/ds'
 import type { Art3DName } from '@/ds'
 
 import CoinFly from './CoinFly.vue'
 
-const props = withDefaults(defineProps<{
-  /** "✅ HEBAT!": the emoji is shown big, the rest is the heading. */
-  title: string
-  subtitle: string
-  /** `tone` is a token text class: text-primary, text-success, text-warning or text-info. */
-  tiles: { label: string; value: string; tone: string; wide?: boolean }[]
-  newRecord: boolean
-  againLabel: string
-  coinsCredited: number
-  theme: 'indigo' | 'cyan' | 'ember' | 'teal'
-  /** Label of the hub link (S17 uses "🏠 Hub"). */
-  hubLabel?: string
-  /** Test id of the scrim (S17 uses `solo-overlay`). */
-  overlayTestid?: string
-}>(), { hubLabel: '🎮 Hub', overlayTestid: 'solo-result-overlay' })
+const props = withDefaults(
+  defineProps<{
+    /** "✅ HEBAT!": the emoji is shown big, the rest is the heading. */
+    title: string
+    subtitle: string
+    /** `tone` is a token text class: text-primary, text-success, text-warning or text-info. */
+    tiles: { label: string; value: string; tone: string; wide?: boolean }[]
+    newRecord: boolean
+    againLabel: string
+    coinsCredited: number
+    theme: 'indigo' | 'cyan' | 'ember' | 'teal'
+    /** Label of the hub link (S17 uses "🏠 Hub"). */
+    hubLabel?: string
+    /** Test id of the scrim (S17 uses `solo-overlay`). */
+    overlayTestid?: string
+  }>(),
+  { hubLabel: '🎮 Hub', overlayTestid: 'solo-result-overlay' },
+)
 
 defineEmits<{ again: [] }>()
 
@@ -69,8 +72,8 @@ const parts = computed(() => {
         >
           {{ parts.text }}
         </h2>
-        <p class="text-body text-muted">{{ subtitle }}</p>
-        <div class="grid w-full grid-cols-2 gap-3">
+        <DsText variant="body" tone="muted">{{ subtitle }}</DsText>
+        <DsGrid :cols="2" gap="sm" class="w-full">
           <div
             v-for="tile in tiles"
             :key="tile.label"
@@ -78,16 +81,19 @@ const parts = computed(() => {
             :class="tile.wide ? 'col-span-2' : ''"
             data-testid="solo-result-tile"
           >
-            <div class="tabular font-display text-heading font-extrabold break-words" :class="tile.tone">
+            <div
+              class="tabular font-display text-heading font-extrabold break-words"
+              :class="tile.tone"
+            >
               {{ tile.value }}
             </div>
             <div class="text-caption font-semibold text-muted">{{ tile.label }}</div>
           </div>
-        </div>
+        </DsGrid>
         <DsSticker v-if="newRecord" art="trophy" data-testid="solo-new-record">
           🏆 REKOD BARU!
         </DsSticker>
-        <div class="grid w-full grid-cols-2 gap-3">
+        <DsGrid :cols="2" gap="sm" class="w-full">
           <UButton
             type="button"
             size="xl"
@@ -108,7 +114,7 @@ const parts = computed(() => {
           >
             {{ hubLabel }}
           </UButton>
-        </div>
+        </DsGrid>
       </section>
     </div>
   </Teleport>

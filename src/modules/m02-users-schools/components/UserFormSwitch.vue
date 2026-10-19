@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { DsCluster } from '@/ds'
+
 /**
  * The switch of S2 "Aktifkan Akaun" and S3 "Status Aktif" (FR-M02-22, FR-M02-44) and S3 "Pakej PKSK"
  * (FR-M02-40): a `USwitch` (on = success) with the label and hint beside it. The 44 px row is the touch target.
@@ -16,7 +18,7 @@ defineSlots<{ icon?: () => unknown; aside?: () => unknown }>()
 </script>
 
 <template>
-  <div class="flex min-h-11 items-center gap-3">
+  <DsCluster :wrap="false" class="min-h-11">
     <USwitch
       v-model="model"
       :name="name"
@@ -26,12 +28,12 @@ defineSlots<{ icon?: () => unknown; aside?: () => unknown }>()
       :data-testid="testid"
     >
       <template #label>
-        <span class="flex items-center gap-2">
+        <DsCluster as="span" gap="xs" :wrap="false">
           <slot name="icon" />
           {{ label }}
-        </span>
+        </DsCluster>
       </template>
     </USwitch>
     <slot name="aside" />
-  </div>
+  </DsCluster>
 </template>

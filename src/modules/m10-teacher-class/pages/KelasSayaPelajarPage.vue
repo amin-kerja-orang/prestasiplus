@@ -8,7 +8,7 @@ import { computed } from 'vue'
 import { useRoute } from 'vue-router'
 
 import { useApi } from '@/composables'
-import { DsEmptyState, DsPage, DsPanel, DsLoadError } from '@/ds'
+import { DsEmptyState, DsPage, DsPanel, DsLoadError, DsGrid } from '@/ds'
 
 import { fetchJoinedClasses } from '../api/guru'
 import { KELAS_COPY } from '../components/kelas-saya/copy'
@@ -54,12 +54,8 @@ const { data, error, loading, reload } = useApi((signal) => fetchJoinedClasses({
       />
     </DsPanel>
 
-    <ul
-      v-else-if="data"
-      class="grid min-w-0 grid-cols-1 gap-3 md:grid-cols-2"
-      data-testid="classes-list"
-    >
+    <DsGrid v-else-if="data" :cols="{ base: 1, md: 2 }" gap="sm" as="ul" data-testid="classes-list">
       <JoinedClassCard v-for="item in data.data" :key="item.id" :item="item" />
-    </ul>
+    </DsGrid>
   </DsPage>
 </template>

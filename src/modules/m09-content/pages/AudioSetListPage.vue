@@ -24,6 +24,8 @@ import {
   DsPanel,
   DsStatRow,
   DsStatusBadge,
+  DsStack,
+  DsText,
 } from '@/ds'
 import type { CardField, DsStatus, StatItem } from '@/ds'
 
@@ -211,9 +213,9 @@ const cardFields: CardField[] = [
       data-testid="audio-guide"
     >
       <template #description>
-        <div class="flex flex-col gap-2">
+        <DsStack gap="xs">
           <p v-for="text in LIST_GUIDE.paragraphs" :key="text">{{ text }}</p>
-        </div>
+        </DsStack>
       </template>
     </UAlert>
 
@@ -222,7 +224,7 @@ const cardFields: CardField[] = [
     <template v-else>
       <DsStatRow :items="statItems" prefix="stat" :cols="4" data-testid="audio-stats" />
 
-      <div class="flex flex-col gap-3">
+      <DsStack gap="sm">
         <DsFilterBar
           :chips="chips"
           apply-label="Tapis"
@@ -281,7 +283,7 @@ const cardFields: CardField[] = [
             </option>
           </DsNativeSelect>
         </DsFilterBar>
-      </div>
+      </DsStack>
 
       <DsPanel v-if="!firstLoad && sets.length === 0" data-testid="audio-empty">
         <DsEmptyState title="Belum ada set Audio KBAT." icon="headphones" />
@@ -302,13 +304,17 @@ const cardFields: CardField[] = [
         data-testid="audio-sets"
       >
         <template #title-cell="{ row }">
-          <p
-            class="line-clamp-2 min-w-40 text-label text-highlighted"
+          <DsText
+            variant="label"
+            as="p"
+            tone="highlighted"
+            :clamp="2"
+            class="min-w-40"
             data-testid="audio-set"
             :data-set-id="row.original.id"
           >
             <span data-testid="set-title">{{ row.original.title }}</span>
-          </p>
+          </DsText>
         </template>
         <template #level-cell="{ row }">
           <span data-testid="set-level">{{ row.original.level }}</span>

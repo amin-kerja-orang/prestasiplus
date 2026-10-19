@@ -9,7 +9,17 @@ import { computed, watch } from 'vue'
 
 import { setRouteOutcome } from '@/app/router/outcome'
 import { useApi } from '@/composables'
-import { DsBackLink, DsLoadError, DsPage, DsPanel, DsStatusBadge } from '@/ds'
+import {
+  DsBackLink,
+  DsLoadError,
+  DsPage,
+  DsPanel,
+  DsStatusBadge,
+  DsStack,
+  DsCluster,
+  DsText,
+  DsHeading,
+} from '@/ds'
 
 import { fetchStructuredQuestion } from '../api/structured'
 import { formatEnDate } from '../lib/audit-format'
@@ -37,7 +47,6 @@ watch(
   },
   { immediate: true },
 )
-
 </script>
 
 <template>
@@ -58,15 +67,15 @@ watch(
       @retry="reload()"
     />
 
-    <div v-else-if="!question" class="flex flex-col gap-4" data-testid="structured-detail-skeleton">
+    <DsStack v-else-if="!question" data-testid="structured-detail-skeleton">
       <USkeleton class="h-56 w-full" />
       <USkeleton class="h-32 w-full" />
-    </div>
+    </DsStack>
 
     <template v-else>
       <DsPanel data-testid="structured-header">
-        <div class="flex flex-wrap items-start justify-between gap-3">
-          <div class="flex flex-wrap gap-2">
+        <DsCluster align="start" justify="between">
+          <DsCluster gap="xs" align="stretch">
             <UBadge
               v-if="question.subject"
               color="primary"
@@ -93,20 +102,23 @@ watch(
               :label="`${question.totalMarks} Markah`"
               data-testid="structured-pill-marks"
             />
-          </div>
-          <span class="tabular text-caption text-muted" data-testid="structured-id"
-            >ID: #{{ question.id }}</span
+          </DsCluster>
+          <DsText variant="caption" as="span" tabular data-testid="structured-id"
+            >ID: #{{ question.id }}</DsText
           >
-        </div>
+        </DsCluster>
 
         <UCard variant="subtle" class="mt-4">
           <p class="mb-1 text-overline text-muted">Stimulus / Konteks Soalan</p>
-          <p
-            class="text-body break-words whitespace-pre-line text-highlighted"
+          <DsText
+            variant="body"
+            tone="highlighted"
+            wrap="anywhere"
+            class="whitespace-pre-line"
             data-testid="structured-stimulus"
           >
             {{ question.stimulus }}
-          </p>
+          </DsText>
         </UCard>
 
         <div
@@ -134,12 +146,12 @@ watch(
         </div>
       </DsPanel>
 
-      <h2 class="text-subheading text-highlighted" data-testid="structured-subs-heading">
+      <DsHeading :level="2" variant="subheading" data-testid="structured-subs-heading">
         Bahagian Soalan ({{ question.subQuestions.length }} sub-soalan)
-      </h2>
+      </DsHeading>
 
       <DsPanel v-for="sub in question.subQuestions" :key="sub.id" data-testid="structured-sub">
-        <div class="flex items-start gap-3">
+        <DsCluster align="start" :wrap="false">
           <UBadge
             color="primary"
             variant="solid"
@@ -158,16 +170,16 @@ watch(
             class="shrink-0"
             data-testid="structured-sub-marks"
           />
-        </div>
+        </DsCluster>
         <UCard variant="subtle" class="mt-3">
           <p class="mb-1 text-overline text-success">Jawapan Model</p>
-          <p class="text-body break-words whitespace-pre-line text-default">
+          <DsText variant="body" wrap="anywhere" class="whitespace-pre-line">
             {{ sub.modelAnswer }}
-          </p>
+          </DsText>
         </UCard>
       </DsPanel>
 
-      <div class="flex flex-wrap gap-3">
+      <DsCluster align="stretch">
         <UButton
           :to="structuredEditPath(question.id)"
           icon="i-ph-pencil-simple"
@@ -186,7 +198,7 @@ watch(
         >
           Balik ke Senarai
         </UButton>
-      </div>
+      </DsCluster>
     </template>
   </DsPage>
 </template>

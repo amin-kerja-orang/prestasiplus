@@ -6,7 +6,7 @@
 import type { TableColumn } from '@nuxt/ui'
 import { computed, ref } from 'vue'
 
-import { DsDrillTable } from '@/ds'
+import { DsDrillTable, DsStack, DsCluster, DsHeading, DsText } from '@/ds'
 
 import type { StudentAnswerRow, StudentDetail } from '../../api/types'
 import { dmyHm } from './monitoring-format'
@@ -35,10 +35,10 @@ const excerpt = (text: string) => (text.length > 80 ? `${text.slice(0, 80)}...` 
 
 <template>
   <UCard data-testid="mon-panel-list">
-    <div class="flex flex-col gap-4">
-      <h2 class="text-label text-highlighted" data-testid="mon-list-heading">
+    <DsStack>
+      <DsHeading :level="2" variant="label" data-testid="mon-list-heading">
         Senarai Soalan ({{ answers.available }} tersedia daripada {{ answers.total }})
-      </h2>
+      </DsHeading>
       <DsDrillTable
         :data="data"
         :columns="columns"
@@ -46,7 +46,7 @@ const excerpt = (text: string) => (text.length > 80 ? `${text.slice(0, 80)}...` 
         @drill="(r: Row) => emit('open', r)"
       >
         <template #no-cell="{ row }">
-          <span class="tabular text-caption text-muted">{{ row.index + 1 }}</span>
+          <DsText variant="caption" as="span" tabular>{{ row.index + 1 }}</DsText>
         </template>
         <template #text-cell="{ row }">
           <UButton
@@ -67,7 +67,7 @@ const excerpt = (text: string) => (text.length > 80 ? `${text.slice(0, 80)}...` 
           }}</span>
         </template>
         <template #correct-cell="{ row }">
-          <span class="text-label text-success">{{ row.original.correctLabel ?? '-' }}</span>
+          <DsText variant="label" tone="success">{{ row.original.correctLabel ?? '-' }}</DsText>
         </template>
         <template #status-cell="{ row }">
           <UIcon
@@ -81,7 +81,7 @@ const excerpt = (text: string) => (text.length > 80 ? `${text.slice(0, 80)}...` 
           <span class="tabular whitespace-nowrap">{{ dmyHm(row.original.answeredAt) }}</span>
         </template>
       </DsDrillTable>
-      <div v-if="more" class="flex justify-center">
+      <DsCluster v-if="more" gap="none" align="stretch" justify="center" :wrap="false">
         <UButton
           type="button"
           color="neutral"
@@ -92,7 +92,7 @@ const excerpt = (text: string) => (text.length > 80 ? `${text.slice(0, 80)}...` 
           data-testid="mon-list-more"
           @click="shown += 20"
         />
-      </div>
-    </div>
+      </DsCluster>
+    </DsStack>
   </UCard>
 </template>

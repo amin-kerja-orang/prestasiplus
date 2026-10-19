@@ -44,7 +44,9 @@ export function pruneUi(exp, tag, el) {
   if (!rules) return null
   const t = exp.trim()
   if (!(t.startsWith('{') && t.endsWith('}'))) return null
-  const entries = splitTop(t.slice(1, -1)).map((e) => e.trim()).filter(Boolean)
+  const entries = splitTop(t.slice(1, -1))
+    .map((e) => e.trim())
+    .filter(Boolean)
   let changed = false
   const kept = []
   for (const e of entries) {
@@ -92,7 +94,12 @@ export function transformSource(file, source, report) {
     }
     const next = pruneUi(a.exp, el.tag, el)
     if (next === null) {
-      report.skip(file, el.loc.start.line, el.tag, 'override still needed (no default or prop covers it)')
+      report.skip(
+        file,
+        el.loc.start.line,
+        el.tag,
+        'override still needed (no default or prop covers it)',
+      )
       return
     }
     if (next === '') removeAttr(ms, source, a)

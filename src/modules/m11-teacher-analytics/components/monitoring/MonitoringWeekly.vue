@@ -9,7 +9,7 @@
 import type { TableColumn } from '@nuxt/ui'
 import { computed, h, ref } from 'vue'
 
-import { DsDataTable } from '@/ds'
+import { DsDataTable, DsStack, DsCluster, DsText } from '@/ds'
 
 import type { WeeklyCellClass, WeeklyRow } from '../../api/types'
 import { count, type UiColor } from './monitoring-format'
@@ -56,15 +56,15 @@ const columns = computed<TableColumn<Row>[]>(() => [
 </script>
 
 <template>
-  <section id="section-mingguan" class="flex flex-col gap-6" data-testid="mon-weekly">
-    <div class="flex flex-col gap-1">
+  <DsStack id="section-mingguan" as="section" gap="lg" data-testid="mon-weekly">
+    <DsStack gap="2xs">
       <h2 class="flex items-center gap-2 text-heading text-highlighted">
         <UIcon name="i-ph-calendar-dots" class="size-6 text-primary-t" />Tracking Mingguan
       </h2>
-      <p class="text-body text-muted">
+      <DsText variant="body" tone="muted">
         Jumlah soalan dijawab mengikut minggu — warna menunjukkan trend naik/turun
-      </p>
-    </div>
+      </DsText>
+    </DsStack>
 
     <DsDataTable
       v-model:page-size="pageSize"
@@ -76,15 +76,15 @@ const columns = computed<TableColumn<Row>[]>(() => [
       caption="Tracking mingguan"
     >
       <template #school-cell="{ row }">
-        <div class="flex max-w-56 min-w-36 flex-col gap-1" data-testid="mon-weekly-row">
+        <DsStack gap="2xs" class="max-w-56 min-w-36" data-testid="mon-weekly-row">
           <RouterLink
             :to="paths.school(row.original.schoolId)"
             :title="row.original.name"
             class="line-clamp-2 text-label text-primary-t"
             >{{ row.original.name }}</RouterLink
           >
-          <span class="text-body text-muted">{{ row.original.code ?? '-' }}</span>
-        </div>
+          <DsText variant="body" as="span" tone="muted">{{ row.original.code ?? '-' }}</DsText>
+        </DsStack>
       </template>
       <template v-for="w in weeks" :key="w.k" #[`w${String(w.k)}-cell`]="{ row }">
         <UBadge
@@ -124,7 +124,7 @@ const columns = computed<TableColumn<Row>[]>(() => [
       <template #best-cell="{ row }">
         <span class="whitespace-nowrap" data-testid="mon-weekly-best">
           <template v-if="row.original.best">
-            <span class="text-label text-highlighted">M{{ row.original.best.k }}</span
+            <DsText variant="label" tone="highlighted">M{{ row.original.best.k }}</DsText
             >{{ ' ' }}
             <span class="tabular ml-1 text-body text-muted">{{
               count(row.original.best.count)
@@ -134,16 +134,16 @@ const columns = computed<TableColumn<Row>[]>(() => [
         </span>
       </template>
       <template #card="{ row }">
-        <div class="flex flex-col gap-3">
-          <div class="flex items-start justify-between gap-3">
-            <div class="flex min-w-0 flex-col gap-1">
+        <DsStack gap="sm">
+          <DsCluster align="start" justify="between" :wrap="false">
+            <DsStack gap="2xs">
               <RouterLink
                 :to="paths.school((row as Row).schoolId)"
                 class="line-clamp-2 text-label text-primary-t"
                 >{{ (row as Row).name }}</RouterLink
               >
-              <span class="text-body text-muted">{{ (row as Row).code ?? '-' }}</span>
-            </div>
+              <DsText variant="body" as="span" tone="muted">{{ (row as Row).code ?? '-' }}</DsText>
+            </DsStack>
             <UIcon
               v-if="(row as Row).trend === 'up'"
               name="i-ph-arrow-up"
@@ -155,8 +155,8 @@ const columns = computed<TableColumn<Row>[]>(() => [
               class="size-5 text-error"
             />
             <UIcon v-else name="i-ph-minus" class="size-5 text-muted" />
-          </div>
-          <ul class="flex flex-wrap gap-2">
+          </DsCluster>
+          <DsCluster as="ul" gap="xs" align="stretch">
             <li v-for="w in weeks" :key="w.k" class="flex items-center gap-1 text-body text-muted">
               M{{ w.k }}
               <UBadge
@@ -170,8 +170,8 @@ const columns = computed<TableColumn<Row>[]>(() => [
                 "
               />
             </li>
-          </ul>
-        </div>
+          </DsCluster>
+        </DsStack>
       </template>
     </DsDataTable>
 
@@ -181,5 +181,5 @@ const columns = computed<TableColumn<Row>[]>(() => [
         >: {{ w.from }} - {{ w.to }}</span
       >
     </p>
-  </section>
+  </DsStack>
 </template>

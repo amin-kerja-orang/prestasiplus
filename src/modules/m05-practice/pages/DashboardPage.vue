@@ -33,7 +33,7 @@ import HomeStats from '../components/dashboard-v2/HomeStats.vue'
 import HomeSubjects from '../components/dashboard-v2/HomeSubjects.vue'
 import HomeSubjectStats from '../components/dashboard-v2/HomeSubjectStats.vue'
 import HomeTrial from '../components/dashboard-v2/HomeTrial.vue'
-import { DsLoadError } from '@/ds'
+import { DsLoadError, DsStack, DsGrid } from '@/ds'
 
 const LOAD_ERROR = 'Maaf, berlaku ralat. Sila cuba semula.'
 
@@ -53,8 +53,8 @@ watch(
 </script>
 
 <template>
-  <div class="flex min-w-0 flex-col gap-6" data-testid="dashboard-page">
-    <div v-if="data" class="flex min-w-0 flex-col gap-6" data-testid="dashboard-main">
+  <DsStack gap="lg" data-testid="dashboard-page">
+    <DsStack v-if="data" gap="lg" data-testid="dashboard-main">
       <HomeGreeting
         :period="data.greetingPeriod"
         :name="data.user.name"
@@ -62,16 +62,16 @@ watch(
         :streak-count="data.streak.count"
       />
       <HomeRewards :data="data" />
-      <div class="grid grid-cols-1 items-start gap-4 md:grid-cols-2">
+      <DsGrid :cols="{ base: 1, md: 2 }" align="start">
         <HomeTrial v-if="data.trial.active" :trial="data.trial" />
         <HomeCarousel v-if="data.banners.length > 0" :banners="data.banners" />
         <HomeKombo v-if="kombo" :count="data.streak.count" />
-      </div>
+      </DsGrid>
       <HomeStats :wallet="data.wallet" :streak="data.streak" :week="data.week" />
-      <div class="grid grid-cols-1 items-start gap-4 md:grid-cols-2">
+      <DsGrid :cols="{ base: 1, md: 2 }" align="start">
         <HomeQuests :quests="data.quests" :completed="data.questsCompleted" />
         <HomeBadges :badges="data.badges" />
-      </div>
+      </DsGrid>
       <HomeQuickActions
         :revision-total="data.revisionTotal"
         :is-admin="data.user.role === 'admin'"
@@ -80,12 +80,12 @@ watch(
       <HomeSubjects :subjects="data.subjects" />
       <HomePlatform :stats="data.stats" />
       <HomeLevels :pills="data.levelPills" />
-      <div class="grid grid-cols-1 items-start gap-4 lg:grid-cols-2">
+      <DsGrid :cols="{ base: 1, lg: 2 }" align="start">
         <HomeRecent :questions="data.recentQuestions" />
         <HomeDifficulty :chart="data.difficultyChart" />
-      </div>
+      </DsGrid>
       <HomeSubjectStats :stats="data.subjectStats" />
-    </div>
+    </DsStack>
 
     <DsLoadError
       v-else-if="error"
@@ -95,10 +95,10 @@ watch(
       @retry="reload()"
     />
 
-    <div v-else class="flex flex-col gap-4" aria-busy="true" data-testid="dashboard-loading">
+    <DsStack v-else aria-busy="true" data-testid="dashboard-loading">
       <USkeleton class="h-32 w-full" />
       <USkeleton class="h-24 w-full" />
       <USkeleton class="h-40 w-full" />
-    </div>
-  </div>
+    </DsStack>
+  </DsStack>
 </template>

@@ -12,7 +12,7 @@ import { computed, ref } from 'vue'
 
 import { useSearchPicker } from '@/composables'
 
-import { DsFormField, DsNativeSelect, DsPanel } from '@/ds'
+import { DsFormField, DsNativeSelect, DsPanel, DsCluster, DsText } from '@/ds'
 
 import { searchSchools, type SchoolSummary } from '../api/schools'
 import { schoolMeta, SEARCH_MIN_CHARS, STATE_FILTER_OPTIONS } from '../lib/user-form-options'
@@ -82,16 +82,21 @@ function clear(): void {
   <div ref="root" data-testid="admin-school">
     <DsFormField native for="admin-school-search" label="Sekolah" :required="required">
       <DsPanel v-if="school" tone="tint" data-testid="admin-school-chip">
-        <div class="flex min-h-14 items-center gap-3">
+        <DsCluster :wrap="false" class="min-h-14">
           <UIcon name="i-ph-buildings" class="size-6 shrink-0 text-primary-t" aria-hidden="true" />
           <span class="min-w-0 flex-1">
-            <span
-              class="block truncate text-label text-highlighted"
+            <DsText
+              variant="label"
+              tone="highlighted"
+              truncate
+              class="block"
               data-testid="admin-school-name"
             >
               {{ school.name }}
-            </span>
-            <span class="block text-caption break-words text-muted">{{ schoolMeta(school) }}</span>
+            </DsText>
+            <DsText variant="caption" as="span" wrap="anywhere" class="block">{{
+              schoolMeta(school)
+            }}</DsText>
           </span>
           <UButton
             type="button"
@@ -102,10 +107,10 @@ function clear(): void {
             data-testid="admin-school-clear"
             @click="clear"
           />
-        </div>
+        </DsCluster>
       </DsPanel>
 
-      <div v-else class="flex flex-col gap-2 sm:flex-row">
+      <DsCluster v-else gap="xs" stack-below="sm" align="stretch">
         <DsNativeSelect
           v-model="state"
           aria-label="Negeri"
@@ -133,7 +138,12 @@ function clear(): void {
           <span v-if="searching" class="sr-only" data-testid="admin-school-loading"
             >Mencari...</span
           >
-          <DsPanel v-if="showDropdown" behavior="float" padding="none" data-testid="admin-school-dropdown">
+          <DsPanel
+            v-if="showDropdown"
+            behavior="float"
+            padding="none"
+            data-testid="admin-school-dropdown"
+          >
             <UButton
               v-for="item in results"
               :key="item.id"
@@ -146,8 +156,8 @@ function clear(): void {
               @click="picker.select(item)"
             >
               <span class="flex min-w-0 flex-col">
-                <span class="text-label text-highlighted">{{ item.name }}</span>
-                <span class="text-caption text-muted">{{ schoolMeta(item) }}</span>
+                <DsText variant="label" tone="highlighted">{{ item.name }}</DsText>
+                <DsText variant="caption" as="span">{{ schoolMeta(item) }}</DsText>
               </span>
             </UButton>
             <p
@@ -159,7 +169,7 @@ function clear(): void {
             </p>
           </DsPanel>
         </div>
-      </div>
+      </DsCluster>
     </DsFormField>
   </div>
 </template>

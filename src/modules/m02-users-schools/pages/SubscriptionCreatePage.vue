@@ -13,7 +13,16 @@ import { computed, reactive, ref } from 'vue'
 import { useRouter } from 'vue-router'
 
 import { useApi, useFlash } from '@/composables'
-import { DsFormField, DsFormSection, DsLoadError, DsPage, DsPanel } from '@/ds'
+import {
+  DsFormField,
+  DsFormSection,
+  DsLoadError,
+  DsPage,
+  DsPanel,
+  DsStack,
+  DsGrid,
+  DsText,
+} from '@/ds'
 
 import type { SchoolSummary } from '../api/schools'
 import { createSubscription, fetchSchoolPackages, type PackageTier } from '../api/subscriptions'
@@ -139,9 +148,9 @@ async function submit(): Promise<void> {
           data-testid="sub-form-alert"
         >
           <template #description>
-            <div class="flex flex-col gap-1">
+            <DsStack gap="2xs">
               <p v-for="m in errors" :key="m">{{ m }}</p>
-            </div>
+            </DsStack>
           </template>
         </UAlert>
 
@@ -161,7 +170,7 @@ async function submit(): Promise<void> {
           :columns="2"
         >
           <div class="flex min-w-0 flex-col gap-3 sm:col-span-2">
-            <p class="text-label text-default">Jenis Pakej <span class="text-error">*</span></p>
+            <DsText variant="label" as="p">Jenis Pakej <span class="text-error">*</span></DsText>
             <URadioGroup
               v-model="form.tier"
               :items="tierItems"
@@ -184,16 +193,16 @@ async function submit(): Promise<void> {
           </div>
 
           <div class="flex min-w-0 flex-col gap-3 sm:col-span-2">
-            <p class="text-label text-default">Tingkatan <span class="text-error">*</span></p>
+            <DsText variant="label" as="p">Tingkatan <span class="text-error">*</span></DsText>
             <DsLoadError
               v-if="packagesError"
               message="Tidak dapat memuatkan senarai pakej. Sila cuba semula."
               testid="sub-packages-error"
               @retry="reloadPackages()"
             />
-            <div v-else-if="!packages" class="grid grid-cols-1 gap-3 sm:grid-cols-2">
+            <DsGrid v-else-if="!packages" :cols="{ base: 1, sm: 2 }" gap="sm">
               <USkeleton v-for="n in 4" :key="n" class="h-24 w-full" />
-            </div>
+            </DsGrid>
             <URadioGroup
               v-else
               :model-value="form.packageId ?? undefined"
@@ -271,31 +280,33 @@ async function submit(): Promise<void> {
         <DsPanel padding="none">
           <div class="flex flex-col gap-4 p-4 sm:p-6">
             <DsPanel v-if="summary" tone="inset" data-testid="sub-summary">
-              <div class="flex flex-col gap-2">
+              <DsStack gap="xs">
                 <template v-if="summary.kind === 'basic'">
-                  <p class="text-body text-default">
+                  <DsText variant="body">
                     Pakej Pemantauan: <strong>PERCUMA</strong> · 500 soalan/bulan/pelajar · 1 bulan
-                  </p>
-                  <p class="text-label text-muted">
+                  </DsText>
+                  <DsText variant="label" as="p" tone="muted">
                     Sekolah boleh naik taraf ke Pakej Penuh bila-bila masa.
-                  </p>
+                  </DsText>
                 </template>
                 <template v-else>
-                  <span class="text-body text-default" data-testid="sub-summary-line">{{
+                  <DsText variant="body" as="span" data-testid="sub-summary-line">{{
                     summary.line
-                  }}</span>
-                  <span class="text-title text-highlighted" data-testid="sub-summary-total">{{
+                  }}</DsText>
+                  <DsText variant="title" as="span" data-testid="sub-summary-total">{{
                     summary.total
-                  }}</span>
-                  <p
+                  }}</DsText>
+                  <DsText
                     v-if="summary.grand"
-                    class="text-label text-muted"
+                    variant="label"
+                    as="p"
+                    tone="muted"
                     data-testid="sub-summary-grand"
                   >
                     {{ summary.grand }}
-                  </p>
+                  </DsText>
                 </template>
-              </div>
+              </DsStack>
             </DsPanel>
             <UButton
               type="submit"

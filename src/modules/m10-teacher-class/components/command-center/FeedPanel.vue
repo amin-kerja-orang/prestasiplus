@@ -4,6 +4,7 @@ import type { CcFeedItem } from '../../api/command-center-types'
 import BoardPanel from './BoardPanel.vue'
 import { useOpenTab } from './composables'
 import { S2_COPY, studentPath } from './copy'
+import { DsStack, DsText } from '@/ds'
 
 defineProps<{ feed: CcFeedItem[] }>()
 const openTab = useOpenTab()
@@ -11,10 +12,10 @@ const openTab = useOpenTab()
 
 <template>
   <BoardPanel icon="lightning" accent="action" title="Live Feed" testid="cc-panel-feed">
-    <p v-if="feed.length === 0" class="text-body text-muted" data-testid="cc-feed-empty">
+    <DsText v-if="feed.length === 0" variant="body" tone="muted" data-testid="cc-feed-empty">
       {{ S2_COPY.noActivity }}
-    </p>
-    <ul v-else class="flex flex-col gap-1" aria-live="off">
+    </DsText>
+    <DsStack v-else as="ul" gap="2xs" aria-live="off">
       <li v-for="(f, i) in feed" :key="i" class="min-w-0">
         <UButton
           color="neutral"
@@ -24,14 +25,18 @@ const openTab = useOpenTab()
           data-testid="cc-feed-row"
           @click="openTab(studentPath(f.studentId))"
         >
-          <span class="tabular text-caption text-muted">{{ f.time }}</span>
-          <span class="min-w-0 text-label break-words text-highlighted">{{ f.student }}</span>
-          <span class="min-w-0 text-caption break-words text-muted">{{ f.subject }}</span>
+          <DsText variant="caption" as="span" tabular>{{ f.time }}</DsText>
+          <DsText variant="label" tone="highlighted" wrap="anywhere" class="min-w-0">{{
+            f.student
+          }}</DsText>
+          <DsText variant="caption" as="span" wrap="anywhere" class="min-w-0">{{
+            f.subject
+          }}</DsText>
           <span :class="f.isCorrect ? 'text-success' : 'text-error'">{{
             f.isCorrect ? '✓' : '✗'
           }}</span>
         </UButton>
       </li>
-    </ul>
+    </DsStack>
   </BoardPanel>
 </template>

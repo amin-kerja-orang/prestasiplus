@@ -12,7 +12,7 @@ import { computed, watch } from 'vue'
 import { isApiError } from '@/api'
 import { setRouteOutcome, useRouteOutcome } from '@/app/router/outcome'
 import { useApi, usePageMeta } from '@/composables'
-import { DsPage, DsLoadError, DsBackLink } from '@/ds'
+import { DsPage, DsLoadError, DsBackLink, DsStack, DsGrid } from '@/ds'
 
 import { fetchMarketplaceProduct } from '../api'
 import { DETAIL_COPY } from '../components/detail/copy'
@@ -61,19 +61,30 @@ watch(
   <div v-if="notFound" />
   <DsPage v-else data-testid="product-page">
     <DsBackLink to="/marketplace" :label="MARKETPLACE_COPY.back" data-testid="marketplace-back" />
-    <DsLoadError v-if="failed" :message="MARKETPLACE_COPY.loadFailed" testid="m20-load-error" retry-testid="m20-retry" @retry="product.reload" />
-    <div v-else-if="!product.data.value" class="flex flex-col gap-3" aria-busy="true" data-testid="product-loading">
+    <DsLoadError
+      v-if="failed"
+      :message="MARKETPLACE_COPY.loadFailed"
+      testid="m20-load-error"
+      retry-testid="m20-retry"
+      @retry="product.reload"
+    />
+    <DsStack
+      v-else-if="!product.data.value"
+      gap="sm"
+      aria-busy="true"
+      data-testid="product-loading"
+    >
       <USkeleton class="h-28 w-full" />
       <USkeleton class="h-40 w-full" />
-    </div>
+    </DsStack>
     <template v-else>
-      <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
+      <DsGrid :cols="{ base: 1, md: 2 }">
         <ProductGallery :images="product.data.value.images" :name="product.data.value.name" />
-        <div class="flex min-w-0 flex-col gap-4">
+        <DsStack>
           <ProductInfo :product="product.data.value" />
           <SellerPanel :seller="product.data.value.seller" />
-        </div>
-      </div>
+        </DsStack>
+      </DsGrid>
       <ReviewsCard :reviews="product.data.value.reviews" :count="product.data.value.reviewCount" />
       <RelatedProducts :products="product.data.value.related" />
     </template>

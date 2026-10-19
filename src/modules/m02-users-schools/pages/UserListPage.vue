@@ -28,6 +28,8 @@ import {
   DsStatusBadge,
   type RowAction,
   useConfirm,
+  DsCluster,
+  DsStack,
 } from '@/ds'
 
 import {
@@ -440,7 +442,7 @@ const COLUMNS: TableColumn<UserRow>[] = [
 
     <!-- Bulk bar (FR-M02-15): only while at least one row is ticked. -->
     <DsPanel v-if="selected.length > 0" behavior="bulk" data-testid="users-bulk-bar">
-      <div class="flex items-center justify-between gap-4">
+      <DsCluster gap="md" justify="between" :wrap="false">
         <span class="flex items-center gap-2 text-body text-default">
           <UIcon name="i-ph-check-square" class="size-5" aria-hidden="true" />
           <span data-testid="users-selected-count">{{ selected.length }}</span> dipilih
@@ -453,7 +455,7 @@ const COLUMNS: TableColumn<UserRow>[] = [
           data-testid="users-bulk-delete"
           @click="bulkOpen = true"
         />
-      </div>
+      </DsCluster>
     </DsPanel>
 
     <DsLoadError
@@ -541,8 +543,10 @@ const COLUMNS: TableColumn<UserRow>[] = [
         <span class="text-nowrap">{{ formatUserDate(row.original.createdAt) }}</span>
       </template>
       <template #actions-cell="{ row }">
-        <div
-          class="flex items-center justify-end gap-1"
+        <DsCluster
+          gap="2xs"
+          justify="end"
+          :wrap="false"
           data-testid="user-row"
           :data-user-id="row.original.id"
         >
@@ -559,7 +563,7 @@ const COLUMNS: TableColumn<UserRow>[] = [
             :actions="menuActions(row.original)"
             :label="`Tindakan lain untuk ${row.original.name}`"
           />
-        </div>
+        </DsCluster>
       </template>
       <template #empty>
         <DsEmptyState
@@ -571,7 +575,7 @@ const COLUMNS: TableColumn<UserRow>[] = [
         />
       </template>
       <template #card="{ row }">
-        <div class="flex min-w-0 items-start gap-3">
+        <DsCluster align="start" :wrap="false">
           <UCheckbox
             v-if="asUser(row).id !== ownId"
             :model-value="selected.includes(asUser(row).id)"
@@ -579,19 +583,20 @@ const COLUMNS: TableColumn<UserRow>[] = [
             data-testid="user-select"
             @update:model-value="(v: boolean | 'indeterminate') => toggleOne(asUser(row).id, v)"
           />
-          <div class="flex min-w-0 flex-col gap-1">
+          <DsStack gap="2xs">
             <DsIdentity
               :name="asUser(row).name"
               :sub="asUser(row).email"
               :src="asUser(row).avatarUrl"
               :initials="initialsOf(asUser(row).name)"
             />
-            <div class="flex flex-wrap items-center gap-2">
+            <DsCluster gap="xs">
               <UBadge color="neutral" variant="subtle" :label="roleLabel(asUser(row).role)" />
               <DsStatusBadge :status="asUser(row).isActive ? 'active' : 'inactive'" />
-            </div>
-            <div
-              class="flex items-center gap-1"
+            </DsCluster>
+            <DsCluster
+              gap="2xs"
+              :wrap="false"
               data-testid="user-row"
               :data-user-id="asUser(row).id"
             >
@@ -607,9 +612,9 @@ const COLUMNS: TableColumn<UserRow>[] = [
                 :actions="menuActions(asUser(row))"
                 :label="`Tindakan lain untuk ${asUser(row).name}`"
               />
-            </div>
-          </div>
-        </div>
+            </DsCluster>
+          </DsStack>
+        </DsCluster>
       </template>
     </DsDataTable>
 

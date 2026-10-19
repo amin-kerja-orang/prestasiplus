@@ -13,7 +13,19 @@
 import { computed, nextTick, onMounted, ref } from 'vue'
 
 import { useFlash } from '@/composables'
-import { DsFormBar, DsFormField, DsFormSection, DsIconChip, DsPage, DsPanel } from '@/ds'
+import {
+  DsFormBar,
+  DsFormField,
+  DsFormSection,
+  DsIconChip,
+  DsPage,
+  DsPanel,
+  DsGrid,
+  DsStack,
+  DsCluster,
+  DsText,
+  DsHeading,
+} from '@/ds'
 
 import { importUsers, type BulkImportRole, type ImportMode } from '../api/imports'
 import type { SchoolSummary } from '../api/schools'
@@ -112,7 +124,7 @@ const ROLE_ICONS: Record<string, string> = {
     :back-to="USERS_LIST_PATH"
     data-testid="bulk-import-page"
   >
-    <div class="grid grid-cols-1 items-start gap-6 xl:grid-cols-3">
+    <DsGrid :cols="{ base: 1, xl: 3 }" gap="lg" align="start">
       <form
         method="post"
         enctype="multipart/form-data"
@@ -132,9 +144,9 @@ const ROLE_ICONS: Record<string, string> = {
             data-testid="bulk-alert"
           >
             <template #description>
-              <div class="flex flex-col gap-1">
+              <DsStack gap="2xs">
                 <p v-for="m in errors" :key="m">{{ m }}</p>
-              </div>
+              </DsStack>
             </template>
           </UAlert>
         </div>
@@ -146,9 +158,9 @@ const ROLE_ICONS: Record<string, string> = {
           :columns="2"
         >
           <div class="flex min-w-0 flex-col gap-3 sm:col-span-2">
-            <p class="text-label text-default">
+            <DsText variant="label" as="p">
               Peranan Pengguna <span class="text-error">*</span>
-            </p>
+            </DsText>
             <URadioGroup
               :model-value="role === '' ? undefined : role"
               :items="roleItems"
@@ -236,14 +248,14 @@ const ROLE_ICONS: Record<string, string> = {
         />
       </form>
 
-      <aside class="flex min-w-0 flex-col gap-6">
+      <DsStack as="aside" gap="lg">
         <DsPanel padding="none" data-testid="bulk-hero">
           <div class="flex flex-col gap-4 p-4 sm:p-6">
-            <div class="flex items-center gap-4">
+            <DsCluster gap="md" :wrap="false">
               <DsIconChip icon="users-three" size="lg" />
-              <h3 class="text-subheading text-highlighted">Jenis pengguna</h3>
-            </div>
-            <div class="flex flex-wrap gap-2">
+              <DsHeading :level="3">Jenis pengguna</DsHeading>
+            </DsCluster>
+            <DsCluster gap="xs" align="stretch">
               <UBadge
                 color="neutral"
                 variant="subtle"
@@ -265,7 +277,7 @@ const ROLE_ICONS: Record<string, string> = {
                 icon="i-ph-shield-check"
                 label="Admin"
               />
-            </div>
+            </DsCluster>
           </div>
         </DsPanel>
 
@@ -292,7 +304,7 @@ const ROLE_ICONS: Record<string, string> = {
             </ul>
           </div>
         </DsPanel>
-      </aside>
-    </div>
+      </DsStack>
+    </DsGrid>
   </DsPage>
 </template>

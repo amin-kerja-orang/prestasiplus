@@ -5,7 +5,7 @@
  */
 import { computed } from 'vue'
 
-import { DsPanel } from '@/ds'
+import { DsPanel, DsStack, DsCluster, DsText } from '@/ds'
 
 import type { StudentKirkpatrick } from '../../../api/types'
 import { pct1 } from '../common/kirkpatrick-format'
@@ -18,14 +18,20 @@ const rows = computed(() => [...props.platform].sort((a, b) => b.accuracy - a.ac
 
 <template>
   <DsPanel title="Tahap 2 — Prestasi Platform" icon="i-ph-chart-bar" data-testid="pel-platform">
-    <ul class="flex flex-col gap-3">
+    <DsStack as="ul" gap="sm">
       <li v-for="r in rows" :key="r.subjectName" data-testid="pel-plat-row">
-        <div class="flex items-baseline justify-between gap-3">
-          <span class="min-w-0 text-label text-muted">{{ r.subjectName }}</span>
-          <span class="tabular shrink-0 text-caption text-highlighted" data-testid="pel-plat-value"
-            >{{ pct1(r.accuracy) }} ({{ r.answers }})</span
+        <DsCluster align="baseline" justify="between" :wrap="false">
+          <DsText variant="label" tone="muted" class="min-w-0">{{ r.subjectName }}</DsText>
+          <DsText
+            variant="caption"
+            as="span"
+            tone="highlighted"
+            tabular
+            class="shrink-0"
+            data-testid="pel-plat-value"
+            >{{ pct1(r.accuracy) }} ({{ r.answers }})</DsText
           >
-        </div>
+        </DsCluster>
         <UProgress
           :model-value="r.accuracy"
           :max="100"
@@ -36,6 +42,6 @@ const rows = computed(() => [...props.platform].sort((a, b) => b.accuracy - a.ac
           data-testid="pel-plat-bar"
         />
       </li>
-    </ul>
+    </DsStack>
   </DsPanel>
 </template>

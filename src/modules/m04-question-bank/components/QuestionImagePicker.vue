@@ -9,7 +9,7 @@
  */
 import { computed, ref, watch } from 'vue'
 
-import { DsArt3D, DsFileField } from '@/ds'
+import { DsArt3D, DsFileField, DsStack, DsCluster, DsText } from '@/ds'
 
 import { imageSrc } from '../lib/image-url'
 
@@ -72,9 +72,9 @@ const hideZoneText = computed(() => !props.edit && shown.value === 'new')
 </script>
 
 <template>
-  <div class="flex min-w-0 flex-col gap-2" :data-testid="testid">
+  <DsStack gap="xs" :data-testid="testid">
     <!-- The upload control: a button around the (screen-reader only) file input of the field. -->
-    <div class="flex min-w-0 flex-wrap items-center gap-3">
+    <DsCluster>
       <DsFileField
         :model-value="file"
         accept="image/jpeg,image/png,image/webp"
@@ -94,12 +94,12 @@ const hideZoneText = computed(() => !props.edit && shown.value === 'new')
           </UButton>
         </template>
       </DsFileField>
-      <span v-if="variant === 'zone' && !(edit && file !== null)" class="text-caption text-muted">
+      <DsText v-if="variant === 'zone' && !(edit && file !== null)" variant="caption" as="span">
         JPG, PNG, WebP — Maks 2MB
-      </span>
-    </div>
+      </DsText>
+    </DsCluster>
 
-    <div v-if="shown !== 'none'" class="flex min-w-0 items-start gap-2">
+    <DsCluster v-if="shown !== 'none'" gap="xs" align="start" :wrap="false">
       <div class="w-40 min-w-0 sm:w-56">
         <DsArt3D
           v-if="shown === 'new' && preview"
@@ -133,6 +133,6 @@ const hideZoneText = computed(() => !props.edit && shown.value === 'new')
         :data-testid="`${testid}-remove`"
         @click.prevent.stop="remove"
       />
-    </div>
-  </div>
+    </DsCluster>
+  </DsStack>
 </template>
