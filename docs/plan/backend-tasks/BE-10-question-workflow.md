@@ -61,6 +61,8 @@ Every route below exists in the mock (verified).
 | `GET /api/master-notes`, `POST /api/master-notes/:id/:action` | notes lookup and the approve / unflag / regen actions (SRS BR-M04-23) |
 | `POST /api/questions/:id/ai-explanation` | **stub** (see criterion 8) |
 
+**D54(a) (2026-10-19):** statuses cross the wire as the v2 lifecycle codes `draft`, `review`, `approved`, `published`, `archived` (BM Draf, Semakan, Lulus, Terbit, Diarkib in the UI; the exact codes are BE-09 open question 1), not the mock's `draft`/`pending_review`/`approved`/`rejected`; the mock is realigned at the http switch, so this card does not replicate the mock's status values.
+
 The status-transition endpoint: the mock changes status through `POST /api/questions/bulk-action` and `PUT /api/questions/:id` (BE-09 routes). This card owns the transition table behind them (BE-09's controller calls the workflow service).
 
 ## DB tables touched
@@ -69,7 +71,7 @@ The status-transition endpoint: the mock changes status through `POST /api/quest
 
 ## Acceptance criteria
 
-1. Allowed transitions are exactly the table of `v2-question-bank.md` 4.1: Draf to Semakan (Guru own, Admin Pusat; submit gate 4.8), Draf to Diarkib, Semakan to Lulus (Admin Pusat), Semakan to Draf (reason mandatory), Lulus to Terbit (publish gate), Lulus to Draf (reason mandatory), Terbit to Diarkib (reason mandatory), Terbit to new version n+1 as Draf, Diarkib to Draf. Every other pair returns 409 `CONFLICT`. A table-driven test walks all 5x5 pairs per role. Each transition writes a `question_status_events` row with actor, role, time, from, to and reason.
+1. Allowed transitions are exactly the table of `v2-question-bank.md` 4.1: Draf to Semakan (Guru own, Admin Pusat; submit gate 4.8), Draf to Diarkib, Semakan to Lulus (Admin Pusat), Semakan to Draf (reason mandatory), Lulus to Terbit (publish gate), Lulus to Draf (reason mandatory), Terbit to Diarkib (reason mandatory), Terbit to new version n+1 as Draf, Diarkib to Draf. Every other pair returns 409 `CONFLICT`. A table-driven test walks all 5x5 pairs per role (D54(a): the pairs use the v2 wire codes; a mock status value such as `pending_review` or `rejected` in a request returns 422 `VALIDATION_ERROR`, never a transition). Each transition writes a `question_status_events` row with actor, role, time, from, to and reason.
 2. Guru can move an own draft to Semakan; only `admin` can do the other transitions (403 otherwise); Admin Sekolah has no access to any route of this card (403); a Guru acting on another Guru's question gets 404.
 3. Reports (mock `reports.ts`): body validation returns 422 with the mock's field messages: "Sila pilih sekurang-kurangnya satu sebab laporan.", "Sebab laporan tidak sah.", "Sumber laporan tidak sah.", "Jenis soalan tidak sah.", "Sila pilih soalan.", "Rujukan sesi atau bilik tidak sah.", "Komen tidak boleh melebihi 500 aksara."; update validation "Status tidak sah." and "Nota admin tidak boleh melebihi 1000 aksara."; success flash "Laporan berjaya dikemaskini."; reasons per question type and displayed statuses (Menunggu, Disemak, Diperbaiki, Ditolak, Dikeluarkan) as SRS BR-M04-14/15. Duplicate open report by the same user for the same question: replay the case in the mock test and assert the same status.
 4. Resolving or filing a report that deactivates a question removes it from `eligibleForPractice` immediately (integration test with BE-09). Which reports deactivate is Open question 2.
@@ -112,7 +114,7 @@ npm run be:test -- apps/api/test/conformance   # only after BE-31 is merged
 Do not guess these; write your working assumption in the PR and ask the lead (issue labelled `question`) if it blocks you.
 
 1. The mock reports deactivate an MCQ at the first report and a structured question at the third (SRS BR-M04-12); `v2-question-bank.md` Q7 says v2 unifies this. Which rule does the API implement? Working assumption: the mock's rule until Q7 is answered.
-2. The mock's status values differ from the v2 lifecycle; see BE-09 open question 1. The transition table above uses the v2 statuses.
+2. **D54(a) (2026-10-19): closed in principle.** The mock's status values differ from the v2 lifecycle; the user decided the wire uses the v2 lifecycle and the mock is realigned at the http switch. The transition table above uses the v2 statuses; the exact codes are BE-09 open question 1.
 3. `source_papers` columns `natural_key` and `content_hash` are required by BE-30; confirm their definition (plan 14.7) before the migration.
 4. Pending LEAD decision: OQ-22 of the URS (auto-hide threshold for reported questions; URS default: pending review after 3 reports from different students, Admin Pusat can hide at once; this is the same question as item 1) and OQ-25 (CSV as the mock versus the Excel template of v2-question-bank 4.3). Build the mock behaviour until answered. (added 2026-10-19)
 

@@ -29,7 +29,7 @@ Everything in M14/M15 beyond the wallet core: dashboard, daily challenges, achie
 ## Outputs
 
 - Contract: `packages/contract/src/gamification/**` (M14 and M15 schemas; rewards schemas go in `gamification/rewards.ts`)
-- `apps/api/prisma/schema/gamification.prisma` + migration with the tables of the list above except `tiers` (BE-11) and the M15 tables (`rewards`, `reward_claims`, `mystery_boxes`, digital shop items and redemptions; names fixed in the contract PR from the M15 repository)
+- `apps/api/prisma/schema/gamification.prisma` + migration with the tables of the list above except `tiers` (BE-11) and the M15 tables (`rewards`, `reward_claims`, `mystery_boxes`, digital shop items and redemptions; names fixed in the contract PR from the M15 repository); **OD-28 (2026-10-19, OWN-7):** also `draw_prizes` (`draw_id` FK cascade, `label`, `value_sen` int, `qty` int, `position`), the rows of the mock's embedded `prizePool`.
 - `apps/api/src/modules/gamification/**` (M14) and `apps/api/src/modules/shop/**` (M15), both PC-2 lane modules
 - Seed `apps/api/prisma/seed/gamification.ts` (challenges, achievements, rewards from the mock seeds; one line in the registry; add `gamification` to the PC-2 seed list)
 - Tests under `apps/api/test/gamification/**`, `apps/api/test/shop/**`
@@ -63,7 +63,7 @@ Every route below exists in the mock (verified). Counts: M14 student 8 (+2 in BE
 
 ## DB tables touched
 
-All gamification and rewards tables listed above, `wallets`/`coin_ledger` (via `WalletService` only).
+All gamification and rewards tables listed above, `wallets`/`coin_ledger` (via `WalletService` only).; **OD-28 (2026-10-19, OWN-7):** `draw_prizes`.
 
 ## Acceptance criteria
 
@@ -75,6 +75,7 @@ All gamification and rewards tables listed above, `wallets`/`coin_ledger` (via `
 6. Responses match the mock shapes for the seeded data: replay the cases of the mock tests in Inputs that do not depend on live totals.
 7. No teacher-economy route is registered (D53/OWN-10): a test asserts that `/api/guru/gamification*` and `/api/admin/gamification/guru*` answer 404.
 8. Tier maintenance by admin (create, update, toggle) keeps the BE-11 rule that a wallet's tier never goes down.
+9. **OD-28 (2026-10-19, OWN-7):** a lucky draw stores its prize pool as ordered `draw_prizes` rows (label, `value_sen` integer sen, quantity, position) and returns `prizePool[]` in the mock shape; the draw cannot award more prizes than the sum of `qty`; deleting a draw cascades to its prizes.
 
 ## Test commands
 

@@ -74,7 +74,7 @@ The mock error mapping (`BijakError`), reproduced with these messages: `not_foun
 4. Marking uses `@pp/exam-core` only; for the PoC papers the stored result equals the mock engine's output (golden tests over fixed answer sets, including one equivalence-marking and one maths-input case).
 5. `AttemptSweeper` closes an expired exam attempt `GRACE_SECONDS` (300 s) after the deadline with status `auto_submitted` and grades whatever was saved; a late `PUT` within 24 h after the deadline is accepted and re-graded (`regraded: true`); later ones return `closed: true` and change nothing. Tests use a fixed clock.
 6. Concurrency: two simultaneous submits with the same `idempotencyKey` produce one `attempt_results` row (unique constraint + test); a replay returns the same body.
-7. Ownership: another user's attempt gives 403 "Akses ditolak" (mock and `v2-bijak-spm.md` NFR-06; the attempt id is a UUID); an unknown id gives 404 "Percubaan tidak ditemui". This differs from the 404 rule of plan section 10 and is listed in the PR and in `v2-backend-deviations.md`.
+7. Ownership: another user's attempt gives 403 "Akses ditolak" (mock and `v2-bijak-spm.md` NFR-06; the attempt id is a UUID; confirmed by the user, D54(b), 2026-10-19); an unknown id gives 404 "Percubaan tidak ditemui". This differs from the 404 rule of plan section 10 and is listed in the PR and in `v2-backend-deviations.md`.
 8. Photos: JPEG or PNG only, at most 5 MB each (`MAX_PHOTO_BYTES`) and at most 3 per part (`MAX_PHOTOS_PER_PART`), with the mock messages "Gambar mesti JPG atau PNG, maksimum 5 MB." and "Maksimum 3 gambar bagi setiap bahagian."; a photo can only be attached to a part that accepts `working` or `drawing` answers and belongs to the caller's attempt; photos are private (only the owner reads them).
 9. Writes under Mod Pelajar are stamped `is_test` and excluded from other users' history aggregates.
 10. Roles: no session 401; missing CSRF 403 `CSRF_INVALID` on every PUT/POST.
@@ -109,7 +109,7 @@ npm run be:test -- apps/api/test/conformance   # only after BE-31 is merged
 
 Do not guess these; write your working assumption in the PR and ask the lead (issue labelled `question`) if it blocks you.
 
-1. Another user's attempt: 403 (mock, NFR-06) versus the 404 rule of plan section 10. Working assumption: 403 as in the mock.
+1. **Closed by D54(b) (2026-10-19):** another user's attempt gives 403 "Akses ditolak" (mock, NFR-06), an explicit exception to the 404 rule of plan section 10 and BE-NFR-05; the exception is listed in `v2-backend-deviations.md`.
 2. Does completing an attempt credit coins? Read `store.ts`; if the mock does not credit, BE-16 does not either (and BE-11 is only used for the "is_test" convention).
 3. Photo retention is 12 months after the attempt (v2-bijak-spm NFR-11, default); deletion job is out of scope here. Confirm.
 

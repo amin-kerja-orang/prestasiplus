@@ -33,7 +33,7 @@ Create the v2 question store as approved in `docs/requirements/v2-exam-schema.md
 ## Outputs
 
 - Contract: `packages/contract/src/questions/**` (question, part, option, answer key kinds, mark-point, stimulus, tag, list filters, errors)
-- `apps/api/prisma/schema/questions.prisma` + migration: `stimuli`, `stimulus_groups`, `questions`, `question_versions`, `question_parts`, `part_options`, `answer_keys` (jsonb content validated by zod per kind), `question_tags`. Status is `text` + `check` with the codes `draft`, `review`, `approved`, `published`, `archived` (BM labels Draf, Semakan, Lulus, Terbit, Diarkib stay in the UI, X2).
+- `apps/api/prisma/schema/questions.prisma` + migration: `stimuli`, `stimulus_groups`, `questions`, `question_versions`, `question_parts`, `part_options`, `answer_keys` (jsonb content validated by zod per kind), `question_tags`; **OD-28 (2026-10-19, OWN-7):** also the parent-owned child tables `stimulus_group_stimuli` (`group_id`, `stimulus_id` unique per group, at most 3, `position`), `stimulus_group_options` (`group_id`, `label` A to H unique per group, `body_ms`, `body_en`, `position`), `question_version_stimuli` (`question_version_id`, `stimulus_id`, `position`, unique pair) and `question_version_sp_nodes` (`question_version_id`, `node_id` FK `curriculum_nodes` kind `sp`, 1 to 3 per version, unique pair). Status is `text` + `check` with the codes `draft`, `review`, `approved`, `published`, `archived` (BM labels Draf, Semakan, Lulus, Terbit, Diarkib stay in the UI, X2). **D54(a) (2026-10-19):** these v2 lifecycle codes are the wire values; the mock's `draft`/`pending_review`/`approved`/`rejected` are not accepted or returned, and the frontend mock is realigned at the http switch (`pending_review` becomes `review`, the mock's live `approved` becomes `published`, mock `rejected` has no v2 status). The exact codes are open question 1 (default as written here).
 - `apps/api/src/modules/questions/**` (not `questions/workflow/**`, which is BE-10): `QuestionsRepository` (the only doorway), `QuestionsService`, controller, `gradeAnswer` for MCQ/short answers (pure functions; the subjective marking engine is `@pp/exam-core`, BE-14). The service also exports `setStatus(id, status, actorId)` and `getStatus`, which BE-10 uses for the lifecycle; this card enforces the publish tag rule inside `setStatus`, BE-10 owns the transition table and events.
 - Seed `apps/api/prisma/seed/questions.ts`: a small fictitious but structurally valid bank (objective MCQ for 3 subjects x 2 forms, a few structured questions with K/N/P points and one stimulus group); never copy real exam content or the .cloud bank
 - Tests under `apps/api/test/questions/**`
@@ -57,7 +57,7 @@ Every route below exists in the mock (verified).
 
 | Method and path | Notes |
 |---|---|
-| `GET /api/questions`, `GET /api/questions/summary`, `GET /api/questions/:id` | filters from the mock (subject, level, chapter, status, type, search); role-scoped visibility (Guru: own uploads and published; Admin: all) |
+| `GET /api/questions`, `GET /api/questions/summary`, `GET /api/questions/:id` | filters from the mock (subject, level, chapter, status, type, search); the `status` filter and every status field use the v2 wire codes (D54(a)); role-scoped visibility (Guru: own uploads and published; Admin: all) |
 | `POST /api/questions`, `PUT /api/questions/:id`, `DELETE /api/questions/:id`, `POST /api/questions/bulk-action` | create/edit/delete/bulk; status changes go through BE-10's transition table; **only Admin Pusat approves and publishes** (D40a) |
 | `GET /api/structured-questions`, `GET /api/structured-questions/:id` | structured list and detail |
 | `GET /api/guru/questions`, `GET /api/guru/questions/:id`, `POST /api/guru/questions`, `PUT /api/guru/questions/:id`, `DELETE /api/guru/questions/:id` | Guru contribution routes (the mock keeps them in M10 `questions.ts`; owner is M04, so they live in this module); `GET /api/guru/contributions` stays in BE-17 and calls this module |
@@ -66,7 +66,7 @@ The status workflow, reports, submissions, imports, quality audit, diagram audit
 
 ## DB tables touched
 
-`stimuli`, `stimulus_groups`, `questions`, `question_versions`, `question_parts`, `part_options`, `answer_keys`, `question_tags`, `curriculum_nodes` (read).
+`stimuli`, `stimulus_groups`, `questions`, `question_versions`, `question_parts`, `part_options`, `answer_keys`, `question_tags`, `curriculum_nodes` (read); **OD-28 (2026-10-19, OWN-7):** `stimulus_group_stimuli`, `stimulus_group_options`, `question_version_stimuli`, `question_version_sp_nodes`.
 
 ## Acceptance criteria
 
@@ -75,11 +75,13 @@ The status workflow, reports, submissions, imports, quality audit, diagram audit
 3. Mark points support code letters, marks, accepted equivalents, "any N of M" groups, alternative methods, ECF and tolerance as in D4.2: one validation test per feature; no marking logic here.
 4. A stimulus group keeps its ordered questions together; reading any member returns the stimulus once (test with three members).
 5. `setStatus(..., 'published')` fails with 422 unless subject, level, unit, SP and TP tags are set (D9 rule); the same rule is applied when `POST /api/questions` is called with a published status. Tested in the service and through the endpoint.
-6. The repository contract for other modules exists and each method has a test: `get`, `getMany`, `count`, `groupCount`, `eligibleForPractice` (status `published` and active only), `sample` (seeded PRNG, same seed gives the same ids), `gradeAnswer`, `deactivate` (the question leaves `eligibleForPractice` immediately).
+6. The repository contract for other modules exists and each method has a test: `get`, `getMany`, `count`, `groupCount`, `eligibleForPractice` (status `published` and active only; D54(a)), `sample` (seeded PRNG, same seed gives the same ids), `gradeAnswer`, `deactivate` (the question leaves `eligibleForPractice` immediately).
 7. List responses match the mock shape (`meta.counts`, pagination) for the seeded data; a Guru cannot see another teacher's drafts (404 on `:id`, absent from the list).
-8. A student session gets 404 on every non-published question id and never receives the source PDF, answer key or mark scheme of an unpublished or exam-mode item.
-9. Mock-parity replay: the cases in `src/modules/m04-question-bank/__tests__/mock/**` that concern the routes above give the same status and error code on the API (differences caused by the v2 schema are listed in the PR and in `v2-backend-deviations.md`).
+8. D54(a): a student session gets 404 on every non-published question id and never receives the source PDF, answer key or mark scheme of an unpublished or exam-mode item.
+9. Mock-parity replay: the cases in `src/modules/m04-question-bank/__tests__/mock/**` that concern the routes above give the same status and error code on the API (differences caused by the v2 schema are listed in the PR and in `v2-backend-deviations.md`); **D54(a):** the status values are never replayed as the mock's (`pending_review`, `approved` meaning live, `rejected`): the replayed cases use the mapped v2 codes and the mapping table is in the PR.
 10. Roles: Admin Pusat full access; Guru only the `/api/guru/questions*` routes and own rows; Murid and Admin Sekolah get 403 on the admin routes; no session 401; missing CSRF 403 `CSRF_INVALID`.
+11. **D54(a) (2026-10-19):** the wire status of a question is one of `draft`, `review`, `approved`, `published`, `archived` (BM Draf, Semakan, Lulus, Terbit, Diarkib in the UI): a create, update or filter with `pending_review`, `rejected` or any other value returns 422 `VALIDATION_ERROR` with `fields.status`; a list response and a detail response never contain a mock status value; a mapping test lists the mock-to-v2 conversion (`draft` to `draft`, `pending_review` to `review`, mock `approved` to `published`, `archived` to `archived`).
+12. **OD-28 (2026-10-19, OWN-7):** the four child tables round-trip with their parent: a group with three stimuli and a lettered option bank returns both ordered by `position`; a fourth stimulus on one group is refused (422); a version with 1 to 3 SP nodes and an ordered stimulus list reads back identically; deleting a group or a version cascades to its child rows; no jsonb column stands in for these lists (G-11).
 
 ## Test commands
 
@@ -111,7 +113,7 @@ npm run be:test -- apps/api/test/conformance   # only after BE-31 is merged
 
 Do not guess these; write your working assumption in the PR and ask the lead (issue labelled `question`) if it blocks you.
 
-1. The mock wire shape (SRS BR-M04-01) uses statuses `draft`, `pending_review`, `approved`, `rejected`, `archived` and the old two-type model (`mcq`, `structured`), while v2 (v2-question-bank 4.1, exam schema D1/D12) has Draf, Semakan, Lulus, Terbit, Diarkib and the part tree. The frontend consumes the contract, so the contract PR (label `contract`) must say which shape the wire uses and how the old values map (for example `pending_review` to `review`, `approved` to `published`). Working assumption: v2 codes on the wire, mapping table in the contract PR; the lead decides.
+1. **D54(a) (2026-10-19): decided in principle, exact codes still open.** The user decided that questions use the v2 lifecycle on the wire (Draf, Semakan, Lulus, Terbit, Diarkib per v2-question-bank 4.1 and exam schema D12 "keep exactly"; D54's short list names four states and omits Lulus, which the approved docs keep) and not the mock's `draft`/`pending_review`/`approved`/`rejected`; the mock is realigned at the http switch. The requirement docs define BM labels only, not codes, so the exact wire codes are open: default (written in Outputs above) `draft`, `review`, `approved`, `published`, `archived`. The contract PR (label `contract`) states the codes and the old-to-new mapping table; the part tree replaces the old `mcq`/`structured` types as in exam schema D1.
 2. `setStatus` is the interface BE-10 needs from this card; confirm the signature with PC-5 in the contract/cross-lane issue if BE-10 starts first.
 
 ## Prompt for Claude Code

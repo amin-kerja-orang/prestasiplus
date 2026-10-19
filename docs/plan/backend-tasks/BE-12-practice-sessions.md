@@ -29,7 +29,7 @@ The practice write path in one transaction, as specified by ADR-0014 section 2: 
 ## Outputs
 
 - Contract: `packages/contract/src/practice/**` (start request/response, check, submit, session, answer row)
-- `apps/api/prisma/schema/practice.prisma` + migration: `practice_sessions` (uuid), `practice_answers`, `revision_queue`, `mastery`, `practice_checks`, `subject_usage`
+- `apps/api/prisma/schema/practice.prisma` + migration: `practice_sessions` (uuid), `practice_answers`, `revision_queue`, `mastery`, `practice_checks`, `subject_usage`; **OD-28 (2026-10-19, OWN-7):** also `practice_session_questions` (`session_id` uuid FK cascade, `position` smallint with `unique (session_id, position)`, `question_id` FK, `question_version_no` int: the version served; data-model section 3).
 - `apps/api/src/modules/practice/**`: `PracticeRepository` (only doorway: `startSession`, `checkAnswer`, `completeSession`, `history`, `answers`, `queue`, `mastery`)
 - Seed: `apps/api/prisma/seed/practice.ts` (a few completed sessions and answers for seeded students)
 - Tests under `apps/api/test/practice/**`
@@ -62,7 +62,7 @@ Learner read endpoints (dashboard, subjects, mastery, revision lists, targets, s
 
 ## DB tables touched
 
-`practice_sessions`, `practice_answers`, `revision_queue`, `mastery`, `practice_checks`, `subject_usage`, `wallets`/`coin_ledger`/`streaks` (via BE-11 service), `questions` (via repository only).
+`practice_sessions`, `practice_answers`, `revision_queue`, `mastery`, `practice_checks`, `subject_usage`, `wallets`/`coin_ledger`/`streaks` (via BE-11 service), `questions` (via repository only).; **OD-28 (2026-10-19, OWN-7):** `practice_session_questions`.
 
 ## Acceptance criteria
 
@@ -76,6 +76,7 @@ Learner read endpoints (dashboard, subjects, mastery, revision lists, targets, s
 8. Writes under Mod Pelajar are stamped `is_test`.
 9. Mock parity: for identical seeded inputs the responses equal the mock handler's outputs on the fields asserted in `src/modules/m05-practice/__tests__/mock/practice-store.test.ts` (document any intentional difference in the PR and the deviations log).
 10. Roles: no session 401; missing CSRF 403 `CSRF_INVALID`; every route needs a signed-in user (any role).
+11. **OD-28 (2026-10-19, OWN-7):** a started session stores its served questions in `practice_session_questions` in order with the version served; `check` and `submit` grade against that version even after the question is edited (version n+1) in between; positions are unique per session; deleting the session cascades; a session started with 10 questions reads back the same 10 ids in the same order.
 
 ## Test commands
 

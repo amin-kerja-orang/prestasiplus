@@ -29,7 +29,7 @@ The performance and analytics reads that Murid, Guru and Admin Sekolah screens u
 ## Outputs
 
 - Contract: `packages/contract/src/reports/performance.ts` (and further files in `reports/`)
-- `apps/api/prisma/schema/reports.prisma` + migration: `headcount_configs`, `headcount_entries`, `timeline_posts`, `risk_profiles`, `sp_records`, `spm_history` (only those the mock persists; everything else is computed) and the SQL views/indexes the reads need
+- `apps/api/prisma/schema/reports.prisma` + migration: `headcount_configs`, `headcount_entries`, `timeline_posts`, `risk_profiles`, `sp_records`, `spm_history` (only those the mock persists; everything else is computed) and the SQL views/indexes the reads need; **OD-28 (2026-10-19, OWN-7):** also `timeline_post_photos` (`post_id` FK cascade, `file_id` FK `files`, `caption` null, `position`) and `spm_history_subjects` (`spm_history_id` FK cascade, `subject_name`, `gps` numeric(4,2), `candidates` int); the data model names BE-19 as owner of both.
 - `apps/api/src/modules/reports/performance/**` using SQL views or `$queryRaw` with indexes; a `StatsService` for percentiles/rank (exported for BE-20, BE-21, BE-22)
 - Seed `apps/api/prisma/seed/poc/performance.ts` (headcount configs/entries, timeline posts for the PoC; one line in the seed registry)
 - Tests under `apps/api/test/performance/**`
@@ -60,7 +60,7 @@ Every route below exists in the mock (verified).
 
 ## DB tables touched
 
-Read: `practice_answers`, `practice_sessions`, `enrolments`, `classrooms`, `users`, `schools`, `exam_attempts` (scores only). Write: `headcount_*`, `timeline_posts`.
+Read: `practice_answers`, `practice_sessions`, `enrolments`, `classrooms`, `users`, `schools`, `exam_attempts` (scores only). Write: `headcount_*`, `timeline_posts`.; **OD-28 (2026-10-19, OWN-7):** `timeline_post_photos`, `spm_history_subjects`.
 
 ## Acceptance criteria
 
@@ -73,6 +73,7 @@ Read: `practice_answers`, `practice_sessions`, `enrolments`, `classrooms`, `user
 7. Dashboard-class queries on 100k generated answer rows complete under 300 ms on a developer laptop (median of 20 runs, number recorded in the PR; a miss is a finding, not a blocker).
 8. Reports read other lanes' tables only through `PracticeRepository` / `ClassesRepository`, or through read-only SQL views defined in this card's migration and documented in the PR with the columns they depend on (a `cross-lane` issue tells PC-2 which columns must stay).
 9. Roles: per the access matrix and the mock guards in each handler file; no session 401; missing CSRF 403 `CSRF_INVALID` on POST/DELETE.
+10. **OD-28 (2026-10-19, OWN-7):** a timeline post with two photos stores two `timeline_post_photos` rows (file through BE-04, caption, position) and returns `photos[]` in the mock shape in `position` order; an SPM history year with several subjects stores one `spm_history_subjects` row per subject and returns `subjects[]` in the mock shape; deleting the parent cascades to both child tables.
 
 ## Test commands
 

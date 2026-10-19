@@ -32,7 +32,7 @@ Persist and serve the M02 user and school management used by Admin Pusat and Adm
 ## Outputs
 
 - Contract: `packages/contract/src/users/**`, `packages/contract/src/schools/**` (users and schools files only; BE-25 adds its own files in `schools/`)
-- `apps/api/prisma/schema/identity.prisma` (extends `users`: profile fields, `is_active`, `is_suspended`, `join_code`, `class_label`, `ic_hash`, `ic_masked`, `trial_questions_used integer not null default 0` (mock BR-07 trial counter, used by BE-25/BE-12); no plaintext IC, no `faith`; adds `import_jobs` with per-row results) and `apps/api/prisma/schema/schools.prisma` (extends `schools`), one migration
+- `apps/api/prisma/schema/identity.prisma` (extends `users`: profile fields, `is_active`, `is_suspended`, `join_code`, `class_label`, `ic_hash`, `ic_masked`, `trial_questions_used integer not null default 0` (mock BR-07 trial counter, used by BE-25/BE-12); no plaintext IC, no `faith`; adds `import_jobs` with per-row results) and `apps/api/prisma/schema/schools.prisma` (extends `schools`), one migration **OD-28 (2026-10-19, OWN-4):** `schools.prisma` also creates `jpns` (`code` unique, `name`) and `ppds` (`jpn_id` FK, `code` unique and stored exactly as the school `district` value, `name`), both with the `legacy_*` columns; `schools.jpn_id` and `schools.ppd_id` reference them. The seed derives the rows from the distinct state and district of the seeded schools (plan 14.7 T-09 rule); `GET /api/jpn` reads `jpns` and `ppds`.
 - `apps/api/src/modules/{users,schools}/**`: repositories are the only doorway to these tables (ADR-0014): `users.get`, `findByEmail`, `search`, `schools.search`, `schools.options`, for other cards
 - Import service for CSV with a per-row result report (used by `bulk-import` here and by the student import in BE-25)
 - Seed `apps/api/prisma/seed/core/schools.ts` (a small fictitious set of schools across 2 states and 2 districts)
@@ -69,7 +69,7 @@ Subscriptions, packages, parent invites, complimentary students, **`POST /api/ad
 
 ## DB tables touched
 
-`users`, `user_roles`, `user_scopes`, `schools`, `import_jobs` (new, per-row results).
+`users`, `user_roles`, `user_scopes`, `schools`, `import_jobs` (new, per-row results).; **OD-28 (2026-10-19, OWN-4):** `jpns`, `ppds` (new, `schools.prisma`).
 
 ## Acceptance criteria
 
@@ -83,6 +83,7 @@ Subscriptions, packages, parent invites, complimentary students, **`POST /api/ad
 8. List pagination `meta` (`page`, `pageSize`, `totalItems`, `totalPages`, `from`, `to`, `counts`) is exact for the seeded data; a test recomputes the counts from the table.
 9. ~~`POST /api/admin/users/:id/impersonate`~~ is not built (user decision 2026-10-19, UD-2): there is one mechanism only, Mod Pelajar via `POST /api/session/mode` (D31c). A test asserts that the route does not exist (404).
 10. Roles: only `admin` may use `/api/admin/users*`, `/api/admin/schools*`, `/api/admin/teachers*`, `/api/admin/config/defaults` except where the mock allows `school_admin` (per `requireAdmin`/`requireSchoolAdmin` guards in the handlers); everyone else gets 403; no session 401; missing CSRF 403 `CSRF_INVALID`.
+11. **OD-28 (2026-10-19, OWN-4):** `jpns` and `ppds` exist and are filled by the seed from the distinct state and district of the seeded schools (one `jpns` row per state, one `ppds` row per district under its JPN, `ppds.code` equal to the school `district` value); every seeded school resolves to one JPN and one PPD; `GET /api/jpn` returns the JPN list with its PPDs in the mock shape; `jpns.code` and `ppds.code` are unique; both tables carry `legacy_source`/`legacy_id` with the unique pair and are listed in `migratable-models.json`.
 
 ## Test commands
 
@@ -108,6 +109,7 @@ npm run be:test -- apps/api/test/conformance   # only after BE-31 is merged
 - Each table that could receive .cloud rows has `legacy_source text null`, `legacy_id text null` and `unique (legacy_source, legacy_id)`, and is listed in `apps/api/prisma/migratable-models.json`. These columns never appear in the contract or in an API response.
 - Enums are `text` + `check` with English codes (no Postgres enum types); anything the source may lack is nullable or has a documented default; seeds never set `legacy_*` and are idempotent.
 - Add or update this entity's row in the mapping matrix (plan section 14.7) in the same PR.
+- **OD-28 (2026-10-19, OWN-4):** the matrix rows `jpns` and `ppds` (derived from distinct `schools.state` and `schools.district`, T-09) are owned by this card.
 
 ## Open questions
 

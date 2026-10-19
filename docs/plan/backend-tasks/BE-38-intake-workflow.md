@@ -13,7 +13,7 @@
 
 ## Goal
 
-(D52) Connect upload, OCR and the AI service to the question bank: an extraction job turns a batch into reviewable **items**; reviewers edit, accept (creating a Draf question through the M04 owner service), reject or mark duplicates; the existing BE-10 lifecycle then carries Draf -> Semakan -> Lulus -> Terbit. The AI never approves.
+(D52) Connect upload, OCR and the AI service to the question bank: an extraction job turns a batch into reviewable **items**; reviewers edit, accept (creating a Draf question through the M04 owner service), reject or mark duplicates; the existing BE-10 lifecycle then carries Draf -> Semakan -> Lulus -> Terbit (D54(a): on the wire these are the v2 codes `draft`, `review`, `approved`, `published`, BE-09 open question 1; the mock's `pending_review`/`approved` statuses are not used). The AI never approves.
 
 ## Inputs (read these)
 
@@ -74,6 +74,7 @@ New: `intake_items`, `intake_item_events`, `duplicate_links`; adds the nullable 
 6. Editing keeps the previous AI text in `intake_item_events`; every transition is audit-logged (who, when, from, to, reason).
 7. Provider failure or budget exhaustion leaves the batch recoverable (status and reason visible, retry works, no duplicate items after retry).
 8. No student, teacher or school identifier is stored in the extracted payload or sent to the provider (reuses BE-36 redaction; test with a planted cover page).
+9. **D54(a) (2026-10-19):** accepting an item creates a question whose wire status is the v2 `draft` code (BM Draf); no response, event or filter of this card carries a mock question status (`pending_review`, `rejected`, or `approved` meaning live); the item review states (`generated | needs_review | accepted | rejected | duplicate`) are a separate set and are not question statuses.
 
 ## Test commands
 

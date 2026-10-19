@@ -124,6 +124,7 @@ Replay the cases of the mock tests listed in Inputs. Exact BM messages are those
 19. **Wallet safety.** Every coin movement goes through the owner service in the caller's transaction and is idempotent per `(source, source_id)`; a failed game transaction leaves no ledger row. No code in this card writes `wallets` or `coin_ledger`.
 20. **Determinism and time.** Code reads the injectable `Clock` and the seeded PRNG, never `Date.now()` or `Math.random()`; day logic (spin, weekly board, Sekolah Bersaing week) is in Asia/Kuala_Lumpur.
 21. **Responses match the mock** for the seeded data: replay the mock-test cases of Inputs that do not depend on live totals.
+22. **D54(d) (2026-10-19):** lobby leaderboards, room players, the weekly competition and Sekolah Bersaing show the display names of classmates only within the scope the mock uses and never any other personal field (no IC, e-mail, phone, birth date); every seeded name and fixture name is fictitious; a row with `anonymous` set is shown without the name.
 
 ## Test commands
 
@@ -176,7 +177,7 @@ Do not guess these; write your working assumption in the PR and ask the lead (is
 9. **`.cloud` migration choices.** Whether completed rooms, game sessions and `.cloud` leagues are migrated (data migration 4.10, Q13) is the lead's decision; the proposed matrix above migrates `game_sessions` only.
 10. **Data model docs.** M16 tables sit in data model section 3.13 (backlog). The lead moves them into a new section (proposed 3.14 "Battle and games"), adds them to the ownership table 2.2 and the Prisma file list, records the G-11 exception for `game_rooms.state`, and adds the lane row to sessions.md section 5. This card does not edit those files.
 11. **Consumers and Admin Sekolah.** BE-20 (M11) needs `GameReadService`; its card does not list it yet. The Admin Sekolah menu item "Sekolah Bersaing" (matrix row 45, D-RAM-2) calls `GET /api/sekolah-bersaing` with the admin-school session; the route has no school scope in the mock (national board), as the catalogue states.
-12. **Privacy of minors (for the user to confirm).** Lobby leaderboards, room players and the weekly competition show full names of pupils (OQ-API-B4-4; SEC-M16-07 recommends first name + initial and opt-out). LEAD decision 2026-10-19 (default, user to confirm): replicate the live/mock behaviour, so classmates see each other's display names on leaderboards as the old system does; seeds and fixtures use fictitious names only; the `anonymous` flag of Sekolah Bersaing rows is honoured when set.
+12. **Privacy of minors (confirmed by the user, D54(d), 2026-10-19: closed).** Lobby leaderboards, room players and the weekly competition show full names of pupils (OQ-API-B4-4; SEC-M16-07 recommends first name + initial and opt-out). LEAD decision 2026-10-19, confirmed by the user (D54(d)): replicate the live/mock behaviour, so classmates see each other's display names on leaderboards as the old system does; seeds and fixtures use fictitious names only; the `anonymous` flag of Sekolah Bersaing rows is honoured when set.
 
 ## Prompt for Claude Code
 

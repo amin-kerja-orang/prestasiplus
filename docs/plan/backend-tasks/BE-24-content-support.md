@@ -29,7 +29,7 @@ CMS content (articles, banners, videos, notes, Perutusan messages, screenshots, 
 ## Outputs
 
 - Contract: `packages/contract/src/content/**`, `packages/contract/src/support/**`
-- `apps/api/prisma/schema/content.prisma` + migration (support tables live in the same file): `articles`, `article_attachments`, `banners`, `videos`, `video_schools`, `notes`, `perutusan`, `perutusan_comments`, `perutusan_reactions`, `perutusan_reads`, `screenshots`, `audio_kbat_sets`, `audio_kbat_attempts`, `support_config`, `support_tickets`
+- `apps/api/prisma/schema/content.prisma` + migration (support tables live in the same file): `articles`, `article_attachments`, `banners`, `videos`, `video_schools`, `notes`, `perutusan`, `perutusan_comments`, `perutusan_reactions`, `perutusan_reads`, `screenshots`, `audio_kbat_sets`, `audio_kbat_attempts`, `support_config`, `support_tickets`; **OD-28 (2026-10-19, OWN-7):** also `perutusan_files` (`perutusan_id` FK cascade, `file_id` FK `files`, `kind` text check `image`/`document`), the rows of the mock's embedded `images[]` and `documents[]`.
 - `apps/api/src/modules/content/**`, `apps/api/src/modules/support/**`
 - Seed `apps/api/prisma/seed/content.ts` (a handful of fictitious articles, banners, videos; one line in the registry)
 - Tests under `apps/api/test/content/**`, `apps/api/test/support/**`
@@ -64,7 +64,7 @@ Every route below exists in the mock (verified). Student audio play is built her
 
 ## DB tables touched
 
-The tables listed in Outputs; `notifications` (via `NotificationsService`), `files`.
+The tables listed in Outputs; `notifications` (via `NotificationsService`), `files`.; **OD-28 (2026-10-19, OWN-7):** `perutusan_files`.
 
 ## Acceptance criteria
 
@@ -77,6 +77,7 @@ The tables listed in Outputs; `notifications` (via `NotificationsService`), `fil
 7. Uploaded images (banners, article attachments, screenshots) go through BE-04 with `purpose=cms_image`.
 8. Roles: admin routes need `admin`; teacher routes as the mock guards; no session 401 where a session is required; missing CSRF 403 `CSRF_INVALID`.
 9. Audio KBAT student play (mock `audio.ts`, SRS M09 #24 to #26): all three routes need a session (401 otherwise); only `approved` sets are visible, so a draft or unknown set gives 404 (the mock answers the default "Not Found." for both routes) and the list contains approved sets only. `GET /api/audio-kbat-sets/:id` returns `id`, `title`, `instructions` and the 4 `sections` (`no`, `title`, `audioUrl`, the section's `questions` with `no`, `questionText`, `options` A to D and `marks`) and never the correct answers or explanations (recursive key-scan test); `audioUrl` is served through BE-04 `FileStorage` (authenticated, not a public path). `POST .../attempts` takes `{ answers: [{ no, choice }] }`: `answers` missing gives 422 `fields.answers` "Medan ini diperlukan."; a non-array, a `no` outside 1 to 30, a duplicate `no` or a `choice` outside A to D gives 422 `fields.answers` "Medan ini tidak sah."; success is 201 `{ data: { score, totalMarks } }` where each correct answer adds that question's marks; one `audio_kbat_attempts` row per submit (user from the session, never the body); `is_test` stamped under Mod Pelajar.
+10. **OD-28 (2026-10-19, OWN-7):** a perutusan with two images and one document stores three `perutusan_files` rows (`kind` `image` or `document`, file through BE-04) and returns `images[]` and `documents[]` in the mock shape; a `kind` outside `image`/`document` is refused; deleting the perutusan cascades to its file rows.
 
 ## Test commands
 
