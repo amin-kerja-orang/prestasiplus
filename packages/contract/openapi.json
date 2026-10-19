@@ -12986,6 +12986,1898 @@
         ],
         "description": "201; `message` is \"Berjaya menyertai kelas {name}.\""
       },
+      "BattleQuestionType": {
+        "type": "string",
+        "enum": [
+          "biasa",
+          "pksk",
+          "spm"
+        ]
+      },
+      "BattlePkskLevel": {
+        "type": "string",
+        "enum": [
+          "T1",
+          "T4"
+        ]
+      },
+      "BattleStatus": {
+        "type": "string",
+        "enum": [
+          "active",
+          "finished",
+          "forfeited",
+          "abandoned"
+        ]
+      },
+      "BattleWinner": {
+        "type": [
+          "string",
+          "null"
+        ],
+        "enum": [
+          "A",
+          "B",
+          null
+        ]
+      },
+      "BattleStandingPeriod": {
+        "type": "string",
+        "enum": [
+          "weekly",
+          "monthly",
+          "all_time"
+        ]
+      },
+      "BattleTournamentStatus": {
+        "type": "string",
+        "enum": [
+          "draft",
+          "registration",
+          "ongoing",
+          "completed"
+        ]
+      },
+      "BattleEmptyBody": {
+        "type": "object",
+        "properties": {},
+        "additionalProperties": false
+      },
+      "BattleRawError": {
+        "type": "object",
+        "properties": {
+          "error": {
+            "type": "string",
+            "minLength": 1,
+            "description": "BM message, see BATTLE_MESSAGES."
+          }
+        },
+        "required": [
+          "error"
+        ],
+        "additionalProperties": false
+      },
+      "BattleSuccess": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "enum": [
+              true
+            ]
+          }
+        },
+        "required": [
+          "success"
+        ],
+        "additionalProperties": false
+      },
+      "BattleStartRequest": {
+        "oneOf": [
+          {
+            "type": "object",
+            "properties": {
+              "question_type": {
+                "type": "string",
+                "enum": [
+                  "biasa"
+                ]
+              },
+              "subject_id": {
+                "$ref": "#/components/schemas/Id"
+              },
+              "open_to_all": {
+                "type": "boolean",
+                "description": "Treated as true only when literally true (anything else is false). No effect on an invitation."
+              }
+            },
+            "required": [
+              "question_type",
+              "subject_id"
+            ]
+          },
+          {
+            "type": "object",
+            "properties": {
+              "question_type": {
+                "type": "string",
+                "enum": [
+                  "pksk"
+                ]
+              },
+              "pksk_domain_id": {
+                "$ref": "#/components/schemas/Id"
+              },
+              "pksk_target_level": {
+                "$ref": "#/components/schemas/BattlePkskLevel"
+              },
+              "open_to_all": {
+                "type": "boolean",
+                "description": "Treated as true only when literally true (anything else is false). No effect on an invitation."
+              }
+            },
+            "required": [
+              "question_type",
+              "pksk_domain_id",
+              "pksk_target_level"
+            ]
+          },
+          {
+            "type": "object",
+            "properties": {
+              "question_type": {
+                "type": "string",
+                "enum": [
+                  "spm"
+                ]
+              },
+              "subject_id": {
+                "$ref": "#/components/schemas/Id"
+              },
+              "open_to_all": {
+                "type": "boolean",
+                "description": "Treated as true only when literally true (anything else is false). No effect on an invitation."
+              }
+            },
+            "required": [
+              "question_type",
+              "subject_id"
+            ]
+          }
+        ]
+      },
+      "BattleStartResponse": {
+        "type": "object",
+        "properties": {
+          "queue_id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 64,
+            "description": "Decimal string; the wire id of the waiting queue.",
+            "example": "1042"
+          }
+        },
+        "required": [
+          "queue_id"
+        ],
+        "additionalProperties": false
+      },
+      "BattleChallenger": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "grade_label": {
+            "type": "string",
+            "description": "\"Darjah n\" 1-6, \"Tingkatan n\" 7-11, \"\" otherwise."
+          },
+          "school": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "name",
+          "grade_label",
+          "school"
+        ],
+        "additionalProperties": false
+      },
+      "BattlePollMatchResponse": {
+        "oneOf": [
+          {
+            "type": "object",
+            "properties": {
+              "status": {
+                "type": "string",
+                "enum": [
+                  "waiting"
+                ]
+              }
+            },
+            "required": [
+              "status"
+            ],
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "properties": {
+              "status": {
+                "type": "string",
+                "enum": [
+                  "expired"
+                ]
+              }
+            },
+            "required": [
+              "status"
+            ],
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "properties": {
+              "status": {
+                "type": "string",
+                "enum": [
+                  "not_found"
+                ]
+              }
+            },
+            "required": [
+              "status"
+            ],
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "properties": {
+              "status": {
+                "type": "string",
+                "enum": [
+                  "incoming_challenge"
+                ]
+              },
+              "challenger": {
+                "$ref": "#/components/schemas/BattleChallenger"
+              }
+            },
+            "required": [
+              "status",
+              "challenger"
+            ],
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "properties": {
+              "status": {
+                "type": "string",
+                "enum": [
+                  "matched"
+                ]
+              },
+              "battle_uuid": {
+                "$ref": "#/components/schemas/Id"
+              }
+            },
+            "required": [
+              "status",
+              "battle_uuid"
+            ],
+            "additionalProperties": false
+          }
+        ]
+      },
+      "BattleAcceptChallengerResponse": {
+        "type": "object",
+        "properties": {
+          "matched": {
+            "type": "boolean",
+            "enum": [
+              true
+            ]
+          },
+          "battle_uuid": {
+            "$ref": "#/components/schemas/Id"
+          }
+        },
+        "required": [
+          "matched",
+          "battle_uuid"
+        ],
+        "additionalProperties": false
+      },
+      "BattlePollChallengerResponse": {
+        "oneOf": [
+          {
+            "type": "object",
+            "properties": {
+              "status": {
+                "type": "string",
+                "enum": [
+                  "waiting"
+                ]
+              }
+            },
+            "required": [
+              "status"
+            ],
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "properties": {
+              "status": {
+                "type": "string",
+                "enum": [
+                  "rejected"
+                ]
+              }
+            },
+            "required": [
+              "status"
+            ],
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "properties": {
+              "status": {
+                "type": "string",
+                "enum": [
+                  "expired"
+                ]
+              }
+            },
+            "required": [
+              "status"
+            ],
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "properties": {
+              "status": {
+                "type": "string",
+                "enum": [
+                  "not_found"
+                ]
+              }
+            },
+            "required": [
+              "status"
+            ],
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "properties": {
+              "status": {
+                "type": "string",
+                "enum": [
+                  "matched"
+                ]
+              },
+              "battle_uuid": {
+                "$ref": "#/components/schemas/Id"
+              }
+            },
+            "required": [
+              "status",
+              "battle_uuid"
+            ],
+            "additionalProperties": false
+          }
+        ]
+      },
+      "BattleSearchQuery": {
+        "type": "object",
+        "properties": {
+          "q": {
+            "type": "string",
+            "description": "Name fragment, case-insensitive; from 2 trimmed characters."
+          }
+        }
+      },
+      "BattleOpponent": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "name": {
+            "type": "string"
+          },
+          "school": {
+            "type": "string"
+          },
+          "avatar": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "school",
+          "avatar"
+        ],
+        "additionalProperties": false
+      },
+      "BattleSearchResponse": {
+        "type": "object",
+        "properties": {
+          "users": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/BattleOpponent"
+            },
+            "maxItems": 10
+          }
+        },
+        "required": [
+          "users"
+        ],
+        "additionalProperties": false
+      },
+      "BattleInviteRequest": {
+        "oneOf": [
+          {
+            "type": "object",
+            "properties": {
+              "question_type": {
+                "type": "string",
+                "enum": [
+                  "biasa"
+                ]
+              },
+              "subject_id": {
+                "$ref": "#/components/schemas/Id"
+              },
+              "receiver_id": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 64,
+                "description": "An existing student other than the sender.",
+                "example": "1042"
+              },
+              "open_to_all": {
+                "type": "boolean",
+                "description": "Treated as true only when literally true (anything else is false). No effect on an invitation."
+              }
+            },
+            "required": [
+              "question_type",
+              "subject_id",
+              "receiver_id"
+            ]
+          },
+          {
+            "type": "object",
+            "properties": {
+              "question_type": {
+                "type": "string",
+                "enum": [
+                  "pksk"
+                ]
+              },
+              "pksk_domain_id": {
+                "$ref": "#/components/schemas/Id"
+              },
+              "pksk_target_level": {
+                "$ref": "#/components/schemas/BattlePkskLevel"
+              },
+              "receiver_id": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 64,
+                "description": "An existing student other than the sender.",
+                "example": "1042"
+              },
+              "open_to_all": {
+                "type": "boolean",
+                "description": "Treated as true only when literally true (anything else is false). No effect on an invitation."
+              }
+            },
+            "required": [
+              "question_type",
+              "pksk_domain_id",
+              "pksk_target_level",
+              "receiver_id"
+            ]
+          },
+          {
+            "type": "object",
+            "properties": {
+              "question_type": {
+                "type": "string",
+                "enum": [
+                  "spm"
+                ]
+              },
+              "subject_id": {
+                "$ref": "#/components/schemas/Id"
+              },
+              "receiver_id": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 64,
+                "description": "An existing student other than the sender.",
+                "example": "1042"
+              },
+              "open_to_all": {
+                "type": "boolean",
+                "description": "Treated as true only when literally true (anything else is false). No effect on an invitation."
+              }
+            },
+            "required": [
+              "question_type",
+              "subject_id",
+              "receiver_id"
+            ]
+          }
+        ]
+      },
+      "BattleInvitation": {
+        "type": "object",
+        "properties": {
+          "uuid": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "sender_name": {
+            "type": "string"
+          },
+          "sender_school": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "uuid",
+          "sender_name",
+          "sender_school"
+        ],
+        "additionalProperties": false
+      },
+      "BattleInvitationsResponse": {
+        "type": "object",
+        "properties": {
+          "invitations": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/BattleInvitation"
+            }
+          }
+        },
+        "required": [
+          "invitations"
+        ],
+        "additionalProperties": false
+      },
+      "BattleInviteAcceptResponse": {
+        "type": "object",
+        "properties": {
+          "success": {
+            "type": "boolean",
+            "enum": [
+              true
+            ]
+          },
+          "battle_uuid": {
+            "$ref": "#/components/schemas/Id"
+          }
+        },
+        "required": [
+          "success",
+          "battle_uuid"
+        ],
+        "additionalProperties": false
+      },
+      "BattleLobbySubject": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "name": {
+            "type": "string"
+          },
+          "icon": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "colour": {
+            "type": "string"
+          },
+          "core": {
+            "type": "boolean",
+            "description": "True for the core subjects."
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "icon",
+          "colour",
+          "core"
+        ],
+        "additionalProperties": false
+      },
+      "BattleLobbyPkskDomain": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "name": {
+            "type": "string"
+          },
+          "icon": {
+            "type": "string"
+          },
+          "colour": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "icon",
+          "colour"
+        ],
+        "additionalProperties": false
+      },
+      "BattleLobbySpmSubject": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "name": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "name"
+        ],
+        "additionalProperties": false
+      },
+      "BattleLobby": {
+        "type": "object",
+        "properties": {
+          "grade": {
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "gradeLabel": {
+            "type": "string"
+          },
+          "spmUnlocked": {
+            "type": "boolean"
+          },
+          "subjects": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/BattleLobbySubject"
+            }
+          },
+          "pkskDomains": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/BattleLobbyPkskDomain"
+            }
+          },
+          "spmSubjects": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/BattleLobbySpmSubject"
+            }
+          }
+        },
+        "required": [
+          "grade",
+          "gradeLabel",
+          "spmUnlocked",
+          "subjects",
+          "pkskDomains"
+        ],
+        "additionalProperties": false
+      },
+      "BattleArenaOption": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 3
+          },
+          "label": {
+            "type": "string",
+            "enum": [
+              "A",
+              "B",
+              "C",
+              "D"
+            ]
+          },
+          "text": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "label",
+          "text"
+        ],
+        "additionalProperties": false
+      },
+      "BattleArenaQuestion": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "text": {
+            "type": "string"
+          },
+          "options": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/BattleArenaOption"
+            },
+            "minItems": 2,
+            "maxItems": 4
+          }
+        },
+        "required": [
+          "id",
+          "text",
+          "options"
+        ],
+        "additionalProperties": false
+      },
+      "BattleArenaResult": {
+        "type": "object",
+        "properties": {
+          "winner": {
+            "$ref": "#/components/schemas/BattleWinner"
+          },
+          "scoreA": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "scoreB": {
+            "type": "integer",
+            "minimum": 0
+          }
+        },
+        "required": [
+          "winner",
+          "scoreA",
+          "scoreB"
+        ],
+        "additionalProperties": false
+      },
+      "BattleArenaView": {
+        "type": "object",
+        "properties": {
+          "uuid": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "status": {
+            "$ref": "#/components/schemas/BattleStatus"
+          },
+          "you": {
+            "type": "string",
+            "enum": [
+              "A",
+              "B"
+            ]
+          },
+          "players": {
+            "type": "object",
+            "properties": {
+              "A": {
+                "type": "object",
+                "properties": {
+                  "name": {
+                    "type": "string"
+                  },
+                  "school": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "name",
+                  "school"
+                ],
+                "additionalProperties": false
+              },
+              "B": {
+                "type": "object",
+                "properties": {
+                  "name": {
+                    "type": "string"
+                  },
+                  "school": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "name",
+                  "school"
+                ],
+                "additionalProperties": false
+              }
+            },
+            "required": [
+              "A",
+              "B"
+            ],
+            "additionalProperties": false
+          },
+          "scores": {
+            "type": "object",
+            "properties": {
+              "A": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "B": {
+                "type": "integer",
+                "minimum": 0
+              }
+            },
+            "required": [
+              "A",
+              "B"
+            ],
+            "additionalProperties": false
+          },
+          "index": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 10
+          },
+          "total": {
+            "type": "number",
+            "enum": [
+              10
+            ]
+          },
+          "question": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/BattleArenaQuestion"
+              },
+              {
+                "type": [
+                  "object",
+                  "null"
+                ]
+              }
+            ]
+          },
+          "secondsLeft": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 15
+          },
+          "result": {
+            "$ref": "#/components/schemas/BattleArenaResult"
+          }
+        },
+        "required": [
+          "uuid",
+          "status",
+          "you",
+          "players",
+          "scores",
+          "index",
+          "total",
+          "question",
+          "secondsLeft"
+        ],
+        "additionalProperties": false
+      },
+      "BattleAnswerRequest": {
+        "type": "object",
+        "properties": {
+          "questionId": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "optionId": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "minimum": 0,
+            "maximum": 3,
+            "description": "Omitted or null is a timeout."
+          },
+          "seconds": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 15,
+            "description": "Seconds used, 0..15; floor(seconds) is scored."
+          }
+        },
+        "required": [
+          "questionId",
+          "seconds"
+        ]
+      },
+      "BattleAnswerResult": {
+        "type": "object",
+        "properties": {
+          "correct": {
+            "type": "boolean"
+          },
+          "correctOptionId": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 3
+          },
+          "points": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 1000
+          },
+          "you": {
+            "type": "object",
+            "properties": {
+              "score": {
+                "type": "integer",
+                "minimum": 0
+              }
+            },
+            "required": [
+              "score"
+            ],
+            "additionalProperties": false
+          },
+          "opponent": {
+            "type": "object",
+            "properties": {
+              "answered": {
+                "type": "boolean",
+                "enum": [
+                  true
+                ]
+              },
+              "correct": {
+                "type": "boolean"
+              },
+              "score": {
+                "type": "integer",
+                "minimum": 0
+              }
+            },
+            "required": [
+              "answered",
+              "correct",
+              "score"
+            ],
+            "additionalProperties": false
+          },
+          "next": {
+            "$ref": "#/components/schemas/BattleArenaQuestion"
+          },
+          "result": {
+            "$ref": "#/components/schemas/BattleArenaResult"
+          }
+        },
+        "required": [
+          "correct",
+          "correctOptionId",
+          "points",
+          "you",
+          "opponent"
+        ],
+        "additionalProperties": false
+      },
+      "BattleStudentStandingsQuery": {
+        "type": "object",
+        "properties": {
+          "period": {
+            "type": "string",
+            "description": "weekly (default) or monthly; any other value is weekly."
+          }
+        }
+      },
+      "BattleSchoolStandingsQuery": {
+        "type": "object",
+        "properties": {
+          "period": {
+            "type": "string",
+            "description": "weekly (default), monthly, all_time; any other value is all time."
+          },
+          "state": {
+            "type": "string",
+            "description": "Exact state name; filters rows only, never the podium."
+          }
+        }
+      },
+      "BattleStudentStanding": {
+        "type": "object",
+        "properties": {
+          "rank": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "userId": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "name": {
+            "type": "string"
+          },
+          "school": {
+            "type": "string"
+          },
+          "menang": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "seri": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "kalah": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "ketepatan": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 100
+          },
+          "streak": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "skor": {
+            "type": "integer",
+            "minimum": 0
+          }
+        },
+        "required": [
+          "rank",
+          "userId",
+          "name",
+          "school",
+          "menang",
+          "seri",
+          "kalah",
+          "ketepatan",
+          "streak",
+          "skor"
+        ],
+        "additionalProperties": false
+      },
+      "BattleSchoolStanding": {
+        "type": "object",
+        "properties": {
+          "rank": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "schoolId": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "name": {
+            "type": "string"
+          },
+          "state": {
+            "type": "string"
+          },
+          "type": {
+            "type": "string"
+          },
+          "battles": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "menang": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "seri": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "kalah": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "ketepatan": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 100
+          },
+          "pelajar": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "skor": {
+            "type": "integer",
+            "minimum": 0
+          }
+        },
+        "required": [
+          "rank",
+          "schoolId",
+          "name",
+          "state",
+          "type",
+          "battles",
+          "menang",
+          "seri",
+          "kalah",
+          "ketepatan",
+          "pelajar",
+          "skor"
+        ],
+        "additionalProperties": false
+      },
+      "BattlePodiumEntry": {
+        "type": "object",
+        "properties": {
+          "column": {
+            "anyOf": [
+              {
+                "type": "number",
+                "enum": [
+                  1
+                ]
+              },
+              {
+                "type": "number",
+                "enum": [
+                  2
+                ]
+              },
+              {
+                "type": "number",
+                "enum": [
+                  3
+                ]
+              }
+            ]
+          },
+          "schoolId": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "name": {
+            "type": "string"
+          },
+          "state": {
+            "type": "string"
+          },
+          "skor": {
+            "type": "integer",
+            "minimum": 0
+          }
+        },
+        "required": [
+          "column",
+          "schoolId",
+          "name",
+          "state",
+          "skor"
+        ],
+        "additionalProperties": false
+      },
+      "BattleSchoolStandingsResult": {
+        "type": "object",
+        "properties": {
+          "activePeriod": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/BattleStandingPeriod"
+              },
+              {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              }
+            ]
+          },
+          "rows": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/BattleSchoolStanding"
+            }
+          },
+          "podium": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/BattlePodiumEntry"
+            },
+            "maxItems": 3
+          }
+        },
+        "required": [
+          "activePeriod",
+          "rows",
+          "podium"
+        ],
+        "additionalProperties": false
+      },
+      "BattleListRow": {
+        "type": "object",
+        "properties": {
+          "uuid": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "playerA": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "$ref": "#/components/schemas/Id"
+              },
+              "name": {
+                "type": "string"
+              },
+              "homeHere": {
+                "type": "boolean"
+              }
+            },
+            "required": [
+              "id",
+              "name",
+              "homeHere"
+            ],
+            "additionalProperties": false
+          },
+          "scoreA": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "scoreB": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "playerB": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "$ref": "#/components/schemas/Id"
+              },
+              "name": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "id",
+              "name"
+            ],
+            "additionalProperties": false
+          },
+          "winner": {
+            "$ref": "#/components/schemas/BattleWinner"
+          },
+          "createdAt": {
+            "$ref": "#/components/schemas/Timestamp"
+          }
+        },
+        "required": [
+          "uuid",
+          "playerA",
+          "scoreA",
+          "scoreB",
+          "playerB",
+          "winner",
+          "createdAt"
+        ],
+        "additionalProperties": false
+      },
+      "BattleStandingBox": {
+        "type": "object",
+        "properties": {
+          "rank": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "battles": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "menang": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "seri": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "kalah": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "skor": {
+            "type": "integer",
+            "minimum": 0
+          }
+        },
+        "required": [
+          "rank",
+          "battles",
+          "menang",
+          "seri",
+          "kalah",
+          "skor"
+        ],
+        "additionalProperties": false
+      },
+      "BattleSchoolDetail": {
+        "type": "object",
+        "properties": {
+          "school": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "$ref": "#/components/schemas/Id"
+              },
+              "name": {
+                "type": "string"
+              },
+              "ppd": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "state": {
+                "type": "string"
+              },
+              "type": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "id",
+              "name",
+              "ppd",
+              "state",
+              "type"
+            ],
+            "additionalProperties": false
+          },
+          "allTime": {
+            "type": "object",
+            "properties": {
+              "battles": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "menang": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "ketepatan": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 100
+              },
+              "pelajar": {
+                "type": "integer",
+                "minimum": 0
+              }
+            },
+            "required": [
+              "battles",
+              "menang",
+              "ketepatan",
+              "pelajar"
+            ],
+            "additionalProperties": false
+          },
+          "week": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/BattleStandingBox"
+              },
+              {
+                "type": [
+                  "object",
+                  "null"
+                ]
+              }
+            ]
+          },
+          "month": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/BattleStandingBox"
+              },
+              {
+                "type": [
+                  "object",
+                  "null"
+                ]
+              }
+            ]
+          },
+          "fighters": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "userId": {
+                  "$ref": "#/components/schemas/Id"
+                },
+                "name": {
+                  "type": "string"
+                },
+                "skor": {
+                  "type": "integer",
+                  "minimum": 0
+                }
+              },
+              "required": [
+                "userId",
+                "name",
+                "skor"
+              ],
+              "additionalProperties": false
+            },
+            "maxItems": 5
+          },
+          "recent": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/BattleListRow"
+            },
+            "maxItems": 10
+          }
+        },
+        "required": [
+          "school",
+          "allTime",
+          "week",
+          "month",
+          "fighters",
+          "recent"
+        ],
+        "additionalProperties": false
+      },
+      "BattleTournamentActive": {
+        "type": "object",
+        "properties": {
+          "uuid": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "title": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "registration",
+              "ongoing"
+            ]
+          },
+          "live_match": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "properties": {
+              "school_a": {
+                "type": "string"
+              },
+              "school_b": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "school_a",
+              "school_b"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "required": [
+          "uuid",
+          "title",
+          "status",
+          "live_match"
+        ],
+        "additionalProperties": false
+      },
+      "BattleTournamentListItem": {
+        "type": "object",
+        "properties": {
+          "uuid": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "title": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "registration",
+              "ongoing"
+            ]
+          }
+        },
+        "required": [
+          "uuid",
+          "title",
+          "status"
+        ],
+        "additionalProperties": false
+      },
+      "BattleTournamentFormOptions": {
+        "type": "object",
+        "properties": {
+          "educationLevels": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "enum": [
+                    "tingkatan4",
+                    "tingkatan5",
+                    "spm"
+                  ]
+                },
+                "name": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "id",
+                "name"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "subjects": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "$ref": "#/components/schemas/Id"
+                },
+                "name": {
+                  "type": "string"
+                },
+                "code": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "id",
+                "name",
+                "code"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "examPapers": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "$ref": "#/components/schemas/Id"
+                },
+                "name": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "id",
+                "name"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "spmCounts": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "integer",
+              "minimum": 0
+            }
+          }
+        },
+        "required": [
+          "educationLevels",
+          "subjects",
+          "examPapers",
+          "spmCounts"
+        ],
+        "additionalProperties": false
+      },
+      "BattleTournamentCreateRequest": {
+        "type": "object",
+        "properties": {
+          "title": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 255
+          },
+          "description": {
+            "type": "string"
+          },
+          "education_level_id": {
+            "type": "string",
+            "enum": [
+              "tingkatan4",
+              "tingkatan5",
+              "spm"
+            ]
+          },
+          "format": {
+            "type": "string",
+            "enum": [
+              "single_match",
+              "knockout",
+              "league",
+              "hybrid"
+            ]
+          },
+          "groups_count": {
+            "type": "integer",
+            "minimum": 2,
+            "maximum": 8
+          },
+          "question_mode": {
+            "type": "string",
+            "enum": [
+              "subject",
+              "exam_paper",
+              "random_mix"
+            ]
+          },
+          "subject_id": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "exam_paper_id": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "mixed_subject_ids": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Id"
+            }
+          },
+          "total_questions": {
+            "type": "integer",
+            "minimum": 5,
+            "maximum": 100
+          },
+          "time_window_minutes": {
+            "type": "integer",
+            "minimum": 10,
+            "maximum": 180
+          },
+          "top_n_scoring": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 50
+          },
+          "min_participants": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 100
+          },
+          "registration_opens_at": {
+            "type": "string",
+            "description": "Local YYYY-MM-DDTHH:mm in Asia/Kuala_Lumpur; \"\" means no date.",
+            "example": "2026-11-01T08:00"
+          },
+          "registration_closes_at": {
+            "type": "string",
+            "description": "Local YYYY-MM-DDTHH:mm in Asia/Kuala_Lumpur; \"\" means no date.",
+            "example": "2026-11-01T08:00"
+          },
+          "action": {
+            "type": "string",
+            "enum": [
+              "draft",
+              "open_registration"
+            ]
+          }
+        },
+        "required": [
+          "title",
+          "education_level_id",
+          "format",
+          "question_mode",
+          "total_questions",
+          "time_window_minutes",
+          "top_n_scoring",
+          "min_participants",
+          "action"
+        ]
+      },
+      "BattleTournamentCreated": {
+        "type": "object",
+        "properties": {
+          "uuid": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "draft",
+              "registration"
+            ]
+          }
+        },
+        "required": [
+          "uuid",
+          "status"
+        ],
+        "additionalProperties": false
+      },
+      "BattleTournamentDetail": {
+        "type": "object",
+        "properties": {
+          "uuid": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "title": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "status": {
+            "$ref": "#/components/schemas/BattleTournamentStatus"
+          },
+          "educationLevelId": {
+            "type": "string",
+            "enum": [
+              "tingkatan4",
+              "tingkatan5",
+              "spm"
+            ]
+          },
+          "format": {
+            "type": "string",
+            "enum": [
+              "single_match",
+              "knockout",
+              "league",
+              "hybrid"
+            ]
+          },
+          "groupsCount": {
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "questionMode": {
+            "type": "string",
+            "enum": [
+              "subject",
+              "exam_paper",
+              "random_mix"
+            ]
+          },
+          "subjectId": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/Id"
+              },
+              {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              }
+            ]
+          },
+          "examPaperId": {
+            "type": "null"
+          },
+          "mixedSubjectIds": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Id"
+            }
+          },
+          "totalQuestions": {
+            "type": "integer"
+          },
+          "timeWindowMinutes": {
+            "type": "integer"
+          },
+          "topNScoring": {
+            "type": "integer"
+          },
+          "minParticipants": {
+            "type": "integer"
+          },
+          "registrationOpensAt": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/Timestamp"
+              },
+              {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              }
+            ]
+          },
+          "registrationClosesAt": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/Timestamp"
+              },
+              {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              }
+            ]
+          },
+          "liveMatch": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "properties": {
+              "schoolA": {
+                "type": "string"
+              },
+              "schoolB": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "schoolA",
+              "schoolB"
+            ],
+            "additionalProperties": false
+          },
+          "createdAt": {
+            "$ref": "#/components/schemas/Timestamp"
+          }
+        },
+        "required": [
+          "uuid",
+          "title",
+          "description",
+          "status",
+          "educationLevelId",
+          "format",
+          "groupsCount",
+          "questionMode",
+          "subjectId",
+          "examPaperId",
+          "mixedSubjectIds",
+          "totalQuestions",
+          "timeWindowMinutes",
+          "topNScoring",
+          "minParticipants",
+          "registrationOpensAt",
+          "registrationClosesAt",
+          "liveMatch",
+          "createdAt"
+        ],
+        "additionalProperties": false
+      },
       "AccessGroupId": {
         "type": "string",
         "enum": [
@@ -28860,6 +30752,1611 @@
           },
           "422": {
             "description": "VALIDATION_ERROR fields.classCode \"Sila masukkan kod kelas.\"",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/battle/quick-match": {
+      "post": {
+        "tags": [
+          "battle"
+        ],
+        "summary": "Join the quick-match queue (M16-02)",
+        "description": "Joins the quick-match queue and returns the queue id. Response is raw (un-enveloped, live-shaped).\nThe server first checks that 10 eligible keyless questions can be drawn; otherwise 422 with an empty body `{}`.\n422 `{}` also covers an invalid question_type, subject, PKSK domain or level; 403 `{}` is an SPM request from a caller below Tingkatan 4. The BM texts (see BATTLE_MESSAGES) are NOT sent on these two routes (BR-M16-03).\nOpponents are deterministic bots chosen by the server (D53(a)); real-time multiplayer is not part of this contract.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Value of Session.csrf; required on every mutating request."
+            },
+            "required": true,
+            "description": "Value of Session.csrf; required on every mutating request.",
+            "name": "X-CSRF-Token",
+            "in": "header"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BattleStartRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "A waiting queue owned by the caller.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BattleStartResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED \"Unauthenticated.\" (no valid session).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Empty body `{}` (SPM requested below Tingkatan 4; the text is not sent), or CSRF_INVALID (ErrorBody).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "anyOf": [
+                    {
+                      "$ref": "#/components/schemas/BattleEmptyBody"
+                    },
+                    {
+                      "$ref": "#/components/schemas/ErrorBody"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Empty body `{}`.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BattleEmptyBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/battle/school-battle": {
+      "post": {
+        "tags": [
+          "battle"
+        ],
+        "summary": "Join the school-battle queue (M16-03)",
+        "description": "Joins the school-battle queue and returns the queue id. Response is raw (un-enveloped, live-shaped).\nThe server first checks that 10 eligible keyless questions can be drawn; otherwise 422 with an empty body `{}`.\n422 `{}` also covers an invalid question_type, subject, PKSK domain or level; 403 `{}` is an SPM request from a caller below Tingkatan 4. The BM texts (see BATTLE_MESSAGES) are NOT sent on these two routes (BR-M16-03).\nOpponents are deterministic bots chosen by the server (D53(a)); real-time multiplayer is not part of this contract.\nSame body and answers as M16-02; the bot opponent must be from another school (widened when nobody fits).",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Value of Session.csrf; required on every mutating request."
+            },
+            "required": true,
+            "description": "Value of Session.csrf; required on every mutating request.",
+            "name": "X-CSRF-Token",
+            "in": "header"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BattleStartRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "A waiting queue owned by the caller (mode school_battle).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BattleStartResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED \"Unauthenticated.\" (no valid session).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Empty body `{}` (SPM requested below Tingkatan 4; the text is not sent), or CSRF_INVALID (ErrorBody).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "anyOf": [
+                    {
+                      "$ref": "#/components/schemas/BattleEmptyBody"
+                    },
+                    {
+                      "$ref": "#/components/schemas/ErrorBody"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Empty body `{}`.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BattleEmptyBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/battle/poll-match/{queueId}": {
+      "get": {
+        "tags": [
+          "battle"
+        ],
+        "summary": "Poll a queue (M16-04)",
+        "description": "Polled every 3 s by the owner. Only the owner sees the queue; anyone else gets `{status:\"not_found\"}` with HTTP 200.\nThe first two polls answer `waiting`, the third matches a bot and answers `matched` with the battle uuid; later polls repeat that answer. A queue older than 120 s, or not polled for more than 10 s, answers `expired`.\nA pending join request turns the queue into `incoming_challenge`, with the challenger name, grade label and school (no id).\nThe 404 `{error:\"Tiada lawan dijumpai.\"}` answers when no bot can be picked; the 422 `{error:\"Soalan tidak mencukupi.\"}` when the 10 questions cannot be drawn at match time.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 64,
+              "description": "Queue id (decimal string).",
+              "example": "1042"
+            },
+            "required": true,
+            "description": "Queue id (decimal string).",
+            "name": "queueId",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Queue state.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BattlePollMatchResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED \"Unauthenticated.\" (no valid session).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "{error:\"Tiada lawan dijumpai.\"}: nobody can be picked as the opponent.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BattleRawError"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "{error:\"Soalan tidak mencukupi.\"}.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BattleRawError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/battle/accept-challenger/{queueId}": {
+      "post": {
+        "tags": [
+          "battle"
+        ],
+        "summary": "Accept the incoming challenger (M16-05)",
+        "description": "Owner only, queue in `incoming_challenge`. Creates the battle (owner = A) and answers `{matched:true, battle_uuid}`. Two concurrent accepts create exactly one battle. 404 `{error:\"Giliran tidak dijumpai.\"}` for an unknown, foreign or not incoming queue.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 64,
+              "description": "Queue id (decimal string).",
+              "example": "1042"
+            },
+            "required": true,
+            "description": "Queue id (decimal string).",
+            "name": "queueId",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Value of Session.csrf; required on every mutating request."
+            },
+            "required": true,
+            "description": "Value of Session.csrf; required on every mutating request.",
+            "name": "X-CSRF-Token",
+            "in": "header"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The battle was created.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BattleAcceptChallengerResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED \"Unauthenticated.\" (no valid session).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "CSRF_INVALID (missing or wrong X-CSRF-Token).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "{error:\"Giliran tidak dijumpai.\"}.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BattleRawError"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "{error:\"Soalan tidak mencukupi.\"}.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BattleRawError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/battle/reject-challenger/{queueId}": {
+      "post": {
+        "tags": [
+          "battle"
+        ],
+        "summary": "Reject the incoming challenger (M16-06)",
+        "description": "Owner only. The queue returns to `waiting` with the challenger cleared and the wait counter reset. Answers `{success:true}` also when the queue is not in `incoming_challenge` (no-op). 404 `{error:\"Giliran tidak dijumpai.\"}` for an unknown or foreign queue.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 64,
+              "description": "Queue id (decimal string).",
+              "example": "1042"
+            },
+            "required": true,
+            "description": "Queue id (decimal string).",
+            "name": "queueId",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Value of Session.csrf; required on every mutating request."
+            },
+            "required": true,
+            "description": "Value of Session.csrf; required on every mutating request.",
+            "name": "X-CSRF-Token",
+            "in": "header"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Done (or nothing to reject).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BattleSuccess"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED \"Unauthenticated.\" (no valid session).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "CSRF_INVALID (missing or wrong X-CSRF-Token).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "{error:\"Giliran tidak dijumpai.\"}.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BattleRawError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/battle/join-queue/{queueId}": {
+      "post": {
+        "tags": [
+          "battle"
+        ],
+        "summary": "Ask to join someone else's waiting queue (M16-12)",
+        "description": "Not the owner; the queue is `waiting` or `incoming_challenge` and has no pending join. Otherwise 404 `{error:\"Ralat menghantar permohonan.\"}` (unknown queue, own queue, queue not open, or a join already pending). The owner's next poll shows the joiner as the incoming challenger.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 64,
+              "description": "Queue id (decimal string).",
+              "example": "1042"
+            },
+            "required": true,
+            "description": "Queue id (decimal string).",
+            "name": "queueId",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Value of Session.csrf; required on every mutating request."
+            },
+            "required": true,
+            "description": "Value of Session.csrf; required on every mutating request.",
+            "name": "X-CSRF-Token",
+            "in": "header"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The join request was stored.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BattleSuccess"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED \"Unauthenticated.\" (no valid session).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "CSRF_INVALID (missing or wrong X-CSRF-Token).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "{error:\"Ralat menghantar permohonan.\"}.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BattleRawError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/battle/poll-challenger/{queueId}": {
+      "get": {
+        "tags": [
+          "battle"
+        ],
+        "summary": "Poll the owner's decision as the joiner (M16-13)",
+        "description": "Only the joiner of that queue; anyone else gets `{status:\"not_found\"}` with HTTP 200 (never an HTTP error). When the owner accepted and no battle exists yet, the battle is created exactly once (owner = A, joiner = B).",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 64,
+              "description": "Queue id (decimal string).",
+              "example": "1042"
+            },
+            "required": true,
+            "description": "Queue id (decimal string).",
+            "name": "queueId",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Decision state; `battle_uuid` only with `matched`.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BattlePollChallengerResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED \"Unauthenticated.\" (no valid session).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/battle/search-opponent": {
+      "get": {
+        "tags": [
+          "battle"
+        ],
+        "summary": "Search students by name to invite (M16-07)",
+        "description": "Query `q` shorter than 2 trimmed characters answers `{users: []}`. Otherwise students whose name contains `q` (case-insensitive), the caller excluded, sorted by name then id, at most 10.\nD54(d): classmates and opponents are shown by display name (and school) only; no IC, e-mail, phone or birth date is ever returned.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "description": "Name fragment, case-insensitive; from 2 trimmed characters."
+            },
+            "required": false,
+            "description": "Name fragment, case-insensitive; from 2 trimmed characters.",
+            "name": "q",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Matching students.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BattleSearchResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED \"Unauthenticated.\" (no valid session).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/battle/invite": {
+      "post": {
+        "tags": [
+          "battle"
+        ],
+        "summary": "Invite a student to a battle (M16-08)",
+        "description": "Body is the M16-02 body plus `receiver_id`. A `pending` invitation valid for 24 h is stored.\n422 `{error}`: \"Penerima tidak sah.\" (receiver is not an existing student, or is the sender), \"Soalan tidak mencukupi.\", \"Jenis soalan tidak sah.\", \"Subjek tidak sah.\", \"Domain PKSK tidak sah.\", \"Tahap PKSK tidak sah.\".\n403 `{error:\"Khas untuk pelajar Tingkatan 4 & 5 sahaja.\"}` for an SPM invite from a caller below Tingkatan 4 (here the text IS sent).",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Value of Session.csrf; required on every mutating request."
+            },
+            "required": true,
+            "description": "Value of Session.csrf; required on every mutating request.",
+            "name": "X-CSRF-Token",
+            "in": "header"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BattleInviteRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Invitation stored.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BattleSuccess"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED \"Unauthenticated.\" (no valid session).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "`{error:\"Khas untuk pelajar Tingkatan 4 & 5 sahaja.\"}`, or CSRF_INVALID (ErrorBody).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "anyOf": [
+                    {
+                      "$ref": "#/components/schemas/BattleRawError"
+                    },
+                    {
+                      "$ref": "#/components/schemas/ErrorBody"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "{error:\"<BM text>\"} with one of the messages above.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BattleRawError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/battle/invitations": {
+      "get": {
+        "tags": [
+          "battle"
+        ],
+        "summary": "Own pending invitations (M16-09)",
+        "description": "The caller's `pending` invitations younger than 24 h, newest first. D54(d): classmates and opponents are shown by display name (and school) only; no IC, e-mail, phone or birth date is ever returned.",
+        "responses": {
+          "200": {
+            "description": "Pending invitations.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BattleInvitationsResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED \"Unauthenticated.\" (no valid session).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/battle/invite/{uuid}/accept": {
+      "post": {
+        "tags": [
+          "battle"
+        ],
+        "summary": "Accept an invitation (M16-10)",
+        "description": "Receiver only, pending, within 24 h; otherwise 404 `{error:\"Cabaran tidak dijumpai.\"}`. Creates an `active` battle (sender = A, receiver = B, mode challenge).",
+        "parameters": [
+          {
+            "schema": {
+              "$ref": "#/components/schemas/Id"
+            },
+            "required": true,
+            "description": "Opaque entity id (string). Never parse or construct on the client.",
+            "name": "uuid",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Value of Session.csrf; required on every mutating request."
+            },
+            "required": true,
+            "description": "Value of Session.csrf; required on every mutating request.",
+            "name": "X-CSRF-Token",
+            "in": "header"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The battle was created.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BattleInviteAcceptResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED \"Unauthenticated.\" (no valid session).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "CSRF_INVALID (missing or wrong X-CSRF-Token).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "{error:\"Cabaran tidak dijumpai.\"}.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BattleRawError"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "{error:\"Soalan tidak mencukupi.\"}.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BattleRawError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/battle/invite/{uuid}/decline": {
+      "post": {
+        "tags": [
+          "battle"
+        ],
+        "summary": "Decline an invitation (M16-11)",
+        "description": "Receiver only, pending; otherwise 404 `{error:\"Cabaran tidak dijumpai.\"}`.",
+        "parameters": [
+          {
+            "schema": {
+              "$ref": "#/components/schemas/Id"
+            },
+            "required": true,
+            "description": "Opaque entity id (string). Never parse or construct on the client.",
+            "name": "uuid",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Value of Session.csrf; required on every mutating request."
+            },
+            "required": true,
+            "description": "Value of Session.csrf; required on every mutating request.",
+            "name": "X-CSRF-Token",
+            "in": "header"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Declined.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BattleSuccess"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED \"Unauthenticated.\" (no valid session).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "CSRF_INVALID (missing or wrong X-CSRF-Token).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "{error:\"Cabaran tidak dijumpai.\"}.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BattleRawError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/battle/forfeit/{uuid}": {
+      "post": {
+        "tags": [
+          "battle"
+        ],
+        "summary": "Forfeit an active battle (M16-14)",
+        "description": "A player of the battle only (raw route). Sets `forfeited`, the opponent wins. 404 `{error:\"Battle tidak dijumpai.\"}` for an unknown or foreign battle; 409 `{error:\"Battle sudah tamat.\"}` when it is not active.",
+        "parameters": [
+          {
+            "schema": {
+              "$ref": "#/components/schemas/Id"
+            },
+            "required": true,
+            "description": "Opaque entity id (string). Never parse or construct on the client.",
+            "name": "uuid",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Value of Session.csrf; required on every mutating request."
+            },
+            "required": true,
+            "description": "Value of Session.csrf; required on every mutating request.",
+            "name": "X-CSRF-Token",
+            "in": "header"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Forfeited.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BattleSuccess"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED \"Unauthenticated.\" (no valid session).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "CSRF_INVALID (missing or wrong X-CSRF-Token).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "{error:\"Battle tidak dijumpai.\"}.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BattleRawError"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "{error:\"Battle sudah tamat.\"}.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BattleRawError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/battle/lobby": {
+      "get": {
+        "tags": [
+          "battle"
+        ],
+        "summary": "Battle lobby data (M16-15)",
+        "description": "Grade label: \"Darjah n\" for grades 1 to 6, \"Tingkatan n\" for 7 to 11, \"\" otherwise. `spmUnlocked` when grade is 10 or more; `spmSubjects` is present only then, with the subjects that have a non-empty SPM pool.",
+        "responses": {
+          "200": {
+            "description": "Lobby data.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/BattleLobby"
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED \"Unauthenticated.\" (no valid session).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/battle/arena/{uuid}": {
+      "get": {
+        "tags": [
+          "battle"
+        ],
+        "summary": "Arena state of a battle (M16-16)",
+        "description": "Players of the battle only; anyone else gets 404 NOT_FOUND (never 403). The question carries id, text and options only: no answer key is ever sent before the player has answered.",
+        "parameters": [
+          {
+            "schema": {
+              "$ref": "#/components/schemas/Id"
+            },
+            "required": true,
+            "description": "Opaque entity id (string). Never parse or construct on the client.",
+            "name": "uuid",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Arena state.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/BattleArenaView"
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED \"Unauthenticated.\" (no valid session).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "NOT_FOUND \"Battle tidak dijumpai.\".",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/battle/arena/{uuid}/answer": {
+      "post": {
+        "tags": [
+          "battle"
+        ],
+        "summary": "Answer the next arena question (M16-17)",
+        "description": "`questionId` must equal the caller's next question. A correct answer scores `1000 - round(500 * s / 15)` with `s = floor(seconds)` clamped to 0..15; wrong or timeout scores 0.\nThe simulated opponent's answer for the same question is returned in `opponent` (D53(a)). After question 10 the battle is `finished`: higher total wins, equal and non-zero is a draw (null), 0-0 is player B.\n404 \"Battle tidak dijumpai.\" / \"Soalan tidak dijumpai.\"; 409 CONFLICT \"Battle sudah tamat.\"; 422 VALIDATION_ERROR \"Soalan tidak sah.\" (fields.questionId), \"Jawapan tidak sah.\" (fields.optionId), \"Masa tidak sah.\" (fields.seconds).",
+        "parameters": [
+          {
+            "schema": {
+              "$ref": "#/components/schemas/Id"
+            },
+            "required": true,
+            "description": "Opaque entity id (string). Never parse or construct on the client.",
+            "name": "uuid",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Value of Session.csrf; required on every mutating request."
+            },
+            "required": true,
+            "description": "Value of Session.csrf; required on every mutating request.",
+            "name": "X-CSRF-Token",
+            "in": "header"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BattleAnswerRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Result of the answer; `next` (keyless) or, after question 10, `result`.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/BattleAnswerResult"
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED \"Unauthenticated.\" (no valid session).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "CSRF_INVALID (missing or wrong X-CSRF-Token).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "NOT_FOUND \"Battle tidak dijumpai.\" or \"Soalan tidak dijumpai.\".",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "CONFLICT \"Battle sudah tamat.\".",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "VALIDATION_ERROR with fields.questionId, fields.optionId or fields.seconds.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/battle/standings/students": {
+      "get": {
+        "tags": [
+          "battle-standings"
+        ],
+        "summary": "Student ranking (M16-18)",
+        "description": "National, not paginated. Only finished and forfeited battles count; windows are weekly (from Monday) or monthly in Asia/Kuala_Lumpur. `skor` is the sum of round(score / 100) per side; `ketepatan` is round(correct / answered * 100); `streak` is consecutive wins from the newest battle. Order: skor desc, menang desc, user id. The internal school id is not in the body.\nD54(d): classmates and opponents are shown by display name (and school) only; no IC, e-mail, phone or birth date is ever returned.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "description": "weekly (default) or monthly; any other value is weekly."
+            },
+            "required": false,
+            "description": "weekly (default) or monthly; any other value is weekly.",
+            "name": "period",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Ranked students.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/BattleStudentStanding"
+                      }
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED \"Unauthenticated.\" (no valid session).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/battle/standings/schools": {
+      "get": {
+        "tags": [
+          "battle-standings"
+        ],
+        "summary": "School ranking (M16-19)",
+        "description": "Also feeds Portal Pentadbiran PG-12. `period` absent is weekly; any other unknown value is all time with `activePeriod: null`. `state` filters `rows` only; `podium` is the top 3 of the national list and \"#\" stays the national position. Figures are computed from battle rows.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "description": "weekly (default), monthly, all_time; any other value is all time."
+            },
+            "required": false,
+            "description": "weekly (default), monthly, all_time; any other value is all time.",
+            "name": "period",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "description": "Exact state name; filters rows only, never the podium."
+            },
+            "required": false,
+            "description": "Exact state name; filters rows only, never the podium.",
+            "name": "state",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Ranked schools and podium.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/BattleSchoolStandingsResult"
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED \"Unauthenticated.\" (no valid session).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/battle/schools/{id}": {
+      "get": {
+        "tags": [
+          "battle-standings"
+        ],
+        "summary": "School battle page (M16-20)",
+        "description": "`fighters` are the top 5 weekly students of the school; `recent` the 10 latest finished battles. D54(d): classmates and opponents are shown by display name (and school) only; no IC, e-mail, phone or birth date is ever returned.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 64,
+              "description": "School id.",
+              "example": "1042"
+            },
+            "required": true,
+            "description": "School id.",
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "School page.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/BattleSchoolDetail"
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED \"Unauthenticated.\" (no valid session).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "NOT_FOUND \"Sekolah tidak dijumpai.\".",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/battle/history": {
+      "get": {
+        "tags": [
+          "battle-standings"
+        ],
+        "summary": "Own battle history (M16-21)",
+        "description": "The caller's finished and forfeited battles, newest first, not paginated.",
+        "responses": {
+          "200": {
+            "description": "Own battles.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/BattleListRow"
+                      }
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED \"Unauthenticated.\" (no valid session).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/tournament/active": {
+      "get": {
+        "tags": [
+          "battle-tournaments"
+        ],
+        "summary": "Active tournaments banner (M16-01)",
+        "description": "A bare JSON array (no `{data}`). Stored status `registration` or `ongoing`; a `registration` tournament whose close date has passed is returned as `ongoing` (derived on read). Order: registration_opens_at (null last), then creation time. Drafts and completed are excluded. `live_match` is `null` (nothing sets it). The client treats any failure as an empty list.",
+        "responses": {
+          "200": {
+            "description": "Active tournaments.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/BattleTournamentActive"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED \"Unauthenticated.\" (no valid session).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/tournaments": {
+      "get": {
+        "tags": [
+          "battle-tournaments"
+        ],
+        "summary": "Active tournaments list (M16-42)",
+        "description": "Same selection and order as M16-01 with uuid, title and status only.",
+        "responses": {
+          "200": {
+            "description": "Active tournaments.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/BattleTournamentListItem"
+                      }
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED \"Unauthenticated.\" (no valid session).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "battle-tournaments"
+        ],
+        "summary": "Create a tournament (M16-44, admin)",
+        "description": "Creates a `draft` (action `draft`) or `registration` (action `open_registration`) tournament. No scheduling, matches, notifications or scoring exist.\n422 VALIDATION_ERROR collects every failing field in `fields`; the top-level message is the first field message. Messages: title \"Tajuk tournament diperlukan.\", education_level_id \"Sila pilih tahap pendidikan.\", format \"Format tidak sah.\", groups_count \"Bilangan kumpulan mesti antara 2 dan 8.\" (required for league and hybrid), question_mode / subject_id / exam_paper_id / mixed_subject_ids \"Sila pilih sumber soalan.\" (exam_paper is always refused), total_questions 5..100, time_window_minutes 10..180, top_n_scoring 1..50, min_participants 1..100 \"Nilai di luar julat.\", dates \"Tarikh tidak sah.\", registration_closes_at \"Tarikh tutup mesti selepas tarikh buka.\", action \"Tindakan tidak sah.\".",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Value of Session.csrf; required on every mutating request."
+            },
+            "required": true,
+            "description": "Value of Session.csrf; required on every mutating request.",
+            "name": "X-CSRF-Token",
+            "in": "header"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BattleTournamentCreateRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Created.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/BattleTournamentCreated"
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED \"Unauthenticated.\" (no valid session).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN \"This action is unauthorized.\" (role is not admin), or CSRF_INVALID.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "VALIDATION_ERROR with fields.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/tournaments/form-options": {
+      "get": {
+        "tags": [
+          "battle-tournaments"
+        ],
+        "summary": "Tournament form options (M16-43, admin)",
+        "description": "Education levels (tingkatan4 \"Tingkatan 4\", tingkatan5 \"Tingkatan 5\", spm \"SPM (Tingkatan 4 & 5)\"), active battle subjects sorted by name, `examPapers` always empty, `spmCounts` by subject code.",
+        "responses": {
+          "200": {
+            "description": "Form options.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/BattleTournamentFormOptions"
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED \"Unauthenticated.\" (no valid session).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN \"This action is unauthorized.\" (role is not admin).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/tournaments/{uuid}": {
+      "get": {
+        "tags": [
+          "battle-tournaments"
+        ],
+        "summary": "Tournament detail (M16-45)",
+        "description": "Drafts are visible to `admin` only; everyone else gets 404 NOT_FOUND \"Tournament tidak dijumpai.\", as for an unknown uuid. `liveMatch` here is camelCase (M16-01 is snake_case) and always null today.",
+        "parameters": [
+          {
+            "schema": {
+              "$ref": "#/components/schemas/Id"
+            },
+            "required": true,
+            "description": "Opaque entity id (string). Never parse or construct on the client.",
+            "name": "uuid",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Tournament.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/BattleTournamentDetail"
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED \"Unauthenticated.\" (no valid session).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "NOT_FOUND \"Tournament tidak dijumpai.\".",
             "content": {
               "application/json": {
                 "schema": {
