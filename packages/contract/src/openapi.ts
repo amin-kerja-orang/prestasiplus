@@ -28,6 +28,7 @@ import { BIJAK_PAPERS_COMPONENT_SCHEMAS, registerBijakPapersPaths } from './bija
 import { SPM_COMPONENT_SCHEMAS, registerSpmPaths } from './spm/paths'
 import { HEATMAP_COMPONENT_SCHEMAS, registerHeatmapPaths } from './heatmap/paths'
 import { CURRICULUM_COMPONENT_SCHEMAS, registerCurriculumPaths } from './curriculum/paths'
+import { PKSK_COMPONENT_SCHEMAS, registerPkskPaths } from './pksk/paths'
 
 /** Every shared schema that becomes a component. Domain tasks (T07, T08, T24...) append here. */
 export const COMPONENT_SCHEMAS = {
@@ -70,6 +71,7 @@ export const COMPONENT_SCHEMAS = {
   PrototypeItem: PrototypeItemSchema,
   ...CURRICULUM_COMPONENT_SCHEMAS, // BE-08
   ...PRACTICE_COMPONENT_SCHEMAS, // BE-12
+  ...PKSK_COMPONENT_SCHEMAS, // BE-42
 } as const
 
 export const CONTRACT_VERSION = '0.1.0'
@@ -90,6 +92,7 @@ export function buildOpenApiDocument(): Record<string, unknown> {
   registerCurriculumPaths(registry) // BE-08
   registerPracticePaths(registry) // BE-12
   registerClassesPaths(registry) // BE-17
+  registerPkskPaths(registry) // BE-42
   const generator = new OpenApiGeneratorV31(registry.definitions)
   return generator.generateDocument({
     openapi: '3.1.0',
