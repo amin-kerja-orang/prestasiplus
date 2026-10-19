@@ -21,7 +21,7 @@ beforeAll(async () => {
     name: 'migrate:demo',
     summary: 'demo entity (tests only)',
     async run(args: CommandArgs, ctx: CliContext) {
-      const report = await new Runner({ pool: ctx.pool }).run({
+      const report = await new Runner({ pool: ctx.pool, env: ctx.env }).run({
         mode: args.mode,
         steps: [demoStep(demoRows(6))],
         inputHash: hashInput(['cli-demo']),
@@ -126,7 +126,7 @@ describe('migration CLI', () => {
       name: 'migrate:badkit',
       summary: 'bad value through the kit (tests only)',
       async run(args: CommandArgs, ctx: CliContext) {
-        const report = await new Runner({ pool: ctx.pool }).run({
+        const report = await new Runner({ pool: ctx.pool, env: ctx.env }).run({
           mode: args.mode,
           inputHash: hashInput(['badkit']),
           steps: [

@@ -1,0 +1,4 @@
+{"id":1,"subject_id":1,"education_level_id":1,"number":1,"title":"Bab Contoh 1","strand":"A"}
+{"id":2,"subject_id":1,"education_level_id":1,"number":2,"title":"Bab Contoh 2","strand":"A"}
+{"id":3,"subject_id":2,"education_level_id":2,"number":1,"title":"Bab Contoh 3","strand":"B"}
+{"id":4,"subject_id":888,"education_level_id":2,"number":2,"title":"Bab Yatim","strand":"B"}

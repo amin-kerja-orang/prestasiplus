@@ -1,6 +1,6 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 
-import { ApplyRefusedError, Runner, RunInProgressError, hashInput } from '../../../src/migration/kit'
+import { ApplyGuardError, ApplyRefusedError, Runner, RunInProgressError, hashInput } from '../../../src/migration/kit'
 import { createKitDb, DEMO_DDL, demoRows, demoStep, type DemoSource, type KitDb } from './helpers'
 
 let kit: KitDb
@@ -8,7 +8,7 @@ let runner: Runner
 beforeAll(async () => {
   kit = await createKitDb()
   await kit.db.query(DEMO_DDL)
-  runner = new Runner({ pool: kit.pool })
+  runner = new Runner({ pool: kit.pool, env: { PP_ALLOW_MIGRATE_APPLY: '1' } })
 })
 afterAll(async () => {
   await kit.close()
@@ -174,5 +174,69 @@ describe('Runner dry-run and apply', () => {
     await expect(runner.run({ steps: [demoStep(demoRows(3))], inputHash: hash })).rejects.toBeInstanceOf(RunInProgressError)
     release()
     expect((await first).status).toBe('succeeded')
+  })
+})
+
+describe('Runner apply guard (LEAD condition from the BE-34 review)', () => {
+  const withEnv = (env: Record<string, string | undefined>) => new Runner({ pool: kit.pool, env })
+  const passingDryRun = async (name: string) => {
+    await reset()
+    const hash = hashInput([name])
+    const rows = demoRows(5)
+    await runner.run({ steps: [demoStep(rows)], inputHash: hash })
+    return { hash, rows }
+  }
+
+  it('refuses apply without PP_ALLOW_MIGRATE_APPLY=1, even after a passing dry-run, before any run row or batch', async () => {
+    const { hash, rows } = await passingDryRun('guard-no-flag')
+    const runsBefore = await count('etl_runs')
+    for (const env of [{}, { PP_ALLOW_MIGRATE_APPLY: 'true' }, { PP_ALLOW_MIGRATE_APPLY: '0' }]) {
+      const err = await withEnv(env).run({ mode: 'apply', steps: [demoStep(rows)], inputHash: hash }).catch((e: unknown) => e)
+      expect(err, JSON.stringify(env)).toBeInstanceOf(ApplyGuardError)
+      expect((err as Error).message).toMatch(/set PP_ALLOW_MIGRATE_APPLY=1/)
+    }
+    expect(await count()).toBe(0)
+    expect(await count('etl_runs')).toBe(runsBefore) // no run row was started
+    expect(await count('etl_checkpoints')).toBe(0)
+  })
+
+  it.each(['production', 'Production', 'PROD', ' prod '])(
+    'in production (%j) refuses a missing or wrong PP_MIGRATE_TARGET_DB',
+    async (nodeEnv) => {
+      const { hash, rows } = await passingDryRun('guard-prod-' + nodeEnv.trim())
+      for (const extra of [{}, { PP_MIGRATE_TARGET_DB: 'some_other_db' }, { PP_MIGRATE_TARGET_DB: '' }]) {
+        const err = await withEnv({ PP_ALLOW_MIGRATE_APPLY: '1', NODE_ENV: nodeEnv, ...extra })
+          .run({ mode: 'apply', steps: [demoStep(rows)], inputHash: hash })
+          .catch((e: unknown) => e)
+        expect(err, JSON.stringify(extra)).toBeInstanceOf(ApplyGuardError)
+        expect((err as Error).message).toMatch(/Refusing --apply in production: PP_MIGRATE_TARGET_DB must equal the connected database name/)
+      }
+      expect(await count()).toBe(0)
+    },
+  )
+
+  it('runs apply in production when PP_MIGRATE_TARGET_DB equals current_database() of the runner pool', async () => {
+    const { hash, rows } = await passingDryRun('guard-prod-ok')
+    const report = await withEnv({ PP_ALLOW_MIGRATE_APPLY: '1', NODE_ENV: 'production', PP_MIGRATE_TARGET_DB: kit.db.name }).run({
+      mode: 'apply',
+      steps: [demoStep(rows)],
+      inputHash: hash,
+    })
+    expect(report.status).toBe('succeeded')
+    expect(await count()).toBe(5)
+  })
+
+  it('runs apply outside production with only PP_ALLOW_MIGRATE_APPLY=1', async () => {
+    const { hash, rows } = await passingDryRun('guard-dev-ok')
+    const report = await withEnv({ PP_ALLOW_MIGRATE_APPLY: '1', NODE_ENV: 'development' }).run({ mode: 'apply', steps: [demoStep(rows)], inputHash: hash })
+    expect(report.status).toBe('succeeded')
+    expect(await count()).toBe(5)
+  })
+
+  it('does not guard dry-run: it needs no variable, even in production', async () => {
+    await reset()
+    const report = await withEnv({ NODE_ENV: 'production' }).run({ steps: [demoStep(demoRows(3))], inputHash: hashInput(['guard-dry']) })
+    expect(report.mode).toBe('dry-run')
+    expect(report.status).toBe('succeeded')
   })
 })

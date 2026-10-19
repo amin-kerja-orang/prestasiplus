@@ -1,5 +1,6 @@
 import type pg from 'pg'
 
+import { assertApplyAllowed } from './apply-guard'
 import { batches } from './batches'
 import { loadCheckpoint, saveCheckpoint } from './checkpoint'
 import { IdMap } from './id-map'
@@ -93,6 +94,11 @@ export class RunInProgressError extends Error {
 
 export interface RunnerDeps {
   pool: pg.Pool
+  /**
+   * Environment for the apply guard (default `process.env`). Commands pass `ctx.env` so the guard
+   * sees the same variables as the CLI. Dry-run never reads it.
+   */
+  env?: Readonly<Record<string, string | undefined>>
 }
 
 /**
@@ -101,7 +107,8 @@ export interface RunnerDeps {
  *  - `dry-run` (default): every step runs inside ONE transaction that is always rolled back, so no
  *    non-`etl_*` table changes. The run row, rejects and reconciliation are written on separate
  *    connections and survive the rollback. Checkpoints are not kept.
- *  - `apply`: refuses (`ApplyRefusedError`) unless a dry-run with `status = succeeded` exists for
+ *  - `apply`: first the shared apply guard (`ApplyGuardError`: `PP_ALLOW_MIGRATE_APPLY=1`, and in
+ *    production `PP_MIGRATE_TARGET_DB` = `current_database()`), then refuses (`ApplyRefusedError`) unless a dry-run with `status = succeeded` exists for
  *    the same `inputHash`, sources and entity set. Each batch is its own transaction that includes
  *    its rejects, counters and checkpoint, so a crash never leaves a half-batch and a re-run
  *    resumes at the next batch of the same run row.
@@ -112,9 +119,11 @@ export interface RunnerDeps {
 export class Runner {
   private readonly pool: pg.Pool
   private readonly ledger: RunLedger
+  private readonly env: Readonly<Record<string, string | undefined>>
 
   constructor(deps: RunnerDeps) {
     this.pool = deps.pool
+    this.env = deps.env ?? process.env
     this.ledger = new RunLedger(deps.pool)
   }
 
@@ -127,6 +136,9 @@ export class Runner {
     if (new Set(names).size !== names.length) throw new RangeError('Duplicate entity in the run.')
     const sources = [...new Set(steps.map((s) => s.source))].sort()
     const batchSize = options.batchSize ?? 1_000
+
+    // The apply guard lives here, not only in the CLI: refuse before any lock, run row or batch.
+    if (mode === 'apply') await assertApplyAllowed(this.pool, this.env)
 
     const lock = await this.pool.connect()
     try {
