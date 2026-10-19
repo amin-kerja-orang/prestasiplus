@@ -299,7 +299,7 @@ const longText = z
   .min(1, M.required)
   .max(2000, M.invalid)
 
-export const KirkpatrickInterventionCreateRequestSchema = z
+const interventionBody = z
   .object({
     studentId: z
       .union([z.string().refine((v) => v.trim() !== '', { error: requiredOrInvalid }), z.number().int()], { error: requiredOrInvalid })
@@ -316,9 +316,35 @@ export const KirkpatrickInterventionCreateRequestSchema = z
     beforeMood: moodInput.optional(),
     afterMood: moodInput.optional(),
   })
+
+/** The mock's legacy form names, mapped to the camelCase fields before parsing. */
+export const KIRKPATRICK_INTERVENTION_ALIASES = {
+  student_id: 'studentId',
+  alert_type: 'alertType',
+  action_date: 'actionDate',
+  alert_description: 'alertDescription',
+  action_taken: 'actionTaken',
+  before_accuracy: 'beforeAccuracy',
+  after_accuracy: 'afterAccuracy',
+  before_mood: 'beforeMood',
+  after_mood: 'afterMood',
+} as const
+
+/** Mock precedence (its pick helper): the camelCase key wins when it is present, even with a null value. */
+function kirkpatrickAliasKeys(input: unknown): unknown {
+  if (typeof input !== 'object' || input === null || Array.isArray(input)) return input
+  const out: Record<string, unknown> = { ...(input as Record<string, unknown>) }
+  for (const [snake, camel] of Object.entries(KIRKPATRICK_INTERVENTION_ALIASES)) {
+    if (!(camel in out) && snake in out) out[camel] = out[snake]
+  }
+  return out
+}
+
+export const KirkpatrickInterventionCreateRequestSchema = z
+  .preprocess(kirkpatrickAliasKeys, interventionBody)
   .meta({
     id: 'KirkpatrickInterventionCreateRequest',
-    description: 'camelCase only (the mock also accepts the legacy snake_case form names; the v2 wire does not). createdBy comes from the session, never from the body. Unknown keys are ignored.',
+    description: 'camelCase fields. The legacy snake_case form names of the mock (student_id, alert_type, action_date, alert_description, action_taken, before_accuracy, after_accuracy, before_mood, after_mood) are accepted too and mapped before validation; if both forms are sent the camelCase one wins (mock precedence). 422 fields are always keyed camelCase. createdBy comes from the session, never from the body. Unknown keys are ignored.',
   })
 
 /** Service rule behind `KirkpatrickInterventionCreateRequest.actionDate`: a real calendar day, YYYY-MM-DD. */

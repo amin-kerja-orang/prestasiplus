@@ -156,9 +156,28 @@ describe('POST /kirkpatrick/interventions request', () => {
     expect(fieldsOf(parse({ ...ok, studentId: true, beforeAccuracy: -1 }))).toEqual({ studentId: M.invalid, beforeAccuracy: M.invalid })
   })
 
-  it('keeps the legacy snake_case names out of the v2 wire', () => {
+  it('accepts the mock snake_case names and maps them, camelCase winning when both are sent', () => {
+    const snake = { student_id: '4664', alert_type: 'declining', action_date: '2026-09-24', alert_description: ' a ', action_taken: 'b', before_accuracy: '10.5', before_mood: 'sad' }
+    const r = parse(snake)
+    expect(r.success).toBe(true)
+    expect(r.data).toMatchObject({ studentId: '4664', alertType: 'declining', alertDescription: 'a', beforeAccuracy: '10.5', beforeMood: 'sad' })
+    expect(parse({ ...snake, alertType: 'mood' }).data).toMatchObject({ alertType: 'mood' })
+    // a present camelCase key wins even when it is null (mock pick), so the snake value is not used
+    expect(fieldsOf(parse({ ...snake, studentId: null }))).toEqual({ studentId: M.required })
+    expect(fieldsOf(parse({}))).toEqual(mockFields('intervention-empty'))
+  })
+
+  it('gives the exact 422 copy, keyed camelCase, on snake_case fields', () => {
     const snake = { student_id: '4664', alert_type: 'declining', action_date: '2026-09-24', alert_description: 'a', action_taken: 'b' }
-    expect(Object.keys(fieldsOf(parse(snake)))).toContain('studentId')
+    expect(fieldsOf(parse({ ...snake, alert_type: 'x', alert_description: '   ', before_accuracy: 101, after_accuracy: 'zz', before_mood: 'angry', action_date: 5 }))).toEqual({
+      alertType: M.invalid,
+      actionDate: M.invalid,
+      alertDescription: M.required,
+      beforeAccuracy: M.invalid,
+      afterAccuracy: M.invalid,
+      beforeMood: M.invalid,
+    })
+    expect(fieldsOf(parse({ student_id: '', action_taken: 'x'.repeat(2001) }))).toMatchObject({ studentId: M.required, actionTaken: M.invalid, alertType: M.required })
   })
 
   it('pins the state-dependent refusals to code, message and field', () => {
