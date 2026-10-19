@@ -444,7 +444,7 @@ All routes in this section use `requireAuth()` and operate on the session user o
 ### M01-19 `GET /api/public/stats`
 - Purpose: login page counters, computed per request (M01 SRS #21, BR-21; no stored figures).
 - Auth: public. Request: none.
-- Response: 200 `Env-D` `{ questionCount: number, subjectCount: number, levelCount: number }`. `questionCount` = M04 eligible questions (status approved and active); `subjectCount` = active M03 subjects; `levelCount` = active M03 education levels.
+- Response: 200 `Env-D` `{ questionCount: number, subjectCount: number, levelCount: number }`. `questionCount` = M04 eligible questions (mock today: status `approved` and active; real API: v2 lifecycle, D54a: status `published` and active); `subjectCount` = active M03 subjects; `levelCount` = active M03 education levels.
 - Errors: none. Side effects: none.
 - Owner: M01 reading M03/M04. Source: `m01/auth-stats.ts` R:12 (H via `auth-deps.ts` `platformStats`). Client: `m01/api/stats.ts` `getPlatformStats`. Card: BE-06. Contract: missing.
 
