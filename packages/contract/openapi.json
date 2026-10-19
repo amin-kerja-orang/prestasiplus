@@ -43124,6 +43124,614 @@
         ],
         "description": "On fields.csvFile (csv mode) or fields.pasteContent (paste mode)."
       },
+      "CikguRubricKey": {
+        "type": "string",
+        "enum": [
+          "spm_bm_karangan",
+          "spm_bi_continuous_writing",
+          "pt3_bm_karangan",
+          "pt3_bi_essay",
+          "sejarah_essay",
+          "general"
+        ]
+      },
+      "CikguLevelCode": {
+        "type": "string",
+        "enum": [
+          "D1",
+          "D2",
+          "D3",
+          "D4",
+          "D5",
+          "D6",
+          "T1",
+          "T2",
+          "T3",
+          "T4",
+          "T5"
+        ]
+      },
+      "CikguChatTier": {
+        "type": "string",
+        "enum": [
+          "admin",
+          "guru",
+          "pelajar"
+        ]
+      },
+      "CikguSendRequest": {
+        "type": "object",
+        "properties": {
+          "message": {
+            "type": "string",
+            "description": "The turn text. Blank after trim = 422 `{}`. No length cap in the mock (open question)."
+          },
+          "thread_id": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Opaque thread id returned by an earlier turn. Null, missing, non-string, unknown or foreign = a new thread."
+          }
+        },
+        "required": [
+          "message"
+        ]
+      },
+      "CikguSendResponse": {
+        "type": "object",
+        "properties": {
+          "thread_id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 64,
+            "description": "Opaque thread id (decimal string); echo it back to continue the thread.",
+            "example": "1042"
+          },
+          "reply": {
+            "type": "string"
+          },
+          "tier": {
+            "$ref": "#/components/schemas/CikguChatTier"
+          },
+          "turns_remaining": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "limit - (used + 1); 0 after the last allowed turn."
+          },
+          "tool_hops": {
+            "anyOf": [
+              {
+                "type": "number",
+                "enum": [
+                  0
+                ]
+              },
+              {
+                "type": "number",
+                "enum": [
+                  1
+                ]
+              }
+            ],
+            "description": "1 when the turn ran mark_essay, saved an RPH or returned practice questions; else 0."
+          },
+          "tokens": {
+            "type": "object",
+            "properties": {
+              "in": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "out": {
+                "type": "integer",
+                "minimum": 0
+              }
+            },
+            "required": [
+              "in",
+              "out"
+            ]
+          }
+        },
+        "required": [
+          "thread_id",
+          "reply",
+          "tier",
+          "turns_remaining",
+          "tool_hops",
+          "tokens"
+        ]
+      },
+      "CikguChatEmptyBody": {
+        "type": "object",
+        "properties": {},
+        "additionalProperties": false
+      },
+      "CikguChatQuotaBody": {
+        "type": "object",
+        "properties": {
+          "quota_exhausted": {
+            "type": "boolean",
+            "enum": [
+              true
+            ]
+          }
+        },
+        "required": [
+          "quota_exhausted"
+        ],
+        "additionalProperties": false
+      },
+      "CikguChatErrorBody": {
+        "type": "object",
+        "properties": {
+          "error": {
+            "type": "string",
+            "minLength": 1,
+            "description": "BM message for direct display."
+          },
+          "code": {
+            "type": "string",
+            "enum": [
+              "RATE_LIMITED",
+              "AI_UNAVAILABLE"
+            ],
+            "description": "Machine code."
+          },
+          "retryAfter": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Seconds, on RATE_LIMITED only."
+          }
+        },
+        "required": [
+          "error",
+          "code"
+        ]
+      },
+      "CikguRph": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "userId": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "subjectName": {
+            "type": "string"
+          },
+          "level": {
+            "$ref": "#/components/schemas/CikguLevelCode"
+          },
+          "tajuk": {
+            "type": "string"
+          },
+          "className": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "lessonDate": {
+            "$ref": "#/components/schemas/DateOnly"
+          },
+          "durationMinutes": {
+            "type": "integer",
+            "minimum": 15,
+            "maximum": 240
+          },
+          "timeSlot": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "tema": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "pengajaranKeperluan": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "generated"
+            ]
+          },
+          "source": {
+            "type": "string",
+            "enum": [
+              "form",
+              "chat"
+            ]
+          },
+          "content": {
+            "type": "string",
+            "description": "The generated plan text, lines joined with \\n."
+          },
+          "threadId": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "minLength": 1,
+            "maxLength": 64,
+            "description": "Set when source = chat; null for a form RPH.",
+            "example": "1042"
+          },
+          "createdAt": {
+            "$ref": "#/components/schemas/Timestamp"
+          }
+        },
+        "required": [
+          "id",
+          "userId",
+          "subjectName",
+          "level",
+          "tajuk",
+          "className",
+          "lessonDate",
+          "durationMinutes",
+          "timeSlot",
+          "tema",
+          "pengajaranKeperluan",
+          "status",
+          "source",
+          "content",
+          "threadId",
+          "createdAt"
+        ]
+      },
+      "CikguRphListItem": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "lessonDate": {
+            "$ref": "#/components/schemas/DateOnly"
+          },
+          "subjectName": {
+            "type": "string"
+          },
+          "level": {
+            "$ref": "#/components/schemas/CikguLevelCode"
+          },
+          "tajuk": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "generated"
+            ]
+          }
+        },
+        "required": [
+          "id",
+          "lessonDate",
+          "subjectName",
+          "level",
+          "tajuk",
+          "status"
+        ]
+      },
+      "CikguRphCreateRequest": {
+        "type": "object",
+        "properties": {
+          "subjectName": {
+            "type": "string",
+            "minLength": 1
+          },
+          "level": {
+            "type": "string",
+            "minLength": 1,
+            "description": "One of D1 to D6, T1 to T5."
+          },
+          "tajuk": {
+            "type": "string",
+            "minLength": 1
+          },
+          "durationMinutes": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "minimum": 15,
+            "maximum": 240,
+            "description": "Integer 15 to 240; missing or null = 60."
+          },
+          "lessonDate": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "YYYY-MM-DD and a real date. Empty, blank, non-string or missing = today (Malaysia)."
+          },
+          "pengajaranKeperluan": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Optional. Blank or non-string = null. At most 500 characters (code points)."
+          },
+          "className": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Optional. Blank or non-string = null. At most 100 characters (code points)."
+          },
+          "timeSlot": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Optional. Blank or non-string = null. At most 100 characters (code points)."
+          },
+          "tema": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Optional. Blank or non-string = null. At most 100 characters (code points)."
+          }
+        },
+        "required": [
+          "subjectName",
+          "level",
+          "tajuk"
+        ]
+      },
+      "CikguEssayMarking": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "userId": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "rubricKey": {
+            "$ref": "#/components/schemas/CikguRubricKey"
+          },
+          "subjectName": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "level": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Free text from the hand-off message (not restricted to the level codes)."
+          },
+          "studentName": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "essayTitle": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "essayText": {
+            "type": "string"
+          },
+          "marks": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "maxMarks": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "comment": {
+            "type": "string"
+          },
+          "threadId": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "createdAt": {
+            "$ref": "#/components/schemas/Timestamp"
+          }
+        },
+        "required": [
+          "id",
+          "userId",
+          "rubricKey",
+          "subjectName",
+          "level",
+          "studentName",
+          "essayTitle",
+          "essayText",
+          "marks",
+          "maxMarks",
+          "comment",
+          "threadId",
+          "createdAt"
+        ]
+      },
+      "CikguEssayListItem": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "studentName": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "subjectName": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "rubricKey": {
+            "$ref": "#/components/schemas/CikguRubricKey"
+          },
+          "essayTitle": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "marks": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "maxMarks": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "createdAt": {
+            "$ref": "#/components/schemas/Timestamp"
+          }
+        },
+        "required": [
+          "id",
+          "studentName",
+          "subjectName",
+          "rubricKey",
+          "essayTitle",
+          "marks",
+          "maxMarks",
+          "createdAt"
+        ]
+      },
+      "CikguPbdQueueItem": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "studentId": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "studentName": {
+            "type": "string"
+          },
+          "classroomId": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "sp": {
+            "type": "string"
+          },
+          "skor": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 100,
+            "description": "One decimal."
+          },
+          "tp": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 6
+          }
+        },
+        "required": [
+          "id",
+          "studentId",
+          "studentName",
+          "classroomId",
+          "sp",
+          "skor",
+          "tp"
+        ]
+      },
+      "CikguRollupRequest": {
+        "type": "object",
+        "properties": {
+          "classroomId": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Id"
+              },
+              {
+                "type": "integer",
+                "minimum": 0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Class id (decimal string; an integer is also accepted). Anything else = zero result."
+          }
+        }
+      },
+      "CikguRollupResult": {
+        "type": "object",
+        "properties": {
+          "created": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "updated": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "skipped": {
+            "type": "integer",
+            "minimum": 0
+          }
+        },
+        "required": [
+          "created",
+          "updated",
+          "skipped"
+        ]
+      },
+      "CikguBulkApproveRequest": {
+        "type": "object",
+        "properties": {
+          "ids": {
+            "type": [
+              "array",
+              "null"
+            ],
+            "items": {
+              "anyOf": [
+                {
+                  "$ref": "#/components/schemas/Id"
+                },
+                {
+                  "type": "integer",
+                  "minimum": 0
+                }
+              ]
+            },
+            "description": "Tag ids (decimal strings; integers also accepted). No size cap in the mock (open question)."
+          }
+        }
+      },
+      "CikguBulkApproveResult": {
+        "type": "object",
+        "properties": {
+          "approved": {
+            "type": "integer",
+            "minimum": 0
+          }
+        },
+        "required": [
+          "approved"
+        ]
+      },
       "AccessGroupId": {
         "type": "string",
         "enum": [
@@ -47099,6 +47707,2223 @@
         "required": [
           "data"
         ]
+      },
+      "PracticeReadSubject": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "code": {
+            "type": "string",
+            "minLength": 1
+          },
+          "name": {
+            "type": "string"
+          },
+          "nameEn": {
+            "type": "string"
+          },
+          "icon": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Lucide name, Font Awesome class, emoji or null (M03 BR-05)."
+          },
+          "color": {
+            "type": "string"
+          },
+          "isCore": {
+            "type": "boolean"
+          },
+          "approvedCount": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Eligible questions of the subject (Q-ELIGIBLE), \"{n} soalan\"."
+          },
+          "bankCount": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Active questions of the subject (Q-ACTIVE), \"Statistik Subjek\"."
+          }
+        },
+        "required": [
+          "id",
+          "code",
+          "name",
+          "nameEn",
+          "icon",
+          "color",
+          "isCore",
+          "approvedCount",
+          "bankCount"
+        ],
+        "additionalProperties": false
+      },
+      "PracticeReadTrialStatus": {
+        "type": "object",
+        "properties": {
+          "active": {
+            "type": "boolean"
+          },
+          "used": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "limit": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "remaining": {
+            "type": "integer",
+            "minimum": 0
+          }
+        },
+        "required": [
+          "active",
+          "used",
+          "limit",
+          "remaining"
+        ],
+        "additionalProperties": false
+      },
+      "PracticeReadDifficultyCounts": {
+        "type": "object",
+        "properties": {
+          "1": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "2": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "3": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "4": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "5": {
+            "type": "integer",
+            "minimum": 0
+          }
+        },
+        "required": [
+          "1",
+          "2",
+          "3",
+          "4",
+          "5"
+        ],
+        "additionalProperties": false,
+        "description": "Question counts for difficulty 1 to 5."
+      },
+      "PracticeReadGreetingPeriod": {
+        "type": "string",
+        "enum": [
+          "Pagi",
+          "Tengah Hari",
+          "Petang",
+          "Malam"
+        ],
+        "description": "Greeting by the Malaysia-time hour (BR-02)."
+      },
+      "PracticeReadQuest": {
+        "type": "object",
+        "properties": {
+          "key": {
+            "type": "string",
+            "minLength": 1,
+            "description": "The M14 challenge id as text."
+          },
+          "emoji": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "difficulty": {
+            "type": "string",
+            "enum": [
+              "easy",
+              "medium",
+              "hard"
+            ],
+            "description": "Mudah, Sederhana, Sukar."
+          },
+          "description": {
+            "type": "string"
+          },
+          "target": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "reward": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Syiling reward (\"+{reward}\")."
+          },
+          "progress": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "completed": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "key",
+          "emoji",
+          "title",
+          "difficulty",
+          "description",
+          "target",
+          "reward",
+          "progress",
+          "completed"
+        ],
+        "additionalProperties": false
+      },
+      "PracticeReadBanner": {
+        "type": "object",
+        "properties": {
+          "type": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "body": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "type",
+          "title",
+          "body"
+        ],
+        "additionalProperties": false
+      },
+      "PracticeReadDashboardBadge": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "name": {
+            "type": "string"
+          },
+          "icon": {
+            "type": "string"
+          },
+          "rarityLabel": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "awardedAt": {
+            "$ref": "#/components/schemas/Timestamp"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "icon",
+          "rarityLabel",
+          "awardedAt"
+        ],
+        "additionalProperties": false
+      },
+      "PracticeReadArticle": {
+        "type": "object",
+        "properties": {
+          "slug": {
+            "type": "string",
+            "minLength": 1
+          },
+          "title": {
+            "type": "string"
+          },
+          "category": {
+            "type": "string",
+            "description": "Category label as shown in the chip (\"Tips Belajar\"...)."
+          },
+          "publishedAt": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/Timestamp"
+              },
+              {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              }
+            ]
+          }
+        },
+        "required": [
+          "slug",
+          "title",
+          "category",
+          "publishedAt"
+        ],
+        "additionalProperties": false
+      },
+      "PracticeReadLevelPill": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "string",
+            "minLength": 1
+          },
+          "name": {
+            "type": "string"
+          },
+          "stage": {
+            "type": "string",
+            "enum": [
+              "primary",
+              "lower_secondary",
+              "upper_secondary"
+            ]
+          },
+          "count": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Active questions of the level (Q-ACTIVE)."
+          }
+        },
+        "required": [
+          "code",
+          "name",
+          "stage",
+          "count"
+        ],
+        "additionalProperties": false
+      },
+      "PracticeReadRecentQuestion": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "subjectName": {
+            "type": "string"
+          },
+          "difficulty": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 5
+          },
+          "text": {
+            "type": "string",
+            "maxLength": 103,
+            "description": "Cut at 100 characters plus \"...\" (BR-29)."
+          },
+          "createdAt": {
+            "$ref": "#/components/schemas/Timestamp"
+          },
+          "levelCode": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "subjectName",
+          "difficulty",
+          "text",
+          "createdAt",
+          "levelCode"
+        ],
+        "additionalProperties": false
+      },
+      "PracticeReadSubjectStat": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "name": {
+            "type": "string"
+          },
+          "icon": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "color": {
+            "type": "string"
+          },
+          "bankCount": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "avgDifficulty": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 5,
+            "description": "Mean difficulty of the active questions, 2 decimals; 0 when none."
+          },
+          "usedCount": {
+            "type": "integer",
+            "minimum": 0
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "icon",
+          "color",
+          "bankCount",
+          "avgDifficulty",
+          "usedCount"
+        ],
+        "additionalProperties": false
+      },
+      "PracticeReadDashboard": {
+        "type": "object",
+        "properties": {
+          "user": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "$ref": "#/components/schemas/Id"
+              },
+              "name": {
+                "type": "string"
+              },
+              "role": {
+                "$ref": "#/components/schemas/RoleCode"
+              }
+            },
+            "required": [
+              "id",
+              "name",
+              "role"
+            ],
+            "additionalProperties": false
+          },
+          "greetingPeriod": {
+            "$ref": "#/components/schemas/PracticeReadGreetingPeriod"
+          },
+          "trial": {
+            "$ref": "#/components/schemas/PracticeReadTrialStatus"
+          },
+          "streak": {
+            "type": "object",
+            "properties": {
+              "count": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "practisedToday": {
+                "type": "boolean"
+              }
+            },
+            "required": [
+              "count",
+              "practisedToday"
+            ],
+            "additionalProperties": false
+          },
+          "wallet": {
+            "type": "object",
+            "properties": {
+              "coins": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "points": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "level": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "levelProgressPct": {
+                "type": "number",
+                "minimum": 0,
+                "maximum": 100
+              }
+            },
+            "required": [
+              "coins",
+              "points",
+              "level",
+              "levelProgressPct"
+            ],
+            "additionalProperties": false
+          },
+          "week": {
+            "type": "object",
+            "properties": {
+              "sessions": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "accuracyPct": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 100,
+                "description": "Correct / answered this Monday-Sunday week, integer (BR-25)."
+              }
+            },
+            "required": [
+              "sessions",
+              "accuracyPct"
+            ],
+            "additionalProperties": false
+          },
+          "banners": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PracticeReadBanner"
+            }
+          },
+          "quests": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PracticeReadQuest"
+            }
+          },
+          "questsCompleted": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "badges": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PracticeReadDashboardBadge"
+            }
+          },
+          "revisionTotal": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Distinct queued questions that still have an active question link (BR-14)."
+          },
+          "articles": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PracticeReadArticle"
+            }
+          },
+          "subjects": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PracticeReadSubject"
+            }
+          },
+          "stats": {
+            "type": "object",
+            "properties": {
+              "totalQuestions": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "activeSubjects": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "activeLevels": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "approvedQuestions": {
+                "type": "integer",
+                "minimum": 0
+              }
+            },
+            "required": [
+              "totalQuestions",
+              "activeSubjects",
+              "activeLevels",
+              "approvedQuestions"
+            ],
+            "additionalProperties": false
+          },
+          "levelPills": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PracticeReadLevelPill"
+            }
+          },
+          "recentQuestions": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PracticeReadRecentQuestion"
+            }
+          },
+          "difficultyChart": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "level": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 5
+                },
+                "count": {
+                  "type": "integer",
+                  "minimum": 0
+                }
+              },
+              "required": [
+                "level",
+                "count"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "subjectStats": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PracticeReadSubjectStat"
+            },
+            "description": "By bankCount descending, ties by id."
+          }
+        },
+        "required": [
+          "user",
+          "greetingPeriod",
+          "trial",
+          "streak",
+          "wallet",
+          "week",
+          "banners",
+          "quests",
+          "questsCompleted",
+          "badges",
+          "revisionTotal",
+          "articles",
+          "subjects",
+          "stats",
+          "levelPills",
+          "recentQuestions",
+          "difficultyChart",
+          "subjectStats"
+        ],
+        "additionalProperties": false
+      },
+      "PracticeReadSubjectListResponse": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PracticeReadSubject"
+            }
+          },
+          "meta": {
+            "$ref": "#/components/schemas/ListMeta"
+          }
+        },
+        "required": [
+          "data",
+          "meta"
+        ]
+      },
+      "PracticeReadSubjectLevel": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "code": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "count": {
+            "type": "integer",
+            "minimum": 0
+          }
+        },
+        "required": [
+          "id",
+          "code",
+          "name",
+          "count"
+        ],
+        "additionalProperties": false
+      },
+      "PracticeReadSubjectConfig": {
+        "type": "object",
+        "properties": {
+          "subject": {
+            "$ref": "#/components/schemas/PracticeReadSubject"
+          },
+          "total": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Practice questions over every offered level (\"Semua Tahap\")."
+          },
+          "levels": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PracticeReadSubjectLevel"
+            },
+            "description": "Offered levels (Darjah 1-4 linked to the subject), in level order (BR-11)."
+          },
+          "difficultyStats": {
+            "$ref": "#/components/schemas/PracticeReadDifficultyCounts"
+          },
+          "difficultyByLevel": {
+            "type": "object",
+            "additionalProperties": {
+              "$ref": "#/components/schemas/PracticeReadDifficultyCounts"
+            },
+            "description": "Keyed by level id."
+          },
+          "subjectiveCounts": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "description": "Subjective counts by key (FR-M05-49); the mock keeps it empty (test fixture)."
+          },
+          "trial": {
+            "$ref": "#/components/schemas/PracticeReadTrialStatus"
+          }
+        },
+        "required": [
+          "subject",
+          "total",
+          "levels",
+          "difficultyStats",
+          "difficultyByLevel",
+          "subjectiveCounts",
+          "trial"
+        ],
+        "additionalProperties": false
+      },
+      "PracticeReadChapterSubject": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "string",
+            "minLength": 1
+          },
+          "name": {
+            "type": "string"
+          },
+          "icon": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "color": {
+            "type": "string"
+          },
+          "chapterCount": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "questionCount": {
+            "type": "integer",
+            "minimum": 0
+          }
+        },
+        "required": [
+          "code",
+          "name",
+          "icon",
+          "color",
+          "chapterCount",
+          "questionCount"
+        ],
+        "additionalProperties": false
+      },
+      "PracticeReadChapterSubjectListResponse": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PracticeReadChapterSubject"
+            }
+          },
+          "meta": {
+            "$ref": "#/components/schemas/ListMeta"
+          }
+        },
+        "required": [
+          "data",
+          "meta"
+        ]
+      },
+      "PracticeReadChapterCard": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "number": {
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "name": {
+            "type": "string"
+          },
+          "total": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "answered": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "correct": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "scorePct": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 100,
+            "description": "1 decimal (BR-16)."
+          },
+          "remaining": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "state": {
+            "type": "string",
+            "enum": [
+              "open",
+              "locked"
+            ]
+          },
+          "complete": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "id",
+          "number",
+          "name",
+          "total",
+          "answered",
+          "correct",
+          "scorePct",
+          "remaining",
+          "state",
+          "complete"
+        ],
+        "additionalProperties": false
+      },
+      "PracticeReadChapterSubjectDetail": {
+        "type": "object",
+        "properties": {
+          "subject": {
+            "type": "object",
+            "properties": {
+              "code": {
+                "type": "string"
+              },
+              "name": {
+                "type": "string"
+              },
+              "color": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "code",
+              "name",
+              "color"
+            ],
+            "additionalProperties": false
+          },
+          "levels": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "$ref": "#/components/schemas/Id"
+                },
+                "name": {
+                  "type": "string"
+                },
+                "count": {
+                  "type": "integer",
+                  "minimum": 0
+                }
+              },
+              "required": [
+                "id",
+                "name",
+                "count"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "levelId": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "minLength": 1,
+            "maxLength": 64,
+            "description": "The level shown; null when the subject offers none.",
+            "example": "1042"
+          },
+          "chapters": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PracticeReadChapterCard"
+            }
+          }
+        },
+        "required": [
+          "subject",
+          "levels",
+          "levelId",
+          "chapters"
+        ],
+        "additionalProperties": false
+      },
+      "PracticeReadRevisionSubjectCard": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "string",
+            "minLength": 1
+          },
+          "name": {
+            "type": "string"
+          },
+          "nameEn": {
+            "type": "string"
+          },
+          "icon": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "color": {
+            "type": "string"
+          },
+          "count": {
+            "type": "integer",
+            "minimum": 1
+          }
+        },
+        "required": [
+          "code",
+          "name",
+          "nameEn",
+          "icon",
+          "color",
+          "count"
+        ],
+        "additionalProperties": false
+      },
+      "PracticeReadRevisionOverview": {
+        "type": "object",
+        "properties": {
+          "total": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Distinct queued questions that still have an active question link (BR-14, XL-19)."
+          },
+          "subjects": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PracticeReadRevisionSubjectCard"
+            },
+            "description": "BR-01 order; only subjects with queued questions (FR-M05-70)."
+          }
+        },
+        "required": [
+          "total",
+          "subjects"
+        ],
+        "additionalProperties": false
+      },
+      "PracticeReadRevisionSubject": {
+        "type": "object",
+        "properties": {
+          "subject": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "$ref": "#/components/schemas/Id"
+              },
+              "code": {
+                "type": "string"
+              },
+              "name": {
+                "type": "string"
+              },
+              "color": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "id",
+              "code",
+              "name",
+              "color"
+            ],
+            "additionalProperties": false
+          },
+          "count": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "0 is a 200: the screen then goes back to the overview with an info flash (FR-M05-72)."
+          }
+        },
+        "required": [
+          "subject",
+          "count"
+        ],
+        "additionalProperties": false
+      },
+      "PracticeReadProgressSubject": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "color": {
+            "type": "string"
+          },
+          "answered": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "correct": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "wrong": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "accuracyPct": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 100,
+            "description": "1 decimal."
+          },
+          "trend": {
+            "type": "array",
+            "items": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 100
+            },
+            "description": "Daily accuracy values, oldest first (sparkline, BR-19)."
+          }
+        },
+        "required": [
+          "code",
+          "name",
+          "color",
+          "answered",
+          "correct",
+          "wrong",
+          "accuracyPct",
+          "trend"
+        ],
+        "additionalProperties": false
+      },
+      "PracticeReadProgress": {
+        "type": "object",
+        "properties": {
+          "period": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "enum": [
+              "7",
+              "30",
+              "90",
+              "all",
+              null
+            ],
+            "description": "null for an unknown period (no chip active, zero figures)."
+          },
+          "answered": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "All answers in the window, with or without a session."
+          },
+          "accuracyPct": {
+            "type": [
+              "number",
+              "null"
+            ],
+            "minimum": 0,
+            "maximum": 100,
+            "description": "1 decimal; null when nothing was answered."
+          },
+          "sessions": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "minutes": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Whole minutes: floor of the seconds / 60."
+          },
+          "chart": {
+            "type": "object",
+            "properties": {
+              "labels": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                },
+                "description": "Day labels \"DD/MM\", oldest first."
+              },
+              "accuracy": {
+                "type": "array",
+                "items": {
+                  "type": "number",
+                  "minimum": 0,
+                  "maximum": 100
+                }
+              },
+              "counts": {
+                "type": "array",
+                "items": {
+                  "type": "integer",
+                  "minimum": 0
+                }
+              }
+            },
+            "required": [
+              "labels",
+              "accuracy",
+              "counts"
+            ],
+            "additionalProperties": false
+          },
+          "weakSubjects": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "code": {
+                  "type": "string"
+                },
+                "name": {
+                  "type": "string"
+                },
+                "color": {
+                  "type": "string"
+                },
+                "answered": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "accuracyPct": {
+                  "type": "number",
+                  "minimum": 0,
+                  "maximum": 100
+                }
+              },
+              "required": [
+                "code",
+                "name",
+                "color",
+                "answered",
+                "accuracyPct"
+              ],
+              "additionalProperties": false
+            },
+            "description": "Subjects under 50 % accuracy (BR-19, inferred threshold)."
+          },
+          "subjects": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PracticeReadProgressSubject"
+            },
+            "description": "Most answers first, then the M03 subject order."
+          }
+        },
+        "required": [
+          "period",
+          "answered",
+          "accuracyPct",
+          "sessions",
+          "minutes",
+          "chart",
+          "weakSubjects",
+          "subjects"
+        ],
+        "additionalProperties": false
+      },
+      "PracticeReadHistoryItem": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "$ref": "#/components/schemas/PracticeSessionId"
+          },
+          "mode": {
+            "$ref": "#/components/schemas/PracticeMode"
+          },
+          "badge": {
+            "type": "object",
+            "properties": {
+              "label": {
+                "type": "string"
+              },
+              "icon": {
+                "type": "string"
+              },
+              "color": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "label",
+              "icon",
+              "color"
+            ],
+            "additionalProperties": false
+          },
+          "completedAt": {
+            "$ref": "#/components/schemas/Timestamp"
+          },
+          "questionCount": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "correctCount": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "wrongCount": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "accuracyPct": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 100,
+            "description": "2 decimals."
+          },
+          "timeSpent": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "coinsEarned": {
+            "type": "integer",
+            "minimum": 0
+          }
+        },
+        "required": [
+          "id",
+          "mode",
+          "badge",
+          "completedAt",
+          "questionCount",
+          "correctCount",
+          "wrongCount",
+          "accuracyPct",
+          "timeSpent",
+          "coinsEarned"
+        ],
+        "additionalProperties": false
+      },
+      "PracticeReadHistoryTotals": {
+        "type": "object",
+        "properties": {
+          "sessions": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "answered": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "avgAccuracyPct": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 100,
+            "description": "1 decimal; sessions with no question add no accuracy."
+          },
+          "coins": {
+            "type": "integer",
+            "minimum": 0
+          }
+        },
+        "required": [
+          "sessions",
+          "answered",
+          "avgAccuracyPct",
+          "coins"
+        ],
+        "additionalProperties": false
+      },
+      "PracticeReadHistoryMeta": {
+        "type": "object",
+        "properties": {
+          "page": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "pageSize": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "totalItems": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "totalPages": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "from": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "minimum": 1
+          },
+          "to": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "minimum": 1
+          },
+          "counts": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "number"
+            }
+          },
+          "totals": {
+            "$ref": "#/components/schemas/PracticeReadHistoryTotals"
+          }
+        },
+        "required": [
+          "page",
+          "pageSize",
+          "totalItems",
+          "totalPages",
+          "totals"
+        ],
+        "additionalProperties": {}
+      },
+      "PracticeReadHistoryResponse": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PracticeReadHistoryItem"
+            }
+          },
+          "meta": {
+            "$ref": "#/components/schemas/PracticeReadHistoryMeta"
+          }
+        },
+        "required": [
+          "data",
+          "meta"
+        ]
+      },
+      "PracticeReadCorrections": {
+        "type": "object",
+        "properties": {
+          "month": {
+            "type": "string",
+            "pattern": "^\\d{4}-(0[1-9]|1[0-2])$"
+          },
+          "prevMonth": {
+            "type": "string",
+            "pattern": "^\\d{4}-(0[1-9]|1[0-2])$"
+          },
+          "nextMonth": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "pattern": "^\\d{4}-(0[1-9]|1[0-2])$",
+            "description": "null when the shown month is the current one (or later)."
+          },
+          "summary": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "properties": {
+              "before": {
+                "type": "number",
+                "minimum": 0,
+                "maximum": 100,
+                "description": "1 decimal."
+              },
+              "after": {
+                "type": "number",
+                "minimum": 0,
+                "maximum": 100
+              },
+              "delta": {
+                "type": "number",
+                "description": "after - before, 1 decimal; may be negative."
+              },
+              "questions": {
+                "type": "integer",
+                "minimum": 0
+              }
+            },
+            "required": [
+              "before",
+              "after",
+              "delta",
+              "questions"
+            ],
+            "additionalProperties": false,
+            "description": "null when the month has no first attempts."
+          },
+          "subjects": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "name": {
+                  "type": "string"
+                },
+                "color": {
+                  "type": "string"
+                },
+                "questions": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "before": {
+                  "type": "number",
+                  "minimum": 0,
+                  "maximum": 100
+                },
+                "after": {
+                  "type": "number",
+                  "minimum": 0,
+                  "maximum": 100
+                },
+                "delta": {
+                  "type": "number"
+                }
+              },
+              "required": [
+                "name",
+                "color",
+                "questions",
+                "before",
+                "after",
+                "delta"
+              ],
+              "additionalProperties": false
+            }
+          }
+        },
+        "required": [
+          "month",
+          "prevMonth",
+          "nextMonth",
+          "summary",
+          "subjects"
+        ],
+        "additionalProperties": false
+      },
+      "PracticeReadMasteryCard": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "icon": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "color": {
+            "type": "string"
+          },
+          "level": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 10
+          },
+          "label": {
+            "type": "string"
+          },
+          "correct": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "answered": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "accuracyPct": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 100,
+            "description": "1 decimal."
+          },
+          "nextLevel": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "minimum": 1,
+            "maximum": 10,
+            "description": "null at level 10."
+          },
+          "nextThreshold": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "minimum": 0
+          },
+          "barPct": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 100,
+            "description": "1 decimal; 100 at level 10."
+          },
+          "xpMultiplier": {
+            "type": [
+              "number",
+              "null"
+            ],
+            "minimum": 1,
+            "description": "1 + 0.05 x (level - 1) from level 2, else null."
+          },
+          "lastAnsweredAt": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/Timestamp"
+              },
+              {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              }
+            ]
+          }
+        },
+        "required": [
+          "code",
+          "name",
+          "icon",
+          "color",
+          "level",
+          "label",
+          "correct",
+          "answered",
+          "accuracyPct",
+          "nextLevel",
+          "nextThreshold",
+          "barPct",
+          "xpMultiplier",
+          "lastAnsweredAt"
+        ],
+        "additionalProperties": false
+      },
+      "PracticeReadMastery": {
+        "type": "object",
+        "properties": {
+          "scale": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "level": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 10
+                },
+                "label": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "level",
+                "label"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "subjects": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PracticeReadMasteryCard"
+            },
+            "description": "Active subjects the caller has answered, in M03 order."
+          }
+        },
+        "required": [
+          "scale",
+          "subjects"
+        ],
+        "additionalProperties": false
+      },
+      "PracticeReadStructuredScope": {
+        "type": "string",
+        "enum": [
+          "spm"
+        ]
+      },
+      "PracticeReadStructuredTrack": {
+        "type": "string",
+        "enum": [
+          "bahasa"
+        ]
+      },
+      "PracticeReadStructuredCard": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "subjectId": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "subjectName": {
+            "type": "string"
+          },
+          "kbatLevel": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 6
+          },
+          "estimatedMinutes": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "isTrial": {
+            "type": "boolean"
+          },
+          "preview": {
+            "type": "string",
+            "maxLength": 203,
+            "description": "First 200 characters of the stimulus plus \"...\" when longer."
+          },
+          "topic": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "author": {
+            "type": "string",
+            "minLength": 1,
+            "description": "The teacher name, or \"Guru Pakar\" when the creator is not a teacher."
+          },
+          "school": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "The author school; null when there is none."
+          },
+          "subQuestionCount": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "\"{n} soalan\": every sub-question."
+          },
+          "levelName": {
+            "type": "string",
+            "description": "M03 level name, e.g. \"Tingkatan 5\"."
+          },
+          "parts": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "\"{parts} bahagian\": the top-level parts."
+          },
+          "marks": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "\"{marks} markah\"."
+          }
+        },
+        "required": [
+          "id",
+          "subjectId",
+          "subjectName",
+          "kbatLevel",
+          "estimatedMinutes",
+          "isTrial",
+          "preview",
+          "topic",
+          "author",
+          "school",
+          "subQuestionCount",
+          "levelName",
+          "parts",
+          "marks"
+        ],
+        "additionalProperties": false
+      },
+      "PracticeReadStructuredListMeta": {
+        "type": "object",
+        "properties": {
+          "page": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "pageSize": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "totalItems": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "totalPages": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "from": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "minimum": 1
+          },
+          "to": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "minimum": 1
+          },
+          "counts": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "number"
+            }
+          },
+          "scope": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "enum": [
+              "spm",
+              null
+            ],
+            "description": "Echo of the variant applied; null when absent or unknown."
+          },
+          "track": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "enum": [
+              "bahasa",
+              null
+            ],
+            "description": "'bahasa' only together with scope 'spm'."
+          },
+          "subjectOptions": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "$ref": "#/components/schemas/Id"
+                },
+                "name": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "id",
+                "name"
+              ],
+              "additionalProperties": false
+            },
+            "description": "The \"Subjek\" options (without \"Semua Subjek\"): plain list by name; SPM variants in the FR-M05-134 order."
+          }
+        },
+        "required": [
+          "page",
+          "pageSize",
+          "totalItems",
+          "totalPages",
+          "scope",
+          "track",
+          "subjectOptions"
+        ],
+        "additionalProperties": {}
+      },
+      "PracticeReadStructuredListResponse": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PracticeReadStructuredCard"
+            }
+          },
+          "meta": {
+            "$ref": "#/components/schemas/PracticeReadStructuredListMeta"
+          }
+        },
+        "required": [
+          "data",
+          "meta"
+        ]
+      },
+      "PracticeReadStructuredDetail": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "subjectId": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "subjectName": {
+            "type": "string"
+          },
+          "levelName": {
+            "type": "string"
+          },
+          "stimulus": {
+            "type": "string"
+          },
+          "stimulusImage": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "null when the set has no image."
+          },
+          "subQuestions": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "$ref": "#/components/schemas/Id"
+                },
+                "label": {
+                  "type": "string"
+                },
+                "text": {
+                  "type": "string"
+                },
+                "marks": {
+                  "type": "integer",
+                  "minimum": 0
+                }
+              },
+              "required": [
+                "id",
+                "label",
+                "text",
+                "marks"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "backUrl": {
+            "type": "string",
+            "minLength": 1,
+            "description": "\"/latihan-berstruktur\", or the SPM variant list of FR-M05-137 (a frontend route)."
+          }
+        },
+        "required": [
+          "id",
+          "subjectId",
+          "subjectName",
+          "levelName",
+          "stimulus",
+          "stimulusImage",
+          "subQuestions",
+          "backUrl"
+        ],
+        "additionalProperties": false
+      },
+      "PracticeReadStructuredAttemptRequest": {
+        "type": "object",
+        "properties": {
+          "answers": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "subQuestionId": {
+                  "$ref": "#/components/schemas/Id"
+                },
+                "text": {
+                  "type": "string",
+                  "maxLength": 5000
+                }
+              },
+              "required": [
+                "subQuestionId",
+                "text"
+              ]
+            },
+            "description": "One row per answered sub-question; an unknown or repeated subQuestionId is 422."
+          },
+          "scope": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/PracticeReadStructuredScope"
+              },
+              {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              }
+            ]
+          },
+          "track": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "enum": [
+              "bahasa",
+              null
+            ],
+            "description": "Needs scope 'spm'."
+          }
+        },
+        "required": [
+          "answers"
+        ]
+      },
+      "PracticeReadStructuredAttemptResult": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "userId": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "structuredQuestionId": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "scope": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/PracticeReadStructuredScope"
+              },
+              {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              }
+            ]
+          },
+          "track": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/PracticeReadStructuredTrack"
+              },
+              {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              }
+            ]
+          },
+          "answers": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "subQuestionId": {
+                  "$ref": "#/components/schemas/Id"
+                },
+                "text": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "subQuestionId",
+                "text"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "marks": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "subQuestionId": {
+                  "$ref": "#/components/schemas/Id"
+                },
+                "awarded": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "max": {
+                  "type": "integer",
+                  "minimum": 0
+                }
+              },
+              "required": [
+                "subQuestionId",
+                "awarded",
+                "max"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "totalAwarded": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "totalMax": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "submittedAt": {
+            "$ref": "#/components/schemas/Timestamp"
+          },
+          "modelAnswers": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "subQuestionId": {
+                  "$ref": "#/components/schemas/Id"
+                },
+                "text": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "subQuestionId",
+                "text"
+              ],
+              "additionalProperties": false
+            }
+          }
+        },
+        "required": [
+          "id",
+          "userId",
+          "structuredQuestionId",
+          "scope",
+          "track",
+          "answers",
+          "marks",
+          "totalAwarded",
+          "totalMax",
+          "submittedAt",
+          "modelAnswers"
+        ],
+        "additionalProperties": false
+      },
+      "PracticeReadSpmGrade": {
+        "type": "string",
+        "enum": [
+          "A+",
+          "A",
+          "A-",
+          "B+",
+          "B",
+          "C+",
+          "C",
+          "D",
+          "E"
+        ]
+      },
+      "PracticeReadSpmTargetRow": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 64,
+            "description": "M03 subject id.",
+            "example": "1042"
+          },
+          "name": {
+            "type": "string"
+          },
+          "target": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/PracticeReadSpmGrade"
+              },
+              {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              }
+            ]
+          },
+          "answered": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "0 without progress."
+          },
+          "accuracyPct": {
+            "type": [
+              "number",
+              "null"
+            ],
+            "minimum": 0,
+            "maximum": 100,
+            "description": "1 decimal; null = \"Belum mula\"."
+          },
+          "band": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "enum": [
+              "green",
+              "amber",
+              "red",
+              null
+            ],
+            "description": "green >= 70, amber 50-69, red < 50 (BR-27)."
+          },
+          "predictedGrade": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "enum": [
+              "A+",
+              "A",
+              "A-",
+              "B+",
+              "B",
+              "C+",
+              "C",
+              "D",
+              "E",
+              "G",
+              null
+            ],
+            "description": "A+ to E, or \"G\" below 40 (BR-27); null = \"-\"."
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "target",
+          "answered",
+          "accuracyPct",
+          "band",
+          "predictedGrade"
+        ],
+        "additionalProperties": false
+      },
+      "PracticeReadSpmTargets": {
+        "type": "object",
+        "properties": {
+          "subjects": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PracticeReadSpmTargetRow"
+            }
+          }
+        },
+        "required": [
+          "subjects"
+        ],
+        "additionalProperties": false,
+        "description": "The 20 SPM subjects of BR-22 in display order, with the caller own targets."
+      },
+      "PracticeReadSpmTargetsSaveRequest": {
+        "type": "object",
+        "properties": {
+          "targets": {
+            "type": "object",
+            "additionalProperties": {
+              "anyOf": [
+                {
+                  "$ref": "#/components/schemas/PracticeReadSpmGrade"
+                },
+                {
+                  "type": "string",
+                  "enum": [
+                    ""
+                  ]
+                }
+              ]
+            },
+            "description": "Subject id (canonical decimal, one of the 20 SPM subjects) to a grade; \"\" or a missing subject clears its target. Replaces all 20 values (BR-26). An unknown key, a non-canonical key (\"01\") or a grade outside the nine is 422 on targets.<key>."
+          }
+        },
+        "required": [
+          "targets"
+        ]
+      },
+      "PracticeReadSpmTargetsSaveResponse": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "object",
+            "properties": {
+              "saved": {
+                "type": "number",
+                "enum": [
+                  20
+                ]
+              }
+            },
+            "required": [
+              "saved"
+            ],
+            "additionalProperties": false
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "Target berjaya disimpan."
+            ]
+          }
+        },
+        "required": [
+          "data",
+          "status"
+        ],
+        "additionalProperties": false
       },
       "QuestionBulkResult": {
         "type": "object",
@@ -61702,6 +64527,952 @@
           },
           "409": {
             "description": "ALREADY_SUBMITTED \"Sesi ini sudah dihantar.\" (second submit).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/dashboard": {
+      "get": {
+        "tags": [
+          "practice-reads"
+        ],
+        "summary": "Student dashboard (S1)",
+        "description": "Mock GET /api/dashboard. One read model: greeting, trial, streak, wallet, this week (Monday-Sunday, Malaysia time), banners, today quests, badges, revision total, latest articles, subjects with counts, question-bank statistics, level pills, newest approved questions and per-subject stats. Wallet, streak, quests, badges, banners and articles come from their owner modules; counts never join live questions for the caller own figures. Any signed-in role (mock: \"Any session (A)\"); the figures are always the caller own, never another user (card AC4: staff read a student through the BE-19 and BE-20 report endpoints). Read-only: no CSRF header, no rate limit.",
+        "responses": {
+          "200": {
+            "description": "The dashboard.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/PracticeReadDashboard"
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED: no valid session.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/practice/subjects": {
+      "get": {
+        "tags": [
+          "practice-reads"
+        ],
+        "summary": "Practice subjects (S2)",
+        "description": "Mock GET /api/practice/subjects. The active M03 subjects in BR-08 order with approvedCount and bankCount. Not paged: page 1, pageSize = number of rows (at least 1), totalPages 1. Any signed-in role (mock: \"Any session (A)\"); the figures are always the caller own, never another user (card AC4: staff read a student through the BE-19 and BE-20 report endpoints). Read-only: no CSRF header, no rate limit.",
+        "responses": {
+          "200": {
+            "description": "The subjects.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PracticeReadSubjectListResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED: no valid session.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/practice/subjects/{code}": {
+      "get": {
+        "tags": [
+          "practice-reads"
+        ],
+        "summary": "Subject practice configuration (S3)",
+        "description": "Mock GET /api/practice/subjects/:code. Offered levels (Darjah 1-4) with practice counts, difficulty split overall and per level, and the caller trial status. Any signed-in role (mock: \"Any session (A)\"); the figures are always the caller own, never another user (card AC4: staff read a student through the BE-19 and BE-20 report endpoints). Read-only: no CSRF header, no rate limit.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 32,
+              "description": "Subject code, case-insensitive; an unknown or inactive subject is 404."
+            },
+            "required": true,
+            "description": "Subject code, case-insensitive; an unknown or inactive subject is 404.",
+            "name": "code",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The subject configuration.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/PracticeReadSubjectConfig"
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED: no valid session.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "NOT_FOUND \"Rekod tidak dijumpai.\" (unknown or inactive subject code).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/practice/chapter-subjects": {
+      "get": {
+        "tags": [
+          "practice-reads"
+        ],
+        "summary": "Subjects with chapter practice (S4)",
+        "description": "Mock GET /api/practice/chapter-subjects. Subjects with at least one chapter (having chapter questions) at an offered level. Not paged. A teacher may open it (no role rule). Any signed-in role (mock: \"Any session (A)\"); the figures are always the caller own, never another user (card AC4: staff read a student through the BE-19 and BE-20 report endpoints). Read-only: no CSRF header, no rate limit.",
+        "responses": {
+          "200": {
+            "description": "The subjects.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PracticeReadChapterSubjectListResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED: no valid session.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/practice/chapter-subjects/{code}": {
+      "get": {
+        "tags": [
+          "practice-reads"
+        ],
+        "summary": "Chapters of a subject with the caller progress (S5)",
+        "description": "Mock GET /api/practice/chapter-subjects/:code?levelId=. Chapter 1 is open; chapter k is open when chapter k - 1 is complete and its score is at least 70 (BR-16). A locked chapter is refused at session start (BE-12 CHAPTER_LOCKED), not here. Any signed-in role (mock: \"Any session (A)\"); the figures are always the caller own, never another user (card AC4: staff read a student through the BE-19 and BE-20 report endpoints). Read-only: no CSRF header, no rate limit.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 32,
+              "description": "Subject code, case-insensitive; an unknown or inactive subject is 404."
+            },
+            "required": true,
+            "description": "Subject code, case-insensitive; an unknown or inactive subject is 404.",
+            "name": "code",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "description": "Offered level id. An unknown or non-offered value (or a non-number) falls back to the first offered level; never 422 (mock)."
+            },
+            "required": false,
+            "description": "Offered level id. An unknown or non-offered value (or a non-number) falls back to the first offered level; never 422 (mock).",
+            "name": "levelId",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The chapter list of one level.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/PracticeReadChapterSubjectDetail"
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED: no valid session.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "NOT_FOUND \"Rekod tidak dijumpai.\" (unknown or inactive subject code).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/practice/revision": {
+      "get": {
+        "tags": [
+          "practice-reads"
+        ],
+        "summary": "Revision queue overview (S6)",
+        "description": "Mock GET /api/practice/revision. Distinct queued questions per subject, only those that still have an active question link (card AC3). Any signed-in role (mock: \"Any session (A)\"); the figures are always the caller own, never another user (card AC4: staff read a student through the BE-19 and BE-20 report endpoints). Read-only: no CSRF header, no rate limit.",
+        "responses": {
+          "200": {
+            "description": "The overview.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/PracticeReadRevisionOverview"
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED: no valid session.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/practice/revision/{code}": {
+      "get": {
+        "tags": [
+          "practice-reads"
+        ],
+        "summary": "Revision count of one subject (S7 guard)",
+        "description": "Mock GET /api/practice/revision/:code. count 0 is still 200. Any signed-in role (mock: \"Any session (A)\"); the figures are always the caller own, never another user (card AC4: staff read a student through the BE-19 and BE-20 report endpoints). Read-only: no CSRF header, no rate limit.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 32,
+              "description": "Subject code, case-insensitive; an unknown or inactive subject is 404."
+            },
+            "required": true,
+            "description": "Subject code, case-insensitive; an unknown or inactive subject is 404.",
+            "name": "code",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The subject and its queued count.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/PracticeReadRevisionSubject"
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED: no valid session.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "NOT_FOUND \"Rekod tidak dijumpai.\" (unknown or inactive subject code).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/practice/progress": {
+      "get": {
+        "tags": [
+          "practice-reads"
+        ],
+        "summary": "Own progress analytics (S8)",
+        "description": "Mock GET /api/practice/progress?period=. Answered and accuracy count every answer in the window (with or without a session) read from the answer rows; sessions and minutes count completed sessions. Figures read the answer dimensions, not a question join (card AC2). Any signed-in role (mock: \"Any session (A)\"); the figures are always the caller own, never another user (card AC4: staff read a student through the BE-19 and BE-20 report endpoints). Read-only: no CSRF header, no rate limit.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "description": "'7', '30' (default), '90' or 'all'. Any other value is not an error: 200 with period null and zero figures (mock)."
+            },
+            "required": false,
+            "description": "'7', '30' (default), '90' or 'all'. Any other value is not an error: 200 with period null and zero figures (mock).",
+            "name": "period",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The progress; an unknown period gives period null and zero figures.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/PracticeReadProgress"
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED: no valid session.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/practice/history": {
+      "get": {
+        "tags": [
+          "practice-reads"
+        ],
+        "summary": "Own completed sessions with all-time totals (S9)",
+        "description": "Mock GET /api/practice/history?period=&page=. Newest first, 15 per page. meta.totals are all-time and never filtered by period (BR-21). Relation to BE-12 GET /practice/sessions: this is the S9 screen model (badge, wrongCount, 2-decimal accuracy), that one the session list of the write path. Any signed-in role (mock: \"Any session (A)\"); the figures are always the caller own, never another user (card AC4: staff read a student through the BE-19 and BE-20 report endpoints). Read-only: no CSRF header, no rate limit.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "description": "'week' (Monday-Sunday), 'month' or 'year' (calendar, Malaysia time). Any other value lists every session; never 422."
+            },
+            "required": false,
+            "description": "'week' (Monday-Sunday), 'month' or 'year' (calendar, Malaysia time). Any other value lists every session; never 422.",
+            "name": "period",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "description": "Page number; a missing or invalid value means page 1 (mock, Laravel style). The page size is fixed at 15."
+            },
+            "required": false,
+            "description": "Page number; a missing or invalid value means page 1 (mock, Laravel style). The page size is fixed at 15.",
+            "name": "page",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The page of sessions with meta.totals.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PracticeReadHistoryResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED: no valid session.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/practice/corrections": {
+      "get": {
+        "tags": [
+          "practice-reads"
+        ],
+        "summary": "Own corrections: first attempt versus later attempt per question (S11)",
+        "description": "Mock GET /api/practice/corrections?month=. Questions whose first attempt fell in the month; \"before\" is the first attempt, \"after\" counts a later correct attempt. SPM past_year sessions are not counted (BR-18). Any signed-in role (mock: \"Any session (A)\"); the figures are always the caller own, never another user (card AC4: staff read a student through the BE-19 and BE-20 report endpoints). Read-only: no CSRF header, no rate limit.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "description": "YYYY-MM. A missing or malformed value shows the current month (DV-M05-13); never 422."
+            },
+            "required": false,
+            "description": "YYYY-MM. A missing or malformed value shows the current month (DV-M05-13); never 422.",
+            "name": "month",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The month report.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/PracticeReadCorrections"
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED: no valid session.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/practice/mastery": {
+      "get": {
+        "tags": [
+          "practice-reads"
+        ],
+        "summary": "Own mastery level per subject (S12)",
+        "description": "Mock GET /api/practice/mastery. The L0-L10 scale and one card per answered active subject; the level comes from the correct count (BR-20). Computed from the answer dimensions, not a question join (card AC2). Any signed-in role (mock: \"Any session (A)\"); the figures are always the caller own, never another user (card AC4: staff read a student through the BE-19 and BE-20 report endpoints). Read-only: no CSRF header, no rate limit.",
+        "responses": {
+          "200": {
+            "description": "The scale and the cards.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/PracticeReadMastery"
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED: no valid session.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/practice/structured": {
+      "get": {
+        "tags": [
+          "practice-reads"
+        ],
+        "summary": "Structured question cards (S10 and the SPM variants)",
+        "description": "Mock GET /api/practice/structured. Published, active Tingkatan 4 and 5 sets, newest first, 20 per page. scope=spm lists the 15 Subjektif subjects newest first across subjects; with track=bahasa only BM then BI. An unknown scope, or a track without scope=spm, is ignored. Any signed-in role (mock: \"Any session (A)\"); the figures are always the caller own, never another user (card AC4: staff read a student through the BE-19 and BE-20 report endpoints). Read-only: no CSRF header, no rate limit.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "description": "Subject filter. An empty value is no filter; an unknown or non-numeric value matches nothing (200, empty list)."
+            },
+            "required": false,
+            "description": "Subject filter. An empty value is no filter; an unknown or non-numeric value matches nothing (200, empty list).",
+            "name": "subjectId",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "description": "1 to 6. An empty value is no filter; any other value matches nothing (200, empty list)."
+            },
+            "required": false,
+            "description": "1 to 6. An empty value is no filter; any other value matches nothing (200, empty list).",
+            "name": "kbatLevel",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "description": "Page number; a missing or invalid value means page 1. The page size is fixed at 20."
+            },
+            "required": false,
+            "description": "Page number; a missing or invalid value means page 1. The page size is fixed at 20.",
+            "name": "page",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "description": "'spm' selects the SPM variant (Subjektif). Any other value is ignored."
+            },
+            "required": false,
+            "description": "'spm' selects the SPM variant (Subjektif). Any other value is ignored.",
+            "name": "scope",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "description": "'bahasa' (BM then BI) only together with scope=spm; otherwise ignored."
+            },
+            "required": false,
+            "description": "'bahasa' (BM then BI) only together with scope=spm; otherwise ignored.",
+            "name": "track",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "A page of cards; meta carries scope, track and subjectOptions.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PracticeReadStructuredListResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED: no valid session.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/practice/structured/{id}": {
+      "get": {
+        "tags": [
+          "practice-reads"
+        ],
+        "summary": "Structured question answer page (Q3)",
+        "description": "Mock GET /api/practice/structured/:id. Stimulus and sub-questions with marks; model answers are never part of it (they come back in the attempt result). Any signed-in role (mock: \"Any session (A)\"); the figures are always the caller own, never another user (card AC4: staff read a student through the BE-19 and BE-20 report endpoints). Read-only: no CSRF header, no rate limit.",
+        "parameters": [
+          {
+            "schema": {
+              "$ref": "#/components/schemas/Id"
+            },
+            "required": true,
+            "description": "Opaque entity id (string). Never parse or construct on the client.",
+            "name": "id",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "description": "Only decides backUrl; 'spm' or ignored."
+            },
+            "required": false,
+            "description": "Only decides backUrl; 'spm' or ignored.",
+            "name": "scope",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "description": "Only decides backUrl; 'bahasa' together with scope=spm, else ignored."
+            },
+            "required": false,
+            "description": "Only decides backUrl; 'bahasa' together with scope=spm, else ignored.",
+            "name": "track",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The question.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/PracticeReadStructuredDetail"
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED: no valid session.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "NOT_FOUND \"Rekod tidak dijumpai.\" (unknown id, or a structured question that is not published, active and for Tingkatan 4 or 5).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/practice/structured/{id}/attempts": {
+      "post": {
+        "tags": [
+          "practice-reads"
+        ],
+        "summary": "Submit a structured attempt",
+        "description": "Mock POST /api/practice/structured/:id/attempts. Stores one attempt of the caller (not idempotent: each call stores a new row) and returns it with the marks and the model answers. Marking is the mock placeholder (LS-7): a sub-question gets full marks when its trimmed answer has at least 20 characters, else 0; the server uses @pp/exam-core once BE-14 has merged. A sub-question left out of answers is marked 0. Any signed-in role; own attempts only.",
+        "parameters": [
+          {
+            "schema": {
+              "$ref": "#/components/schemas/Id"
+            },
+            "required": true,
+            "description": "Opaque entity id (string). Never parse or construct on the client.",
+            "name": "id",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Value of Session.csrf; required on mutating requests."
+            },
+            "required": true,
+            "description": "Value of Session.csrf; required on mutating requests.",
+            "name": "X-CSRF-Token",
+            "in": "header"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PracticeReadStructuredAttemptRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "The stored attempt with marks and model answers.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/PracticeReadStructuredAttemptResult"
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED: no valid session.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "CSRF_INVALID (missing or wrong X-CSRF-Token).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "NOT_FOUND \"Rekod tidak dijumpai.\" (unknown id, or a structured question that is not published, active and for Tingkatan 4 or 5).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "VALIDATION_ERROR with fields: scope or track \"Skop tidak sah.\" (not 'spm' / 'bahasa', or track without scope 'spm'); answers \"Jawapan tidak sah.\" (not an array); answers.<index> \"Jawapan tidak sah.\" (bad row, unknown or repeated subQuestionId) or \"Jawapan tidak boleh melebihi 5000 aksara.\". message is the first field message, plus \" (and N more error(s))\" when there are several.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "RATE_LIMITED \"Terlalu banyak percubaan. Sila cuba sebentar lagi.\" The body carries retryAfter (seconds) and the Retry-After header carries the same value.",
+            "headers": {
+              "Retry-After": {
+                "description": "Seconds until a retry is allowed (same value as error.retryAfter).",
+                "schema": {
+                  "type": "integer",
+                  "minimum": 0
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/spm-targets": {
+      "get": {
+        "tags": [
+          "practice-reads"
+        ],
+        "summary": "Own SPM targets (S15)",
+        "description": "Mock GET /api/spm-targets. The 20 SPM subjects of BR-22 in order with the caller target. answered, accuracyPct, band and predictedGrade are 0 / null (\"Belum mula\") unless progress exists (mock: only a test fixture sets it; the v2 source is an open question). Any signed-in role (mock: \"Any session (A)\"); the figures are always the caller own, never another user (card AC4: staff read a student through the BE-19 and BE-20 report endpoints). Read-only: no CSRF header, no rate limit.",
+        "responses": {
+          "200": {
+            "description": "The targets.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/PracticeReadSpmTargets"
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED: no valid session.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "practice-reads"
+        ],
+        "summary": "Replace own SPM targets",
+        "description": "Mock PUT /api/spm-targets. Replaces all 20 values (BR-26): a missing subject or \"\" clears its target. Idempotent: the same body twice stores the same rows and answers the same. Any invalid key or grade is 422 and nothing is saved. Any signed-in role; own targets only (SEC-M05-06).",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Value of Session.csrf; required on mutating requests."
+            },
+            "required": true,
+            "description": "Value of Session.csrf; required on mutating requests.",
+            "name": "X-CSRF-Token",
+            "in": "header"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PracticeReadSpmTargetsSaveRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "{ data: { saved: 20 }, status: \"Target berjaya disimpan.\" }.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PracticeReadSpmTargetsSaveResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED: no valid session.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "CSRF_INVALID (missing or wrong X-CSRF-Token).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "VALIDATION_ERROR \"Gred target tidak sah.\": fields.targets when targets is not an object; fields[\"targets.<key>\"] for a key that is not one of the 20 subjects (or not canonical), or a value outside the nine grades and \"\".",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "RATE_LIMITED \"Terlalu banyak percubaan. Sila cuba sebentar lagi.\" The body carries retryAfter (seconds) and the Retry-After header carries the same value.",
+            "headers": {
+              "Retry-After": {
+                "description": "Seconds until a retry is allowed (same value as error.retryAfter).",
+                "schema": {
+                  "type": "integer",
+                  "minimum": 0
+                }
+              }
+            },
             "content": {
               "application/json": {
                 "schema": {
@@ -81150,6 +84921,885 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/RateLimitedBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/cikgu/send": {
+      "post": {
+        "tags": [
+          "cikgu"
+        ],
+        "summary": "Chat turn with Cikgu Alesa (raw, un-enveloped body)",
+        "description": "Any signed-in role. RAW body (no `{data}` envelope, snake_case), as the live site; the client reads the body for every HTTP status. A guest gets 401 with body exactly `{}` (not the error envelope). A non-string or blank (after trim) `message` is 422 body `{}`, checked before the thread and the AI call; nothing is stored. Quota by role (BR-M13-06), counted per user per Malaysia calendar day from the stored user messages: `admin` tier `admin` 100 turns, `teacher` tier `guru` 30, every other role tier `pelajar` 10. When used >= limit: 429 body exactly `{\"quota_exhausted\": true}` and nothing is stored. `turns_remaining` = limit - (used + 1). Routing of the reply is deterministic string logic on the server (BR-M13-04), first match on the trimmed message, case-insensitive: starts with \"Tolong mark karangan ini menggunakan rubric \" = `mark_essay` (stores an essay marking); contains \"rph\" = RPH tool (stores an RPH when subject and level are found); contains \"latihan\" or \"soalan\" = practice reply; otherwise the general reply. `tool_hops` is 1 when the turn ran mark_essay, saved an RPH or returned practice questions, else 0. With the mock AI provider `tokens.in = 120 + ceil(codepoints(message) / 4)` and `tokens.out = ceil(codepoints(reply) / 4)`. AI: the reply, marks and RPH text come from the mock provider or, later, the BE-36 adapter (redaction, rate limit, cost log, budget); this route calls no AI vendor. PDPA: the user is often a minor. The message and reply are personal data: never logged, `Cache-Control: no-store`, sent to a provider only after redaction. The contract makes no statement that content is not used to train models (open question). The CSRF header is checked (403 CSRF_INVALID, standard envelope).",
+        "x-envelope": "none",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Value of Session.csrf; required on mutating requests."
+            },
+            "required": true,
+            "description": "Value of Session.csrf; required on mutating requests.",
+            "name": "X-CSRF-Token",
+            "in": "header"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CikguSendRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The reply. Raw snake_case body, no envelope.",
+            "headers": {
+              "Cache-Control": {
+                "description": "no-store: the body carries personal data of minors (chat text, essays, student names).",
+                "schema": {
+                  "type": "string",
+                  "enum": [
+                    "no-store"
+                  ]
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CikguSendResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Guest: body exactly `{}`.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CikguChatEmptyBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "CSRF_INVALID (missing or wrong X-CSRF-Token).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Blank or non-string message: body exactly `{}`. Nothing stored.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CikguChatEmptyBody"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Either the daily quota is used up (body exactly `{\"quota_exhausted\": true}`, nothing stored), or [PROPOSED] RATE_LIMITED (D57a; raw body with a BM string `error`, `code` RATE_LIMITED and `retryAfter`, plus the Retry-After header). Tell them apart by the `quota_exhausted` key.",
+            "headers": {
+              "Retry-After": {
+                "description": "Seconds until a retry is allowed (same value as error.retryAfter).",
+                "schema": {
+                  "type": "integer",
+                  "minimum": 0
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "anyOf": [
+                    {
+                      "$ref": "#/components/schemas/CikguChatQuotaBody"
+                    },
+                    {
+                      "$ref": "#/components/schemas/CikguChatErrorBody"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "[PROPOSED] AI_UNAVAILABLE: raw body `{error: \"Cikgu Alesa tak boleh respon. Cuba lagi.\", code: \"AI_UNAVAILABLE\"}`. Nothing is stored and no quota turn is consumed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CikguChatErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/cikgu/rph": {
+      "get": {
+        "tags": [
+          "cikgu"
+        ],
+        "summary": "My RPH list",
+        "description": "Teacher or admin. Only the caller's own RPHs, `lessonDate` descending then id descending, 20 per page. An admin sees only their own (normally empty) rows.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "description": "1-based page. The page size is fixed at 20 (no pageSize). An invalid value means 1; a page beyond the last is an empty page that keeps the requested page number."
+            },
+            "required": false,
+            "description": "1-based page. The page size is fixed at 20 (no pageSize). An invalid value means 1; a page beyond the last is an empty page that keeps the requested page number.",
+            "name": "page",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "One page of the caller's RPHs.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/CikguRphListItem"
+                      }
+                    },
+                    "meta": {
+                      "$ref": "#/components/schemas/ListMeta"
+                    }
+                  },
+                  "required": [
+                    "data",
+                    "meta"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED \"Unauthenticated.\" (no valid session).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN \"This action is unauthorized.\" (any role other than teacher or admin).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "cikgu"
+        ],
+        "summary": "Generate and save an RPH from the form",
+        "description": "Teacher or admin. Validates (BR-M13-12), generates the plan text with the AI provider (mock: the canned plan), stores the row with `status` generated, `source` form, `threadId` null, 201 `{data: Rph}`. Values are trimmed; lengths count Unicode code points; optional text fields that are blank become null; `lessonDate` empty or missing = today (Malaysia); `durationMinutes` missing = 60. Content for 60 minutes splits 6/15/15/15/9 (a = round(0.10 x total), e = round(0.15 x total), b = floor((total - a - e) / 3), d = total - a - e - 2b). The mock waits 1,500 ms; the API does not (open question). The CSRF header is checked.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Value of Session.csrf; required on mutating requests."
+            },
+            "required": true,
+            "description": "Value of Session.csrf; required on mutating requests.",
+            "name": "X-CSRF-Token",
+            "in": "header"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CikguRphCreateRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "The saved RPH.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/CikguRph"
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED \"Unauthenticated.\" (no valid session).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN \"This action is unauthorized.\" (any role other than teacher or admin), or CSRF_INVALID.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "VALIDATION_ERROR with `fields`, collected for all fields and returned together, inserted in the order subjectName, level, tajuk, durationMinutes, lessonDate, pengajaranKeperluan, className, timeSlot, tema. Messages: required text = \"Medan ini diperlukan.\"; level not in D1-D6/T1-T5 = \"Medan ini tidak sah.\"; too long = \"Medan ini tidak boleh melebihi {max} aksara.\" (subjectName 100, tajuk 200, pengajaranKeperluan 500, className/timeSlot/tema 100); durationMinutes = \"Tempoh mesti antara 15 dan 240 minit.\"; lessonDate = \"Tarikh tidak sah.\". Top-level message = the first field message plus \" (and N more error(s))\" when several fields fail.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "RATE_LIMITED \"Terlalu banyak percubaan. Sila cuba sebentar lagi.\" The body carries retryAfter (seconds) and the Retry-After header carries the same value.",
+            "headers": {
+              "Retry-After": {
+                "description": "Seconds until a retry is allowed (same value as error.retryAfter).",
+                "schema": {
+                  "type": "integer",
+                  "minimum": 0
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "[PROPOSED] AI_UNAVAILABLE \"Cikgu Alesa tak boleh respon. Cuba lagi.\" (provider error, BE-36 rate limit or AI_BUDGET_EXHAUSTED). Nothing is stored.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/cikgu/rph/{id}": {
+      "get": {
+        "tags": [
+          "cikgu"
+        ],
+        "summary": "RPH detail",
+        "description": "Teacher or admin. Own rows only; unknown, foreign or non-numeric id = 404 NOT_FOUND \"Not Found.\" (no existence leak).",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 64,
+              "description": "Decimal-string id of a row of the caller. Unknown, foreign or non-numeric = 404.",
+              "example": "1042"
+            },
+            "required": true,
+            "description": "Decimal-string id of a row of the caller. Unknown, foreign or non-numeric = 404.",
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The RPH.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/CikguRph"
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED \"Unauthenticated.\" (no valid session).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN \"This action is unauthorized.\" (any role other than teacher or admin).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "NOT_FOUND \"Not Found.\" (unknown, foreign or non-numeric id; indistinguishable on purpose).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/cikgu/essays": {
+      "get": {
+        "tags": [
+          "cikgu"
+        ],
+        "summary": "My essay markings",
+        "description": "Teacher or admin. Own markings only, `createdAt` descending then id descending, 20 per page. Rows carry a student name typed by the teacher (PDPA): `Cache-Control: no-store`, never logged.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "description": "1-based page. The page size is fixed at 20 (no pageSize). An invalid value means 1; a page beyond the last is an empty page that keeps the requested page number."
+            },
+            "required": false,
+            "description": "1-based page. The page size is fixed at 20 (no pageSize). An invalid value means 1; a page beyond the last is an empty page that keeps the requested page number.",
+            "name": "page",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "One page of the caller's markings.",
+            "headers": {
+              "Cache-Control": {
+                "description": "no-store: the body carries personal data of minors (chat text, essays, student names).",
+                "schema": {
+                  "type": "string",
+                  "enum": [
+                    "no-store"
+                  ]
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/CikguEssayListItem"
+                      }
+                    },
+                    "meta": {
+                      "$ref": "#/components/schemas/ListMeta"
+                    }
+                  },
+                  "required": [
+                    "data",
+                    "meta"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED \"Unauthenticated.\" (no valid session).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN \"This action is unauthorized.\" (any role other than teacher or admin).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/cikgu/essays/{id}": {
+      "get": {
+        "tags": [
+          "cikgu"
+        ],
+        "summary": "Essay marking detail",
+        "description": "Teacher or admin. Own rows only; unknown, foreign or non-numeric id = 404 NOT_FOUND \"Not Found.\". Carries the essay text and student name (child data): `Cache-Control: no-store`, never logged.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 64,
+              "description": "Decimal-string id of a row of the caller. Unknown, foreign or non-numeric = 404.",
+              "example": "1042"
+            },
+            "required": true,
+            "description": "Decimal-string id of a row of the caller. Unknown, foreign or non-numeric = 404.",
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The marking.",
+            "headers": {
+              "Cache-Control": {
+                "description": "no-store: the body carries personal data of minors (chat text, essays, student names).",
+                "schema": {
+                  "type": "string",
+                  "enum": [
+                    "no-store"
+                  ]
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/CikguEssayMarking"
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED \"Unauthenticated.\" (no valid session).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN \"This action is unauthorized.\" (any role other than teacher or admin).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "NOT_FOUND \"Not Found.\" (unknown, foreign or non-numeric id; indistinguishable on purpose).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/cikgu/pbd": {
+      "get": {
+        "tags": [
+          "cikgu"
+        ],
+        "summary": "My pending PBD tags (approval queue)",
+        "description": "Teacher or admin. Own `pending` tags only, newest roll-up first, then student name A to Z (case and diacritic insensitive, Malay collation), then id; 20 per page. Student names: `Cache-Control: no-store`.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "description": "1-based page. The page size is fixed at 20 (no pageSize). An invalid value means 1; a page beyond the last is an empty page that keeps the requested page number."
+            },
+            "required": false,
+            "description": "1-based page. The page size is fixed at 20 (no pageSize). An invalid value means 1; a page beyond the last is an empty page that keeps the requested page number.",
+            "name": "page",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "One page of the pending tags.",
+            "headers": {
+              "Cache-Control": {
+                "description": "no-store: the body carries personal data of minors (chat text, essays, student names).",
+                "schema": {
+                  "type": "string",
+                  "enum": [
+                    "no-store"
+                  ]
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/CikguPbdQueueItem"
+                      }
+                    },
+                    "meta": {
+                      "$ref": "#/components/schemas/ListMeta"
+                    }
+                  },
+                  "required": [
+                    "data",
+                    "meta"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED \"Unauthenticated.\" (no valid session).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN \"This action is unauthorized.\" (any role other than teacher or admin).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/cikgu/pbd/rollup": {
+      "post": {
+        "tags": [
+          "cikgu"
+        ],
+        "summary": "Roll up practice answers of a class into PBD tags",
+        "description": "Teacher or admin. `classroomId` null, malformed, not the caller's class, or a class without a subject: 200 `{created: 0, updated: 0, skipped: 0}` and no change (never 422, never reveals a foreign class). Otherwise, for every active member with at least one answer in the class subject (rows with `is_test` excluded): skor = round(correct / answered x 1000) / 10; tp bands <20 1, <40 2, <60 3, <75 4, <90 5, else 6; sp = \"5.1.1\" for subject Kimia, \"1.1.1\" for Sejarah and every other subject (illustrative, open question). An existing `pending` tag for (teacher, class, student, sp) gets the new skor/tp and `createdAt` = now (`updated`); else if an approved tag exists it is left alone (`skipped`); else a new pending tag (`created`).",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Value of Session.csrf; required on mutating requests."
+            },
+            "required": true,
+            "description": "Value of Session.csrf; required on mutating requests.",
+            "name": "X-CSRF-Token",
+            "in": "header"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CikguRollupRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Counts of the run.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/CikguRollupResult"
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED \"Unauthenticated.\" (no valid session).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN \"This action is unauthorized.\" (any role other than teacher or admin), or CSRF_INVALID.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "RATE_LIMITED \"Terlalu banyak percubaan. Sila cuba sebentar lagi.\" The body carries retryAfter (seconds) and the Retry-After header carries the same value.",
+            "headers": {
+              "Retry-After": {
+                "description": "Seconds until a retry is allowed (same value as error.retryAfter).",
+                "schema": {
+                  "type": "integer",
+                  "minimum": 0
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/cikgu/pbd/bulk-approve": {
+      "post": {
+        "tags": [
+          "cikgu"
+        ],
+        "summary": "Approve PBD tags in bulk",
+        "description": "Teacher or admin. Only the caller's `pending` tags among `ids` become `approved` with `approvedAt` = now; foreign, unknown or non-pending ids are ignored silently; duplicates count once; non-array or empty `ids` = `{approved: 0}` (never 422). `approved` = how many changed.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Value of Session.csrf; required on mutating requests."
+            },
+            "required": true,
+            "description": "Value of Session.csrf; required on mutating requests.",
+            "name": "X-CSRF-Token",
+            "in": "header"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CikguBulkApproveRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Number of tags approved.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/CikguBulkApproveResult"
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED \"Unauthenticated.\" (no valid session).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN \"This action is unauthorized.\" (any role other than teacher or admin), or CSRF_INVALID.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "RATE_LIMITED \"Terlalu banyak percubaan. Sila cuba sebentar lagi.\" The body carries retryAfter (seconds) and the Retry-After header carries the same value.",
+            "headers": {
+              "Retry-After": {
+                "description": "Seconds until a retry is allowed (same value as error.retryAfter).",
+                "schema": {
+                  "type": "integer",
+                  "minimum": 0
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/cikgu/pbd/export.csv": {
+      "get": {
+        "tags": [
+          "cikgu"
+        ],
+        "summary": "Export approved PBD tags as CSV (raw file)",
+        "description": "Teacher or admin. A file, not JSON: UTF-8 `text/csv; charset=utf-8`, attachment `pbd-approved.csv`, `Cache-Control: no-store`. First line `pelajar,kelas,sp,skor,tp,tarikh_lulus`; one line per approved tag of the caller ordered by approval time (else roll-up time), student name, id; `skor` with one decimal, `tarikh_lulus` = YYYY-MM-DD (Malaysia date of approval). A cell starting with `=`, `+`, `@` or `-` gets a leading `'`; a cell containing `\"`, `,`, CR or LF is double-quoted with inner quotes doubled; lines end with `\\n`, including the last; no approved tag = the header line only. Bulk child data: rate limited (D57, [PROPOSED] on a read).",
+        "x-envelope": "none",
+        "responses": {
+          "200": {
+            "description": "The CSV file.",
+            "headers": {
+              "Content-Disposition": {
+                "description": "attachment; filename=\"pbd-approved.csv\"",
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "Cache-Control": {
+                "description": "no-store: the body carries personal data of minors (chat text, essays, student names).",
+                "schema": {
+                  "type": "string",
+                  "enum": [
+                    "no-store"
+                  ]
+                }
+              }
+            },
+            "content": {
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED \"Unauthenticated.\" (no valid session).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN \"This action is unauthorized.\" (any role other than teacher or admin).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "RATE_LIMITED \"Terlalu banyak percubaan. Sila cuba sebentar lagi.\" The body carries retryAfter (seconds) and the Retry-After header carries the same value.",
+            "headers": {
+              "Retry-After": {
+                "description": "Seconds until a retry is allowed (same value as error.retryAfter).",
+                "schema": {
+                  "type": "integer",
+                  "minimum": 0
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
                 }
               }
             }

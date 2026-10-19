@@ -16,6 +16,7 @@ import { AccessModeSchema, PortalIdSchema, RoleCodeSchema, ScopeLevelSchema } fr
 import { ErrorBodySchema, ErrorCodeSchema, ErrorPayloadSchema } from './common/error'
 import { ClientUuidSchema, IdSchema } from './common/ids'
 import { PRACTICE_COMPONENT_SCHEMAS, registerPracticePaths } from './practice/paths'
+import { PRACTICE_READS_COMPONENT_SCHEMAS, registerPracticeReadsPaths } from './practice/reads/paths'
 import { SESSION_COMPONENT_SCHEMAS, registerSessionPaths } from './session/paths'
 import { CONTENT_COMPONENT_SCHEMAS, registerContentPaths } from './content/paths'
 import { SUPPORT_COMPONENT_SCHEMAS, registerSupportPaths } from './support/paths'
@@ -46,6 +47,7 @@ import { QUESTION_SETS_COMPONENT_SCHEMAS, registerQuestionSetsPaths } from './cl
 import { PKSK_COMPONENT_SCHEMAS, registerPkskPaths } from './pksk/paths'
 import { PARENT_INVITE_COMPONENT_SCHEMAS, registerParentInvitePaths } from './schools/parents/paths'
 import { SUBSCRIPTION_COMPONENT_SCHEMAS, registerSubscriptionPaths } from './schools/subscriptions/paths'
+import { CIKGU_COMPONENT_SCHEMAS, registerCikguPaths } from './cikgu/paths'
 
 /** Every shared schema that becomes a component. Domain tasks (T07, T08, T24...) append here. */
 export const COMPONENT_SCHEMAS = {
@@ -93,6 +95,7 @@ export const COMPONENT_SCHEMAS = {
   ...PERFORMANCE_COMPONENT_SCHEMAS, // BE-19
   ...PARENT_INVITE_COMPONENT_SCHEMAS, // BE-25
   ...SUBSCRIPTION_COMPONENT_SCHEMAS, // BE-25
+  ...CIKGU_COMPONENT_SCHEMAS, // BE-43 (M13)
   // V2-T08 access matrix
   AccessGroupId: AccessGroupIdSchema,
   AccessGroup: AccessGroupSchema,
@@ -106,6 +109,7 @@ export const COMPONENT_SCHEMAS = {
   ...CURRICULUM_COMPONENT_SCHEMAS, // BE-08
   ...PRACTICE_COMPONENT_SCHEMAS, // BE-12
   ...PKSK_COMPONENT_SCHEMAS, // BE-42
+  ...PRACTICE_READS_COMPONENT_SCHEMAS, // BE-13
 } as const
 
 export const CONTRACT_VERSION = '0.1.0'
@@ -127,6 +131,7 @@ export function buildOpenApiDocument(): Record<string, unknown> {
   registerCommandCenterPaths(registry) // BE-22
   registerCurriculumPaths(registry) // BE-08
   registerPracticePaths(registry) // BE-12
+  registerPracticeReadsPaths(registry) // BE-13
   registerClassesPaths(registry) // BE-17
   registerBattlePaths(registry) // BE-44 (M16)
   registerGamesPaths(registry) // BE-45 (M16 games, leagues)
@@ -144,6 +149,7 @@ export function buildOpenApiDocument(): Record<string, unknown> {
   registerPkskPaths(registry) // BE-42
   registerParentInvitePaths(registry) // BE-25
   registerSubscriptionPaths(registry) // BE-25
+  registerCikguPaths(registry) // BE-43 (M13)
   const generator = new OpenApiGeneratorV31(registry.definitions)
   return generator.generateDocument({
     openapi: '3.1.0',
