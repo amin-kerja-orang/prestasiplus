@@ -77,6 +77,18 @@ A PC may claim **only** cards listed here. A card that is not listed is closed, 
 | BE-36 | contract-only | 2026-10-19 | AI adapter wire types: `packages/contract/src/ai/**`. |
 | BE-41 | contract-only | 2026-10-19 | SPM hub (M06): `packages/contract/src/spm/**`. |
 | BE-48 | contract-only | 2026-10-19 | Heatmap: `packages/contract/src/heatmap/**`. |
+| BE-16 | contract-only | 2026-10-19 | Bijak attempts: `packages/contract/src/bijak/attempts/**` only (BE-15 owns `bijak/papers`). Foreign attempt = 403 (D54b). |
+| BE-18 | contract-only | 2026-10-19 | Missions and question sets: `packages/contract/src/classes/{missions,question-sets}/**` only (BE-17 owns the rest of `classes/`). |
+| BE-20 | contract-only | 2026-10-19 | Analytics and Kirkpatrick: `packages/contract/src/reports/{analytics,kirkpatrick}/**` only (BE-19 owns `reports/performance`). |
+| BE-22 | contract-only | 2026-10-19 | Command Center and admin dashboard: `packages/contract/src/admin/command-center/**`. |
+| BE-38 | contract-only | 2026-10-19 | Intake batches and review: `packages/contract/src/intake/**`. Match the prototype intake in `src/modules/m28-bijak-spm/admin/intake` (types.ts, server/store.ts) and the five lifecycle states (D54a). |
+| BE-39 | contract-only | 2026-10-19 | Paper builder and blueprints: `packages/contract/src/bijak/builder/**` only. Match `src/modules/m28-bijak-spm/admin/papers` and server/admin.ts. |
+| BE-42 | contract-only | 2026-10-19 | PKSK: `packages/contract/src/pksk/**`. |
+| BE-43 | contract-only | 2026-10-19 | Cikgu Alesa: `packages/contract/src/cikgu/**`. |
+| BE-44 | contract-only | 2026-10-19 | Battle: `packages/contract/src/battle/**`. |
+| BE-45 | contract-only | 2026-10-19 | Papan Bijak, games hub, leagues: `packages/contract/src/games/**`. |
+| BE-46 | contract-only | 2026-10-19 | Marketplace: `packages/contract/src/marketplace/**`. |
+| BE-47 | contract-only | 2026-10-19 | Keluarga Angkat (student side): `packages/contract/src/sponsorship/**`. |
 
 Rules for `contract-only`:
 - The frontend mock is the spec: match the mock handlers' request and response shapes, error codes and BM messages exactly.
@@ -90,6 +102,7 @@ Rules for `contract-only`:
 
 ### Lead notices (current instructions; newest first)
 
+- 2026-10-19 14:40: **12 more contract-only cards opened:** BE-16, 18, 20, 22, 38, 39, 42, 43, 44, 45, 46, 47. Only BE-19 and BE-36 were left before. Same rules: one branch `be/<card>-contract` per card, push = claim.
 - 2026-10-19: **Reserved for an external collaborator: BE-11 and BE-24 (contract-only), branches `be/BE-11-contract` and `be/BE-24-contract`.** Every session skips these two cards even before their branches appear on GitHub. BE-08 contract stays with the session that pushed `be/BE-08-contract` first.
 - 2026-10-19: **Decisions D54 (docs/TRACKER.md):** questions use the v2 lifecycle on the wire: Draf, Semakan, Lulus, Diterbitkan, Diarkib (codes draft, review, approved, published, archived); another student's Bijak attempt returns 403; BE-23 is now P1; M16 leaderboards show classmates' display names (fictitious names in seeds). Cards that conflict with these follow D54.
 - 2026-10-19: **Start now; do not wait for perfect docs.** Take cards only from the Open list above. If `docs/requirements/v2-backend-urs.md` or `docs/plan/backend-dev-guide.md` is not on the branch yet, follow `docs/architecture/v2-backend-plan.md` and the card file. Once they land, re-read them at your next session start.
