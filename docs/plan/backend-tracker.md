@@ -28,7 +28,7 @@ Single source of truth for the **state of every backend card**. The lead's proje
 | BE-03 | Authentication, session, roles, scope and Mod Pelajar | PC-1 | P0 | BE-02 | L | todo | - | `be/BE-03-auth-session` | - | Sync S3 (auth, scope). Security review. Users table already has legacy columns. |
 | BE-04 | File storage service and upload handling | PC-1 | P0 | BE-03 | S | todo | - | `be/BE-04-file-storage` | - | Sync S4. Security review (uploads). Also derived files for BE-37. |
 | BE-05 | Users and schools (M02): admin CRUD, search, import | PC-1 | P0 | BE-03 | L | todo | - | `be/BE-05-users-schools` | - | Sync S5. Security review (IC, passwords). Unblocks BE-17, BE-25. |
-| BE-06 | Account basics (M01): register, password reset, profile, settings, notifications | PC-1 | P1 | BE-03, BE-04, BE-05 | M | todo | - | `be/BE-06-account-notifications` | - | Reset e-mail logged, not sent. |
+| BE-06 | Account basics (M01): register, password reset, profile, settings, notifications | PC-1 | P1 | BE-03, BE-04, BE-05 | M | in-progress | s-vm-obgn | `be/BE-06-contract` | - | Contract only (account, notifications). Reset e-mail logged, not sent. |
 | BE-07 | Seed: core population (schools, users, roles) for the PoC profile | PC-1 | P0 | BE-05 | S | todo | - | `be/BE-07-seed-core-accounts` | - | Demo accounts only (Demo1234). |
 | BE-08 | Curriculum (M03): levels, subjects, chapters, topics, DSKP tree | PC-2 | P0 | BE-03 | M | todo | - | `be/BE-08-curriculum` | - | Contract merged 2026-10-19 (PR -, be/BE-08-contract). Sync S5. Unblocks BE-09. |
 | BE-09 | Question bank core (M04): schema, repository, question CRUD and eligibility | PC-2 | P0 | BE-08 | L | todo | - | `be/BE-09-question-bank-core` | - | Sync S6 (question schema). Unblocks BE-10, BE-12, BE-15. |
