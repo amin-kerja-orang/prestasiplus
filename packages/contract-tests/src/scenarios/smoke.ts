@@ -33,6 +33,12 @@ const FORBIDDEN_ROLE: Record<string, ActorRole> = {
   'GET /me/parent-links': 'teacher', // student and parent only (a student reads own links)
 }
 
+/**
+ * Operations whose only 403 is PASSWORD_CHANGE_REQUIRED (every signed-in role gets it while the flag is set), so
+ * there is no role that is simply "not allowed". The API conformance scenarios of the account domain cover it.
+ */
+const FLAG_ONLY_403 = new Set(['GET /me', 'GET /me/settings', 'GET /me/notifications', 'GET /me/notifications/unread-count'])
+
 /** Required query parameters (the contract marks them 422 when missing). */
 const QUERY: Record<string, string> = {
   'GET /practice/sessions': '?modes=random,chapter',
@@ -96,7 +102,7 @@ export function smokeScenarios(contract: ContractIndex): Scenario[] {
         },
       })
     }
-    if ('403' in op.responses) {
+    if ('403' in op.responses && !FLAG_ONLY_403.has(op.key)) {
       // A student reaches no admin or teacher route; FORBIDDEN_ROLE lists the exceptions.
       const forbidden = FORBIDDEN_ROLE[op.key] ?? 'student'
       out.push({

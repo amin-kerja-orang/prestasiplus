@@ -25612,6 +25612,46 @@
           "password"
         ]
       },
+      "AccountRegisterPending": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": [
+              "pending_verification"
+            ]
+          },
+          "message": {
+            "type": "string",
+            "enum": [
+              "Pendaftaran diterima. Akaun guru anda akan diaktifkan selepas disahkan oleh pentadbir sekolah."
+            ]
+          }
+        },
+        "required": [
+          "status",
+          "message"
+        ],
+        "additionalProperties": false
+      },
+      "AccountRegisterResponse": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Session"
+              },
+              {
+                "$ref": "#/components/schemas/AccountRegisterPending"
+              }
+            ]
+          }
+        },
+        "required": [
+          "data"
+        ]
+      },
       "AccountPasswordEmailRequest": {
         "type": "object",
         "properties": {
@@ -79193,7 +79233,7 @@
           "account"
         ],
         "summary": "Self-registration (Murid, Guru, Ibu Bapa)",
-        "description": "Public. Roles are limited to student, teacher and parent (default student); any other role in the body is a 422. Creates an active account and logs it in: the response is the contract Session and the session cookie is set (not remembered). A duplicate e-mail (case-insensitive) is a 422 on `fields.email`. Rate limit (BE-06 AC6, D57a): per client IP, the BE-03 login numbers: 5 failed attempts per 60 seconds, then 429 until the window ends with doubling backoff on repeat; only refused attempts (422) count, so legitimate registrations are not slowed. The response is Cache-Control: no-store (it sets a session). Accepted residual risk (security review, by design as the mock and the UX): the 422 emailTaken lets a client learn whether an e-mail is registered; it is bounded only by the per-IP limit above. Log redaction (BE-NFR-10, BE-NFR-11): the request body, the IC number, the reset token, the e-mail and every password are never written to application logs, audit rows or error bodies (an e-mail may appear only masked, a token only as its id).",
+        "description": "Public. Roles are limited to student, teacher and parent (default student); any other role in the body is a 422. Student and parent: creates an active account and logs it in (the response is the contract Session and the session cookie is set, not remembered). Teacher (privacy: a teacher gets school scope, which reaches the data of children): created inactive, with no school and the requested school kept as pending, and NO session; the answer is {status: pending_verification, message}. Until a school_admin verifies the account (BE-21), login is 403 ACCOUNT_INACTIVE. A teacher must give a schoolId (422 otherwise). A duplicate e-mail (case-insensitive) is a 422 on `fields.email`. Rate limit (BE-06 AC6, D57a): per client IP, the BE-03 login numbers: 5 failed attempts per 60 seconds, then 429 until the window ends with doubling backoff on repeat; only refused attempts (422) count, so legitimate registrations are not slowed. Status is 201 for both variants; narrow with the check status-in-data (present = pending, absent = Session). The response is Cache-Control: no-store. Accepted residual risk (security review, by design as the mock and the UX): the 422 emailTaken lets a client learn whether an e-mail is registered; it is bounded only by the per-IP limit above. Log redaction (BE-NFR-10, BE-NFR-11): the request body, the IC number, the reset token, the e-mail and every password are never written to application logs, audit rows or error bodies (an e-mail may appear only masked, a token only as its id).",
         "requestBody": {
           "required": true,
           "content": {
@@ -79206,7 +79246,7 @@
         },
         "responses": {
           "201": {
-            "description": "Registered and logged in.",
+            "description": "Student or parent: registered and logged in (data is the Session, cookie set). Teacher: created INACTIVE with no school scope and no session until a school_admin verifies the account; data is {status: pending_verification, message} and no cookie is set.",
             "headers": {
               "Cache-Control": {
                 "description": "no-store (the body carries a credential or token).",
@@ -79221,15 +79261,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "type": "object",
-                  "properties": {
-                    "data": {
-                      "$ref": "#/components/schemas/Session"
-                    }
-                  },
-                  "required": [
-                    "data"
-                  ]
+                  "$ref": "#/components/schemas/AccountRegisterResponse"
                 }
               }
             }
@@ -79529,6 +79561,16 @@
                 }
               }
             }
+          },
+          "403": {
+            "description": "PASSWORD_CHANGE_REQUIRED (shared common code, 403): while the account must change its password (session.mustChangePassword) every authenticated route except GET /session, PUT /me/password and POST /auth/logout answers this.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
           }
         }
       },
@@ -79596,7 +79638,7 @@
             }
           },
           "403": {
-            "description": "CSRF_INVALID (missing or wrong X-CSRF-Token).",
+            "description": "CSRF_INVALID (missing or wrong X-CSRF-Token), or PASSWORD_CHANGE_REQUIRED (shared common code, 403): while the account must change its password (session.mustChangePassword) every authenticated route except GET /session, PUT /me/password and POST /auth/logout answers this.",
             "content": {
               "application/json": {
                 "schema": {
@@ -79643,7 +79685,7 @@
           "account"
         ],
         "summary": "Change own password",
-        "description": "Any signed-in role. The current password is required and re-hashed with argon2id on change. The session is kept (BR-16). A wrong current password counts as a failure: the BE-03 login numbers: 5 failed attempts per 60 seconds, then 429 until the window ends with doubling backoff on repeat, per user. D57a: this write route is rate limited (RATE_LIMITED, retryAfter, Retry-After); the per-user limit is a platform setting of the implementation. Log redaction (BE-NFR-10, BE-NFR-11): the request body, the IC number, the reset token, the e-mail and every password are never written to application logs, audit rows or error bodies (an e-mail may appear only masked, a token only as its id).",
+        "description": "Any signed-in role. The current password is required and re-hashed with argon2id on change. The caller's session is ALWAYS rotated (new cookie, old one dead), the CSRF token changes, the user's other sessions end, and the client re-reads GET /session for the new CSRF token and the cleared mustChangePassword flag. A wrong current password counts as a failure: the BE-03 login numbers: 5 failed attempts per 60 seconds, then 429 until the window ends with doubling backoff on repeat, per user. D57a: this write route is rate limited (RATE_LIMITED, retryAfter, Retry-After); the per-user limit is a platform setting of the implementation. Log redaction (BE-NFR-10, BE-NFR-11): the request body, the IC number, the reset token, the e-mail and every password are never written to application logs, audit rows or error bodies (an e-mail may appear only masked, a token only as its id).",
         "parameters": [
           {
             "schema": {
@@ -79803,7 +79845,7 @@
             }
           },
           "403": {
-            "description": "CSRF_INVALID (missing or wrong X-CSRF-Token).",
+            "description": "CSRF_INVALID (missing or wrong X-CSRF-Token), or PASSWORD_CHANGE_REQUIRED (shared common code, 403): while the account must change its password (session.mustChangePassword) every authenticated route except GET /session, PUT /me/password and POST /auth/logout answers this.",
             "content": {
               "application/json": {
                 "schema": {
@@ -79879,6 +79921,16 @@
                 }
               }
             }
+          },
+          "403": {
+            "description": "PASSWORD_CHANGE_REQUIRED (shared common code, 403): while the account must change its password (session.mustChangePassword) every authenticated route except GET /session, PUT /me/password and POST /auth/logout answers this.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
           }
         }
       },
@@ -79946,7 +79998,7 @@
             }
           },
           "403": {
-            "description": "CSRF_INVALID (missing or wrong X-CSRF-Token).",
+            "description": "CSRF_INVALID (missing or wrong X-CSRF-Token), or PASSWORD_CHANGE_REQUIRED (shared common code, 403): while the account must change its password (session.mustChangePassword) every authenticated route except GET /session, PUT /me/password and POST /auth/logout answers this.",
             "content": {
               "application/json": {
                 "schema": {
@@ -80094,6 +80146,16 @@
                 }
               }
             }
+          },
+          "403": {
+            "description": "PASSWORD_CHANGE_REQUIRED (shared common code, 403): the account must change its password first (session.mustChangePassword).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
           }
         }
       }
@@ -80125,6 +80187,16 @@
           },
           "401": {
             "description": "UNAUTHORIZED \"Unauthenticated.\" (no valid session).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "PASSWORD_CHANGE_REQUIRED (shared common code, 403): the account must change its password first (session.mustChangePassword).",
             "content": {
               "application/json": {
                 "schema": {
@@ -80186,7 +80258,7 @@
             }
           },
           "403": {
-            "description": "CSRF_INVALID (missing or wrong X-CSRF-Token).",
+            "description": "CSRF_INVALID (missing or wrong X-CSRF-Token), or PASSWORD_CHANGE_REQUIRED (shared common code, 403) while session.mustChangePassword is set.",
             "content": {
               "application/json": {
                 "schema": {
@@ -80277,7 +80349,7 @@
             }
           },
           "403": {
-            "description": "CSRF_INVALID (missing or wrong X-CSRF-Token).",
+            "description": "CSRF_INVALID (missing or wrong X-CSRF-Token), or PASSWORD_CHANGE_REQUIRED (shared common code, 403) while session.mustChangePassword is set.",
             "content": {
               "application/json": {
                 "schema": {
@@ -80378,7 +80450,7 @@
             }
           },
           "403": {
-            "description": "CSRF_INVALID (missing or wrong X-CSRF-Token).",
+            "description": "CSRF_INVALID (missing or wrong X-CSRF-Token), or PASSWORD_CHANGE_REQUIRED (shared common code, 403) while session.mustChangePassword is set.",
             "content": {
               "application/json": {
                 "schema": {
@@ -80478,7 +80550,7 @@
             }
           },
           "403": {
-            "description": "CSRF_INVALID (missing or wrong X-CSRF-Token).",
+            "description": "CSRF_INVALID (missing or wrong X-CSRF-Token), or PASSWORD_CHANGE_REQUIRED (shared common code, 403) while session.mustChangePassword is set.",
             "content": {
               "application/json": {
                 "schema": {
@@ -80578,7 +80650,7 @@
             }
           },
           "403": {
-            "description": "CSRF_INVALID (missing or wrong X-CSRF-Token).",
+            "description": "CSRF_INVALID (missing or wrong X-CSRF-Token), or PASSWORD_CHANGE_REQUIRED (shared common code, 403) while session.mustChangePassword is set.",
             "content": {
               "application/json": {
                 "schema": {
