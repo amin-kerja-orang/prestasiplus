@@ -152,6 +152,8 @@ export function classifyFamily(rawToken) {
     if (/^(font|leading|tracking)-/.test(util)) return { family: 'type', code: 'weight' }
     return { family: 'type', code: 'typography' }
   }
+  // Approved tint tokens (tokens.css `--color-<tone>-soft|strong`): allowed, not debt.
+  if (/^bg-(?:primary|highlight|success|warning|error|info)-(?:soft|strong)$/.test(util)) return null
   if (SURFACE_RE.test(util)) {
     const code = util.startsWith('bg-') ? 'bg' : util.split('-')[0]
     return { family: 'surface', code }

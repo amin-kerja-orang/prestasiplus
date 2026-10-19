@@ -10,6 +10,7 @@
     [data-ds='native-select'],
     [data-ds='media-card'] a
   ):focus-visible {
+  /* stylelint-disable-next-line property-disallowed-list -- resets the browser outline; the ring below replaces it */
   outline: none;
   box-shadow: 0 0 0 2px var(--ui-primary);
 }

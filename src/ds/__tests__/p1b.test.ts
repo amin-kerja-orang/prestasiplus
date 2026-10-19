@@ -35,6 +35,8 @@ describe('DsPanel tones', () => {
     expect(form.classes()).not.toContain('shadow-lift')
     const tint = mount(DsPanel, { props: { tone: 'tint' } })
     expect(tint.classes()).toContain('bg-primary/10')
+    expect(mount(DsPanel, { props: { level: 'inset' } }).classes()).toContain('bg-elevated')
+    expect(mount(DsPanel, { props: { level: 'tint' } }).classes()).toContain('bg-primary/10')
     expect(mount(DsPanel).classes()).toContain('shadow-ds-xs')
     const float = mount(DsPanel, { props: { tone: 'float' } })
     expect(float.classes()).toEqual(expect.arrayContaining(['absolute', 'z-20', 'max-h-64']))

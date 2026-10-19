@@ -86,6 +86,7 @@ export { default as DsText } from './DsText.vue'
 export { default as DsHeading } from './DsHeading.vue'
 export { default as DsStack } from './DsStack.vue'
 export { default as DsCluster } from './DsCluster.vue'
+export { default as DsCard } from './DsCard.vue'
 export { default as DsSpacer } from './DsSpacer.vue'
 export { default as DsGrid } from './DsGrid.vue'
 export { default as DsGridItem } from './DsGridItem.vue'
@@ -95,6 +96,7 @@ export { default as DsSurface } from './DsSurface.vue'
 export { default as DsStateView } from './DsStateView.vue'
 export type {
   DsSpace,
+  DsCardPadding,
   DsPadding,
   DsBreakpoint,
   DsSize,

@@ -11,6 +11,8 @@ export type QuizOptionState = 'idle' | 'selected' | 'correct' | 'wrong' | 'dimme
 
 /* ---- Layout / typography primitives (v2-ds-hardening section 3) ---- */
 export type DsSpace = 'none' | '2xs' | 'xs' | 'sm' | 'md' | 'lg' | 'xl' | '2xl' | 'section'
+/** Body padding of `DsCard`. */
+export type DsCardPadding = 'none' | 'sm' | 'md'
 export type DsPadding = 'none' | 'sm' | 'md' | 'lg'
 export type DsBreakpoint = 'sm' | 'md' | 'lg' | 'xl'
 export type DsTone = 'neutral' | 'primary' | 'success' | 'warning' | 'error' | 'info'
@@ -30,7 +32,7 @@ export type DsPageLayout = 'list' | 'form' | 'report' | 'dashboard' | 'detail' |
 export type DsPageWidth = 'prose' | 'default' | 'wide' | 'full'
 
 /** Colour of a figure; replaces the `valueClass` escape hatch (R2). */
-export type DsValueTone = 'highlighted' | 'primary' | 'success' | 'warning' | 'error' | 'info' | 'muted'
+export type DsValueTone = 'highlighted' | 'primary' | 'success' | 'warning' | 'error' | 'info' | 'muted' | 'dimmed'
 
 /** Table density (R4): `compact` replaces the old `compactCells` boolean. */
 export type DsTableDensity = 'cozy' | 'tight' | 'compact'

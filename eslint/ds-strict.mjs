@@ -26,9 +26,15 @@ export function readDsStrict(file = 'config/ds-strict.json') {
 /** Globs of a level. */
 export const globsOf = (strict, level) => strict.filter((e) => e.level === level).map((e) => e.glob)
 
+/** Expands one `{a,b}` group (no nesting) so each alternative is classified as file or directory. */
+function expandBraces(g) {
+  const m = /^(.*){([^{}]*)}(.*)$/.exec(g)
+  return m ? m[2].split(',').map((alt) => `${m[1]}${alt}${m[3]}`) : [g]
+}
+
 /** Globs that match only `.css` and `.vue` files below each entry (for Stylelint). */
 export function styleGlobs(globs) {
-  return globs.map((g) => {
+  return globs.flatMap(expandBraces).map((g) => {
     if (/\.(css|vue)$/.test(g)) return g
     const base = g.endsWith('/**') ? g : `${g.replace(/\/$/, '')}/**`
     return `${base}/*.{css,vue}`

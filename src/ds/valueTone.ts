@@ -9,6 +9,7 @@ export const valueToneText: Record<DsValueTone, string> = {
   error: 'text-error',
   info: 'text-info',
   muted: 'text-muted',
+  dimmed: 'text-dimmed',
 }
 
 /** Deprecated `valueClass` strings map one-to-one onto a tone (codemod table). */

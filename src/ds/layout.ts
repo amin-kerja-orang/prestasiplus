@@ -2,7 +2,7 @@
  * Literal class lookup tables shared by the layout primitives. Tailwind and the class allowlist
  * need to see whole class names, so nothing here is built by string concatenation.
  */
-import type { DsBreakpoint, DsCols, DsPadding, DsResponsive, DsSpace } from './types'
+import type { DsBreakpoint, DsCardPadding, DsCols, DsPadding, DsResponsive, DsSpace } from './types'
 
 export const gapAll: Record<DsSpace, string> = {
   none: 'gap-0',
@@ -42,6 +42,12 @@ export const paddingUtil: Record<DsPadding, string> = {
   sm: 'p-3',
   md: 'p-4 sm:p-5',
   lg: 'p-5 sm:p-6',
+}
+/** Card body padding at every width (the responsive twin overrides the theme's `sm:p-5`). */
+export const cardBodyPadding: Record<DsCardPadding, string> = {
+  none: 'p-0 sm:p-0',
+  sm: 'p-3 sm:p-3',
+  md: 'p-4 sm:p-4',
 }
 export const alignUtil = {
   start: 'items-start',

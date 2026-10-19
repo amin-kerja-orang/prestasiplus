@@ -52,8 +52,15 @@ describe('CM-6 prop renames', () => {
     expect(t('<DsIconChip icon="i-ph-fire-duotone" />')).toContain('icon="fire"')
   })
   it('leaves what it cannot map', () => {
-    expect(t('<DsPanel tone="inset" />')).toContain('tone="inset"')
+    expect(t('<DsPanel :tone="x" />')).toContain(':tone="x"')
     expect(t('<DsStatTile :value-class="cls" />')).toContain(':value-class="cls"')
+  })
+  it('maps the surface layers, dimmed tone and all bundled icons', () => {
+    expect(t('<DsPanel tone="inset" />')).toContain('<DsPanel level="inset" />')
+    expect(t('<DsPanel tone="tint" />')).toContain('<DsPanel level="tint" />')
+    expect(t('<DsStatTile value-class="text-dimmed" />')).toContain('value-tone="dimmed"')
+    expect(t('<DsIconChip icon="i-ph-users-three-duotone" />')).toContain('icon="users-three"')
+    expect(t('<DsIconChip icon="i-ph-lock" />')).toContain('icon="lock"')
   })
   it('rewrites object callers', () => {
     expect(run(cm6, "confirm({ message: 'x', tone: 'danger' })")).toContain("tone: 'error'")
@@ -69,6 +76,18 @@ describe('CM-7 :ui removal', () => {
   it('drops the attribute when nothing is left', () => {
     const src = `<template><UProgress :ui="{ base: 'bg-elevated rounded-full' }" /></template>`
     expect(run(cm7, src)).not.toContain(':ui')
+  })
+  it('turns UCard body padding into DsCard padding', () => {
+    const src = `<script setup lang="ts">
+import { DsPanel } from '@/ds'
+</script>
+<template><UCard :ui="{ body: 'flex gap-2 p-3 sm:p-3' }">x</UCard></template>`
+    const out = run(cm7, src)
+    expect(out).toContain(`<DsCard padding="sm" :ui="{ body: 'flex gap-2' }">x</DsCard>`)
+    expect(out).toContain("import { DsPanel, DsCard } from '@/ds'")
+    expect(run(cm7, `<template><UCard :ui="{ body: 'p-4' }">x</UCard></template>`)).toBe(
+      '<template><UCard>x</UCard></template>',
+    )
   })
   it('keeps overrides the defaults do not cover', () => {
     expect(pruneUi("{ body: 'p-3' }", 'UCard', { props: [] })).toBeNull()

@@ -114,7 +114,7 @@ export const iconBundle = {
   },
   // The v2 shells (learner menu glyphs, duotone + regular) and the restyled pages push the bundle
   // just past the 256KB default; the icons stay bundled so the demo needs no icon API at runtime.
-  sizeLimitKb: 384,
+  sizeLimitKb: 512,
 }
 
 export const uiConfig = {

@@ -6,7 +6,10 @@
  * (`bulk` / `bar` sticky bars, `float` result list). `title` (with optional `description` / `icon`)
  * and the `actions` slot print the standard panel header.
  *
- * Deprecated aliases, kept for one release: `tone` (`raised` | `inset` | `tint` set the layer;
+ * `level` is the surface layer: `raised` (default), `inset` (sunken block) or `tint` (primary soft
+ * tint).
+ *
+ * Deprecated aliases, kept for one release: `tone` (`inset` | `tint` mean `level`;
  * `bulk` | `bar` | `float` mean `behavior`) and `flush` (= `padding="none"`).
  */
 import { computed } from 'vue'
@@ -21,6 +24,8 @@ const props = withDefaults(
     /** @deprecated Use `behavior` (bulk, bar, float) and the surface layers. */
     tone?: 'raised' | 'bulk' | 'bar' | 'inset' | 'tint' | 'float'
     /** Positional behaviour: `bulk` = sticky selection bar; `bar` = sticky bottom action bar; `float` = floating result list under a search field. */
+    /** Surface layer: raised card, inset (sunken) block, or primary-tinted block. */
+    level?: 'raised' | 'inset' | 'tint'
     behavior?: 'static' | 'bulk' | 'bar' | 'float'
     /** Root element (`div`, `form`, `section`, `nav`...). */
     as?: 'div' | 'section' | 'article' | 'aside' | 'li' | 'form' | 'nav' | 'header' | 'footer' | 'ul' | 'ol'
@@ -53,6 +58,9 @@ const behavior = computed<'static' | 'bulk' | 'bar' | 'float'>(() => {
   if (props.behavior) return props.behavior
   return props.tone === 'bulk' || props.tone === 'bar' || props.tone === 'float' ? props.tone : 'static'
 })
+const layer = computed<'raised' | 'inset' | 'tint'>(
+  () => props.level ?? (props.tone === 'inset' || props.tone === 'tint' ? props.tone : 'raised'),
+)
 const bar = computed(() => behavior.value === 'bulk' || behavior.value === 'bar')
 const hasHeader = computed(() => Boolean(props.title))
 </script>
@@ -60,9 +68,9 @@ const hasHeader = computed(() => Boolean(props.title))
 <template>
   <DsSurface
     :as="as"
-    :level="bar || tone === 'inset' ? 'elevated' : 'raised'"
-    :tone="tone === 'tint' ? 'primary' : 'neutral'"
-    :shadow="bar || behavior === 'float' ? 'lift' : tone === 'inset' ? 'none' : 'auto'"
+    :level="bar || layer === 'inset' ? 'elevated' : 'raised'"
+    :tone="layer === 'tint' ? 'primary' : 'neutral'"
+    :shadow="bar || behavior === 'float' ? 'lift' : layer === 'inset' ? 'none' : 'auto'"
     :padding="
       flush || padding === 'none' || behavior === 'float' || hasHeader || $slots.actions
         ? 'none'
@@ -74,7 +82,7 @@ const hasHeader = computed(() => Boolean(props.title))
       sticky && behavior === 'bulk' ? 'sticky top-2 z-20' : '',
       sticky && behavior === 'bar' ? 'sticky bottom-2 z-20' : '',
     ]"
-    :data-tone="tone"
+    :data-tone="tone === 'raised' && layer !== 'raised' ? layer : tone"
     :data-behavior="behavior"
     data-ds="panel"
   >

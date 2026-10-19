@@ -39,6 +39,7 @@ const VALUE_TONES = {
   'text-error': 'error',
   'text-info': 'info',
   'text-muted': 'muted',
+  'text-dimmed': 'dimmed',
 }
 
 const q = (s) => JSON.stringify(s)
@@ -121,7 +122,7 @@ const RULES = {
       const v = literalValue(t)
       if (v === 'raised') c.remove(t, 'tone')
       else if (v === 'bulk' || v === 'bar' || v === 'float') c.replace(t, 'tone', `behavior=${q(v)}`)
-      else if (v === 'inset' || v === 'tint') c.skip('tone', `tone="${v}" has no replacement prop (surface layer)`)
+      else if (v === 'inset' || v === 'tint') c.replace(t, 'tone', `level=${q(v)}`)
       else c.skip('tone', 'dynamic value')
     }
     const f = c.attr('flush')
@@ -165,7 +166,7 @@ function icon(c) {
   const a = c.attr('icon')
   if (!a || !ICON_TAGS.has(c.tag)) return
   const v = literalValue(a)
-  const m = v && /^i-ph-([a-z0-9-]+?)(?:-(duotone|regular))?$/.exec(v)
+  const m = v && /^i-ph-([a-z0-9-]+?)(?:-(duotone|regular|bold))?$/.exec(v)
   if (!m) return
   if (!ICON_BASES.has(m[1])) return c.skip('icon', `"${m[1]}" is not in the bundled icon list`)
   c.replace(a, 'icon', a.kind === 'static' ? `${a.name}=${q(m[1])}` : `:${a.name}="'${m[1]}'"`)
