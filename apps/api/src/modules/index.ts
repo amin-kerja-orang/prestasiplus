@@ -3,6 +3,7 @@ import type { Type } from '@nestjs/common'
 import { AuthModule } from './auth'
 import { ParentsModule } from './parents'
 import { SchoolsModule } from './schools'
+import { SubscriptionsModule } from './subscriptions'
 import { UsersModule } from './users'
 
 /**
