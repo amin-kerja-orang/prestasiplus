@@ -1,0 +1,242 @@
+// Curriculum tables (BE-08, owner module M03). Conventions: docs/architecture/v2-backend-plan.md
+// section 14.2, data model section 3.3.
+// Not expressible in Prisma and written by hand in migration 0003_curriculum: identity columns
+// (GENERATED ALWAYS), CHECK constraints (enums are text + check), the functional unique index of
+// `curriculum_tp_descriptors`.
+
+model EducationLevel {
+  id           BigInt   @id @default(autoincrement())
+  /// Stored upper-case, unique (check `code = upper(code)`).
+  code         String
+  /// BM name (.cloud `name_bm`).
+  name         String
+  nameEn       String   @map("name_en")
+  /// primary, lower_secondary, upper_secondary (check constraint).
+  stage        String
+  /// Free label, for example KSSR or KSSM.
+  curriculum   String
+  /// The mock calls it `order` (a reserved word in SQL).
+  sortOrder    Int      @default(0) @map("sort_order")
+  isActive     Boolean  @default(true) @map("is_active")
+  /// Link to `users.grade` (1 to 11); null for levels created later.
+  grade        Int?     @db.SmallInt
+  createdAt    DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt    DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+  legacySource String?  @map("legacy_source")
+  legacyId     String?  @map("legacy_id")
+
+  subjectLevels SubjectLevel[]
+  chapters      Chapter[]
+  nodes         CurriculumNode[]
+
+  @@unique([code], map: "uq_education_levels_code")
+  @@unique([legacySource, legacyId], map: "uq_education_levels_legacy")
+  @@map("education_levels")
+}
+
+model Subject {
+  id           BigInt   @id @default(autoincrement())
+  /// Stored upper-case, unique (check `code = upper(code)`).
+  code         String
+  name         String
+  nameEn       String   @map("name_en")
+  /// Lucide name, Font Awesome class, emoji or null (free text, M03 BR-05).
+  icon         String?
+  /// `#RRGGBB` (validated at the API boundary; the ETL maps .cloud colours).
+  color        String
+  isCore       Boolean  @default(false) @map("is_core")
+  sortOrder    Int      @default(0) @map("sort_order")
+  isActive     Boolean  @default(true) @map("is_active")
+  createdAt    DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt    DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+  legacySource String?  @map("legacy_source")
+  legacyId     String?  @map("legacy_id")
+
+  subjectLevels SubjectLevel[]
+  chapters      Chapter[]
+  nodes         CurriculumNode[]
+  tpDescriptors CurriculumTpDescriptor[]
+
+  @@unique([code], map: "uq_subjects_code")
+  @@unique([legacySource, legacyId], map: "uq_subjects_legacy")
+  @@map("subjects")
+}
+
+/// Derived pivot (no .cloud table): distinct (subject, level) of chapters plus the links an admin
+/// ticks on the subject form. Rule in `modules/curriculum/rules.ts`.
+model SubjectLevel {
+  id               BigInt  @id @default(autoincrement())
+  subjectId        BigInt  @map("subject_id")
+  educationLevelId BigInt  @map("education_level_id")
+  legacySource     String? @map("legacy_source")
+  legacyId         String? @map("legacy_id")
+
+  subject        Subject        @relation(fields: [subjectId], references: [id], onDelete: Cascade, map: "fk_subject_levels_subject_id")
+  educationLevel EducationLevel @relation(fields: [educationLevelId], references: [id], onDelete: Cascade, map: "fk_subject_levels_education_level_id")
+
+  @@unique([subjectId, educationLevelId], map: "uq_subject_levels_subject_id_education_level_id")
+  @@unique([legacySource, legacyId], map: "uq_subject_levels_legacy")
+  @@index([educationLevelId], map: "ix_subject_levels_education_level_id")
+  @@map("subject_levels")
+}
+
+/// `in_tree = false` marks the 60 out-of-tree chapters observed on live: only they may have a null
+/// level and name (check constraint), and no tree read or write returns them.
+model Chapter {
+  id               BigInt   @id @default(autoincrement())
+  subjectId        BigInt   @map("subject_id")
+  educationLevelId BigInt?  @map("education_level_id")
+  name             String?
+  nameEn           String?  @map("name_en")
+  chapterNumber    Int?     @map("chapter_number")
+  description      String?
+  /// Unit/strand title kept from .cloud (v2 addition; read-only on the wire).
+  strand           String?
+  /// Printed DSKP code such as 1.1.3 (v2 addition; read-only on the wire).
+  dskpCode         String?  @map("dskp_code")
+  /// Display flag set by rule (data migration 4.2), not copied.
+  inTree           Boolean  @default(true) @map("in_tree")
+  isActive         Boolean  @default(true) @map("is_active")
+  createdAt        DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt        DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+  legacySource     String?  @map("legacy_source")
+  legacyId         String?  @map("legacy_id")
+
+  subject        Subject         @relation(fields: [subjectId], references: [id], onDelete: Cascade, map: "fk_chapters_subject_id")
+  educationLevel EducationLevel? @relation(fields: [educationLevelId], references: [id], onDelete: Cascade, map: "fk_chapters_education_level_id")
+  topics         Topic[]
+
+  @@unique([legacySource, legacyId], map: "uq_chapters_legacy")
+  @@index([subjectId, educationLevelId], map: "ix_chapters_subject_id_education_level_id")
+  @@index([educationLevelId], map: "ix_chapters_education_level_id")
+  @@map("chapters")
+}
+
+model Topic {
+  id               BigInt   @id @default(autoincrement())
+  chapterId        BigInt   @map("chapter_id")
+  name             String
+  nameEn           String?  @map("name_en")
+  /// Free text, ordered naturally (1 < 1.1 < 2) by the API.
+  topicNumber      String?  @map("topic_number")
+  description      String?
+  learningStandard String?  @map("learning_standard")
+  /// .cloud `sort_order`; unused by the API (order is topic_number, then id).
+  sortOrder        Int?     @map("sort_order")
+  isActive         Boolean  @default(true) @map("is_active")
+  createdAt        DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt        DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+  legacySource     String?  @map("legacy_source")
+  legacyId         String?  @map("legacy_id")
+
+  chapter   Chapter    @relation(fields: [chapterId], references: [id], onDelete: Cascade, map: "fk_topics_chapter_id")
+  subtopics Subtopic[]
+
+  @@unique([legacySource, legacyId], map: "uq_topics_legacy")
+  @@index([chapterId], map: "ix_topics_chapter_id")
+  @@map("topics")
+}
+
+/// Prototype only (no .cloud source), so no `legacy_*` columns.
+model Subtopic {
+  id                BigInt   @id @default(autoincrement())
+  topicId           BigInt   @map("topic_id")
+  name              String
+  nameEn            String?  @map("name_en")
+  learningObjective String?  @map("learning_objective")
+  createdAt         DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt         DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  topic Topic @relation(fields: [topicId], references: [id], onDelete: Cascade, map: "fk_subtopics_topic_id")
+
+  @@index([topicId], map: "ix_subtopics_topic_id")
+  @@map("subtopics")
+}
+
+/// The generic DSKP tag tree (exam schema D9): grouping -> unit -> sk -> sp. Seeded from
+/// docs/reference/dskp/*.json, never migrated (the .cloud `chapters` are not the DSKP).
+model CurriculumNode {
+  id               BigInt   @id @default(autoincrement())
+  subjectId        BigInt   @map("subject_id")
+  educationLevelId BigInt   @map("education_level_id")
+  /// grouping, unit, sk, sp (check constraint).
+  kind             String
+  /// Printed code (1.0, 1.1, 1.1.3); a grouping has its title slug.
+  code             String
+  title            String
+  titlePrinted     String?  @map("title_printed")
+  parentId         BigInt?  @map("parent_id")
+  sortOrder        Int      @default(0) @map("sort_order")
+  /// DSKP edition text; nodes are versioned by edition.
+  edition          String
+  isElective       Boolean  @default(false) @map("is_elective")
+  createdAt        DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt        DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  subject        Subject                  @relation(fields: [subjectId], references: [id], onDelete: Cascade, map: "fk_curriculum_nodes_subject_id")
+  educationLevel EducationLevel           @relation(fields: [educationLevelId], references: [id], onDelete: Cascade, map: "fk_curriculum_nodes_education_level_id")
+  parent         CurriculumNode?          @relation("CurriculumNodeTree", fields: [parentId], references: [id], onDelete: Cascade, map: "fk_curriculum_nodes_parent_id")
+  children       CurriculumNode[]         @relation("CurriculumNodeTree")
+  tpDescriptors  CurriculumTpDescriptor[]
+
+  @@unique([subjectId, educationLevelId, edition, kind, code], map: "uq_curriculum_nodes_key")
+  @@index([parentId], map: "ix_curriculum_nodes_parent_id")
+  @@index([subjectId, kind], map: "ix_curriculum_nodes_subject_id_kind")
+  @@index([educationLevelId], map: "ix_curriculum_nodes_education_level_id")
+  @@map("curriculum_nodes")
+}
+
+/// Tahap Penguasaan text per unit or SK (`node_id`), or the subject's general levels (`node_id`
+/// null). `unique (subject_id, coalesce(node_id, 0), tp)` is a functional index written by hand.
+model CurriculumTpDescriptor {
+  id         BigInt   @id @default(autoincrement())
+  subjectId  BigInt   @map("subject_id")
+  nodeId     BigInt?  @map("node_id")
+  /// 1 to 6 (check constraint).
+  tp         Int      @db.SmallInt
+  descriptor String
+  /// unit or sk for a node descriptor, null for the general levels (check constraint).
+  scope      String?
+  createdAt  DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  subject Subject         @relation(fields: [subjectId], references: [id], onDelete: Cascade, map: "fk_curriculum_tp_descriptors_subject_id")
+  node    CurriculumNode? @relation(fields: [nodeId], references: [id], onDelete: Cascade, map: "fk_curriculum_tp_descriptors_node_id")
+
+  @@index([subjectId], map: "ix_curriculum_tp_descriptors_subject_id")
+  @@index([nodeId], map: "ix_curriculum_tp_descriptors_node_id")
+  @@map("curriculum_tp_descriptors")
+}
+
+/// Grade-and-subject-coded topics of the learner catalogue and Peta Belajar (S12 to S14). Prototype
+/// only (no .cloud source): see docs/architecture/v2-backend-deviations.md (BE-08 learner reads).
+model LegacyTopic {
+  id          BigInt  @id @default(autoincrement())
+  /// DARJAH_1 .. DARJAH_6, TINGKATAN_1 .. TINGKATAN_5 (check constraint).
+  gradeLevel  String  @map("grade_level")
+  /// MATEMATIK, BAHASA_MELAYU, BAHASA_INGGERIS, SAINS, PENDIDIKAN_ISLAM, PENDIDIKAN_MORAL, SEJARAH,
+  /// GEOGRAFI (check constraint).
+  subject     String
+  name        String
+  description String?
+  /// Peta Belajar emoji, seeded only where observed.
+  icon        String?
+  sequence    Int
+
+  subtopics LegacySubtopic[]
+
+  @@index([gradeLevel, subject, sequence], map: "ix_legacy_topics_grade_level_subject_sequence")
+  @@map("legacy_topics")
+}
+
+model LegacySubtopic {
+  id            BigInt  @id @default(autoincrement())
+  legacyTopicId BigInt  @map("legacy_topic_id")
+  name          String
+  description   String?
+  sortOrder     Int     @default(0) @map("sort_order")
+
+  legacyTopic LegacyTopic @relation(fields: [legacyTopicId], references: [id], onDelete: Cascade, map: "fk_legacy_subtopics_legacy_topic_id")
+
+  @@index([legacyTopicId], map: "ix_legacy_subtopics_legacy_topic_id")
+  @@map("legacy_subtopics")
+}
