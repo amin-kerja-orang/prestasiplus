@@ -19,13 +19,15 @@ import { DDL_FILE } from '../ddl/generate'
 import { renderDdl } from '../ddl/render'
 import { columnNames, schemaOf, TABLES, type TableSpec } from '../ddl/spec'
 import { hashRow, quoteIdent, toJson } from '../kit/sql'
+import type { LegacySource } from '../kit/types'
+import { assertStagingResetAllowed } from './guard'
 import { silentLogger, type Logger } from './log'
 import type { TableReader } from './readers'
 
 export class LoaderError extends Error {}
 export class SourceNotImplementedError extends LoaderError {}
 
-export type SourceName = 'cloud' | 'my'
+export type SourceName = LegacySource
 
 /** Per-source settings. `my` is the OD-13 extension point: named, not implemented. */
 export const SOURCES: Record<SourceName, { implemented: boolean; stagingSchema: string; ddlFile: string | null }> = {
@@ -33,15 +35,13 @@ export const SOURCES: Record<SourceName, { implemented: boolean; stagingSchema: 
   my: { implemented: false, stagingSchema: 'staging_my', ddlFile: null },
 }
 
-export function assertSourceName(value: string): asserts value is SourceName {
-  if (!(value in SOURCES)) throw new LoaderError(`Unknown source "${value}". Allowed: cloud, my.`)
-}
-
 export interface LoadOptions {
   source?: SourceName
   allowExtraColumns?: boolean
   batchSize?: number
   log?: Logger
+  /** Environment for the reset guard (default `process.env`). */
+  env?: Readonly<Record<string, string | undefined>>
   /**
    * Load only these spec tables, with DDL rendered for just them (tests that exercise failure paths
    * and do not need all 118 tables). Default: every table, with `ddl/staging_cloud.sql`.
@@ -72,6 +72,13 @@ export interface LoadResult {
   totalRows: number
 }
 
+/** Column names that are plain identifiers are printed; anything else is only counted (it could be a value). */
+function describeNames(names: string[]): string {
+  const ok = names.filter((n) => /^[a-z0-9_]{1,63}$/.test(n)).sort()
+  const other = names.length - ok.length
+  return [ok.join(', '), other > 0 ? `${other} with unprintable names` : ''].filter(Boolean).join('; ')
+}
+
 function sqlState(e: unknown): string {
   const code = (e as { code?: unknown })?.code
   return typeof code === 'string' ? code : 'unknown'
@@ -88,6 +95,7 @@ async function loadTable(
   const schema = schemaOf(spec)
   const names = columnNames(spec)
   const known = new Set(names)
+  const redacted = new Set(spec.columns.filter((c) => c.redact).map((c) => c.name))
   const target = `${quoteIdent(schema)}.${quoteIdent(spec.name)}`
   const colList = [...names.map(quoteIdent), '"_row_hash"'].join(', ')
   const insert = `insert into ${target} (${colList}) select ${colList} from jsonb_populate_recordset(null::${target}, $1::jsonb)`
@@ -116,7 +124,7 @@ async function loadTable(
       const clean: Record<string, unknown> = {}
       for (const [key, value] of Object.entries(row)) {
         if (known.has(key)) {
-          clean[key] = value
+          clean[key] = redacted.has(key) ? null : value
           seen.add(key)
         } else if (!OWN_COLUMNS.has(key)) extras.add(key)
       }
@@ -124,7 +132,7 @@ async function loadTable(
     }
     if (extras.size > 0 && !opts.allowExtraColumns) {
       throw new LoaderError(
-        `Table ${spec.name}: the input has columns that ${schema} does not define (${[...extras].sort().join(', ')}). ` +
+        `Table ${spec.name}: the input has columns that ${schema} does not define (${describeNames([...extras])}). ` +
           'Add them to ddl/spec.ts and run staging:ddl, or pass --allow-extra-columns to drop them.',
       )
     }
@@ -147,7 +155,7 @@ async function loadTable(
     throw new LoaderError(`Table ${spec.name}: read ${result.rowsRead} rows but staging holds ${result.rowsLoaded}.`)
   }
   if (result.extraColumns.length > 0) {
-    opts.log.warn(`Table ${spec.name}: dropped input columns ${result.extraColumns.join(', ')}.`)
+    opts.log.warn(`Table ${spec.name}: dropped input columns ${describeNames(result.extraColumns)}.`)
   }
   return result
 }
@@ -160,6 +168,9 @@ export async function loadStaging(pool: pg.Pool, reader: TableReader, options: L
   }
   const log = options.log ?? silentLogger
   const opts = { allowExtraColumns: options.allowExtraColumns ?? false, batchSize: options.batchSize ?? 2000, log }
+
+  // M1: nothing is dropped unless the target is a staging database and the operator opted in.
+  await assertStagingResetAllowed(pool, options.env ?? process.env)
 
   const client = await pool.connect()
   const tables: TableLoad[] = []

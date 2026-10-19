@@ -10,6 +10,7 @@
  *   Flags and MySQL tinyint columns are `t` (permissive: the dump may hold 0/1, true/false or words).
  *   `enum`  the column is enum-like: the profiler lists its distinct values (cap 50).
  *   `fk=T`  the column references `T.id`: the profiler counts orphans.
+ *   `redact` the loader writes NULL (PDPA data minimisation: login/invite secrets are never staged).
  *
  * Only columns named in v2-data-migration.md (sections 1, 2, 3.3, 4) are listed, plus `id` and the
  * usual timestamps. The real .cloud column list is not available to this card (OD-2), so the loader
@@ -37,6 +38,8 @@ export interface ColumnSpec {
   enum: boolean
   /** Referenced table (its `id`), or null. */
   fk: string | null
+  /** The loader stores NULL instead of the source value. */
+  redact: boolean
 }
 
 export interface TableSpec {
@@ -52,12 +55,14 @@ function column(notation: string): ColumnSpec {
   if (!name || !type || !(type in SQL_TYPES)) throw new RangeError(`Bad column notation "${notation}".`)
   let isEnum = false
   let fk: string | null = null
+  let redact = false
   for (const flag of flags) {
     if (flag === 'enum') isEnum = true
+    else if (flag === 'redact') redact = true
     else if (flag.startsWith('fk=')) fk = flag.slice(3)
     else throw new RangeError(`Bad column flag "${flag}" in "${notation}".`)
   }
-  return { name, type: type as ColumnType, enum: isEnum, fk }
+  return { name, type: type as ColumnType, enum: isEnum, fk, redact }
 }
 
 const TS = ['created_at:ts', 'updated_at:ts']
@@ -77,10 +82,10 @@ const pivot = { pk: null } as const
 const STAGING: TableSpec[] = [
   // Identity, users, schools
   s('users', [
-    'name:t', 'email:t', 'phone:t', 'ic:t', 'username:t', 'password:t', 'remember_token:t', 'role:t:enum',
+    'name:t', 'email:t', 'phone:t', 'ic:t', 'username:t', 'password:t', 'remember_token:t:redact', 'role:t:enum',
     'school_id:id:fk=schools', 'kelas:t', 'faith:t', 'is_active:t:enum', 'is_suspended:t:enum',
     'is_complimentary:t:enum', 'google_id:t', 'referral_code:t', 'referred_by:id:fk=users',
-    'parent_invite_token:t', 'notifications_read_at:ts', 'bio:t', 'spm_targets:t', 'teaching_subject:t',
+    'parent_invite_token:t:redact', 'notifications_read_at:ts', 'bio:t', 'spm_targets:t', 'teaching_subject:t',
     'teaching_experience_years:i', 'teaching_qualification:t', 'last_login_at:ts',
   ]),
   s('schools', ['name:t', 'code:t', 'type:t:enum', 'state:t:enum', 'district:t:enum', 'join_code:t', 'is_active:t:enum']),

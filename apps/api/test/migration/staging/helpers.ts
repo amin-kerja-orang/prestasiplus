@@ -81,3 +81,8 @@ export function capture() {
     text: () => lines.join('\n'),
   }
 }
+
+/** Environment under which a destructive staging load is allowed for this test database (M1). */
+export function stagingEnv(db: { name: string }, extra: Record<string, string> = {}): Record<string, string> {
+  return { NODE_ENV: 'test', PP_ALLOW_STAGING_RESET: '1', PP_STAGING_DB_ALLOWLIST: db.name, ...extra }
+}

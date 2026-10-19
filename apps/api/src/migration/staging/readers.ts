@@ -56,6 +56,9 @@ export class DirReader implements TableReader {
     if (m.source !== 'cloud') throw new DumpFormatError('manifest.json source must be "cloud".')
     if (!m.tables || typeof m.tables !== 'object') throw new DumpFormatError('manifest.json has no tables object.')
     for (const [name, entry] of Object.entries(m.tables)) {
+      if (entry === null || typeof entry !== 'object' || Array.isArray(entry)) {
+        throw new DumpFormatError(`manifest.json entry for table "${name}" must be an object.`)
+      }
       if (!findTable(name)) throw new DumpFormatError(`manifest.json lists an unknown table "${name}".`)
       if (!Number.isInteger(entry.rows) || entry.rows < 0) throw new DumpFormatError(`Bad row count for table "${name}".`)
       if (entry.rows > 0 && (!entry.file || !FILE_NAME.test(entry.file))) {

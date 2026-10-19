@@ -63,6 +63,8 @@ function users(): Row[] {
     if (n === 10) row.password = ''
     if (n === 11) row.password = null
     if (n === 12) row.is_suspended = '1'
+    if (n <= 3) row.remember_token = `fixture-remember-token-${pad(n)}` // must be stored as NULL (PDPA)
+    if (n === 9) row.parent_invite_token = 'fixture-invite-token-009' // must be stored as NULL (PDPA)
     return row
   })
 }

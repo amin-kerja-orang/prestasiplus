@@ -2,15 +2,14 @@ import { spawnSync } from 'node:child_process'
 import { mkdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 
+import pg from 'pg'
 import { afterEach, beforeEach, describe, expect, inject, it, vi } from 'vitest'
 
-import { CloudSourceConnectError } from '../../../src/migration/cloud-source'
 import { runStagingCli, STAGING_EXIT } from '../../../src/migration/staging/cli'
 import { scrub, scrubbingLogger, secretsFromUrl } from '../../../src/migration/staging/log'
 import { withDatabase } from '../../support/global-setup'
 import { capture, REPO_ROOT, tempDir, type TempDir } from './helpers'
 
-vi.setConfig({ testTimeout: 60_000 })
 
 const FAKE_PASSWORD = 'Fx!Pass/word:9@fake'
 const FAKE_USER = 'leaky_user_fixture'
@@ -20,6 +19,18 @@ describe('no connection string or credential in logs (AC5)', () => {
   afterEach(() => {
     for (const s of spies.splice(0)) s.mockRestore()
   })
+
+  // A target that only answers the identity query: the source must be refused or fail before it is used.
+  const fakeTargetPool = {
+    query: async (sql: string) => {
+      if (/pg_control_system/.test(sql)) throw new Error('not readable')
+      return { rows: [{ database: 'target', address: '10.255.255.1', port: 5432 }] }
+    },
+    connect: async () => {
+      throw new Error('the target pool must not be used')
+    },
+    end: async () => undefined,
+  }
 
   const run = async (cloudUrl: string, argv: string[] = ['staging:load']) => {
     const io = capture()
@@ -31,7 +42,7 @@ describe('no connection string or credential in logs (AC5)', () => {
     spies.push(vi.spyOn(process.stdout, 'write').mockImplementation(((c: unknown) => (stdout.push(String(c)), true)) as never))
     const code = await runStagingCli(argv, {
       env: { DATABASE_URL: 'postgresql://target_user:target_pw_fixture@127.0.0.1:1/target', CLOUD_SOURCE_URL: cloudUrl },
-      pool: { connect: async () => { throw new Error('the target pool must not be used') }, end: async () => undefined } as never,
+      pool: fakeTargetPool as never,
       out: io.out,
       err: io.err,
     })
@@ -50,24 +61,53 @@ describe('no connection string or credential in logs (AC5)', () => {
     }
   })
 
-  it('does not print them when the server rejects the login or the role can write', async () => {
+  it('does not print them when the server rejects the login (a role that does not exist: exit 1 on any auth method)', async () => {
     const adminUrl = inject('testDbAdminUrl')
     if (!adminUrl) throw new Error('Test database unavailable.')
     const u = new URL(withDatabase(adminUrl, 'postgres'))
     u.username = FAKE_USER
     u.password = FAKE_PASSWORD
     const { code, text } = await run(u.toString())
-    // A wrong password is a connect failure (1); a server that trusts everyone then refuses the write-capable role (3).
-    expect([STAGING_EXIT.failed, STAGING_EXIT.sourceRefused]).toContain(code)
+    expect(code).toBe(STAGING_EXIT.failed)
     for (const secret of [FAKE_PASSWORD, encodeURIComponent(FAKE_PASSWORD), FAKE_USER, u.host]) {
       expect(text, secret).not.toContain(secret)
     }
   })
 
-  it('does not echo a malformed URL passed as the source', async () => {
+  it('does not print them when the role can write (exit 3)', async () => {
+    const adminUrl = inject('testDbAdminUrl')
+    if (!adminUrl) throw new Error('Test database unavailable.')
+    const u = new URL(withDatabase(adminUrl, 'postgres'))
+    const { code, text } = await run(u.toString())
+    expect(code).toBe(STAGING_EXIT.sourceRefused)
+    expect(text).toMatch(/not read-only/)
+    for (const secret of [decodeURIComponent(u.password), u.username, u.host].filter(Boolean)) {
+      expect(text, secret).not.toContain(secret)
+    }
+  })
+
+  it('treats a malformed source URL as a configuration error (exit 2) without echoing it', async () => {
     const { code, text } = await run(`${FAKE_USER}:${FAKE_PASSWORD}-not-a-url`)
-    expect(code).toBe(STAGING_EXIT.failed)
+    expect(code).toBe(STAGING_EXIT.usage)
+    expect(text).toMatch(/not a valid URL/)
     expect(text).not.toContain(FAKE_PASSWORD)
+  })
+
+  it('reports an idle pool error through the scrubbing logger (L5)', async () => {
+    const url = `postgresql://${FAKE_USER}:${encodeURIComponent(FAKE_PASSWORD)}@127.0.0.1:1/x`
+    const pool = new pg.Pool({ connectionString: url })
+    const on = vi.spyOn(pool, 'on')
+    const io = capture()
+    const code = await runStagingCli(['staging:load'], { env: { DATABASE_URL: url }, pool, out: io.out, err: io.err })
+    expect(code).toBe(STAGING_EXIT.usage)
+    const handler = on.mock.calls.find((c) => c[0] === 'error')?.[1] as ((e: Error) => void) | undefined
+    expect(handler).toBeTypeOf('function')
+    handler?.(Object.assign(new Error(`connection to ${FAKE_USER}:${FAKE_PASSWORD}@127.0.0.1 lost`), { code: '57P01' }))
+    expect(io.text()).toMatch(/connection reported an error \(57P01\)/)
+    expect(io.text()).not.toContain(FAKE_PASSWORD)
+    expect(io.text()).not.toContain(FAKE_USER)
+    expect(pool.listenerCount('error')).toBe(0) // removed again when the run ended
+    await pool.end()
   })
 
   it('scrub removes URLs, passwords and user names wherever they appear', () => {
@@ -80,7 +120,6 @@ describe('no connection string or credential in logs (AC5)', () => {
     const sink: string[] = []
     scrubbingLogger({ out: (l) => sink.push(l), err: (l) => sink.push(l) }, secrets).warn(`leak ${FAKE_PASSWORD}`)
     expect(sink).toEqual(['leak [redacted]'])
-    expect(new CloudSourceConnectError('x')).toBeInstanceOf(Error)
   })
 
   it('the shipped docs and source carry no connection string with credentials', () => {
@@ -178,7 +217,14 @@ describe('runbook (AC6)', () => {
 
   it('documents the commands and the dump format', () => {
     const text = runbook()
-    for (const needle of ['staging:load', 'staging:profile', 'CLOUD_SOURCE_URL', 'manifest.json', 'pp-staging-dump/1', 'OD-2']) {
+    const needles = [
+      'staging:load', 'staging:profile', 'CLOUD_SOURCE_URL', 'manifest.json', 'pp-staging-dump/1', 'OD-2',
+      'PP_ALLOW_STAGING_RESET=1', '_staging', 'revoke create on schema public from public', 'PostgreSQL 14',
+      'Maximum retention', 'custodian is the lead', 'Full-disk encryption at rest', 'Write-ahead log', 'backups',
+      'shell history', 'restricted', 'PDPA incident is reported to the lead immediately', '2^53', 'NULL',
+      'never carry the legacy token', 'sslmode=require', '[masked]', 'pg_write_server_files', 'SECURITY DEFINER',
+    ]
+    for (const needle of needles) {
       expect(text, needle).toContain(needle)
     }
   })
