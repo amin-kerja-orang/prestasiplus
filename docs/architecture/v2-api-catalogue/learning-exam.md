@@ -25,7 +25,7 @@ grep -rnE "\broute\(" src/modules/<module> --include=*.ts | grep -v __tests__ | 
 
 Each registered route is unique by method + pattern (the router refuses duplicates at boot, `src/mock/server/router.ts`). Every `route` array is wired into its module's `routes:` list (`mock/index.ts`), checked for M04, M05, M06, M07, M13, M25.
 
-Also covered: the admin SPM question intake and paper builder (D52). **There is no mock route, store or class for it in this source snapshot** (section 11); the endpoints are known from cards BE-36 to BE-40 only.
+Also covered: the admin SPM question intake (D52), documented as 10 operations IN-01..IN-10 (section 11). Source: local commit `b2e1033` on `feature/student-prototype`, not yet in `feature/v2-backend`; like Bijak it has no HTTP routes. Two operations have no card endpoint (IN-05, IN-09); IN-04 is only partly covered and IN-06/IN-08 have no public endpoint.
 
 Contract status of the whole part: `packages/contract/src` contains only `common`, `session`, `auth`, `access` (and `openapi.ts` registers only `/auth/login`, `/auth/logout`, `/session`, `/session/role`, `/session/mode` plus the access components). **All 99 routes, all 16 Bijak operations and all intake endpoints are `missing`**: `exists` = 0, `partial` = 0. The shared pieces that already exist and must be reused: `Id`, `Timestamp`, `DateOnly`, `ListMeta`, `PageQuery`, `ErrorBody`, `ErrorCode` (`packages/contract/src/common/*`).
 
@@ -1428,32 +1428,96 @@ Contract status for every operation below: **missing** (no `bijak` schema in `pa
 | BE-15 | `GET /admin/bijak/papers` (proposed, read-only paper list) | none |
 | BE-39 | `GET/POST /admin/papers`, `GET/PUT/DELETE /admin/papers/:id`, `PUT /admin/papers/:id/sections`, `PUT /admin/papers/:id/placements`, `GET /admin/papers/:id/conformance`, `POST /admin/papers/:id/publish`, `POST /admin/papers/:id/withdraw`, `GET/POST /admin/blueprints`, `GET /admin/blueprints/:id`, `POST /admin/blueprints/:id/versions`, `POST /admin/blueprints/:id/retire` (Admin Pusat only, indicative, "final paths from the contract commit") | none in this snapshot (see section 11) |
 
-## 11. Admin SPM question intake and paper builder (D52): mock status and card mapping
+## 11. Admin SPM question intake (D52)
 
-**Finding.** In this source snapshot (`D:\Dev Projects\pp-docs`, branch `docs/v2-reference`) there is **no intake, OCR, extraction, paper-builder or blueprint-admin code that registers routes or a store**: a repository-wide search of `src/` and `packages/` for `intake`, `OCR`, `ocr`, `extractor`, `extraction`, `pdfjs`, `tesseract` finds nothing in M04, M28 or any other module (only unrelated hits in `src/modules/m09-content`: audio media). The M04 mock has 30 routes (section 4) and none of them is an intake route; `BijakServer` has no builder or blueprint write method. The cards state the same: "The exact wire shapes come from the frontend's intake mock and client (contract-first; the lead confirms the file paths, OD-20) and are not invented here" (plan section 15, BE-36 to BE-40 "Inputs"). The lead's session notes mention an intake commit on another branch (`v2/qi-intake`); it is not part of this worktree, so its shapes could not be read here. Consequently no wire shape is documented in this catalogue for these endpoints (rule: never invent); they are listed as **endpoint defined by the card only, shape not yet defined (OQ-API-B2-17)**.
+**Source and status.** This section documents code that is **not in this branch**. The source is local commit `b2e1033` ("feat(v2-question-bank): admin SPM question intake") on branch `feature/student-prototype`, read with `git show b2e1033:<path>` (read-only; nothing was checked out). It is not pushed and not merged into `feature/v2-backend`. The file paths below (`src/modules/m28-bijak-spm/admin/intake/**`, `routes/admin-intake.ts`, the intake methods in `server/store.ts`, `__tests__/intake.test.ts`, `docs/adr/0019-ai-provider-agnostic-extraction.md`) **will exist on `feature/v2-backend` only after the LEAD merges that commit**. Like the rest of M28, the intake has **no HTTP routes**: it is methods of `BijakServer` plus a client-side OCR step and an extractor interface. The frontend routes (vue-router, not API) are `/admin/spm/soalan` (list), `/admin/spm/soalan/muat-naik` (upload) and `/admin/spm/soalan/:batchId` (review), `roles: ['admin']`. Cards: BE-36 (AI service), BE-37 (files, OCR, jobs), BE-38 (batches, review, accept), BE-39 (builder, section 10), BE-40 (dashboard). Their paths are "indicative" (cards re-read on disk 2026-10-19). Contract status of every operation: **missing**.
 
-Card-defined endpoints (paths are "indicative" in the cards; all under `/api`; the final paths come from each card's contract commit):
+Shared facts:
 
-| Card | Method and path (indicative) | Role (card) | Notes | Mock counterpart |
-|---|---|---|---|---|
-| BE-36 | `GET /ai/status` | Admin Pusat | provider id, model, `configured` yes/no (never the key), month-to-date cost, budget, remaining | none in snapshot |
-| BE-36 | `GET /ai/usage` | Admin Pusat | paged usage rows, filters month/batch/provider, no content | none |
-| BE-36 | `PUT /ai/settings` | Admin Pusat | monthly budget, notification toggles; audit-logged | none |
-| BE-36 | `POST /ai/test` | Admin Pusat | health check with a mock-safe sample | none |
-| BE-37 | `POST /intake/batches` | Guru (own), Admin Pusat | create batch with declaration (paper type, subject, level, year, source declaration, notes) | none |
-| BE-37 | `POST /intake/batches/:id/files` | Guru (own), Admin Pusat | multipart upload, returns file ids | none |
-| BE-37 | `GET /intake/batches/:id`, `GET /intake/batches` | Guru (own), Admin Pusat | statuses Dihantar / Sedang diproses / Sedia untuk semakan / Gagal, per-file progress | none |
-| BE-37 | `GET /intake/files/:id/pages/:n/image`, `.../thumb`; `GET /intake/figures/:id/image` | Guru (own), Admin Pusat | authenticated image serving | none |
-| BE-37 | `POST /intake/batches/:id/cancel` | Guru (own), Admin Pusat | cancel pending jobs | none |
-| BE-38 | `POST /intake/batches/:id/extract` | Guru (own), Admin Pusat | enqueue extraction; idempotent; blocked for an already-imported file hash | none |
-| BE-38 | `GET /intake/items`, `GET /intake/items/:id` | Guru (own), Admin Pusat | review queue with filters | none |
-| BE-38 | `PATCH /intake/items/:id` | Guru (own), Admin Pusat | edit extracted fields, keeps AI text in history | none |
-| BE-38 | `POST /intake/items/:id/accept`, `.../reject`, `.../duplicate` | Guru (own), Admin Pusat | accept creates a Draf question via `QuestionsService` | none |
-| BE-38 | `POST /intake/items/bulk` | Admin Pusat for threshold bulk accept | bulk accept/reject | none |
-| BE-39 | admin papers and blueprints (table above) | Admin Pusat | publish gate, conformance | none |
-| BE-40 | `GET /intake/dashboard`, `GET /intake/dashboard/cost` | Admin Pusat | AC-29.1 figures; cost by day/provider/batch | none |
+- Operations take no role argument; the mock relies on the admin-only frontend route. The cards: Guru for own batches, Admin Pusat for all (BE-37/38), Admin Pusat only for `/ai/*` and the dashboard.
+- Errors reuse `BijakError(code, message)` (section 10): `not_found` maps to 404, `bad_request` to 400/422.
+- Times are epoch ms (`createdAt`, `updatedAt`, `submittedAt`); ids are `ek-<seq>` (seeded demo `ek-demo-1`); same issue as OQ-API-B2-13.
+- Mock status model: `IntakeStatus = 'draf' | 'semakan'` only. Cards: batch status `Dihantar / Sedang diproses / Sedia untuk semakan / Gagal`, item state `generated / needs_review / accepted / rejected / duplicate` (OQ-API-B2-23).
+- **Types** (`admin/intake/types.ts`): `PageText {page, text, source:'text-layer'|'ocr', confidence?:0..100}`; `PageImage {page, dataUrl, width, height}` (browser memory only, never sent to the store); `IntakeQuestion {id, label (printed number), type:'mcq'|'structured'|'short'|'essay', stem, options:McqOption[], marks, mode:LeafKind, parts: IntakePart[] ({id,label,prompt,marks,mode,scheme?:SchemeDef}), scheme?:SchemeDef, tag:CurriculumTag, stimulusId?, page, lowFields:string[], confirmed:string[], needsManual?}`; `IntakeStimulus = StimulusDef + page?`; `ExtractedPaper {provider, model, questions, stimuli, unmatched:string[], warnings:string[]}`; `IntakeMeta {subject, kertas:1|2, year, paperType, source, copyright, notes, fileName, fileHash, pageCount}`; `IntakeBatch = IntakeMeta + {id, userId, status, createdAt, updatedAt, submittedAt?, provider, model, questions, stimuli, unmatched, pages}`; `IntakeSummary {id, title ("<Subject> Kertas <k> <year>"), subject, subjectName, kertas, year, status, fileName, questionCount, groupCount, lowCount (low-confidence fields not yet confirmed), marks, updatedAt}`; `IntakeIssue {questionId?, where, message}`; `SaveExtractedPayload {questions, stimuli}`. `SchemeDef`, `LeafKind`, `StimulusDef`, `CurriculumTag` are the Bijak types of `domain/types.ts`. Option lists: `PAPER_TYPES` = Percubaan SPM, Soalan Umum, Peperiksaan Sebenar, Buku Latihan, Lain-lain; `COPYRIGHT_OPTIONS` = `sendiri` "Milik sendiri / sekolah", `rasmi` "Kertas rasmi KPM / LPM", `pihak-ketiga` "Pihak ketiga / komersial".
 
-Roles per D40a (BE-38): Guru reviews only own batches and can move own Draf to Semakan; only Admin Pusat approves and publishes; Admin Sekolah and PPD have no access (403); out-of-scope ids 404. Matrix: BS-02 "Import & Semakan" and BS-03 "Sumber Kertas" (admin F), KS-09 "Set Builder", KS-12 "Set Soalan" (admin F). Contract status for all: **missing**. The lead should re-run this section against the intake branch once its mock is merged (OQ-API-B2-17).
+| ID | Mock operation | Target endpoint (card, indicative) | Card |
+|---|---|---|---|
+| IN-01 | `listIntakeBatches(filter)` | `GET /api/intake/batches` | BE-37 |
+| IN-02 | `getIntakeBatch(id)` | `GET /api/intake/batches/:id` + `GET /api/intake/items` | BE-37, BE-38 |
+| IN-03 | `createIntakeBatch(userId, meta, extracted, pages)` | `POST /api/intake/batches` + `POST /api/intake/batches/:id/files` + `POST /api/intake/batches/:id/extract` | BE-37, BE-38 |
+| IN-04 | `saveExtracted(id, payload)` | `PATCH /api/intake/items/:id` (per item); whole-batch replace: **endpoint not yet defined** | BE-38 (partial) |
+| IN-05 | `submitForReview(id)` | **endpoint not yet defined** (card: "submit-for-review hooks into BE-10") | none |
+| IN-06 | `validateBatch(batch)` (quality gate) | rules inside BE-38 accept and BE-10 submit; **no endpoint of its own** | BE-38 AC-4, BE-10 |
+| IN-07 | `readPaper(file)` / `checkFile(file)` (browser OCR) | server OCR as jobs: `POST /api/intake/batches/:id/files` | BE-37 |
+| IN-08 | `QuestionExtractor.extract(input)` + registry | in-process, **no public endpoint**; `GET /api/ai/status`, `POST /api/ai/test` | BE-36 |
+| IN-09 | DSKP units (`unitsFor`, `unitByCode`, `guessUnit`) | **endpoint not yet defined** (curriculum, BE-08) | none |
+| IN-10 | `demoBatch(now)` seed | seed only (BE-26 "may seed one finished intake batch") | BE-26 |
+
+### IN-01 `listIntakeBatches(filter)` -> `GET /api/intake/batches`
+
+- **Input:** `{ status?:'draf'|'semakan', subject?:SubjectCode, q?:string }`; `q` is a case-insensitive contains on `fileName`. **Output:** `IntakeSummary[]`, newest `updatedAt` first, unpaged. No role scoping in the mock (all batches).
+- **Mapping:** BE-37 `GET /intake/batches` (status model differs, per-file progress is new; BE-38 lists `GET /intake/items` with filters status, batch, subject, uploader, confidence band, duplicate flag). No pagination in the mock (OQ-API-B2-24).
+- **Side effects:** the first intake call seeds the demo batch `ek-demo-1` into the store. **Contract:** missing.
+
+### IN-02 `getIntakeBatch(id)` -> `GET /api/intake/batches/:id`
+
+- **Output:** a deep copy of the whole `IntakeBatch` (every question, stimulus, `unmatched` and the extracted page text `pages`). **Errors:** `not_found` "Kumpulan ekstrak tidak ditemui".
+- **Mapping:** BE-37 `GET /intake/batches/:id` (status and file progress) plus BE-38 `GET /intake/items` and `GET /intake/items/:id` for the review content. The cards split the batch into items; the mock returns one document (OQ-API-B2-23). Page images: the mock keeps them in the browser; the cards serve them with `GET /intake/files/:id/pages/:n/image` and figures with `GET /intake/figures/:id/image`. **Card:** BE-37, BE-38. **Contract:** missing.
+
+### IN-03 `createIntakeBatch(userId, meta, extracted, pages)` -> batch + files + extract
+
+- **Input:** `IntakeMeta` (the declaration), the `ExtractedPaper` already produced in the browser, and the `PageText[]`. **Output:** the created `IntakeBatch` (`status:'draf'`, `id` = `ek-<seq>`, `provider`/`model` copied from `extracted`, `createdAt = updatedAt = now`). No validation in the store (the upload page validates the file and the meta).
+- **Mapping:** BE-37 `POST /intake/batches` takes the declaration (paper type, subject, level, year, source declaration, notes); `POST /intake/batches/:id/files` uploads files (limit `INTAKE_MAX_FILE_MB`, 20 by default); BE-38 `POST /intake/batches/:id/extract` runs extraction server-side (idempotent; a file hash already imported is refused before any cost). In the mock the browser does OCR and extraction and posts the result; in the target the server does both, so the request body of this operation does **not** survive. The mock stores `fileHash` (SHA-256 computed in the browser) and does not check duplicates. **Card:** BE-37, BE-38. **Contract:** missing.
+
+### IN-04 `saveExtracted(id, payload)` -> `PATCH /api/intake/items/:id` (partial)
+
+- **Input:** `SaveExtractedPayload {questions, stimuli}` (the full edited content). **Output:** the updated `IntakeBatch` (`updatedAt = now`).
+- **Errors:** `not_found` "Kumpulan ekstrak tidak ditemui"; `bad_request` "Kumpulan sudah dihantar untuk semakan" (batch not `draf`: read-only under review).
+- **Mapping:** BE-38 `PATCH /intake/items/:id` edits one item and keeps the previous AI text in `intake_item_events`. The mock replaces all questions and stimuli of the batch in one call (including stimulus grouping, scheme editor and confirmed low-confidence fields). A batch-level replace and stimulus-group endpoints are **endpoint not yet defined** (OQ-API-B2-25). **Card:** BE-38. **Contract:** missing.
+
+### IN-05 `submitForReview(id)` -> endpoint not yet defined
+
+- **Purpose:** batch `draf` to `semakan` after the quality gate; "the quality gate runs here too, so the UI cannot bypass it (E9)".
+- **Output:** `{ ok:true, batch }` (status `semakan`, `submittedAt = updatedAt = now`) or `{ ok:false, issues: IntakeIssue[] }` (nothing changes). **Errors:** `not_found` "Kumpulan ekstrak tidak ditemui"; `bad_request` "Kumpulan sudah dihantar untuk semakan".
+- **Mapping:** none. BE-38 creates Draf questions through accept (`POST /intake/items/:id/accept`, per item) and states that submit/approve/publish "use the BE-10 endpoints; do not duplicate them here". No card has a batch-level submit (OQ-API-B2-26). **Card:** none. **Contract:** missing.
+
+### IN-06 `validateBatch(batch)` (quality gate, `domain/validation.ts`) -> no own endpoint
+
+Pure function used by the UI (live list) and by IN-05; returns `IntakeIssue[]`. Messages (verbatim; `where` = "Soalan <label>" plus the part label, or "Kertas"):
+
+- Batch: "Tiada soalan. Tambah sekurang-kurangnya satu soalan."; "Pengisytiharan sumber diperlukan."; "Status hak cipta diperlukan."
+- Each question: "Teks soalan kosong."; "Soalan ini perlu disemak manual. Tandakan selesai disemak." (`needsManual`); tags: "Subjek dan tingkatan perlu ditetapkan.", "Unit DSKP belum dipilih." (unit null unless `formOrigin` is `T1-T3`), "Standard Pembelajaran (SP) belum dipilih.", "Tahap Penguasaan (TP) mesti antara 1 dan 6."; an unconfirmed low-confidence field: "Medan keyakinan rendah belum disahkan: <name>." (names: `tag.unit` "unit DSKP", `tag.sp` "SP", `marks` "markah", `stem` "teks soalan", `scheme` "skema"); "Rajah / petikan yang dirujuk tidak wujud."
+- MCQ: "Soalan objektif perlu sekurang-kurangnya 2 pilihan."; "Ada pilihan jawapan yang kosong."; "Kunci jawapan belum dipilih."; "Markah mesti lebih daripada 0."
+- Structured (parts): "Teks bahagian kosong."; "Markah mesti lebih daripada 0."; "Skema pemarkahan tiada."; "Jumlah markah skema (<n>) tidak sama dengan markah bahagian (<m>)."; "Ada mata skema tanpa penerangan."; "Jumlah markah soalan ialah 0."
+- Question without parts: "Markah mesti lebih daripada 0."; "Skema pemarkahan tiada."; "Jumlah markah skema (<n>) tidak sama dengan markah soalan (<m>)."
+- Groups and stimuli: "Soalan dalam satu kumpulan mesti berturutan." (`where` = stimulus label); "Teks alternatif (alt) bagi rajah diperlukan."
+
+**Mapping:** BE-38 AC-4 enforces "tags valid against the taxonomy, marks total equals sum of part marks, figure references resolve" on accept/submit; BE-10 owns the gates. The rule list above is the behavioural spec to port into the shared rules (OQ-API-B2-27). **Card:** BE-38, BE-10. **Contract:** missing.
+
+### IN-07 `readPaper(file, onProgress)` / `checkFile(file)` (browser OCR, `lib/ocr.ts`) -> server OCR
+
+- **Input:** a `File`. `checkFile` returns a BM message or null: unsupported type (allowed `application/pdf`, `image/png`, `image/jpeg`) "Jenis fail tidak disokong. Gunakan PDF, PNG atau JPG."; larger than 20 MB "Fail melebihi had 20 MB.". **Output:** `{ pages: PageText[], images: PageImage[], fileHash }`.
+- **Behaviour to reproduce server-side:** PDF text layer via `pdfjs-dist` (text items grouped into lines by baseline within 2 units, top-down then left-right); a page with fewer than 20 text characters is treated as a scan: rendered (scale 2, else 1.1) to JPEG quality 0.6 and read with `tesseract.js` languages `msa` + `eng`, storing the mean `confidence`; image files go straight to OCR; progress phases `baca`, `imej`, `ocr`; aborting raises "Dibatalkan". Page text is kept; images are not stored.
+- **Mapping:** BE-37 does this as durable jobs behind `POST /intake/batches/:id/files` (`OCR_MAX_PAGES`, `OCR_WORKERS`, `OCR_PAGE_TIMEOUT_MS`, `INTAKE_MAX_FILE_MB`), progress through `GET /intake/batches/:id`, cancel `POST /intake/batches/:id/cancel`. BE-37 requires BM rejection messages but does not list them; the two above are the only ones in the mock (OQ-API-B2-28). **Card:** BE-37. **Contract:** missing.
+
+### IN-08 `QuestionExtractor` interface and provider registry (`ai/*`, ADR 0019) -> BE-36 (in-process)
+
+- **Interface:** `QuestionExtractor { readonly id, readonly label, extract(input: ExtractInput): Promise<ExtractedPaper> }` with `ExtractInput {pages: PageText[], images?: PageImage[], subject, kertas:1|2}`. Output `ExtractedPaper` as above (drafts only; per-field confidence is expressed as `lowFields`; `unmatched` lists scheme entries with no question, e.g. "Jawapan <a>-<b>", "Skema <n><part>"; `warnings`, e.g. "Tiada soalan dikesan dalam teks kertas.").
+- **Registry:** provider ids `mock`, `anthropic`, `openai`, `gemini`, `openai-compatible`; config from `VITE_AI_PROVIDER` (default `mock`), `VITE_AI_MODEL`, `VITE_AI_BASE_URL` (frontend names only; the server uses `AI_PROVIDER`, `AI_MODEL`, `AI_BASE_URL`, `AI_API_KEY`, plan 15.3). An unknown id throws "Penyedia AI tidak dikenali: <id>" (no fallback). The four real providers are stubs that reject with "Dikonfigurasi di pelayan".
+- **Mock extractor** (`provider:'mock'`, `model:'heuristik-1'`): heuristic parsing of question numbers, options, parts, `[n markah]`, Rajah/Jadual/Petikan groups, K/N/P/B/M/F/C scheme lines and "mana-mana N"; sets `needsManual` when there is no stem and no parts; adds `tag.unit` or `tag.sp` to `lowFields` when unsure, and `marks` when a non-MCQ question without parts has no marks. The BE-36 mock adapter must be deterministic and produce this output shape.
+- **Mapping:** BE-36: extraction "is invoked in-process by the intake worker (BE-38), not by a public endpoint". Admin endpoints in the card: `GET /ai/status` (provider, model, configured yes/no, month-to-date cost, budget), `GET /ai/usage`, `PUT /ai/settings`, `POST /ai/test`. The mock has none of them (no cost, usage or budget), so their shapes are **not yet defined** (OQ-API-B2-29). The mock also masks no personal data; the card requires redaction before every provider call (ADR 0019 point 3). **Card:** BE-36. **Contract:** missing.
+
+### IN-09 DSKP units (`lib/dskp.ts`) -> endpoint not yet defined
+
+Stand-in for the DSKP list: 12 prototype units `{code, label, subject, form:'T4'|'T5', keywords[]}` (for example `MAT-T4-02` "Asas Nombor"; the codes are not official). Functions: `unitsFor(subject)`, `unitByCode(code)`, `guessUnit(subject, text)` (first unit whose keyword occurs in the lower-cased text), `emptyTag(subject)` (`level 'T4+T5'`, `tp 3`), `tagWithUnit(tag, unit)` (sets `unit`, `unitLabel`, `level`, `formOrigin` from the unit). Free-text units are not accepted (AC-05.2). The target is the M03 curriculum tree (BE-08, `curriculum_nodes`); BE-36 to BE-40 define no lookup endpoint. The existing M04 DSKP cascade (M04-28 to M04-30: bidang, SK, SP) has a different shape (OQ-API-B2-30). **Card:** none. **Contract:** missing.
+
+### IN-10 `demoBatch(now)` -> seed
+
+Builds batch `ek-demo-1` (subject MAT, kertas 2, year 2025, paper type "Percubaan SPM", source "Kertas contoh fiksyen untuk demo", copyright `sendiri`, file `kertas-contoh-mat-k2.pdf`, hash `demo-seed`, status `draf`) from a fictional sample paper, seeded into the store on the first intake call. Target: BE-26 may seed one finished batch produced by the mock provider.
+
+### Card endpoints with no mock counterpart
+
+`POST /intake/batches/:id/cancel`, `GET /intake/files/:id/pages/:n/image` (and `/thumb`), `GET /intake/figures/:id/image`, `GET /intake/items`, `GET /intake/items/:id`, `POST /intake/items/:id/accept|reject|duplicate`, `POST /intake/items/bulk`, `GET /intake/dashboard`, `GET /intake/dashboard/cost`, `GET /ai/usage`, `PUT /ai/settings`: the mock has no accept/reject/duplicate/bulk, no duplicate detection, no figure crops (stimuli are SVG or text, `StimulusDef`), no dashboard, no cost or budget. Their shapes are defined by the cards only. The paper builder and blueprint admin endpoints (BE-39) are listed in section 10; the mock has no builder method either.
 
 ## 12. Uncovered endpoints
 
@@ -1482,7 +1546,7 @@ No backend card defines these routes (checked against cards BE-09, BE-10, BE-12,
 - BJ-04 `subjects()`: **endpoint not yet defined** (no card path).
 - BJ-16 `serverNow()`: the card embeds `serverNow` in the attempt view; the mock shape has no such field.
 - Photo upload (`POST /bijak/attempts/:id/photos`) has a card path but no mock method.
-- Intake (BE-36 to BE-40), admin paper builder and blueprint admin (BE-39), admin Bijak list (BE-15 "proposed"): card paths only; there is no mock shape to document (section 11).
+- Intake (section 11, source commit b2e1033): IN-05 submit-for-review and IN-09 DSKP lookup have no card endpoint; the batch-level replace of IN-04 has none; cards BE-37..BE-40 list many endpoints with no mock counterpart (accept/reject/duplicate, dashboard, AI usage, image serving).
 
 ## 13. Open questions
 
@@ -1506,10 +1570,18 @@ Each question names the owner who should answer. IDs are stable.
 | OQ-API-B2-14 | The Bijak result carries `coins = score*2` and `points = score*10` but the mock writes no wallet. BE-16 says credit the wallet "only if the mock credits". Confirm no wallet credit in B1 (display values only) or define the rule (idempotent per attempt). | BJ-10, BJ-14 | Lead + BE-11 owner |
 | OQ-API-B2-15 | `BijakServer.subjects()` (the subject dictionary, open dictionary D9) has no endpoint. Reuse `GET /api/subjects` (M03/BE-08) with a Bijak flag, or add `GET /api/bijak/subjects`? | BJ-04 | BE-15 and BE-08 owners |
 | OQ-API-B2-16 | `getResult` before submit: mock `not_submitted` ("Skema hanya didedahkan selepas Hantar"); card text says both "409/403 `not_submitted`" and error mapping `not_submitted` 409. Pick 409. The same message is used for `forbidden` when "Semak" is called in exam mode (403). | BJ-13, BJ-14 | BE-16 owner |
-| OQ-API-B2-17 | Intake and paper-builder wire shapes (BE-36 to BE-40): the mock for them is not in this source snapshot (the lead's notes mention the branch `v2/qi-intake`, OD-20). Re-run section 11 against that branch and document request/response shapes, status/queue filters, error codes and BM copy before BE-37/38 start. Until then paths in the cards are "indicative". | section 11 | Lead |
+| OQ-API-B2-17 | Intake code is in commit b2e1033 (feature/student-prototype), not in this branch; after the LEAD merges it, re-check line references in section 11 and re-verify against the merged code. | section 11 | Lead |
 | OQ-API-B2-18 | The generic error messages in the mock are English Laravel defaults ("Unauthenticated.", "This action is unauthorized.", "Not Found."), while the contract states `message` is BM for direct display; M04/M05/M06/M07 domain errors are already BM. Provide BM defaults in the API (and confirm that the frontend shows its own SRS copy for 401/403/404)? | all | Lead + contract owner |
 | OQ-API-B2-19 | Mutations answer `{ data, status:'<BM flash>' }` (E3). `status` is outside the contract envelope. Add an optional `status` (flash) to the envelope schemas, or return flash text separately? Several clients read it with `raw: true`. | M04, M05, M07 | Lead |
 | OQ-API-B2-20 | Several endpoints return bare arrays inside `data` (M07-02, M07-04, M07-06, M07-21; M06-02, M06-08) or RAW bare arrays (M04-28 to M04-30 DSKP cascade, `{ok}`, `{success,message}`). The contract must model these exactly (`listEnvelopeOf` does not cover them). | M04, M06, M07 | contract owner (BE-03/BE-31) |
 | OQ-API-B2-21 | BE-09 lists `GET /api/guru/questions`, `POST /api/guru/questions` and BE-10 lists `/api/guru/questions/import` and `/template`: these are **M10** mock routes (`src/modules/m10-teacher-class/mock/handlers/questions.ts`), not M04; they belong to the M10 part of this catalogue. DSKP lookups M04-28 to M04-30 are M10-owned data registered by M04. Confirm ownership to avoid two implementations. | M04 | Lead |
 | OQ-API-B2-22 | Simulated uploads: the mock keeps only metadata and a `blob:mock/...` reference (question images, option images, diagram images, CSV). Real endpoints need BE-04 FileStorage (types, 2 MB / 5 MB limits, magic-byte checks) and a decision on whether question create/update stay multipart with the file inline or switch to a two-step upload. | M04-03, M04-05, M04-16, M04-22 | BE-04 and BE-09 owners |
 
+| OQ-API-B2-23 | Intake status model: mock batch `draf`/`semakan` and one document per batch (questions inside); cards BE-37/38 use batch status Dihantar / Sedang diproses / Sedia untuk semakan / Gagal plus per-item states `generated / needs_review / accepted / rejected / duplicate`. Which shape does the frontend get after the switch (frontend change or adapter)? | IN-02, IN-03 | Lead + BE-38 owner |
+| OQ-API-B2-24 | `listIntakeBatches` is unpaged and not scoped by owner; BE-37/38 require Guru-own vs Admin Pusat-all scoping and (for items) filters. Define list meta and filters. | IN-01 | BE-37 owner |
+| OQ-API-B2-25 | The review UI saves the whole edited batch (questions, stimuli, stimulus groups, scheme edits, confirmed low-confidence fields) in one call; BE-38 offers only item-level `PATCH`. Add a batch-level save or change the UI to per-item saves? Stimulus groups (stimuli stored once on the batch) have no card endpoint. | IN-04 | Lead + BE-38 owner |
+| OQ-API-B2-26 | No card defines batch-level "Hantar untuk semakan" (mock `submitForReview`, Draf to Semakan). BE-38 accept creates Draf questions and BE-10 owns submit. Define the endpoint(s) and whether the quality gate (IN-06) runs per question or per batch. | IN-05 | BE-38 and BE-10 owners |
+| OQ-API-B2-27 | The quality-gate rule list and BM messages (IN-06) are not in any card; decide where they live (shared rules package vs questions service) so UI and API cannot diverge. | IN-06 | BE-38 owner |
+| OQ-API-B2-28 | Server-side file/OCR rejection messages: the mock has "Jenis fail tidak disokong. Gunakan PDF, PNG atau JPG." and "Fail melebihi had 20 MB."; BE-37 needs more (magic bytes, page cap, encrypted/corrupt PDF, timeout). Provide the BM copy. | IN-07 | BE-37 owner |
+| OQ-API-B2-29 | `/ai/status`, `/ai/usage`, `/ai/settings`, `/ai/test` and `/intake/dashboard*` have no frontend mock; the response shapes must be authored in the contract first. The extractor interface (`ExtractInput`/`ExtractedPaper`) is the only AI wire known. | IN-08 | BE-36 and BE-40 owners |
+| OQ-API-B2-30 | Intake DSKP units (12 prototype units) vs the M04 DSKP cascade vs M03 `curriculum_nodes`: no endpoint is defined for the intake tag selector (unit, SP, TP). | IN-09 | BE-08 owner |
