@@ -4,8 +4,8 @@
  * foreign key, duplicate counts for `users.email` and `(school_id, username)`, and a histogram of
  * password-hash prefixes. No value of any other column is ever selected into the report.
  *
- * Safety nets for the enum listing: a value that looks personal (contains `@`, or a run of 7 or
- * more digits, or is longer than 40 characters) is shown as `[masked]`.
+ * Enum values are shown only through an allow-pattern: /^[A-Za-z0-9_.:/-]{1,40}$/ with at most 4 digits in
+ * total. Anything else (spaces, a name, an IC or phone number, an e-mail) is shown as `[masked]`.
  */
 import type pg from 'pg'
 
@@ -68,8 +68,9 @@ const DUPLICATE_CHECKS: readonly { table: string; label: string; columns: readon
 ]
 const HASH_COLUMNS: readonly { table: string; column: string }[] = [{ table: 'users', column: 'password' }]
 
-const looksPersonal = (v: string): boolean => v.includes('@') || /\d{7,}/.test(v) || v.length > 40
-export const maskEnumValue = (v: string): string => (looksPersonal(v) ? '[masked]' : v)
+const SAFE_ENUM = /^[A-Za-z0-9_.:/-]{1,40}$/
+export const maskEnumValue = (v: string): string =>
+  SAFE_ENUM.test(v) && (v.match(/[0-9]/g)?.length ?? 0) <= 4 ? v : '[masked]'
 
 const qualified = (spec: TableSpec) => `${quoteIdent(schemaOf(spec))}.${quoteIdent(spec.name)}`
 
@@ -78,7 +79,7 @@ async function tableExists(db: pg.Pool, spec: TableSpec): Promise<boolean> {
   return res.rows[0]?.ok === true
 }
 
-async function profileTable(db: pg.Pool, spec: TableSpec): Promise<TableProfile> {
+export async function profileTable(db: pg.Pool, spec: TableSpec): Promise<TableProfile> {
   const target = qualified(spec)
   const cols = columnNames(spec)
 
@@ -149,23 +150,36 @@ async function profileTable(db: pg.Pool, spec: TableSpec): Promise<TableProfile>
   return { schema: schemaOf(spec), table: spec.name, rowCount: total, nullRatios, enums, orphans, duplicates, hashPrefixes }
 }
 
-/** Profiles every spec table that exists in the staging database. */
-export async function collectProfile(db: pg.Pool, now: Date = new Date()): Promise<ProfileReport> {
-  const tables: TableProfile[] = []
-  const missing: string[] = []
-  for (const spec of TABLES) {
-    if (!(await tableExists(db, spec))) {
-      missing.push(spec.name)
-      continue
+export interface CollectOptions {
+  /** Only these spec tables (names). Default: all. */
+  tables?: readonly string[]
+  /** Tables profiled at the same time (default 4; keep it at or below the pool size). */
+  concurrency?: number
+}
+
+/** Profiles every (selected) spec table that exists in the staging database. */
+export async function collectProfile(db: pg.Pool, now: Date = new Date(), options: CollectOptions = {}): Promise<ProfileReport> {
+  const wanted = options.tables ? new Set(options.tables) : null
+  const specs = TABLES.filter((t) => !wanted || wanted.has(t.name))
+  const results: (TableProfile | null)[] = new Array(specs.length).fill(null)
+  let next = 0
+  const worker = async () => {
+    for (;;) {
+      const i = next++
+      const spec = specs[i]
+      if (!spec) return
+      if (await tableExists(db, spec)) results[i] = await profileTable(db, spec)
     }
-    tables.push(await profileTable(db, spec))
   }
+  await Promise.all(Array.from({ length: Math.max(1, options.concurrency ?? 4) }, worker))
+  const tables = results.filter((t): t is TableProfile => t !== null)
+  const missing = specs.filter((_, idx) => results[idx] === null).map((t) => t.name)
   return {
     generatedAt: now.toISOString(),
     source: 'cloud',
     tablesProfiled: tables.length,
     tablesMissing: missing,
-    totalRows: tables.reduce((s, t) => s + t.rowCount, 0),
+    totalRows: tables.reduce((sum, t) => sum + t.rowCount, 0),
     tables,
   }
 }
