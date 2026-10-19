@@ -115,6 +115,7 @@ describe('articles', () => {
   }
 
   it('parses the admin item and detail', () => {
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars -- omit keys to build an invalid payload
     const { content: _c, ...rest } = adminDetail
     expect(ok(AdminArticleItemSchema, { id: '501', title: 'T', category: 'BERITA', categoryLabel: 'Berita', gradeLevel: 'SEMUA', isPublished: false, isFeatured: false, views: 0, createdAt: AT, author })).toBe(true)
     expect(ok(AdminArticleDetailSchema, adminDetail)).toBe(true)
