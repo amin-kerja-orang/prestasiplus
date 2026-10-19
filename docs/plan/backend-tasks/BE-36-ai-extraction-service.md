@@ -109,6 +109,7 @@ Do not guess these; write your working assumption in the PR and ask the lead (is
 
 1. Final provider and region are the user's decision (v2-question-bank Q5); the default stays `mock` until then.
 2. The price table values (`AI_PRICE_TABLE_JSON`) are configuration supplied by the lead, not invented in the repo.
+3. BE-43 (Cikgu Alesa) needs a text-generation capability on the provider adapter, which today only has `extractPaper`, `suggestTags` and `healthCheck` (URS OQ-29). Working assumption: add `generateText(input)` to `ExtractionProvider` (mock adapter returns the canned text; real adapters call the same endpoint family), with the same redaction step, `ai_usage_logs` row, rate limit and budget. Acceptance note: the contract-test suite of AC 1 covers `generateText` for every adapter with recorded fixtures. BE-43 does not edit `ai-extraction/**`.
 
 ## Prompt for Claude Code
 

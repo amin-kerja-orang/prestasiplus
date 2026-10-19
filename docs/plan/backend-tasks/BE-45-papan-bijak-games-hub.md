@@ -29,9 +29,9 @@ Everything the prototype serves under `/api/games/*`, `/api/papan-bijak/*`, `/ap
 - Data model: [v2-data-model.md](../../architecture/v2-data-model.md) global rules G-01 to G-18 and section 3.13 (M16 rows are listed there as backlog; they become B1 tables with this card, see Open question 10). Plan [v2-backend-plan.md](../../architecture/v2-backend-plan.md) sections 5, 6, 14.7 and 14.9; `docs/architecture/v2-data-migration.md` section 4.10 and the `.cloud` rows for `games`, `game_sessions`, `game_rooms`, `game_room_players`, `leagues`, `league_members`
 - `docs/requirements/role-access-matrix.md` (Murid rows 21 Permainan; Admin Sekolah row 45 Sekolah Bersaing; D-RAM-2), `docs/requirements/v2-cloud-gap.md` F-57, F-58, F-61, F-62
 - BE-09 `QuestionsService` (`sample` keyless, `gradeAnswer`), BE-08 curriculum reads, BE-05 users/schools reads, BE-11 `WalletService`, BE-13 weekly practice ranking read (the mock's `practice.weekRank`) and platform answer accuracy
-- Requirements: BE-FR-NEW-45 (proposed wording below; the lead assigns the number in [URS 9.2](../../requirements/v2-backend-urs.md)); BE-NFR-05, BE-NFR-08, BE-NFR-17, BE-NFR-18, BE-NFR-19
+- Requirements: BE-FR-42; BE-NFR-05, BE-NFR-08, BE-NFR-17, BE-NFR-18, BE-NFR-19
 
-**Proposed BE-FR wording (for the URS table):** "The API shall serve the Permainan area exactly as the prototype: the games hub and lobbies, six room games with deterministic bot players and server clocks, the Papan Bijak quick match, five single-player games with plausibility-checked results, the daily Roda Nasib spin, Jutawan Ilmu with 50:50, the weekly competition board, leagues with invite codes, the Sekolah Bersaing weekly board and the admin game settings; game coins are credited only through the M14 owner service and only when the setting allows. Real-time multiplayer is out of scope." Traced to BE-45; test type IT.
+The requirement wording is BE-FR-42 in the URS (section 4.2).
 
 ## Outputs
 

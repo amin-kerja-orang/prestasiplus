@@ -108,6 +108,7 @@ Do not guess these; write your working assumption in the PR and ask the lead (is
 
 1. Teacher economy is Not in B1 (owner decision D53/OWN-10, D28c); nothing to decide here.
 2. M15 table names are not fixed in the card; derive them from `src/modules/m15-rewards-shop/mock/repository/*` and record them in the mapping matrix.
+3. Entry points for BE-44 and BE-45 (2026-10-19): this card exports from the M14 service the entry points `onGameResult(userId, { game, event, coins, xp, correct, total })` and `canEarnSyiling(userId)` (names from ADR-0014 and the M14 mock repository) in addition to the game settings and tier reward rates; both write only through `WalletService` in the caller's transaction and are idempotent per source key. BE-44 (coins 0, xp 0) and BE-45 (coin credits) code against a port until this card merges.
 
 ## Prompt for Claude Code
 

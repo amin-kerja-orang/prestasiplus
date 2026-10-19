@@ -2,7 +2,7 @@
 
 Single source of truth for the **state of every backend card**. The lead's project tracker (`docs/TRACKER.md`) stays lead-only; this file is the one the backend sessions edit. Cards: [backend-tasks/](backend-tasks/README.md). Lanes, order and sync points: [sessions.md](sessions.md). Agent prompts: [agent-kickoff/](agent-kickoff/README.md). Design: [../architecture/v2-backend-plan.md](../architecture/v2-backend-plan.md).
 
-- Last updated: 2026-10-19 (initial; all cards `todo`).
+- Last updated: 2026-10-19 (BE-41 to BE-48 added; all cards `todo`).
 - Priority: **P0** blocks other lanes or the learning loop; **P1** needed for release B1; **P2** later in B1 or release gates.
 - Status: `todo` / `in-progress` / `review` / `done` / `blocked`.
 - Owner: the PC and session that holds the card, written as `PC-2/S3` (see sessions.md for session ids). Empty (`-`) until someone starts.
@@ -13,9 +13,9 @@ Single source of truth for the **state of every backend card**. The lead's proje
 | Priority | Cards | Of which done |
 |---|---|---|
 | P0 | 13 | 0 |
-| P1 | 20 | 0 |
-| P2 | 7 | 0 |
-| **Total** | **40** | **0** |
+| P1 | 22 | 0 |
+| P2 | 13 | 0 |
+| **Total** | **48** | **0** |
 
 (The lead refreshes this table when merging; sessions do not need to.)
 
@@ -63,6 +63,14 @@ Single source of truth for the **state of every backend card**. The lead's proje
 | BE-38 | Intake batches, extraction orchestration, review workflow, accept-to-Draf, duplicates | PC-5 | P1 | BE-09, BE-10, BE-36, BE-37 | L | todo | - | `be/BE-38-intake-workflow` | - | D52. Security review. Needs OD-20 paths. |
 | BE-39 | Paper builder and blueprint admin (write side of M28 papers) | PC-3 | P1 | BE-15, BE-10 | L | todo | - | `be/BE-39-paper-builder-blueprints` | - | D52. No Prisma change (BE-15 creates the columns). Needs BE-10 (PC-5) and BE-15. |
 | BE-40 | Intake dashboard, AI usage and budget endpoints | PC-5 | P2 | BE-36, BE-38 | S | todo | - | `be/BE-40-intake-dashboard-ai-usage` | - | D52. Admin only. |
+| BE-41 | SPM hub: Tahun Lepas, Latih Tubi, Tracking A, Subjektif, mock exams (M06) | PC-3 | P1 | BE-03, BE-08, BE-09, BE-12, BE-13 | M | todo | - | `be/BE-41-spm-hub` | - | Added 2026-10-19 (D53); lane proposed, LEAD to confirm |
+| BE-42 | PKSK: domains, practice, exam, access grants, admin questions (M07) | PC-1 | P2 | BE-03, BE-05, BE-09, BE-10, BE-12, BE-25 | L | todo | - | `be/BE-42-pksk` | - | Added 2026-10-19 (D53); lane proposed, LEAD to confirm |
+| BE-43 | Cikgu Alesa: chat, RPH, essay markings, PBD tags (M13) | PC-5 | P2 | BE-36, BE-03, BE-05, BE-08, BE-12, BE-17 | L | todo | - | `be/BE-43-cikgu-alesa` | - | Added 2026-10-19 (D53); lane proposed, LEAD to confirm |
+| BE-44 | Battle arena, standings and tournaments (M16 part 1) | PC-7 (proposed new lane: Games and competitions) | P2 | BE-03, BE-05, BE-08, BE-09, BE-12, BE-23 | L | todo | - | `be/BE-44-battle` | - | Added 2026-10-19 (D53); lane proposed, LEAD to confirm |
+| BE-45 | Permainan hub, Papan Bijak, room and solo games, leagues, Sekolah Bersaing (M16 part 2) | PC-7 (proposed new lane: Games and competitions) | P2 | BE-03, BE-05, BE-08, BE-09, BE-11, BE-13, BE-23 | L | todo | - | `be/BE-45-papan-bijak-games-hub` | - | Added 2026-10-19 (D53); lane proposed, LEAD to confirm |
+| BE-46 | Marketplace: buyer slice (M20) | PC-1 | P2 | BE-03, BE-05 | M | todo | - | `be/BE-46-marketplace` | - | Added 2026-10-19 (D53); lane proposed, LEAD to confirm |
+| BE-47 | Mohon Keluarga Angkat: student-side application (M21) | PC-1 | P2 | BE-03, BE-05 | S | todo | - | `be/BE-47-keluarga-angkat` | - | Added 2026-10-19 (D53); lane proposed, LEAD to confirm |
+| BE-48 | Heatmap Topik Lemah read model (M25) | PC-2 | P1 | BE-12, BE-13, BE-08 | S | todo | - | `be/BE-48-heatmap-topik-lemah` | - | Added 2026-10-19 (D53); lane proposed, LEAD to confirm |
 
 ## Lead tasks (not BE cards)
 
@@ -91,4 +99,5 @@ Newest first. The lead appends a line when a card merges, a decision is made or 
 
 | Date | Entry |
 |---|---|
+| 2026-10-19 | Cards BE-41 to BE-48 added (D53(a): every module reachable in the prototype is B1): M06 SPM hub, M07 PKSK, M13 Cikgu Alesa, M16 battle and games (two cards), M20 buyer slice, M21 student side, M25 heatmap. Lanes and priorities are proposals (new lane PC-7 for M16); the LEAD confirms. |
 | 2026-10-19 | Programme created: 40 cards (BE-34 to BE-40 added: migration kit, anonymiser + fixtures, AI extraction service, intake files + OCR, intake workflow, paper builder, intake dashboard), tracker, sessions plan and agent kickoff prompts written. All cards `todo`. Waiting for sync point S0. |

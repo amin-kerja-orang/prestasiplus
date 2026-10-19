@@ -28,9 +28,9 @@ Everything the prototype serves under `/api/battle/*`, the tournament banner/lis
 - Data model: [v2-data-model.md](../../architecture/v2-data-model.md) global rules G-01 to G-18 and section 3.13 (M16 rows are listed there as backlog; they become B1 tables with this card, see Open question 9). Plan [v2-backend-plan.md](../../architecture/v2-backend-plan.md) sections 5, 6, 14.7 and 14.9; `docs/architecture/v2-data-migration.md` section 4.10 and the `.cloud` table rows for `battles`, `battle_participants`, `battle_queue`, `battle_invites`, `school_battle_rankings`
 - `docs/requirements/role-access-matrix.md` (Murid rows 18 Kedudukan and 23 Tournament; Admin Sekolah row 45 is BE-45), `docs/requirements/v2-portals.md` PG-12, PG-13 (read-only reports of `GET /api/battle/standings/schools` and `.../students`)
 - BE-09 `QuestionsService` (`sample` keyless, `gradeAnswer`, SPM pool count), BE-08 curriculum reads (subjects, education levels, grade to level), BE-05 users/schools reads, BE-12/BE-13 owner read for platform answer accuracy (Q-ANS-CORRECT / Q-ANS-ALL equivalent)
-- Requirements: BE-FR-NEW-44 (proposed wording below; the lead assigns the number in [URS 9.2](../../requirements/v2-backend-urs.md)); BE-NFR-05, BE-NFR-08, BE-NFR-17, BE-NFR-18, BE-NFR-19
+- Requirements: BE-FR-41; BE-NFR-05, BE-NFR-08, BE-NFR-17, BE-NFR-18, BE-NFR-19
 
-**Proposed BE-FR wording (for the URS table):** "The API shall serve the Battle arena exactly as the prototype: lobby, quick-match and school-battle queues with deterministic bot opponents, invitations, join-queue requests, forfeit, a keyless ten-question arena with server-side scoring and winner rule, battle history, student and school standings computed from finished and forfeited battles, one school battle page, and the tournament banner, list, detail and admin create. Real-time multiplayer is out of scope." Traced to BE-44; test type IT.
+The requirement wording is BE-FR-41 in the URS (section 4.2).
 
 ## Outputs
 

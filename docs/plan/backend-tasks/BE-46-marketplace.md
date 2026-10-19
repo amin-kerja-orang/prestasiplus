@@ -20,7 +20,7 @@
 - `docs/requirements/srs/M20-marketplace.md` (section 7 routes #13 to #17, BR-M20-05, BR-M20-08, BR-M20-12, BR-M20-16 to BR-M20-21, FR-M20-11, FR-M20-52 to FR-M20-61, V-M20-03, section 6 data, section 6.11 seeds), `docs/requirements/urs/M20-marketplace.md`
 - Mock: `src/modules/m20-marketplace/mock/handlers/buyer.ts` (the 5 routes), `mock/repository/{marketplace,format,types,tables}.ts`, `mock/data/seed-data.ts`, `mock/seeds/seed.ts`, `mock/whatsapp-log.ts`; client `src/modules/m20-marketplace/api/{marketplace,types}.ts`; mock test `src/modules/m20-marketplace/__tests__/mock/buyer.test.ts` and fixtures `__tests__/fixtures.ts`
 - `docs/requirements/role-access-matrix.md` (Murid row 32 "Marketplace")
-- Requirements: BE-FR-NEW-46 (wording proposed in the report; number assigned by the integrator of [URS 9.2](../../requirements/v2-backend-urs.md)); BE-NFR-05, BE-NFR-06
+- Requirements: BE-FR-43; BE-NFR-05, BE-NFR-06
 - API catalogue part B4 (economy, content, games): [economy-content-games.md, section "M20 Marketplace" (M20-13 to M20-17)](../../architecture/v2-api-catalogue/economy-content-games.md#m20-marketplace-m20-marketplace---5-routes) (its "out of B1" status note is superseded by D53); OQ-API-B4-28 (view counters)
 - Data model: [v2-data-model.md](../../architecture/v2-data-model.md) section 3.13 row `marketplace.*` (candidate `marketplace_*`; they become B1 tables through this card) and global rules G-01 to G-18
 - Migration: [v2-data-migration.md](../../architecture/v2-data-migration.md) section 3 rows `marketplace_sellers`, `marketplace_products`, `marketplace_orders` and section 4.11; plan [v2-backend-plan.md](../../architecture/v2-backend-plan.md) sections 5, 6, 14.7 (the row "Out of B1 ... marketplace" is replaced by this card's rows)

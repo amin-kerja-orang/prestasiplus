@@ -28,7 +28,7 @@ Serve the 14 M06 mock routes so the `/spm` hub, Databank (Tahun Lepas), Latih Tu
 - `docs/architecture/v2-backend-plan.md` sections 5, 6, 14 (14.7 mapping matrix, 14.9 checklist); `docs/architecture/v2-data-migration.md` section 4.5
 - `docs/requirements/v2-backend-urs.md` (UD-1: ids are decimal strings and the session follows the contract; D53)
 - Services of other owners that this card calls and never bypasses (ADR-0014, D12): BE-08 `CurriculumService` (subjects, levels), BE-09 `QuestionsService` (SPM pool counts and samples, structured questions, serve-shape of a question), BE-12/BE-13 `PracticeRepository` (history stats over the modes `past_year`, `latih_tubi`, `ramalan`; structured attempts with scope `spm`)
-- Requirements: BE-FR-38 (proposed, see the report to the LEAD), BE-NFR-05, BE-NFR-20 ([URS 9.2](../../requirements/v2-backend-urs.md))
+- Requirements: BE-FR-38, BE-NFR-05, BE-NFR-20 ([URS 9.2](../../requirements/v2-backend-urs.md))
 
 ## Outputs
 

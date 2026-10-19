@@ -26,7 +26,7 @@ Serve the 21 M07 mock routes: the student PKSK area (access flags, the 15 domain
 - `docs/architecture/v2-backend-plan.md` sections 5, 6, 14 (14.7 mapping matrix, 14.9 checklist); `docs/architecture/v2-data-migration.md` section 4.5 (.cloud has `pksk_packages` and `pksk_accesses` only; no attempts, mastery or loads)
 - `docs/requirements/v2-backend-urs.md` (UD-1: ids are decimal strings, the session follows the contract; D53; OQ-21 on PKSK entitlement)
 - Services of other owners that this card calls and never bypasses (ADR-0014, D12): BE-09 `QuestionsService` (PKSK-tagged questions: list, get, create, update, set status, delete, count, serve shape), BE-10 lifecycle rules (status codes), BE-12 `PracticeRepository` (completion of a PKSK practice session, which in turn credits wallet and streak through BE-11), BE-25 `SubscriptionService` (the PKSK subscription flag), BE-03 `AuditService`, BE-05 users lookup
-- Requirements: BE-FR-39 (proposed, see the report to the LEAD), BE-NFR-05, BE-NFR-20 ([URS 9.2](../../requirements/v2-backend-urs.md))
+- Requirements: BE-FR-39, BE-NFR-05, BE-NFR-20 ([URS 9.2](../../requirements/v2-backend-urs.md))
 
 ## Outputs
 

@@ -22,7 +22,7 @@
 - `docs/plan/backend-tasks/BE-13-practice-reads.md` (reads over the answer dimensions, no join to questions; indexes), `docs/plan/backend-tasks/BE-12-practice-sessions.md` (`practice_answers`, `PracticeRepository`), `docs/plan/backend-tasks/BE-08-curriculum.md` (chapters, subjects, order)
 - `docs/architecture/v2-data-migration.md` section 4.4 (statistics read the answer-row dimensions, not a question join)
 - `docs/requirements/role-access-matrix.md` (Murid row 14; not for Guru or Admin Sekolah)
-- Requirements: BE-FR-NEW-48 (wording proposed in the report; number assigned by the integrator of [URS 9.2](../../requirements/v2-backend-urs.md)); BE-NFR-15 (read performance, as BE-13)
+- Requirements: BE-FR-45; BE-NFR-15 (read performance, as BE-13)
 - API catalogue part B2: [learning-exam.md section 9 (M25-01)](../../architecture/v2-api-catalogue/learning-exam.md#9-m25-ai-centre-1-route); its OQ-API-B2-11 is closed for this route by this card
 - Data model: [v2-data-model.md](../../architecture/v2-data-model.md) tables `practice_answers` (owner BE-12), `chapters`, `subjects` (owner BE-08); URS OQ-13 (the heatmap route belonged to no card) is closed by this card
 
@@ -109,7 +109,7 @@ npm run be:test -- apps/api/test/conformance   # only after BE-31 is merged
 
 Do not guess these; write your working assumption in the PR and ask the lead (issue labelled `question`) if it blocks you.
 
-1. The same screen also shows the "Cikgu Pakar" card from `GET /api/duta/recommendations`, a route registered by the M06 mock (M06-14) that belongs to the backlog (no card). This card does not build it. Working assumption: the screen keeps the frontend mock for that one call (hybrid transport) or hides the block; the lead decides, and it is not a blocker for BE-48.
+1. The same screen also shows the "Cikgu Pakar" card from `GET /api/duta/recommendations`, a route registered by the M06 mock (M06-14) that is served by BE-41. This card does not build it; the screen calls BE-41 once that card has merged, and it is not a blocker for BE-48.
 2. The SRS says topic ties are broken by name with ms-MY collation, but the mock compares names by plain code-unit order (`a.name < b.name`), and the mock tests pass with that. Working assumption: replicate the mock (code-unit comparison); a Malay-collation change is a deviation to be agreed first.
 3. Test mode (G-07): an admin in Mod Pelajar writes `is_test = true` answers, so an admin heatmap would be empty if test rows were excluded, while BE-19 excludes `is_test` from aggregates. Working assumption: follow whatever BE-13 does for the caller's own `GET /api/practice/mastery` and state it in the PR; the lead confirms.
 4. K-M25-01 (minimum 5 attempts) is a constant of the mock; the SRS notes any value from 3 to 5 reproduces the observation. Working assumption: constant 5 in the contract folder, not configurable.

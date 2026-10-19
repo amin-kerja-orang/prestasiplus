@@ -109,6 +109,7 @@ Do not guess these; write your working assumption in the PR and ask the lead (is
 1. The trial limit of 50 and the +1-per-checked-answer rule are a provisional M19 rule in the mock (overview 6.7); the real subscription derivation is Q6. Working assumption: keep the mock rule.
 2. Points and coins per session come from the mock `sessionCoins` curve; confirm the v2 economy (BE-23 may change it).
 3. Later tables (URS 13.4 item 4): assigned-mode starts (`missionId`, `remedialTestId`, `questionSetId`) read tables created by BE-18, and quest rewards are credited through BE-23. Until those cards merge, keep the fields in the contract and put each behind a port with a no-op default (an unknown assignment returns the mock's not-found error; the quest reward port credits nothing). BE-18 and BE-23 enable them when they merge. (added 2026-10-19)
+4. Cross-card notes (2026-10-19): (a) the `ramalan` practice mode selects its questions through `SpmTrackingService.ramalanQuestionIds(subjectId, year, setNo)` served by BE-41 (M06 set service), see BE-41 AC 6; until BE-41 merges `ramalan` returns the mock's empty-set behaviour behind a port. (b) `PracticeRepository` also needs the direct-completion method (`completeDirect`: a session completed without the start and check flow, mode `pksk`, no revision queue, no subject mastery, no trial counter) that BE-42 (M07-07) calls; BE-42 open question 4 says who adds it, and the tier rate (`flat_quiz_reward` or `pksk_reward_correct`) is decided in BE-23.
 
 ## Prompt for Claude Code
 

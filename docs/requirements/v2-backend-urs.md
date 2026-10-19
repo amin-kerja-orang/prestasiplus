@@ -20,29 +20,29 @@
 
 | Id | Decision (project owner) | Effect on this document and the cards | TRACKER |
 |---|---|---|---|
-| UD-1 | Ids and session follow the **contract**, not the mock: ids are decimal strings; authentication is a cookie session with `X-CSRF-Token`, the `Session` shape and the `/api/session*` endpoints; bad credentials are 401 `INVALID_CREDENTIALS`; no Bearer on the real API. The LEAD realigns the mock and `HttpTransport` (V2-T31). | BE-FR-01, BE-NFR-03, BE-NFR-25, section 13.2; BE-03 states that the contract wins for these items. | D53 (letter to be added by the LEAD) |
-| UD-2 | Impersonate is **dropped**: one mechanism, Mod Pelajar via `POST /api/session/mode` (D31c, the admin acts as their own account). | OQ-17 closed; BE-05 and BE-21 no longer build the impersonate routes (a one-line note records that the mock routes are intentionally not ported). | D53 (letter to be added by the LEAD) |
-| UD-3 | Parent hadiah approvals (`/api/parent/hadiah-approvals*`, M15-08 to M15-10) are **not built in B1**; the backend does not register them and the frontend hides the entry point (unbuilt screens are hidden, no "coming soon" page). | OQ-20 closed; BE-23 lists the routes under "Not in B1 (UD-3)". | D53 (letter to be added by the LEAD) |
-| UD-4 | M18 Amaran (4 routes `/api/amaran/*`) is **folded into BE-21**. | BE-FR-37 added; OQ-12 closed; BE-21 endpoint table, inputs, files and ACs 8 to 12; cards README backlog updated. | D53 (letter to be added by the LEAD) |
+| UD-1 | Ids and session follow the **contract**, not the mock: ids are decimal strings; authentication is a cookie session with `X-CSRF-Token`, the `Session` shape and the `/api/session*` endpoints; bad credentials are 401 `INVALID_CREDENTIALS`; no Bearer on the real API. The LEAD realigns the mock and `HttpTransport` (V2-T31). | BE-FR-01, BE-NFR-03, BE-NFR-25, section 13.2; BE-03 states that the contract wins for these items. | D53(b) to (g) |
+| UD-2 | Impersonate is **dropped**: one mechanism, Mod Pelajar via `POST /api/session/mode` (D31c, the admin acts as their own account). | OQ-17 closed; BE-05 and BE-21 no longer build the impersonate routes (a one-line note records that the mock routes are intentionally not ported). | D53(b) to (g) |
+| UD-3 | Parent hadiah approvals (`/api/parent/hadiah-approvals*`, M15-08 to M15-10) are **not built in B1**; the backend does not register them and the frontend hides the entry point (unbuilt screens are hidden, no "coming soon" page). | OQ-20 closed; BE-23 lists the routes under "Not in B1 (UD-3)". | D53(b) to (g) |
+| UD-4 | M18 Amaran (4 routes `/api/amaran/*`) is **folded into BE-21**. | BE-FR-37 added; OQ-12 closed; BE-21 endpoint table, inputs, files and ACs 8 to 12; cards README backlog updated. | D53(b) to (g) |
 
-The LEAD recorded the owner decisions of 2026-10-19 as TRACKER D53. UD-1 to UD-4 keep their labels here; the table above gets the exact D53 letters when the LEAD adds them (this document and the cards do not edit the tracker). Further D53 decisions applied below:
+The LEAD recorded the owner decisions of 2026-10-19 as TRACKER D53: UD-1 to UD-4, OWN-1 and OWN-10 are D53(b) to (g) (exact letter per item not cited here), the scope decision is D53(a) and the DSKP decision is D53(h). The UD labels stay as the local names; this document and the cards do not edit the tracker. Further D53 decisions applied below:
 
 | D53 item | Decision | Effect |
 |---|---|---|
-| OWN-1 | One table for the question-paper submission: `intake_batches` (BE-37) IS the Submission; `question_submissions` is dropped from BE-10; `source_papers` stays the paper identity and rights registry that a batch points to. | BE-10 drops the table and the three `/api/question-submissions*` routes (served by intake, see BE-FR-12 and BE-37); BE-FR-22. |
-| OWN-10 | The teacher economy (teacher wallets, ledger, rewards, redemptions, cash withdrawals, teacher badges and their routes) is backlog, not B1 (D28c). | OQ-16 closed; BE-23 lists the routes under "Not in B1 (D53/OWN-10)"; BE-FR-16. |
+| OWN-1 (D53(b) to (g)) | One table for the question-paper submission: `intake_batches` (BE-37) IS the Submission; `question_submissions` is dropped from BE-10; `source_papers` stays the paper identity and rights registry that a batch points to. | BE-10 drops the table and the three `/api/question-submissions*` routes (served by intake, see BE-FR-12 and BE-37); BE-FR-22. |
+| OWN-10 (D53(b) to (g)) | The teacher economy (teacher wallets, ledger, rewards, redemptions, cash withdrawals, teacher badges and their routes) is backlog, not B1 (D28c). | OQ-16 closed; BE-23 lists the routes under "Not in B1 (D53/OWN-10)"; BE-FR-16. |
 | D53(h) | Questions are tagged with `curriculum_node` only (v2-exam-schema D9); BE-18 `dskp_*` is a teacher picking list only. | BE-FR-11, BE-10. |
-| D53(a) | Every module reachable in the prototype is B1: M06, M07, M13, M16, M20, M21 (student side only; Penaja out per D48), M25 (= Heatmap Topik Lemah) and the M09 student Audio KBAT play. | Cards BE-41 to BE-48 are being written (BE-41 M06 SPM hub, BE-42 M07 PKSK, BE-43 M13 Cikgu Alesa, BE-44 and BE-45 M16, BE-46 M20, BE-47 M21 student side, BE-48 M25); the two audio routes are in BE-24; sections 1, 10, 11 and OQ-11, OQ-13, OQ-14 updated. Requirements for BE-41 to BE-48 are not added yet. |
+| D53(a) | Every module reachable in the prototype is B1: M06, M07, M13, M16, M20, M21 (student side only; Penaja out per D48), M25 (= Heatmap Topik Lemah) and the M09 student Audio KBAT play. | Cards BE-41 to BE-48 exist (BE-41 M06 SPM hub, BE-42 M07 PKSK, BE-43 M13 Cikgu Alesa, BE-44 and BE-45 M16, BE-46 M20, BE-47 M21 student side, BE-48 M25) with requirements BE-FR-38 to BE-FR-45; the two audio routes are in BE-24; sections 1, 10, 11 and OQ-11, OQ-13, OQ-14 updated. |
 
 ## 1. Purpose and scope
 
 The backend replaces the in-browser mock behind the frontend `Transport` seam (ADR-0004), endpoint by endpoint, for release **B1** of the plan (section 2): the four prototype roles, the core learning loop, Bijak SPM, class and report flows, the SPM question intake and paper builder (D52), the migration pipeline from prestasiplus.cloud (read-only source), and container deployment (D50).
 
-**In scope:** everything in plan section 2 "Goals", which is the 40 cards BE-01 to BE-40.
+**In scope:** everything in plan section 2 "Goals", which is the 48 cards BE-01 to BE-48.
 
 **Out of scope:** roles `ppd_officer`, `parent`, `sponsor` (schema columns only; Penaja out per D48), the teacher economy (D53/OWN-10), payments gateway, e-mail/SMS/push delivery, AI features other than question-intake extraction and what the cards BE-41 to BE-48 specify for M13 and M25, reloading exam questions from .cloud (D29a), changing UI behaviour, horizontal scaling and performance tuning beyond sane indexes. Since D53(a) the plan's earlier non-goals marketplace (M20) and sponsorship (M21, student side) are in B1.
 
-**Mock domains:** since D53(a) every module reachable in the prototype is B1. M06, M07, M13, M16, M20, M21 (student side), M25 are being given cards BE-41 to BE-48; until those cards exist their requirements are not written here (sections 10 and 11).
+**Mock domains:** since D53(a) every module reachable in the prototype is B1. M06, M07, M13, M16, M20, M21 (student side) and M25 are served by cards BE-41 to BE-48 (requirements BE-FR-38 to BE-FR-45); sections 10 and 11 list them.
 
 ## 2. Actors
 
@@ -132,6 +132,14 @@ The review found behaviour that the sources require but no card states as an acc
 | BE-FR-35 | Question versioning shall follow v2-question-bank 4.6: each question has a stable id and version number; "Sunting" on a Terbit question creates version n+1 as Draf; when n+1 becomes Terbit version n becomes `Diarkib (digantikan)` in the same transaction so there is never a moment with zero live version unless an admin withdraws; practice and Bijak answers record the question id and version served. | BE-09, BE-10 | v2-question-bank 4.6, NFR-08 | IT: publish of n+1 archives n atomically (forced failure leaves n live); answer rows store the version; history is unchanged after an edit. |
 | BE-FR-36 | Student question reports shall carry the question and version, use the reasons and statuses of v2-question-bank 4.7 (statuses Menunggu, Disemak, Diperbaiki, Ditolak, Dikeluarkan; comment at most 500 characters), notify the reporter on a status change and become Diperbaiki when the fixing version is Terbit. | BE-10 | v2-question-bank 4.7; M04 URS EP-M04-3 | IT: report create/list/mine/patch per role; comment of 501 characters rejected 422; status moves to Diperbaiki when the linked version is published. The auto-hide threshold is OQ-22. |
 | BE-FR-37 | The API shall serve the M18 Amaran Awal routes (school risk page `GET /api/amaran/schools/:id`, executive summary `GET /api/amaran/summary`, own-school effectiveness `GET /api/amaran/effectiveness`, school CSV `GET /api/amaran/export/school/:id`) with the risk model of BR-M18-13/14 computed at request time and never stored. In B1 the roles are `admin`, `school_admin` (own school) and `teacher` (own school or schools of own classes); `ppd_officer` has no endpoints. | BE-21 | M18 SRS section 7 #21, #22, #24, #30; BR-M18-01 to BR-M18-34; matrix row 49; user decision UD-4 | IT: BE-21 AC 8 to 12: access per role (out-of-scope school 403, unknown school 404, teacher export 403); the risk score `0.4A + 0.3E + 0.3M` and the thresholds below 40, below 60 and above, unit-tested; the mock's 422 messages and BM cell texts verbatim; the CSV has a BOM, CRLF, the mock header row, `Cache-Control: no-store`, formula-injection neutralisation, no personal data; every accepted export writes an audit row; `is_test` rows excluded. |
+| BE-FR-38 | The API shall serve the 14 M06 routes of the classic SPM hub: overview, databank, Latih Tubi list and setup, Tracking A hub and set list with the set-status rule and the `ramalan` question selection that BE-12 binds to, the Subjektif overview, the SPM mock exam (create, paper without keys, owner-only submit, result) and the simulated walkthrough, plus the Duta recommendation card. Every figure is computed from the owner stores (curriculum, questions, practice); the module owns only the SPM subject configuration, Tracking A sets, mock exams and Duta cards. | BE-41 | M06 URS/SRS; matrix row 13; D53(a) | IT: BE-41 AC 1 to 16: any signed-in role (401 otherwise); `readiness` only for the active role `admin`; set status `belum_cukup`, `bank_besar`, `bersih` by the BR-M06-08 rule; a mock exam paper view never contains `modelAnswer`, `studentAnswer`, `marks` or `feedback` (recursive key scan); a mock of another user is 404; a second submit is 409 "Mock ini sudah dihantar."; a result before submit is 409 `NOT_SUBMITTED`; the Duta pick is deterministic for a given `seed`; the mock's hub constants are computed, not copied. |
+| BE-FR-39 | The API shall serve the 21 M07 PKSK routes: the student area (access flags, 15 domains, per-level dashboard, domain sections, a 10-question practice set and its scored submission stored as one M05 session of mode `pksk`, a full exam of 30 + 70 + 1 questions and its scored attempt, attempt history) and the admin area (PKSK question CRUD, stats and bulk action; access grants list, stats, grant and revoke; package list). PKSK questions are tags on the single question bank and are read and written only through the BE-09 service. | BE-42 | M07 URS/SRS; matrix row 19; v2-question-bank A6; D53(a) | IT: BE-42 AC 1 to 19: level `T1` or `T4` only (any other value 404 before the access check); a user without access gets 403 and no question data; no correctness flag in any practice or exam payload (recursive key scan); an invalid answer set gives 422 "Jawapan tidak sah." and writes nothing; PKSK questions never appear in M04 lists or counts; grant, revoke and bulk delete write audit rows without personal data; the access routes are `admin` only; test-mode writes are stamped `is_test`. |
+| BE-FR-40 | The API shall serve the 10 M13 Cikgu Alesa routes: the chat turn (any signed-in role, un-enveloped bodies) with a daily quota per role in Malaysia time, and the teacher tools (RPH list, create and detail, essay markings, PBD queue, roll-up, bulk approve, CSV export). Replies, marks and RPH text are produced by the `mock` AI provider by default; a real provider is reached only through the BE-36 adapter. | BE-43, BE-36 | M13 URS/SRS; matrix row 37; D53(a); BE-36 | IT: BE-43 AC 1 to 15: the chat bodies are exactly `{thread_id, reply, tier, turns_remaining, tool_hops, tokens}`, 429 `{"quota_exhausted": true}` and, for a guest, 401 with body `{}`; a teacher has 30 turns a day, a student 10, an admin 100, and 40 parallel teacher turns store exactly 30; the quota resets after 00:00 `Asia/Kuala_Lumpur`; a foreign thread or row is never revealed (404); CSV cells beginning with `=`, `+`, `-` or `@` are neutralised; a provider failure or `AI_BUDGET_EXHAUSTED` stores nothing and uses no quota turn; no essay text or student name reaches the provider outside the redacted payload. Needs a text-generation method on the BE-36 adapter (OQ-29). |
+| BE-FR-41 | The API shall serve the Battle arena as the prototype does: lobby, quick-match and school-battle queues with deterministic bot opponents, invitations, join-queue requests, forfeit, a keyless ten-question arena with server-side scoring and winner rule, battle history, student and school standings computed from finished and forfeited battles, one school battle page, and the tournament banner, list, detail and admin create. Real-time multiplayer is out of scope. | BE-44 | M16 URS/SRS; matrix rows 21, 23; D53(a) | IT: BE-44 AC 1 to 17: raw routes answer errors as `{"error": "<BM text>"}`; a queue expires after 120 s or 10 s without a poll; a battle, queue or invitation is visible only to its participants (documented not-found answer, never 403 on a resource id); no battle response contains an answer key (recursive scan); the 3-poll match, the expiries and the 24 h invitation expiry are tested with a fixed clock and the seeded PRNG; windows are Monday-based weeks and calendar months in Malaysia time; the two tournament admin routes are `admin` only. |
+| BE-FR-42 | The API shall serve the Permainan area as the prototype does: the games hub and lobbies, six room games with deterministic bot players and server clocks, the Papan Bijak quick match, five single-player games with plausibility-checked results, the daily Roda Nasib spin, Jutawan Ilmu with 50:50, the weekly competition board, leagues with invite codes, the Sekolah Bersaing weekly board and the admin game settings. Game coins are credited only through the M14 owner service and only when the setting allows. Real-time multiplayer is out of scope. | BE-45 | M16 URS/SRS; matrix rows 21, 33, Admin Sekolah row 45; D53(a) | IT: BE-45 AC 1 to 21: one Roda Nasib spin per Malaysia day enforced by a unique constraint; room settlement happens once per room; every coin credit goes through the M14 service and is idempotent; implausible solo results are rejected; league invite codes and the Sekolah Bersaing board are scoped as the mock; the admin game settings are `admin` only; time and randomness come from the injected clock and seeded PRNG. |
+| BE-FR-43 | The API shall serve the 5 buyer routes of the Marketplace (category list, product search, product page that counts a view, WhatsApp hand-off that counts a click and returns a `wa.me` URL, public shop page). There is no cart, order or payment (D14) and the server never sends a message. | BE-46 | M20 URS/SRS; matrix row 32; D14; D53(a) | IT: BE-46 AC 1 to 9: a draft or rejected product, or one of a non-active seller, is absent from search, related and shop and answers 404 with no counter change; the four sorts and their tie rules equal the mock; a product page call increments `views` by exactly 1 (20 parallel calls give exactly 20); the WhatsApp route returns the exact URL, counts a click only for a seller product and calls no outbound HTTP client; any signed-in role gets 200, no session 401. |
+| BE-FR-44 | The API shall store one foster-family application submitted by a signed-in user from the student page "Mohon Keluarga Angkat": validation as the mock, the applicant and role taken from the session, status `pending`, a reason cut at 5,000 characters. The Penaja role, sponsor tables and admin review are out of scope (D48). | BE-47 | M21 URS/SRS; matrix row 15; D48; D53(a) | IT: BE-47 AC 1 to 8: 201 `{data: {id}}` with a decimal-string id; every field message and the several-errors summary as the mock; an unknown student e-mail gives "Email pelajar tidak dijumpai dalam PrestasiPlus."; `applicantUserId` and `applicantRole` in the body are ignored; no duplicate check; no notification, e-mail or audit row containing the reason; no session 401. |
+| BE-FR-45 | The API shall serve the Heatmap Topik Lemah of the signed-in learner, grouped by subject and computed on every request from the practice answer log through a BE-13 read method; it creates no table and makes no AI call. | BE-48, BE-13 | M25 URS/SRS; matrix row 14; D12; D53(a) | IT: BE-48 AC 1 to 9: a chapter with 4 attempts is hidden and with 5 is shown; percent and colour band edges (49.5 gives 50, 79.5 gives 80); ties order by name then numeric chapter id; `?userId=` is ignored and a teacher or parent session gets 403; for every shown cell attempts and correct equal the BE-13 aggregate; the response is unchanged when every answer's `question_id` is null and `historical` is true; the grouping query median is under 200 ms on 20 students with a generated 100,000-row answer table (a miss is a finding, not a blocker). |
 
 ## 5. Non-functional requirements (BE-NFR)
 
@@ -302,6 +310,14 @@ Sections 9.1 and 9.2 are generated from the Cards column of sections 4 to 7 by a
 | BE-FR-35 | BE-09, BE-10 | IT | P0 |
 | BE-FR-36 | BE-10 | IT | P1 |
 | BE-FR-37 | BE-21 | IT | P1 |
+| BE-FR-38 | BE-41 | IT | P1 |
+| BE-FR-39 | BE-42 | IT | P2 |
+| BE-FR-40 | BE-43, BE-36 | IT | P1 |
+| BE-FR-41 | BE-44 | IT | P2 |
+| BE-FR-42 | BE-45 | IT | P2 |
+| BE-FR-43 | BE-46 | IT | P2 |
+| BE-FR-44 | BE-47 | IT | P2 |
+| BE-FR-45 | BE-48, BE-13 | IT | P1 |
 | BE-NFR-01 | BE-03, BE-33 | IT, SEC | P0 |
 | BE-NFR-02 | BE-03, BE-33 | IT, SEC | P0 |
 | BE-NFR-03 | BE-03, BE-33 | IT | P0 |
@@ -387,7 +403,7 @@ Sections 9.1 and 9.2 are generated from the Cards column of sections 4 to 7 by a
 | BE-10 | FR-12, 35, 36; NFR-08, 38 | P1 |
 | BE-11 | FR-13; NFR-17, 18, 19 | P0 |
 | BE-12 | FR-14, 33; NFR-17, 18, 19, 20 | P0 |
-| BE-13 | FR-15; NFR-15 | P1 |
+| BE-13 | FR-15, 45; NFR-15 | P1 |
 | BE-14 | FR-17 | P1 |
 | BE-15 | FR-18; NFR-20 | P1 |
 | BE-16 | FR-19, 33; NFR-17, 18, 19, 21, 29 | P1 |
@@ -410,20 +426,28 @@ Sections 9.1 and 9.2 are generated from the Cards column of sections 4 to 7 by a
 | BE-33 | FR-34; NFR-01, 02, 03, 04, 07, 08, 09, 11, 21, 27, 28, 35, 40; OPS-01, 07, 08, 10 | P2 |
 | BE-34 | NFR-13, 17, 18; MIG-01, 02, 03, 04, 07; OPS-06 | P0 |
 | BE-35 | NFR-13; MIG-14, 15 | P1 |
-| BE-36 | FR-21; NFR-31, 32, 33, 34, 35, 36; OPS-03 | P1 |
+| BE-36 | FR-21, 40; NFR-31, 32, 33, 34, 35, 36; OPS-03 | P1 |
 | BE-37 | FR-22; NFR-14, 15, 18, 21, 29, 30; OPS-03 | P1 |
 | BE-38 | FR-23; NFR-08, 14, 15, 17, 18, 33, 34, 36 | P1 |
 | BE-39 | FR-20; NFR-08 | P1 |
 | BE-40 | FR-24; NFR-19, 34 | P2 |
+| BE-41 | FR-38 | P1 |
+| BE-42 | FR-39 | P2 |
+| BE-43 | FR-40 | P2 |
+| BE-44 | FR-41 | P2 |
+| BE-45 | FR-42 | P2 |
+| BE-46 | FR-43 | P2 |
+| BE-47 | FR-44 | P2 |
+| BE-48 | FR-45 | P1 |
 
 Cross-cutting requirements that apply in addition to every card that adds endpoints or tables: FR-02; NFR-05, 11, 12, 16, 23, 24, 25, 26; MIG-01, 03, 17; OPS-11.
 
 ### 9.3 Result of this review
 
-- Requirements: 105 (BE-FR 37, BE-NFR 40, BE-MIG 17, BE-OPS 11). Cards: 40.
+- Requirements: 113 (BE-FR 45, BE-NFR 40, BE-MIG 17, BE-OPS 11). Cards: 48.
 - Requirements with no card: 0. Cards with no requirement: 0.
 - Requirements whose acceptance is only partly covered by a card (the remainder is an open question, not an invented rule): BE-NFR-14 (user-data rights, OQ-3), BE-NFR-15 (endpoints without a target, OQ-1), BE-NFR-30 (malware scanning, OQ-5), BE-NFR-36 (pilot measurement, OQ-7), BE-OPS-07 (backup targets, OQ-2), BE-NFR-04 (rate-limit values, OQ-9).
-- Requirements added or made explicit by this review because a card or source required the behaviour but no row stated it: BE-FR-34, BE-FR-35, BE-FR-36, BE-NFR-37, BE-NFR-38, BE-NFR-39, BE-NFR-40, BE-OPS-11.
+- Requirements added or made explicit by this review because a card or source required the behaviour but no row stated it: BE-FR-34, BE-FR-35, BE-FR-36, BE-FR-37 (UD-4), BE-FR-38 to BE-FR-45 (cards BE-41 to BE-48), BE-NFR-37, BE-NFR-38, BE-NFR-39, BE-NFR-40, BE-OPS-11.
 
 <!-- TRACE:END -->
 
@@ -438,23 +462,23 @@ Cross-cutting requirements that apply in addition to every card that adds endpoi
 | M03 curriculum | 29 | BE-08 | carded |
 | M04 question bank | 30 | BE-09, BE-10 | carded |
 | M05 practice | 23 | BE-12, BE-13 | carded |
-| M06 SPM classic (`/api/spm/*`, `/api/spm-mocks`, `/api/spm-walkthrough/solve`, `/api/duta/recommendations`) | 14 | BE-41 | B1 by D53(a); card being written |
-| M07 PKSK | 21 | BE-42 | B1 by D53(a); card being written (OQ-21) |
+| M06 SPM classic (`/api/spm/*`, `/api/spm-mocks`, `/api/spm-walkthrough/solve`, `/api/duta/recommendations`) | 14 | BE-41 | carded (BE-FR-38) |
+| M07 PKSK | 21 | BE-42 | carded (BE-FR-39; OQ-21) |
 | M08 student performance | 30 | BE-19 | carded |
 | M09 content | 43 | BE-24 | carded, including the student Audio KBAT play (D53(a)) |
 | M10 classes, missions, Command Center | 39 | BE-17, BE-18, BE-22 | carded |
 | M11 teacher analytics | 7 | BE-20 | carded |
 | M12 Kirkpatrick | 14 | BE-20 | carded |
-| M13 Cikgu Alesa | 10 | BE-43 | B1 by D53(a); card being written |
+| M13 Cikgu Alesa | 10 | BE-43 | carded (BE-FR-40) |
 | M14 gamification | 42 | BE-11, BE-23 | carded |
 | M15 rewards shop | 18 | BE-23 | carded; 3 parent approval routes not built (UD-3) |
-| M16 battle, games, tournaments, leagues, Sekolah Bersaing | 52 | BE-44, BE-45 | B1 by D53(a); cards being written |
+| M16 battle, games, tournaments, leagues, Sekolah Bersaing | 52 | BE-44, BE-45 | carded (BE-FR-41, BE-FR-42) |
 | M17 admin dashboard | 11 | BE-22 | carded |
 | M18 PPD/JPN, Amaran Awal | 4 | BE-21 | carded (UD-4) |
-| M20 marketplace | 5 | BE-46 | B1 by D53(a); card being written |
-| M21 sponsorship | 1 | BE-47 | B1 by D53(a), student side only (Penaja out per D48); card being written |
+| M20 marketplace | 5 | BE-46 | carded (BE-FR-43) |
+| M21 sponsorship | 1 | BE-47 | student side only (Penaja out per D48); carded (BE-FR-44) |
 | M22 support tickets | 4 | BE-24 | carded |
-| M25 AI centre (`/api/buku-nota/heatmap`, Heatmap Topik Lemah) | 1 | BE-48 | B1 by D53(a); card being written |
+| M25 AI centre (`/api/buku-nota/heatmap`, Heatmap Topik Lemah) | 1 | BE-48 | carded (BE-FR-45) |
 | M27 school admin | 22 | BE-21 | carded; 2 impersonate routes not built (UD-2) |
 | M28 Bijak SPM | 0 routes, 16 `BijakServer` methods | BE-15, BE-16, BE-39 | carded; HTTP surface is defined by the contract commit |
 
@@ -494,7 +518,7 @@ Core routes outside any module (`GET /api/me`, gamification summary, server stat
 
 ## 11. Out of scope / not covered by any card
 
-Since D53(a) (owner decision 2026-10-19) every module reachable in the prototype is B1: M06, M07, M13, M16, M20, M21 (student side only), M25 and the M09 student Audio KBAT play now have a card or are being given one (BE-41 to BE-48, BE-24); they are in section 10. What remains without a card is below. None is specified as a requirement.
+Since D53(a) (owner decision 2026-10-19) every module reachable in the prototype is B1: M06, M07, M13, M16, M20, M21 (student side only), M25 and the M09 student Audio KBAT play now have a card (BE-41 to BE-48, BE-24); they are in section 10. What remains without a card is below. None is specified as a requirement.
 
 | Item | Evidence | Source of exclusion | Open question |
 |---|---|---|---|
@@ -560,6 +584,8 @@ Numbering OQ-n (OQ-1 to OQ-8 were NQ-1 to NQ-8 in the first draft). "Default unt
 | OQ-25 | The question import format: v2-question-bank 4.3 and Q10 say an Excel template, the mock and BE-10 say CSV. | BE-FR-12, BE-NFR-38. | CSV as the mock until answered. |
 | OQ-26 | Cross-host session: v2-portals NFR Security says the session is shared across the two portal hosts (`admin.*` and the main host) without exposing the Pembelajaran session to Pentadbiran pages beyond the active role, and OD-4 leaves hostnames to release. Is a cross-host cookie in B1 or one origin? | BE-NFR-02, BE-OPS-05, BE-OPS-08. | One origin in B1 (compose + nginx); cookie domain is configuration. |
 | OQ-27 | Invalid pagination input: the mock treats a missing or invalid `page` as 1 while the contract `PageQuerySchema` rejects it (422). | BE-NFR-16, BE-NFR-24. | `page` missing or invalid means 1 (mock); `pageSize` above 100 is 422 (contract). |
+| OQ-28 | Lanes and priorities of the new cards BE-41 to BE-48 (BE-41 PC-3 P1, BE-42 PC-1 P2, BE-43 PC-5 P2, BE-44 and BE-45 a proposed lane PC-7 "Games and competitions" P2, BE-46 PC-1 P2, BE-47 PC-1 P2, BE-48 PC-2 P1) and whether to open PC-7. | The cards' folders belong to no lane today (sessions.md section 5). | Proposed values are in the tracker with the note "lane proposed, LEAD to confirm"; if PC-7 is not opened, BE-44 and BE-45 go to PC-3 after BE-39. |
+| OQ-29 | BE-43 needs a text-generation method on the BE-36 adapter (today the interface is extraction only: `extractPaper`, `suggestTags`, `healthCheck`); who adds it, and does the BE-36 budget and redaction apply to chat text? | BE-FR-40, BE-NFR-31 to BE-NFR-35. | The BE-36 owner adds a `generateText` capability (same lane PC-5) with the same redaction, usage log and budget; BE-43 does not edit `ai-extraction/**`. |
 
 ## 13. Review record
 
@@ -602,5 +628,5 @@ Applied in the cards: BE-01 ADR-0020; BE-14 ADR-0021; BE-10 paths and ACs (versi
 
 Applied by the cards of 2026-10-19 (D53): BE-10 drops `question_submissions` and its three routes; BE-37 gains `GET /api/intake/files/:id/original` and the Submission note; BE-38 adds the `source_paper_id` pointer; BE-23 moves the teacher economy to "Not in B1 (D53/OWN-10)"; BE-24 gains the two Audio KBAT student routes with ACs from the mock.
 
-Still open: (1) BE-18 (not edited by this agent) must drop `POST /api/guru/question-papers` and `creates a pending submission via BE-10` in AC 6, because the upload is now `POST /api/intake/batches` (BE-37); (2) BE-19 and BE-18 `dskp_*` wording should say "teacher picking list only" (D53(h)); (3) BE-21's two working assumptions (its open questions 2 and 3: the intervention store and no officer endpoints in B1); (4) BE-37 open question 3: batch statuses versus the mock's `pending|processing|done|rejected` and `adminNotes`; (5) cards BE-41 to BE-48 and their requirements.
+Still open: (1) BE-18 (not edited by this agent) must drop `POST /api/guru/question-papers` and `creates a pending submission via BE-10` in AC 6, because the upload is now `POST /api/intake/batches` (BE-37); (2) BE-19 and BE-18 `dskp_*` wording should say "teacher picking list only" (D53(h)); (3) BE-21's two working assumptions (its open questions 2 and 3: the intervention store and no officer endpoints in B1); (4) BE-37 open question 3: batch statuses versus the mock's `pending|processing|done|rejected` and `adminNotes`; (5) cards BE-41 to BE-48 are integrated (BE-FR-38 to BE-FR-45, README and tracker rows; the lanes are proposals, OQ-28); the cross-card notes were added to BE-12, BE-13, BE-23 and BE-36 (OQ-29).
 

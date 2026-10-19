@@ -22,7 +22,7 @@
 - Mock: `src/modules/m21-sponsorship/mock/handlers/foster-application.ts` (the one route), `mock/repository/foster-applications.ts`, `mock/repository/types.ts` (`FosterApplicationRow`), `mock/tables/tables.ts`; client and messages `src/modules/m21-sponsorship/api/{foster-application,types}.ts`; copy `components/mohon/mohon-copy.ts`; mock test `src/modules/m21-sponsorship/__tests__/mock/foster-application.test.ts`
 - `docs/requirements/role-access-matrix.md` (Murid row 15 "Mohon Keluarga Angkat"); `docs/TRACKER.md` D48 (Penaja out of scope), D53
 - BE-05 `UsersRepository.findByEmail` (student lookup), BE-03 guards
-- Requirements: BE-FR-NEW-47 (wording proposed in the report; number assigned by the integrator of [URS 9.2](../../requirements/v2-backend-urs.md)); BE-NFR-06, BE-NFR-10
+- Requirements: BE-FR-44; BE-NFR-06, BE-NFR-10
 - API catalogue part B4 (economy, content, games): [economy-content-games.md, section "M21 Sponsorship and Anak Angkat" (M21-15)](../../architecture/v2-api-catalogue/economy-content-games.md#m21-sponsorship-and-anak-angkat-m21-sponsorship---1-route); OQ-API-B4-19, OQ-API-B4-20
 - Data model: [v2-data-model.md](../../architecture/v2-data-model.md) section 3.13 row `m21.*` (only the `foster_applications` part becomes a B1 table; `sponsors` and `foster_sponsorships` stay backlog) and global rules G-01 to G-18
 - Migration: [v2-data-migration.md](../../architecture/v2-data-migration.md) section 3 row `foster_applications` (Reshape), section 4.11 and Q7; plan [v2-backend-plan.md](../../architecture/v2-backend-plan.md) sections 5, 6, 14.7

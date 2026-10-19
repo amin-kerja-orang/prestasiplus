@@ -107,6 +107,7 @@ npm run be:test -- apps/api/test/conformance   # only after BE-31 is merged
 Do not guess these; write your working assumption in the PR and ask the lead (issue labelled `question`) if it blocks you.
 
 1. Where do the structured question definitions come from? The mock reads them from M04 structured questions; v2 has the part tree (BE-09). Working assumption: `structured_attempts` references a question id and version from BE-09 and the mock's response shape is kept; the lead confirms in the contract PR.
+2. Consumed by BE-48 (2026-10-19): BE-48 adds the read method `PracticeRepository.chapterAnswerCounts(userId, minAttempts)` returning `{chapterId, attempts, correct}[]` (SQL `GROUP BY chapter_id` over `practice_answers`, no join to `questions`) in `practice/reads/**`; keep BE-13's aggregates and indexes compatible with it (BE-48 AC 6 compares the two).
 
 ## Prompt for Claude Code
 
