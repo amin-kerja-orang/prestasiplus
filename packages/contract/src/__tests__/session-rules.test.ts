@@ -20,6 +20,7 @@ const base = {
   landingPath: '/admin',
   expiresAt: '2026-10-16T17:30:00+08:00',
   csrf: 'tok',
+  mustChangePassword: false,
 }
 const scopes: Record<string, Record<string, unknown>> = {
   national: { level: 'national', label: 'Kebangsaan' },

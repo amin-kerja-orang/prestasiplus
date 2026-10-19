@@ -13,6 +13,7 @@ export const ERROR_CODES = [
   'CONFLICT',
   'SERVER_ERROR',
   'RATE_LIMITED',
+  'PASSWORD_CHANGE_REQUIRED',
 ] as const
 export const ErrorCodeSchema = z.enum(ERROR_CODES).meta({ id: 'ErrorCode' })
 export type ErrorCode = z.infer<typeof ErrorCodeSchema>
@@ -26,6 +27,7 @@ export const ERROR_STATUS: Readonly<Record<ErrorCode, number>> = {
   CONFLICT: 409,
   SERVER_ERROR: 500,
   RATE_LIMITED: 429,
+  PASSWORD_CHANGE_REQUIRED: 403,
 }
 
 export const ErrorPayloadSchema = z
