@@ -159,6 +159,7 @@ const csv = (description: string, headers: HeaderDoc) => ({
 /** D57b: a response that carries a credential, a token or a bulk dump of minors' data must not be cached. */
 const NO_STORE: HeaderDoc = {
   'Cache-Control': { description: 'no-store (nothing is kept by a proxy or the browser cache).', schema: { type: 'string' } },
+  Pragma: { description: 'no-cache (HTTP/1.0 caches).', schema: { type: 'string' } },
 }
 
 /** D57a / BE-NFR-04: 429 of every write, both reset-password routes and the CSV exports. The numeric limits belong to the implementation card and the runbook. */
@@ -398,7 +399,7 @@ export function registerSchoolAdminPaths(registry: OpenAPIRegistry): void {
     description: 'The target must be an active teacher of the school. Replaces the hash at once and revokes the target sessions (not the caller). The new password (8 to 255 characters) is never echoed or logged. Rate limited (429).',
     request: { params: IdParams, headers: [csrf], body: body(SchoolAdminResetPasswordRequestSchema) },
     responses: {
-      200: json(SchoolAdminResetResultSchema, 'Reset; status "Pengguna berjaya dikemaskini.".'),
+      200: { ...json(SchoolAdminResetResultSchema, 'Reset; status "Pengguna berjaya dikemaskini.". Sent with Cache-Control: no-store and Pragma: no-cache (the request carries a password).'), headers: NO_STORE },
       401: UNAUTHORIZED,
       403: FORBIDDEN_INACTIVE,
       404: NOT_FOUND_USER,
@@ -504,7 +505,7 @@ export function registerSchoolAdminPaths(registry: OpenAPIRegistry): void {
     description: 'The target must be an active pupil of the school. Replaces the hash at once and revokes the target sessions (not the caller). The new password (8 to 255 characters) is never echoed or logged. This is the recovery path when the one-time credential of POST /admin-sekolah/pelajar was lost. Rate limited (429).',
     request: { params: IdParams, headers: [csrf], body: body(SchoolAdminResetPasswordRequestSchema) },
     responses: {
-      200: json(SchoolAdminResetResultSchema, 'Reset; status "Pengguna berjaya dikemaskini.".'),
+      200: { ...json(SchoolAdminResetResultSchema, 'Reset; status "Pengguna berjaya dikemaskini.". Sent with Cache-Control: no-store and Pragma: no-cache (the request carries a password).'), headers: NO_STORE },
       401: UNAUTHORIZED,
       403: FORBIDDEN_INACTIVE,
       404: NOT_FOUND_USER,
@@ -576,7 +577,7 @@ export function registerSchoolAdminPaths(registry: OpenAPIRegistry): void {
     responses: {
       200: csv('The CSV file.', {
         'Content-Disposition': contentDisposition,
-        'Cache-Control': { description: 'no-store', schema: { type: 'string' } },
+        ...NO_STORE,
       }),
       401: UNAUTHORIZED,
       403: err('FORBIDDEN "This action is unauthorized." (role not allowed, including a teacher; checked before the 404).'),

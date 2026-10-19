@@ -597,6 +597,28 @@ describe('school-admin contract: OpenAPI document', () => {
     expect(created.headers?.['Cache-Control']).toBeDefined()
   })
 
+  it('credential 201, both user CSVs and both reset-password 200s declare Cache-Control no-store and Pragma no-cache (D57b)', () => {
+    const targets: readonly [string, string, string][] = [
+      ['post', '/admin-sekolah/pelajar', '201'],
+      ['get', '/admin-sekolah/pelajar/export.csv', '200'],
+      ['get', '/admin-sekolah/guru/export.csv', '200'],
+      ['post', '/admin-sekolah/pelajar/{id}/reset-password', '200'],
+      ['post', '/admin-sekolah/guru/{id}/reset-password', '200'],
+      ['get', '/amaran/export/school/{id}', '200'],
+    ]
+    for (const [method, path, status] of targets) {
+      const headers = doc.paths[path]![method]!.responses[status]!.headers as Record<string, { description: string }> | undefined
+      expect(headers?.['Cache-Control']?.description, `${method} ${path}`).toMatch(/^no-store/)
+      expect(headers?.Pragma?.description, `${method} ${path}`).toMatch(/^no-cache/)
+    }
+  })
+
+  it('every non-GET route of this domain declares 429 with a Retry-After header', () => {
+    for (const [method, path] of MUTATING.filter(([, p]) => p.startsWith('/admin-sekolah'))) {
+      expect(doc.paths[path]![method]!.responses['429']?.headers?.['Retry-After'], `${method} ${path}`).toBeDefined()
+    }
+  })
+
   it('writes, reset-password routes and CSV exports document 429 RATE_LIMITED with Retry-After (D57a)', () => {
     const limited: readonly [string, string][] = [
       ...MUTATING.filter(([, p]) => p.startsWith('/admin-sekolah')),

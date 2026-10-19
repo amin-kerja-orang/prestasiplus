@@ -48624,6 +48624,12 @@
                 "schema": {
                   "type": "string"
                 }
+              },
+              "Pragma": {
+                "description": "no-cache (HTTP/1.0 caches).",
+                "schema": {
+                  "type": "string"
+                }
               }
             },
             "content": {
@@ -49002,7 +49008,21 @@
         },
         "responses": {
           "200": {
-            "description": "Reset; status \"Pengguna berjaya dikemaskini.\".",
+            "description": "Reset; status \"Pengguna berjaya dikemaskini.\". Sent with Cache-Control: no-store and Pragma: no-cache (the request carries a password).",
+            "headers": {
+              "Cache-Control": {
+                "description": "no-store (nothing is kept by a proxy or the browser cache).",
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "Pragma": {
+                "description": "no-cache (HTTP/1.0 caches).",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
             "content": {
               "application/json": {
                 "schema": {
@@ -49194,6 +49214,12 @@
                 "schema": {
                   "type": "string"
                 }
+              },
+              "Pragma": {
+                "description": "no-cache (HTTP/1.0 caches).",
+                "schema": {
+                  "type": "string"
+                }
               }
             },
             "content": {
@@ -49355,6 +49381,12 @@
               },
               "Cache-Control": {
                 "description": "no-store (nothing is kept by a proxy or the browser cache).",
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "Pragma": {
+                "description": "no-cache (HTTP/1.0 caches).",
                 "schema": {
                   "type": "string"
                 }
@@ -49641,7 +49673,21 @@
         },
         "responses": {
           "200": {
-            "description": "Reset; status \"Pengguna berjaya dikemaskini.\".",
+            "description": "Reset; status \"Pengguna berjaya dikemaskini.\". Sent with Cache-Control: no-store and Pragma: no-cache (the request carries a password).",
+            "headers": {
+              "Cache-Control": {
+                "description": "no-store (nothing is kept by a proxy or the browser cache).",
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "Pragma": {
+                "description": "no-cache (HTTP/1.0 caches).",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
             "content": {
               "application/json": {
                 "schema": {
@@ -49984,7 +50030,13 @@
                 }
               },
               "Cache-Control": {
-                "description": "no-store",
+                "description": "no-store (nothing is kept by a proxy or the browser cache).",
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "Pragma": {
+                "description": "no-cache (HTTP/1.0 caches).",
                 "schema": {
                   "type": "string"
                 }
