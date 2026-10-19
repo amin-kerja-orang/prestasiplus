@@ -16,6 +16,19 @@ async function parentUser(query: FixtureQuery): Promise<string> {
 let seq = 0
 const next = (prefix: string): string => `${prefix}${(seq += 1)}`
 
+async function parentSchool(query: FixtureQuery): Promise<string> {
+  const rows = await query<{ id: string }>(`insert into schools (name) values ('Sekolah Contoh') returning id::text as id`)
+  return (rows[0] as { id: string }).id
+}
+
+async function parentPackage(query: FixtureQuery): Promise<string> {
+  const rows = await query<{ id: string }>(
+    `insert into school_packages (code, name, slug, education_level, form_level, price_annual)
+     values ('T4', 'Pakej Contoh', 'pakej-contoh', 'spm', 't4', 30.00) returning id::text as id`,
+  )
+  return (rows[0] as { id: string }).id
+}
+
 /** BE-08: curriculum parents (codes are stored upper-case, a CHECK enforces it; fictitious names). */
 async function parentLevel(query: FixtureQuery): Promise<string> {
   const rows = await query<{ id: string }>(
@@ -42,16 +55,34 @@ async function parentChapter(query: FixtureQuery): Promise<string> {
 }
 
 export const MODEL_FIXTURES: Record<string, Fixture> = {
-  // chapters: an in-tree chapter needs a name and a level (ck_chapters_in_tree_complete).
+  // chapters (BE-08): an in-tree chapter needs a name and a level (ck_chapters_in_tree_complete).
   chapters: async (query) => ({ subject_id: await parentSubject(query), education_level_id: await parentLevel(query), name: 'Bab Contoh' }),
-  // education_levels: code must be upper-case, stage one of three.
+  comp_students: async (query) => ({ user_id: await parentUser(query), package_expires_on: '2027-01-01' }),
+  // education_levels (BE-08): code must be upper-case, stage one of three.
   education_levels: async () => ({ code: next('FXL'), stage: 'primary' }),
+  // files (BE-04): mime, sha256 and purpose have check constraints.
+  files: { public_id: 'AAAAAAAAAAAAAAAAAAAAAA', purpose: 'avatar', mime: 'image/png', size_bytes: 1, sha256: '0'.repeat(64), storage_key: 'avatar/migration-fixture.png' },
+  parent_invites: async (query) => ({
+    student_id: await parentUser(query),
+    token_hash: 'a'.repeat(64),
+    expires_at: '2027-01-01T00:00:00Z',
+  }),
+  parent_links: async (query) => ({ parent_id: await parentUser(query), student_id: await parentUser(query) }),
+  school_packages: { code: 'T5', name: 'Pakej T5', slug: 'pakej-t5', education_level: 'spm', form_level: 't5', price_annual: 30 },
+  school_subscriptions: async (query) => ({
+    school_id: await parentSchool(query),
+    school_package_id: await parentPackage(query),
+    package_tier: 'full',
+    status: 'active',
+    starts_on: '2026-01-01',
+    ends_on: '2026-12-31',
+  }),
   // schools: name (text) is generated; nothing else is required.
-  // subject_levels: both parents must exist.
+  // subject_levels (BE-08): both parents must exist.
   subject_levels: async (query) => ({ subject_id: await parentSubject(query), education_level_id: await parentLevel(query) }),
-  // subjects: code must be upper-case.
+  // subjects (BE-08): code must be upper-case.
   subjects: async () => ({ code: next('FXS') }),
-  // topics: the chapter must exist.
+  // topics (BE-08): the chapter must exist.
   topics: async (query) => ({ chapter_id: await parentChapter(query) }),
   user_roles: async (query) => ({ user_id: await parentUser(query), role: 'student' }),
   user_scopes: async (query) => ({ user_id: await parentUser(query), role: 'student', level: 'self' }),

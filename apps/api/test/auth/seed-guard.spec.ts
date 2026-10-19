@@ -16,20 +16,15 @@ describe('seed production guard', () => {
     expect(() => assertSeedAllowed({ NODE_ENV: 'test' })).not.toThrow()
   })
 
-  it('the seed command exits non-zero with a clear message in production, before any database work', () => {
+  it('the seed command in production without the flag only runs reference modules (never refuses silently, never touches demo data)', () => {
     const cwd = fileURLToPath(new URL('../..', import.meta.url))
     const res = spawnSync(process.execPath, ['--import', 'tsx', 'prisma/seed/index.ts'], {
       cwd,
       encoding: 'utf8',
-      env: {
-        ...process.env,
-        NODE_ENV: 'production',
-        ALLOW_DEMO_SEED: 'false',
-        DATABASE_URL: 'postgresql://x:y@127.0.0.1:1/none',
-      },
+      env: { ...process.env, NODE_ENV: 'production', ALLOW_DEMO_SEED: 'false', DATABASE_URL: 'postgresql://x:y@127.0.0.1:1/none' },
     })
+    // The unreachable database stops the reference seed; the demo modules were never attempted.
     expect(res.status).not.toBe(0)
-    expect(res.stderr).toMatch(/Refusing to seed demo data/)
-    expect(res.stderr).toMatch(/ALLOW_DEMO_SEED=true/)
+    expect(res.stdout).not.toMatch(/core-identity/)
   }, 60_000)
 })

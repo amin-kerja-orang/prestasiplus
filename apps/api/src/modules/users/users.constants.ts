@@ -19,9 +19,10 @@ export const BULK_DELETE_MAX_IDS = 500
 export const PAGE_NUMBER_MAX = 10_000_000
 
 /**
- * Roles a school_admin can see until the parent links table exists (BE-25): a parent is in scope
- * only when ALL linked children are in the caller's school, and that cannot be known yet, so
- * parents stay hidden (fail closed). `MANAGEABLE_TARGET_ROLES.school_admin` already lists `parent`.
+ * Roles of the NON-parent users a school_admin can see (own school only). A parent is judged by its
+ * links, not by its own school (BE-25, LEAD decision 2026-10-19, card AC 7): visible only with AT
+ * LEAST ONE linked child and EVERY linked child in the caller's school. See
+ * `UsersRepository.visibleWhere`. `ASSIGNABLE_ROLES.school_admin` still excludes `parent`.
  */
 export const SCHOOL_ADMIN_VISIBLE_ROLES: readonly RoleCode[] = ['student', 'teacher']
 

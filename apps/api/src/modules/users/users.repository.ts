@@ -1,6 +1,7 @@
 import { Inject, Injectable } from '@nestjs/common'
 import { ROLE_CODES, type RoleCode } from '@pp/contract'
 
+import { ApiError } from '../../common/errors/api-error'
 import { ScopeFilter } from '../../common/scope/scope-filter'
 import type { Prisma } from '../../db/generated/client'
 import { idFromString, idToString, isIdString } from '../../db/ids'
@@ -65,7 +66,21 @@ export interface NewUserRow {
   icMasked: string | null
   isActive: boolean
   createdById: string
+  /** DELIMa id (student import); omitted: null. */
+  idDelima?: string | null
+  /** Complimentary student flag; omitted: false. */
+  isComplimentary?: boolean
   now: Date
+}
+
+/** What the subscription access rules read from one user (BE-25 `SubscriptionService`). */
+export interface AccessFacts {
+  schoolId: string | null
+  trialQuestionsUsed: number
+  /** Holds the student role (a parent or teacher with a school is not covered by the school subscription). */
+  isStudent: boolean
+  /** `YYYY-MM-DD` the complimentary package ends (that day included), or null for any other user. */
+  compExpiresOn: string | null
 }
 
 export interface UserPatchRow {
@@ -227,17 +242,32 @@ export class UsersRepository {
   }
 
   /**
-   * Users the caller may see and change. Admin: everyone. school_admin: users of its own school
-   * whose roles are all in `SCHOOL_ADMIN_VISIBLE_ROLES` (and at least one is); any other target
-   * is "not found" (never 403).
+   * Users the caller may see and change. Admin: everyone. school_admin (any other target is "not
+   * found", never 403):
+   * - student/teacher: of its own school, all roles in `SCHOOL_ADMIN_VISIBLE_ROLES`, at least one;
+   * - parent (BE-25, AC 7): a parent-only account with AT LEAST ONE linked child (`some`) and EVERY
+   *   linked child in the caller's school (`every`). `every` alone is true for a parent with no
+   *   children, which would expose every childless parent nationwide, so `some` is required too
+   *   (fail closed). The parent's own `school_id` does not matter (parents usually have none).
    */
   visibleWhere(caller: Caller): Prisma.UserWhereInput {
     const scope = this.scopeWhere(caller)
     if (caller.isAdmin) return scope
     const visible = [...SCHOOL_ADMIN_VISIBLE_ROLES]
-    return {
+    const staffAndStudents: Prisma.UserWhereInput = {
       AND: [scope, { roles: { some: { role: { in: visible } } } }, { roles: { none: { role: { notIn: visible } } } }],
     }
+    if (caller.schoolId === null || !isIdString(caller.schoolId)) return staffAndStudents
+    const school = idFromString(caller.schoolId)
+    const parents: Prisma.UserWhereInput = {
+      AND: [
+        { roles: { some: { role: 'parent' } } },
+        { roles: { none: { role: { not: 'parent' } } } },
+        { parentLinksAsParent: { some: {} } },
+        { parentLinksAsParent: { every: { student: { schoolId: school } } } },
+      ],
+    }
+    return { OR: [staffAndStudents, parents] }
   }
 
   async findVisible(caller: Caller, id: string): Promise<UserRecord | null> {
@@ -265,7 +295,12 @@ export class UsersRepository {
   async list(caller: Caller, filter: UserListFilter): Promise<{ rows: UserRecord[]; total: number }> {
     const and: Prisma.UserWhereInput[] = [this.visibleWhere(caller)]
     if (filter.role) and.push({ roles: { some: { role: filter.role } } })
-    if (filter.schoolId !== undefined) and.push({ schoolId: idFromString(filter.schoolId) })
+    if (filter.schoolId !== undefined) {
+      // A school_admin may only filter by its own school: another school's filter matches nothing, so a
+      // visible parent carrying a hidden school cannot be found by guessing it (AC 7).
+      if (!caller.isAdmin && filter.schoolId !== caller.schoolId) return { rows: [], total: 0 }
+      and.push({ schoolId: idFromString(filter.schoolId) })
+    }
     if (filter.isActive !== undefined) and.push({ isActive: filter.isActive })
     if (filter.search) and.push(textSearch(filter.search))
     const where: Prisma.UserWhereInput = { AND: and }
@@ -298,7 +333,7 @@ export class UsersRepository {
   async schoolIdsWithUsers(caller: Caller): Promise<string[]> {
     const groups = await this.prisma.client.user.groupBy({
       by: ['schoolId'],
-      where: { AND: [this.visibleWhere(caller), { schoolId: { not: null } }] },
+      where: { AND: [this.visibleWhere(caller), this.scopeWhere(caller), { schoolId: { not: null } }] },
     })
     return groups.flatMap((g) => (g.schoolId === null ? [] : [idToString(g.schoolId)]))
   }
@@ -344,6 +379,25 @@ export class UsersRepository {
       select: STUDENT_SELECT,
       orderBy: [{ name: 'asc' }, { id: 'asc' }],
       take: limit,
+    })
+    return rows.map(toStudent)
+  }
+
+  /**
+   * Children linked to a parent, A to Z. A school_admin gets only the children of its own school
+   * (the contract hides the others); admin gets all.
+   */
+  async linkedStudents(caller: Caller, parentId: string): Promise<StudentRow[]> {
+    if (!isIdString(parentId)) return []
+    const school = !caller.isAdmin && caller.schoolId !== null && isIdString(caller.schoolId) ? idFromString(caller.schoolId) : null
+    if (!caller.isAdmin && school === null) return []
+    const rows = await this.prisma.client.user.findMany({
+      where: {
+        parentLinksAsStudent: { some: { parentId: idFromString(parentId) } },
+        ...(school === null ? {} : { schoolId: school }),
+      },
+      select: STUDENT_SELECT,
+      orderBy: [{ name: 'asc' }, { id: 'asc' }],
     })
     return rows.map(toStudent)
   }
@@ -406,10 +460,14 @@ export class UsersRepository {
     return idToString(row.id)
   }
 
-  async update(id: string, patch: UserPatchRow): Promise<void> {
+  /**
+   * Updates one user. With `caller`, the statement itself re-checks `visibleWhere`, so a parent link added
+   * between the service's visibility check and this write cannot be bypassed (0 rows is "not found").
+   */
+  async update(id: string, patch: UserPatchRow, caller?: Caller): Promise<void> {
     const { now, schoolId, ...rest } = patch
-    await this.prisma.client.user.update({
-      where: { id: idFromString(id) },
+    const res = await this.prisma.client.user.updateMany({
+      where: caller ? { AND: [{ id: idFromString(id) }, this.visibleWhere(caller)] } : { id: idFromString(id) },
       data: {
         ...(rest.name !== undefined ? { name: rest.name } : {}),
         ...(rest.email !== undefined ? { email: rest.email } : {}),
@@ -425,6 +483,7 @@ export class UsersRepository {
         updatedAt: now,
       },
     })
+    if (res.count === 0) throw ApiError.of('NOT_FOUND')
   }
 
   /** Makes the role list of a user exactly `roles` (adds the missing, removes the others). */
@@ -486,11 +545,48 @@ export class UsersRepository {
     for (const id of ids.filter(isIdString)) await this.sessions.revokeAllFor(idFromString(id))
   }
 
+  /** Which of these IC hashes already belong to an account (duplicate check of the complimentary register). */
+  async existingIcHashes(hashes: readonly string[]): Promise<Set<string>> {
+    const unique = [...new Set(hashes)]
+    if (unique.length === 0) return new Set()
+    const rows = await this.prisma.client.$queryRaw<{ h: string }[]>`
+      SELECT DISTINCT ic_hash AS h FROM users WHERE ic_hash = ANY(${unique}::text[])`
+    return new Set(rows.map((r) => r.h))
+  }
+
+  /** School, trial counter and complimentary package end of one user, or null for an unknown id. */
+  async accessFacts(userId: string): Promise<AccessFacts | null> {
+    if (!isIdString(userId)) return null
+    const row = await this.prisma.client.user.findUnique({
+      where: { id: idFromString(userId) },
+      select: { schoolId: true, trialQuestionsUsed: true, roles: { where: { role: 'student' }, select: { id: true } }, compStudent: { select: { packageExpiresOn: true } } },
+    })
+    if (!row) return null
+    return {
+      schoolId: row.schoolId === null ? null : idToString(row.schoolId),
+      trialQuestionsUsed: row.trialQuestionsUsed,
+      isStudent: row.roles.length > 0,
+      compExpiresOn: row.compStudent ? row.compStudent.packageExpiresOn.toISOString().slice(0, 10) : null,
+    }
+  }
+
+  /** Adds exactly 1 to the trial counter in one atomic statement; the new value, or null for an unknown id. */
+  async incrementTrial(userId: string): Promise<number | null> {
+    if (!isIdString(userId)) return null
+    const rows = await this.prisma.client.$queryRaw<{ n: number }[]>`
+      UPDATE users SET trial_questions_used = trial_questions_used + 1
+       WHERE id = ${idFromString(userId)}
+   RETURNING trial_questions_used AS n`
+    return rows[0]?.n ?? null
+  }
+
   /** Hard delete; roles, scopes and sessions go with the user (FK cascade), audit actors become null. */
-  async remove(ids: readonly string[]): Promise<number> {
+  async remove(ids: readonly string[], caller?: Caller): Promise<number> {
     const userIds = ids.filter(isIdString).map(idFromString)
     if (userIds.length === 0) return 0
-    const res = await this.prisma.client.user.deleteMany({ where: { id: { in: userIds } } })
+    const res = await this.prisma.client.user.deleteMany({
+      where: caller ? { AND: [{ id: { in: userIds } }, this.visibleWhere(caller)] } : { id: { in: userIds } },
+    })
     return res.count
   }
 }
@@ -509,6 +605,8 @@ function toCreateData(input: NewUserRow): Prisma.UserUncheckedCreateInput {
     icMasked: input.icMasked,
     isActive: input.isActive,
     createdById: idFromString(input.createdById),
+    ...(input.idDelima !== undefined ? { idDelima: input.idDelima } : {}),
+    ...(input.isComplimentary !== undefined ? { isComplimentary: input.isComplimentary } : {}),
     createdAt: input.now,
     updatedAt: input.now,
   }

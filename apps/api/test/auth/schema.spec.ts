@@ -95,7 +95,7 @@ describe('identity schema (migration 0002_identity)', () => {
         order by 1`,
     )
     expect(ident.map((r) => r.table_name)).toEqual(
-      expect.arrayContaining(['audit_events', 'login_attempts', 'schools', 'user_roles', 'user_scopes', 'users']),
+      expect.arrayContaining(['audit_events', 'files', 'login_attempts', 'schools', 'user_roles', 'user_scopes', 'users']),
     )
     expect(new Set(ident.map((r) => r.identity_generation))).toEqual(new Set(['ALWAYS']))
   })
