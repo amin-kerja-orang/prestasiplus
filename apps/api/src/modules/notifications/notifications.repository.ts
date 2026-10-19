@@ -103,7 +103,9 @@ export class NotificationsRepository {
   async markRead(userId: string, id: string, now: Date): Promise<boolean> {
     const uid = idFromString(userId)
     const nid = idFromString(id)
-    await this.prisma.client.notification.updateMany({ where: { userId: uid, id: nid, readAt: null }, data: { readAt: now } })
+    const res = await this.prisma.client.notification.updateMany({ where: { userId: uid, id: nid, readAt: null }, data: { readAt: now } })
+    if (res.count === 1) return true
+    // Count 0: already read (still the owner's), or unknown / foreign.
     return (await this.prisma.client.notification.count({ where: { userId: uid, id: nid } })) === 1
   }
 

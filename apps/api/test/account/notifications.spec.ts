@@ -6,7 +6,7 @@ import {
   NotificationSuccessSchema,
   NotificationUnreadCountSchema,
 } from '@pp/contract'
-import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest'
+import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import {
   ADMIN,
@@ -178,6 +178,8 @@ describe('notifications inbox (BE-06 part B)', () => {
     expect(res.status).toBe(200)
     const left = (await t.db.query<{ id: string }>('select id::text from notifications order by id')).map((r) => r.id)
     expect(left).toEqual([mine[0], foreign])
+    const row = await t.db.query<{ read_at: Date | null }>('select read_at from notifications where id = $1', [foreign])
+    expect(row[0]?.read_at).toBeNull()
   })
 
   it('bulk bodies: missing, empty, non-list or over-cap ids are 422 with fields.ids', async () => {
@@ -189,6 +191,46 @@ describe('notifications inbox (BE-06 part B)', () => {
     expect(err.fields?.ids).toMatch(/500/)
     const ok500 = await me.post('/me/notifications/bulk-delete', { ids: Array.from({ length: 500 }, (_, i) => String(i + 1)) })
     expect(ok500.status).toBe(200)
+  })
+
+  it('meta.counts and totals never include another user rows, with or without filters', async () => {
+    await seed(meId, 2)
+    await seed(otherId, 5, { read: true })
+    const body = NotificationListResponseSchema.parse((await me.get('/me/notifications?filter=read')).body)
+    expect(body.data).toEqual([])
+    expect(body.meta.totalItems).toBe(0)
+    expect(body.meta.counts).toEqual({ all: 2, unread: 2 })
+  })
+
+  it('repeated or odd query keys are ignored, never a 422 (first value wins; non-strings ignored)', async () => {
+    await seed(meId, 25)
+    await seed(meId, 1, { read: true })
+    const get = async (q: string) => {
+      const res = await me.get(`/me/notifications${q}`)
+      expect(res.status, JSON.stringify(res.body)).toBe(200)
+      return NotificationListResponseSchema.parse(res.body)
+    }
+    expect((await get('?page=2&page=1')).meta.page).toBe(2)
+    expect((await get('?page=abc&page=2')).meta.page).toBe(1)
+    expect((await get('?filter=read&filter=unread')).meta.totalItems).toBe(1)
+    expect((await get('?type=system&type=reminder&filter=nope&filter=read')).meta.totalItems).toBe(26)
+    expect((await get('?filter[a]=1&page[b]=2&type[]=x')).meta.page).toBe(1)
+  })
+
+  it('a bulk id longer than 64 characters is 422 with fields.ids.N (contract Id max length)', async () => {
+    const err = expectError(await me.post('/me/notifications/bulk-read', { ids: ['1', '9'.repeat(65)] }), 'VALIDATION_ERROR')
+    expect(Object.keys(err.fields ?? {})).toEqual(['ids.1'])
+  })
+
+  it('an overloaded database is 429 RATE_LIMITED, never a 500', async () => {
+    const spy = vi.spyOn(t.repo, 'unreadCount').mockRejectedValueOnce(Object.assign(new Error('pool exhausted'), { code: 'P2024' }))
+    try {
+      const res = await me.get('/me/notifications/unread-count')
+      expectError(res, 'RATE_LIMITED', 'Too Many Attempts.')
+    } finally {
+      spy.mockRestore()
+    }
+    expect((await me.get('/me/notifications/unread-count')).status).toBe(200)
   })
 
   it('writes need the CSRF header (403 CSRF_INVALID)', async () => {
@@ -207,7 +249,8 @@ describe('notification write throttle (D57a)', () => {
     await t.close()
   })
 
-  it('writes are 429 RATE_LIMITED with Retry-After after the ceiling; reads have their own counter', async () => {
+  // Counters are per user and per bucket, so each test uses its own account and stays order independent.
+  it('writes are 429 RATE_LIMITED with Retry-After after the ceiling, and reads are not affected', async () => {
     const me = apiOf(await login(t, STUDENT))
     for (let i = 0; i < 3; i++) expect((await me.post('/me/notifications/read-all')).status).toBe(200)
     const res = await me.post('/me/notifications/read-all')
@@ -215,8 +258,14 @@ describe('notification write throttle (D57a)', () => {
     expect(err.retryAfter).toBeGreaterThan(0)
     expect(Number(res.headers['retry-after'])).toBeGreaterThan(0)
     expect((await me.get('/me/notifications')).status).toBe(200)
+  })
+
+  it('reads are 429 after their own ceiling (inbox and unread-count share it), and writes are not affected', async () => {
+    const me = apiOf(await login(t, TEACHER))
+    expect((await me.get('/me/notifications')).status).toBe(200)
     expect((await me.get('/me/notifications/unread-count')).status).toBe(200)
     expectError(await me.get('/me/notifications'), 'RATE_LIMITED', 'Too Many Attempts.')
+    expect((await me.post('/me/notifications/read-all')).status).toBe(200)
   })
 })
 
@@ -243,12 +292,38 @@ describe('NotificationsService.push', () => {
     expect(rows).toHaveLength(2) // the push option created nothing extra
   })
 
-  it('rejects a category outside the contract enum, empty or over-long text, and a bad user id', async () => {
+  it('rejects a category outside the contract enum, empty text, an over-long type and a bad user id', async () => {
     await expect(t.service.push(meId, { type: 'x', category: 'bogus' as never, title: 'a', body: 'b' })).rejects.toThrow()
     await expect(t.service.push(meId, { type: 'x', title: '', body: 'b' })).rejects.toThrow()
-    await expect(t.service.push(meId, { type: 'x', title: 'a'.repeat(201), body: 'b' })).rejects.toThrow(/too long/)
-    await expect(t.service.push(meId, { type: 'x', title: 'a', body: 'b'.repeat(2001) })).rejects.toThrow(/too long/)
+    await expect(t.service.push(meId, { type: '', title: 'a', body: 'b' })).rejects.toThrow()
     await expect(t.service.push(meId, { type: 't'.repeat(65), title: 'a', body: 'b' })).rejects.toThrow(/too long/)
     await expect(t.service.push('abc', { type: 'x', title: 'a', body: 'b' })).rejects.toThrow()
+  })
+
+  it('truncates a long title (200) and body (2000) with an ellipsis instead of throwing', async () => {
+    const item = await t.service.push(meId, { type: 'x', title: 'a'.repeat(500), body: 'b'.repeat(5000) })
+    expect(item.title).toHaveLength(200)
+    expect(item.title.endsWith('…')).toBe(true)
+    expect(item.body).toHaveLength(2000)
+    expect(item.body.endsWith('…')).toBe(true)
+    const exact = await t.service.push(meId, { type: 'x', title: 'a'.repeat(200), body: 'b'.repeat(2000) })
+    expect(exact.title).toBe('a'.repeat(200))
+    expect(exact.body).toBe('b'.repeat(2000))
+  })
+
+  it('joins the ambient transaction: a rollback leaves no row, a commit keeps it', async () => {
+    const before = (await t.db.query('select 1 from notifications where type = $1', ['tx_probe'])).length
+    await expect(
+      t.prisma.transaction(async () => {
+        await t.service.push(meId, { type: 'tx_probe', title: 'a', body: 'b' })
+        expect(await t.db.query('select 1 from notifications where type = $1', ['tx_probe'])).toHaveLength(before) // not visible outside yet
+        throw new Error('rollback')
+      }),
+    ).rejects.toThrow('rollback')
+    expect(await t.db.query('select 1 from notifications where type = $1', ['tx_probe'])).toHaveLength(before)
+    await t.prisma.transaction(async () => {
+      await t.service.push(meId, { type: 'tx_probe', title: 'a', body: 'b' })
+    })
+    expect(await t.db.query('select 1 from notifications where type = $1', ['tx_probe'])).toHaveLength(before + 1)
   })
 })

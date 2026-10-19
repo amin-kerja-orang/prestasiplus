@@ -49,6 +49,9 @@ const toItem = (r: NotificationRow): NotificationItem => ({
   createdAt: toMytTimestamp(r.createdAt),
 })
 
+/** Cuts `text` to at most `max` characters, the last one being an ellipsis. */
+const truncate = (text: string, max: number): string => (text.length <= max ? text : `${text.slice(0, max - 1)}…`)
+
 /** Valid, de-duplicated ids; anything that cannot be an id matches nothing, as a foreign id does. */
 const idsOf = (ids: readonly string[]): string[] => [...new Set(ids.filter(isIdString))]
 
@@ -103,18 +106,32 @@ export class NotificationsService {
 
   /**
    * Creates an unread notification for `userId`. Called by other modules (BE-24, BE-36, the BE-06
-   * account flows). `category` must be one of the contract categories or null/omitted; `type` is an
-   * open-ended lower-case code; lengths are bounded (`NOTIFICATION_LIMITS`). A bad input is a
-   * programming error and throws. `options.push` is a no-op hook in B1 (no push provider).
+   * account flows). It joins the ambient transaction (`prisma.transaction`) when the caller has one,
+   * so a rollback removes the notification too.
+   *
+   * Never throws over text length: `title` is cut to 200 and `body` to 2000 characters with a
+   * trailing ellipsis, so a long message cannot break the caller's flow. It still throws on
+   * programming errors: a `category` outside the contract enum (or not null/omitted), an empty or
+   * over-long `type` (max 64), an empty `title` or `body`, or a bad `userId`.
+   *
+   * `options.push` is a no-op hook in B1 (no push provider).
+   * TODO(push-provider card, not yet allocated): act on `options.push` once a push provider exists.
    */
   async push(userId: string, input: PushInput, options: PushOptions = {}): Promise<NotificationItem> {
     if (!isIdString(userId)) throw new RangeError('NotificationsService.push: invalid user id')
     const parsed = NotificationInputSchema.parse(input)
-    if (parsed.type.length > NOTIFICATION_LIMITS.type || parsed.title.length > NOTIFICATION_LIMITS.title || parsed.body.length > NOTIFICATION_LIMITS.body) {
-      throw new RangeError('NotificationsService.push: type, title or body is too long')
-    }
+    if (parsed.type.length > NOTIFICATION_LIMITS.type) throw new RangeError('NotificationsService.push: type is too long')
     void options.push // B1: no push provider, intentionally unused.
-    const row = await this.repo.create(userId, { type: parsed.type, category: parsed.category ?? null, title: parsed.title, body: parsed.body }, this.clock.now())
+    const row = await this.repo.create(
+      userId,
+      {
+        type: parsed.type,
+        category: parsed.category ?? null,
+        title: truncate(parsed.title, NOTIFICATION_LIMITS.title),
+        body: truncate(parsed.body, NOTIFICATION_LIMITS.body),
+      },
+      this.clock.now(),
+    )
     return toItem(row)
   }
 

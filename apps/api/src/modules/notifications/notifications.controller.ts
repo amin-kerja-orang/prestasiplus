@@ -19,6 +19,16 @@ function me(req: Req): string {
   return auth.userId
 }
 
+/** A repeated key (`?page=1&page=2`) arrives as an array: the first string wins; anything else is ignored. */
+const first = (v: unknown): string | undefined => {
+  const x = Array.isArray(v) ? v[0] : v
+  return typeof x === 'string' ? x : undefined
+}
+
+/** Query values are never a 422 (contract): odd or repeated values are coerced, then parsed. */
+const listQueryOf = (raw: Record<string, unknown>): z.infer<typeof NotificationListQuerySchema> =>
+  new ZodValidationPipe(NotificationListQuerySchema).transform({ filter: first(raw.filter), type: first(raw.type), page: first(raw.page) })
+
 const bulkIds = (raw: unknown): string[] => new ZodValidationPipe(NotificationBulkRequestSchema).transform(raw ?? {}).ids
 
 /** The signed-in user's inbox (any role, own items only). Every answer is `no-store`. */
@@ -30,8 +40,8 @@ export class NotificationsController {
 
   @Get()
   @RateLimit(LIMITS.read)
-  list(@Req() req: Req, @Query(new ZodValidationPipe(NotificationListQuerySchema)) query: z.infer<typeof NotificationListQuerySchema>) {
-    return this.notifications.list(me(req), query)
+  list(@Req() req: Req, @Query() raw: Record<string, unknown>) {
+    return this.notifications.list(me(req), listQueryOf(raw))
   }
 
   @Get('unread-count')

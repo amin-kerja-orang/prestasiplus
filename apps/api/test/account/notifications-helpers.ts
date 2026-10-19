@@ -12,6 +12,8 @@ import { AuthModule } from '../../src/modules/auth'
 import { NotificationsModule, NotificationsService } from '../../src/modules/notifications'
 import { START } from '../auth/helpers'
 import { createTestDatabase } from '../support/db'
+import { PrismaService } from '../../src/db/prisma.service'
+import { NotificationsRepository } from '../../src/modules/notifications/notifications.repository'
 import type { UsersTestApp } from '../users/helpers'
 
 export { ADMIN, STUDENT, TEACHER, apiOf, login } from '../users/helpers'
@@ -20,6 +22,8 @@ export type { Api, UsersTestApp } from '../users/helpers'
 
 export interface NotificationsTestApp extends UsersTestApp {
   service: NotificationsService
+  repo: NotificationsRepository
+  prisma: PrismaService
 }
 
 /** Nest app with the auth and notifications modules on a private migrated + identity-seeded database. */
@@ -58,6 +62,8 @@ export async function bootNotificationsApp(env: Record<string, string | undefine
     db,
     clock,
     service: app.get(NotificationsService),
+    repo: app.get(NotificationsRepository),
+    prisma: app.get(PrismaService),
     http: () => request(app.getHttpServer()) as unknown as ReturnType<UsersTestApp['http']>,
     agent: () => request.agent(app.getHttpServer()),
     async close() {
