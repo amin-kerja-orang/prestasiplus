@@ -37,10 +37,11 @@ Many sessions work at the same time, on one PC or on many. Each session is an in
    cd ../pp-<card-id>
    npm ci
    ```
-5. **Claim by pushing the branch** right away (section 2). The push is the claim:
+5. **Check `docs/plan/reviews/`** for a file named after any card you hold: fix those first.
+6. **Claim by pushing the branch** right away (section 2). The push is the claim:
    - If the push is rejected because the branch exists, another session won. Remove your worktree and take the next free card.
    - Add the draft PR when `gh` works.
-6. **Nothing free?** Report `idle` in one line and stop. The LEAD opens more cards.
+7. **Nothing free?** Report `idle` in one line and stop. The LEAD opens more cards.
 
 **Resume** a card only when the user's prompt says so ("Continue BE-xx"). Then work in that card's existing branch.
 
@@ -73,6 +74,9 @@ A PC may claim **only** cards listed here. A card that is not listed is closed, 
 | Card | Mode | Opened | Note |
 |---|---|---|---|
 | BE-01 | full | 2026-10-19 | Scaffold + CI; first card on the critical path. |
+| BE-02 | full (stacked) | 2026-10-19 | Group A, for the holder of BE-01. Branch `be/BE-02-db-orm` from `origin/be/BE-01-scaffold-ci`, not from feature/v2-backend. Rebase onto feature/v2-backend after BE-01 merges. The LEAD merges BE-02 only after BE-01. |
+| BE-34 | full (stacked) | 2026-10-19 | Group A. Migration kit, stacked on `origin/be/BE-02-db-orm` (branch `be/BE-34-migration-kit`). Rebase onto feature/v2-backend after BE-02 merges; the LEAD merges BE-34 only after BE-02. |
+| BE-31 | harness-only | 2026-10-19 | Group A. Build the conformance harness (`packages/contract-tests/**` and its runner) and run it against the frontend mock now. Do not add the API-target wiring until BE-03 merges. Branch `be/BE-31-conformance-harness`. |
 | BE-05 | contract-only | 2026-10-19 | Users and schools: `packages/contract/src/{users,schools}/**`. |
 | BE-08 | contract-only | 2026-10-19 | Curriculum: `packages/contract/src/curriculum/**`. |
 | BE-09 | contract-only | 2026-10-19 | Question bank core: `packages/contract/src/questions/**`. |
@@ -90,6 +94,7 @@ A PC may claim **only** cards listed here. A card that is not listed is closed, 
 | BE-36 | contract-only | 2026-10-19 | AI adapter wire types: `packages/contract/src/ai/**`. |
 | BE-41 | contract-only | 2026-10-19 | SPM hub (M06): `packages/contract/src/spm/**`. |
 | BE-48 | contract-only | 2026-10-19 | Heatmap: `packages/contract/src/heatmap/**`. |
+| BE-13 | contract-only | 2026-10-19 | Practice read models (Group B): `packages/contract/src/practice/reads/**` only; do not edit BE-12's files in `practice/`. |
 | BE-16 | contract-only | 2026-10-19 | Bijak attempts: `packages/contract/src/bijak/attempts/**` only (BE-15 owns `bijak/papers`). Foreign attempt = 403 (D54b). |
 | BE-18 | contract-only | 2026-10-19 | Missions and question sets: `packages/contract/src/classes/{missions,question-sets}/**` only (BE-17 owns the rest of `classes/`). |
 | BE-20 | contract-only | 2026-10-19 | Analytics and Kirkpatrick: `packages/contract/src/reports/{analytics,kirkpatrick}/**` only (BE-19 owns `reports/performance`). |
@@ -115,6 +120,10 @@ Rules for `contract-only`:
 
 ### Lead notices (current instructions; newest first)
 
+- 2026-10-19 17:00: **D59 (user):** IC reset stays for all roles (with D55 limits and a notification); initial passwords are random per account, shown once, with mustChangePassword (no shared default); Battle search covers all schools; the shared 429 response is coming to common/ (LEAD). **Reviewers are now read-only** (no worktrees, no npm); the LEAD runs the checks at merge.
+- 2026-10-19 16:20: **Group A opened:** BE-02 (database, stacked on the BE-01 branch, for BE-01's holder) and BE-31 harness-only (conformance runner against the mock). New mode `harness-only` means only the parts that need no unmerged dependency.
+- 2026-10-19 16:05: **D58 (TRACKER)** covers BE-45 server-checked solo games, BE-39 [PROPOSED] copy, the BE-06 rate-limit copy, and the BE-05 and BE-25 rules. The base lint failure (`_stats` in the BE-12 test) is fixed here. **Worktree rule:** before `npm ci` or `npm install` in a worktree, check `(Get-Item node_modules -Force).LinkType`; if it is a junction, delete the link with `.Delete()` first. A junctioned install wiped the main node_modules today.
+- 2026-10-19 15:45: **Review feedback now lives in `docs/plan/reviews/<card>.md`** on this branch. Changes are requested for BE-05, BE-09, BE-19 and BE-25 (Group A) and for BE-06 and BE-21 (Group B). The holder fixes the branch, rebases on origin/feature/v2-backend, and sets the row back to `review`. **D57 security defaults** (TRACKER) apply to every contract: 429 on writes and public lookups, no-store on credentials and tokens, role and scope limits, and parent-invite PDPA rules. **Opened for Group B:** BE-13 contract-only (`packages/contract/src/practice/reads/**` only; BE-12 is merged). Merged so far: BE-08, 10, 11, 12, 15, 17, 23, 24, 41, 48.
 - 2026-10-19: **Decisions D55 (security):** BE-06 reset-ic has an attempt limit (5 per 15 min per account and IP, 429 RATE_LIMITED, BM message); unknown e-mail answers with the invalid-token message (no enumeration); BE-21 student-create returns the password once to the creating admin only, never logged, and the account must change its password at first login. Contracts and cards BE-03, BE-06, BE-21 and BE-33 follow D55.
 - 2026-10-19 14:40: **12 more contract-only cards opened:** BE-16, 18, 20, 22, 38, 39, 42, 43, 44, 45, 46, 47. Only BE-19 and BE-36 were left before. Same rules: one branch `be/<card>-contract` per card, push = claim.
 - 2026-10-19: **Reserved for an external collaborator: BE-11 and BE-24 (contract-only), branches `be/BE-11-contract` and `be/BE-24-contract`.** Every session skips these two cards even before their branches appear on GitHub. BE-08 contract stays with the session that pushed `be/BE-08-contract` first.

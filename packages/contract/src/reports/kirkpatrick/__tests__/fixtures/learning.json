@@ -1,0 +1,414 @@
+{
+  "kpi": {
+    "answers": 306133,
+    "accuracy": 82.8,
+    "avgScore": 80.3,
+    "sessionsCompleted": 20991,
+    "sessions": 20991,
+    "completionPct": 100
+  },
+  "subjects": [
+    {
+      "subjectId": 14,
+      "name": "Pendidikan Muzik",
+      "answers": 20,
+      "accuracy": 100,
+      "status": "Mastered"
+    },
+    {
+      "subjectId": 16,
+      "name": "Reka Bentuk & Teknologi",
+      "answers": 461,
+      "accuracy": 99.3,
+      "status": "Mastered"
+    },
+    {
+      "subjectId": 15,
+      "name": "Pendidikan Jasmani & Kesihatan",
+      "answers": 3571,
+      "accuracy": 98.7,
+      "status": "Mastered"
+    },
+    {
+      "subjectId": 17,
+      "name": "Sains Komputer",
+      "answers": 513,
+      "accuracy": 97.5,
+      "status": "Mastered"
+    },
+    {
+      "subjectId": 25,
+      "name": "Tasawwur Islam",
+      "answers": 24917,
+      "accuracy": 96.6,
+      "status": "Mastered"
+    },
+    {
+      "subjectId": 19,
+      "name": "Bahasa Cina",
+      "answers": 46,
+      "accuracy": 95.7,
+      "status": "Mastered"
+    },
+    {
+      "subjectId": 24,
+      "name": "Pendidikan Al-Quran & As-Sunnah",
+      "answers": 190,
+      "accuracy": 95.3,
+      "status": "Mastered"
+    },
+    {
+      "subjectId": 7,
+      "name": "Pendidikan Moral",
+      "answers": 4370,
+      "accuracy": 93.9,
+      "status": "Mastered"
+    },
+    {
+      "subjectId": 20,
+      "name": "Bahasa Tamil",
+      "answers": 317,
+      "accuracy": 93.4,
+      "status": "Mastered"
+    },
+    {
+      "subjectId": 6,
+      "name": "Pendidikan Islam",
+      "answers": 53828,
+      "accuracy": 92.9,
+      "status": "Mastered"
+    },
+    {
+      "subjectId": 27,
+      "name": "Pendidikan Syariah Islamiah",
+      "answers": 1885,
+      "accuracy": 92.8,
+      "status": "Mastered"
+    },
+    {
+      "subjectId": 18,
+      "name": "Bahasa Arab",
+      "answers": 686,
+      "accuracy": 91.5,
+      "status": "Mastered"
+    },
+    {
+      "subjectId": 13,
+      "name": "Pendidikan Seni Visual",
+      "answers": 2944,
+      "accuracy": 87.9,
+      "status": "Mastered"
+    },
+    {
+      "subjectId": 1,
+      "name": "Bahasa Melayu",
+      "answers": 69893,
+      "accuracy": 87.6,
+      "status": "Mastered"
+    },
+    {
+      "subjectId": 21,
+      "name": "Prinsip Perakaunan",
+      "answers": 2939,
+      "accuracy": 83.2,
+      "status": "Mastered"
+    },
+    {
+      "subjectId": 22,
+      "name": "Ekonomi",
+      "answers": 2333,
+      "accuracy": 79.1,
+      "status": "Developing"
+    },
+    {
+      "subjectId": 5,
+      "name": "Sejarah",
+      "answers": 57695,
+      "accuracy": 76.3,
+      "status": "Developing"
+    },
+    {
+      "subjectId": 2,
+      "name": "Bahasa Inggeris",
+      "answers": 17985,
+      "accuracy": 74.6,
+      "status": "Developing"
+    },
+    {
+      "subjectId": 11,
+      "name": "Biologi",
+      "answers": 6836,
+      "accuracy": 72.4,
+      "status": "Developing"
+    },
+    {
+      "subjectId": 3,
+      "name": "Matematik",
+      "answers": 19026,
+      "accuracy": 70.5,
+      "status": "Developing"
+    },
+    {
+      "subjectId": 8,
+      "name": "Matematik Tambahan",
+      "answers": 1645,
+      "accuracy": 68.9,
+      "status": "Developing"
+    },
+    {
+      "subjectId": 4,
+      "name": "Sains",
+      "answers": 17138,
+      "accuracy": 67.9,
+      "status": "Developing"
+    },
+    {
+      "subjectId": 23,
+      "name": "Perniagaan",
+      "answers": 5497,
+      "accuracy": 67.7,
+      "status": "Developing"
+    },
+    {
+      "subjectId": 12,
+      "name": "Geografi",
+      "answers": 2119,
+      "accuracy": 66.6,
+      "status": "Developing"
+    },
+    {
+      "subjectId": 10,
+      "name": "Kimia",
+      "answers": 3988,
+      "accuracy": 65.5,
+      "status": "Developing"
+    }
+  ],
+  "schools": [
+    {
+      "schoolId": 8880,
+      "name": "SEKOLAH MENENGAH KEBANGSAAN TINGGI KLUANG",
+      "students": 53,
+      "answers": 71338,
+      "accuracy": 90.1,
+      "avgScore": 84.7,
+      "subjects": 5
+    },
+    {
+      "schoolId": 8106,
+      "name": "SEKOLAH MENENGAH KEBANGSAAN BANDAR RINCHING",
+      "students": 560,
+      "answers": 67853,
+      "accuracy": 87.6,
+      "avgScore": 88.9,
+      "subjects": 6
+    },
+    {
+      "schoolId": 8965,
+      "name": "SEKOLAH MENENGAH KEBANGSAAN BALING",
+      "students": 7,
+      "answers": 579,
+      "accuracy": 83.8,
+      "avgScore": 83.9,
+      "subjects": 0
+    },
+    {
+      "schoolId": 8277,
+      "name": "SAM HULU LANGAT",
+      "students": 150,
+      "answers": 1203,
+      "accuracy": 82.1,
+      "avgScore": 80.9,
+      "subjects": 5
+    },
+    {
+      "schoolId": 8030,
+      "name": "SEKOLAH MENENGAH KEBANGSAAN RAJA MAHADI",
+      "students": 8,
+      "answers": 256,
+      "accuracy": 79.7,
+      "avgScore": 82,
+      "subjects": 0
+    },
+    {
+      "schoolId": 8078,
+      "name": "SEKOLAH MENENGAH KEBANGSAAN BANDAR BARU BANGI",
+      "students": 423,
+      "answers": 60644,
+      "accuracy": 79.4,
+      "avgScore": 76.3,
+      "subjects": 5
+    },
+    {
+      "schoolId": 8767,
+      "name": "SEKOLAH MENENGAH KEBANGSAAN TUN HUSSEIN ONN",
+      "students": 8,
+      "answers": 719,
+      "accuracy": 79,
+      "avgScore": 80.5,
+      "subjects": 0
+    },
+    {
+      "schoolId": 9167,
+      "name": "SEKOLAH MENENGAH KEBANGSAAN GHAFAR BABA",
+      "students": 8,
+      "answers": 545,
+      "accuracy": 77.6,
+      "avgScore": 78,
+      "subjects": 0
+    },
+    {
+      "schoolId": 8082,
+      "name": "SEKOLAH MENENGAH KEBANGSAAN ENGKU HUSAIN",
+      "students": 549,
+      "answers": 49813,
+      "accuracy": 77.4,
+      "avgScore": 74.2,
+      "subjects": 6
+    },
+    {
+      "schoolId": 8102,
+      "name": "SEKOLAH MENENGAH KEBANGSAAN BANDAR TASIK KESUMA",
+      "students": 776,
+      "answers": 25247,
+      "accuracy": 76.9,
+      "avgScore": 73.7,
+      "subjects": 7
+    },
+    {
+      "schoolId": 8772,
+      "name": "SEKOLAH MENENGAH KEBANGSAAN TAMAN KLUANG BARAT",
+      "students": 7,
+      "answers": 232,
+      "accuracy": 76.7,
+      "avgScore": 78.7,
+      "subjects": 0
+    },
+    {
+      "schoolId": 8090,
+      "name": "SEKOLAH MENENGAH KEBANGSAAN PANDAN INDAH",
+      "students": 385,
+      "answers": 10386,
+      "accuracy": 75.7,
+      "avgScore": 74.9,
+      "subjects": 6
+    },
+    {
+      "schoolId": 8080,
+      "name": "SEKOLAH MENENGAH KEBANGSAAN KHIR JOHARI",
+      "students": 184,
+      "answers": 15007,
+      "accuracy": 75.6,
+      "avgScore": 73.3,
+      "subjects": 3
+    },
+    {
+      "schoolId": 8087,
+      "name": "SEKOLAH MENENGAH KEBANGSAAN JALAN REKO",
+      "students": 312,
+      "answers": 863,
+      "accuracy": 75.4,
+      "avgScore": 78.1,
+      "subjects": 5
+    },
+    {
+      "schoolId": 8765,
+      "name": "SEKOLAH MENENGAH KEBANGSAAN LAYANG-LAYANG",
+      "students": 16,
+      "answers": 270,
+      "accuracy": 73,
+      "avgScore": 72.2,
+      "subjects": 4
+    },
+    {
+      "schoolId": 7780,
+      "name": "SEKOLAH MENENGAH KEBANGSAAN HAMID KHAN",
+      "students": 6,
+      "answers": 150,
+      "accuracy": 70,
+      "avgScore": 73.1,
+      "subjects": 0
+    },
+    {
+      "schoolId": 8107,
+      "name": "SEKOLAH MENENGAH KEBANGSAAN BANDAR SERI PUTRA",
+      "students": 675,
+      "answers": 83,
+      "accuracy": 68.7,
+      "avgScore": 28,
+      "subjects": 1
+    },
+    {
+      "schoolId": 8098,
+      "name": "SEKOLAH MENENGAH KEBANGSAAN JALAN EMPAT",
+      "students": 1,
+      "answers": 54,
+      "accuracy": 66.7,
+      "avgScore": 71.3,
+      "subjects": 0
+    },
+    {
+      "schoolId": 9806,
+      "name": "SEKOLAH MENENGAH KEBANGSAAN KENINGAU",
+      "students": 6,
+      "answers": 459,
+      "accuracy": 66.2,
+      "avgScore": 60.3,
+      "subjects": 1
+    },
+    {
+      "schoolId": 8298,
+      "name": "KOLEJ VOKASIONAL KAJANG",
+      "students": 2,
+      "answers": 220,
+      "accuracy": 57.7,
+      "avgScore": 56.7,
+      "subjects": 0
+    },
+    {
+      "schoolId": 9681,
+      "name": "SEKOLAH MENENGAH KEBANGSAAN AMINUDDIN BAKI",
+      "students": 1,
+      "answers": 127,
+      "accuracy": 56.7,
+      "avgScore": 60.2,
+      "subjects": 0
+    },
+    {
+      "schoolId": 8300,
+      "name": "KOLEJ ISLAM SULTAN ALAM SHAH",
+      "students": 1,
+      "answers": 30,
+      "accuracy": 53.3,
+      "avgScore": 50,
+      "subjects": 0
+    },
+    {
+      "schoolId": 1014,
+      "name": "SEKOLAH KEBANGSAAN BANDAR RINCHING",
+      "students": 5,
+      "answers": 30,
+      "accuracy": 50,
+      "avgScore": 50,
+      "subjects": 0
+    },
+    {
+      "schoolId": 8228,
+      "name": "SEKOLAH MENENGAH KEBANGSAAN TINGGI KLANG",
+      "students": 5,
+      "answers": 25,
+      "accuracy": 40,
+      "avgScore": 60,
+      "subjects": 0
+    },
+    {
+      "schoolId": 940,
+      "name": "SEKOLAH KEBANGSAAN KUALA SELANGOR",
+      "students": 1,
+      "answers": 0,
+      "accuracy": 0,
+      "avgScore": 0,
+      "subjects": 1
+    }
+  ]
+}

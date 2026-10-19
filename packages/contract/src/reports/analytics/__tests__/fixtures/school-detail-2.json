@@ -1,0 +1,34 @@
+{
+  "school": {
+    "id": 5183,
+    "name": "SEKOLAH KEBANGSAAN TOK JEMBAL",
+    "code": "TBE05183",
+    "state": "Terengganu"
+  },
+  "subscription": null,
+  "warning": null,
+  "tahap": "Tiada Langsung",
+  "pct": 0,
+  "cards": {
+    "students": 0,
+    "engaged": 0,
+    "answers": 0,
+    "teachers": 1,
+    "teachersLoggedIn": 1
+  },
+  "flags": {
+    "review": 0,
+    "excluded": 0
+  },
+  "students": [],
+  "teachers": [
+    {
+      "id": 827,
+      "name": "Guru Demo 0827",
+      "email": "guru0827@demo.test",
+      "loggedIn": true,
+      "lastLoginAt": "2026-02-14T15:20:00+08:00",
+      "createdAt": "2025-05-09T06:00:00+08:00"
+    }
+  ]
+}

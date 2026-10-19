@@ -1,0 +1,971 @@
+{
+  "kpi": {
+    "gps": 4.3,
+    "gpsYear": 2025,
+    "recordsLabel": 41,
+    "passPct": 96.7,
+    "pass": 174,
+    "candidates": 180,
+    "gradeA": 52,
+    "gradeAPct": 28.9,
+    "accuracy": 82.8,
+    "answers": 306133,
+    "active": 946,
+    "activePct": 22.8,
+    "t4t5": 4158,
+    "records": 4378
+  },
+  "distribution": {
+    "year": 2025,
+    "candidates": 180,
+    "rows": [
+      {
+        "grade": "A+",
+        "n": 10,
+        "pct": 5.6
+      },
+      {
+        "grade": "A",
+        "n": 18,
+        "pct": 10
+      },
+      {
+        "grade": "A-",
+        "n": 24,
+        "pct": 13.3
+      },
+      {
+        "grade": "B+",
+        "n": 32,
+        "pct": 17.8
+      },
+      {
+        "grade": "B",
+        "n": 32,
+        "pct": 17.8
+      },
+      {
+        "grade": "C+",
+        "n": 26,
+        "pct": 14.4
+      },
+      {
+        "grade": "C",
+        "n": 21,
+        "pct": 11.7
+      },
+      {
+        "grade": "D",
+        "n": 11,
+        "pct": 6.1
+      },
+      {
+        "grade": "E",
+        "n": 5,
+        "pct": 2.8
+      },
+      {
+        "grade": "G",
+        "n": 1,
+        "pct": 0.6
+      }
+    ]
+  },
+  "subjectGps": {
+    "year": 2026,
+    "rows": [
+      {
+        "name": "Matematik",
+        "gps": 2.5,
+        "grade": "A-",
+        "candidates": 30,
+        "prev": 4.45
+      },
+      {
+        "name": "Bahasa Melayu",
+        "gps": 2.8,
+        "grade": "A-",
+        "candidates": 30,
+        "prev": 4
+      },
+      {
+        "name": "Sains",
+        "gps": 2.9,
+        "grade": "A-",
+        "candidates": 30,
+        "prev": 4.7
+      },
+      {
+        "name": "Sejarah",
+        "gps": 3,
+        "grade": "A-",
+        "candidates": 30,
+        "prev": 4.5
+      },
+      {
+        "name": "Bahasa Inggeris",
+        "gps": 3.2,
+        "grade": "B+",
+        "candidates": 30,
+        "prev": 4.3
+      }
+    ]
+  },
+  "trend": {
+    "years": [
+      2022,
+      2023,
+      2024,
+      2025,
+      2026
+    ],
+    "rows": [
+      {
+        "name": "Keseluruhan",
+        "values": [
+          5.2,
+          4.8,
+          4.5,
+          4.3,
+          null
+        ]
+      },
+      {
+        "name": "Bahasa Melayu",
+        "values": [
+          4.8,
+          4.5,
+          4.2,
+          4,
+          2.8
+        ]
+      },
+      {
+        "name": "Bahasa Inggeris",
+        "values": [
+          5.2,
+          4.9,
+          4.55,
+          4.3,
+          3.2
+        ]
+      },
+      {
+        "name": "Matematik",
+        "values": [
+          5.5,
+          5.1,
+          4.75,
+          4.45,
+          2.5
+        ]
+      },
+      {
+        "name": "Sains",
+        "values": [
+          5.8,
+          5.4,
+          5,
+          4.7,
+          2.9
+        ]
+      },
+      {
+        "name": "Sejarah",
+        "values": [
+          5.6,
+          5.2,
+          4.8,
+          4.5,
+          3
+        ]
+      },
+      {
+        "name": "Pendidikan Islam",
+        "values": [
+          4.2,
+          3.9,
+          3.65,
+          3.4,
+          null
+        ]
+      }
+    ]
+  },
+  "schools": [
+    {
+      "schoolId": 9681,
+      "name": "SEKOLAH MENENGAH KEBANGSAAN AMINUDDIN BAKI",
+      "students": 1,
+      "active": 1,
+      "accuracy": 56.7,
+      "answers": 127,
+      "engagement": 100,
+      "tahap": "champion",
+      "faded": false
+    },
+    {
+      "schoolId": 8098,
+      "name": "SEKOLAH MENENGAH KEBANGSAAN JALAN EMPAT",
+      "students": 1,
+      "active": 1,
+      "accuracy": 66.7,
+      "answers": 54,
+      "engagement": 96,
+      "tahap": "champion",
+      "faded": false
+    },
+    {
+      "schoolId": 9806,
+      "name": "SEKOLAH MENENGAH KEBANGSAAN KENINGAU",
+      "students": 6,
+      "active": 5,
+      "accuracy": 66.2,
+      "answers": 459,
+      "engagement": 92,
+      "tahap": "champion",
+      "faded": false
+    },
+    {
+      "schoolId": 8965,
+      "name": "SEKOLAH MENENGAH KEBANGSAAN BALING",
+      "students": 7,
+      "active": 6,
+      "accuracy": 83.8,
+      "answers": 579,
+      "engagement": 88.9,
+      "tahap": "champion",
+      "faded": false
+    },
+    {
+      "schoolId": 8767,
+      "name": "SEKOLAH MENENGAH KEBANGSAAN TUN HUSSEIN ONN",
+      "students": 8,
+      "active": 7,
+      "accuracy": 79,
+      "answers": 719,
+      "engagement": 87.5,
+      "tahap": "champion",
+      "faded": false
+    },
+    {
+      "schoolId": 9167,
+      "name": "SEKOLAH MENENGAH KEBANGSAAN GHAFAR BABA",
+      "students": 8,
+      "active": 5,
+      "accuracy": 77.6,
+      "answers": 545,
+      "engagement": 83,
+      "tahap": "champion",
+      "faded": false
+    },
+    {
+      "schoolId": 8880,
+      "name": "SEKOLAH MENENGAH KEBANGSAAN TINGGI KLUANG",
+      "students": 53,
+      "active": 29,
+      "accuracy": 90.1,
+      "answers": 71338,
+      "engagement": 81.9,
+      "tahap": "champion",
+      "faded": false
+    },
+    {
+      "schoolId": 8298,
+      "name": "KOLEJ VOKASIONAL KAJANG",
+      "students": 2,
+      "active": 1,
+      "accuracy": 57.7,
+      "answers": 220,
+      "engagement": 80,
+      "tahap": "champion",
+      "faded": false
+    },
+    {
+      "schoolId": 8078,
+      "name": "SEKOLAH MENENGAH KEBANGSAAN BANDAR BARU BANGI",
+      "students": 423,
+      "active": 179,
+      "accuracy": 79.4,
+      "answers": 60644,
+      "engagement": 72.5,
+      "tahap": "konsisten",
+      "faded": false
+    },
+    {
+      "schoolId": 8300,
+      "name": "KOLEJ ISLAM SULTAN ALAM SHAH",
+      "students": 1,
+      "active": 1,
+      "accuracy": 53.3,
+      "answers": 30,
+      "engagement": 72,
+      "tahap": "konsisten",
+      "faded": false
+    },
+    {
+      "schoolId": 8082,
+      "name": "SEKOLAH MENENGAH KEBANGSAAN ENGKU HUSAIN",
+      "students": 549,
+      "active": 225,
+      "accuracy": 77.4,
+      "answers": 49813,
+      "engagement": 70.6,
+      "tahap": "konsisten",
+      "faded": false
+    },
+    {
+      "schoolId": 8106,
+      "name": "SEKOLAH MENENGAH KEBANGSAAN BANDAR RINCHING",
+      "students": 560,
+      "active": 142,
+      "accuracy": 87.6,
+      "answers": 67853,
+      "engagement": 69.9,
+      "tahap": "konsisten",
+      "faded": false
+    },
+    {
+      "schoolId": 8772,
+      "name": "SEKOLAH MENENGAH KEBANGSAAN TAMAN KLUANG BARAT",
+      "students": 7,
+      "active": 5,
+      "accuracy": 76.7,
+      "answers": 232,
+      "engagement": 63.7,
+      "tahap": "konsisten",
+      "faded": false
+    },
+    {
+      "schoolId": 8030,
+      "name": "SEKOLAH MENENGAH KEBANGSAAN RAJA MAHADI",
+      "students": 8,
+      "active": 7,
+      "accuracy": 79.7,
+      "answers": 256,
+      "engagement": 63.6,
+      "tahap": "konsisten",
+      "faded": false
+    },
+    {
+      "schoolId": 8080,
+      "name": "SEKOLAH MENENGAH KEBANGSAAN KHIR JOHARI",
+      "students": 184,
+      "active": 53,
+      "accuracy": 75.6,
+      "answers": 15007,
+      "engagement": 62.4,
+      "tahap": "konsisten",
+      "faded": false
+    },
+    {
+      "schoolId": 7780,
+      "name": "SEKOLAH MENENGAH KEBANGSAAN HAMID KHAN",
+      "students": 6,
+      "active": 5,
+      "accuracy": 70,
+      "answers": 150,
+      "engagement": 57.7,
+      "tahap": "berkembang",
+      "faded": false
+    },
+    {
+      "schoolId": 8102,
+      "name": "SEKOLAH MENENGAH KEBANGSAAN BANDAR TASIK KESUMA",
+      "students": 776,
+      "active": 192,
+      "accuracy": 76.9,
+      "answers": 25247,
+      "engagement": 40.9,
+      "tahap": "berkembang",
+      "faded": false
+    },
+    {
+      "schoolId": 8228,
+      "name": "SEKOLAH MENENGAH KEBANGSAAN TINGGI KLANG",
+      "students": 5,
+      "active": 4,
+      "accuracy": 40,
+      "answers": 25,
+      "engagement": 37.2,
+      "tahap": "minimum",
+      "faded": false
+    },
+    {
+      "schoolId": 8765,
+      "name": "SEKOLAH MENENGAH KEBANGSAAN LAYANG-LAYANG",
+      "students": 16,
+      "active": 4,
+      "accuracy": 73,
+      "answers": 270,
+      "engagement": 33.4,
+      "tahap": "minimum",
+      "faded": false
+    },
+    {
+      "schoolId": 8090,
+      "name": "SEKOLAH MENENGAH KEBANGSAAN PANDAN INDAH",
+      "students": 385,
+      "active": 52,
+      "accuracy": 75.7,
+      "answers": 10386,
+      "engagement": 31.6,
+      "tahap": "minimum",
+      "faded": false
+    },
+    {
+      "schoolId": 1014,
+      "name": "SEKOLAH KEBANGSAAN BANDAR RINCHING",
+      "students": 5,
+      "active": 2,
+      "accuracy": 50,
+      "answers": 30,
+      "engagement": 22.4,
+      "tahap": "minimum",
+      "faded": false
+    },
+    {
+      "schoolId": 8277,
+      "name": "SAM HULU LANGAT",
+      "students": 150,
+      "active": 11,
+      "accuracy": 82.1,
+      "answers": 1203,
+      "engagement": 10.1,
+      "tahap": "tidakTerlibat",
+      "faded": false
+    },
+    {
+      "schoolId": 8087,
+      "name": "SEKOLAH MENENGAH KEBANGSAAN JALAN REKO",
+      "students": 312,
+      "active": 5,
+      "accuracy": 75.4,
+      "answers": 863,
+      "engagement": 3.9,
+      "tahap": "tidakTerlibat",
+      "faded": false
+    },
+    {
+      "schoolId": 940,
+      "name": "SEKOLAH KEBANGSAAN KUALA SELANGOR",
+      "students": 1,
+      "active": 0,
+      "accuracy": null,
+      "answers": null,
+      "engagement": 2,
+      "tahap": "tidakTerlibat",
+      "faded": true
+    },
+    {
+      "schoolId": 8107,
+      "name": "SEKOLAH MENENGAH KEBANGSAAN BANDAR SERI PUTRA",
+      "students": 675,
+      "active": 4,
+      "accuracy": 68.7,
+      "answers": 83,
+      "engagement": 0.4,
+      "tahap": "tidakTerlibat",
+      "faded": false
+    }
+  ],
+  "predictions": [
+    {
+      "userId": 14,
+      "name": "Pelajar Demo 000014",
+      "schoolId": 8082,
+      "schoolName": "SEKOLAH MENENGAH KEBANGSAAN ENGKU HUSAIN",
+      "answers": 5,
+      "accuracy": 100,
+      "grade": "A+"
+    },
+    {
+      "userId": 15,
+      "name": "Pelajar Demo 000015",
+      "schoolId": 8090,
+      "schoolName": "SEKOLAH MENENGAH KEBANGSAAN PANDAN INDAH",
+      "answers": 25,
+      "accuracy": 100,
+      "grade": "A+"
+    },
+    {
+      "userId": 25,
+      "name": "Pelajar Demo 000025",
+      "schoolId": 8078,
+      "schoolName": "SEKOLAH MENENGAH KEBANGSAAN BANDAR BARU BANGI",
+      "answers": 10,
+      "accuracy": 100,
+      "grade": "A+"
+    },
+    {
+      "userId": 26,
+      "name": "Pelajar Demo 000026",
+      "schoolId": 8082,
+      "schoolName": "SEKOLAH MENENGAH KEBANGSAAN ENGKU HUSAIN",
+      "answers": 5,
+      "accuracy": 100,
+      "grade": "A+"
+    },
+    {
+      "userId": 35,
+      "name": "Pelajar Demo 000035",
+      "schoolId": 8082,
+      "schoolName": "SEKOLAH MENENGAH KEBANGSAAN ENGKU HUSAIN",
+      "answers": 5,
+      "accuracy": 100,
+      "grade": "A+"
+    },
+    {
+      "userId": 42,
+      "name": "Pelajar Demo 000042",
+      "schoolId": 8106,
+      "schoolName": "SEKOLAH MENENGAH KEBANGSAAN BANDAR RINCHING",
+      "answers": 20,
+      "accuracy": 100,
+      "grade": "A+"
+    },
+    {
+      "userId": 180,
+      "name": "Pelajar Demo 000180",
+      "schoolId": 8880,
+      "schoolName": "SEKOLAH MENENGAH KEBANGSAAN TINGGI KLUANG",
+      "answers": 5,
+      "accuracy": 100,
+      "grade": "A+"
+    },
+    {
+      "userId": 294,
+      "name": "Pelajar Demo 000294",
+      "schoolId": 8102,
+      "schoolName": "SEKOLAH MENENGAH KEBANGSAAN BANDAR TASIK KESUMA",
+      "answers": 11,
+      "accuracy": 100,
+      "grade": "A+"
+    },
+    {
+      "userId": 372,
+      "name": "Pelajar Demo 000372",
+      "schoolId": 8102,
+      "schoolName": "SEKOLAH MENENGAH KEBANGSAAN BANDAR TASIK KESUMA",
+      "answers": 10,
+      "accuracy": 100,
+      "grade": "A+"
+    },
+    {
+      "userId": 638,
+      "name": "Pelajar Demo 000638",
+      "schoolId": 8102,
+      "schoolName": "SEKOLAH MENENGAH KEBANGSAAN BANDAR TASIK KESUMA",
+      "answers": 5,
+      "accuracy": 100,
+      "grade": "A+"
+    },
+    {
+      "userId": 845,
+      "name": "Pelajar Demo 000845",
+      "schoolId": 8102,
+      "schoolName": "SEKOLAH MENENGAH KEBANGSAAN BANDAR TASIK KESUMA",
+      "answers": 20,
+      "accuracy": 100,
+      "grade": "A+"
+    },
+    {
+      "userId": 1404,
+      "name": "Pelajar Demo 001404",
+      "schoolId": 8102,
+      "schoolName": "SEKOLAH MENENGAH KEBANGSAAN BANDAR TASIK KESUMA",
+      "answers": 5,
+      "accuracy": 100,
+      "grade": "A+"
+    },
+    {
+      "userId": 1745,
+      "name": "Pelajar Demo 001745",
+      "schoolId": 8030,
+      "schoolName": "SEKOLAH MENENGAH KEBANGSAAN RAJA MAHADI",
+      "answers": 10,
+      "accuracy": 100,
+      "grade": "A+"
+    },
+    {
+      "userId": 4706,
+      "name": "Pelajar Demo 004706",
+      "schoolId": 8030,
+      "schoolName": "SEKOLAH MENENGAH KEBANGSAAN RAJA MAHADI",
+      "answers": 10,
+      "accuracy": 100,
+      "grade": "A+"
+    },
+    {
+      "userId": 60,
+      "name": "Pelajar Demo 000060",
+      "schoolId": 8082,
+      "schoolName": "SEKOLAH MENENGAH KEBANGSAAN ENGKU HUSAIN",
+      "answers": 297,
+      "accuracy": 98,
+      "grade": "A+"
+    },
+    {
+      "userId": 47,
+      "name": "Pelajar Demo 000047",
+      "schoolId": 8106,
+      "schoolName": "SEKOLAH MENENGAH KEBANGSAAN BANDAR RINCHING",
+      "answers": 16352,
+      "accuracy": 97.5,
+      "grade": "A+"
+    },
+    {
+      "userId": 1529,
+      "name": "Pelajar Demo 001529",
+      "schoolId": 8102,
+      "schoolName": "SEKOLAH MENENGAH KEBANGSAAN BANDAR TASIK KESUMA",
+      "answers": 38,
+      "accuracy": 97.4,
+      "grade": "A+"
+    },
+    {
+      "userId": 1945,
+      "name": "Pelajar Demo 001945",
+      "schoolId": 8772,
+      "schoolName": "SEKOLAH MENENGAH KEBANGSAAN TAMAN KLUANG BARAT",
+      "answers": 35,
+      "accuracy": 97.1,
+      "grade": "A+"
+    },
+    {
+      "userId": 71,
+      "name": "Pelajar Demo 000071",
+      "schoolId": 8082,
+      "schoolName": "SEKOLAH MENENGAH KEBANGSAAN ENGKU HUSAIN",
+      "answers": 302,
+      "accuracy": 97,
+      "grade": "A+"
+    },
+    {
+      "userId": 1608,
+      "name": "Pelajar Demo 001608",
+      "schoolId": 8102,
+      "schoolName": "SEKOLAH MENENGAH KEBANGSAAN BANDAR TASIK KESUMA",
+      "answers": 65,
+      "accuracy": 96.9,
+      "grade": "A+"
+    },
+    {
+      "userId": 21,
+      "name": "Pelajar Demo 000021",
+      "schoolId": 8090,
+      "schoolName": "SEKOLAH MENENGAH KEBANGSAAN PANDAN INDAH",
+      "answers": 60,
+      "accuracy": 96.7,
+      "grade": "A+"
+    },
+    {
+      "userId": 16,
+      "name": "Pelajar Demo 000016",
+      "schoolId": 8080,
+      "schoolName": "SEKOLAH MENENGAH KEBANGSAAN KHIR JOHARI",
+      "answers": 25,
+      "accuracy": 96,
+      "grade": "A+"
+    },
+    {
+      "userId": 83,
+      "name": "Pelajar Demo 000083",
+      "schoolId": 8080,
+      "schoolName": "SEKOLAH MENENGAH KEBANGSAAN KHIR JOHARI",
+      "answers": 144,
+      "accuracy": 95.8,
+      "grade": "A+"
+    },
+    {
+      "userId": 76,
+      "name": "Pelajar Demo 000076",
+      "schoolId": 8082,
+      "schoolName": "SEKOLAH MENENGAH KEBANGSAAN ENGKU HUSAIN",
+      "answers": 40,
+      "accuracy": 95,
+      "grade": "A+"
+    },
+    {
+      "userId": 1787,
+      "name": "Pelajar Demo 001787",
+      "schoolId": 8102,
+      "schoolName": "SEKOLAH MENENGAH KEBANGSAAN BANDAR TASIK KESUMA",
+      "answers": 448,
+      "accuracy": 94.6,
+      "grade": "A+"
+    }
+  ],
+  "alesa": {
+    "lulus": 48,
+    "gagal": 2,
+    "intervensi": 4,
+    "rows": [
+      {
+        "userId": 15,
+        "name": "Pelajar Demo 000015",
+        "schoolName": "SEKOLAH MENENGAH KEBANGSAAN PANDAN INDAH",
+        "accuracy": 100,
+        "grade": "A+",
+        "confidence": "rendah",
+        "cadanganBand": "A",
+        "observed": true
+      },
+      {
+        "userId": 19,
+        "name": "Pelajar Demo 000019",
+        "schoolName": "SEKOLAH MENENGAH KEBANGSAAN BANDAR SERI PUTRA",
+        "accuracy": 90,
+        "grade": "A+",
+        "confidence": "rendah",
+        "cadanganBand": "A",
+        "observed": true
+      },
+      {
+        "userId": 63,
+        "name": "Pelajar Demo 000063",
+        "schoolName": "SEKOLAH MENENGAH KEBANGSAAN PANDAN INDAH",
+        "accuracy": 90.3,
+        "grade": "A+",
+        "confidence": "sederhana",
+        "cadanganBand": "A",
+        "observed": true
+      },
+      {
+        "userId": 139,
+        "name": "Pelajar Demo 000139",
+        "schoolName": "SAM HULU LANGAT",
+        "accuracy": 93.3,
+        "grade": "A+",
+        "confidence": "rendah",
+        "cadanganBand": "A",
+        "observed": true
+      },
+      {
+        "userId": 2814,
+        "name": "Pelajar Demo 002814",
+        "schoolName": "SEKOLAH MENENGAH KEBANGSAAN BANDAR SERI PUTRA",
+        "accuracy": 93.3,
+        "grade": "A+",
+        "confidence": "rendah",
+        "cadanganBand": "A",
+        "observed": true
+      },
+      {
+        "userId": 3379,
+        "name": "Pelajar Demo 003379",
+        "schoolName": "SAM HULU LANGAT",
+        "accuracy": 90,
+        "grade": "A+",
+        "confidence": "rendah",
+        "cadanganBand": "A",
+        "observed": true
+      },
+      {
+        "userId": 68,
+        "name": "Pelajar Demo 000068",
+        "schoolName": "SEKOLAH MENENGAH KEBANGSAAN PANDAN INDAH",
+        "accuracy": 89.8,
+        "grade": "A",
+        "confidence": "rendah",
+        "cadanganBand": "A",
+        "observed": true
+      },
+      {
+        "userId": 73,
+        "name": "Pelajar Demo 000073",
+        "schoolName": "SEKOLAH MENENGAH KEBANGSAAN PANDAN INDAH",
+        "accuracy": 88.2,
+        "grade": "A",
+        "confidence": "rendah",
+        "cadanganBand": "A",
+        "observed": true
+      },
+      {
+        "userId": 117,
+        "name": "Pelajar Demo 000117",
+        "schoolName": "SEKOLAH MENENGAH KEBANGSAAN PANDAN INDAH",
+        "accuracy": 85.7,
+        "grade": "A",
+        "confidence": "rendah",
+        "cadanganBand": "A",
+        "observed": true
+      },
+      {
+        "userId": 125,
+        "name": "Pelajar Demo 000125",
+        "schoolName": "SEKOLAH MENENGAH KEBANGSAAN KHIR JOHARI",
+        "accuracy": 87,
+        "grade": "A",
+        "confidence": "rendah",
+        "cadanganBand": "A",
+        "observed": true
+      },
+      {
+        "userId": 155,
+        "name": "Pelajar Demo 000155",
+        "schoolName": "SAM HULU LANGAT",
+        "accuracy": 86.9,
+        "grade": "A",
+        "confidence": "rendah",
+        "cadanganBand": "A",
+        "observed": true
+      },
+      {
+        "userId": 194,
+        "name": "Pelajar Demo 000194",
+        "schoolName": "SAM HULU LANGAT",
+        "accuracy": 81.4,
+        "grade": "A",
+        "confidence": "sederhana",
+        "cadanganBand": "A",
+        "observed": true
+      },
+      {
+        "userId": 251,
+        "name": "Pelajar Demo 000251",
+        "schoolName": "SEKOLAH MENENGAH KEBANGSAAN PANDAN INDAH",
+        "accuracy": 82.5,
+        "grade": "A",
+        "confidence": "sederhana",
+        "cadanganBand": "A",
+        "observed": true
+      },
+      {
+        "userId": 273,
+        "name": "Pelajar Demo 000273",
+        "schoolName": "SEKOLAH MENENGAH KEBANGSAAN PANDAN INDAH",
+        "accuracy": 82.4,
+        "grade": "A",
+        "confidence": "sederhana",
+        "cadanganBand": "A",
+        "observed": true
+      },
+      {
+        "userId": 295,
+        "name": "Pelajar Demo 000295",
+        "schoolName": "SEKOLAH MENENGAH KEBANGSAAN PANDAN INDAH",
+        "accuracy": 82,
+        "grade": "A",
+        "confidence": "rendah",
+        "cadanganBand": "A",
+        "observed": true
+      },
+      {
+        "userId": 296,
+        "name": "Pelajar Demo 000296",
+        "schoolName": "SAM HULU LANGAT",
+        "accuracy": 81.2,
+        "grade": "A",
+        "confidence": "sederhana",
+        "cadanganBand": "A",
+        "observed": true
+      },
+      {
+        "userId": 330,
+        "name": "Pelajar Demo 000330",
+        "schoolName": "SAM HULU LANGAT",
+        "accuracy": 80,
+        "grade": "A",
+        "confidence": "rendah",
+        "cadanganBand": "A",
+        "observed": true
+      },
+      {
+        "userId": 356,
+        "name": "Pelajar Demo 000356",
+        "schoolName": "SEKOLAH MENENGAH KEBANGSAAN KHIR JOHARI",
+        "accuracy": 82.2,
+        "grade": "A",
+        "confidence": "sederhana",
+        "cadanganBand": "A",
+        "observed": true
+      },
+      {
+        "userId": 399,
+        "name": "Pelajar Demo 000399",
+        "schoolName": "SEKOLAH MENENGAH KEBANGSAAN PANDAN INDAH",
+        "accuracy": 80.3,
+        "grade": "A",
+        "confidence": "rendah",
+        "cadanganBand": "A",
+        "observed": true
+      },
+      {
+        "userId": 410,
+        "name": "Pelajar Demo 000410",
+        "schoolName": "SEKOLAH MENENGAH KEBANGSAAN PANDAN INDAH",
+        "accuracy": 80.2,
+        "grade": "A",
+        "confidence": "rendah",
+        "cadanganBand": "A",
+        "observed": true
+      },
+      {
+        "userId": 411,
+        "name": "Pelajar Demo 000411",
+        "schoolName": "SEKOLAH MENENGAH KEBANGSAAN PANDAN INDAH",
+        "accuracy": 80,
+        "grade": "A",
+        "confidence": "rendah",
+        "cadanganBand": "A",
+        "observed": true
+      },
+      {
+        "userId": 841,
+        "name": "Pelajar Demo 000841",
+        "schoolName": "SEKOLAH MENENGAH KEBANGSAAN TINGGI KLUANG",
+        "accuracy": 87.8,
+        "grade": "A",
+        "confidence": "tinggi",
+        "cadanganBand": "A",
+        "observed": true
+      },
+      {
+        "userId": 94,
+        "name": "Pelajar Demo 000094",
+        "schoolName": "SEKOLAH MENENGAH KEBANGSAAN BANDAR SERI PUTRA",
+        "accuracy": 72.2,
+        "grade": "A-",
+        "confidence": "rendah",
+        "cadanganBand": "A",
+        "observed": true
+      },
+      {
+        "userId": 478,
+        "name": "Pelajar Demo 000478",
+        "schoolName": "SEKOLAH MENENGAH KEBANGSAAN PANDAN INDAH",
+        "accuracy": 76.2,
+        "grade": "A-",
+        "confidence": "tinggi",
+        "cadanganBand": "A",
+        "observed": true
+      },
+      {
+        "userId": 520,
+        "name": "Pelajar Demo 000520",
+        "schoolName": "SEKOLAH MENENGAH KEBANGSAAN PANDAN INDAH",
+        "accuracy": 76,
+        "grade": "A-",
+        "confidence": "sederhana",
+        "cadanganBand": "A",
+        "observed": true
+      }
+    ]
+  },
+  "roi": {
+    "active": 946,
+    "perStudent": 323.6,
+    "accuracy": 82.8,
+    "gps": 4.3
+  },
+  "insights": {
+    "active": 946,
+    "t4t5": 4158,
+    "pct": 22.8,
+    "accuracy": 82.8,
+    "grade": "A",
+    "year": 2025,
+    "gps": 4.3
+  }
+}
