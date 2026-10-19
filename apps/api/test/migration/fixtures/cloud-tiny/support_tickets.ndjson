@@ -1,0 +1,2 @@
+{"id":1,"user_id":1,"subject":"Tiket contoh","status":"dibuka"}
+{"id":2,"user_id":2,"subject":"Tiket contoh 2","status":"ditutup","admin_reply":"Balasan contoh."}

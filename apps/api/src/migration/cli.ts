@@ -25,7 +25,9 @@ import { fileURLToPath, pathToFileURL } from 'node:url'
 import pg from 'pg'
 
 import {
+  ApplyGuardError,
   ApplyRefusedError,
+  assertApplyAllowed,
   findMigrateCommand,
   listMigrateCommands,
   RunInProgressError,
@@ -38,47 +40,8 @@ export const EXIT = { ok: 0, failed: 1, usage: 2, applyRefused: 3, busy: 4 } as 
 
 export class UsageError extends Error {}
 
-/** `--apply` was not explicitly allowed for this environment or database. */
-export class ApplyGuardError extends Error {
-  constructor(message: string) {
-    super(message)
-    this.name = 'ApplyGuardError'
-  }
-}
-
-const PRODUCTION = /^\s*prod(uction)?\s*$/i
-
-/** Host name of a connection URL (never user, password or query); `unknown host` when it cannot be read. */
-function hostOf(url: string | undefined): string {
-  if (!url) return 'unknown host'
-  try {
-    return new URL(url).hostname || 'unknown host'
-  } catch {
-    return 'unknown host'
-  }
-}
-
-/**
- * Guards `--apply` against running on the wrong database (security M3). Needs
- * `PP_ALLOW_MIGRATE_APPLY=1`; in production also `PP_MIGRATE_TARGET_DB` equal to the connected
- * database name. Returns the line to print (host and database name only, no credentials).
- */
-export async function assertApplyAllowed(
-  pool: pg.Pool,
-  env: Readonly<Record<string, string | undefined>>,
-): Promise<string> {
-  if (env.PP_ALLOW_MIGRATE_APPLY !== '1') {
-    throw new ApplyGuardError('Refusing --apply: set PP_ALLOW_MIGRATE_APPLY=1 to allow writes by the migration kit.')
-  }
-  const res = await pool.query<{ db: string }>('SELECT current_database() AS db')
-  const db = res.rows[0]?.db ?? ''
-  if (PRODUCTION.test(env.NODE_ENV ?? '') && env.PP_MIGRATE_TARGET_DB !== db) {
-    throw new ApplyGuardError(
-      `Refusing --apply in production: PP_MIGRATE_TARGET_DB must equal the connected database name ("${db}") on ${hostOf(env.DATABASE_URL)}.`,
-    )
-  }
-  return `--apply target: database "${db}" on ${hostOf(env.DATABASE_URL)}`
-}
+// One implementation, shared with Runner.run (kit/apply-guard.ts); re-exported for existing importers.
+export { ApplyGuardError, assertApplyAllowed }
 
 /** `--dry-run` / `--apply` choose the mode (default dry-run); giving both is an error. */
 export function parseArgs(argv: readonly string[]): { command: string | undefined; args: CommandArgs } {
