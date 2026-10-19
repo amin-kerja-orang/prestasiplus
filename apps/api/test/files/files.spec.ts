@@ -75,8 +75,11 @@ describe('POST /api/files: accepted files (AC 1)', () => {
     const ref = await uploadOk(student, 'avatar', makePng())
     expect(ref.id).toMatch(/^[A-Za-z0-9_-]{22}$/)
     const internal = await internalId(t.db, ref.id)
-    expect(ref.id).not.toContain(internal)
-    expect(ref.url).not.toContain(internal)
+    // compare whole values and path segments, never substrings: a random token can contain any digit
+    expect(ref.id).not.toBe(String(internal))
+    const segments = ref.url.split('/').filter(Boolean)
+    expect(segments).toEqual(['api', 'files', ref.id])
+    expect(segments).not.toContain(String(internal))
     const other = await uploadOk(student, 'avatar', makePng())
     expect(other.id).not.toBe(ref.id)
     // the database key is not accepted as an id
