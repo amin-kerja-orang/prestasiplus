@@ -31,6 +31,7 @@ import { COMMAND_CENTER_COMPONENT_SCHEMAS, registerCommandCenterPaths } from './
 import { CURRICULUM_COMPONENT_SCHEMAS, registerCurriculumPaths } from './curriculum/paths'
 import { BATTLE_COMPONENT_SCHEMAS, registerBattlePaths } from './battle/paths'
 import { GAMES_COMPONENT_SCHEMAS, registerGamesPaths } from './games/paths'
+import { MARKETPLACE_COMPONENT_SCHEMAS, registerMarketplacePaths } from './marketplace/paths'
 
 /** Every shared schema that becomes a component. Domain tasks (T07, T08, T24...) append here. */
 export const COMPONENT_SCHEMAS = {
@@ -64,6 +65,7 @@ export const COMPONENT_SCHEMAS = {
   ...CLASSES_COMPONENT_SCHEMAS, // BE-17
   ...BATTLE_COMPONENT_SCHEMAS, // BE-44 (M16)
   ...GAMES_COMPONENT_SCHEMAS, // BE-45 (M16 games, leagues)
+  ...MARKETPLACE_COMPONENT_SCHEMAS, // BE-46 (M20)
   // V2-T08 access matrix
   AccessGroupId: AccessGroupIdSchema,
   AccessGroup: AccessGroupSchema,
@@ -99,6 +101,7 @@ export function buildOpenApiDocument(): Record<string, unknown> {
   registerClassesPaths(registry) // BE-17
   registerBattlePaths(registry) // BE-44 (M16)
   registerGamesPaths(registry) // BE-45 (M16 games, leagues)
+  registerMarketplacePaths(registry) // BE-46 (M20)
   const generator = new OpenApiGeneratorV31(registry.definitions)
   return generator.generateDocument({
     openapi: '3.1.0',

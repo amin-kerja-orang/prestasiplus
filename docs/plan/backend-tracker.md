@@ -68,7 +68,7 @@ Single source of truth for the **state of every backend card**. The lead's proje
 | BE-43 | Cikgu Alesa: chat, RPH, essay markings, PBD tags (M13) | PC-5 | P2 | BE-36, BE-03, BE-05, BE-08, BE-12, BE-17 | L | todo | - | `be/BE-43-cikgu-alesa` | - | Added 2026-10-19 (D53); lane approved by LEAD 2026-10-19 |
 | BE-44 | Battle arena, standings and tournaments (M16 part 1) | PC-7 | P2 | BE-03, BE-05, BE-08, BE-09, BE-12, BE-23 | L | todo | - | `be/BE-44-battle` | - | Contract merged 2026-10-19 (PR #12, be/BE-44-contract). Added 2026-10-19 (D53); lane approved by LEAD 2026-10-19 |
 | BE-45 | Permainan hub, Papan Bijak, room and solo games, leagues, Sekolah Bersaing (M16 part 2) | PC-7 | P2 | BE-03, BE-05, BE-08, BE-09, BE-11, BE-13, BE-23 | L | todo | - | `be/BE-45-papan-bijak-games-hub` | - | Contract merged 2026-10-19 (PR #13, be/BE-45-contract). Added 2026-10-19 (D53); lane approved by LEAD 2026-10-19 |
-| BE-46 | Marketplace: buyer slice (M20) | PC-1 | P2 | BE-03, BE-05 | M | todo | - | `be/BE-46-marketplace` | - | Added 2026-10-19 (D53); lane approved by LEAD 2026-10-19 |
+| BE-46 | Marketplace: buyer slice (M20) | PC-1 | P2 | BE-03, BE-05 | M | todo | - | `be/BE-46-marketplace` | - | Contract merged 2026-10-19 (PR #14, be/BE-46-contract). Added 2026-10-19 (D53); lane approved by LEAD 2026-10-19 |
 | BE-47 | Mohon Keluarga Angkat: student-side application (M21) | PC-1 | P2 | BE-03, BE-05 | S | todo | - | `be/BE-47-keluarga-angkat` | - | Added 2026-10-19 (D53); lane approved by LEAD 2026-10-19 |
 | BE-48 | Heatmap Topik Lemah read model (M25) | PC-2 | P1 | BE-12, BE-13, BE-08 | S | todo | - | `be/BE-48-heatmap-topik-lemah` | - | Contract merged 2026-10-19 (PR #5, be/BE-48-contract). Added 2026-10-19 (D53); lane approved by LEAD 2026-10-19 |
 
