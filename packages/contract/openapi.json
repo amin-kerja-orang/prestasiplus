@@ -14210,6 +14210,684 @@
           "edition",
           "isElective"
         ]
+      },
+      "PracticeMode": {
+        "type": "string",
+        "enum": [
+          "random",
+          "chapter",
+          "revision",
+          "past_year",
+          "latih_tubi",
+          "ramalan",
+          "mission",
+          "remedial",
+          "question_set",
+          "pksk"
+        ]
+      },
+      "PracticeStartMode": {
+        "type": "string",
+        "enum": [
+          "random",
+          "chapter",
+          "revision",
+          "past_year",
+          "latih_tubi",
+          "ramalan",
+          "mission",
+          "remedial",
+          "question_set"
+        ]
+      },
+      "PracticeSessionId": {
+        "type": "string",
+        "format": "uuid",
+        "description": "Practice session id (uuid)."
+      },
+      "PracticeErrorCode": {
+        "type": "string",
+        "enum": [
+          "TRIAL_EXHAUSTED",
+          "CHAPTER_LOCKED",
+          "NOT_ENOUGH_QUESTIONS",
+          "SET_NOT_READY",
+          "NO_WRONG_QUESTIONS",
+          "ALREADY_COMPLETED",
+          "NO_ATTEMPTS_LEFT",
+          "ALREADY_SUBMITTED"
+        ]
+      },
+      "PracticeTextDirection": {
+        "type": "string",
+        "enum": [
+          "ltr",
+          "rtl"
+        ]
+      },
+      "PracticeScriptType": {
+        "type": "string",
+        "enum": [
+          "rumi",
+          "arab",
+          "jawi",
+          "mixed"
+        ]
+      },
+      "PracticeQuizOption": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Zero-based option index; sent back as selectedOptionId."
+          },
+          "label": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 4
+          },
+          "text": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "label",
+          "text"
+        ],
+        "additionalProperties": false
+      },
+      "PracticeQuizQuestion": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "questionText": {
+            "type": "string"
+          },
+          "textDirection": {
+            "$ref": "#/components/schemas/PracticeTextDirection"
+          },
+          "scriptType": {
+            "$ref": "#/components/schemas/PracticeScriptType"
+          },
+          "wrongTimes": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "From the caller revision queue."
+          },
+          "hasDskp": {
+            "type": "boolean"
+          },
+          "contributor": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "properties": {
+              "name": {
+                "type": "string",
+                "minLength": 1
+              },
+              "profileUrl": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              }
+            },
+            "required": [
+              "name",
+              "profileUrl"
+            ],
+            "additionalProperties": false,
+            "description": "Teacher who wrote the question (\"Soalan oleh:\"), else null."
+          },
+          "options": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PracticeQuizOption"
+            }
+          }
+        },
+        "required": [
+          "id",
+          "questionText",
+          "textDirection",
+          "scriptType",
+          "wrongTimes",
+          "hasDskp",
+          "contributor",
+          "options"
+        ],
+        "additionalProperties": false
+      },
+      "PracticeGamification": {
+        "type": "object",
+        "properties": {
+          "coinsEarned": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "streakCount": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "pointsEarned": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "totalBalance": {
+            "type": "integer",
+            "minimum": 0
+          }
+        },
+        "required": [
+          "coinsEarned",
+          "streakCount",
+          "pointsEarned",
+          "totalBalance"
+        ],
+        "additionalProperties": false
+      },
+      "StartSessionRequest": {
+        "type": "object",
+        "properties": {
+          "mode": {
+            "$ref": "#/components/schemas/PracticeStartMode"
+          },
+          "subjectCode": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 32
+          },
+          "levelId": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/Id"
+              },
+              {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              }
+            ]
+          },
+          "difficulty": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "minimum": 1,
+            "maximum": 5
+          },
+          "count": {
+            "type": "integer",
+            "minimum": 1,
+            "description": "random/chapter 5|10|15|20; revision absent or 20; past_year 5|10|20; latih_tubi per subject target."
+          },
+          "chapterId": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 64,
+            "description": "chapter mode",
+            "example": "1042"
+          },
+          "year": {
+            "type": "integer",
+            "description": "ramalan mode."
+          },
+          "setNo": {
+            "type": "integer",
+            "description": "ramalan mode."
+          },
+          "targetQuestionId": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "minLength": 1,
+            "maxLength": 64,
+            "description": "latih_tubi \"Buka Soalan Sama\"; needs count 1.",
+            "example": "1042"
+          },
+          "missionId": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 64,
+            "description": "mission mode",
+            "example": "1042"
+          },
+          "remedialTestId": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 64,
+            "description": "remedial mode",
+            "example": "1042"
+          },
+          "questionSetId": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 64,
+            "description": "question_set mode",
+            "example": "1042"
+          },
+          "clientUuid": {
+            "type": "string",
+            "format": "uuid",
+            "description": "Idempotency key: replaying a start with the same clientUuid returns the same session."
+          }
+        },
+        "required": [
+          "mode"
+        ]
+      },
+      "StartSessionResponse": {
+        "type": "object",
+        "properties": {
+          "sessionId": {
+            "$ref": "#/components/schemas/PracticeSessionId"
+          },
+          "mode": {
+            "$ref": "#/components/schemas/PracticeMode"
+          },
+          "subject": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "properties": {
+              "code": {
+                "type": "string"
+              },
+              "name": {
+                "type": "string"
+              },
+              "color": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "code",
+              "name",
+              "color"
+            ],
+            "additionalProperties": false
+          },
+          "chapter": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "$ref": "#/components/schemas/Id"
+              },
+              "number": {
+                "type": [
+                  "integer",
+                  "null"
+                ]
+              },
+              "name": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              }
+            },
+            "required": [
+              "id",
+              "number",
+              "name"
+            ],
+            "additionalProperties": false
+          },
+          "questions": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PracticeQuizQuestion"
+            }
+          },
+          "revisionMeta": {
+            "type": "object",
+            "properties": {
+              "selected": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "totalWrong": {
+                "type": "integer",
+                "minimum": 0
+              }
+            },
+            "required": [
+              "selected",
+              "totalWrong"
+            ],
+            "additionalProperties": false,
+            "description": "revision mode only."
+          },
+          "timeLimitSec": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "minimum": 0,
+            "description": "question_set mode only."
+          }
+        },
+        "required": [
+          "sessionId",
+          "mode",
+          "subject",
+          "questions"
+        ],
+        "additionalProperties": false
+      },
+      "CheckAnswerRequest": {
+        "type": "object",
+        "properties": {
+          "questionId": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "selectedOptionId": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Zero-based option index; must exist on the question."
+          }
+        },
+        "required": [
+          "questionId",
+          "selectedOptionId"
+        ]
+      },
+      "CheckAnswerResponse": {
+        "type": "object",
+        "properties": {
+          "isCorrect": {
+            "type": "boolean"
+          },
+          "correctOptionId": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "feedback": {
+            "type": "string",
+            "minLength": 1,
+            "description": "revision: \"Betul! Kali ini berjaya!\" / \"Masih belum tepat\"; other modes: \"Betul!\" / \"Salah\"."
+          },
+          "explanation": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "isCorrect",
+          "correctOptionId",
+          "feedback",
+          "explanation"
+        ],
+        "additionalProperties": false
+      },
+      "SubmitSessionRequest": {
+        "type": "object",
+        "properties": {
+          "timeSpent": {
+            "description": "Seconds (number). Never rejected: a non-number counts as 0; the stored value is round(timeSpent) clamped to [0, 180 x questionCount]. Answers are not sent."
+          }
+        }
+      },
+      "SubmitSessionResponse": {
+        "type": "object",
+        "properties": {
+          "results": {
+            "type": "object",
+            "properties": {
+              "score": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "total": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "gamification": {
+                "$ref": "#/components/schemas/PracticeGamification"
+              }
+            },
+            "required": [
+              "score",
+              "total",
+              "gamification"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "required": [
+          "results"
+        ],
+        "additionalProperties": false
+      },
+      "ListSessionsQuery": {
+        "type": "object",
+        "properties": {
+          "modes": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Comma list of PracticeMode; empty or any unknown value is 422."
+          },
+          "type": {
+            "type": "string",
+            "description": "One mode inside modes to narrow the rows; otherwise ignored."
+          },
+          "page": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "pageSize": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 100,
+            "description": "Default 15 when page is given. With neither page nor pageSize the list is not paged."
+          }
+        },
+        "required": [
+          "modes"
+        ]
+      },
+      "SessionListItem": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "$ref": "#/components/schemas/PracticeSessionId"
+          },
+          "mode": {
+            "$ref": "#/components/schemas/PracticeMode"
+          },
+          "subjectId": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/Id"
+              },
+              {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              }
+            ]
+          },
+          "subjectCode": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "\"UMUM\" for mixed free practice (no subject)."
+          },
+          "questionCount": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "correctCount": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "percent": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 100
+          },
+          "coinsEarned": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "timeSpent": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "completedAt": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/Timestamp"
+              },
+              {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              }
+            ]
+          }
+        },
+        "required": [
+          "id",
+          "mode",
+          "subjectId",
+          "subjectCode",
+          "questionCount",
+          "correctCount",
+          "percent",
+          "coinsEarned",
+          "timeSpent",
+          "completedAt"
+        ],
+        "additionalProperties": false
+      },
+      "SessionListStats": {
+        "type": "object",
+        "properties": {
+          "sessions": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "avgAccuracyPct": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 100
+          },
+          "coins": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "answered": {
+            "type": "integer",
+            "minimum": 0
+          }
+        },
+        "required": [
+          "sessions",
+          "avgAccuracyPct",
+          "coins",
+          "answered"
+        ],
+        "additionalProperties": false
+      },
+      "SessionListMeta": {
+        "type": "object",
+        "properties": {
+          "page": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "pageSize": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "totalItems": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "totalPages": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "from": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "minimum": 1
+          },
+          "to": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "minimum": 1
+          },
+          "counts": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "number"
+            }
+          },
+          "activeType": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/PracticeMode"
+              },
+              {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              }
+            ]
+          },
+          "stats": {
+            "$ref": "#/components/schemas/SessionListStats"
+          }
+        },
+        "required": [
+          "page",
+          "pageSize",
+          "totalItems",
+          "totalPages",
+          "activeType",
+          "stats"
+        ],
+        "additionalProperties": {}
+      },
+      "SessionListResponse": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SessionListItem"
+            }
+          },
+          "meta": {
+            "$ref": "#/components/schemas/SessionListMeta"
+          }
+        },
+        "required": [
+          "data",
+          "meta"
+        ]
       }
     },
     "parameters": {}
@@ -25957,6 +26635,413 @@
           },
           "404": {
             "description": "NOT_FOUND with message \"Subtopik tidak dijumpai.\"",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/practice/sessions": {
+      "post": {
+        "tags": [
+          "practice"
+        ],
+        "summary": "Start a practice session",
+        "description": "Any signed-in user. Questions are served without the key or the explanation. Mission starts resume an in-progress session. A repeated clientUuid returns the same session (status code of the replay is an open question).",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Value of Session.csrf; required on mutating requests."
+            },
+            "required": true,
+            "description": "Value of Session.csrf; required on mutating requests.",
+            "name": "X-CSRF-Token",
+            "in": "header"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/StartSessionRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Session started.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/StartSessionResponse"
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED: no valid session.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "402": {
+            "description": "TRIAL_EXHAUSTED \"Baki percubaan percuma anda telah habis.\" (not subscribed, no trial left).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "CSRF_INVALID (missing or wrong X-CSRF-Token).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "NOT_FOUND \"Rekod tidak dijumpai.\" (unknown subject, chapter, mission, remedial test, question set or ramalan set).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "CHAPTER_LOCKED \"Bab ini masih dikunci.\"; ALREADY_COMPLETED \"Misi ini sudah diselesaikan.\" (mission) or \"Ujian ini sudah selesai.\" (remedial); NO_ATTEMPTS_LEFT \"Tiada percubaan lagi untuk set ini.\".",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "VALIDATION_ERROR \"Nilai tidak sah.\" with fields (mode, levelId, difficulty, count, targetQuestionId); NOT_ENOUGH_QUESTIONS \"Soalan tidak mencukupi.\"; SET_NOT_READY \"Soalan tidak mencukupi.\"; NO_WRONG_QUESTIONS \"Maaf, terdapat masalah memuatkan kuiz ulang kaji.\".",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "tags": [
+          "practice"
+        ],
+        "summary": "Own completed sessions (history)",
+        "description": "Newest first. Not paged when neither page nor pageSize is given.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Comma list of PracticeMode; empty or any unknown value is 422."
+            },
+            "required": true,
+            "description": "Comma list of PracticeMode; empty or any unknown value is 422.",
+            "name": "modes",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "description": "One mode inside modes to narrow the rows; otherwise ignored."
+            },
+            "required": false,
+            "description": "One mode inside modes to narrow the rows; otherwise ignored.",
+            "name": "type",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "required": false,
+            "name": "page",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100,
+              "description": "Default 15 when page is given. With neither page nor pageSize the list is not paged."
+            },
+            "required": false,
+            "description": "Default 15 when page is given. With neither page nor pageSize the list is not paged.",
+            "name": "pageSize",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Sessions with meta.activeType and meta.stats.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SessionListResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED: no valid session.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "VALIDATION_ERROR \"Mod tidak sah.\" with fields.modes.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/practice/sessions/{id}/check-answer": {
+      "post": {
+        "tags": [
+          "practice"
+        ],
+        "summary": "Check one answer",
+        "description": "One check per question per session: a repeat returns the stored result. +1 trial use per first check while not subscribed. Only the session owner may call it.",
+        "parameters": [
+          {
+            "schema": {
+              "$ref": "#/components/schemas/PracticeSessionId"
+            },
+            "required": true,
+            "description": "Practice session id (uuid).",
+            "name": "id",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Value of Session.csrf; required on mutating requests."
+            },
+            "required": true,
+            "description": "Value of Session.csrf; required on mutating requests.",
+            "name": "X-CSRF-Token",
+            "in": "header"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CheckAnswerRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Result of the check; the key is revealed here by design.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/CheckAnswerResponse"
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED: no valid session.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "CSRF_INVALID (missing or wrong X-CSRF-Token).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "NOT_FOUND \"Rekod tidak dijumpai.\" (unknown session, or a session of another user).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "ALREADY_SUBMITTED \"Sesi ini sudah dihantar.\".",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "VALIDATION_ERROR \"Jawapan tidak sah.\" (fields.questionId when not in the session, fields.selectedOptionId when out of range).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/practice/sessions/{id}/submit": {
+      "post": {
+        "tags": [
+          "practice"
+        ],
+        "summary": "Submit (complete) a session",
+        "description": "Grades the stored checks and, in one transaction, writes the answer rows, revision queue, mastery, session totals and wallet/streak credit. timeSpent is coerced, never rejected: a non-number counts as 0 and the stored value is clamped to [0, 180 x questionCount]. Only the session owner may call it.",
+        "parameters": [
+          {
+            "schema": {
+              "$ref": "#/components/schemas/PracticeSessionId"
+            },
+            "required": true,
+            "description": "Practice session id (uuid).",
+            "name": "id",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Value of Session.csrf; required on mutating requests."
+            },
+            "required": true,
+            "description": "Value of Session.csrf; required on mutating requests.",
+            "name": "X-CSRF-Token",
+            "in": "header"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SubmitSessionRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Session completed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/SubmitSessionResponse"
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED: no valid session.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "CSRF_INVALID (missing or wrong X-CSRF-Token).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "NOT_FOUND \"Rekod tidak dijumpai.\" (unknown session, or a session of another user).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "ALREADY_SUBMITTED \"Sesi ini sudah dihantar.\" (second submit).",
             "content": {
               "application/json": {
                 "schema": {
