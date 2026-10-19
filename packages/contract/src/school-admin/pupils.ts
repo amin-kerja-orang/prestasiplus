@@ -1,0 +1,124 @@
+import { z } from '../zod'
+import { IdSchema } from '../common/ids'
+import { TimestampSchema } from '../common/time'
+import { nonBlank, PASSWORD_MAX_LENGTH, PASSWORD_MIN_LENGTH, SchoolAdminSchoolInfoSchema } from './common'
+import { SchoolAdminUserDetailSchema, SchoolAdminUserListMetaSchema } from './users'
+
+/**
+ * Pupil management of the Admin Sekolah (S6, S9, S12): list, form options, detail, CSV export,
+ * create (with the one-time credential), update, reset password. Routes are under
+ * `/admin-sekolah/pelajar`. Pupils cannot be toggled active or inactive here.
+ *
+ * PDPA: pupils are mostly minors. The list row carries `email` and `phone` because the M27 pupil
+ * list screen shows both columns (S6: "Emel", "Telefon"); no IC number appears in any response.
+ * The frontend list is the reason `phone` stays in the row (a drop was considered, BE-21 review).
+ */
+
+export const SchoolAdminPupilRowSchema = z
+  .object({
+    id: IdSchema,
+    name: z.string(),
+    initials: z.string().min(1).max(2).meta({ description: 'Up to two upper-case initials.' }),
+    email: z.string(),
+    phone: z.string().nullable(),
+    gradeLabel: z.string().nullable().meta({ description: '"Tingkatan 1..5", "Darjah 1..6" or null.' }),
+    classNames: z
+      .array(z.string())
+      .meta({ description: 'Names of the active enrolments of both class kinds, inactive classes left out.' }),
+    isActive: z.boolean(),
+    createdAt: TimestampSchema,
+    canEdit: z.boolean().meta({ description: 'True only for an active pupil (equals isActive).' }),
+  })
+  .meta({ id: 'SchoolAdminPupilRow' })
+export type SchoolAdminPupilRow = z.infer<typeof SchoolAdminPupilRowSchema>
+
+/** Active first, then id descending; 25 per page. */
+export const SchoolAdminPupilListResponseSchema = z
+  .object({ data: z.array(SchoolAdminPupilRowSchema), meta: SchoolAdminUserListMetaSchema })
+  .meta({ id: 'SchoolAdminPupilListResponse' })
+export type SchoolAdminPupilListResponse = z.infer<typeof SchoolAdminPupilListResponseSchema>
+
+/** `GET /admin-sekolah/pelajar/form-options`. Never carries the default password or its length. */
+export const SchoolAdminPupilFormOptionsSchema = z
+  .object({
+    school: SchoolAdminSchoolInfoSchema,
+    classes: z
+      .array(z.object({ id: IdSchema, name: z.string() }))
+      .meta({ description: 'Active classrooms of the school by name A to Z: the valid targets of `classId`.' }),
+    passwordPlaceholder: z.literal('••••••••').meta({ description: 'Eight bullets.' }),
+    passwordHint: z.literal('Biarkan kosong untuk guna kata laluan lalai (minimum 8 aksara).'),
+    passwordMinLength: z.literal(8),
+  })
+  .meta({ id: 'SchoolAdminPupilFormOptions' })
+export type SchoolAdminPupilFormOptions = z.infer<typeof SchoolAdminPupilFormOptionsSchema>
+
+/**
+ * `POST /admin-sekolah/pelajar` body. The pupil is created ACTIVE with role student and the caller
+ * school; `role`, `schoolId`, `isActive`, `grade`, `icNumber` are ignored (mass-assignment waiver:
+ * the mock ignores unknown and protected keys instead of the strict 422 of BE-NFR-05; the server
+ * must never bind them, proved by an integration test). `password` empty or absent = the
+ * configured default password (the account is then flagged `mustChangePassword`, D55c / D57c; risk
+ * accepted pending LEAD, a server-generated random initial password per account is the alternative
+ * and would not change the wire shape). `classId` blank or absent = no class. Validation (422,
+ * Laravel English text): `name` required, 3 to 255 ("The name field must be at least 3
+ * characters."); `email` required, valid, at most 255, unique among ALL users of every school
+ * ("The email has already been taken."); `password` 8 to 255 when given; `classId` an active
+ * classroom of the school ("The selected class id is invalid.").
+ *
+ * Accepted trade-off (e-mail enumeration): because the e-mail is unique across schools, the 422
+ * "The email has already been taken." tells a school admin that an address is registered
+ * somewhere, including a pupil of another school. This cannot be hidden without dropping
+ * uniqueness; it is mitigated by the 429 rate limit and the audit trail.
+ */
+export const SchoolAdminPupilCreateRequestSchema = z
+  .object({
+    name: nonBlank(255).min(3),
+    email: z.email().max(255),
+    password: z
+      .union([z.literal(''), z.string().min(PASSWORD_MIN_LENGTH).max(PASSWORD_MAX_LENGTH)])
+      .nullable()
+      .optional()
+      .meta({ writeOnly: true, description: 'Empty, null or absent = the default password; otherwise 8 to 255 characters.' }),
+    classId: z.union([IdSchema, z.literal('')]).nullable().optional(),
+  })
+  .meta({ id: 'SchoolAdminPupilCreateRequest' })
+export type SchoolAdminPupilCreateRequest = z.infer<typeof SchoolAdminPupilCreateRequestSchema>
+
+/**
+ * `201` result (user decision D55c). `credential.password` (the typed or the default password) is
+ * shown ONCE, in this response, to the creating school admin only, for hand-over to the pupil. It
+ * is never logged, never stored in plain text (only the hash is kept) and cannot be retrieved
+ * again: no other route returns it. The account is created flagged `mustChangePassword`: the
+ * pupil's first login is forced to set a new password (enforced by BE-03, the session/login flow).
+ *
+ * Lost response: the credential is NEVER re-served. If the 201 is lost, a blind retry answers 422
+ * "The email has already been taken." (the account exists) and the password is gone; the recovery
+ * is `POST /admin-sekolah/pelajar/{id}/reset-password` (the admin sets a new password and hands
+ * it over). The server must not keep the plaintext to support a retry. The response carries
+ * `Cache-Control: no-store` so no proxy or browser cache keeps a minor's password.
+ */
+export const SchoolAdminPupilCreatedResultSchema = z
+  .object({
+    data: SchoolAdminUserDetailSchema,
+    credential: z
+      .object({
+        name: z.string(),
+        school: z.string(),
+        email: z.string(),
+        password: z.string().min(1).meta({
+          description:
+            'Shown once, only to the creating school admin in this 201 response. Never logged, never stored in plain text, not retrievable again (no other route returns it).',
+        }),
+      })
+      .meta({
+        description:
+          'One-time hand-over credential (D55c). Present only in this create response; later reads and the reset-password routes never echo a password.',
+      }),
+    mustChangePassword: z.literal(true).meta({
+      description:
+        'Always true on create (D55c): the new pupil account is flagged must-change-password, so the first login forces a password change (enforced by BE-03).',
+    }),
+    status: z.string().min(1).meta({ description: 'Pelajar "{name}" berjaya dicipta.' }),
+  })
+  .meta({ id: 'SchoolAdminPupilCreatedResult' })
+export type SchoolAdminPupilCreatedResult = z.infer<typeof SchoolAdminPupilCreatedResultSchema>
