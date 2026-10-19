@@ -18,6 +18,7 @@ import { CLOCK, type Clock } from '../../db/clock'
 import { AuthConfig } from './auth.config'
 import { AuthService, type RequestInfo, type SessionGrant } from './auth.service'
 import { clearSessionCookie, sessionTokenOf, setSessionCookie } from './cookies'
+import { AllowWhilePasswordChangeRequired } from './password-change.guard'
 import { PostgresSessionResolver } from './session-resolver.service'
 
 function infoOf(req: Request): RequestInfo {
@@ -98,6 +99,7 @@ export class SessionController extends SessionResponder {
   }
 
   @Get()
+  @AllowWhilePasswordChangeRequired()
   async current(@Req() req: Request, @Res({ passthrough: true }) res: Response): Promise<{ data: Session }> {
     const state = await this.resolver.require(req)
     noStore(res)

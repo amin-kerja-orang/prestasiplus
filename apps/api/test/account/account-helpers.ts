@@ -3,7 +3,7 @@ import 'reflect-metadata'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 
-import type { INestApplication } from '@nestjs/common'
+import type { INestApplication, Type } from '@nestjs/common'
 import { ConfigService } from '@nestjs/config'
 import { Test } from '@nestjs/testing'
 import { ErrorBodySchema, SessionSchema, type Session } from '@pp/contract'
@@ -88,6 +88,8 @@ export interface BootOptions {
   teeMail?: boolean
   /** Keep the real NotificationsService adapter instead of the spy. */
   realNotices?: boolean
+  /** Extra feature modules next to the account module. */
+  modules?: Type<unknown>[]
   db?: TestDatabase
 }
 
@@ -123,7 +125,7 @@ export async function bootAccountApp(opts: BootOptions = {}): Promise<AccountTes
   let mail: MailSpy = new MailSpy()
   const notices = new NoticeSpy()
   let builder = Test.createTestingModule({
-    imports: [defineAppModule([AccountModule], opts.logStream ? { logStream: opts.logStream } : {})],
+    imports: [defineAppModule([AccountModule, ...(opts.modules ?? [])], opts.logStream ? { logStream: opts.logStream } : {})],
   })
     .overrideProvider(CLOCK)
     .useValue(clock)

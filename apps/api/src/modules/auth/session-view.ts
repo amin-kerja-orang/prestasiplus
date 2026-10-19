@@ -209,7 +209,7 @@ export function assemble(account: AccountRecord, state: SessionState, csrf: stri
     landingPath: LANDING_PATHS[active.role],
     expiresAt: toMytTimestamp(state.expiresAt),
     csrf,
-    mustChangePassword: false, // placeholder until BE-06 wires accounts.must_change_password
+    mustChangePassword: account.user.mustResetPassword,
   }
   const auth: AuthContext = {
     sessionRowId: state.id,
@@ -218,6 +218,7 @@ export function assemble(account: AccountRecord, state: SessionState, csrf: stri
     active,
     mode: modeBody,
     capabilities,
+    mustChangePassword: account.user.mustResetPassword,
   }
   return { session, auth, grants, baseRole: grant.role, mode, repaired }
 }

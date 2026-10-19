@@ -49,6 +49,7 @@ import { ZodValidationPipe } from '../../common/validation/zod-validation.pipe'
 import { CLOCK, type Clock } from '../../db/clock'
 import { AuthConfig } from '../auth/auth.config'
 import type { RequestInfo, SessionGrant } from '../auth/auth.service'
+import { AllowWhilePasswordChangeRequired } from '../auth/password-change.guard'
 import { setSessionCookie } from '../auth/cookies'
 import { ACCOUNT_LIMITS } from './account.constants'
 import { invalid } from './account.errors'
@@ -202,6 +203,7 @@ export class MeController extends Cookies {
   }
 
   @Put('password')
+  @AllowWhilePasswordChangeRequired()
   @RateLimit(ACCOUNT_LIMITS.write)
   async password(
     @Body() raw: unknown,

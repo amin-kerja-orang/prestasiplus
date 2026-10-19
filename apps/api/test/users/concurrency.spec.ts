@@ -38,6 +38,7 @@ describe('concurrency: the last active admin survives two racing requests (D58)'
     const created = CreatedUserSchema.parse(
       (await first.post('/admin/users', { roles: ['admin'], name: `Admin Balapan ${String(n)}`, email })).body.data,
     )
+    await t.db.query('update users set must_reset_password = false where id = $1::bigint', [created.id]) // forced-change guard is not under test here
     const b = apiOf(await login(t, email, { password: created.generatedPassword }))
     const aId = (await t.db.query<{ id: string }>(`select id::text from users where email = $1`, [ADMIN]))[0]?.id as string
     return { a: apiOf(await login(t, ADMIN)), b, aId, bId: created.id }
