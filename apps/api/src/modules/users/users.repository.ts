@@ -66,7 +66,19 @@ export interface NewUserRow {
   icMasked: string | null
   isActive: boolean
   createdById: string
+  /** DELIMa id (student import); omitted: null. */
+  idDelima?: string | null
+  /** Complimentary student flag; omitted: false. */
+  isComplimentary?: boolean
   now: Date
+}
+
+/** What the subscription access rules read from one user (BE-25 `SubscriptionService`). */
+export interface AccessFacts {
+  schoolId: string | null
+  trialQuestionsUsed: number
+  /** `YYYY-MM-DD` the complimentary package ends (that day included), or null for any other user. */
+  compExpiresOn: string | null
 }
 
 export interface UserPatchRow {
@@ -531,6 +543,40 @@ export class UsersRepository {
     for (const id of ids.filter(isIdString)) await this.sessions.revokeAllFor(idFromString(id))
   }
 
+  /** Which of these IC hashes already belong to an account (duplicate check of the complimentary register). */
+  async existingIcHashes(hashes: readonly string[]): Promise<Set<string>> {
+    const unique = [...new Set(hashes)]
+    if (unique.length === 0) return new Set()
+    const rows = await this.prisma.client.$queryRaw<{ h: string }[]>`
+      SELECT DISTINCT ic_hash AS h FROM users WHERE ic_hash = ANY(${unique}::text[])`
+    return new Set(rows.map((r) => r.h))
+  }
+
+  /** School, trial counter and complimentary package end of one user, or null for an unknown id. */
+  async accessFacts(userId: string): Promise<AccessFacts | null> {
+    if (!isIdString(userId)) return null
+    const row = await this.prisma.client.user.findUnique({
+      where: { id: idFromString(userId) },
+      select: { schoolId: true, trialQuestionsUsed: true, compStudent: { select: { packageExpiresOn: true } } },
+    })
+    if (!row) return null
+    return {
+      schoolId: row.schoolId === null ? null : idToString(row.schoolId),
+      trialQuestionsUsed: row.trialQuestionsUsed,
+      compExpiresOn: row.compStudent ? row.compStudent.packageExpiresOn.toISOString().slice(0, 10) : null,
+    }
+  }
+
+  /** Adds exactly 1 to the trial counter in one atomic statement; the new value, or null for an unknown id. */
+  async incrementTrial(userId: string): Promise<number | null> {
+    if (!isIdString(userId)) return null
+    const rows = await this.prisma.client.$queryRaw<{ n: number }[]>`
+      UPDATE users SET trial_questions_used = trial_questions_used + 1
+       WHERE id = ${idFromString(userId)}
+   RETURNING trial_questions_used AS n`
+    return rows[0]?.n ?? null
+  }
+
   /** Hard delete; roles, scopes and sessions go with the user (FK cascade), audit actors become null. */
   async remove(ids: readonly string[], caller?: Caller): Promise<number> {
     const userIds = ids.filter(isIdString).map(idFromString)
@@ -556,6 +602,8 @@ function toCreateData(input: NewUserRow): Prisma.UserUncheckedCreateInput {
     icMasked: input.icMasked,
     isActive: input.isActive,
     createdById: idFromString(input.createdById),
+    ...(input.idDelima !== undefined ? { idDelima: input.idDelima } : {}),
+    ...(input.isComplimentary !== undefined ? { isComplimentary: input.isComplimentary } : {}),
     createdAt: input.now,
     updatedAt: input.now,
   }

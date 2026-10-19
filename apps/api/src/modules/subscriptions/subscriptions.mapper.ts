@@ -6,12 +6,6 @@ import type { SchoolRow } from '../schools'
 import { dayTimestamp } from './dates'
 import type { PackageRow, SubscriptionRecord } from './subscriptions.repository'
 
-/**
- * `studentQuota` is `min(1)` on the wire, but a migrated row may have none (deviation log 2026-10-20,
- * BE-25). Such a row is shown with this placeholder, has `remaining` 0 and grants no quota.
- */
-export const NO_QUOTA_PLACEHOLDER = 1
-
 /** BR-25: the share of the quota used, whole percent, at most 100. */
 export function usedPercent(used: number, quota: number): number {
   return quota > 0 ? Math.min(100, Math.round((used * 100) / quota)) : 0
@@ -47,7 +41,7 @@ export function toPackageWire(p: PackageRow): SchoolPackage {
 }
 
 export function toDetail(row: SubscriptionRecord, school: SchoolRow, pkg: PackageRow, used: number): SubscriptionDetail {
-  const quota = row.studentQuota ?? NO_QUOTA_PLACEHOLDER
+  const quota = row.studentQuota
   return {
     id: row.id,
     schoolId: row.schoolId,
@@ -65,8 +59,8 @@ export function toDetail(row: SubscriptionRecord, school: SchoolRow, pkg: Packag
     createdAt: toMytTimestamp(row.createdAt),
     updatedAt: toMytTimestamp(row.updatedAt),
     formLevel: pkg.formLevel as SubscriptionDetail['formLevel'],
-    remaining: row.studentQuota === null ? 0 : Math.max(0, row.studentQuota - used),
-    usedPercent: row.studentQuota === null ? 0 : usedPercent(used, row.studentQuota),
+    remaining: Math.max(0, quota - used),
+    usedPercent: usedPercent(used, quota),
     school: toSchool(school),
     package: toPackageWire(pkg),
   }
@@ -79,7 +73,7 @@ export function toListItem(row: SubscriptionRecord, school: SchoolRow, pkg: Pack
     formLevel: pkg.formLevel as SubscriptionListItem['formLevel'],
     packageTier: row.packageTier,
     used,
-    studentQuota: row.studentQuota ?? NO_QUOTA_PLACEHOLDER,
+    studentQuota: row.studentQuota,
     status: row.status,
     startsAt: dayTimestamp(row.startsOn),
     endsAt: dayTimestamp(row.endsOn),

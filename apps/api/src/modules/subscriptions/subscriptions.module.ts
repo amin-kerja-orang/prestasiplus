@@ -6,7 +6,6 @@ import { AuthModule } from '../auth'
 import { SchoolsModule } from '../schools'
 import { IcService } from '../users/credentials'
 import { UsersModule } from '../users'
-import { AccountFlagsRepository } from './account-flags.repository'
 import { COMP_CLASSROOM_PORT, NoClassroomsPort } from './comp-students/classroom.port'
 import { CompStudentsController } from './comp-students/comp-students.controller'
 import { CompStudentsRepository } from './comp-students/comp-students.repository'
@@ -32,7 +31,6 @@ import { UserPackagesService } from './user-packages.service'
   controllers: [SubscriptionsController, QuotaController, UserPackagesController, CompStudentsController],
   providers: [
     SubscriptionsRepository,
-    AccountFlagsRepository,
     CompStudentsRepository,
     SchoolSubscriptionsService,
     QuotaService,

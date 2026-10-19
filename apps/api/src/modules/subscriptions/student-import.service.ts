@@ -23,8 +23,8 @@ import { gradeOfClassLevel } from '../users/class-level'
 import { IcService } from '../users/credentials'
 import { ImportJobsRepository } from '../users/import'
 import { UsersRepository, uniqueField, type NewUserRow } from '../users/users.repository'
-import { AccountFlagsRepository } from './account-flags.repository'
 import { QuotaService } from './quota.service'
+import { SubscriptionsRepository } from './subscriptions.repository'
 import { parseStrict } from './strict-body'
 import { IMPORT_TX, SUBSCRIPTION_AUDIT } from './subscriptions.constants'
 import { invalid, tooLarge } from './subscriptions.errors'
@@ -60,7 +60,7 @@ export class StudentImportService {
     @Inject(UsersRepository) private readonly users: UsersRepository,
     @Inject(SchoolsRepository) private readonly schools: SchoolsRepository,
     @Inject(ImportJobsRepository) private readonly jobs: ImportJobsRepository,
-    @Inject(AccountFlagsRepository) private readonly flags: AccountFlagsRepository,
+    @Inject(SubscriptionsRepository) private readonly subscriptions: SubscriptionsRepository,
     @Inject(QuotaService) private readonly quota: QuotaService,
     @Inject(PasswordService) private readonly passwords: PasswordService,
     @Inject(IcService) private readonly ic: IcService,
@@ -109,6 +109,7 @@ export class StudentImportService {
         grade,
         passwordHash: hashes[i] as string,
         mustChangePassword: true,
+        idDelima: p.email,
         icHash: ic?.hash ?? null,
         icMasked: ic?.masked ?? null,
         isActive: true,
@@ -120,13 +121,12 @@ export class StudentImportService {
     let jobId: string
     try {
       jobId = await this.prisma.transaction(async (tx) => {
-        await this.flags.lockSchoolImports(schoolId)
+        await this.subscriptions.lockSchoolImports(schoolId)
         const locked = await this.quota.figures(schoolId)
         if (!locked) throw invalid({ schoolId: STUDENT_IMPORT_MESSAGES.noSubscription })
         if (rows.length > locked.remaining) throw invalid({ schoolId: STUDENT_IMPORT_MESSAGES.quotaShort })
         const ids = await this.users.createManyWithRole(rows, 'student')
         if (ids.length !== rows.length) throw ApiError.of('CONFLICT')
-        await this.flags.setIdDelima(ids, plan.planned.map((p) => p.email))
         const job = await this.jobs.create({
           kind: 'students',
           mode: body.importMode as StudentImportMode,

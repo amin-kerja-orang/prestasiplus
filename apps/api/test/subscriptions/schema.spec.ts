@@ -123,7 +123,8 @@ describe('subscriptions and parents schema (migration 0006_subscriptions_parents
         `insert into school_subscriptions (school_id, school_package_id, package_tier, student_quota, question_limit, status, starts_on, ends_on)
          values (${school}, ${pkg}, 'basic', ${quota}, ${limit}, 'active', '2026-06-01', '${ends}')`,
       )
-    await base('null', 'null', '2026-06-01')
+    await base('5', 'null', '2026-06-01')
+    expect(await rejects(`insert into school_subscriptions (school_id, school_package_id, package_tier, status, starts_on, ends_on) values ($1, $2, 'basic', 'active', '2026-01-01', '2026-02-01')`, [schoolId, packageId])).toMatch(/student_quota/)
     expect(await rejects(`insert into school_subscriptions (school_id, school_package_id, package_tier, student_quota, status, starts_on, ends_on) values ($1, $2, 'basic', 0, 'active', '2026-01-01', '2026-02-01')`, [schoolId, packageId])).toMatch(/ck_school_subscriptions_student_quota/)
     await expect(base('5', '0', '2026-07-01')).rejects.toThrow(/ck_school_subscriptions_question_limit/)
     await expect(base('5', '500', '2026-05-31')).rejects.toThrow(/ck_school_subscriptions_dates/)
@@ -147,8 +148,8 @@ describe('subscriptions and parents schema (migration 0006_subscriptions_parents
   it('enforces the legacy pair on subscriptions and packages', async () => {
     const ins = (id: string, src = 'cloud') =>
       db.query(
-        `insert into school_subscriptions (school_id, school_package_id, package_tier, status, starts_on, ends_on, legacy_source, legacy_id)
-         values ($1, $2, 'full', 'expired', '2025-01-01', '2025-12-31', $3, $4)`,
+        `insert into school_subscriptions (school_id, school_package_id, package_tier, student_quota, status, starts_on, ends_on, legacy_source, legacy_id)
+         values ($1, $2, 'full', 5, 'expired', '2025-01-01', '2025-12-31', $3, $4)`,
         [schoolB, packageId, src, id],
       )
     await ins('1')
@@ -168,6 +169,7 @@ describe('subscriptions and parents schema (migration 0006_subscriptions_parents
     expect(await rejects(`insert into user_packages (user_id, form_level, school_package_id, student_quota) values ($1, 't1_t3', $2, 50)`, [admin, packageId])).toMatch(/ck_user_packages_form_level/)
     expect(await rejects(`insert into user_packages (user_id, form_level, school_package_id, student_quota) values ($1, 't5', $2, 0)`, [admin, packageId])).toMatch(/ck_user_packages_student_quota/)
     expect(await rejects(`insert into user_packages (user_id, form_level, school_package_id, student_quota) values (999999, 't5', $1, 5)`, [packageId])).toMatch(/fk_user_packages_user_id/)
+    expect(await rejects(`insert into user_packages (user_id, form_level, school_package_id, student_quota) values ($1, 't4', $2, 60)`, [admin, packageId])).toMatch(/uq_user_packages_user_form_level/)
     await db.query(`delete from users where id = $1`, [admin])
     expect(await db.query(`select 1 from user_packages where user_id = $1`, [admin])).toHaveLength(0)
   })

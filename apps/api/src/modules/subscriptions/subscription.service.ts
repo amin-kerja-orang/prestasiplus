@@ -1,7 +1,7 @@
 import { Inject, Injectable } from '@nestjs/common'
 
 import { ApiError } from '../../common/errors/api-error'
-import { AccountFlagsRepository } from './account-flags.repository'
+import { UsersRepository } from '../users/users.repository'
 import { mytDay } from './dates'
 import { TRIAL_LIMIT } from './subscriptions.constants'
 import { SubscriptionsRepository } from './subscriptions.repository'
@@ -32,7 +32,7 @@ export interface TrialStatus {
 @Injectable()
 export class SubscriptionService {
   constructor(
-    @Inject(AccountFlagsRepository) private readonly facts: AccountFlagsRepository,
+    @Inject(UsersRepository) private readonly facts: UsersRepository,
     @Inject(SubscriptionsRepository) private readonly subscriptions: SubscriptionsRepository,
   ) {}
 

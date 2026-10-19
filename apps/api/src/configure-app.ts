@@ -17,6 +17,8 @@ export function trustProxyHops(raw: unknown): number {
  */
 export const IMPORT_JSON_LIMIT = '1100kb'
 export const IMPORT_JSON_PATH = '/api/admin/users/bulk-import'
+/** The DELIMa student import (BE-25) takes the same large JSON body. */
+export const STUDENT_IMPORT_JSON_PATH = '/api/admin/students/import'
 
 /** Cross-cutting setup shared by `main.ts` and the tests: prefix, request id, logger, proxy trust. */
 export function configureApp(app: INestApplication): void {
@@ -29,6 +31,8 @@ export function configureApp(app: INestApplication): void {
   // A larger JSON parser for the import route ONLY. `app.use` runs now, before Nest registers its own
   // parsers at init; a parser that has read the body sets `req._body`, so the later (100kb) parser skips it.
   const largeJson = json({ limit: IMPORT_JSON_LIMIT })
-  app.use(IMPORT_JSON_PATH, (req: Request, res: Response, next: NextFunction) => (req.method === 'POST' ? largeJson(req, res, next) : next()))
+  for (const path of [IMPORT_JSON_PATH, STUDENT_IMPORT_JSON_PATH]) {
+    app.use(path, (req: Request, res: Response, next: NextFunction) => (req.method === 'POST' ? largeJson(req, res, next) : next()))
+  }
   app.useLogger(app.get(Logger))
 }

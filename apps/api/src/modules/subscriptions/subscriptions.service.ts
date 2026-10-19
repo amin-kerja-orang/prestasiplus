@@ -204,7 +204,7 @@ export class SchoolSubscriptionsService {
       const row = await this.repo.findForUpdate(caller, id)
       if (!row) throw notFound()
       const line = reasonLine(
-        `Kuota ${row.studentQuota === null ? '-' : String(row.studentQuota)} → ${String(quota)} pada ${formatMytDateTime(now)}`,
+        `Kuota ${String(row.studentQuota)} → ${String(quota)} pada ${formatMytDateTime(now)}`,
         textOrNull(body.notes),
       )
       const next = await this.repo.update(row.id, { studentQuota: quota, ...(line === null ? {} : { notes: appendNote(row.notes, line) }), now })

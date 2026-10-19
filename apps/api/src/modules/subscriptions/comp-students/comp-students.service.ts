@@ -27,7 +27,6 @@ import type { Caller } from '../../users/caller'
 import { classLevelOfGrade } from '../../users/class-level'
 import { generatePassword, IcService } from '../../users/credentials'
 import { UsersRepository, uniqueField, type NewUserRow } from '../../users/users.repository'
-import { AccountFlagsRepository } from '../account-flags.repository'
 import { parseStrict } from '../strict-body'
 import { SUBSCRIPTION_AUDIT, PAGE_NUMBER_MAX, WRITE_TX, IMPORT_TX } from '../subscriptions.constants'
 import { invalid, notFound, tooLarge } from '../subscriptions.errors'
@@ -50,7 +49,6 @@ export class CompStudentsService {
     @Inject(CLOCK) private readonly clock: Clock,
     @Inject(CompStudentsRepository) private readonly repo: CompStudentsRepository,
     @Inject(UsersRepository) private readonly users: UsersRepository,
-    @Inject(AccountFlagsRepository) private readonly flags: AccountFlagsRepository,
     @Inject(PasswordService) private readonly passwords: PasswordService,
     @Inject(IcService) private readonly ic: IcService,
     @Inject(AuditService) private readonly audit: AuditService,
@@ -126,7 +124,7 @@ export class CompStudentsService {
     }
 
     // A person who already has an account (same IC) or repeats in the paste is skipped.
-    const known = await this.flags.existingIcHashes(valid.map((v) => v.hash))
+    const known = await this.users.existingIcHashes(valid.map((v) => v.hash))
     const seen = new Set<string>()
     const planned = valid.filter((v) => {
       if (known.has(v.hash) || seen.has(v.hash)) {
@@ -150,6 +148,7 @@ export class CompStudentsService {
       grade: classroom.grade,
       passwordHash: hashes[i] as string,
       mustChangePassword: true,
+      isComplimentary: true,
       icHash: p.hash,
       icMasked: p.masked,
       isActive: true,
@@ -161,7 +160,6 @@ export class CompStudentsService {
       await this.prisma.transaction(async (tx) => {
         const ids = await this.users.createManyWithRole(rows, 'student')
         if (ids.length !== rows.length) throw ApiError.of('CONFLICT')
-        await this.flags.markComplimentary(ids)
         await this.repo.createMany(
           ids.map((userId) => ({ userId, packageExpiresOn: body.packageExpiresAt, originalSchoolName: classroom.schoolName })),
           now,

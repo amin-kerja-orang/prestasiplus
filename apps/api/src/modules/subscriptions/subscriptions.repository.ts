@@ -30,8 +30,7 @@ export interface SubscriptionRecord {
   schoolId: string
   schoolPackageId: string
   packageTier: SubscriptionTier
-  /** Null only for a migrated row whose source has no student quota (deviation log, BE-25 step 1). */
-  studentQuota: number | null
+  studentQuota: number
   status: SubscriptionStatus
   /** `YYYY-MM-DD`, Malaysia time. */
   startsOn: string
@@ -228,12 +227,12 @@ export class SubscriptionsRepository {
 
   /**
    * The subscription that grants the school's quota: the latest-starting `active` or `grace` row
-   * (ties by id) that has a student quota. A row without one grants nothing (deviation log, BE-25).
+   * (ties by id).
    */
   async quotaSource(schoolId: string): Promise<SubscriptionRecord | null> {
     if (!isIdString(schoolId)) return null
     const row = await this.prisma.client.schoolSubscription.findFirst({
-      where: { schoolId: idFromString(schoolId), status: { in: ['active', 'grace'] }, studentQuota: { not: null } },
+      where: { schoolId: idFromString(schoolId), status: { in: ['active', 'grace'] } },
       orderBy: [{ startsOn: 'desc' }, { id: 'desc' }],
     })
     return row ? toRecord(row) : null
@@ -289,18 +288,18 @@ export class SubscriptionsRepository {
     return toRecord(row)
   }
 
+  /** Serialises the student imports of one school, so two imports cannot both pass the quota check. Transaction scoped. */
+  async lockSchoolImports(schoolId: string): Promise<void> {
+    const key = `students.import:${schoolId}`
+    await this.prisma.client.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${key}))`
+  }
+
   // --- user packages ---------------------------------------------------------------------------------
 
   async userPackages(userId: string): Promise<UserPackageRow[]> {
     if (!isIdString(userId)) return []
     const rows = await this.prisma.client.userPackage.findMany({ where: { userId: idFromString(userId) }, orderBy: { id: 'asc' } })
     return rows.map(toUserPackage)
-  }
-
-  /** Serialises the upserts of one user (there is no unique index on user + form level). Transaction scoped. */
-  async lockUserPackages(userId: string): Promise<void> {
-    const key = `user_packages:${userId}`
-    await this.prisma.client.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${key}))`
   }
 
   /** Mock BR-13: creates the row of (user, form level) or replaces its package and quota; `assignedAt` = now. */
@@ -312,11 +311,13 @@ export class SubscriptionsRepository {
     now: Date
   }): Promise<UserPackageRow> {
     const userId = idFromString(input.userId)
-    const current = await this.prisma.client.userPackage.findFirst({ where: { userId, formLevel: input.formLevel }, orderBy: { id: 'asc' } })
     const data = { schoolPackageId: idFromString(input.schoolPackageId), studentQuota: input.studentQuota, assignedAt: input.now, updatedAt: input.now }
-    const row = current
-      ? await this.prisma.client.userPackage.update({ where: { id: current.id }, data })
-      : await this.prisma.client.userPackage.create({ data: { userId, formLevel: input.formLevel, createdAt: input.now, ...data } })
+    // One statement on the unique key (INSERT ... ON CONFLICT DO UPDATE): parallel calls leave one row.
+    const row = await this.prisma.client.userPackage.upsert({
+      where: { userId_formLevel: { userId, formLevel: input.formLevel } },
+      create: { userId, formLevel: input.formLevel, createdAt: input.now, ...data },
+      update: data,
+    })
     return toUserPackage(row)
   }
 }

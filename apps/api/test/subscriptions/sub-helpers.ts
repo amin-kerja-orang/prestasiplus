@@ -7,6 +7,7 @@ import { expect } from 'vitest'
 
 import { runSeeds } from '../../prisma/seed'
 import { identitySeed } from '../../prisma/seed/core/identity'
+import { schoolPackagesSeed } from '../../prisma/seed/core/school-packages'
 import { schoolsSeed } from '../../prisma/seed/core/schools'
 import { defineAppModule } from '../../src/app.module'
 import { configureApp } from '../../src/configure-app'
@@ -32,25 +33,10 @@ export interface BootOptions {
   classrooms?: CompClassroomPort
 }
 
-/** The four catalogue rows of the mock (BR-22). Real data comes from the ETL; tests insert them. */
-export const PACKAGES = [
-  { code: 'T4', name: 'Pakej SPM Tingkatan 4', slug: 'spm-t4', level: 'spm', form: 't4', renewals: 1 },
-  { code: 'T5', name: 'Pakej SPM Tingkatan 5', slug: 'spm-t5', level: 'spm', form: 't5', renewals: 0 },
-  { code: 'D1_D6', name: 'Pakej Rendah (Darjah 1-6)', slug: 'rendah-d1-d6', level: 'primary', form: 'd1_d6', renewals: 5 },
-  { code: 'T1_T3', name: 'Pakej Menengah Rendah (Tingkatan 1-3)', slug: 'menengah-rendah-t1-t3', level: 'lower_secondary', form: 't1_t3', renewals: 2 },
-] as const
-
 /** Nest app with auth, users and subscriptions on a private migrated database (identity + schools seeds + the 4 packages). */
 export async function bootSubApp(opts: BootOptions = {}): Promise<SubTestApp> {
   const db = await createTestDatabase()
-  await runSeeds([identitySeed, schoolsSeed], { prisma: db.prisma })
-  for (const p of PACKAGES) {
-    await db.query(
-      `insert into school_packages (code, name, slug, education_level, form_level, price_annual, max_renewals) values ($1, $2, $3, $4, $5, 30.00, $6)`,
-      [p.code, p.name, p.slug, p.level, p.form, p.renewals],
-    )
-  }
-
+  await runSeeds([identitySeed, schoolsSeed, schoolPackagesSeed], { prisma: db.prisma })
   const env: Record<string, string | undefined> = {
     DATABASE_URL: db.url,
     COOKIE_SECURE: 'false',

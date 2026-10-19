@@ -75,7 +75,6 @@ describe('school quota and student import (AC 2)', () => {
   let s1: string
   let s2: string
   let s3: string
-  let s4: string
 
   beforeAll(async () => {
     t = await bootSubApp()
@@ -84,7 +83,6 @@ describe('school quota and student import (AC 2)', () => {
     s1 = await schoolIdOf(t.db, 'DEMO001') // 5 students (one inactive, one suspended)
     s2 = await schoolIdOf(t.db, 'DEMO002') // 1 student
     s3 = await schoolIdOf(t.db, 'DEMO003')
-    s4 = await schoolIdOf(t.db, 'DEMO004')
   })
   afterAll(async () => {
     await t.close()
@@ -123,13 +121,6 @@ describe('school quota and student import (AC 2)', () => {
       expect(await quota(s2)).toEqual({ hasSubscription: true, quota: 1, used: 1, remaining: 0 })
       await addStudents(t.db, s2, 2)
       expect(await quota(s2)).toEqual({ hasSubscription: true, quota: 1, used: 3, remaining: 0 })
-    })
-
-    it('a subscription without a student quota (migrated, null) grants nothing', async () => {
-      await addSubscription(t.db, { schoolId: s4, quota: null })
-      expect(await quota(s4)).toEqual({ hasSubscription: false })
-      const res = await admin.get('/admin/school-subscriptions?search=DEMO004')
-      expect(res.body.data[0]).toMatchObject({ studentQuota: 1 })
     })
 
     it('404 for an unknown or malformed school', async () => {
@@ -212,6 +203,16 @@ describe('school quota and student import (AC 2)', () => {
         .attach('csvFile', big, 'besar.csv')
       expect(res.status).toBe(413)
       expect(res.body.error.code).toBe('PAYLOAD_TOO_LARGE')
+    })
+
+    it('accepts a JSON import of about 1 MB (large-JSON parser on this path)', async () => {
+      const school = (await t.db.query<{ id: string }>(`insert into schools (name, code) values ('SK Besar', 'BESAR1') returning id::text`))[0]?.id as string
+      await addSubscription(t.db, { schoolId: school, quota: 5 })
+      const pasteContent = `${block('Besar', 'besar.1')}${'\n'.repeat(450_000)}`
+      expect(Buffer.byteLength(JSON.stringify({ pasteContent }))).toBeGreaterThan(900_000)
+      const res = await imp({ schoolId: school, pasteContent })
+      expect(res.status, JSON.stringify(res.body).slice(0, 200)).toBe(200)
+      expect(res.body.data).toMatchObject({ created: 1 })
     })
 
     it('413 for a JSON text over 1 MB (bytes), even before other checks', async () => {

@@ -30,7 +30,7 @@ CREATE TABLE "school_subscriptions" (
     "school_id" BIGINT NOT NULL,
     "school_package_id" BIGINT NOT NULL,
     "package_tier" TEXT NOT NULL,
-    "student_quota" INTEGER,
+    "student_quota" INTEGER NOT NULL,
     "status" TEXT NOT NULL,
     "starts_on" DATE NOT NULL,
     "ends_on" DATE NOT NULL,
@@ -127,6 +127,9 @@ CREATE INDEX "ix_school_subscriptions_school_package_id" ON "school_subscription
 CREATE UNIQUE INDEX "uq_school_subscriptions_legacy" ON "school_subscriptions"("legacy_source", "legacy_id");
 
 -- CreateIndex
+CREATE UNIQUE INDEX "uq_user_packages_user_form_level" ON "user_packages"("user_id", "form_level");
+
+-- CreateIndex
 CREATE INDEX "ix_user_packages_user_assigned" ON "user_packages"("user_id", "assigned_at");
 
 -- CreateIndex
@@ -207,7 +210,7 @@ ALTER TABLE "school_packages" ADD CONSTRAINT "ck_school_packages_max_renewals" C
 
 ALTER TABLE "school_subscriptions" ADD CONSTRAINT "ck_school_subscriptions_package_tier" CHECK ("package_tier" IN ('basic', 'full'));
 ALTER TABLE "school_subscriptions" ADD CONSTRAINT "ck_school_subscriptions_status" CHECK ("status" IN ('active', 'grace', 'expired', 'cancelled'));
-ALTER TABLE "school_subscriptions" ADD CONSTRAINT "ck_school_subscriptions_student_quota" CHECK ("student_quota" IS NULL OR "student_quota" >= 1);
+ALTER TABLE "school_subscriptions" ADD CONSTRAINT "ck_school_subscriptions_student_quota" CHECK ("student_quota" >= 1);
 ALTER TABLE "school_subscriptions" ADD CONSTRAINT "ck_school_subscriptions_question_limit" CHECK ("question_limit" IS NULL OR "question_limit" >= 1);
 ALTER TABLE "school_subscriptions" ADD CONSTRAINT "ck_school_subscriptions_dates" CHECK ("ends_on" >= "starts_on");
 

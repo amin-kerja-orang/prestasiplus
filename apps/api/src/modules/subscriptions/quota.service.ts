@@ -15,7 +15,7 @@ export interface QuotaFigures {
 /**
  * The school student quota (mock `quota.ts`, BR-16, BR-24, BR-25):
  * - quota is `studentQuota` of the latest `active` (or `grace`) subscription, latest `starts_on`
- *   then id; a row with no student quota (migrated, OD-22) grants nothing;
+ *   then id;
  * - `used` counts the school's students, active and inactive;
  * - `remaining` is max(0, quota - used).
  * Read-only; `StudentImportService` reads it again under its lock before it inserts.
@@ -30,7 +30,7 @@ export class QuotaService {
   /** Null when the school has no subscription that grants a quota. The school must exist. */
   async figures(schoolId: string): Promise<QuotaFigures | null> {
     const source = await this.subscriptions.quotaSource(schoolId)
-    if (!source || source.studentQuota === null) return null
+    if (!source) return null
     const used = (await this.schools.memberCounts([schoolId])).get(schoolId)?.studentCount ?? 0
     return { quota: source.studentQuota, used, remaining: Math.max(0, source.studentQuota - used) }
   }

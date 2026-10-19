@@ -112,8 +112,8 @@ model SchoolSubscription {
   schoolPackageId  BigInt   @map("school_package_id")
   /// `basic` (Pemantauan) or `full` (Penuh) (check).
   packageTier      String   @map("package_tier")
-  /// Null only for migrated rows whose source has no student quota (OD-22); check >= 1 when set.
-  studentQuota     Int?     @map("student_quota")
+  /// Required, check >= 1 (LEAD 2026-10-20; BE-28 maps the .cloud quota, OD-22).
+  studentQuota     Int      @map("student_quota")
   /// `active`, `grace`, `expired`, `cancelled` (check). `none` is an API value, never stored.
   status           String
   startsOn         DateTime @map("starts_on") @db.Date
@@ -153,6 +153,7 @@ model UserPackage {
   user          User          @relation(fields: [userId], references: [id], onDelete: Cascade, map: "fk_user_packages_user_id")
   schoolPackage SchoolPackage @relation(fields: [schoolPackageId], references: [id], onDelete: Restrict, map: "fk_user_packages_school_package_id")
 
+  @@unique([userId, formLevel], map: "uq_user_packages_user_form_level")
   @@index([userId, assignedAt], map: "ix_user_packages_user_assigned")
   @@index([schoolPackageId], map: "ix_user_packages_school_package_id")
   @@map("user_packages")

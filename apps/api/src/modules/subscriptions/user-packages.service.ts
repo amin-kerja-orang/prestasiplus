@@ -85,7 +85,6 @@ export class UserPackagesService {
     if (!pkg || pkg.id !== body.packageId) throw invalid({ packageId: V.invalid('package id') })
     const now = this.clock.now()
     const row = await this.write(async (tx) => {
-      await this.repo.lockUserPackages(user.id)
       const saved = await this.repo.assignUserPackage({
         userId: user.id,
         formLevel: body.formLevel,
