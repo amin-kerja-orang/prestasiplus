@@ -31,7 +31,6 @@ ENV NODE_ENV=production \
 WORKDIR /app
 # Same layout as the repo so the node_modules/@pp/* workspace symlinks resolve.
 COPY --from=deps --chown=node:node /app/node_modules ./node_modules
-COPY --from=deps --chown=node:node /app/apps/api/node_modules ./apps/api/node_modules
 COPY --chown=node:node packages/contract ./packages/contract
 COPY --from=build --chown=node:node /app/apps/api/package.json ./apps/api/package.json
 COPY --from=build --chown=node:node /app/apps/api/dist ./apps/api/dist
