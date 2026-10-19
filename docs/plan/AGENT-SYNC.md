@@ -75,6 +75,7 @@ A PC may claim **only** cards listed here. A card that is not listed is closed, 
 |---|---|---|---|
 | BE-01 | full | 2026-10-19 | Scaffold + CI; first card on the critical path. |
 | BE-02 | full (stacked) | 2026-10-19 | Group A, for the holder of BE-01. Branch `be/BE-02-db-orm` from `origin/be/BE-01-scaffold-ci`, not from feature/v2-backend. Rebase onto feature/v2-backend after BE-01 merges. The LEAD merges BE-02 only after BE-01. |
+| BE-34 | full (stacked) | 2026-10-19 | Group A. Migration kit, stacked on `origin/be/BE-02-db-orm` (branch `be/BE-34-migration-kit`). Rebase onto feature/v2-backend after BE-02 merges; the LEAD merges BE-34 only after BE-02. |
 | BE-31 | harness-only | 2026-10-19 | Group A. Build the conformance harness (`packages/contract-tests/**` and its runner) and run it against the frontend mock now. Do not add the API-target wiring until BE-03 merges. Branch `be/BE-31-conformance-harness`. |
 | BE-05 | contract-only | 2026-10-19 | Users and schools: `packages/contract/src/{users,schools}/**`. |
 | BE-08 | contract-only | 2026-10-19 | Curriculum: `packages/contract/src/curriculum/**`. |

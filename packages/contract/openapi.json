@@ -50103,6 +50103,3782 @@
         ],
         "additionalProperties": false
       },
+      "AnalyticsTahap": {
+        "type": "string",
+        "enum": [
+          "Cemerlang",
+          "Sederhana",
+          "Rendah",
+          "Kritikal",
+          "Tiada Langsung"
+        ],
+        "description": "Engagement band of a percentage p: Cemerlang p > 60; Sederhana 20 <= p <= 60; Rendah 5 <= p < 20; Kritikal 0 < p < 5; Tiada Langsung p = 0."
+      },
+      "AnalyticsLevel": {
+        "type": "string",
+        "enum": [
+          "T4",
+          "T5"
+        ]
+      },
+      "AnalyticsStudentStatus": {
+        "type": "string",
+        "enum": [
+          "aktif",
+          "login",
+          "never"
+        ]
+      },
+      "AnalyticsFlagLevel": {
+        "type": "string",
+        "enum": [
+          "review",
+          "excluded"
+        ]
+      },
+      "AnalyticsMonitoringFilterQuery": {
+        "type": "object",
+        "properties": {
+          "period": {
+            "type": "string",
+            "description": "'' (all time), 7d, 30d or 3m. Any other value is treated as all time."
+          },
+          "state": {
+            "type": "string",
+            "description": "Exact state name; '' or unknown value narrows nothing / gives the empty table."
+          },
+          "tahap": {
+            "type": "string",
+            "description": "One of the five Tahap keys; filters the student table only, not KPIs, weekly or signals. An unknown value gives an empty table."
+          }
+        }
+      },
+      "AnalyticsExportQuery": {
+        "type": "object",
+        "properties": {
+          "period": {
+            "type": "string",
+            "description": "'' (all time), 7d, 30d or 3m. Any other value is treated as all time."
+          },
+          "state": {
+            "type": "string",
+            "description": "Exact state name; '' or unknown value narrows nothing / gives the empty table."
+          },
+          "tahap": {
+            "type": "string",
+            "description": "One of the five Tahap keys; filters the student table only, not KPIs, weekly or signals. An unknown value gives an empty table."
+          },
+          "format": {
+            "type": "string",
+            "enum": [
+              "pdf",
+              "csv"
+            ],
+            "description": "Required; a missing or other value gives 422 fields.format."
+          }
+        },
+        "required": [
+          "format"
+        ]
+      },
+      "AnalyticsTeacherReportQuery": {
+        "type": "object",
+        "properties": {
+          "range": {
+            "type": "string",
+            "description": "Days: 7, 30 or 90. Anything else (including a non-number) is treated as 30."
+          },
+          "classroomId": {
+            "type": "string",
+            "description": "An own class id. A class that is not an own class (or an unknown id) is ignored: all classes."
+          }
+        }
+      },
+      "AnalyticsItemAnalysisQuery": {
+        "type": "object",
+        "properties": {
+          "subjectId": {
+            "type": "string",
+            "description": "Subject id; an unknown id gives no rows."
+          },
+          "classroomId": {
+            "type": "string",
+            "description": "Own class id; a selected own class without a subject uses the class subject. A not-own or unknown class gives no rows."
+          }
+        }
+      },
+      "AnalyticsStudentLite": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "name": {
+            "type": "string"
+          },
+          "email": {
+            "type": "string"
+          },
+          "avatarUrl": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "neverLoggedIn": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "email",
+          "avatarUrl",
+          "neverLoggedIn"
+        ]
+      },
+      "AnalyticsClassOption": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "name": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "name"
+        ]
+      },
+      "AnalyticsTeacherReport": {
+        "type": "object",
+        "properties": {
+          "range": {
+            "anyOf": [
+              {
+                "type": "number",
+                "enum": [
+                  7
+                ]
+              },
+              {
+                "type": "number",
+                "enum": [
+                  30
+                ]
+              },
+              {
+                "type": "number",
+                "enum": [
+                  90
+                ]
+              }
+            ]
+          },
+          "classroomId": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/Id"
+              },
+              {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              }
+            ]
+          },
+          "options": {
+            "type": "object",
+            "properties": {
+              "classes": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/AnalyticsClassOption"
+                }
+              }
+            },
+            "required": [
+              "classes"
+            ]
+          },
+          "population": {
+            "type": "object",
+            "properties": {
+              "total": {
+                "type": "integer"
+              },
+              "loggedIn": {
+                "type": "integer"
+              },
+              "practised": {
+                "type": "integer"
+              }
+            },
+            "required": [
+              "total",
+              "loggedIn",
+              "practised"
+            ]
+          },
+          "activity": {
+            "type": "object",
+            "properties": {
+              "total": {
+                "type": "integer"
+              },
+              "byType": {
+                "type": "object",
+                "properties": {
+                  "kuiz": {
+                    "type": "integer"
+                  },
+                  "struktur": {
+                    "type": "integer"
+                  },
+                  "latihTubi": {
+                    "type": "integer"
+                  },
+                  "trackingA": {
+                    "type": "integer"
+                  },
+                  "battle": {
+                    "type": "integer"
+                  },
+                  "permainan": {
+                    "type": "integer"
+                  }
+                },
+                "required": [
+                  "kuiz",
+                  "struktur",
+                  "latihTubi",
+                  "trackingA",
+                  "battle",
+                  "permainan"
+                ]
+              }
+            },
+            "required": [
+              "total",
+              "byType"
+            ]
+          },
+          "score": {
+            "type": "object",
+            "properties": {
+              "overall": {
+                "type": [
+                  "number",
+                  "null"
+                ]
+              },
+              "byType": {
+                "type": "object",
+                "properties": {
+                  "kuiz": {
+                    "type": [
+                      "number",
+                      "null"
+                    ]
+                  },
+                  "struktur": {
+                    "type": [
+                      "number",
+                      "null"
+                    ]
+                  },
+                  "latihTubi": {
+                    "type": [
+                      "number",
+                      "null"
+                    ]
+                  },
+                  "trackingA": {
+                    "type": [
+                      "number",
+                      "null"
+                    ]
+                  },
+                  "battle": {
+                    "type": [
+                      "number",
+                      "null"
+                    ]
+                  }
+                },
+                "required": [
+                  "kuiz",
+                  "struktur",
+                  "latihTubi",
+                  "trackingA",
+                  "battle"
+                ]
+              }
+            },
+            "required": [
+              "overall",
+              "byType"
+            ]
+          },
+          "trend": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "date": {
+                  "type": "string"
+                },
+                "count": {
+                  "type": "integer"
+                }
+              },
+              "required": [
+                "date",
+                "count"
+              ]
+            },
+            "description": "One entry per day of the range ending today; date is dd/mm."
+          },
+          "notLoggedIn": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AnalyticsStudentLite"
+            },
+            "description": "Every population pupil who never logged in, name A-Z."
+          },
+          "notPractised": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AnalyticsStudentLite"
+            },
+            "description": "The first 10 pupils without a practice session, name A-Z."
+          },
+          "notPractisedAll": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AnalyticsStudentLite"
+            },
+            "description": "All pupils without a practice session, name A-Z."
+          },
+          "mostActive": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "$ref": "#/components/schemas/Id"
+                },
+                "name": {
+                  "type": "string"
+                },
+                "email": {
+                  "type": "string"
+                },
+                "avatarUrl": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "neverLoggedIn": {
+                  "type": "boolean"
+                },
+                "activities": {
+                  "type": "integer"
+                }
+              },
+              "required": [
+                "id",
+                "name",
+                "email",
+                "avatarUrl",
+                "neverLoggedIn",
+                "activities"
+              ]
+            },
+            "description": "Up to 10 pupils with at least one activity in the range."
+          }
+        },
+        "required": [
+          "range",
+          "classroomId",
+          "options",
+          "population",
+          "activity",
+          "score",
+          "trend",
+          "notLoggedIn",
+          "notPractised",
+          "notPractisedAll",
+          "mostActive"
+        ]
+      },
+      "AnalyticsSchoolEngagementRow": {
+        "type": "object",
+        "properties": {
+          "schoolId": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "name": {
+            "type": "string"
+          },
+          "code": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "state": {
+            "type": "string"
+          },
+          "registered": {
+            "type": "integer"
+          },
+          "engaged": {
+            "type": "integer"
+          },
+          "pct": {
+            "type": "number"
+          },
+          "tahap": {
+            "$ref": "#/components/schemas/AnalyticsTahap"
+          }
+        },
+        "required": [
+          "schoolId",
+          "name",
+          "code",
+          "state",
+          "registered",
+          "engaged",
+          "pct",
+          "tahap"
+        ]
+      },
+      "AnalyticsTeacherEngagementRow": {
+        "type": "object",
+        "properties": {
+          "schoolId": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "name": {
+            "type": "string"
+          },
+          "code": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "state": {
+            "type": "string"
+          },
+          "registered": {
+            "type": "integer"
+          },
+          "loggedIn": {
+            "type": "integer"
+          },
+          "pct": {
+            "type": "number"
+          },
+          "tahap": {
+            "$ref": "#/components/schemas/AnalyticsTahap"
+          }
+        },
+        "required": [
+          "schoolId",
+          "name",
+          "code",
+          "state",
+          "registered",
+          "loggedIn",
+          "pct",
+          "tahap"
+        ]
+      },
+      "AnalyticsWeeklyRow": {
+        "type": "object",
+        "properties": {
+          "schoolId": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "name": {
+            "type": "string"
+          },
+          "code": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "cells": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "k": {
+                  "type": "integer"
+                },
+                "count": {
+                  "type": "integer"
+                },
+                "cls": {
+                  "type": "string",
+                  "enum": [
+                    "zero",
+                    "first",
+                    "up",
+                    "down"
+                  ]
+                },
+                "best": {
+                  "type": "boolean"
+                }
+              },
+              "required": [
+                "k",
+                "count",
+                "cls",
+                "best"
+              ]
+            }
+          },
+          "trend": {
+            "type": "string",
+            "enum": [
+              "up",
+              "down",
+              "same"
+            ]
+          },
+          "best": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "properties": {
+              "k": {
+                "type": "integer"
+              },
+              "count": {
+                "type": "integer"
+              }
+            },
+            "required": [
+              "k",
+              "count"
+            ]
+          }
+        },
+        "required": [
+          "schoolId",
+          "name",
+          "code",
+          "cells",
+          "trend",
+          "best"
+        ]
+      },
+      "AnalyticsSignal": {
+        "type": "object",
+        "properties": {
+          "schoolId": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "name": {
+            "type": "string"
+          },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "best",
+              "rendah",
+              "kritikal",
+              "tiada",
+              "motivasi",
+              "hubungi",
+              "handsOn"
+            ]
+          },
+          "registered": {
+            "type": "integer"
+          },
+          "engaged": {
+            "type": "integer"
+          },
+          "pct": {
+            "type": "number"
+          },
+          "teachersLoggedIn": {
+            "type": "integer"
+          }
+        },
+        "required": [
+          "schoolId",
+          "name",
+          "kind",
+          "registered",
+          "engaged",
+          "pct",
+          "teachersLoggedIn"
+        ]
+      },
+      "AnalyticsMonitoringOverview": {
+        "type": "object",
+        "properties": {
+          "filters": {
+            "type": "object",
+            "properties": {
+              "period": {
+                "type": "string"
+              },
+              "state": {
+                "type": "string"
+              },
+              "tahap": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "period",
+              "state",
+              "tahap"
+            ],
+            "description": "Echo of the effective filters; an unknown period is echoed as an empty string."
+          },
+          "kpi": {
+            "type": "object",
+            "properties": {
+              "schools": {
+                "type": "integer"
+              },
+              "students": {
+                "type": "integer"
+              },
+              "engaged": {
+                "type": "integer"
+              },
+              "engagementPct": {
+                "type": "number"
+              },
+              "answers": {
+                "type": "integer"
+              },
+              "avgPerStudent": {
+                "type": "number"
+              },
+              "teachers": {
+                "type": "integer"
+              },
+              "teachersLoggedIn": {
+                "type": "integer"
+              },
+              "teacherPct": {
+                "type": "number"
+              }
+            },
+            "required": [
+              "schools",
+              "students",
+              "engaged",
+              "engagementPct",
+              "answers",
+              "avgPerStudent",
+              "teachers",
+              "teachersLoggedIn",
+              "teacherPct"
+            ]
+          },
+          "studentRows": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AnalyticsSchoolEngagementRow"
+            }
+          },
+          "teacherRows": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AnalyticsTeacherEngagementRow"
+            }
+          },
+          "weeks": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "k": {
+                  "type": "integer"
+                },
+                "from": {
+                  "type": "string"
+                },
+                "to": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "k",
+                "from",
+                "to"
+              ]
+            },
+            "description": "Monday-based weeks up to now; from/to are dd/mm."
+          },
+          "weekly": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AnalyticsWeeklyRow"
+            }
+          },
+          "signals": {
+            "type": "object",
+            "properties": {
+              "best": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/AnalyticsSignal"
+                }
+              },
+              "attention": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/AnalyticsSignal"
+                }
+              },
+              "suggestions": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/AnalyticsSignal"
+                }
+              }
+            },
+            "required": [
+              "best",
+              "attention",
+              "suggestions"
+            ]
+          }
+        },
+        "required": [
+          "filters",
+          "kpi",
+          "studentRows",
+          "teacherRows",
+          "weeks",
+          "weekly",
+          "signals"
+        ]
+      },
+      "AnalyticsSchoolDetail": {
+        "type": "object",
+        "properties": {
+          "school": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "$ref": "#/components/schemas/Id"
+              },
+              "name": {
+                "type": "string"
+              },
+              "code": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "state": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "id",
+              "name",
+              "code",
+              "state"
+            ]
+          },
+          "subscription": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "properties": {
+              "status": {
+                "type": "string",
+                "enum": [
+                  "active",
+                  "cancelled",
+                  "expired"
+                ]
+              },
+              "endsAt": {
+                "$ref": "#/components/schemas/Timestamp"
+              }
+            },
+            "required": [
+              "status",
+              "endsAt"
+            ]
+          },
+          "warning": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "properties": {
+              "review": {
+                "type": "integer"
+              },
+              "excluded": {
+                "type": "integer"
+              }
+            },
+            "required": [
+              "review",
+              "excluded"
+            ]
+          },
+          "tahap": {
+            "$ref": "#/components/schemas/AnalyticsTahap"
+          },
+          "pct": {
+            "type": "number"
+          },
+          "cards": {
+            "type": "object",
+            "properties": {
+              "students": {
+                "type": "integer"
+              },
+              "engaged": {
+                "type": "integer"
+              },
+              "answers": {
+                "type": "integer"
+              },
+              "teachers": {
+                "type": "integer"
+              },
+              "teachersLoggedIn": {
+                "type": "integer"
+              }
+            },
+            "required": [
+              "students",
+              "engaged",
+              "answers",
+              "teachers",
+              "teachersLoggedIn"
+            ]
+          },
+          "flags": {
+            "type": "object",
+            "properties": {
+              "review": {
+                "type": "integer"
+              },
+              "excluded": {
+                "type": "integer"
+              }
+            },
+            "required": [
+              "review",
+              "excluded"
+            ]
+          },
+          "students": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "$ref": "#/components/schemas/Id"
+                },
+                "name": {
+                  "type": "string"
+                },
+                "email": {
+                  "type": "string"
+                },
+                "level": {
+                  "$ref": "#/components/schemas/AnalyticsLevel"
+                },
+                "answers": {
+                  "type": "integer"
+                },
+                "status": {
+                  "$ref": "#/components/schemas/AnalyticsStudentStatus"
+                },
+                "engaged": {
+                  "type": "boolean",
+                  "description": "At least one answer and not flagged excluded."
+                },
+                "flag": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/AnalyticsFlagLevel"
+                    },
+                    {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    }
+                  ]
+                },
+                "lastLoginAt": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/Timestamp"
+                    },
+                    {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    }
+                  ]
+                },
+                "lastActivityAt": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/Timestamp"
+                    },
+                    {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    }
+                  ]
+                }
+              },
+              "required": [
+                "id",
+                "name",
+                "email",
+                "level",
+                "answers",
+                "status",
+                "engaged",
+                "flag",
+                "lastLoginAt",
+                "lastActivityAt"
+              ]
+            }
+          },
+          "teachers": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "$ref": "#/components/schemas/Id"
+                },
+                "name": {
+                  "type": "string"
+                },
+                "email": {
+                  "type": "string"
+                },
+                "loggedIn": {
+                  "type": "boolean"
+                },
+                "lastLoginAt": {
+                  "allOf": [
+                    {
+                      "$ref": "#/components/schemas/Timestamp"
+                    },
+                    {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    }
+                  ]
+                },
+                "createdAt": {
+                  "$ref": "#/components/schemas/Timestamp"
+                }
+              },
+              "required": [
+                "id",
+                "name",
+                "email",
+                "loggedIn",
+                "lastLoginAt",
+                "createdAt"
+              ]
+            }
+          }
+        },
+        "required": [
+          "school",
+          "subscription",
+          "warning",
+          "tahap",
+          "pct",
+          "cards",
+          "flags",
+          "students",
+          "teachers"
+        ]
+      },
+      "AnalyticsStudentAnswerRow": {
+        "type": "object",
+        "properties": {
+          "questionId": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "html": {
+            "type": "string",
+            "description": "Question HTML; the client must sanitise it."
+          },
+          "textPlain": {
+            "type": "string"
+          },
+          "subjectName": {
+            "type": "string"
+          },
+          "chapterLabel": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "source": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "difficulty": {
+            "type": "number"
+          },
+          "answeredAt": {
+            "$ref": "#/components/schemas/Timestamp"
+          },
+          "selectedLabel": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "enum": [
+              "A",
+              "B",
+              "C",
+              "D",
+              null
+            ]
+          },
+          "correctLabel": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "enum": [
+              "A",
+              "B",
+              "C",
+              "D",
+              null
+            ]
+          },
+          "isCorrect": {
+            "type": "boolean"
+          },
+          "options": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "label": {
+                  "type": "string",
+                  "enum": [
+                    "A",
+                    "B",
+                    "C",
+                    "D"
+                  ]
+                },
+                "text": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "label",
+                "text"
+              ]
+            },
+            "description": "Empty when the question has no options."
+          },
+          "explanation": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "questionId",
+          "html",
+          "textPlain",
+          "subjectName",
+          "chapterLabel",
+          "source",
+          "difficulty",
+          "answeredAt",
+          "selectedLabel",
+          "correctLabel",
+          "isCorrect",
+          "options",
+          "explanation"
+        ]
+      },
+      "AnalyticsStudentDetail": {
+        "type": "object",
+        "properties": {
+          "school": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "$ref": "#/components/schemas/Id"
+              },
+              "name": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "id",
+              "name"
+            ]
+          },
+          "student": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "$ref": "#/components/schemas/Id"
+              },
+              "name": {
+                "type": "string"
+              },
+              "email": {
+                "type": "string"
+              },
+              "level": {
+                "$ref": "#/components/schemas/AnalyticsLevel"
+              },
+              "lastActivityAt": {
+                "allOf": [
+                  {
+                    "$ref": "#/components/schemas/Timestamp"
+                  },
+                  {
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  }
+                ]
+              }
+            },
+            "required": [
+              "id",
+              "name",
+              "email",
+              "level",
+              "lastActivityAt"
+            ]
+          },
+          "cards": {
+            "type": "object",
+            "properties": {
+              "answered": {
+                "type": "integer"
+              },
+              "correct": {
+                "type": "integer"
+              },
+              "wrong": {
+                "type": "integer"
+              },
+              "accuracy": {
+                "type": "number"
+              }
+            },
+            "required": [
+              "answered",
+              "correct",
+              "wrong",
+              "accuracy"
+            ]
+          },
+          "subjects": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "subjectId": {
+                  "$ref": "#/components/schemas/Id"
+                },
+                "name": {
+                  "type": "string"
+                },
+                "correct": {
+                  "type": "integer"
+                },
+                "total": {
+                  "type": "integer"
+                },
+                "pct": {
+                  "type": "number"
+                }
+              },
+              "required": [
+                "subjectId",
+                "name",
+                "correct",
+                "total",
+                "pct"
+              ]
+            }
+          },
+          "topics": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "subjectId": {
+                  "$ref": "#/components/schemas/Id"
+                },
+                "subjectName": {
+                  "type": "string"
+                },
+                "rows": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "bab": {
+                        "type": [
+                          "integer",
+                          "null"
+                        ]
+                      },
+                      "name": {
+                        "type": "string"
+                      },
+                      "correct": {
+                        "type": "integer"
+                      },
+                      "total": {
+                        "type": "integer"
+                      },
+                      "pct": {
+                        "type": "number"
+                      },
+                      "badge": {
+                        "type": "string",
+                        "enum": [
+                          "Kuat",
+                          "Sederhana",
+                          "Lemah"
+                        ]
+                      }
+                    },
+                    "required": [
+                      "bab",
+                      "name",
+                      "correct",
+                      "total",
+                      "pct",
+                      "badge"
+                    ]
+                  }
+                }
+              },
+              "required": [
+                "subjectId",
+                "subjectName",
+                "rows"
+              ]
+            }
+          },
+          "answers": {
+            "type": "object",
+            "properties": {
+              "available": {
+                "type": "integer"
+              },
+              "total": {
+                "type": "integer"
+              },
+              "rows": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/AnalyticsStudentAnswerRow"
+                }
+              }
+            },
+            "required": [
+              "available",
+              "total",
+              "rows"
+            ]
+          },
+          "wrong": {
+            "type": "object",
+            "properties": {
+              "count": {
+                "type": "integer"
+              },
+              "unique": {
+                "type": "integer"
+              },
+              "rows": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/AnalyticsStudentAnswerRow"
+                }
+              }
+            },
+            "required": [
+              "count",
+              "unique",
+              "rows"
+            ]
+          },
+          "gaps": {
+            "type": "object",
+            "properties": {
+              "count": {
+                "type": "integer"
+              },
+              "items": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "group": {
+                      "type": "string"
+                    },
+                    "subjectName": {
+                      "type": "string"
+                    },
+                    "pct": {
+                      "type": "number"
+                    },
+                    "correct": {
+                      "type": "integer"
+                    },
+                    "total": {
+                      "type": "integer"
+                    },
+                    "severity": {
+                      "type": "string",
+                      "enum": [
+                        "Kritikal",
+                        "Lemah",
+                        "Perlu Perhatian"
+                      ]
+                    },
+                    "availableQuestions": {
+                      "type": "integer"
+                    }
+                  },
+                  "required": [
+                    "group",
+                    "subjectName",
+                    "pct",
+                    "correct",
+                    "total",
+                    "severity",
+                    "availableQuestions"
+                  ]
+                }
+              },
+              "strong": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "group": {
+                      "type": "string"
+                    },
+                    "subjectName": {
+                      "type": "string"
+                    },
+                    "pct": {
+                      "type": "number"
+                    },
+                    "answered": {
+                      "type": "integer"
+                    }
+                  },
+                  "required": [
+                    "group",
+                    "subjectName",
+                    "pct",
+                    "answered"
+                  ]
+                }
+              },
+              "untried": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              }
+            },
+            "required": [
+              "count",
+              "items",
+              "strong",
+              "untried"
+            ]
+          },
+          "observations": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "kind": {
+                  "type": "string",
+                  "enum": [
+                    "strong",
+                    "weak"
+                  ]
+                },
+                "subjectName": {
+                  "type": "string"
+                },
+                "pct": {
+                  "type": "number"
+                },
+                "wrong": {
+                  "type": "integer"
+                },
+                "total": {
+                  "type": "integer"
+                }
+              },
+              "required": [
+                "kind",
+                "subjectName",
+                "pct",
+                "wrong",
+                "total"
+              ]
+            }
+          }
+        },
+        "required": [
+          "school",
+          "student",
+          "cards",
+          "subjects",
+          "topics",
+          "answers",
+          "wrong",
+          "gaps",
+          "observations"
+        ]
+      },
+      "AnalyticsTeacherDetail": {
+        "type": "object",
+        "properties": {
+          "school": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "$ref": "#/components/schemas/Id"
+              },
+              "name": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "id",
+              "name"
+            ]
+          },
+          "teacher": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "$ref": "#/components/schemas/Id"
+              },
+              "name": {
+                "type": "string"
+              },
+              "email": {
+                "type": "string"
+              },
+              "lastLoginAt": {
+                "allOf": [
+                  {
+                    "$ref": "#/components/schemas/Timestamp"
+                  },
+                  {
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  }
+                ]
+              }
+            },
+            "required": [
+              "id",
+              "name",
+              "email",
+              "lastLoginAt"
+            ]
+          },
+          "cards": {
+            "type": "object",
+            "properties": {
+              "students": {
+                "type": "integer"
+              },
+              "engaged": {
+                "type": "integer"
+              },
+              "pct": {
+                "type": "number"
+              },
+              "needAttention": {
+                "type": "integer"
+              }
+            },
+            "required": [
+              "students",
+              "engaged",
+              "pct",
+              "needAttention"
+            ]
+          },
+          "students": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "$ref": "#/components/schemas/Id"
+                },
+                "name": {
+                  "type": "string"
+                },
+                "level": {
+                  "$ref": "#/components/schemas/AnalyticsLevel"
+                },
+                "answers": {
+                  "type": "integer"
+                },
+                "accuracy": {
+                  "type": [
+                    "number",
+                    "null"
+                  ]
+                },
+                "status": {
+                  "$ref": "#/components/schemas/AnalyticsStudentStatus"
+                }
+              },
+              "required": [
+                "id",
+                "name",
+                "level",
+                "answers",
+                "accuracy",
+                "status"
+              ]
+            }
+          },
+          "suggestions": {
+            "type": "object",
+            "properties": {
+              "neverLoggedIn": {
+                "type": "integer"
+              },
+              "lowAccuracy": {
+                "type": "integer"
+              },
+              "answered": {
+                "type": "integer"
+              }
+            },
+            "required": [
+              "neverLoggedIn",
+              "lowAccuracy",
+              "answered"
+            ]
+          }
+        },
+        "required": [
+          "school",
+          "teacher",
+          "cards",
+          "students",
+          "suggestions"
+        ]
+      },
+      "AnalyticsMonitoringExport": {
+        "type": "object",
+        "properties": {
+          "filename": {
+            "type": "string",
+            "description": "monitoring-penglibatan.{format}. The mock returns rows only; the client builds the file."
+          },
+          "rows": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AnalyticsSchoolEngagementRow"
+            }
+          }
+        },
+        "required": [
+          "filename",
+          "rows"
+        ]
+      },
+      "AnalyticsItemAnalysis": {
+        "type": "object",
+        "properties": {
+          "options": {
+            "type": "object",
+            "properties": {
+              "subjects": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "$ref": "#/components/schemas/Id"
+                    },
+                    "name": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "name"
+                  ]
+                }
+              },
+              "classes": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/AnalyticsClassOption"
+                }
+              }
+            },
+            "required": [
+              "subjects",
+              "classes"
+            ]
+          },
+          "rows": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "questionId": {
+                  "$ref": "#/components/schemas/Id"
+                },
+                "textPlain": {
+                  "type": "string"
+                },
+                "subjectName": {
+                  "type": "string"
+                },
+                "attempts": {
+                  "type": "integer"
+                },
+                "pct": {
+                  "type": "number"
+                },
+                "band": {
+                  "type": "string",
+                  "enum": [
+                    "mudah",
+                    "sederhana",
+                    "sukar"
+                  ]
+                },
+                "discrimination": {
+                  "type": [
+                    "number",
+                    "null"
+                  ],
+                  "description": "Upper-group p minus lower-group p (3 decimals); null when it cannot be computed."
+                }
+              },
+              "required": [
+                "questionId",
+                "textPlain",
+                "subjectName",
+                "attempts",
+                "pct",
+                "band",
+                "discrimination"
+              ]
+            }
+          }
+        },
+        "required": [
+          "options",
+          "rows"
+        ]
+      },
+      "KirkpatrickBandKey": {
+        "type": "string",
+        "enum": [
+          "champion",
+          "konsisten",
+          "berkembang",
+          "minimum",
+          "tidakTerlibat"
+        ],
+        "description": "By answers: >= 50 champion, 20-49 konsisten, 5-19 berkembang, 1-4 minimum, 0 tidakTerlibat."
+      },
+      "KirkpatrickGrade": {
+        "type": "string",
+        "enum": [
+          "A+",
+          "A",
+          "A-",
+          "B+",
+          "B",
+          "C+",
+          "C",
+          "D",
+          "E",
+          "G"
+        ]
+      },
+      "KirkpatrickAlertType": {
+        "type": "string",
+        "enum": [
+          "mood",
+          "inactive",
+          "declining"
+        ]
+      },
+      "KirkpatrickMood": {
+        "type": "string",
+        "enum": [
+          "happy",
+          "okay",
+          "sad",
+          "stressed"
+        ]
+      },
+      "KirkpatrickInterventionStatus": {
+        "type": "string",
+        "enum": [
+          "Menunggu Semakan",
+          "Meningkat",
+          "Menurun"
+        ],
+        "description": "Derived on read, never stored. null when before is missing or equal."
+      },
+      "KirkpatrickSchoolQuery": {
+        "type": "object",
+        "properties": {
+          "schoolId": {
+            "type": "string",
+            "description": "School id; '' means all schools. A malformed value gives 422 fields.schoolId; an unknown school gives the zero state (empty lists, zero counts)."
+          }
+        }
+      },
+      "KirkpatrickScopeQuery": {
+        "type": "object",
+        "properties": {
+          "schoolId": {
+            "type": "string",
+            "description": "School id; '' means all schools. A malformed value gives 422 fields.schoolId; an unknown school gives the zero state (empty lists, zero counts)."
+          },
+          "state": {
+            "type": "string",
+            "description": "Exact state name (overview only); an unknown state gives the zero state."
+          }
+        }
+      },
+      "KirkpatrickBandCount": {
+        "type": "object",
+        "properties": {
+          "key": {
+            "$ref": "#/components/schemas/KirkpatrickBandKey"
+          },
+          "count": {
+            "type": "integer"
+          },
+          "pct": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "key",
+          "count",
+          "pct"
+        ]
+      },
+      "KirkpatrickOverview": {
+        "type": "object",
+        "properties": {
+          "scope": {
+            "type": "object",
+            "properties": {
+              "schoolId": {
+                "allOf": [
+                  {
+                    "$ref": "#/components/schemas/Id"
+                  },
+                  {
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  }
+                ]
+              },
+              "state": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              }
+            },
+            "required": [
+              "schoolId",
+              "state"
+            ]
+          },
+          "t4": {
+            "type": "object",
+            "properties": {
+              "gps": {
+                "type": [
+                  "number",
+                  "null"
+                ]
+              },
+              "gpsYear": {
+                "type": [
+                  "integer",
+                  "null"
+                ]
+              },
+              "recordsLabel": {
+                "type": "integer"
+              }
+            },
+            "required": [
+              "gps",
+              "gpsYear",
+              "recordsLabel"
+            ]
+          },
+          "t3": {
+            "type": "object",
+            "properties": {
+              "active": {
+                "type": "integer"
+              },
+              "t4t5": {
+                "type": "integer"
+              },
+              "sessions": {
+                "type": "integer"
+              },
+              "accuracy": {
+                "type": "number"
+              }
+            },
+            "required": [
+              "active",
+              "t4t5",
+              "sessions",
+              "accuracy"
+            ]
+          },
+          "t2": {
+            "type": "object",
+            "properties": {
+              "accuracy": {
+                "type": "number"
+              },
+              "answers": {
+                "type": "integer"
+              }
+            },
+            "required": [
+              "accuracy",
+              "answers"
+            ]
+          },
+          "t1": {
+            "type": "object",
+            "properties": {
+              "satisfaction": {
+                "type": "number"
+              },
+              "responses": {
+                "type": "integer"
+              }
+            },
+            "required": [
+              "satisfaction",
+              "responses"
+            ]
+          },
+          "comparison": {
+            "type": "object",
+            "properties": {
+              "subtitle": {
+                "type": "string"
+              },
+              "before": {
+                "type": [
+                  "object",
+                  "null"
+                ],
+                "properties": {
+                  "month": {
+                    "type": "string",
+                    "pattern": "^\\d{4}-\\d{2}$"
+                  },
+                  "from": {
+                    "$ref": "#/components/schemas/DateOnly"
+                  },
+                  "to": {
+                    "$ref": "#/components/schemas/DateOnly"
+                  },
+                  "active": {
+                    "type": "integer"
+                  },
+                  "accuracy": {
+                    "type": "number"
+                  },
+                  "answers": {
+                    "type": "integer"
+                  },
+                  "champions": {
+                    "type": "integer"
+                  }
+                },
+                "required": [
+                  "month",
+                  "from",
+                  "to",
+                  "active",
+                  "accuracy",
+                  "answers",
+                  "champions"
+                ]
+              },
+              "after": {
+                "type": [
+                  "object",
+                  "null"
+                ],
+                "properties": {
+                  "month": {
+                    "type": "string",
+                    "pattern": "^\\d{4}-\\d{2}$"
+                  },
+                  "from": {
+                    "$ref": "#/components/schemas/DateOnly"
+                  },
+                  "to": {
+                    "$ref": "#/components/schemas/DateOnly"
+                  },
+                  "active": {
+                    "type": "integer"
+                  },
+                  "accuracy": {
+                    "type": "number"
+                  },
+                  "answers": {
+                    "type": "integer"
+                  },
+                  "champions": {
+                    "type": "integer"
+                  }
+                },
+                "required": [
+                  "month",
+                  "from",
+                  "to",
+                  "active",
+                  "accuracy",
+                  "answers",
+                  "champions"
+                ]
+              },
+              "delta": {
+                "type": [
+                  "object",
+                  "null"
+                ],
+                "properties": {
+                  "active": {
+                    "type": "number"
+                  },
+                  "accuracy": {
+                    "type": "number"
+                  },
+                  "answers": {
+                    "type": "number"
+                  },
+                  "champions": {
+                    "type": "number"
+                  }
+                },
+                "required": [
+                  "active",
+                  "accuracy",
+                  "answers",
+                  "champions"
+                ]
+              },
+              "sentences": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              }
+            },
+            "required": [
+              "subtitle",
+              "before",
+              "after",
+              "delta",
+              "sentences"
+            ]
+          },
+          "kpi": {
+            "type": "object",
+            "properties": {
+              "t4t5": {
+                "type": "integer"
+              },
+              "answers": {
+                "type": "integer"
+              },
+              "teachersLoggedIn": {
+                "type": "integer"
+              },
+              "teachers": {
+                "type": "integer"
+              },
+              "accuracy": {
+                "type": "number"
+              }
+            },
+            "required": [
+              "t4t5",
+              "answers",
+              "teachersLoggedIn",
+              "teachers",
+              "accuracy"
+            ]
+          },
+          "bands": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/KirkpatrickBandCount"
+            }
+          }
+        },
+        "required": [
+          "scope",
+          "t4",
+          "t3",
+          "t2",
+          "t1",
+          "comparison",
+          "kpi",
+          "bands"
+        ]
+      },
+      "KirkpatrickReaction": {
+        "type": "object",
+        "properties": {
+          "npsStudent": {
+            "type": "number"
+          },
+          "npsTeacher": {
+            "type": "number"
+          },
+          "npsAdmin": {
+            "type": "number"
+          },
+          "satisfaction": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "npsStudent",
+          "npsTeacher",
+          "npsAdmin",
+          "satisfaction"
+        ],
+        "description": "Means over all feedback responses; global, ignores the scope."
+      },
+      "KirkpatrickLearning": {
+        "type": "object",
+        "properties": {
+          "kpi": {
+            "type": "object",
+            "properties": {
+              "answers": {
+                "type": "integer"
+              },
+              "accuracy": {
+                "type": "number"
+              },
+              "avgScore": {
+                "type": "number"
+              },
+              "sessionsCompleted": {
+                "type": "integer"
+              },
+              "sessions": {
+                "type": "integer"
+              },
+              "completionPct": {
+                "type": "number"
+              }
+            },
+            "required": [
+              "answers",
+              "accuracy",
+              "avgScore",
+              "sessionsCompleted",
+              "sessions",
+              "completionPct"
+            ]
+          },
+          "subjects": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "subjectId": {
+                  "$ref": "#/components/schemas/Id"
+                },
+                "name": {
+                  "type": "string"
+                },
+                "answers": {
+                  "type": "integer"
+                },
+                "accuracy": {
+                  "type": "number"
+                },
+                "status": {
+                  "type": "string",
+                  "enum": [
+                    "Mastered",
+                    "Developing",
+                    "Beginning"
+                  ]
+                }
+              },
+              "required": [
+                "subjectId",
+                "name",
+                "answers",
+                "accuracy",
+                "status"
+              ]
+            }
+          },
+          "schools": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "schoolId": {
+                  "$ref": "#/components/schemas/Id"
+                },
+                "name": {
+                  "type": "string"
+                },
+                "students": {
+                  "type": "integer"
+                },
+                "answers": {
+                  "type": "integer"
+                },
+                "accuracy": {
+                  "type": "number"
+                },
+                "avgScore": {
+                  "type": "number"
+                },
+                "subjects": {
+                  "type": "integer"
+                }
+              },
+              "required": [
+                "schoolId",
+                "name",
+                "students",
+                "answers",
+                "accuracy",
+                "avgScore",
+                "subjects"
+              ]
+            }
+          }
+        },
+        "required": [
+          "kpi",
+          "subjects",
+          "schools"
+        ]
+      },
+      "KirkpatrickBehavior": {
+        "type": "object",
+        "properties": {
+          "kpi": {
+            "type": "object",
+            "properties": {
+              "t4t5": {
+                "type": "integer"
+              },
+              "active": {
+                "type": "integer"
+              },
+              "sessions": {
+                "type": "integer"
+              },
+              "answers": {
+                "type": "integer"
+              },
+              "accuracy": {
+                "type": "number"
+              },
+              "teacherPct": {
+                "type": "number"
+              },
+              "teachersLoggedIn": {
+                "type": "integer"
+              },
+              "teachers": {
+                "type": "integer"
+              }
+            },
+            "required": [
+              "t4t5",
+              "active",
+              "sessions",
+              "answers",
+              "accuracy",
+              "teacherPct",
+              "teachersLoggedIn",
+              "teachers"
+            ]
+          },
+          "bands": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/KirkpatrickBandCount"
+            }
+          },
+          "schools": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "schoolId": {
+                  "$ref": "#/components/schemas/Id"
+                },
+                "name": {
+                  "type": "string"
+                },
+                "code": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "students": {
+                  "type": "integer"
+                },
+                "active": {
+                  "type": "integer"
+                },
+                "answers": {
+                  "type": "integer"
+                },
+                "sessions": {
+                  "type": "integer"
+                },
+                "perActive": {
+                  "type": "number"
+                },
+                "score": {
+                  "type": "number"
+                },
+                "tahap": {
+                  "$ref": "#/components/schemas/KirkpatrickBandKey"
+                }
+              },
+              "required": [
+                "schoolId",
+                "name",
+                "code",
+                "students",
+                "active",
+                "answers",
+                "sessions",
+                "perActive",
+                "score",
+                "tahap"
+              ]
+            }
+          },
+          "heat": {
+            "type": "object",
+            "properties": {
+              "max": {
+                "type": "integer"
+              },
+              "cells": {
+                "type": "array",
+                "items": {
+                  "type": "array",
+                  "items": {
+                    "type": "integer"
+                  }
+                }
+              }
+            },
+            "required": [
+              "max",
+              "cells"
+            ],
+            "description": "7 rows (Isnin to Ahad) of 18 cells (06:00 to 23:00)."
+          },
+          "alerts": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "list": {
+                  "anyOf": [
+                    {
+                      "type": "number",
+                      "enum": [
+                        1
+                      ]
+                    },
+                    {
+                      "type": "number",
+                      "enum": [
+                        2
+                      ]
+                    },
+                    {
+                      "type": "number",
+                      "enum": [
+                        3
+                      ]
+                    }
+                  ]
+                },
+                "schoolId": {
+                  "$ref": "#/components/schemas/Id"
+                },
+                "name": {
+                  "type": "string"
+                },
+                "kind": {
+                  "type": "string",
+                  "enum": [
+                    "never",
+                    "teacher",
+                    "good"
+                  ]
+                },
+                "n": {
+                  "type": "integer"
+                },
+                "pct": {
+                  "type": "number"
+                }
+              },
+              "required": [
+                "list",
+                "schoolId",
+                "name",
+                "kind"
+              ]
+            }
+          },
+          "moodCount": {
+            "type": "integer",
+            "description": "Always 0 (the mood store is not built; wellbeing data is not modelled)."
+          }
+        },
+        "required": [
+          "kpi",
+          "bands",
+          "schools",
+          "heat",
+          "alerts",
+          "moodCount"
+        ]
+      },
+      "KirkpatrickResults": {
+        "type": "object",
+        "properties": {
+          "kpi": {
+            "type": "object",
+            "properties": {
+              "gps": {
+                "type": [
+                  "number",
+                  "null"
+                ]
+              },
+              "gpsYear": {
+                "type": [
+                  "integer",
+                  "null"
+                ]
+              },
+              "recordsLabel": {
+                "type": "integer"
+              },
+              "passPct": {
+                "type": [
+                  "number",
+                  "null"
+                ]
+              },
+              "pass": {
+                "type": [
+                  "integer",
+                  "null"
+                ]
+              },
+              "candidates": {
+                "type": "integer"
+              },
+              "gradeA": {
+                "type": [
+                  "integer",
+                  "null"
+                ]
+              },
+              "gradeAPct": {
+                "type": [
+                  "number",
+                  "null"
+                ]
+              },
+              "accuracy": {
+                "type": "number"
+              },
+              "answers": {
+                "type": "integer"
+              },
+              "active": {
+                "type": "integer"
+              },
+              "activePct": {
+                "type": "number"
+              },
+              "t4t5": {
+                "type": "integer"
+              },
+              "records": {
+                "type": "integer"
+              }
+            },
+            "required": [
+              "gps",
+              "gpsYear",
+              "recordsLabel",
+              "passPct",
+              "pass",
+              "candidates",
+              "gradeA",
+              "gradeAPct",
+              "accuracy",
+              "answers",
+              "active",
+              "activePct",
+              "t4t5",
+              "records"
+            ]
+          },
+          "distribution": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "properties": {
+              "year": {
+                "type": "integer"
+              },
+              "candidates": {
+                "type": "integer"
+              },
+              "rows": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "grade": {
+                      "$ref": "#/components/schemas/KirkpatrickGrade"
+                    },
+                    "n": {
+                      "type": "integer"
+                    },
+                    "pct": {
+                      "type": "number"
+                    }
+                  },
+                  "required": [
+                    "grade",
+                    "n",
+                    "pct"
+                  ]
+                }
+              }
+            },
+            "required": [
+              "year",
+              "candidates",
+              "rows"
+            ]
+          },
+          "subjectGps": {
+            "type": "object",
+            "properties": {
+              "year": {
+                "type": "integer"
+              },
+              "rows": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "name": {
+                      "type": "string"
+                    },
+                    "gps": {
+                      "type": "number"
+                    },
+                    "grade": {
+                      "$ref": "#/components/schemas/KirkpatrickGrade"
+                    },
+                    "candidates": {
+                      "type": "integer"
+                    },
+                    "prev": {
+                      "type": [
+                        "number",
+                        "null"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "name",
+                    "gps",
+                    "grade",
+                    "candidates",
+                    "prev"
+                  ]
+                }
+              }
+            },
+            "required": [
+              "year",
+              "rows"
+            ]
+          },
+          "trend": {
+            "type": "object",
+            "properties": {
+              "years": {
+                "type": "array",
+                "items": {
+                  "type": "integer"
+                }
+              },
+              "rows": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "name": {
+                      "type": "string"
+                    },
+                    "values": {
+                      "type": "array",
+                      "items": {
+                        "type": [
+                          "number",
+                          "null"
+                        ]
+                      }
+                    }
+                  },
+                  "required": [
+                    "name",
+                    "values"
+                  ]
+                }
+              }
+            },
+            "required": [
+              "years",
+              "rows"
+            ]
+          },
+          "schools": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "schoolId": {
+                  "$ref": "#/components/schemas/Id"
+                },
+                "name": {
+                  "type": "string"
+                },
+                "students": {
+                  "type": "integer"
+                },
+                "active": {
+                  "type": "integer"
+                },
+                "accuracy": {
+                  "type": [
+                    "number",
+                    "null"
+                  ]
+                },
+                "answers": {
+                  "type": [
+                    "integer",
+                    "null"
+                  ]
+                },
+                "engagement": {
+                  "type": [
+                    "number",
+                    "null"
+                  ]
+                },
+                "tahap": {
+                  "$ref": "#/components/schemas/KirkpatrickBandKey"
+                },
+                "faded": {
+                  "type": "boolean"
+                }
+              },
+              "required": [
+                "schoolId",
+                "name",
+                "students",
+                "active",
+                "accuracy",
+                "answers",
+                "engagement",
+                "tahap",
+                "faded"
+              ]
+            }
+          },
+          "predictions": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "userId": {
+                  "$ref": "#/components/schemas/Id"
+                },
+                "name": {
+                  "type": "string"
+                },
+                "schoolId": {
+                  "$ref": "#/components/schemas/Id"
+                },
+                "schoolName": {
+                  "type": "string"
+                },
+                "answers": {
+                  "type": "integer"
+                },
+                "accuracy": {
+                  "type": "number"
+                },
+                "grade": {
+                  "$ref": "#/components/schemas/KirkpatrickGrade"
+                }
+              },
+              "required": [
+                "userId",
+                "name",
+                "schoolId",
+                "schoolName",
+                "answers",
+                "accuracy",
+                "grade"
+              ]
+            }
+          },
+          "alesa": {
+            "type": "object",
+            "properties": {
+              "lulus": {
+                "type": "integer"
+              },
+              "gagal": {
+                "type": "integer"
+              },
+              "intervensi": {
+                "type": "integer"
+              },
+              "rows": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "userId": {
+                      "$ref": "#/components/schemas/Id"
+                    },
+                    "name": {
+                      "type": "string"
+                    },
+                    "schoolName": {
+                      "type": "string"
+                    },
+                    "accuracy": {
+                      "type": "number"
+                    },
+                    "grade": {
+                      "$ref": "#/components/schemas/KirkpatrickGrade"
+                    },
+                    "confidence": {
+                      "type": "string",
+                      "enum": [
+                        "rendah",
+                        "sederhana",
+                        "tinggi"
+                      ]
+                    },
+                    "cadanganBand": {
+                      "type": "string",
+                      "enum": [
+                        "A",
+                        "B",
+                        "C",
+                        "D/E"
+                      ]
+                    },
+                    "observed": {
+                      "type": "boolean"
+                    }
+                  },
+                  "required": [
+                    "userId",
+                    "name",
+                    "schoolName",
+                    "accuracy",
+                    "grade",
+                    "confidence",
+                    "cadanganBand",
+                    "observed"
+                  ]
+                }
+              }
+            },
+            "required": [
+              "lulus",
+              "gagal",
+              "intervensi",
+              "rows"
+            ]
+          },
+          "roi": {
+            "type": "object",
+            "properties": {
+              "active": {
+                "type": "integer"
+              },
+              "perStudent": {
+                "type": "number"
+              },
+              "accuracy": {
+                "type": "number"
+              },
+              "gps": {
+                "type": [
+                  "number",
+                  "null"
+                ]
+              }
+            },
+            "required": [
+              "active",
+              "perStudent",
+              "accuracy",
+              "gps"
+            ]
+          },
+          "insights": {
+            "type": "object",
+            "properties": {
+              "active": {
+                "type": "integer"
+              },
+              "t4t5": {
+                "type": "integer"
+              },
+              "pct": {
+                "type": "number"
+              },
+              "accuracy": {
+                "type": "number"
+              },
+              "grade": {
+                "$ref": "#/components/schemas/KirkpatrickGrade"
+              },
+              "year": {
+                "type": [
+                  "integer",
+                  "null"
+                ]
+              },
+              "gps": {
+                "type": [
+                  "number",
+                  "null"
+                ]
+              }
+            },
+            "required": [
+              "active",
+              "t4t5",
+              "pct",
+              "accuracy",
+              "grade",
+              "year",
+              "gps"
+            ]
+          }
+        },
+        "required": [
+          "kpi",
+          "distribution",
+          "subjectGps",
+          "trend",
+          "schools",
+          "predictions",
+          "alesa",
+          "roi",
+          "insights"
+        ],
+        "description": "One response holds every prediction row (about 946 in the mock); pagination is an open question. ALESA prediction rows (M13 AI) are served from the mock store until the AI adapter exists."
+      },
+      "KirkpatrickChain": {
+        "type": "object",
+        "properties": {
+          "t1": {
+            "type": "object",
+            "properties": {
+              "nps": {
+                "type": "number"
+              },
+              "satisfaction": {
+                "type": "number"
+              },
+              "responses": {
+                "type": "integer"
+              }
+            },
+            "required": [
+              "nps",
+              "satisfaction",
+              "responses"
+            ]
+          },
+          "t2": {
+            "type": "object",
+            "properties": {
+              "accuracy": {
+                "type": "number"
+              },
+              "answers": {
+                "type": "integer"
+              },
+              "avgScore": {
+                "type": "number"
+              }
+            },
+            "required": [
+              "accuracy",
+              "answers",
+              "avgScore"
+            ]
+          },
+          "t3": {
+            "type": "object",
+            "properties": {
+              "active": {
+                "type": "integer"
+              },
+              "t4t5": {
+                "type": "integer"
+              },
+              "pct": {
+                "type": "number"
+              },
+              "sessions": {
+                "type": "integer"
+              },
+              "bands": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/KirkpatrickBandCount"
+                }
+              }
+            },
+            "required": [
+              "active",
+              "t4t5",
+              "pct",
+              "sessions",
+              "bands"
+            ]
+          },
+          "t4": {
+            "type": "object",
+            "properties": {
+              "gps": {
+                "type": [
+                  "number",
+                  "null"
+                ]
+              },
+              "r": {
+                "type": "number"
+              },
+              "strength": {
+                "type": "string",
+                "enum": [
+                  "Lemah",
+                  "Sederhana",
+                  "Kuat"
+                ]
+              }
+            },
+            "required": [
+              "gps",
+              "r",
+              "strength"
+            ]
+          },
+          "correlation": {
+            "type": "object",
+            "properties": {
+              "bands": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "label": {
+                      "type": "string"
+                    },
+                    "n": {
+                      "type": "integer"
+                    },
+                    "acc": {
+                      "type": "number"
+                    }
+                  },
+                  "required": [
+                    "label",
+                    "n",
+                    "acc"
+                  ]
+                }
+              },
+              "r": {
+                "type": "number"
+              }
+            },
+            "required": [
+              "bands",
+              "r"
+            ]
+          }
+        },
+        "required": [
+          "t1",
+          "t2",
+          "t3",
+          "t4",
+          "correlation"
+        ],
+        "description": "Platform-wide, ignores the scope. The correlation r and bands are documented constants in the mock (OQ-API-B3-8)."
+      },
+      "KirkpatrickFilterOptions": {
+        "type": "object",
+        "properties": {
+          "schools": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "$ref": "#/components/schemas/Id"
+                },
+                "name": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "id",
+                "name"
+              ]
+            }
+          },
+          "states": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "required": [
+          "schools",
+          "states"
+        ]
+      },
+      "KirkpatrickStudent": {
+        "type": "object",
+        "properties": {
+          "student": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "$ref": "#/components/schemas/Id"
+              },
+              "name": {
+                "type": "string"
+              },
+              "schoolName": {
+                "type": "string"
+              },
+              "grade": {
+                "type": [
+                  "integer",
+                  "null"
+                ]
+              }
+            },
+            "required": [
+              "id",
+              "name",
+              "schoolName",
+              "grade"
+            ]
+          },
+          "activeDays": {
+            "type": "integer"
+          },
+          "answers": {
+            "type": "integer"
+          },
+          "accuracy": {
+            "type": "number"
+          },
+          "konsistensi": {
+            "type": "number"
+          },
+          "streak": {
+            "type": "integer"
+          },
+          "strongest": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "properties": {
+              "subjectName": {
+                "type": "string"
+              },
+              "accuracy": {
+                "type": "number"
+              }
+            },
+            "required": [
+              "subjectName",
+              "accuracy"
+            ]
+          },
+          "weakest": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "properties": {
+              "subjectName": {
+                "type": "string"
+              },
+              "accuracy": {
+                "type": "number"
+              }
+            },
+            "required": [
+              "subjectName",
+              "accuracy"
+            ]
+          },
+          "headcount": {
+            "type": "object",
+            "properties": {
+              "year": {
+                "type": "integer"
+              },
+              "rows": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "subjectName": {
+                      "type": "string"
+                    },
+                    "tov": {
+                      "type": [
+                        "number",
+                        "null"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "subjectName",
+                    "tov"
+                  ]
+                }
+              }
+            },
+            "required": [
+              "year",
+              "rows"
+            ]
+          },
+          "platform": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "subjectName": {
+                  "type": "string"
+                },
+                "accuracy": {
+                  "type": "number"
+                },
+                "answers": {
+                  "type": "integer"
+                }
+              },
+              "required": [
+                "subjectName",
+                "accuracy",
+                "answers"
+              ]
+            }
+          }
+        },
+        "required": [
+          "student",
+          "activeDays",
+          "answers",
+          "accuracy",
+          "konsistensi",
+          "streak",
+          "strongest",
+          "weakest",
+          "headcount",
+          "platform"
+        ]
+      },
+      "KirkpatrickMe": {
+        "type": "object",
+        "properties": {
+          "headcount": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "properties": {
+              "year": {
+                "type": "integer"
+              },
+              "rows": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "subjectName": {
+                      "type": "string"
+                    },
+                    "tov": {
+                      "type": [
+                        "number",
+                        "null"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "subjectName",
+                    "tov"
+                  ]
+                }
+              }
+            },
+            "required": [
+              "year",
+              "rows"
+            ],
+            "description": "null when the viewer has no headcount TOV in the current year."
+          },
+          "days": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "date": {
+                  "type": "string"
+                },
+                "answers": {
+                  "type": "integer"
+                }
+              },
+              "required": [
+                "date",
+                "answers"
+              ]
+            },
+            "description": "30 days ending today; date is dd/mm."
+          }
+        },
+        "required": [
+          "headcount",
+          "days"
+        ]
+      },
+      "KirkpatrickInterventionRow": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "studentId": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "alertType": {
+            "$ref": "#/components/schemas/KirkpatrickAlertType"
+          },
+          "actionDate": {
+            "$ref": "#/components/schemas/DateOnly"
+          },
+          "alertDescription": {
+            "type": "string"
+          },
+          "actionTaken": {
+            "type": "string"
+          },
+          "beforeAccuracy": {
+            "type": [
+              "number",
+              "null"
+            ]
+          },
+          "afterAccuracy": {
+            "type": [
+              "number",
+              "null"
+            ]
+          },
+          "beforeMood": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/KirkpatrickMood"
+              },
+              {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              }
+            ]
+          },
+          "afterMood": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/KirkpatrickMood"
+              },
+              {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              }
+            ]
+          },
+          "createdBy": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "createdAt": {
+            "$ref": "#/components/schemas/Timestamp"
+          },
+          "updatedAt": {
+            "$ref": "#/components/schemas/Timestamp"
+          },
+          "status": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/KirkpatrickInterventionStatus"
+              },
+              {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              }
+            ]
+          },
+          "studentName": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "id",
+          "studentId",
+          "alertType",
+          "actionDate",
+          "alertDescription",
+          "actionTaken",
+          "beforeAccuracy",
+          "afterAccuracy",
+          "beforeMood",
+          "afterMood",
+          "createdBy",
+          "createdAt",
+          "updatedAt",
+          "status",
+          "studentName"
+        ]
+      },
+      "KirkpatrickInterventionList": {
+        "type": "object",
+        "properties": {
+          "kpi": {
+            "type": "object",
+            "properties": {
+              "total": {
+                "type": "integer"
+              },
+              "pending": {
+                "type": "integer"
+              },
+              "up": {
+                "type": "integer"
+              },
+              "down": {
+                "type": "integer"
+              }
+            },
+            "required": [
+              "total",
+              "pending",
+              "up",
+              "down"
+            ]
+          },
+          "rows": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/KirkpatrickInterventionRow"
+            },
+            "description": "Newest first (createdAt, then id, descending)."
+          }
+        },
+        "required": [
+          "kpi",
+          "rows"
+        ]
+      },
+      "KirkpatrickInterventionCreateRequest": {
+        "type": "object",
+        "properties": {
+          "studentId": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "integer"
+              }
+            ],
+            "description": "Id of a user with role student; otherwise 422 fields.studentId \"Pelajar tidak dijumpai.\" (KirkpatrickInterventionRefusalSchema). A number is accepted as the mock does."
+          },
+          "alertType": {
+            "type": "string",
+            "enum": [
+              "mood",
+              "inactive",
+              "declining"
+            ]
+          },
+          "actionDate": {
+            "type": "string",
+            "minLength": 1,
+            "description": "YYYY-MM-DD. A string that is not a valid calendar day gives 422 fields.actionDate \"Tarikh tidak sah.\" after the student check (service rule; see kirkpatrickIsCalendarDay)."
+          },
+          "alertDescription": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 2000,
+            "description": "Trimmed, 1 to 2000 characters."
+          },
+          "actionTaken": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 2000,
+            "description": "Trimmed, 1 to 2000 characters."
+          },
+          "beforeAccuracy": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "string",
+                "enum": [
+                  ""
+                ]
+              },
+              {
+                "type": "string",
+                "pattern": "^\\s*-?\\d+(\\.\\d+)?\\s*$"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "0 to 100 as a number or numeric text; null or '' means not set. Stored with one decimal."
+          },
+          "afterAccuracy": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "string",
+                "enum": [
+                  ""
+                ]
+              },
+              {
+                "type": "string",
+                "pattern": "^\\s*-?\\d+(\\.\\d+)?\\s*$"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "0 to 100 as a number or numeric text; null or '' means not set. Stored with one decimal."
+          },
+          "beforeMood": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/KirkpatrickMood"
+              },
+              {
+                "type": "string",
+                "enum": [
+                  ""
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "null or '' means not set."
+          },
+          "afterMood": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/KirkpatrickMood"
+              },
+              {
+                "type": "string",
+                "enum": [
+                  ""
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "null or '' means not set."
+          }
+        },
+        "required": [
+          "studentId",
+          "alertType",
+          "actionDate",
+          "alertDescription",
+          "actionTaken"
+        ],
+        "description": "camelCase fields. The legacy snake_case form names of the mock (student_id, alert_type, action_date, alert_description, action_taken, before_accuracy, after_accuracy, before_mood, after_mood) are accepted too and mapped before validation; if both forms are sent the camelCase one wins (mock precedence). 422 fields are always keyed camelCase. createdBy comes from the session, never from the body. Unknown keys are ignored."
+      },
+      "KirkpatrickInterventionStudentNotFound": {
+        "type": "object",
+        "properties": {
+          "error": {
+            "type": "object",
+            "properties": {
+              "code": {
+                "type": "string",
+                "enum": [
+                  "VALIDATION_ERROR"
+                ]
+              },
+              "message": {
+                "type": "string",
+                "enum": [
+                  "Pelajar tidak dijumpai."
+                ]
+              },
+              "fields": {
+                "type": "object",
+                "properties": {
+                  "studentId": {
+                    "type": "string",
+                    "enum": [
+                      "Pelajar tidak dijumpai."
+                    ]
+                  }
+                },
+                "required": [
+                  "studentId"
+                ]
+              }
+            },
+            "required": [
+              "code",
+              "message",
+              "fields"
+            ]
+          }
+        },
+        "required": [
+          "error"
+        ]
+      },
+      "KirkpatrickInterventionInvalidDate": {
+        "type": "object",
+        "properties": {
+          "error": {
+            "type": "object",
+            "properties": {
+              "code": {
+                "type": "string",
+                "enum": [
+                  "VALIDATION_ERROR"
+                ]
+              },
+              "message": {
+                "type": "string",
+                "enum": [
+                  "Tarikh tidak sah."
+                ]
+              },
+              "fields": {
+                "type": "object",
+                "properties": {
+                  "actionDate": {
+                    "type": "string",
+                    "enum": [
+                      "Tarikh tidak sah."
+                    ]
+                  }
+                },
+                "required": [
+                  "actionDate"
+                ]
+              }
+            },
+            "required": [
+              "code",
+              "message",
+              "fields"
+            ]
+          }
+        },
+        "required": [
+          "error"
+        ]
+      },
+      "KirkpatrickInterventionRefusal": {
+        "anyOf": [
+          {
+            "$ref": "#/components/schemas/KirkpatrickInterventionStudentNotFound"
+          },
+          {
+            "$ref": "#/components/schemas/KirkpatrickInterventionInvalidDate"
+          }
+        ]
+      },
+      "KirkpatrickFeedbackStatus": {
+        "type": "object",
+        "properties": {
+          "month": {
+            "type": "string",
+            "pattern": "^\\d{4}-(0[1-9]|1[0-2])$"
+          },
+          "answered": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "month",
+          "answered"
+        ],
+        "description": "Calendar month in Malaysia time; one response per user per month."
+      },
+      "KirkpatrickFeedbackRequest": {
+        "type": "object",
+        "properties": {
+          "nps": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "string",
+                "pattern": "^\\s*-?\\d+\\s*$"
+              }
+            ],
+            "description": "Whole number 0 to 10 (NPS); numeric text is accepted."
+          },
+          "satisfaction": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "string",
+                "pattern": "^\\s*-?\\d+\\s*$"
+              }
+            ],
+            "description": "Whole number 1 to 5 (satisfaction); numeric text is accepted."
+          }
+        },
+        "required": [
+          "nps",
+          "satisfaction"
+        ],
+        "description": "The responder role and school come from the session, never from the body. Unknown keys are ignored."
+      },
+      "KirkpatrickFeedbackResponse": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "userId": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "role": {
+            "type": "string"
+          },
+          "schoolId": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "minLength": 1,
+            "maxLength": 64,
+            "description": "The respondent school at response time.",
+            "example": "1042"
+          },
+          "month": {
+            "type": "string",
+            "pattern": "^\\d{4}-(0[1-9]|1[0-2])$"
+          },
+          "nps": {
+            "type": "integer"
+          },
+          "satisfaction": {
+            "type": "integer"
+          },
+          "createdAt": {
+            "$ref": "#/components/schemas/Timestamp"
+          }
+        },
+        "required": [
+          "id",
+          "userId",
+          "role",
+          "schoolId",
+          "month",
+          "nps",
+          "satisfaction",
+          "createdAt"
+        ]
+      },
+      "KirkpatrickFeedbackConflict": {
+        "type": "object",
+        "properties": {
+          "error": {
+            "type": "object",
+            "properties": {
+              "code": {
+                "type": "string",
+                "enum": [
+                  "CONFLICT"
+                ]
+              },
+              "message": {
+                "type": "string",
+                "enum": [
+                  "Anda sudah mengisi maklum balas untuk bulan ini."
+                ]
+              }
+            },
+            "required": [
+              "code",
+              "message"
+            ]
+          }
+        },
+        "required": [
+          "error"
+        ]
+      },
       "QuestionBulkResult": {
         "type": "object",
         "properties": {
@@ -82457,6 +86233,1547 @@
           },
           "403": {
             "description": "FORBIDDEN \"This action is unauthorized.\" (the active role is not admin).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/monitoring/overview": {
+      "get": {
+        "tags": [
+          "analytics"
+        ],
+        "summary": "Monitoring overview (S2)",
+        "description": "Engagement by school, teacher login rates, weekly tracking and signals. Admin sees all schools; teacher and school_admin are forced to the own school from the session, never from the request (deviation from the mock, where a teacher sees all schools). Invalid filter values are tolerated, never rejected.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "description": "'' (all time), 7d, 30d or 3m. Any other value is treated as all time."
+            },
+            "required": false,
+            "description": "'' (all time), 7d, 30d or 3m. Any other value is treated as all time.",
+            "name": "period",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "description": "Exact state name; '' or unknown value narrows nothing / gives the empty table."
+            },
+            "required": false,
+            "description": "Exact state name; '' or unknown value narrows nothing / gives the empty table.",
+            "name": "state",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "description": "One of the five Tahap keys; filters the student table only, not KPIs, weekly or signals. An unknown value gives an empty table."
+            },
+            "required": false,
+            "description": "One of the five Tahap keys; filters the student table only, not KPIs, weekly or signals. An unknown value gives an empty table.",
+            "name": "tahap",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Monitoring overview (S2)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/AnalyticsMonitoringOverview"
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED \"Unauthenticated.\": no valid session.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN \"This action is unauthorized.\": role not admin, teacher or school_admin",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/monitoring/schools/{schoolId}": {
+      "get": {
+        "tags": [
+          "analytics"
+        ],
+        "summary": "School detail (S3)",
+        "description": "Pupils (T4 and T5) and teachers of one school. Admin: any school. Teacher and school_admin: the own school only. Unknown ids and, for teacher and school_admin, another school or a pupil/teacher of another school all answer 404 (existence is not revealed). A non-numeric id is also 404.",
+        "parameters": [
+          {
+            "schema": {
+              "$ref": "#/components/schemas/Id"
+            },
+            "required": true,
+            "description": "Opaque entity id (string). Never parse or construct on the client.",
+            "name": "schoolId",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "School detail (S3)",
+            "headers": {
+              "Cache-Control": {
+                "description": "no-store: the body holds personal data of pupils and teachers.",
+                "schema": {
+                  "type": "string",
+                  "example": "no-store"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/AnalyticsSchoolDetail"
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED \"Unauthenticated.\": no valid session.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN \"This action is unauthorized.\": role not admin, teacher or school_admin",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "NOT_FOUND \"Not Found.\": Unknown ids and, for teacher and school_admin, another school or a pupil/teacher of another school all answer 404 (existence is not revealed). A non-numeric id is also 404.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/monitoring/schools/{schoolId}/students/{userId}": {
+      "get": {
+        "tags": [
+          "analytics"
+        ],
+        "summary": "Pupil detail (S4)",
+        "description": "Answers, topics and gaps of one pupil. Admin: the school segment is not validated against the pupil (live rule BR-M11-29). Teacher and school_admin: school and pupil must be own. A pupil with no answers returns the empty state, not 404. Unknown ids and, for teacher and school_admin, another school or a pupil/teacher of another school all answer 404 (existence is not revealed). A non-numeric id is also 404.",
+        "parameters": [
+          {
+            "schema": {
+              "$ref": "#/components/schemas/Id"
+            },
+            "required": true,
+            "description": "Opaque entity id (string). Never parse or construct on the client.",
+            "name": "schoolId",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "$ref": "#/components/schemas/Id"
+            },
+            "required": true,
+            "description": "Opaque entity id (string). Never parse or construct on the client.",
+            "name": "userId",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Pupil detail (S4)",
+            "headers": {
+              "Cache-Control": {
+                "description": "no-store: the body holds personal data of pupils and teachers.",
+                "schema": {
+                  "type": "string",
+                  "example": "no-store"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/AnalyticsStudentDetail"
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED \"Unauthenticated.\": no valid session.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN \"This action is unauthorized.\": role not admin, teacher or school_admin",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "NOT_FOUND \"Not Found.\": Unknown ids and, for teacher and school_admin, another school or a pupil/teacher of another school all answer 404 (existence is not revealed). A non-numeric id is also 404.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/monitoring/schools/{schoolId}/teachers/{userId}": {
+      "get": {
+        "tags": [
+          "analytics"
+        ],
+        "summary": "Teacher detail (S5)",
+        "description": "One teacher and the pupils of the school in the URL. Scope as the pupil detail. Unknown ids and, for teacher and school_admin, another school or a pupil/teacher of another school all answer 404 (existence is not revealed). A non-numeric id is also 404.",
+        "parameters": [
+          {
+            "schema": {
+              "$ref": "#/components/schemas/Id"
+            },
+            "required": true,
+            "description": "Opaque entity id (string). Never parse or construct on the client.",
+            "name": "schoolId",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "$ref": "#/components/schemas/Id"
+            },
+            "required": true,
+            "description": "Opaque entity id (string). Never parse or construct on the client.",
+            "name": "userId",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Teacher detail (S5)",
+            "headers": {
+              "Cache-Control": {
+                "description": "no-store: the body holds personal data of pupils and teachers.",
+                "schema": {
+                  "type": "string",
+                  "example": "no-store"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/AnalyticsTeacherDetail"
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED \"Unauthenticated.\": no valid session.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN \"This action is unauthorized.\": role not admin, teacher or school_admin",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "NOT_FOUND \"Not Found.\": Unknown ids and, for teacher and school_admin, another school or a pupil/teacher of another school all answer 404 (existence is not revealed). A non-numeric id is also 404. A user who is not a teacher is also 404.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/monitoring/export": {
+      "get": {
+        "tags": [
+          "analytics"
+        ],
+        "summary": "Monitoring export rows (S2 PDF and CSV links)",
+        "description": "The student table behind the export, with the overview filters (tahap applied). The mock returns JSON rows and the client builds the file; a server-built file is an open question. Cells that start with =, +, - or @ must be neutralised by whoever builds a CSV or XLSX. Admin sees all schools; teacher and school_admin are forced to the own school from the session, never from the request (deviation from the mock, where a teacher sees all schools).",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "description": "'' (all time), 7d, 30d or 3m. Any other value is treated as all time."
+            },
+            "required": false,
+            "description": "'' (all time), 7d, 30d or 3m. Any other value is treated as all time.",
+            "name": "period",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "description": "Exact state name; '' or unknown value narrows nothing / gives the empty table."
+            },
+            "required": false,
+            "description": "Exact state name; '' or unknown value narrows nothing / gives the empty table.",
+            "name": "state",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "description": "One of the five Tahap keys; filters the student table only, not KPIs, weekly or signals. An unknown value gives an empty table."
+            },
+            "required": false,
+            "description": "One of the five Tahap keys; filters the student table only, not KPIs, weekly or signals. An unknown value gives an empty table.",
+            "name": "tahap",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "enum": [
+                "pdf",
+                "csv"
+              ],
+              "description": "Required; a missing or other value gives 422 fields.format."
+            },
+            "required": true,
+            "description": "Required; a missing or other value gives 422 fields.format.",
+            "name": "format",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Monitoring export rows (S2 PDF and CSV links)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/AnalyticsMonitoringExport"
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED \"Unauthenticated.\": no valid session.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN \"This action is unauthorized.\": role not admin, teacher or school_admin",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "VALIDATION_ERROR: fields.format \"Format eksport mesti pdf atau csv.\" (missing or other than pdf and csv).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/teacher/report": {
+      "get": {
+        "tags": [
+          "analytics"
+        ],
+        "summary": "Teacher report (S1)",
+        "description": "Population, activity, scores, trend and pupil lists of the own classes (teacher) or an empty population (admin). Invalid range or classroomId are tolerated: range falls back to 30, a not-own class is ignored.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "description": "Days: 7, 30 or 90. Anything else (including a non-number) is treated as 30."
+            },
+            "required": false,
+            "description": "Days: 7, 30 or 90. Anything else (including a non-number) is treated as 30.",
+            "name": "range",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "description": "An own class id. A class that is not an own class (or an unknown id) is ignored: all classes."
+            },
+            "required": false,
+            "description": "An own class id. A class that is not an own class (or an unknown id) is ignored: all classes.",
+            "name": "classroomId",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Teacher report (S1)",
+            "headers": {
+              "Cache-Control": {
+                "description": "no-store: the body holds personal data of pupils and teachers.",
+                "schema": {
+                  "type": "string",
+                  "example": "no-store"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/AnalyticsTeacherReport"
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED \"Unauthenticated.\": no valid session.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN \"This action is unauthorized.\": role not admin or teacher (school_admin included)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/teacher/item-analysis": {
+      "get": {
+        "tags": [
+          "analytics"
+        ],
+        "summary": "Teacher item analysis (S6)",
+        "description": "Per-question difficulty band and discrimination over the own classes. Rows are [] for admin and for a not-own or unknown class (no error). Band: mudah p > 70, sederhana 40 to 70, sukar p < 40.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "description": "Subject id; an unknown id gives no rows."
+            },
+            "required": false,
+            "description": "Subject id; an unknown id gives no rows.",
+            "name": "subjectId",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "description": "Own class id; a selected own class without a subject uses the class subject. A not-own or unknown class gives no rows."
+            },
+            "required": false,
+            "description": "Own class id; a selected own class without a subject uses the class subject. A not-own or unknown class gives no rows.",
+            "name": "classroomId",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Teacher item analysis (S6)",
+            "headers": {
+              "Cache-Control": {
+                "description": "no-store: the body holds personal data of pupils and teachers.",
+                "schema": {
+                  "type": "string",
+                  "example": "no-store"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/AnalyticsItemAnalysis"
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED \"Unauthenticated.\": no valid session.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN \"This action is unauthorized.\": role not admin or teacher (school_admin included)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/kirkpatrick/overview": {
+      "get": {
+        "tags": [
+          "kirkpatrick"
+        ],
+        "summary": "Four-level summary with before and after comparison (S1)",
+        "description": "Admin, teacher, school_admin. Teacher and school_admin are forced to the own school from the session whatever schoolId or state is sent (a caller without a school gets the empty view); admin chooses any school or state. Deviation from the mock, where a teacher chooses any school.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "description": "School id; '' means all schools. A malformed value gives 422 fields.schoolId; an unknown school gives the zero state (empty lists, zero counts)."
+            },
+            "required": false,
+            "description": "School id; '' means all schools. A malformed value gives 422 fields.schoolId; an unknown school gives the zero state (empty lists, zero counts).",
+            "name": "schoolId",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "description": "Exact state name (overview only); an unknown state gives the zero state."
+            },
+            "required": false,
+            "description": "Exact state name (overview only); an unknown state gives the zero state.",
+            "name": "state",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Four-level summary with before and after comparison (S1)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/KirkpatrickOverview"
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED \"Unauthenticated.\": no valid session.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN \"This action is unauthorized.\": role not admin, teacher or school_admin",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "VALIDATION_ERROR: fields.schoolId \"Medan ini tidak sah.\" (not a whole-number id).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/kirkpatrick/reaction": {
+      "get": {
+        "tags": [
+          "kirkpatrick"
+        ],
+        "summary": "Level 1 reaction (S2)",
+        "description": "Admin, teacher, school_admin. Platform-wide for admin and ignores every query; for teacher and school_admin the means are over the own school respondents (deviation from the mock, which is global).",
+        "responses": {
+          "200": {
+            "description": "Level 1 reaction (S2)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/KirkpatrickReaction"
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED \"Unauthenticated.\": no valid session.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN \"This action is unauthorized.\": role not admin, teacher or school_admin",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/kirkpatrick/learning": {
+      "get": {
+        "tags": [
+          "kirkpatrick"
+        ],
+        "summary": "Level 2 learning (S3)",
+        "description": "Admin, teacher, school_admin (deviation: the mock refuses school_admin). state is ignored. Teacher and school_admin are forced to the own school from the session whatever schoolId or state is sent (a caller without a school gets the empty view); admin chooses any school or state. Deviation from the mock, where a teacher chooses any school.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "description": "School id; '' means all schools. A malformed value gives 422 fields.schoolId; an unknown school gives the zero state (empty lists, zero counts)."
+            },
+            "required": false,
+            "description": "School id; '' means all schools. A malformed value gives 422 fields.schoolId; an unknown school gives the zero state (empty lists, zero counts).",
+            "name": "schoolId",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Level 2 learning (S3)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/KirkpatrickLearning"
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED \"Unauthenticated.\": no valid session.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN \"This action is unauthorized.\": role not admin, teacher or school_admin",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "VALIDATION_ERROR: fields.schoolId \"Medan ini tidak sah.\" (not a whole-number id).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/kirkpatrick/behavior": {
+      "get": {
+        "tags": [
+          "kirkpatrick"
+        ],
+        "summary": "Level 3 behaviour (S4)",
+        "description": "Admin, teacher, school_admin (deviation: the mock refuses school_admin). Teacher and school_admin are forced to the own school from the session whatever schoolId or state is sent (a caller without a school gets the empty view); admin chooses any school or state. Deviation from the mock, where a teacher chooses any school.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "description": "School id; '' means all schools. A malformed value gives 422 fields.schoolId; an unknown school gives the zero state (empty lists, zero counts)."
+            },
+            "required": false,
+            "description": "School id; '' means all schools. A malformed value gives 422 fields.schoolId; an unknown school gives the zero state (empty lists, zero counts).",
+            "name": "schoolId",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Level 3 behaviour (S4)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/KirkpatrickBehavior"
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED \"Unauthenticated.\": no valid session.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN \"This action is unauthorized.\": role not admin, teacher or school_admin",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "VALIDATION_ERROR: fields.schoolId \"Medan ini tidak sah.\" (not a whole-number id).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/kirkpatrick/results": {
+      "get": {
+        "tags": [
+          "kirkpatrick"
+        ],
+        "summary": "Level 4 results (S5)",
+        "description": "Admin, teacher, school_admin (deviation: the mock refuses school_admin). Teacher and school_admin are forced to the own school from the session whatever schoolId or state is sent (a caller without a school gets the empty view); admin chooses any school or state. Deviation from the mock, where a teacher chooses any school. Lists pupils by name (predictions, ALESA rows): personal data of minors.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "description": "School id; '' means all schools. A malformed value gives 422 fields.schoolId; an unknown school gives the zero state (empty lists, zero counts)."
+            },
+            "required": false,
+            "description": "School id; '' means all schools. A malformed value gives 422 fields.schoolId; an unknown school gives the zero state (empty lists, zero counts).",
+            "name": "schoolId",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Level 4 results (S5)",
+            "headers": {
+              "Cache-Control": {
+                "description": "no-store: the body holds personal data.",
+                "schema": {
+                  "type": "string",
+                  "example": "no-store"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/KirkpatrickResults"
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED \"Unauthenticated.\": no valid session.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN \"This action is unauthorized.\": role not admin, teacher or school_admin",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "VALIDATION_ERROR: fields.schoolId \"Medan ini tidak sah.\" (not a whole-number id).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/kirkpatrick/chain": {
+      "get": {
+        "tags": [
+          "kirkpatrick"
+        ],
+        "summary": "Impact chain (S6)",
+        "description": "Admin, teacher, school_admin (deviation: the mock refuses school_admin). Platform-wide for admin; for teacher and school_admin computed over the own school (the mock is platform-wide).",
+        "responses": {
+          "200": {
+            "description": "Impact chain (S6)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/KirkpatrickChain"
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED \"Unauthenticated.\": no valid session.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN \"This action is unauthorized.\": role not admin, teacher or school_admin",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/kirkpatrick/filter-options": {
+      "get": {
+        "tags": [
+          "kirkpatrick"
+        ],
+        "summary": "School and state options of the filters",
+        "description": "Admin, teacher, school_admin. school_admin gets only the own school (empty lists when it has none).",
+        "responses": {
+          "200": {
+            "description": "School and state options of the filters",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/KirkpatrickFilterOptions"
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED \"Unauthenticated.\": no valid session.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN \"This action is unauthorized.\": role not admin, teacher or school_admin",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/kirkpatrick/students/{id}": {
+      "get": {
+        "tags": [
+          "kirkpatrick"
+        ],
+        "summary": "Kirkpatrick view of one pupil (S8)",
+        "description": "Admin: any pupil. Teacher and school_admin: pupils of the own school only (deviation: the mock has no school limit and refuses school_admin). A non-numeric id is 404 NOT_FOUND \"Not Found.\" (no route). A pupil with no sessions gets the zero state.",
+        "parameters": [
+          {
+            "schema": {
+              "$ref": "#/components/schemas/Id"
+            },
+            "required": true,
+            "description": "Opaque entity id (string). Never parse or construct on the client.",
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Kirkpatrick view of one pupil (S8)",
+            "headers": {
+              "Cache-Control": {
+                "description": "no-store: the body holds personal data.",
+                "schema": {
+                  "type": "string",
+                  "example": "no-store"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/KirkpatrickStudent"
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED \"Unauthenticated.\": no valid session.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN \"This action is unauthorized.\": role not admin, teacher or school_admin, or an id that is not a pupil in scope: one uniform 403 for an unknown id, a non-pupil and a pupil of another school (teacher, school_admin), so ids cannot be probed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/kirkpatrick/me": {
+      "get": {
+        "tags": [
+          "kirkpatrick"
+        ],
+        "summary": "Own headcount and last 30 days (S9)",
+        "description": "Any signed-in role; own data only.",
+        "responses": {
+          "200": {
+            "description": "Own headcount and last 30 days (S9)",
+            "headers": {
+              "Cache-Control": {
+                "description": "no-store: the body holds personal data.",
+                "schema": {
+                  "type": "string",
+                  "example": "no-store"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/KirkpatrickMe"
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED \"Unauthenticated.\": no valid session.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/kirkpatrick/export-pdf": {
+      "get": {
+        "tags": [
+          "kirkpatrick"
+        ],
+        "summary": "Impact chain report as PDF (S6 \"Muat Turun Laporan\")",
+        "description": "Admin, teacher, school_admin; figures as in the chain (own school for teacher and school_admin). One A4 page \"Model Kirkpatrick - Rantaian Impak\" built from the chain figures; the body starts with %PDF. File name laporan-kirkpatrick.pdf (layout contract: mock pdf.ts).",
+        "responses": {
+          "200": {
+            "description": "The PDF file.",
+            "headers": {
+              "Content-Disposition": {
+                "description": "attachment; filename=\"laporan-kirkpatrick.pdf\"",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/pdf": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED \"Unauthenticated.\": no valid session.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN \"This action is unauthorized.\": role not admin, teacher or school_admin",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/kirkpatrick/interventions": {
+      "get": {
+        "tags": [
+          "kirkpatrick"
+        ],
+        "summary": "Intervention log and KPIs (S7)",
+        "description": "Admin: all. School_admin: interventions of pupils of the own school. Teacher: interventions of pupils of the own classes. Out-of-scope rows are omitted and the KPIs count the visible rows only (deviation: the mock returns every intervention to any admin or teacher, and refuses school_admin). Notes are sensitive personal data of minors: never logged.",
+        "responses": {
+          "200": {
+            "description": "Intervention log and KPIs (S7)",
+            "headers": {
+              "Cache-Control": {
+                "description": "no-store: the body holds personal data.",
+                "schema": {
+                  "type": "string",
+                  "example": "no-store"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/KirkpatrickInterventionList"
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED \"Unauthenticated.\": no valid session.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN \"This action is unauthorized.\": role not admin, teacher or school_admin",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "kirkpatrick"
+        ],
+        "summary": "Record an intervention",
+        "description": "Admin, teacher, school_admin (deviation: the mock refuses school_admin). Needs X-CSRF-Token. studentId must be a pupil in scope (admin any; school_admin own school; teacher own classes); an unknown or out-of-scope pupil gives the same typed 422 \"Pelajar tidak dijumpai.\" so existence is not revealed. 422 fields use the copy \"Medan ini diperlukan.\" (blank) and \"Medan ini tidak sah.\" (invalid); the top-level message is the Laravel-style summary of the first field message. Stage order of the mock: field checks first, then the student check, then the calendar date. Notes are sensitive personal data of minors: never logged.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Value of Session.csrf."
+            },
+            "required": true,
+            "description": "Value of Session.csrf.",
+            "name": "X-CSRF-Token",
+            "in": "header"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/KirkpatrickInterventionCreateRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "The recorded intervention.",
+            "headers": {
+              "Cache-Control": {
+                "description": "no-store: the body holds personal data.",
+                "schema": {
+                  "type": "string",
+                  "example": "no-store"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/KirkpatrickInterventionRow"
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED \"Unauthenticated.\": no valid session.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN \"This action is unauthorized.\", or CSRF_INVALID on a missing or invalid X-CSRF-Token.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "VALIDATION_ERROR with fields; the student and date refusals are pinned by KirkpatrickInterventionRefusal.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "RATE_LIMITED with retryAfter and a Retry-After header: writes are rate limited",
+            "headers": {
+              "Retry-After": {
+                "description": "Seconds until a retry is allowed.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/feedback/status": {
+      "get": {
+        "tags": [
+          "kirkpatrick"
+        ],
+        "summary": "Has the viewer answered this month?",
+        "description": "Any signed-in role; own data only.",
+        "responses": {
+          "200": {
+            "description": "Has the viewer answered this month?",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/KirkpatrickFeedbackStatus"
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED \"Unauthenticated.\": no valid session.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/feedback": {
+      "post": {
+        "tags": [
+          "kirkpatrick"
+        ],
+        "summary": "Submit the monthly feedback",
+        "description": "Any signed-in role. Needs X-CSRF-Token. One response per user per calendar month (Malaysia time); a second gives 409 CONFLICT. nps is a whole number 0 to 10 and satisfaction 1 to 5; blank gives \"Medan ini diperlukan.\", anything else invalid \"Medan ini tidak sah.\". Role and school come from the session, never from the body.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Value of Session.csrf."
+            },
+            "required": true,
+            "description": "Value of Session.csrf.",
+            "name": "X-CSRF-Token",
+            "in": "header"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/KirkpatrickFeedbackRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "The stored response.",
+            "headers": {
+              "Cache-Control": {
+                "description": "no-store: the body holds personal data.",
+                "schema": {
+                  "type": "string",
+                  "example": "no-store"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/KirkpatrickFeedbackResponse"
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED \"Unauthenticated.\": no valid session.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN \"This action is unauthorized.\", or CSRF_INVALID on a missing or invalid X-CSRF-Token.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "CONFLICT \"Anda sudah mengisi maklum balas untuk bulan ini.\".",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/KirkpatrickFeedbackConflict"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "VALIDATION_ERROR with fields.nps and/or fields.satisfaction.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "RATE_LIMITED with retryAfter and a Retry-After header: writes are rate limited",
+            "headers": {
+              "Retry-After": {
+                "description": "Seconds until a retry is allowed.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
             "content": {
               "application/json": {
                 "schema": {

@@ -45,6 +45,8 @@ import { NOTIFICATIONS_COMPONENT_SCHEMAS, registerNotificationsPaths } from './n
 import { MISSIONS_COMPONENT_SCHEMAS, registerMissionsPaths } from './classes/missions/paths'
 import { QUESTION_SETS_COMPONENT_SCHEMAS, registerQuestionSetsPaths } from './classes/question-sets/paths'
 import { PKSK_COMPONENT_SCHEMAS, registerPkskPaths } from './pksk/paths'
+import { ANALYTICS_COMPONENT_SCHEMAS, registerAnalyticsPaths } from './reports/analytics/paths'
+import { KIRKPATRICK_COMPONENT_SCHEMAS, registerKirkpatrickPaths } from './reports/kirkpatrick/paths'
 import { PARENT_INVITE_COMPONENT_SCHEMAS, registerParentInvitePaths } from './schools/parents/paths'
 import { SUBSCRIPTION_COMPONENT_SCHEMAS, registerSubscriptionPaths } from './schools/subscriptions/paths'
 import { CIKGU_COMPONENT_SCHEMAS, registerCikguPaths } from './cikgu/paths'
@@ -110,6 +112,8 @@ export const COMPONENT_SCHEMAS = {
   ...PRACTICE_COMPONENT_SCHEMAS, // BE-12
   ...PKSK_COMPONENT_SCHEMAS, // BE-42
   ...PRACTICE_READS_COMPONENT_SCHEMAS, // BE-13
+  ...ANALYTICS_COMPONENT_SCHEMAS, // BE-20 (M11)
+  ...KIRKPATRICK_COMPONENT_SCHEMAS, // BE-20 (M12)
 } as const
 
 export const CONTRACT_VERSION = '0.1.0'
@@ -147,6 +151,8 @@ export function buildOpenApiDocument(): Record<string, unknown> {
   registerQuestionSetsPaths(registry) // BE-18 (M10 question sets, DSKP)
   registerPerformancePaths(registry) // BE-19
   registerPkskPaths(registry) // BE-42
+  registerAnalyticsPaths(registry) // BE-20 (M11)
+  registerKirkpatrickPaths(registry) // BE-20 (M12)
   registerParentInvitePaths(registry) // BE-25
   registerSubscriptionPaths(registry) // BE-25
   registerCikguPaths(registry) // BE-43 (M13)
