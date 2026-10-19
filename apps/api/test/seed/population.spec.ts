@@ -239,22 +239,21 @@ describe('demo gate (population seed)', () => {
 
   const userCount = async () => (await db.query<{ n: number }>(`select count(*)::int n from users`))[0]!.n
 
-  it('refuses or skips in production without ALLOW_DEMO_SEED and touches nothing', async () => {
+  it('skips the demo modules in production without ALLOW_DEMO_SEED, still runs the reference catalogue, and writes no user', async () => {
     vi.stubEnv('NODE_ENV', 'production')
     vi.stubEnv('ALLOW_DEMO_SEED', '')
-    // The runner throws (BE-03) or skips demo modules and warns (BE-25 reference/demo split); both leave no rows.
     const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined)
-    let ran: string[] = []
-    let refused = false
+    let ran: string[]
     try {
-      ran = await runSeeds(MODULES, { prisma: db.prisma })
-    } catch (e) {
-      refused = true
-      expect(String(e)).toMatch(/ALLOW_DEMO_SEED/)
+      ran = await runSeeds(seedModules, { prisma: db.prisma })
+    } finally {
+      warn.mockRestore()
+      vi.unstubAllEnvs()
     }
-    warn.mockRestore()
-    vi.unstubAllEnvs()
-    expect(refused || !ran.includes('core-population')).toBe(true)
+    expect(populationSeed.kind).toBe('demo')
+    expect(ran).toEqual(seedModules.filter((m) => m.kind === 'reference').map((m) => m.name))
+    expect(ran).toContain('core-school-packages')
+    expect(ran).not.toContain('core-population')
     expect(await userCount()).toBe(0)
   })
 
