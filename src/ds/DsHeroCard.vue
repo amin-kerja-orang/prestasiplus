@@ -53,7 +53,7 @@ const hasRing = () => props.progress !== undefined && !!props.ringLabel
     </template>
     <div class="flex min-w-0 flex-1 flex-col items-start gap-1">
       <span class="text-overline">{{ overline }}</span>
-      <h3 :id="titleId" class="font-display text-subheading font-bold">{{ title }}</h3>
+      <h3 :id="titleId" class="font-display text-subheading font-bold text-primary-on">{{ title }}</h3>
       <p v-if="subtitle" class="text-label font-medium">{{ subtitle }}</p>
       <slot name="cta">
         <UButton
