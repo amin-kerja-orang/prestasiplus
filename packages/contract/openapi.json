@@ -3767,6 +3767,225 @@
         ],
         "additionalProperties": false
       },
+      "SupportTicketStatus": {
+        "type": "string",
+        "enum": [
+          "dibuka",
+          "dalam_proses",
+          "menunggu_balas",
+          "selesai",
+          "ditutup"
+        ]
+      },
+      "SupportTicket": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "subject": {
+            "type": "string"
+          },
+          "body": {
+            "type": "string"
+          },
+          "status": {
+            "$ref": "#/components/schemas/SupportTicketStatus"
+          },
+          "statusLabel": {
+            "type": "string"
+          },
+          "adminReply": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "createdAt": {
+            "$ref": "#/components/schemas/Timestamp"
+          }
+        },
+        "required": [
+          "id",
+          "subject",
+          "body",
+          "status",
+          "statusLabel",
+          "adminReply",
+          "createdAt"
+        ],
+        "additionalProperties": false
+      },
+      "SupportTicketListQuery": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string",
+            "description": "A SupportTicketStatus value; an unknown value is ignored (all tickets). A `userId` here is ignored too."
+          }
+        }
+      },
+      "SupportTicketListMeta": {
+        "type": "object",
+        "properties": {
+          "total": {
+            "type": "integer",
+            "minimum": 0
+          }
+        },
+        "required": [
+          "total"
+        ],
+        "additionalProperties": false
+      },
+      "SupportTicketListResponse": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SupportTicket"
+            }
+          },
+          "meta": {
+            "$ref": "#/components/schemas/SupportTicketListMeta"
+          }
+        },
+        "required": [
+          "data",
+          "meta"
+        ]
+      },
+      "SupportTicketCreateRequest": {
+        "type": "object",
+        "properties": {
+          "subject": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 255
+          },
+          "body": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 5000
+          }
+        },
+        "required": [
+          "subject",
+          "body"
+        ]
+      },
+      "SupportQueueRow": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "createdAt": {
+            "$ref": "#/components/schemas/Timestamp"
+          },
+          "userName": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "subject": {
+            "type": "string"
+          },
+          "status": {
+            "$ref": "#/components/schemas/SupportTicketStatus"
+          },
+          "replied": {
+            "type": "boolean",
+            "description": "adminReply is non-empty."
+          }
+        },
+        "required": [
+          "id",
+          "createdAt",
+          "userName",
+          "subject",
+          "status",
+          "replied"
+        ],
+        "additionalProperties": false
+      },
+      "SupportQueueQuery": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string",
+            "description": "Exact SupportTicketStatus value; blank = all; an unknown value returns no rows."
+          }
+        }
+      },
+      "SupportQueueMeta": {
+        "type": "object",
+        "properties": {
+          "total": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "counts": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "status": {
+                  "$ref": "#/components/schemas/SupportTicketStatus"
+                },
+                "count": {
+                  "type": "integer",
+                  "minimum": 1
+                }
+              },
+              "required": [
+                "status",
+                "count"
+              ],
+              "additionalProperties": false
+            }
+          }
+        },
+        "required": [
+          "total",
+          "counts"
+        ],
+        "additionalProperties": false
+      },
+      "SupportQueueResponse": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SupportQueueRow"
+            },
+            "maxItems": 200
+          },
+          "meta": {
+            "$ref": "#/components/schemas/SupportQueueMeta"
+          }
+        },
+        "required": [
+          "data",
+          "meta"
+        ]
+      },
+      "SupportOpenCount": {
+        "type": "object",
+        "properties": {
+          "count": {
+            "type": "integer",
+            "minimum": 0
+          }
+        },
+        "required": [
+          "count"
+        ],
+        "additionalProperties": false
+      },
       "AccessGroupId": {
         "type": "string",
         "enum": [
@@ -7573,6 +7792,231 @@
           },
           "422": {
             "description": "VALIDATION_ERROR fields.format \"Medan ini tidak sah.\" (format is not xlsx or docx).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/tiket": {
+      "get": {
+        "tags": [
+          "support"
+        ],
+        "summary": "Own support tickets",
+        "description": "Any signed-in user. Only the caller tickets are returned (a userId query value is ignored), newest id first, not paginated. `meta.total` counts all of the caller tickets whatever the status filter.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "description": "A SupportTicketStatus value; an unknown value is ignored (all tickets). A `userId` here is ignored too."
+            },
+            "required": false,
+            "description": "A SupportTicketStatus value; an unknown value is ignored (all tickets). A `userId` here is ignored too.",
+            "name": "status",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Tickets with meta.total.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SupportTicketListResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED: no valid session.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "support"
+        ],
+        "summary": "Create a support ticket",
+        "description": "Any signed-in user; the owner is the session user. The ticket starts `dibuka` with adminReply null. Every active admin is notified (type new_ticket, title \"Tiket baru\", body \"Tiket sokongan baharu telah diterima.\") through NotificationsService; a notification failure never undoes the ticket. The page flash \"Tiket dihantar. Pasukan sokongan akan membalas secepat mungkin.\" is client-side text.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Value of Session.csrf; required on mutating requests."
+            },
+            "required": true,
+            "description": "Value of Session.csrf; required on mutating requests.",
+            "name": "X-CSRF-Token",
+            "in": "header"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SupportTicketCreateRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Ticket created.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/SupportTicket"
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED: no valid session.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "CSRF_INVALID (missing or wrong X-CSRF-Token).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "VALIDATION_ERROR with fields: subject \"Subjek diperlukan.\" or \"Subjek tidak boleh melebihi 255 aksara.\"; body \"Butiran diperlukan.\" or \"Butiran tidak boleh melebihi 5000 aksara.\" Top-level message is the first field message (+ \" (and 1 more error)\" when both fail).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/tiket": {
+      "get": {
+        "tags": [
+          "support"
+        ],
+        "summary": "Admin support queue (read-only)",
+        "description": "Admin only (D27: read-only, no reply or status change). Newest first (createdAt desc, then id desc), first 200 rows only. `meta.total` = all tickets; `meta.counts` = statuses with a count above 0, in vocabulary order, over all tickets (not the filtered ones).",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "description": "Exact SupportTicketStatus value; blank = all; an unknown value returns no rows."
+            },
+            "required": false,
+            "description": "Exact SupportTicketStatus value; blank = all; an unknown value returns no rows.",
+            "name": "status",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Queue rows with meta.total and meta.counts.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SupportQueueResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED: no valid session.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN \"This action is unauthorized.\" (not an admin).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/tiket/open-count": {
+      "get": {
+        "tags": [
+          "support"
+        ],
+        "summary": "Count of open tickets (badge)",
+        "description": "Admin only. `count` = tickets with status `dibuka`.",
+        "responses": {
+          "200": {
+            "description": "Open ticket count.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/SupportOpenCount"
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED: no valid session.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN \"This action is unauthorized.\" (not an admin).",
             "content": {
               "application/json": {
                 "schema": {
