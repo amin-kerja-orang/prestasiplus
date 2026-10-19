@@ -85,7 +85,7 @@ A PC may claim **only** cards listed here. A card that is not listed is closed, 
 | BE-05 | full | 2026-10-19 | Group A (PC-1). Users & schools (M02). **DONE — merged 2ab7976f (2026-10-20).** Unblocked BE-17 (also needs BE-08 full), BE-25. |
 | BE-08 | full | 2026-10-19 | Group B (PC-2). Curriculum (M03): levels, subjects, chapters, topics, DSKP tree. Opened after S3; contract already merged. Unblocks BE-09 full. |
 | BE-09 | contract-only | 2026-10-19 | Question bank core: `packages/contract/src/questions/**`. |
-| BE-11 | contract-only | 2026-10-19 | Wallet and streak: `packages/contract/src/wallet/**`. |
+| BE-11 | full | 2026-10-20 | **Group B.** Wallet, ledger and streak core (M14 core). Depends BE-03 (done). Contract merged. Opened for Group B (#29). Unblocks BE-12, BE-16, BE-23. Branch `be/BE-11-wallet-streak-core`. |
 | BE-12 | contract-only | 2026-10-19 | Practice write path: `packages/contract/src/practice/**`. |
 | BE-25 | full | 2026-10-20 | Group A (PC-1). Subscriptions, packages, parent invites/links, complimentary students (M02 rest). **DONE — merged 6f634d67 (2026-10-20).** Migration 0006. Unblocks BE-12. |
 | BE-06 | full | 2026-10-20 | Group A (PC-1). Account basics (M01). **DONE — merged b5d5d7d4 (2026-10-20).** Migration 0007. mustChangePassword guard; teacher self-register fail-closed; register throttle decoupled from login. Unblocks BE-24. |
