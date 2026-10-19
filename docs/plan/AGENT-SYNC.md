@@ -49,7 +49,7 @@ Rules for `contract-only`:
 
 ### Lead notices (current instructions; newest first)
 
-- 2026-10-19: **Decisions D54 (docs/TRACKER.md):** questions use the v2 lifecycle on the wire (Draf, Semakan, Diterbitkan, Diarkib); another student's Bijak attempt returns 403; BE-23 is now P1; M16 leaderboards show classmates' display names (fictitious names in seeds). Cards that conflict with these follow D54.
+- 2026-10-19: **Decisions D54 (docs/TRACKER.md):** questions use the v2 lifecycle on the wire: Draf, Semakan, Lulus, Diterbitkan, Diarkib (codes draft, review, approved, published, archived); another student's Bijak attempt returns 403; BE-23 is now P1; M16 leaderboards show classmates' display names (fictitious names in seeds). Cards that conflict with these follow D54.
 - 2026-10-19: **Start now; do not wait for perfect docs.** Take cards only from the Open list above. If `docs/requirements/v2-backend-urs.md` or `docs/plan/backend-dev-guide.md` is not on the branch yet, follow `docs/architecture/v2-backend-plan.md` and the card file. Once they land, re-read them at your next session start.
 
 - 2026-10-19: **S0 is open, start now.** Defaults in force until the LEAD says otherwise:
