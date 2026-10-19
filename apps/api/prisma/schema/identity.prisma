@@ -42,6 +42,7 @@ model User {
   scopes       UserScope[]
   sessions     Session[]
   auditEvents  AuditEvent[]
+  importJobs   ImportJob[]
 
   @@unique([legacySource, legacyId], map: "uq_users_legacy")
   @@index([schoolId], map: "ix_users_school_id")
@@ -89,6 +90,33 @@ model UserScope {
   @@unique([legacySource, legacyId], map: "uq_user_scopes_legacy")
   @@index([schoolId], map: "ix_user_scopes_school_id")
   @@map("user_scopes")
+}
+
+/// One bulk import run (users or students) with its per-row result. Not migrated (no legacy columns).
+/// `failures` is `[{row, message}]` (the mock ImportRun.failures); row numbers are 1-based data rows.
+/// `source_file_id` (FK files) is added once `files` exists (BE-04 / BE-25).
+model ImportJob {
+  id            BigInt   @id @default(autoincrement())
+  /// users, students (check constraint).
+  kind          String
+  /// paste, csv (check constraint).
+  mode          String
+  createdById   BigInt?  @map("created_by_id")
+  /// Scope of the importer; null for a national admin.
+  schoolId      BigInt?  @map("school_id")
+  totalRows     Int      @default(0) @map("total_rows")
+  importedCount Int      @default(0) @map("imported_count")
+  failedCount   Int      @default(0) @map("failed_count")
+  failures      Json     @default("[]")
+  createdAt     DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt     DateTime @default(now()) @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  createdBy User?   @relation(fields: [createdById], references: [id], onDelete: SetNull, map: "fk_import_jobs_created_by_id")
+  school    School? @relation(fields: [schoolId], references: [id], onDelete: SetNull, map: "fk_import_jobs_school_id")
+
+  @@index([createdById, createdAt], map: "ix_import_jobs_created_by_id_created_at")
+  @@index([schoolId], map: "ix_import_jobs_school_id")
+  @@map("import_jobs")
 }
 
 /// Server-side session. The cookie value is opaque random; only its SHA-256 (`token_hash`) is stored.
