@@ -116,6 +116,7 @@ describe('admin catalogue', () => {
     expect(bad({ imageUrl: 'https://x.test/a b.png' })).toBe(false)
     expect(bad({ iconEmoji: 'x'.repeat(9) })).toBe(false)
     expect(bad({ isActive: 'yes' })).toBe(false)
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars -- omit keys to build an invalid payload
     const { tokenCost: _t, ...missing } = input
     expect(RewardInputSchema.safeParse(missing).success).toBe(false)
   })

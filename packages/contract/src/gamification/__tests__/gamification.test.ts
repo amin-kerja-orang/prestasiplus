@@ -106,6 +106,7 @@ const adminTier = {
   boardGameRewardWin: 5,
   isActive: true,
 }
+// eslint-disable-next-line @typescript-eslint/no-unused-vars -- omit keys to build an invalid payload
 const { id: _id, tierName: _tn, perks: _perks, isActive: _ia, ...tierFields } = adminTier
 const challengeInput = {
   title: 'Jawab 10 soalan',
@@ -278,6 +279,7 @@ describe('admin: overview, tiers, challenges', () => {
     expect(GamificationAdminTierUpdateSchema.safeParse({ ...tierFields, color: 'red' }).success).toBe(false)
     expect(GamificationAdminTierUpdateSchema.safeParse({ ...tierFields, labelMs: 'x'.repeat(61) }).success).toBe(false)
     expect(GamificationAdminTierUpdateSchema.safeParse({ ...tierFields, icon: '   ' }).success).toBe(false)
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars -- omit keys to build an invalid payload
     const { quizRewardL3: _q, ...missing } = tierFields
     expect(GamificationAdminTierUpdateSchema.safeParse(missing).success).toBe(false)
   })
@@ -303,6 +305,7 @@ describe('admin: overview, tiers, challenges', () => {
     expect(GamificationAdminChallengeInputSchema.safeParse({ ...challengeInput, targetValue: 0 }).success).toBe(false)
     expect(GamificationAdminChallengeInputSchema.safeParse({ ...challengeInput, title: 'x'.repeat(121) }).success).toBe(false)
     expect(GamificationAdminChallengeInputSchema.safeParse({ ...challengeInput, description: 'x'.repeat(256) }).success).toBe(false)
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars -- omit keys to build an invalid payload
     const { sortOrder: _s, ...missing } = challengeInput
     expect(GamificationAdminChallengeInputSchema.safeParse(missing).success).toBe(false)
   })
