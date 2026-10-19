@@ -67,9 +67,7 @@ import {
 } from './rooms'
 import {
   GamesBetulSalahPayloadSchema,
-  GamesBetulSalahSubmitSchema,
   GamesCabaranKilatPayloadSchema,
-  GamesCabaranKilatSubmitSchema,
   GamesJutawanAnswerRequestSchema,
   GamesJutawanAnswerResponseSchema,
   GamesJutawanLifelineRequestSchema,
@@ -80,20 +78,24 @@ import {
   GamesJutawanStartResponseSchema,
   GamesJutawanSubjectSchema,
   GamesKadMemoriPayloadSchema,
-  GamesKadMemoriSubmitSchema,
   GamesSessionIdSchema,
   GamesSoloPayloadSchema,
   GamesSoloQuerySchema,
+  GamesBetulSalahCheckSchema,
+  GamesCabaranKilatCheckSchema,
+  GamesKadMemoriCheckSchema,
+  GamesSoloCheckRequestSchema,
+  GamesSoloCheckResponseSchema,
   GamesSoloSubmitRequestSchema,
+  GamesSusunJawapanCheckSchema,
+  GamesTembakJawapanCheckSchema,
   GamesSoloSubmitResponseSchema,
   GamesSpinPageSchema,
   GamesSpinRefusedSchema,
   GamesSpinResponseSchema,
   GamesSpinSegmentSchema,
   GamesSusunJawapanPayloadSchema,
-  GamesSusunJawapanSubmitSchema,
   GamesTembakJawapanPayloadSchema,
-  GamesTembakJawapanSubmitSchema,
   GamesUjiMindaSchema,
   GamesWeeklyCompetitionSchema,
   GamesWeeklyRowSchema,
@@ -147,11 +149,13 @@ export const GAMES_COMPONENT_SCHEMAS = {
   GamesSusunJawapanPayload: GamesSusunJawapanPayloadSchema,
   GamesKadMemoriPayload: GamesKadMemoriPayloadSchema,
   GamesSoloPayload: GamesSoloPayloadSchema,
-  GamesBetulSalahSubmit: GamesBetulSalahSubmitSchema,
-  GamesCabaranKilatSubmit: GamesCabaranKilatSubmitSchema,
-  GamesTembakJawapanSubmit: GamesTembakJawapanSubmitSchema,
-  GamesSusunJawapanSubmit: GamesSusunJawapanSubmitSchema,
-  GamesKadMemoriSubmit: GamesKadMemoriSubmitSchema,
+  GamesBetulSalahCheck: GamesBetulSalahCheckSchema,
+  GamesCabaranKilatCheck: GamesCabaranKilatCheckSchema,
+  GamesTembakJawapanCheck: GamesTembakJawapanCheckSchema,
+  GamesSusunJawapanCheck: GamesSusunJawapanCheckSchema,
+  GamesKadMemoriCheck: GamesKadMemoriCheckSchema,
+  GamesSoloCheckRequest: GamesSoloCheckRequestSchema,
+  GamesSoloCheckResponse: GamesSoloCheckResponseSchema,
   GamesSoloSubmitRequest: GamesSoloSubmitRequestSchema,
   GamesSoloSubmitResponse: GamesSoloSubmitResponseSchema,
   GamesSpinSegment: GamesSpinSegmentSchema,
@@ -241,7 +245,7 @@ const RATE_LIMITED = {
   },
   content: { 'application/json': { schema: ErrorBodySchema } },
 }
-/** D57(b): responses that carry join codes (room code, league invite code) or answer keys are never cached. */
+/** D57(b): responses that carry join codes (room code, league invite code) or answer keys (the solo check, D58a) are never cached. */
 const NO_STORE_HEADERS = {
   'Cache-Control': {
     description: 'no-store: the body carries a join code or answer keys and must not be cached by browsers or proxies.',
@@ -255,7 +259,7 @@ const GAME_404 = 'NOT_FOUND "Permainan tidak dijumpai." (unknown game).'
 const TAGS = ['games']
 
 /**
- * Registers the 27 BE-45 routes: games hub and lobbies, rooms and the Papan Bijak quick match, solo
+ * Registers the 28 BE-45 routes: games hub and lobbies, rooms and the Papan Bijak quick match, solo
  * games, Roda Nasib, Jutawan Ilmu, the weekly board, Uji Minda, leagues, Sekolah Bersaing and the admin
  * game settings. Bodies are `{ data }` / `{ error }` except the raw routes M16-29 to M16-31, M16-33 and
  * M16-35 whose live-shaped bodies and raw error bodies are declared per route. The battle routes (BE-44)
@@ -422,14 +426,34 @@ export function registerGamesPaths(registry: OpenAPIRegistry): void {
     tags: TAGS,
     summary: 'Start a single-player game session (M16-32)',
     description:
-      'Creates a session row and returns its items. SECURITY EXCEPTION (SEC-M16-01, BE-45 Open question 8): as in the mock, this payload carries the answer keys (is_true, correct, answer, pair_id).',
+      'Creates a session row and returns its items. D58a: the payload is keyless; no answer key (is_true, correct, answer, pair_id) is sent before the answer. Each answer is checked by POST /games/solo/{game}/check. Kad Memori caveat: the card faces (question and answer text) are sent so the client can show a card when it is flipped; the pairing is not sent (see the open question of this card).',
     request: { params: SoloGameParam, query: GamesSoloQuerySchema },
     responses: {
       429: RATE_LIMITED,
-      200: noStore(envelopeOf(GamesSoloPayloadSchema), 'The session id and the items of the game (with answer keys); Cache-Control: no-store.'),
+      200: json(envelopeOf(GamesSoloPayloadSchema), 'The session id and the keyless items of the game.'),
       401: UNAUTHORIZED,
       404: err(GAME_404),
       422: err('VALIDATION_ERROR "Tahap tidak sah." (fields.darjah): darjah outside 1..11.'),
+    },
+  })
+
+  registry.registerPath({
+    method: 'post',
+    path: '/games/solo/{game}/check',
+    tags: TAGS,
+    summary: 'Check one single-player answer (D58a) [PROPOSED route, not in the mock]',
+    description:
+      'Modelled on the Bijak "Semak" check (/bijak/attempts/{id}/questions/{questionId}/check). Own session only. The server checks the answer against the stored key, stores the check, and returns correct/wrong plus the key of that item, revealed only now ({ data }). One check per item: a second check of the same item is 409 (so the key cannot be probed by retrying). ' +
+      'Kad Memori: the body names two flipped cards; the answer is correct when they are a pair, then pair_id is returned (null on a mismatch); a mismatch may be repeated, a card of an already matched pair is 409. Every stored check feeds the final submit. Standard `{ error }` bodies. The response carries answer keys, so Cache-Control: no-store.',
+    request: { params: SoloGameParam, headers: [csrf], body: body(GamesSoloCheckRequestSchema) },
+    responses: {
+      429: RATE_LIMITED,
+      200: noStore(envelopeOf(GamesSoloCheckResponseSchema), 'Correct or wrong plus the key of the item; Cache-Control: no-store.'),
+      401: UNAUTHORIZED,
+      403: CSRF_INVALID,
+      404: err('NOT_FOUND "Permainan tidak dijumpai." (unknown game), "Sesi tidak dijumpai." (unknown or foreign session) or "Soalan tidak dijumpai." (item or card not in the session).'),
+      409: err('CONFLICT "Keputusan sudah dihantar." (session already submitted), "Soalan sudah dijawab." [PROPOSED] (item already checked) or "Kad sudah dipadankan." [PROPOSED] (Kad Memori: card already matched).'),
+      422: err('VALIDATION_ERROR "Jawapan tidak sah." (answer, option or card value, or the same card twice).'),
     },
   })
 
@@ -439,16 +463,16 @@ export function registerGamesPaths(registry: OpenAPIRegistry): void {
     tags: TAGS,
     summary: 'Submit a single-player result (M16-33)',
     description:
-      'RAW live-shaped bodies; errors are raw `{ message }` (404, 409, 422), not the standard error body. Own session only, one submit per session. A first result is a record, later ones only if they exceed the stored best.',
+      'D58a: the body is only the session id; the server computes score, counts, streak, combo, level and coins from the stored checks and ignores any value the client sends. RAW live-shaped bodies; errors are raw `{ message }` (404, 409, 422), not the standard error body. Own session only, one submit per session. A first result is a record, later ones only if they exceed the stored best. The response also returns the computed values ([PROPOSED] fields).',
     request: { params: SoloGameParam, headers: [csrf], body: body(GamesSoloSubmitRequestSchema) },
     responses: {
       429: RATE_LIMITED,
-      200: json(GamesSoloSubmitResponseSchema, '{ is_new_record, syiling_awarded } or, for Kad Memori, { results }.'),
+      200: json(GamesSoloSubmitResponseSchema, '{ is_new_record, syiling_awarded, score, correct_count, total_answered } or, for Kad Memori, { results: { syiling_earned, accuracy, moves, time_seconds } }.'),
       401: UNAUTHORIZED,
       403: CSRF_INVALID,
       404: json(GamesRawMessageSchema, 'Raw `{ message: "Permainan tidak dijumpai." }`.'),
       409: json(GamesRawMessageSchema, 'Raw `{ message: "Keputusan sudah dihantar." }`.'),
-      422: json(GamesRawMessageSchema, 'Raw `{ message: "Keputusan tidak sah." }` (unknown or foreign session, or values beyond the bounds).'),
+      422: json(GamesRawMessageSchema, 'Raw `{ message: "Keputusan tidak sah." }` (unknown or foreign session, no stored check, or Kad Memori with fewer than 6 matched pairs).'),
     },
   })
 

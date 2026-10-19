@@ -20826,10 +20826,6 @@
                 "statement": {
                   "type": "string"
                 },
-                "is_true": {
-                  "type": "boolean",
-                  "description": "ANSWER KEY shipped to the client by design (SEC-M16-01)."
-                },
                 "difficulty": {
                   "type": "integer",
                   "minimum": 1
@@ -20838,7 +20834,6 @@
               "required": [
                 "id",
                 "statement",
-                "is_true",
                 "difficulty"
               ],
               "additionalProperties": false
@@ -20894,16 +20889,11 @@
                       },
                       "text": {
                         "type": "string"
-                      },
-                      "correct": {
-                        "type": "boolean",
-                        "description": "ANSWER KEY shipped to the client by design (SEC-M16-01)."
                       }
                     },
                     "required": [
                       "id",
-                      "text",
-                      "correct"
+                      "text"
                     ],
                     "additionalProperties": false
                   }
@@ -20963,15 +20953,10 @@
                     "properties": {
                       "text": {
                         "type": "string"
-                      },
-                      "correct": {
-                        "type": "boolean",
-                        "description": "ANSWER KEY shipped to the client by design (SEC-M16-01)."
                       }
                     },
                     "required": [
-                      "text",
-                      "correct"
+                      "text"
                     ],
                     "additionalProperties": false
                   }
@@ -21020,10 +21005,6 @@
                 "question": {
                   "type": "string"
                 },
-                "answer": {
-                  "type": "string",
-                  "description": "ANSWER KEY shipped to the client by design (SEC-M16-01)."
-                },
                 "scrambled": {
                   "type": "array",
                   "items": {
@@ -21049,7 +21030,6 @@
               "required": [
                 "id",
                 "question",
-                "answer",
                 "scrambled",
                 "type",
                 "difficulty",
@@ -21091,12 +21071,6 @@
                   "minimum": 1,
                   "maximum": 12
                 },
-                "pair_id": {
-                  "type": "integer",
-                  "minimum": 0,
-                  "maximum": 5,
-                  "description": "ANSWER KEY shipped to the client by design (SEC-M16-01)."
-                },
                 "type": {
                   "type": "string",
                   "enum": [
@@ -21114,7 +21088,6 @@
               },
               "required": [
                 "id",
-                "pair_id",
                 "type",
                 "content",
                 "difficulty"
@@ -21150,199 +21123,255 @@
             "$ref": "#/components/schemas/GamesKadMemoriPayload"
           }
         ],
-        "description": "The payload of the requested game: statements (betul-salah), questions (cabaran-kilat, tembak-jawapan), puzzles (susun-jawapan) or cards (kad-memori). A session row is created by the GET."
+        "description": "The keyless payload of the requested game: statements (betul-salah), questions (cabaran-kilat, tembak-jawapan), puzzles (susun-jawapan) or cards (kad-memori). A session row is created by the GET. No answer key is present (D58a)."
       },
-      "GamesBetulSalahSubmit": {
+      "GamesBetulSalahCheck": {
         "type": "object",
         "properties": {
           "session_id": {
             "$ref": "#/components/schemas/GamesSessionId"
           },
-          "correct_count": {
-            "type": "integer",
-            "minimum": 0
+          "item_id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 64,
+            "description": "Id of the statement, question or puzzle in the payload of this session.",
+            "example": "1042"
           },
-          "total_answered": {
-            "type": "integer",
-            "minimum": 0
-          },
-          "streak": {
-            "type": "integer",
-            "minimum": 0
-          },
-          "score": {
-            "type": "integer",
-            "minimum": 0
-          },
-          "syiling_earned": {
-            "type": "integer",
-            "minimum": 0
+          "answer": {
+            "type": "boolean"
           }
         },
         "required": [
           "session_id",
-          "correct_count",
-          "total_answered",
-          "streak",
-          "score",
-          "syiling_earned"
+          "item_id",
+          "answer"
         ]
       },
-      "GamesCabaranKilatSubmit": {
+      "GamesCabaranKilatCheck": {
         "type": "object",
         "properties": {
           "session_id": {
             "$ref": "#/components/schemas/GamesSessionId"
           },
-          "correct_count": {
-            "type": "integer",
-            "minimum": 0
+          "item_id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 64,
+            "description": "Id of the statement, question or puzzle in the payload of this session.",
+            "example": "1042"
           },
-          "total_answered": {
+          "option_id": {
             "type": "integer",
-            "minimum": 0
-          },
-          "max_combo": {
-            "type": "integer",
-            "minimum": 0
-          },
-          "score": {
-            "type": "integer",
-            "minimum": 0
-          },
-          "syiling_earned": {
-            "type": "integer",
-            "minimum": 0
+            "minimum": 0,
+            "maximum": 3,
+            "description": "The id (0..3) of the chosen option."
           }
         },
         "required": [
           "session_id",
-          "correct_count",
-          "total_answered",
-          "max_combo",
-          "score",
-          "syiling_earned"
+          "item_id",
+          "option_id"
         ]
       },
-      "GamesTembakJawapanSubmit": {
+      "GamesTembakJawapanCheck": {
         "type": "object",
         "properties": {
           "session_id": {
             "$ref": "#/components/schemas/GamesSessionId"
           },
-          "correct_count": {
-            "type": "integer",
-            "minimum": 0
+          "item_id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 64,
+            "description": "Id of the statement, question or puzzle in the payload of this session.",
+            "example": "1042"
           },
-          "total_answered": {
+          "option_index": {
             "type": "integer",
-            "minimum": 0
-          },
-          "max_level": {
-            "type": "integer",
-            "minimum": 1
-          },
-          "score": {
-            "type": "integer",
-            "minimum": 0
-          },
-          "syiling_earned": {
-            "type": "integer",
-            "minimum": 0
+            "minimum": 0,
+            "maximum": 3,
+            "description": "The position (0..3) of the chosen option."
           }
         },
         "required": [
           "session_id",
-          "correct_count",
-          "total_answered",
-          "max_level",
-          "score",
-          "syiling_earned"
+          "item_id",
+          "option_index"
         ]
       },
-      "GamesSusunJawapanSubmit": {
+      "GamesSusunJawapanCheck": {
         "type": "object",
         "properties": {
           "session_id": {
             "$ref": "#/components/schemas/GamesSessionId"
           },
-          "solved_count": {
-            "type": "integer",
-            "minimum": 0
+          "item_id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 64,
+            "description": "Id of the statement, question or puzzle in the payload of this session.",
+            "example": "1042"
           },
-          "total_puzzles": {
-            "type": "integer",
-            "minimum": 0
-          },
-          "score": {
-            "type": "integer",
-            "minimum": 0
-          },
-          "syiling_earned": {
-            "type": "integer",
-            "minimum": 0
+          "answer": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200
           }
         },
         "required": [
           "session_id",
-          "solved_count",
-          "total_puzzles",
-          "score",
-          "syiling_earned"
+          "item_id",
+          "answer"
         ]
       },
-      "GamesKadMemoriSubmit": {
+      "GamesKadMemoriCheck": {
         "type": "object",
         "properties": {
           "session_id": {
             "$ref": "#/components/schemas/GamesSessionId"
           },
-          "matches": {
-            "type": "number",
-            "enum": [
-              6
-            ]
-          },
-          "total_pairs": {
-            "type": "number",
-            "enum": [
-              6
-            ]
-          },
-          "moves": {
+          "card_id": {
             "type": "integer",
-            "minimum": 6
+            "minimum": 1,
+            "maximum": 12
           },
-          "time_seconds": {
+          "other_card_id": {
             "type": "integer",
-            "minimum": 0
+            "minimum": 1,
+            "maximum": 12
           }
         },
         "required": [
           "session_id",
-          "matches",
-          "total_pairs",
-          "moves",
-          "time_seconds"
+          "card_id",
+          "other_card_id"
         ]
       },
-      "GamesSoloSubmitRequest": {
+      "GamesSoloCheckRequest": {
         "anyOf": [
           {
-            "$ref": "#/components/schemas/GamesBetulSalahSubmit"
+            "$ref": "#/components/schemas/GamesBetulSalahCheck"
           },
           {
-            "$ref": "#/components/schemas/GamesCabaranKilatSubmit"
+            "$ref": "#/components/schemas/GamesCabaranKilatCheck"
           },
           {
-            "$ref": "#/components/schemas/GamesTembakJawapanSubmit"
+            "$ref": "#/components/schemas/GamesTembakJawapanCheck"
           },
           {
-            "$ref": "#/components/schemas/GamesSusunJawapanSubmit"
+            "$ref": "#/components/schemas/GamesSusunJawapanCheck"
           },
           {
-            "$ref": "#/components/schemas/GamesKadMemoriSubmit"
+            "$ref": "#/components/schemas/GamesKadMemoriCheck"
           }
+        ]
+      },
+      "GamesSoloCheckResponse": {
+        "anyOf": [
+          {
+            "type": "object",
+            "properties": {
+              "correct": {
+                "type": "boolean"
+              },
+              "is_true": {
+                "type": "boolean"
+              }
+            },
+            "required": [
+              "correct",
+              "is_true"
+            ],
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "properties": {
+              "correct": {
+                "type": "boolean"
+              },
+              "correct_option_id": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 3
+              }
+            },
+            "required": [
+              "correct",
+              "correct_option_id"
+            ],
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "properties": {
+              "correct": {
+                "type": "boolean"
+              },
+              "correct_option_index": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 3
+              }
+            },
+            "required": [
+              "correct",
+              "correct_option_index"
+            ],
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "properties": {
+              "correct": {
+                "type": "boolean"
+              },
+              "answer": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "correct",
+              "answer"
+            ],
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "properties": {
+              "correct": {
+                "type": "boolean",
+                "description": "true when the two cards are a pair."
+              },
+              "pair_id": {
+                "type": [
+                  "integer",
+                  "null"
+                ],
+                "minimum": 0,
+                "maximum": 5,
+                "description": "The pair id, only when the cards match; null on a mismatch (nothing else is revealed)."
+              }
+            },
+            "required": [
+              "correct",
+              "pair_id"
+            ],
+            "additionalProperties": false
+          }
+        ],
+        "description": "betul-salah: { correct, is_true }; cabaran-kilat: { correct, correct_option_id }; tembak-jawapan: { correct, correct_option_index }; susun-jawapan: { correct, answer }; kad-memori: { correct, pair_id | null }."
+      },
+      "GamesSoloSubmitRequest": {
+        "type": "object",
+        "properties": {
+          "session_id": {
+            "$ref": "#/components/schemas/GamesSessionId"
+          }
+        },
+        "required": [
+          "session_id"
         ]
       },
       "GamesSoloSubmitResponse": {
@@ -21356,11 +21385,29 @@
               "syiling_awarded": {
                 "type": "integer",
                 "minimum": 0
+              },
+              "score": {
+                "type": "integer",
+                "minimum": 0,
+                "description": "[PROPOSED] Server-computed score."
+              },
+              "correct_count": {
+                "type": "integer",
+                "minimum": 0,
+                "description": "[PROPOSED] Correct checks (solved puzzles for susun-jawapan)."
+              },
+              "total_answered": {
+                "type": "integer",
+                "minimum": 0,
+                "description": "[PROPOSED] Checks stored for the session."
               }
             },
             "required": [
               "is_new_record",
-              "syiling_awarded"
+              "syiling_awarded",
+              "score",
+              "correct_count",
+              "total_answered"
             ],
             "additionalProperties": false
           },
@@ -21379,11 +21426,23 @@
                     "minimum": 0,
                     "maximum": 100,
                     "description": "round(6 / moves * 100); coins 6."
+                  },
+                  "moves": {
+                    "type": "integer",
+                    "minimum": 6,
+                    "description": "[PROPOSED] Pair checks stored for the session."
+                  },
+                  "time_seconds": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "description": "[PROPOSED] Server clock: submit time minus session start."
                   }
                 },
                 "required": [
                   "syiling_earned",
-                  "accuracy"
+                  "accuracy",
+                  "moves",
+                  "time_seconds"
                 ],
                 "additionalProperties": false
               }
@@ -61128,7 +61187,7 @@
           "games"
         ],
         "summary": "Start a single-player game session (M16-32)",
-        "description": "Creates a session row and returns its items. SECURITY EXCEPTION (SEC-M16-01, BE-45 Open question 8): as in the mock, this payload carries the answer keys (is_true, correct, answer, pair_id).",
+        "description": "Creates a session row and returns its items. D58a: the payload is keyless; no answer key (is_true, correct, answer, pair_id) is sent before the answer. Each answer is checked by POST /games/solo/{game}/check. Kad Memori caveat: the card faces (question and answer text) are sent so the client can show a card when it is flipped; the pairing is not sent (see the open question of this card).",
         "parameters": [
           {
             "schema": {
@@ -61162,18 +61221,7 @@
         ],
         "responses": {
           "200": {
-            "description": "The session id and the items of the game (with answer keys); Cache-Control: no-store.",
-            "headers": {
-              "Cache-Control": {
-                "description": "no-store: the body carries a join code or answer keys and must not be cached by browsers or proxies.",
-                "schema": {
-                  "type": "string",
-                  "enum": [
-                    "no-store"
-                  ]
-                }
-              }
-            },
+            "description": "The session id and the keyless items of the game.",
             "content": {
               "application/json": {
                 "schema": {
@@ -61242,13 +61290,162 @@
         }
       }
     },
+    "/games/solo/{game}/check": {
+      "post": {
+        "tags": [
+          "games"
+        ],
+        "summary": "Check one single-player answer (D58a) [PROPOSED route, not in the mock]",
+        "description": "Modelled on the Bijak \"Semak\" check (/bijak/attempts/{id}/questions/{questionId}/check). Own session only. The server checks the answer against the stored key, stores the check, and returns correct/wrong plus the key of that item, revealed only now ({ data }). One check per item: a second check of the same item is 409 (so the key cannot be probed by retrying). Kad Memori: the body names two flipped cards; the answer is correct when they are a pair, then pair_id is returned (null on a mismatch); a mismatch may be repeated, a card of an already matched pair is 409. Every stored check feeds the final submit. Standard `{ error }` bodies. The response carries answer keys, so Cache-Control: no-store.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "enum": [
+                "betul-salah",
+                "cabaran-kilat",
+                "tembak-jawapan",
+                "susun-jawapan",
+                "kad-memori"
+              ],
+              "description": "Solo game key. Unknown: 404 \"Permainan tidak dijumpai.\"."
+            },
+            "required": true,
+            "description": "Solo game key. Unknown: 404 \"Permainan tidak dijumpai.\".",
+            "name": "game",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Value of Session.csrf; required on mutating requests."
+            },
+            "required": true,
+            "description": "Value of Session.csrf; required on mutating requests.",
+            "name": "X-CSRF-Token",
+            "in": "header"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GamesSoloCheckRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Correct or wrong plus the key of the item; Cache-Control: no-store.",
+            "headers": {
+              "Cache-Control": {
+                "description": "no-store: the body carries a join code or answer keys and must not be cached by browsers or proxies.",
+                "schema": {
+                  "type": "string",
+                  "enum": [
+                    "no-store"
+                  ]
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/GamesSoloCheckResponse"
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED \"Unauthenticated.\" (no valid session).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "CSRF_INVALID (missing or wrong X-CSRF-Token).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "NOT_FOUND \"Permainan tidak dijumpai.\" (unknown game), \"Sesi tidak dijumpai.\" (unknown or foreign session) or \"Soalan tidak dijumpai.\" (item or card not in the session).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "CONFLICT \"Keputusan sudah dihantar.\" (session already submitted), \"Soalan sudah dijawab.\" [PROPOSED] (item already checked) or \"Kad sudah dipadankan.\" [PROPOSED] (Kad Memori: card already matched).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "VALIDATION_ERROR \"Jawapan tidak sah.\" (answer, option or card value, or the same card twice).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "RATE_LIMITED (BM \"Terlalu banyak percubaan. Sila cuba sebentar lagi.\"): body error.retryAfter and the Retry-After header carry the seconds to wait.",
+            "headers": {
+              "Retry-After": {
+                "description": "Seconds until a retry is allowed (same value as error.retryAfter).",
+                "schema": {
+                  "type": "integer",
+                  "minimum": 0
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/games/solo/{game}/submit": {
       "post": {
         "tags": [
           "games"
         ],
         "summary": "Submit a single-player result (M16-33)",
-        "description": "RAW live-shaped bodies; errors are raw `{ message }` (404, 409, 422), not the standard error body. Own session only, one submit per session. A first result is a record, later ones only if they exceed the stored best.",
+        "description": "D58a: the body is only the session id; the server computes score, counts, streak, combo, level and coins from the stored checks and ignores any value the client sends. RAW live-shaped bodies; errors are raw `{ message }` (404, 409, 422), not the standard error body. Own session only, one submit per session. A first result is a record, later ones only if they exceed the stored best. The response also returns the computed values ([PROPOSED] fields).",
         "parameters": [
           {
             "schema": {
@@ -61291,7 +61488,7 @@
         },
         "responses": {
           "200": {
-            "description": "{ is_new_record, syiling_awarded } or, for Kad Memori, { results }.",
+            "description": "{ is_new_record, syiling_awarded, score, correct_count, total_answered } or, for Kad Memori, { results: { syiling_earned, accuracy, moves, time_seconds } }.",
             "content": {
               "application/json": {
                 "schema": {
@@ -61341,7 +61538,7 @@
             }
           },
           "422": {
-            "description": "Raw `{ message: \"Keputusan tidak sah.\" }` (unknown or foreign session, or values beyond the bounds).",
+            "description": "Raw `{ message: \"Keputusan tidak sah.\" }` (unknown or foreign session, no stored check, or Kad Memori with fewer than 6 matched pairs).",
             "content": {
               "application/json": {
                 "schema": {

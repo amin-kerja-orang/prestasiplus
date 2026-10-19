@@ -12,7 +12,7 @@ import {
   GAMES_ROOM_LIMITS,
   GAMES_SOLO_GAMES,
   GAMES_SOLO_PAYLOAD_SCHEMAS,
-  GAMES_SOLO_SUBMIT_SCHEMAS,
+  GAMES_SOLO_CHECK_SCHEMAS,
   GamesAdminOverviewSchema,
   GamesAdminSettingsResultSchema,
   GamesAdminSettingsUpdateRequestSchema,
@@ -44,6 +44,8 @@ import {
   GamesRoomViewSchema,
   GamesSekolahBersaingSchema,
   GamesSoloPayloadSchema,
+  GamesSoloCheckRequestSchema,
+  GamesSoloCheckResponseSchema,
   GamesSoloQuerySchema,
   GamesSoloSubmitRequestSchema,
   GamesSoloSubmitResponseSchema,
@@ -422,7 +424,7 @@ describe('Papan Bijak quick match (M16-29 to M16-31, raw bodies)', () => {
 describe('single-player games (M16-32, M16-33)', () => {
   const base = { sessionId: SESSION, personalBest: 38, canEarnSyiling: true }
   const payloads = {
-    'betul-salah': { ...base, statements: [{ id: '9001', statement: '7 + 5 → 12', is_true: true, difficulty: 1 }] },
+    'betul-salah': { ...base, statements: [{ id: '9001', statement: '7 + 5 → 12', difficulty: 1 }] },
     'cabaran-kilat': {
       ...base,
       questions: [
@@ -431,25 +433,25 @@ describe('single-player games (M16-32, M16-33)', () => {
           question_text: 'Berapakah 7 + 5?',
           difficulty: 2,
           options: [
-            { id: 0, text: '10', correct: false },
-            { id: 1, text: '12', correct: true },
+            { id: 0, text: '10' },
+            { id: 1, text: '12' },
           ],
         },
       ],
     },
     'tembak-jawapan': {
       ...base,
-      questions: [{ id: '9001', question: 'Berapakah 7 + 5?', difficulty: 1, options: [{ text: '12', correct: true }, { text: '13', correct: false }] }],
+      questions: [{ id: '9001', question: 'Berapakah 7 + 5?', difficulty: 1, options: [{ text: '12' }, { text: '13' }] }],
     },
     'susun-jawapan': {
       ...base,
-      puzzles: [{ id: '9001', question: 'Ibu negara Malaysia?', answer: 'KUALA LUMPUR', scrambled: ['LUMPUR', 'KUALA'], type: 'words', difficulty: 1, points: 6 }],
+      puzzles: [{ id: '9001', question: 'Ibu negara Malaysia?', scrambled: ['LUMPUR', 'KUALA'], type: 'words', difficulty: 1, points: 6 }],
     },
     'kad-memori': {
       ...base,
       cards: [
-        { id: 1, pair_id: 0, type: 'question', content: '7 + 5', difficulty: 1 },
-        { id: 2, pair_id: 0, type: 'answer', content: '12', difficulty: 1 },
+        { id: 1, type: 'question', content: '7 + 5', difficulty: 1 },
+        { id: 2, type: 'answer', content: '12', difficulty: 1 },
       ],
     },
   } as const
@@ -462,11 +464,23 @@ describe('single-player games (M16-32, M16-33)', () => {
     }
   })
 
-  it('SEC-M16-01 (replicated, Open question 8): the answer-key fields ARE explicit in the solo payloads and required', () => {
-    rejected(GAMES_SOLO_PAYLOAD_SCHEMAS['betul-salah'], { ...base, statements: [{ id: '1', statement: 's', difficulty: 1 }] })
-    rejected(GAMES_SOLO_PAYLOAD_SCHEMAS['susun-jawapan'], { ...base, puzzles: [{ id: '1', question: 'q', scrambled: [], type: 'words', difficulty: 1, points: 3 }] })
-    rejected(GAMES_SOLO_PAYLOAD_SCHEMAS['kad-memori'], { ...base, cards: [{ id: 1, type: 'question', content: 'c', difficulty: 1 }] })
-    // and nothing else rides along
+  it('D58a: no answer key is declared or accepted in any solo payload', () => {
+    for (const game of GAMES_SOLO_GAMES) {
+      const text = JSON.stringify(doc.components.schemas[{
+        'betul-salah': 'GamesBetulSalahPayload',
+        'cabaran-kilat': 'GamesCabaranKilatPayload',
+        'tembak-jawapan': 'GamesTembakJawapanPayload',
+        'susun-jawapan': 'GamesSusunJawapanPayload',
+        'kad-memori': 'GamesKadMemoriPayload',
+      }[game]])
+      expect(text, game).not.toMatch(/"(is_true|correct|answer|pair_id)":\{/)
+    }
+    // a payload that still carries a key is refused (strict)
+    rejected(GAMES_SOLO_PAYLOAD_SCHEMAS['betul-salah'], { ...base, statements: [{ id: '1', statement: 's', is_true: true, difficulty: 1 }] })
+    rejected(GAMES_SOLO_PAYLOAD_SCHEMAS['susun-jawapan'], { ...base, puzzles: [{ id: '1', question: 'q', answer: 'A', scrambled: [], type: 'words', difficulty: 1, points: 3 }] })
+    rejected(GAMES_SOLO_PAYLOAD_SCHEMAS['kad-memori'], { ...base, cards: [{ id: 1, pair_id: 0, type: 'question', content: 'c', difficulty: 1 }] })
+    rejected(GAMES_SOLO_PAYLOAD_SCHEMAS['cabaran-kilat'], { ...base, questions: [{ id: '1', question_text: 'q', difficulty: 1, options: [{ id: 0, text: 't', correct: true }] }] })
+    rejected(GAMES_SOLO_PAYLOAD_SCHEMAS['tembak-jawapan'], { ...base, questions: [{ id: '1', question: 'q', difficulty: 1, options: [{ text: 't', correct: true }] }] })
     rejected(GAMES_SOLO_PAYLOAD_SCHEMAS['betul-salah'], { ...payloads['betul-salah'], explanation: 'x' })
   })
 
@@ -486,30 +500,52 @@ describe('single-player games (M16-32, M16-33)', () => {
     }
   })
 
-  it('parses a submit body per game; each game rejects the bodies of the others', () => {
+  it('parses a check body per game; each game rejects the bodies of the others', () => {
     const bodies = {
-      'betul-salah': { session_id: SESSION, correct_count: 8, total_answered: 10, streak: 5, score: 120, syiling_earned: 20 },
-      'cabaran-kilat': { session_id: SESSION, correct_count: 8, total_answered: 10, max_combo: 5, score: 120, syiling_earned: 20 },
-      'tembak-jawapan': { session_id: SESSION, correct_count: 8, total_answered: 10, max_level: 2, score: 120, syiling_earned: 12 },
-      'susun-jawapan': { session_id: SESSION, solved_count: 5, total_puzzles: 8, score: 30, syiling_earned: 10 },
-      'kad-memori': { session_id: SESSION, matches: 6, total_pairs: 6, moves: 9, time_seconds: 41 },
+      'betul-salah': { session_id: SESSION, item_id: '9001', answer: true },
+      'cabaran-kilat': { session_id: SESSION, item_id: '9001', option_id: 1 },
+      'tembak-jawapan': { session_id: SESSION, item_id: '9001', option_index: 0 },
+      'susun-jawapan': { session_id: SESSION, item_id: '9001', answer: 'KUALA LUMPUR' },
+      'kad-memori': { session_id: SESSION, card_id: 1, other_card_id: 2 },
     } as const
     for (const game of GAMES_SOLO_GAMES) {
-      ok(GAMES_SOLO_SUBMIT_SCHEMAS[game], bodies[game])
-      ok(GamesSoloSubmitRequestSchema, bodies[game])
-      for (const other of GAMES_SOLO_GAMES) if (other !== game) rejected(GAMES_SOLO_SUBMIT_SCHEMAS[other], bodies[game])
+      ok(GAMES_SOLO_CHECK_SCHEMAS[game], bodies[game])
+      ok(GamesSoloCheckRequestSchema, bodies[game])
+      for (const other of GAMES_SOLO_GAMES) if (other !== game) rejected(GAMES_SOLO_CHECK_SCHEMAS[other], bodies[game])
     }
-    rejected(GAMES_SOLO_SUBMIT_SCHEMAS['kad-memori'], { ...bodies['kad-memori'], matches: 5 })
-    rejected(GAMES_SOLO_SUBMIT_SCHEMAS['kad-memori'], { ...bodies['kad-memori'], moves: 5 })
-    rejected(GAMES_SOLO_SUBMIT_SCHEMAS['betul-salah'], { ...bodies['betul-salah'], score: -1 })
-    rejected(GAMES_SOLO_SUBMIT_SCHEMAS['tembak-jawapan'], { ...bodies['tembak-jawapan'], max_level: 0 })
+    rejected(GAMES_SOLO_CHECK_SCHEMAS['cabaran-kilat'], { ...bodies['cabaran-kilat'], option_id: 4 })
+    rejected(GAMES_SOLO_CHECK_SCHEMAS['susun-jawapan'], { ...bodies['susun-jawapan'], answer: '' })
+    rejected(GAMES_SOLO_CHECK_SCHEMAS['kad-memori'], { ...bodies['kad-memori'], other_card_id: 13 })
+    expect(firstIssue(GAMES_SOLO_CHECK_SCHEMAS['kad-memori'], { ...bodies['kad-memori'], other_card_id: 1 }).message).toBe('Jawapan tidak sah.')
+    rejected(GAMES_SOLO_CHECK_SCHEMAS['betul-salah'], { ...bodies['betul-salah'], session_id: 'tf_abc' })
+  })
+
+  it('check responses: correct/wrong plus the key of that item only; Kad Memori reveals pair_id only on a match', () => {
+    ok(GamesSoloCheckResponseSchema, { correct: true, is_true: true })
+    ok(GamesSoloCheckResponseSchema, { correct: false, correct_option_id: 1 })
+    ok(GamesSoloCheckResponseSchema, { correct: false, correct_option_index: 2 })
+    ok(GamesSoloCheckResponseSchema, { correct: true, answer: 'KUALA LUMPUR' })
+    ok(GamesSoloCheckResponseSchema, { correct: true, pair_id: 3 })
+    ok(GamesSoloCheckResponseSchema, { correct: false, pair_id: null })
+    rejected(GamesSoloCheckResponseSchema, { correct: true })
+    rejected(GamesSoloCheckResponseSchema, { correct: true, is_true: true, answer: 'x' })
+    expect(GAMES_MESSAGES.soloAlreadyChecked).toBe('Soalan sudah dijawab.')
+    expect(GAMES_MESSAGES.soloCardMatched).toBe('Kad sudah dipadankan.')
+  })
+
+  it('D58a: the submit body is only the session id; score and counts sent by a client are not part of the contract', () => {
+    ok(GamesSoloSubmitRequestSchema, { session_id: SESSION })
+    rejected(GamesSoloSubmitRequestSchema, {})
+    rejected(GamesSoloSubmitRequestSchema, { session_id: 'tf_abc' })
+    const props = Object.keys((doc.components.schemas.GamesSoloSubmitRequest as { properties: object }).properties)
+    expect(props).toEqual(['session_id'])
   })
 
   it('answers raw bodies: {is_new_record, syiling_awarded}, Kad Memori {results}, and raw {message} refusals', () => {
-    ok(GamesSoloSubmitResponseSchema, { is_new_record: true, syiling_awarded: 5 })
-    ok(GamesSoloSubmitResponseSchema, { results: { syiling_earned: 6, accuracy: 67 } })
-    rejected(GamesSoloSubmitResponseSchema, { data: { is_new_record: true, syiling_awarded: 5 } })
-    rejected(GamesSoloSubmitResponseSchema, { results: { syiling_earned: 6, accuracy: 101 } })
+    ok(GamesSoloSubmitResponseSchema, { is_new_record: true, syiling_awarded: 5, score: 120, correct_count: 8, total_answered: 10 })
+    ok(GamesSoloSubmitResponseSchema, { results: { syiling_earned: 6, accuracy: 67, moves: 9, time_seconds: 41 } })
+    rejected(GamesSoloSubmitResponseSchema, { data: { is_new_record: true, syiling_awarded: 5, score: 1, correct_count: 1, total_answered: 1 } })
+    rejected(GamesSoloSubmitResponseSchema, { results: { syiling_earned: 6, accuracy: 101, moves: 9, time_seconds: 41 } })
     ok(GamesRawMessageSchema, { message: GAMES_MESSAGES.soloInvalidResult })
     ok(GamesRawMessageSchema, { message: GAMES_MESSAGES.soloAlreadySubmitted })
     expect(GAMES_MESSAGES.soloInvalidResult).toBe('Keputusan tidak sah.')
@@ -801,6 +837,7 @@ describe('openapi registration', () => {
     'GET /papan-bijak/quick-match/poll',
     'POST /papan-bijak/quick-match/cancel',
     'GET /games/solo/{game}',
+    'POST /games/solo/{game}/check',
     'POST /games/solo/{game}/submit',
     'GET /games/roda-nasib',
     'POST /games/roda-nasib/spin',
@@ -819,8 +856,8 @@ describe('openapi registration', () => {
     'PUT /admin/games/settings',
   ]
 
-  it('registers exactly the 27 routes of the card under the games tag', () => {
-    expect(gamesOps).toHaveLength(27)
+  it('registers exactly the 28 routes of the card under the games tag', () => {
+    expect(gamesOps).toHaveLength(28)
     expect(gamesOps.map((o) => o.key).sort()).toEqual([...EXPECTED].sort())
   })
 
@@ -840,7 +877,7 @@ describe('openapi registration', () => {
 
   it('every mutation takes the X-CSRF-Token header and declares 403', () => {
     const mutations = gamesOps.filter((o) => o.method !== 'get')
-    expect(mutations).toHaveLength(14)
+    expect(mutations).toHaveLength(15)
     for (const { key, op } of mutations) {
       expect(op.parameters?.some((p) => p.in === 'header' && p.name === 'X-CSRF-Token'), key).toBe(true)
       expect(op.responses['403'], key).toBeDefined()
@@ -854,7 +891,7 @@ describe('openapi registration', () => {
 
   it('D57(a): every write route (and the solo GET that creates a session) documents 429 RATE_LIMITED with retryAfter and Retry-After', () => {
     const writes = gamesOps.filter((o) => o.method !== 'get' || o.key === 'GET /games/solo/{game}')
-    expect(writes).toHaveLength(15)
+    expect(writes).toHaveLength(16)
     for (const { key, op } of writes) {
       const r = op.responses['429']
       expect(r, key).toBeDefined()
@@ -865,7 +902,7 @@ describe('openapi registration', () => {
     for (const { key, op } of gamesOps.filter((o) => !writes.includes(o))) expect(op.responses['429'], key).toBeUndefined()
   })
 
-  it('D57(b): responses that carry join codes or answer keys send Cache-Control: no-store', () => {
+  it('D57(b)/D58a: responses that carry join codes or answer keys send Cache-Control: no-store; the keyless solo GET does not need it', () => {
     const noStore = (key: string, status: string) => {
       const r = gamesOps.find((o) => o.key === key)?.op.responses[status]
       expect(Object.keys(r?.headers ?? {}), `${key} ${status}`).toContain('Cache-Control')
@@ -874,8 +911,10 @@ describe('openapi registration', () => {
     noStore('POST /games/{game}/rooms/join', '200')
     noStore('GET /games/{game}/rooms/{code}', '200')
     noStore('GET /games/hub', '200')
-    noStore('GET /games/solo/{game}', '200')
+    noStore('POST /games/solo/{game}/check', '200')
     noStore('GET /leagues/{id}', '200')
+    const solo = gamesOps.find((o) => o.key === 'GET /games/solo/{game}')?.op.responses['200']
+    expect(Object.keys(solo?.headers ?? {})).not.toContain('Cache-Control')
   })
 
   it('M16-51 and M16-52 are admin only: 403 "This action is unauthorized."', () => {

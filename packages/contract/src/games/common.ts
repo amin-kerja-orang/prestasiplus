@@ -135,6 +135,10 @@ export const GAMES_MESSAGES = {
   level: 'Tahap tidak sah.',
   soloInvalidResult: 'Keputusan tidak sah.',
   soloAlreadySubmitted: 'Keputusan sudah dihantar.',
+  soloSessionNotFound: 'Sesi tidak dijumpai.',
+  soloItemNotFound: 'Soalan tidak dijumpai.',
+  soloAlreadyChecked: 'Soalan sudah dijawab.', // [PROPOSED]
+  soloCardMatched: 'Kad sudah dipadankan.', // [PROPOSED]
   spinAlreadySpun: 'Anda sudah spin hari ini.',
   jutawanSubject: 'Subjek tidak sah.',
   jutawanNotEnoughQuestions: 'Soalan tidak mencukupi.',
