@@ -34,6 +34,7 @@ describe('auth configuration', () => {
     expect(config({}).rememberDaysFor(['admin'])).toBe(1)
     expect(config({}).rememberDaysFor(['teacher'])).toBe(30)
     expect(config({ SESSION_REMEMBER_DAYS: '2', SESSION_REMEMBER_DAYS_STAFF: '9' }).rememberDaysStaff).toBe(2)
+    expect(config({ SESSION_REMEMBER_DAYS_STAFF: '0' }).rememberDaysFor(['admin'])).toBe(0)
     expect(config({ SESSION_REMEMBER_DAYS: 'abc' }).rememberDays).toBe(30)
     expect(config({ LEGACY_BCRYPT_DUMMY_COST: '99' }).legacyDummyCost).toBe(12)
   })

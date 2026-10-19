@@ -32,7 +32,7 @@ export class AuthConfig {
   readonly loginLimit: number
   /** "Remember me" lifetime in days for learner roles. */
   readonly rememberDays: number
-  /** "Remember me" lifetime in days for accounts holding admin or school_admin; never above `rememberDays`. */
+  /** "Remember me" days for accounts holding admin or school_admin; never above `rememberDays`; 0 turns remember off for them. */
   readonly rememberDaysStaff: number
   /** Cost of the throw-away bcrypt hash that equalises timing for unknown accounts. */
   readonly legacyDummyCost: number
@@ -55,7 +55,7 @@ export class AuthConfig {
     this.rememberDays = intOr(config.get('SESSION_REMEMBER_DAYS'), DEFAULT_REMEMBER_DAYS, 1)
     this.rememberDaysStaff = Math.min(
       this.rememberDays,
-      intOr(config.get('SESSION_REMEMBER_DAYS_STAFF'), DEFAULT_REMEMBER_DAYS_STAFF, 1),
+      intOr(config.get('SESSION_REMEMBER_DAYS_STAFF'), DEFAULT_REMEMBER_DAYS_STAFF, 0),
     )
     this.legacyDummyCost = intOr(
       config.get('LEGACY_BCRYPT_DUMMY_COST'),

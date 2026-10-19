@@ -113,15 +113,17 @@ export class AuthService {
     }
 
     const activeRole = (grants[0] as { role: RoleCode }).role
+    const rememberDays = this.config.rememberDaysFor(grants.map((g) => g.role))
+    const remember = body.remember && rememberDays > 0
     const newHash = match.needsRehash ? await this.passwords.hash(body.password) : null
     const granted = await this.prisma.transaction(async () => {
       if (oldToken) await this.store.revokeByToken(oldToken)
       const issued = await this.store.create({
         userId: account.user.id,
         activeRole,
-        remember: body.remember,
+        remember,
         // "Remember me" is capped by the highest-privilege role of the account (LEAD, M2).
-        rememberDays: this.config.rememberDaysFor(grants.map((g) => g.role)),
+        rememberDays,
         userAgent: info.userAgent,
         ip: info.ip,
       })
@@ -136,7 +138,7 @@ export class AuthService {
         schoolId: out.session.active.scope.schoolId ?? null,
         requestId: info.requestId,
         ip: info.ip,
-        details: { remember: body.remember, rehashed: newHash !== null },
+        details: { remember, rehashed: newHash !== null },
       })
       return out
     })

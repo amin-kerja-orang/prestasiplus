@@ -7,9 +7,11 @@ import { assertSeedAllowed } from '../../prisma/seed'
 
 describe('seed production guard', () => {
   it('refuses in production unless ALLOW_DEMO_SEED=1', () => {
-    expect(() => assertSeedAllowed({ NODE_ENV: 'production' })).toThrow(/ALLOW_DEMO_SEED=1/)
+    expect(() => assertSeedAllowed({ NODE_ENV: 'production' })).toThrow(/ALLOW_DEMO_SEED/)
     expect(() => assertSeedAllowed({ NODE_ENV: 'production', ALLOW_DEMO_SEED: '0' })).toThrow()
     expect(() => assertSeedAllowed({ NODE_ENV: 'production', ALLOW_DEMO_SEED: '1' })).not.toThrow()
+    expect(() => assertSeedAllowed({ NODE_ENV: 'production', ALLOW_DEMO_SEED: 'true' })).not.toThrow()
+    expect(() => assertSeedAllowed({ NODE_ENV: 'production', ALLOW_DEMO_SEED: 'false' })).toThrow()
     expect(() => assertSeedAllowed({ NODE_ENV: 'development' })).not.toThrow()
     expect(() => assertSeedAllowed({ NODE_ENV: 'test' })).not.toThrow()
   })
@@ -22,12 +24,12 @@ describe('seed production guard', () => {
       env: {
         ...process.env,
         NODE_ENV: 'production',
-        ALLOW_DEMO_SEED: '',
+        ALLOW_DEMO_SEED: 'false',
         DATABASE_URL: 'postgresql://x:y@127.0.0.1:1/none',
       },
     })
     expect(res.status).not.toBe(0)
     expect(res.stderr).toMatch(/Refusing to seed demo data/)
-    expect(res.stderr).toMatch(/ALLOW_DEMO_SEED=1/)
+    expect(res.stderr).toMatch(/ALLOW_DEMO_SEED=true/)
   }, 60_000)
 })

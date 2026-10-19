@@ -166,6 +166,7 @@ describe('session endpoints', () => {
 
     it('SESSION_REMEMBER_DAYS and SESSION_REMEMBER_DAYS_STAFF are honoured; the staff value never exceeds the general one', async () => {
       const custom = await bootAuthApp({ db: t.db, env: { SESSION_REMEMBER_DAYS: '7', SESSION_REMEMBER_DAYS_STAFF: '3' } })
+      const off = await bootAuthApp({ db: t.db, env: { SESSION_REMEMBER_DAYS_STAFF: '0' } })
       const capped = await bootAuthApp({ db: t.db, env: { SESSION_REMEMBER_DAYS: '2', SESSION_REMEMBER_DAYS_STAFF: '10' } })
       try {
         const days = async (app: AuthTestApp, email: string) => {
@@ -176,9 +177,11 @@ describe('session endpoints', () => {
         expect(await days(custom, 'guru@demo.test')).toBe(7 * DAY)
         expect(await days(custom, 'admin@demo.test')).toBe(3 * DAY)
         expect(await days(capped, 'admin@demo.test')).toBe(2 * DAY)
+        expect(await days(off, 'admin@demo.test')).toBe(120 * MIN) // remember is off for staff: ordinary idle session
       } finally {
         await custom.app.close()
         await capped.app.close()
+        await off.app.close()
       }
     })
   })
