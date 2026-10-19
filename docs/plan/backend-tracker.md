@@ -99,6 +99,7 @@ Newest first. The lead appends a line when a card merges, a decision is made or 
 
 | Date | Entry |
 |---|---|
+| 2026-10-19 | LEAD merged contract-only PRs: BE-43(#22) BE-45(#13) after code review (Approve). Append-only conflicts resolved; openapi.json regenerated; contract:check, contract tests and tsc green. Cards back to `todo` for their full implementation. |
 | 2026-10-19 | LEAD merged **BE-31 harness-only** (packages/contract-tests: runner, coverage gate, known-mismatch list, oasdiff breaking-change job gated by `contract-breaking`). Review: Approve after one fix (mock run excluded from the unit project). The API target follows BE-03. |
 | 2026-10-19 | LEAD merged contract-only PRs: BE-06(#4) BE-16(#10) BE-21(#6) BE-44(#12) BE-46(#14) BE-47(#15) after code review (Approve). Append-only conflicts resolved; openapi.json regenerated; contract:check, contract tests and tsc green. Cards back to `todo` for their full implementation. |
 | 2026-10-19 | LEAD merged contract-only PRs: BE-20(-) after code review (Approve). Append-only conflicts resolved; openapi.json regenerated; contract:check, contract tests and tsc green. Cards back to `todo` for their full implementation. |
