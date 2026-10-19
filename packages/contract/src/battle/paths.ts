@@ -289,6 +289,7 @@ export function registerBattlePaths(registry: OpenAPIRegistry): void {
       description: [
         'Query `q` shorter than 2 trimmed characters answers `{users: []}`. Otherwise students whose name contains `q` (case-insensitive), the caller excluded, sorted by name then id, at most 10.',
         SEARCH_NOTE,
+        'Decided D59c: any signed-in student may search students of all schools (as the old system). The result exposes only name, display name and school (no e-mail, IC, class or contact data). Rate-limited (429).',
       ].join('\n'),
       request: { query: BattleSearchQuerySchema },
       responses: { 200: json(BattleSearchResponseSchema, 'Matching students.'), 401: UNAUTHORIZED },

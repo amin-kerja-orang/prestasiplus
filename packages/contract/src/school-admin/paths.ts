@@ -22,7 +22,7 @@ import {
   AmaranTallySchema,
   AMARAN_CSV_COLUMNS,
 } from './amaran'
-import { SchoolAdminSchoolInfoSchema, SchoolAdminSchoolRefSchema } from './common'
+import { SchoolAdminInitialCredentialSchema, SchoolAdminSchoolInfoSchema, SchoolAdminSchoolRefSchema } from './common'
 import {
   SchoolAdminPupilCreateRequestSchema,
   SchoolAdminPupilCreatedResultSchema,
@@ -56,6 +56,7 @@ import {
 } from './reports'
 import {
   SchoolAdminTeacherCreateRequestSchema,
+  SchoolAdminTeacherCreatedResultSchema,
   SchoolAdminTeacherListResponseSchema,
   SchoolAdminTeacherRowSchema,
   SchoolAdminToggleActiveResultSchema,
@@ -81,6 +82,7 @@ export const SCHOOL_ADMIN_COMPONENT_SCHEMAS = {
   // shared
   SchoolAdminSchoolRef: SchoolAdminSchoolRefSchema,
   SchoolAdminSchoolInfo: SchoolAdminSchoolInfoSchema,
+  SchoolAdminInitialCredential: SchoolAdminInitialCredentialSchema,
   // reports
   SchoolAdminSubscriptionStatus: SchoolAdminSubscriptionStatusSchema,
   SchoolAdminDashboard: SchoolAdminDashboardSchema,
@@ -118,6 +120,7 @@ export const SCHOOL_ADMIN_COMPONENT_SCHEMAS = {
   SchoolAdminTeacherRow: SchoolAdminTeacherRowSchema,
   SchoolAdminTeacherListResponse: SchoolAdminTeacherListResponseSchema,
   SchoolAdminTeacherCreateRequest: SchoolAdminTeacherCreateRequestSchema,
+  SchoolAdminTeacherCreatedResult: SchoolAdminTeacherCreatedResultSchema,
   SchoolAdminToggleActiveResult: SchoolAdminToggleActiveResultSchema,
   // pupils
   SchoolAdminPupilRow: SchoolAdminPupilRowSchema,
@@ -347,12 +350,17 @@ export function registerSchoolAdminPaths(registry: OpenAPIRegistry): void {
     path: '/admin-sekolah/guru',
     tags: ['school-admin'],
     summary: 'Create a teacher (S11)',
-    description: 'Creates an active teacher of the caller school (createdBy = the caller). The password (8 to 255 characters) is hashed and never returned. The e-mail is unique across all schools (accepted enumeration trade-off, see POST /admin-sekolah/pelajar). Unknown and protected body keys are ignored (mass-assignment waiver).',
-    request: { headers: [csrf], body: body(SchoolAdminTeacherCreateRequestSchema) },
+    description:
+      'Creates an active teacher of the caller school (createdBy = the caller). D59b: there is no password in the request; the server ALWAYS generates a random initial password (CSPRNG, at least 12 characters), returns it once in credential.password and sets mustChangePassword true (the first login forces a change, BE-03). The password is never logged, never stored in plain text and never re-served; the 201 carries Cache-Control: no-store and Pragma: no-cache (D57b). LOST RESPONSE: recover with POST /admin-sekolah/guru/{id}/reset-password; the optional Idempotency-Key header prevents a duplicate account on a retry (a replayed key answers 409 CONFLICT, proposed). The e-mail is unique across all schools (accepted enumeration trade-off, see POST /admin-sekolah/pelajar). Unknown and protected body keys, a password key included, are ignored (mass-assignment waiver).',
+    request: { headers: [csrf, IdempotencyKey], body: body(SchoolAdminTeacherCreateRequestSchema) },
     responses: {
-      201: json(SchoolAdminUserWriteResultSchema, 'Created; status "Pengguna berjaya didaftarkan.".'),
+      201: {
+        ...json(SchoolAdminTeacherCreatedResultSchema, 'Created, with the one-time credential and mustChangePassword true; status "Pengguna berjaya didaftarkan.". Never cached.'),
+        headers: NO_STORE,
+      },
       401: UNAUTHORIZED,
       403: FORBIDDEN_SA_WRITE,
+      409: err('CONFLICT (proposed): the Idempotency-Key was already used. No second account is created and the credential is NOT re-served; use reset-password.'),
       422: err(FIELD_RULES),
       429: RATE_LIMITED,
     },
@@ -396,7 +404,7 @@ export function registerSchoolAdminPaths(registry: OpenAPIRegistry): void {
     path: '/admin-sekolah/guru/{id}/reset-password',
     tags: ['school-admin'],
     summary: 'Reset a teacher password',
-    description: 'The target must be an active teacher of the school. Replaces the hash at once and revokes the target sessions (not the caller). The new password (8 to 255 characters) is never echoed or logged. Rate limited (429).',
+    description: 'The target must be an active teacher of the school. Replaces the hash at once and revokes the target sessions (not the caller). The new password (8 to 255 characters, chosen by the admin) is required: there is no fallback to a shared default password (D59b). It is never echoed or logged. Rate limited (429).',
     request: { params: IdParams, headers: [csrf], body: body(SchoolAdminResetPasswordRequestSchema) },
     responses: {
       200: { ...json(SchoolAdminResetResultSchema, 'Reset; status "Pengguna berjaya dikemaskini.". Sent with Cache-Control: no-store and Pragma: no-cache (the request carries a password).'), headers: NO_STORE },
@@ -427,8 +435,8 @@ export function registerSchoolAdminPaths(registry: OpenAPIRegistry): void {
     path: '/admin-sekolah/pelajar/form-options',
     tags: ['school-admin'],
     summary: 'Create-pupil form data (S12)',
-    description: 'Matches before the {id} route. Never carries the default password.',
-    responses: { 200: json(envelopeOf(SchoolAdminPupilFormOptionsSchema), 'School, active classes and password hints.'), 401: UNAUTHORIZED, 403: FORBIDDEN_SA },
+    description: 'Matches before the {id} route. Carries the school and the active classes only: there is no password field in the create form (D59b, the server generates the initial password).',
+    responses: { 200: json(envelopeOf(SchoolAdminPupilFormOptionsSchema), 'School and active classes.'), 401: UNAUTHORIZED, 403: FORBIDDEN_SA },
   })
 
   registry.registerPath({
@@ -465,7 +473,7 @@ export function registerSchoolAdminPaths(registry: OpenAPIRegistry): void {
       'Creates an active pupil of the caller school (createdBy = the caller); with classId the pupil is enrolled with source school_admin. D55c: the response shows the password once, to the creating admin only (never logged, never stored in plain text, not retrievable again) and returns mustChangePassword true: the account is flagged so the first login forces a password change (BE-03). The 201 carries Cache-Control: no-store (D57b). ' +
       'LOST RESPONSE: the credential is never re-served. If the 201 is lost, a retry answers 422 "The email has already been taken." and the password is gone; recover with POST /admin-sekolah/pelajar/{id}/reset-password (the admin sets a new password). The server must not store the plaintext to support a retry. The optional Idempotency-Key header prevents a duplicate account on a retry: a replayed key answers 409 CONFLICT and never re-serves the credential. ' +
       'ACCEPTED TRADE-OFF (e-mail enumeration): the e-mail is unique across all schools, so the 422 "The email has already been taken." reveals that an address is registered somewhere (a pupil of another school included). It cannot be hidden without dropping uniqueness; it is mitigated by the 429 rate limit and the audit trail. ' +
-      'An empty password means the configured default password; the account is then still must-change-password (D55c / D57c; risk accepted pending LEAD, a server-generated random initial password is the alternative and keeps the same wire shape). Mass assignment waiver: role, schoolId, isActive, grade and icNumber in the body are ignored, never bound (BE-NFR-05 exception, mock fidelity). 429 RATE_LIMITED guards bulk account creation.',
+      'D59b: there is no password in the request and no shared default password: the server ALWAYS generates a random initial password (CSPRNG, at least 12 characters; exact policy in the implementation card) and returns it once in credential.password with mustChangePassword true. Mass assignment waiver: role, schoolId, isActive, grade, icNumber and a password key in the body are ignored, never bound (BE-NFR-05 exception, mock fidelity). 429 RATE_LIMITED guards bulk account creation.',
     request: { headers: [csrf, IdempotencyKey], body: body(SchoolAdminPupilCreateRequestSchema) },
     responses: {
       201: {
@@ -502,7 +510,7 @@ export function registerSchoolAdminPaths(registry: OpenAPIRegistry): void {
     path: '/admin-sekolah/pelajar/{id}/reset-password',
     tags: ['school-admin'],
     summary: 'Reset a pupil password',
-    description: 'The target must be an active pupil of the school. Replaces the hash at once and revokes the target sessions (not the caller). The new password (8 to 255 characters) is never echoed or logged. This is the recovery path when the one-time credential of POST /admin-sekolah/pelajar was lost. Rate limited (429).',
+    description: 'The target must be an active pupil of the school. Replaces the hash at once and revokes the target sessions (not the caller). The new password (8 to 255 characters, chosen by the admin) is required: there is no fallback to a shared default password (D59b). It is never echoed or logged. This is the recovery path when the one-time credential of POST /admin-sekolah/pelajar was lost. Rate limited (429).',
     request: { params: IdParams, headers: [csrf], body: body(SchoolAdminResetPasswordRequestSchema) },
     responses: {
       200: { ...json(SchoolAdminResetResultSchema, 'Reset; status "Pengguna berjaya dikemaskini.". Sent with Cache-Control: no-store and Pragma: no-cache (the request carries a password).'), headers: NO_STORE },
