@@ -113,7 +113,7 @@ export function registerPerformancePaths(registry: OpenAPIRegistry): void {
     path: string,
     summary: string,
     schema: z.ZodType,
-    errors: Record<number, ReturnType<typeof err>>,
+    errors: Partial<Record<number, ReturnType<typeof err>>>,
     request: { params?: z.ZodObject; query?: z.ZodObject } = {},
     description?: string,
     tag = 'performance',
