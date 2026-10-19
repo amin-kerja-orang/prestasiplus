@@ -4,6 +4,7 @@ import { z } from '../../zod'
 import { envelopeOf, listEnvelopeOf } from '../../common/envelope'
 import { ErrorBodySchema } from '../../common/error'
 import { IdSchema } from '../../common/ids'
+import { registerRoute } from './rate-limit'
 import {
   BIJAK_BUILDER_MESSAGES,
   BijakBlueprintAdminCreateSchema,
@@ -124,11 +125,16 @@ const PAPER_LOCKED = err(
  * Registers the 15 admin operations of BE-39. There is no mock route or mock method behind them: the
  * paths are fixed by this contract (card BE-39 Endpoints). Every response is `{ data }`,
  * `{ data, meta }` or `{ error }`; every mutation needs `X-CSRF-Token`.
+ *
+ * D57: every write route (POST, PUT, DELETE) also answers 429 RATE_LIMITED with retryAfter and a
+ * Retry-After header (added by `registerRoute`). D57(b): no response carries a credential or token,
+ * so none sends Cache-Control: no-store. D57(d)/(e): not applicable (no student search, no role
+ * assignment; every route is Admin Pusat only).
  */
 export function registerBijakBuilderPaths(registry: OpenAPIRegistry): void {
   /* ----------------------------------------------------------------------------- papers */
 
-  registry.registerPath({
+  registerRoute(registry, {
     method: 'get',
     path: '/admin/papers',
     tags: [BIJAK_BUILDER_TAG],
@@ -142,7 +148,7 @@ export function registerBijakBuilderPaths(registry: OpenAPIRegistry): void {
     },
   })
 
-  registry.registerPath({
+  registerRoute(registry, {
     method: 'post',
     path: '/admin/papers',
     tags: [BIJAK_BUILDER_TAG],
@@ -160,7 +166,7 @@ export function registerBijakBuilderPaths(registry: OpenAPIRegistry): void {
     },
   })
 
-  registry.registerPath({
+  registerRoute(registry, {
     method: 'get',
     path: '/admin/papers/{id}',
     tags: [BIJAK_BUILDER_TAG],
@@ -175,7 +181,7 @@ export function registerBijakBuilderPaths(registry: OpenAPIRegistry): void {
     },
   })
 
-  registry.registerPath({
+  registerRoute(registry, {
     method: 'put',
     path: '/admin/papers/{id}',
     tags: [BIJAK_BUILDER_TAG],
@@ -194,7 +200,7 @@ export function registerBijakBuilderPaths(registry: OpenAPIRegistry): void {
     },
   })
 
-  registry.registerPath({
+  registerRoute(registry, {
     method: 'delete',
     path: '/admin/papers/{id}',
     tags: [BIJAK_BUILDER_TAG],
@@ -210,7 +216,7 @@ export function registerBijakBuilderPaths(registry: OpenAPIRegistry): void {
     },
   })
 
-  registry.registerPath({
+  registerRoute(registry, {
     method: 'put',
     path: '/admin/papers/{id}/sections',
     tags: [BIJAK_BUILDER_TAG],
@@ -233,7 +239,7 @@ export function registerBijakBuilderPaths(registry: OpenAPIRegistry): void {
     },
   })
 
-  registry.registerPath({
+  registerRoute(registry, {
     method: 'put',
     path: '/admin/papers/{id}/placements',
     tags: [BIJAK_BUILDER_TAG],
@@ -262,7 +268,7 @@ export function registerBijakBuilderPaths(registry: OpenAPIRegistry): void {
     },
   })
 
-  registry.registerPath({
+  registerRoute(registry, {
     method: 'get',
     path: '/admin/papers/{id}/conformance',
     tags: [BIJAK_BUILDER_TAG],
@@ -277,7 +283,7 @@ export function registerBijakBuilderPaths(registry: OpenAPIRegistry): void {
     },
   })
 
-  registry.registerPath({
+  registerRoute(registry, {
     method: 'post',
     path: '/admin/papers/{id}/publish',
     tags: [BIJAK_BUILDER_TAG],
@@ -297,7 +303,7 @@ export function registerBijakBuilderPaths(registry: OpenAPIRegistry): void {
     },
   })
 
-  registry.registerPath({
+  registerRoute(registry, {
     method: 'post',
     path: '/admin/papers/{id}/withdraw',
     tags: [BIJAK_BUILDER_TAG],
@@ -315,7 +321,7 @@ export function registerBijakBuilderPaths(registry: OpenAPIRegistry): void {
 
   /* ------------------------------------------------------------------------- blueprints */
 
-  registry.registerPath({
+  registerRoute(registry, {
     method: 'get',
     path: '/admin/blueprints',
     tags: [BIJAK_BLUEPRINT_ADMIN_TAG],
@@ -329,7 +335,7 @@ export function registerBijakBuilderPaths(registry: OpenAPIRegistry): void {
     },
   })
 
-  registry.registerPath({
+  registerRoute(registry, {
     method: 'post',
     path: '/admin/blueprints',
     tags: [BIJAK_BLUEPRINT_ADMIN_TAG],
@@ -347,7 +353,7 @@ export function registerBijakBuilderPaths(registry: OpenAPIRegistry): void {
     },
   })
 
-  registry.registerPath({
+  registerRoute(registry, {
     method: 'get',
     path: '/admin/blueprints/{id}',
     tags: [BIJAK_BLUEPRINT_ADMIN_TAG],
@@ -362,7 +368,7 @@ export function registerBijakBuilderPaths(registry: OpenAPIRegistry): void {
     },
   })
 
-  registry.registerPath({
+  registerRoute(registry, {
     method: 'post',
     path: '/admin/blueprints/{id}/versions',
     tags: [BIJAK_BLUEPRINT_ADMIN_TAG],
@@ -383,7 +389,7 @@ export function registerBijakBuilderPaths(registry: OpenAPIRegistry): void {
     },
   })
 
-  registry.registerPath({
+  registerRoute(registry, {
     method: 'post',
     path: '/admin/blueprints/{id}/retire',
     tags: [BIJAK_BLUEPRINT_ADMIN_TAG],

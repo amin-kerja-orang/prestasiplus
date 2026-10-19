@@ -755,11 +755,38 @@ describe('openapi document', () => {
     }
   })
 
+  it('documents 429 RATE_LIMITED with retryAfter and a Retry-After header on every write route (D57a)', () => {
+    type R429 = {
+      description: string
+      headers: Record<string, { schema: { type: string } }>
+      content: Record<string, { schema: { $ref: string } }>
+    }
+    const writes = mine.filter((o) => o.method !== 'get')
+    expect(writes).toHaveLength(10)
+    for (const { path, method, op } of writes) {
+      const r = op.responses['429'] as R429 | undefined
+      expect(r, `${method} ${path}`).toBeDefined()
+      expect(r!.description, `${method} ${path}`).toContain('RATE_LIMITED')
+      expect(r!.description, `${method} ${path}`).toContain('retryAfter')
+      expect(r!.headers['Retry-After'], `${method} ${path}`).toBeDefined()
+      expect(r!.headers['Retry-After']!.schema.type).toBe('integer')
+      expect(r!.content['application/json']!.schema.$ref).toBe('#/components/schemas/ErrorBody')
+    }
+  })
+
+  it('sends no credential or token on any route of the card, so none needs Cache-Control: no-store (D57b)', () => {
+    for (const { path, method, op } of mine) {
+      for (const [status, r] of Object.entries(op.responses as Record<string, { headers?: object }>)) {
+        expect(Object.keys(r.headers ?? {}), `${method} ${path} ${status}`).not.toContain('Cache-Control')
+      }
+    }
+  })
+
   it('has the documented status codes of the key routes', () => {
     const codes = (path: string, method: string) =>
       Object.keys(doc.paths[path]?.[method]?.responses ?? {}).sort()
-    expect(codes('/admin/papers', 'post')).toEqual(['201', '401', '403', '404', '422'])
-    expect(codes('/admin/papers/{id}', 'delete')).toEqual(['200', '401', '403', '404', '409'])
+    expect(codes('/admin/papers', 'post')).toEqual(['201', '401', '403', '404', '422', '429'])
+    expect(codes('/admin/papers/{id}', 'delete')).toEqual(['200', '401', '403', '404', '409', '429'])
     expect(codes('/admin/papers/{id}/placements', 'put')).toEqual([
       '200',
       '401',
@@ -767,6 +794,7 @@ describe('openapi document', () => {
       '404',
       '409',
       '422',
+      '429',
     ])
     expect(codes('/admin/papers/{id}/publish', 'post')).toEqual([
       '200',
@@ -775,6 +803,7 @@ describe('openapi document', () => {
       '404',
       '409',
       '422',
+      '429',
     ])
     expect(codes('/admin/papers/{id}/withdraw', 'post')).toEqual([
       '200',
@@ -782,9 +811,10 @@ describe('openapi document', () => {
       '403',
       '404',
       '409',
+      '429',
     ])
     expect(codes('/admin/papers/{id}/conformance', 'get')).toEqual(['200', '401', '403', '404'])
-    expect(codes('/admin/blueprints', 'post')).toEqual(['201', '401', '403', '409', '422'])
+    expect(codes('/admin/blueprints', 'post')).toEqual(['201', '401', '403', '409', '422', '429'])
     expect(codes('/admin/blueprints/{id}/versions', 'post')).toEqual([
       '201',
       '401',
@@ -792,6 +822,7 @@ describe('openapi document', () => {
       '404',
       '409',
       '422',
+      '429',
     ])
     expect(codes('/admin/blueprints/{id}/retire', 'post')).toEqual([
       '200',
@@ -799,6 +830,7 @@ describe('openapi document', () => {
       '403',
       '404',
       '409',
+      '429',
     ])
   })
 
