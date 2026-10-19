@@ -42,3 +42,29 @@ describe('staging:load refuses anonymised and synthetic dumps in production', ()
     await expect(loadStaging(pool, reader, { env: { NODE_ENV: 'test' } })).rejects.not.toThrow(SyntheticDumpRefusedError)
   })
 })
+
+describe('R1: the marker fails closed', () => {
+  const marked = (value: unknown, key: 'anonymised' | 'synthetic' = 'anonymised'): DirReader => {
+    const dir = work.out(`marker-${String(JSON.stringify(value)).replace(/\W/g, '_')}-${key}`)
+    writeDump(dir, { schools: [{ id: 1 }] })
+    const m = JSON.parse(readFileSync(join(dir, 'manifest.json'), 'utf8')) as Record<string, unknown>
+    m[key] = value
+    writeFileSync(join(dir, 'manifest.json'), JSON.stringify(m))
+    return new DirReader(dir)
+  }
+
+  it.each([[true], ['true'], [1], ['yes'], ['false'], [0], [{}], [[]], [null]])('%j counts as marked', (value) => {
+    expect(marked(value).syntheticMarker()).toBe(true)
+    expect(marked(value, 'synthetic').syntheticMarker()).toBe(true)
+  })
+
+  it('only an absent key or a strict false is unmarked', () => {
+    expect(marked(false).syntheticMarker()).toBe(false)
+    expect(marked(false, 'synthetic').syntheticMarker()).toBe(false)
+    expect(new DirReader(dumpWith('absent', null)).syntheticMarker()).toBe(false)
+  })
+
+  it('a string "true" is refused in production', async () => {
+    await expect(loadStaging(pool, marked('true'), { env: { NODE_ENV: 'production' } })).rejects.toThrow(SyntheticDumpRefusedError)
+  })
+})

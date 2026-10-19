@@ -137,6 +137,8 @@ describe('pseudonyms (AC2)', () => {
     // L5: the country code and the leading 0 are the same number
     expect(p.apply('phone', '+60 12-345 6789')).toBe(p.apply('phone', '0123456789'))
     expect(p.apply('phone', '60123456789')).toBe(p.apply('phone', '0123456789'))
+    expect(p.apply('phone', '+60 12-345 67890')).toBe(p.apply('phone', '0123456 7890'))
+    expect(p.apply('phone', '6012345678')).not.toBe(p.apply('phone', '012345678')) // 10 digits starting 60 is not a +60 number
     expect(p.apply('phone', '0123456789')).not.toBe(p.apply('phone', '0123456780'))
     expect((p.apply('ic', '010101-01-0101') as string).replace(/\D/g, '')).toBe((p.apply('ic', '010101010101') as string).replace(/\D/g, ''))
     expect(p.apply('email', 'a@b.org')).not.toBe(p.apply('email', 'c@d.org'))

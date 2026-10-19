@@ -11,7 +11,7 @@
  *     written is deleted again;
  *   - the log carries table names and counts only.
  */
-import { existsSync, readdirSync, realpathSync, renameSync, rmdirSync, rmSync } from 'node:fs'
+import { existsSync, readdirSync, realpathSync, renameSync, rmdirSync, rmSync, statSync } from 'node:fs'
 import { open, writeFile } from 'node:fs/promises'
 import { dirname, isAbsolute, join, relative, resolve } from 'node:path'
 
@@ -93,6 +93,9 @@ export const PARTIAL_SUFFIX = '.partial'
 export function assertOutputUsable(outDir: string, sourceDir?: string): void {
   assertNotOverlapping(outDir, sourceDir)
   assertNotOverlapping(`${outDir}${PARTIAL_SUFFIX}`, sourceDir)
+  if (existsSync(outDir) && !statSync(outDir).isDirectory()) {
+    throw new OutputError('The output path exists and is not a directory (a file is in the way). Use a new path.')
+  }
   if (existsSync(outDir) && readdirSync(real(outDir)).length > 0) {
     throw new OutputError('The output directory is not empty. Use a new directory (an old dump is never overwritten or mixed).')
   }
@@ -200,8 +203,17 @@ export async function runAnonymise(options: AnonymiseOptions): Promise<Anonymise
     log.info(`Leak scan: clean (${scan.rowsScanned} rows, ${scan.cellsScanned} cells checked).`)
 
     const totalRows = results.reduce((sum, t) => sum + t.rows, 0)
-    if (existsSync(finalDir)) rmdirSync(finalDir) // an empty directory the caller made
-    renameSync(outDir, finalDir)
+    // Not atomic: the empty directory is removed, then the partial one is renamed. If either step fails the
+    // partial output is deleted by the handler below and the run must simply be repeated; nothing leaks.
+    try {
+      if (existsSync(finalDir)) rmdirSync(finalDir) // an empty directory the caller made
+      renameSync(outDir, finalDir)
+    } catch (e) {
+      const code = (e as { code?: unknown })?.code
+      throw new OutputError(
+        `Could not move the finished output into place (${typeof code === 'string' ? code : 'error'}; the target may be in use, on another volume, or not a directory). The partial output was deleted; repeat the run.`,
+      )
+    }
     log.info(`Done: ${results.length} tables, ${totalRows} rows.`)
     return { tables: results, totalRows, scan, pseudonyms: pseudo.counts }
   } catch (e) {

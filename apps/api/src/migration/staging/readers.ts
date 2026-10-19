@@ -81,7 +81,9 @@ export class DirReader implements TableReader {
   }
 
   syntheticMarker(): boolean {
-    return this.manifest.anonymised === true || this.manifest.synthetic === true
+    // Fail closed: only an absent key or a strict `false` is unmarked ("true", 1, "yes", an object all count).
+    const marked = (v: unknown): boolean => v !== undefined && v !== false
+    return marked(this.manifest.anonymised) || marked(this.manifest.synthetic)
   }
 
   inputHash(): string {

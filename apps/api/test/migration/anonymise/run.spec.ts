@@ -415,3 +415,15 @@ describe('M3: Windows and inline keys', () => {
     expect(r.log.text()).not.toContain(TEST_KEY)
   })
 })
+
+describe('code Minor 1: a file in the way of the output', () => {
+  it('exits 1 with a clear message and leaves the file and no .partial', async () => {
+    const out = work.out('file-in-the-way')
+    writeFileSync(out, 'i am a file')
+    const r = await run(['--source', source, '--out', out])
+    expect(r.code).toBe(ANON_EXIT.failed)
+    expect(r.log.text()).toMatch(/not a directory/)
+    expect(readFileSync(out, 'utf8')).toBe('i am a file')
+    expect(existsSync(`${out}.partial`)).toBe(false)
+  })
+})

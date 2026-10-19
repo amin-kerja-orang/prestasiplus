@@ -68,7 +68,8 @@ const collapse = (s: string): string => s.normalize('NFKC').trim().replace(/\s+/
 export function normaliseForKind(kind: PseudonymKind, value: string): string {
   if (kind === 'phone') {
     const d = value.replace(/\D/g, '')
-    return d.startsWith('60') && d.length >= 10 ? `0${d.slice(2)}` : d
+    // +60 / 60 plus 9 or 10 digits (Malaysian mobile and landline lengths) is the same number as 0 plus those digits.
+    return d.startsWith('60') && (d.length === 11 || d.length === 12) ? `0${d.slice(2)}` : d
   }
   if (kind === 'ic') return value.replace(/\D/g, '')
   return collapse(value)
