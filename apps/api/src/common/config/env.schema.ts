@@ -24,6 +24,8 @@ export const EnvSchema = z.object({
   THROTTLE_LOGIN_PER_MINUTE: z.coerce.number().int().min(1).optional(),
   // BE-05 (schools): requests per minute, counted per process. Public routes per client address, admin routes per user.
   THROTTLE_PUBLIC_PER_MINUTE: z.coerce.number().int().min(1).default(60),
+  // BE-06: self-registration attempts per minute per client address (own bucket, tolerant of a school behind one NAT).
+  THROTTLE_REGISTER_PER_MINUTE: z.coerce.number().int().min(1).default(30),
   THROTTLE_PUBLIC_SEARCH_PER_MINUTE: z.coerce.number().int().min(1).default(300),
   THROTTLE_ADMIN_READ_PER_MINUTE: z.coerce.number().int().min(1).default(300),
   THROTTLE_ADMIN_WRITE_PER_MINUTE: z.coerce.number().int().min(1).default(30),
@@ -35,6 +37,9 @@ export const EnvSchema = z.object({
   THROTTLE_PARENT_INVITE_ISSUE_PER_HOUR: z.coerce.number().int().min(1).default(10),
   THROTTLE_PARENT_INVITE_ACCEPT_PER_HOUR: z.coerce.number().int().min(1).default(30),
   THROTTLE_PARENT_LINK_WRITE_PER_MINUTE: z.coerce.number().int().min(1).default(30),
+  // BE-06 (notifications): inbox throttles per user, counted per process.
+  THROTTLE_NOTIFICATION_READ_PER_MINUTE: z.coerce.number().int().min(1).default(240),
+  THROTTLE_NOTIFICATION_WRITE_PER_MINUTE: z.coerce.number().int().min(1).default(60),
   // BE-05 (users): HMAC key of the IC number hash. Unset: SESSION_SECRET is used (required in production). Rotating it breaks IC lookups until every ic_hash is recomputed.
   IC_HASH_KEY: z.preprocess((v) => (v === '' ? undefined : v), z.string().min(16).optional()),
   /** Reverse-proxy hops to trust for the client address (0 = none). */
@@ -64,6 +69,10 @@ export const EnvSchema = z.object({
   UPLOAD_RATE_PER_MINUTE: z.coerce.number().int().min(1).max(1000).optional(),
   /** Downloads per user per minute (anonymous cms_image reads: per address) before 429. */
   FILE_READS_PER_MINUTE: z.coerce.number().int().min(1).max(10000).optional(),
+  // BE-06 (account). Optional: the code applies 30 writes per minute per user when unset.
+  THROTTLE_ACCOUNT_WRITE_PER_MINUTE: z.coerce.number().int().min(1).optional(),
+  // BE-06: development only. true lets the logging MailPort print the password reset link (a secret) to the log. Ignored outside NODE_ENV=development; refused at start in production.
+  MAIL_LOG_RESET_LINKS: z.enum(['true', 'false']).optional(),
 })
 export type Env = z.infer<typeof EnvSchema>
 
@@ -93,6 +102,9 @@ function withSessionSecret(env: Env): Env {
     throw new Error(
       `Invalid environment configuration. IC_HASH_KEY: required in production, at least ${MIN_IC_KEY_LENGTH} characters and different from SESSION_SECRET`,
     )
+  }
+  if (env.MAIL_LOG_RESET_LINKS === 'true') {
+    throw new Error('Invalid environment configuration. MAIL_LOG_RESET_LINKS: must not be true in production (it would write reset links to the log)')
   }
   const dir = env.FILE_STORAGE_DIR
   if (!dir || !isAbsolute(dir)) {

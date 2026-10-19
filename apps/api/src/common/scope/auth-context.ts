@@ -19,6 +19,8 @@ export interface AuthContext {
   mode: Mode | null
   /** Capability keys of the active role and scope (`capabilitiesFor` from `@pp/contract`). */
   capabilities: string[]
+  /** The account's `must_reset_password` flag, read fresh on each request: while true only the password-change routes answer. */
+  mustChangePassword: boolean
 }
 
 /** The request property `AuthGuard` sets. */

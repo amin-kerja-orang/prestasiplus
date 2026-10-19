@@ -1,4 +1,5 @@
 import { Module } from '@nestjs/common'
+import { APP_GUARD } from '@nestjs/core'
 
 import { AuditModule } from '../../common/audit/audit.module'
 import { GUARD_PROVIDERS } from '../../common/guards/guards'
@@ -10,6 +11,7 @@ import { AuthService } from './auth.service'
 import { LegacyBcryptPool } from './legacy-bcrypt'
 import { LoginThrottle } from './login-throttle.service'
 import { PasswordService } from './password.service'
+import { PasswordChangeGuard } from './password-change.guard'
 import { PostgresSessionResolver } from './session-resolver.service'
 import { SessionStore } from './session.store'
 
@@ -31,7 +33,10 @@ import { SessionStore } from './session.store'
     PostgresSessionResolver,
     { provide: SESSION_RESOLVER, useExisting: PostgresSessionResolver },
     AuthService,
-    ...GUARD_PROVIDERS,
+    // Order matters: AuthGuard, then the forced-password-change guard, then Roles and Capability.
+    ...GUARD_PROVIDERS.slice(0, 1),
+    { provide: APP_GUARD, useClass: PasswordChangeGuard },
+    ...GUARD_PROVIDERS.slice(1),
   ],
   exports: [SESSION_RESOLVER, PasswordService, SessionStore, AuthConfig],
 })

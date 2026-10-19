@@ -28,6 +28,7 @@ async function parentPackage(query: FixtureQuery): Promise<string> {
 
 export const MODEL_FIXTURES: Record<string, Fixture> = {
   comp_students: async (query) => ({ user_id: await parentUser(query), package_expires_on: '2027-01-01' }),
+  notifications: async (query) => ({ user_id: await parentUser(query), type: 'spaced_review', title: 'Tajuk Contoh', body: 'Kandungan contoh' }),
   parent_invites: async (query) => ({
     student_id: await parentUser(query),
     token_hash: 'a'.repeat(64),
