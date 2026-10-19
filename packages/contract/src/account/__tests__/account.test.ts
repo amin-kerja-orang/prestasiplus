@@ -28,6 +28,9 @@ import {
   AccountStatusSchema,
   AccountUserMeSchema,
   accountUserMeMismatches,
+  ACCOUNT_RESET_TOKEN_RULES,
+  ACCOUNT_SECURITY_NOTIFICATIONS,
+  ACCOUNT_THROTTLE,
   type AccountUserMe,
 } from '../schema'
 
@@ -209,8 +212,10 @@ describe('password reset', () => {
     expect(fields(AccountPasswordResetIcRequestSchema, { email: 'a@b.test', icNumber: '1'.repeat(15) })).toEqual({
       icNumber: 'The ic number field must not be greater than 14 characters.',
     })
-    expect(AccountResetTokenSchema.safeParse({ token: 'rt_abc', email: 'a@b.test' }).success).toBe(true)
-    expect(AccountResetTokenSchema.safeParse({ token: 'rt_abc', email: 'a@b.test', icNumber: '1' }).success).toBe(false)
+    expect(AccountResetTokenSchema.safeParse({ token: 'rt_abc' }).success).toBe(true)
+    // the e-mail is not echoed (data minimisation) and the IC never appears
+    expect(AccountResetTokenSchema.safeParse({ token: 'rt_abc', email: 'a@b.test' }).success).toBe(false)
+    expect(AccountResetTokenSchema.safeParse({ token: 'rt_abc', icNumber: '1' }).success).toBe(false)
   })
 
   it('reset response is the Session plus a sibling status', () => {
@@ -255,6 +260,100 @@ describe('D55 decisions', () => {
     const doc = buildOpenApiDocument() as { paths: Record<string, Record<string, { description?: string }>> }
     expect(doc.paths['/auth/password/email']?.post?.description).toContain('D55b')
     expect(doc.paths['/auth/password/reset']?.post?.description).toContain('D55b')
+  })
+})
+
+type OpRes = { description?: string; headers?: Record<string, { schema?: Record<string, unknown> }>; content?: Record<string, unknown> }
+type Op = { description?: string; responses: Record<string, OpRes> }
+const securityDoc = () => buildOpenApiDocument() as { paths: Record<string, Record<string, Op>> }
+
+describe('D57 security defaults', () => {
+  const doc = securityDoc()
+  const op = (method: string, path: string) => {
+    const found = doc.paths[path]?.[method]
+    if (!found) throw new Error(`${method} ${path} missing`)
+    return found
+  }
+  /** Every write route and the unauthenticated lookup of the account module (D57a). */
+  const limited: [string, string][] = [
+    ['post', '/auth/register'],
+    ['post', '/auth/password/email'],
+    ['post', '/auth/password/reset'],
+    ['post', '/auth/password/reset-ic'],
+    ['put', '/me'],
+    ['put', '/me/password'],
+    ['post', '/me/picture'],
+    ['put', '/me/settings'],
+    ['get', '/public/stats'],
+  ]
+
+  it('declares 429 with a Retry-After header on every write route and the public lookup', () => {
+    for (const [method, path] of limited) {
+      const res = op(method, path).responses['429']
+      expect(res, `${method} ${path}`).toBeDefined()
+      expect(res?.description, `${method} ${path}`).toContain('RATE_LIMITED')
+      expect(res?.description, `${method} ${path}`).toContain('Retry-After')
+      expect(res?.headers?.['Retry-After']?.schema, `${method} ${path}`).toMatchObject({ type: 'integer' })
+      expect(res?.content?.['application/json'], `${method} ${path}`).toBeDefined()
+    }
+  })
+
+  it('sends Cache-Control no-store on the token and credential bearing 2xx responses', () => {
+    for (const [path, status] of [['/auth/register', '201'], ['/auth/password/reset', '200'], ['/auth/password/reset-ic', '200']] as const) {
+      const res = op('post', path).responses[status]
+      expect(res?.headers?.['Cache-Control']?.schema, path).toMatchObject({ enum: ['no-store'] })
+    }
+  })
+
+  it('reset and reset-ic state the BE-03 numbers and the per-(e-mail, IP) plus per-IP rule', () => {
+    expect(ACCOUNT_THROTTLE.failedAttemptsPerWindow).toBe(5)
+    expect(ACCOUNT_THROTTLE.windowSeconds).toBe(60)
+    const reset = op('post', '/auth/password/reset').description ?? ''
+    expect(reset).toContain('5 failures per 60 seconds')
+    expect(reset).toContain('(e-mail hash, client IP)')
+    expect(reset).toContain('per client IP')
+    expect(op('post', '/auth/password/reset-ic').description).toContain('5 attempts per 15 minutes')
+  })
+
+  it('specifies the reset token on both token routes', () => {
+    for (const phrase of ['128 bits', 'only its hash is stored', '60 minutes', 'single use', 'revokes every earlier unused token', 'consumes every outstanding token', 'constant time']) {
+      expect(ACCOUNT_RESET_TOKEN_RULES.summary, phrase).toContain(phrase)
+    }
+    expect(ACCOUNT_RESET_TOKEN_RULES.minEntropyBits).toBe(128)
+    for (const path of ['/auth/password/email', '/auth/password/reset', '/auth/password/reset-ic']) {
+      expect(op('post', path).description, path).toContain(ACCOUNT_RESET_TOKEN_RULES.summary)
+    }
+  })
+
+  it('makes the per-e-mail throttle uniform: every request and every reset-ic attempt, known e-mail or not', () => {
+    const email = op('post', '/auth/password/email').description ?? ''
+    expect(email).toContain('EVERY request whether the e-mail exists')
+    expect(email).toContain('every reset-ic attempt (match or not)')
+    const ic = op('post', '/auth/password/reset-ic').description ?? ''
+    expect(ic).toContain('EVERY attempt, match or not')
+    expect(ic).not.toContain('Issuing a token also starts')
+  })
+
+  it('documents link, logging, notification and enumeration rules', () => {
+    const email = op('post', '/auth/password/email').description ?? ''
+    expect(email).toContain('URL fragment')
+    expect(email).toContain('Referrer-Policy: no-referrer')
+    expect(email).toContain('masked e-mail and the token id')
+    for (const [method, path] of [['post', '/auth/register'], ['post', '/auth/password/email'], ['post', '/auth/password/reset'], ['post', '/auth/password/reset-ic'], ['put', '/me/password']] as const) {
+      expect(op(method, path).description, path).toContain('Log redaction')
+    }
+    const ic = op('post', '/auth/password/reset-ic').description ?? ''
+    expect(ic).toContain('no token is issued for an inactive account')
+    expect(ic).toContain('audited')
+    expect(ic).toContain('NotificationsService.push')
+    expect(op('post', '/auth/password/reset').description).toContain('writes an audit event')
+    expect(op('post', '/auth/register').description).toContain('Accepted residual risk')
+    expect(ACCOUNT_SECURITY_NOTIFICATIONS.resetDone.body.length).toBeGreaterThan(0)
+  })
+
+  it('no reset-ic response field echoes the e-mail', () => {
+    const schemas = (doc as unknown as { components: { schemas: Record<string, unknown> } }).components.schemas
+    expect(JSON.stringify(schemas['AccountResetToken'])).not.toContain('email')
   })
 })
 

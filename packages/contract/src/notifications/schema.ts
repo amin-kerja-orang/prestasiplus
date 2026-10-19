@@ -12,8 +12,10 @@ import { TimestampSchema } from '../common/time'
  * An id of another user behaves as if it did not exist: 404 on the single-item routes, silently
  * ignored by the bulk routes. Differences from the mock: ids are opaque `Id` strings (UD-1), and
  * the bulk `ids` items are `Id`s, so the mock "ids.* must be an integer" rule is not part of the
- * contract (an unknown id is ignored like a foreign one). The entity is shared with M22, which
- * sends through `NotificationsService.push`.
+ * contract (an unknown id is ignored like a foreign one). Every write route also documents 429
+ * RATE_LIMITED with `retryAfter` and `Retry-After` (D57a; the mock has no throttle). The entity is
+ * shared with M22, which sends through `NotificationsService.push`; BE-06 account flows push the
+ * security notices of `ACCOUNT_SECURITY_NOTIFICATIONS` (password reset, reset by IC) through it.
  */
 
 export const NOTIFICATION_CATEGORIES = ['system', 'reminder', 'milestone'] as const

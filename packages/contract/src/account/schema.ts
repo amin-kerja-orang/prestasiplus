@@ -26,6 +26,15 @@ import { SessionSchema, type Session } from '../session/session'
  *   no account enumeration.
  * - D55a: `password/reset-ic` is attempt limited (5 per 15 minutes, per account and per IP), answered
  *   with 429 RATE_LIMITED; the mock has no such limit.
+ * - D57a: every write route and the public lookup (`/public/stats`) documents 429 RATE_LIMITED with
+ *   `retryAfter` and the `Retry-After` header; `password/reset` and `password/reset-ic` carry the
+ *   limits of `ACCOUNT_THROTTLE` (the mock has none).
+ * - D57b: the responses that carry a credential or token (register, reset, reset-ic) send
+ *   `Cache-Control: no-store`.
+ * - Security review 2026-10-19: `AccountResetToken` no longer echoes the e-mail (the client already
+ *   holds it); the reset token is specified (>= 128-bit random, hash only, single use, one active
+ *   token per user) in `ACCOUNT_RESET_TOKEN_RULES`; the per-e-mail throttle is uniform (keyed on the
+ *   hash of the normalised e-mail for every request, known or not).
  *
  * Validation copy is the mock copy: Laravel 11 English defaults (SRS M01 section 5, unverified
  * copy) except the observed BM texts. Text fields are trimmed and a blank text counts as absent
@@ -65,6 +74,48 @@ export const ACCOUNT_AUTH_MESSAGES = {
 /** D55a: `POST /auth/password/reset-ic` allows 5 attempts per 15 minutes, counted per account (e-mail) and per IP. */
 export const ACCOUNT_RESET_IC_MAX_ATTEMPTS = 5
 export const ACCOUNT_RESET_IC_WINDOW_MINUTES = 15
+
+/**
+ * D57 / security review: throttle numbers of the public reset flow. The failed-attempt budget is the
+ * BE-03 login throttle (5 failures per 60 seconds, then 429 until the window ends, backoff doubling
+ * on repeat). `ipCeilingPerWindow` (20) is PROPOSED: a per-IP ceiling over all e-mails so a single
+ * client cannot scan many accounts; the lead confirms the number. Keys: `emailIp` = hash of the
+ * normalised e-mail + client IP (so an attacker cannot lock a victim out from another IP), `ip` = the
+ * client IP alone.
+ */
+export const ACCOUNT_THROTTLE = {
+  failedAttemptsPerWindow: 5,
+  windowSeconds: 60,
+  ipCeilingPerWindow: 20,
+} as const
+
+/**
+ * Reset token rules (security review, D57). Repeated in the operation descriptions so BE-31 can
+ * test them. Issued by `password/email` (mailed link) and by `password/reset-ic` (response body).
+ */
+export const ACCOUNT_RESET_TOKEN_RULES = {
+  minEntropyBits: 128,
+  summary:
+    'The token is at least 128 bits from a CSPRNG; only its hash is stored; it is valid 60 minutes and single use; issuing a new token revokes every earlier unused token of that user (one active token); a successful reset consumes every outstanding token of the user; the stored hash is compared in constant time; an inactive account is never issued a token.',
+} as const
+
+/**
+ * Proposed BM copy of the in-app security notices (NotificationsService.push, type is a free code)
+ * sent to the account owner when a reset token is issued by IC and when a password is reset, so a
+ * takeover is visible. No existing frontend string; the lead confirms.
+ */
+export const ACCOUNT_SECURITY_NOTIFICATIONS = {
+  resetIcIssued: {
+    type: 'password_reset_ic',
+    title: 'Permintaan tetap semula kata laluan',
+    body: 'Kata laluan akaun anda diminta ditetapkan semula menggunakan No Kad Pengenalan. Jika bukan anda, sila hubungi pentadbir.',
+  },
+  resetDone: {
+    type: 'password_reset',
+    title: 'Kata laluan telah ditetapkan semula',
+    body: 'Kata laluan akaun anda telah ditetapkan semula. Jika bukan anda, sila hubungi pentadbir.',
+  },
+} as const
 
 /** Laravel validation templates with the attribute words filled in (mock `validate.ts`). */
 const msg = {
@@ -313,9 +364,19 @@ export const AccountPasswordResetIcRequestSchema = z
   .meta({ id: 'AccountPasswordResetIcRequest' })
 export type AccountPasswordResetIcRequest = z.infer<typeof AccountPasswordResetIcRequestSchema>
 
-/** `data` of `POST /auth/password/reset-ic`: the broker token to use with `password/reset`. */
+/**
+ * `data` of `POST /auth/password/reset-ic`: the reset token to use with `password/reset`. The
+ * e-mail is NOT echoed (the client already holds it; data minimisation, BE-NFR-11). The token is
+ * bound to that e-mail and can only be redeemed through `password/reset` with it; see
+ * `ACCOUNT_RESET_TOKEN_RULES`. The response is `Cache-Control: no-store`.
+ */
 export const AccountResetTokenSchema = z
-  .strictObject({ token: z.string().min(1), email: z.string().min(1) })
+  .strictObject({
+    token: z.string().min(1).meta({
+      description:
+        'Opaque reset token, at least 128 bits of randomness; only its hash is stored. Never logged, never cached.',
+    }),
+  })
   .meta({ id: 'AccountResetToken' })
 export type AccountResetToken = z.infer<typeof AccountResetTokenSchema>
 

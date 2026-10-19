@@ -140,4 +140,14 @@ describe('openapi registration', () => {
     expect(doc.paths['/me/notifications/bulk-read']?.post?.responses['422']).toBeDefined()
     expect(doc.paths['/me/notifications/{id}']?.delete?.responses['204']).toBeUndefined()
   })
+
+  it('every write route declares 429 RATE_LIMITED with the Retry-After header (D57a)', () => {
+    type Res = { description?: string; headers?: Record<string, { schema?: unknown }> }
+    for (const [method, path] of routes.filter(([m]) => m !== 'get')) {
+      const res = doc.paths[path]?.[method]?.responses['429'] as Res | undefined
+      expect(res, `${method} ${path}`).toBeDefined()
+      expect(res?.description, `${method} ${path}`).toContain('RATE_LIMITED')
+      expect(res?.headers?.['Retry-After']?.schema, `${method} ${path}`).toMatchObject({ type: 'integer' })
+    }
+  })
 })
