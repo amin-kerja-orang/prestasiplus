@@ -74,6 +74,8 @@ export async function bootParentsApp(env: Record<string, string | undefined> = {
 export async function newParent(t: UsersTestApp, admin: Api, email: string, name = 'Ibu Ujian'): Promise<{ id: string; who: LoggedIn; api: Api }> {
   const res = await admin.post('/admin/users', { roles: ['parent'], name, email })
   const created = CreatedUserSchema.parse(res.body.data)
+  // The generated password is a forced-change account (global guard): clear the flag, these tests are about other things.
+  await t.db.query('update users set must_reset_password = false where id = $1::bigint', [created.id])
   const who = await loginAs(t as never, email, { password: created.generatedPassword })
   return { id: created.id, who, api: apiOf(who) }
 }

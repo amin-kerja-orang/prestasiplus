@@ -479,6 +479,7 @@ describe('admin users: create, read, update, toggle, delete (AC 1, 2, 4, 7, 8)',
 
     it('AC 7: roles, scopes and sessions cascade; audit actors become null; created_by of others becomes null', async () => {
       const creator = await make('pencipta@ujian.test', ['school_admin'])
+      await t.db.query("update users set must_reset_password = false where email = 'pencipta@ujian.test'") // forced-change guard is not under test here
       const csess = await login(t, 'pencipta@ujian.test', { password: creator.generatedPassword })
       const made = await apiOf(csess).post('/admin/users', teacherBody(school1, { email: 'dicipta@ujian.test' }))
       expect(made.status, JSON.stringify(made.body)).toBe(201)

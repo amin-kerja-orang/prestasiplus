@@ -13,6 +13,8 @@ export interface AccountRecord {
   scopes: UserScope[]
   /** Schools referenced by scope rows, by decimal id (includes `school` when present). */
   schools: Map<string, School>
+  /** `/api/files/<token>` of the newest avatar file, or null (same rule as `GET /me`). */
+  avatarUrl: string | null
 }
 
 export interface LoginCandidate {
@@ -84,7 +86,19 @@ export class AccountRepository {
         schools.set(s.id.toString(), s)
       }
     }
-    return { user: plain as User, school, roles: roles.map((r) => r.role), scopes, schools }
+    const avatar = await this.prisma.client.file.findFirst({
+      where: { ownerUserId: userId, purpose: 'avatar' },
+      select: { publicId: true },
+      orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
+    })
+    return {
+      user: plain as User,
+      school,
+      roles: roles.map((r) => r.role),
+      scopes,
+      schools,
+      avatarUrl: avatar ? `/api/files/${avatar.publicId}` : null,
+    }
   }
 
   /**

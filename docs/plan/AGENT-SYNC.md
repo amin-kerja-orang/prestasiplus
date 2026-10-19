@@ -88,14 +88,14 @@ A PC may claim **only** cards listed here. A card that is not listed is closed, 
 | BE-11 | contract-only | 2026-10-19 | Wallet and streak: `packages/contract/src/wallet/**`. |
 | BE-12 | contract-only | 2026-10-19 | Practice write path: `packages/contract/src/practice/**`. |
 | BE-25 | full | 2026-10-20 | Group A (PC-1). Subscriptions, packages, parent invites/links, complimentary students (M02 rest). **DONE — merged 6f634d67 (2026-10-20).** Migration 0006. Unblocks BE-12. |
-| BE-06 | full | 2026-10-20 | Group A (PC-1). Account basics (M01): register, password reset, profile, settings, notifications. **CLAIMED** pc-aminfaudzi/S2, branch `be/BE-06-account-notifications` from 6f634d67. Depends BE-03/04/05 (all done). **Migration number 0007**. D55: reset-ic attempt limit, no e-mail enumeration, reset e-mail logged not sent (D14); enforce mustChangePassword; IcService (HMAC+mask); no-store + 429 (D57). Security review. |
+| BE-06 | full | 2026-10-20 | Group A (PC-1). Account basics (M01). **DONE — merged b5d5d7d4 (2026-10-20).** Migration 0007. mustChangePassword guard; teacher self-register fail-closed; register throttle decoupled from login. Unblocks BE-24. |
 | BE-10 | contract-only | 2026-10-19 | Question workflow: `packages/contract/src/question-workflow/**`. |
 | BE-15 | contract-only | 2026-10-19 | Bijak papers: `packages/contract/src/bijak/papers/**`. |
 | BE-17 | contract-only | 2026-10-19 | Classes (teacher): `packages/contract/src/classes/**`, not `classes/{missions,question-sets}`. |
 | BE-19 | contract-only | 2026-10-19 | Performance reports: `packages/contract/src/reports/performance/**`. |
 | BE-21 | contract-only | 2026-10-19 | School admin: `packages/contract/src/school-admin/**`. |
 | BE-23 | contract-only | 2026-10-19 | Gamification and shop: `packages/contract/src/gamification/**`. |
-| BE-24 | contract-only | 2026-10-19 | Content and support: `packages/contract/src/{content,support}/**`. |
+| BE-24 | full | 2026-10-20 | Group A (PC-1). Content (M09) + support tickets (M22). **CLAIMED** pc-aminfaudzi/S2, branch `be/BE-24-content-support` from b5d5d7d4. Depends BE-03/04/05/06 (all done); uses BE-06 NotificationsService + BE-05 school scope. **Migration number 0009** (BE-08 curriculum holds 0008 and merges first; LEAD merges in numeric order). no-store/429 (D57). Security review. |
 | BE-36 | contract-only | 2026-10-19 | AI adapter wire types: `packages/contract/src/ai/**`. |
 | BE-41 | contract-only | 2026-10-19 | SPM hub (M06): `packages/contract/src/spm/**`. |
 | BE-48 | contract-only | 2026-10-19 | Heatmap: `packages/contract/src/heatmap/**`. |
@@ -125,6 +125,7 @@ Rules for `contract-only`:
 
 ### Lead notices (current instructions; newest first)
 
+- 2026-10-20: **BE-06 merged** (b5d5d7d4; account, mustChangePassword guard, teacher self-register fail-closed, register throttle decoupled from the login brute-force throttle). **BE-24 opened + claimed** (pc-aminfaudzi/S2, migration 0009). Done: 12/48 (BE-01,02,03,04,05,06,07,25,27,31,34,35); P0 9/13, P1 3/23. **Migrations merged 0001-0007; allocated: 0008 = BE-08 curriculum (Group B, merges next, critical path), 0009 = BE-24.** LEAD merges in numeric order. **Group B coordinates migration numbers via git** (BE-08 correctly took 0008 after 0007=BE-06). Teacher self-register verification flow recorded as BE-21 AC#13.
 - 2026-10-20: **BE-07, BE-31 merged + LEAD contract change (session.mustChangePassword + PASSWORD_CHANGE_REQUIRED, a6c16790).** be:verify now runs `npm test -w @pp/contract-tests` (gate gap closed). **BE-32 opened + claimed (PC-1 part, e3m2); LEAD owns L1/V2-T31.** BE-06 (61) rebasing onto the contract change to build the mustChangePassword guard. Done: BE-01,02,03,04,05,07,25,27,31,34,35 (11/48); P0 9/13. **Group B (collaborator PC): active today — BE-08 curriculum (full, critical path) pushed, last at ~03:51; BE-36/39 contracts ~05:01.** Group B coordination is via the project owner (relay), not GitHub issues (gh not available to the LEAD here).
 - 2026-10-20: **BE-25 merged** (6f634d67, subscriptions + parents; migration 0006; H1 invite-token-in-logs fixed). **BE-06 opened + claimed** (pc-aminfaudzi/S2, migration 0007). BE-07 (seed, e3m2) being rebased onto BE-25 (shared seed framework). Done so far: BE-01, 02, 03, 34, 27, 05, 35, 04, 25 (9/48). Migrations merged: 0001-0006; next allocated 0007 = BE-06.
 - 2026-10-20: **BE-04 merged** (8536a37e, file storage; F1 IDOR closed, opaque ids, migration 0005_files). LEAD verify caught a flaky files.spec assertion — fixed before merge. **BE-07 opened + BE-31 reopened as full, both to s-aminfaudzi-e3m2** (parallel, no folder overlap). Done so far: BE-01, 02, 03, 34, 27, 05, 35, 04 (8/48). Still blocked: BE-28 (needs BE-08+BE-17 full), BE-06 (PC-1, free for whoever finishes — depends BE-03/04/05, all done).
