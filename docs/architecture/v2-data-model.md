@@ -32,6 +32,7 @@
    - [3.10 Reports and analytics stores](#310-reports-and-analytics-stores)
    - [3.11 Content and support](#311-content-and-support)
    - [3.12 Migration control tables (ETL)](#312-migration-control-tables-etl)
+   - [3.12a Modules added to B1 by D53(a)](#312a-modules-added-to-b1-by-d53a-owner-cards-be-41-to-be-48-pending)
    - [3.13 Mock stores without a card (backlog and mock-only)](#313-mock-stores-without-a-card-backlog-and-mock-only)
 4. [Enums](#4-enums)
 5. [Read models and views](#5-read-models-and-views)
@@ -103,7 +104,7 @@ D12 and ADR-0014: exactly one owner per store. This table lists **every** persis
 
 | # | Finding | Detail | Proposed handling (LEAD decides) |
 |---|---|---|---|
-| OWN-1 | **Two cards for the teacher paper submission** | `question_submissions` (BE-10: teacher submissions queue, mock `questionSubmissions`: subject text, level, year, paper type, author credit, note, files, status) and `intake_batches` (BE-37: "declaration fields, status, owner") describe the same business object (the v2 "Submission" of `v2-question-bank` 4.2). Plan 15.4 says PDF/AI imports belong to BE-38 and that .cloud `question_submissions` is superseded by the intake. | One table. Recommended: `intake_batches` is the Submission; BE-10 keeps only a read endpoint over it, or `question_submissions` is dropped from BE-10. OQ-DM-02. |
+| OWN-1 | **Teacher paper submission: RESOLVED by D53 (owner decision 2026-10-19)** | `question_submissions` (BE-10) and `intake_batches` (BE-37) described the same business object (the v2 "Submission"). | **One table: `intake_batches` (BE-37) is the Submission; `question_submissions` is dropped from BE-10.** OQ-DM-02 resolved. |
 | OWN-2 | **Provenance/rights in two places** | `source_papers` (BE-10: "provenance, rights declaration") and `intake_batches`/`intake_files` (BE-37) plus per-item provenance (BE-38) all hold file hash, subject, kertas, year, board, rights. Exam schema D10 and section 6 name one entity `source_paper / submission`. | `source_papers` = the registry of a paper's identity and rights (natural key, hash, board, takedown unit); `intake_batches` = the upload event pointing at one `source_papers` row. OQ-DM-02. |
 | OWN-3 | **Three event logs** | `audit_events` (BE-03, platform), `question_status_events` (BE-10) and `intake_item_events` (BE-38). URS BE-NFR-08 speaks of one append-only audit trail; `v2-question-bank` US-15 needs before/after, reason and AI-run id on question changes. | Keep three, with a fixed split: `audit_events` = security and administration actions (no content); `question_status_events` = question lifecycle transitions (actor, reason, version); `intake_item_events` = item edits with previous AI text (AC-08.2). Documented in 3.1/3.4/3.5. |
 | OWN-4 | **`jpns` and `ppds` have no card** | `GET /api/jpn`, `schools.jpn`, `schools.ppd` exist in the mock and BE-05 serves `GET /api/jpn`, but no card lists the tables; plan 14.7 derives them from distinct state/district (T-09). | Create both in BE-05 (schools.prisma). **[P]** GAP-2. |
@@ -112,8 +113,8 @@ D12 and ADR-0014: exactly one owner per store. This table lists **every** persis
 | OWN-7 | **Child tables the mock needs and no card lists** | `practice_session_questions` (the served list), `remedial_test_items`, `draw_prizes`, `timeline_post_photos`, `spm_history_subjects`, `perutusan_files`, `stimulus_group_stimuli`, `stimulus_group_options`, `question_version_stimuli`, `question_version_sp_nodes`, `curriculum_tp_descriptors`. The mock embeds these as arrays inside the parent row; the "jsonb never replaces a table" rule (G-11) turns them into tables. | Created by the card that owns the parent (BE-12, BE-18, BE-23, BE-19, BE-24, BE-09, BE-08). **[P]**. |
 | OWN-8 | **`token_movements`, `tiers`** (**[rev2] resolved**) | BE-11 now creates `token_movements` and `tiers` in `wallet.prisma` ("a wallet carries its tier"); BE-23 keeps admin tier CRUD only. | Both tables are owned by BE-11. The ledger `tokens` column stays for the per-entry token delta. OQ-DM-06 closed. |
 | OWN-9 | **Two reward catalogues** | `rewards`/`reward_claims` (plan) versus mock `gamification.syilingRewards` + `rewardClaims` (M14) **and** `hadiah.rewards` + `hadiah.redemptions` (M15). The matrix maps .cloud `gifts`/`gift_redemptions` to `rewards`/`reward_claims` without saying which mock store. | This document: M15 Hadiah = `rewards` + `reward_redemptions`; M14 Syiling = `syiling_rewards` + `reward_claims`. OQ-DM-07, GAP-9. |
-| OWN-10 | **Teacher economy** | `teacher_wallets`, `teacher_ledger`, `teacher_rewards`, `teacher_redemptions`, `cash_withdrawals`, `teacher_badges`, `teacher_badge_awards` are in BE-23's mock list, but D28(c) puts contributor rewards out of scope and URS OQ-16 / OD-8 / migration Q10 are open. | Specified here (3.7) so the schema exists if kept; whether they ship is URS OQ-16. |
-| OWN-11 | **`curriculum_nodes` versus `dskp_bidang/sk/sp`** | BE-08 owns the DSKP node tree (exam schema D9: unit, SK, SP). BE-18 owns `dskp_bidang/sk/sp` (teacher picks, with `created_by`). BE-10 serves `GET /api/guru/dskp/*` "for question tagging". The mock M04 `dskpSpId` points to the `dskp_sp` store. | Questions tag `curriculum_nodes` only. `dskp_*` stays the teacher-created picking list until a card says otherwise. OQ-DM-08. |
+| OWN-10 | **Teacher economy: RESOLVED by D53 (owner decision 2026-10-19): backlog, not B1** | `teacher_wallets`, `teacher_ledger`, `teacher_rewards`, `teacher_redemptions`, `cash_withdrawals`, `teacher_badges`, `teacher_badge_awards` | No tables in B1. Their specification moved to section 3.13 (backlog). The teacher-economy endpoints are "Not in B1 (D53)". |
+| OWN-11 | **`curriculum_nodes` vs `dskp_bidang/sk/sp`: RESOLVED by D53(h) (owner decision 2026-10-19)** | BE-08 owns the DSKP node tree; BE-18 owns `dskp_bidang/sk/sp` (teacher picks). | **Questions tag `curriculum_node` only; `dskp_*` is the teacher picking list.** OQ-DM-08 resolved. |
 | OWN-12 | **`files`, `jobs`, `etl_*`** | Platform tables used by several owners (BE-04, BE-37, BE-34). Owned by the creating card; other modules use the service. | No action. |
 
 ### 2.2 Ownership table
@@ -179,7 +180,7 @@ D12 and ADR-0014: exactly one owner per store. This table lists **every** persis
 | `stimulus_group_stimuli` | BE-09 **[P]** | m28 `GroupDef.stimulusId` | not migrated | - | - | - | P |
 | `stimulus_group_options` | BE-09 **[P]** | m28 `GroupDef.optionBank` | not migrated | - | - | - | P |
 | `question_reports` | BE-10 | `questionReports` | not migrated (open reports exported, Q9) | - | - | T | |
-| `question_submissions` | BE-10 | `questionSubmissions` | not migrated | - | - | - | C (OWN-1) |
+| `question_submissions` | dropped (D53 OWN-1) | `questionSubmissions` | not migrated | - | - | - | resolved: `intake_batches` is the Submission |
 | `question_imports` | BE-10 | `questionImportRuns` | not migrated | - | - | - | |
 | `question_status_events` | BE-10 | none | not migrated | - | - | - | |
 | `source_papers` | BE-10 | none (`sourceFile/sourcePage/sourceSet` fields) | not migrated (`source_papers` archived) | - | - | - | C (OWN-2) |
@@ -233,8 +234,8 @@ D12 and ADR-0014: exactly one owner per store. This table lists **every** persis
 | `achievements` | BE-23 | `gamification.achievements` | `achievements` | W1 | M | - | |
 | `user_achievements` | BE-23 | `gamification.userAchievements` | `achievement_user` | W3 | M | T | |
 | `learner_badges`, `learner_badge_holdings` | BE-23 | `gamification.learnerBadges`, `learnerBadgeHoldings` | none | - | - | - | K |
-| `teacher_badges` | BE-23 | `gamification.teacherBadges` | `teacher_badges` | W1 | M | - | OWN-10 |
-| `teacher_badge_awards` | BE-23 | `gamification.teacherBadgeAwards` | `teacher_badge_user` | W3 | M | - | OWN-10 |
+| `teacher_badges` | backlog (D53 OWN-10) | `gamification.teacherBadges` | `teacher_badges` | W1 | M | - | D (OWN-10 resolved, 3.13) |
+| `teacher_badge_awards` | backlog (D53 OWN-10) | `gamification.teacherBadgeAwards` | `teacher_badge_user` | W3 | M | - | D (OWN-10 resolved, 3.13) |
 | `referral_codes` | BE-23 | `gamification.referralCodes` | `users.referral_code` (no matrix row) | W2 | M | - | GAP-8 |
 | `referrals` | BE-23 | `gamification.referrals` | `users.referred_by` (no matrix row) | W3 | M | - | GAP-8 |
 | `draws` | BE-23 | `gamification.draws` | `lucky_draws` | W3 | M | - | |
@@ -246,7 +247,7 @@ D12 and ADR-0014: exactly one owner per store. This table lists **every** persis
 | `reward_redemptions` | BE-23 **[P name]** | `hadiah.redemptions` (M15) | `gift_redemptions` (ambiguous) | W3 | M | - | OWN-9 |
 | `mystery_box_openings` | BE-23 | `hadiah.mysteryBoxOpenings` | none | - | - | - | |
 | `gamification_settings` | BE-23 | `gamification.settings` | `reward_settings` (no matrix row) | W1 | M | - | GAP-3 |
-| `teacher_wallets`, `teacher_ledger`, `teacher_rewards`, `teacher_redemptions`, `cash_withdrawals` | BE-23 | `gamification.teacher*`, `cashWithdrawals` | none unless Q10 finds rows | - | - | - | OWN-10 |
+| `teacher_wallets`, `teacher_ledger`, `teacher_rewards`, `teacher_redemptions`, `cash_withdrawals` | backlog (D53 OWN-10) | `gamification.teacher*`, `cashWithdrawals` | none unless Q10 finds rows | - | - | - | D (OWN-10 resolved, 3.13) |
 
 #### Exam / Bijak SPM (M28)
 
@@ -319,7 +320,7 @@ D12 and ADR-0014: exactly one owner per store. This table lists **every** persis
 
 #### Unowned / deferred (section 3.13)
 
-`settings`, `feature_flags`, `mood_checkins` (**[rev2]** no card; URS OQ-24), PKSK (6 tables), M06 tracking sets and mock exams, M13 Cikgu Alesa (6), M16 battles/games (19), M18 (2), M20 marketplace (6), M21 sponsorship (3), M26 tuition centres, M09 audio KBAT attempts, and the computed stores of M05/M08/M12 (3.13 and section 5).
+`settings`, `feature_flags`, `mood_checkins` (**[rev2]** no card; URS OQ-24), M26 tuition centres and the computed stores of M05/M08/M12 (3.13 and section 5). **D53(a):** PKSK, M06, M13, M16, M20, M21 (student side) are now B1 with pending cards BE-41..BE-47, M18 is BE-21 and Audio KBAT attempts are BE-24 (section 3.12a); the teacher economy is backlog (D53 OWN-10, 3.13).
 
 ---
 ## 3. Domains: ER diagrams and table specifications
@@ -1218,22 +1219,9 @@ Every transition not in the table of `v2-question-bank` 4.1 is refused (409) and
 
 `unique (reporter_id, question_id, question_version_no)` (one report per student per version, AC-18.3). Index `(status, created_at)`. The mock fields `questionType` (mcq or structured: one bank in v2), `roomCode` (M16, deferred) and `sourceSet` are not carried.
 
-#### `question_submissions` (PK, TS, no LEG) owner BE-10 (**provisional, OWN-1**)
+#### `question_submissions`: dropped (D53 OWN-1, owner decision 2026-10-19)
 
-Mock `questionSubmissions` (the old teacher upload). Superseded by `intake_batches` per plan 15.4 and the matrix; listed because BE-10 names it. If OQ-DM-02 resolves to "one table", this section disappears.
-
-| Column | Type | Null | Default | Notes |
-|---|---|---|---|---|
-| teacher_id | bigint | Y | | FK -> users.id |
-| subject_text | text | Y | | free text in the mock |
-| level_code | text | N | | |
-| year | smallint | Y | | |
-| paper_type | text | Y | | `Soalan Umum`, `Trial`, `DSKP`, `Buku Teks`, `Buku Latihan`, `Peperiksaan`, `Lain-lain` (v2-question-bank 4.2) |
-| author_credit | text | Y | | |
-| note | text | N | | |
-| files | jsonb | Y | `[]` | `[{index,name,size,mime}]` as the mock; G-11 exception that disappears with this table |
-| status | enum(E-submission_status) | Y | `pending` | `pending`, `processing`, `done`, `rejected` [mock] |
-| admin_notes | text | N | | |
+`intake_batches` (BE-37) is the one Submission table. `question_submissions` is dropped from BE-10 and gets no table; the mock `questionSubmissions` fields (subject text, level, year, paper type, author credit, note, files, status, admin notes) map onto the `intake_batches` declaration fields (3.5). The teacher-submission endpoints of M04 (`GET /api/question-submissions`, `PATCH .../:id/status`, `GET .../:id/files/:index`) are served by BE-37/BE-38 or a BE-10 read over intake (pending card update).
 
 #### `question_imports` (PK, TS, no LEG) owner BE-10 (Excel/CSV only)
 
@@ -1267,6 +1255,8 @@ OQ-DM-21 asks what the audit computes in v2.
 ### 3.5 Intake, AI extraction and jobs
 
 Owner: BE-36 (`ai.prisma`), BE-37 (`intake.prisma` first part, `jobs`), BE-38 (`intake.prisma` second part). **[rev2] Sources:** the audited cards BE-36 to BE-40, plan section 15, `v2-question-bank.md`, and the intake mock of local commit `b2e1033` (`admin/intake/types.ts`, the intake methods of `server/store.ts`, ADR-0019), read with `git show`; those paths reach `feature/v2-backend` only after the LEAD merges the commit. The mock is **browser-side and batch-shaped** (OCR and extraction run in the browser, the store keeps one `IntakeBatch` document with `questions[]`, `stimuli[]`, `pages[]`; statuses `draf`/`semakan`); the cards are **server-side and item-shaped**. The tables follow the cards and carry the mock fields as columns where the mock has them. Mock fields are tagged **[mock]**, card fields **[card]**, the rest **[P]**. The workflow statuses are the BM words of v2-question-bank 4.1/4.2 with English codes **[P]**.
+
+**Status (D53, 2026-10-19):** the D52 intake (commit `b2e1033`) and the paper builder (merge `1b5193f`) are merged locally into `feature/student-prototype` and are **pending push**. Final admin routes: `/admin/spm/soalan/ekstrak`, `/admin/spm/soalan/ekstrak/:batchId`, `/admin/spm/soalan/muat-naik`, `/admin/spm/soalan`, `/admin/spm/semakan`, `/admin/spm/kertas`. Teacher submission = `intake_batches` (OWN-1 resolved).
 
 Flow: a **batch** (the Submission: declaration + files) -> **files** -> **pages** (images, text layer, OCR) and **figures** -> a **job** runs render/OCR/extraction -> an **AI run** per extraction call -> **items** (reviewable drafts with source region and confidence) -> review -> **accept** creates a Draf question through `QuestionsService` (BE-09). The AI service has no approval right and cannot set a status beyond Draf.
 
@@ -1777,9 +1767,6 @@ erDiagram
   syiling_rewards ||--o{ reward_claims : "claimed"
   rewards ||--o{ reward_redemptions : "redeemed"
   users ||--o{ reward_redemptions : "redeems"
-  teacher_badges ||--o{ teacher_badge_awards : "awarded"
-  teacher_rewards ||--o{ teacher_redemptions : "redeemed"
-  users ||--o| teacher_wallets : "teacher"
   wallets {
     bigint id PK
     bigint user_id FK
@@ -1947,12 +1934,6 @@ Platform daily challenges only; teacher-created challenges are `missions` (3.9, 
 | `learner_badge_holdings` (PK, TS) | user_id | bigint | Y | FK -> users.id |
 | | badge_id | bigint | Y | FK -> learner_badges.id; `unique (user_id, badge_id)` |
 | | awarded_at | timestamptz | Y | |
-| `teacher_badges` (PK, TS, LEG) | name, icon | text | Y | |
-| | threshold | int | Y | |
-| | bonus_coins | int | Y | 0 |
-| | is_active | boolean | Y | true |
-| `teacher_badge_awards` (PK, TS, LEG) | user_id | bigint | Y | FK -> users.id |
-| | badge_id | bigint | Y | FK -> teacher_badges.id; `unique (user_id, badge_id)` |
 | | awarded_at | timestamptz | Y | |
 
 #### `referral_codes`, `referrals` (PK, TS, LEG) owner BE-23
@@ -2051,34 +2032,6 @@ Key/value settings (mock `gamification.settings`).
 | label | text | Y | | BM label |
 
 .cloud keeps one `reward_settings` row (columns `reward_budget_sen_month`, `flat_quiz_reward`, `current_session_year`, `games_award_syiling`), which the ETL pivots into rows (GAP-3).
-
-#### Teacher economy (specified so the schema exists; shipping is URS OQ-16 / D28c)
-
-| Table | Column | Type | Null | Notes |
-|---|---|---|---|---|
-| `teacher_wallets` (PK, TS) | user_id | bigint | Y | FK -> users.id, unique |
-| | balance, total_earned, questions_count | int | Y | default 0 |
-| `teacher_ledger` (PK, created_at, append-only) | user_id | bigint | Y | FK -> users.id |
-| | amount | int | Y | |
-| | description | text | Y | |
-| `teacher_rewards` (PK, TS) | name, description | text | Y | |
-| | category | enum(E-teacher_reward_category) | Y | `general`, `digital`, `physical`, `voucher` |
-| | cost_coins | int | Y | |
-| | stock, max_per_user, max_per_month | int | N | |
-| | image_file_id | bigint | N | FK -> files.id **[P]** |
-| | is_active | boolean | Y | default true |
-| `teacher_redemptions` (PK, TS) | user_id | bigint | Y | FK -> users.id |
-| | reward_id | bigint | Y | FK -> teacher_rewards.id |
-| | cost_coins | int | Y | snapshot |
-| | status | enum(E-teacher_redemption_status) | Y | `pending`, `processing`, `delivered`, `cancelled` (mock uppercase) |
-| | debited | boolean | Y | default false |
-| `cash_withdrawals` (PK, TS) | user_id | bigint | Y | FK -> users.id |
-| | coins | int | Y | |
-| | cash_sen | int | Y | integer sen |
-| | bank_name, bank_account, account_holder | text | Y | **personal and financial data**: encrypt at rest or do not build; never logged (BE-NFR-11) |
-| | status | enum(E-cash_status) | Y | `pending`, `approved`, `processing`, `paid`, `rejected` (mock uppercase) |
-| | admin_note | text | N | |
-| | paid_debited | boolean | Y | default false |
 
 ---
 
@@ -2749,7 +2702,7 @@ erDiagram
 | | status | enum(E-ticket_status) | Y | `open` | mock stores BM words `dibuka`, `dalam_proses`, `menunggu_balas`, `selesai`, `ditutup`; proposed codes `open`, `in_progress`, `awaiting_reply`, `resolved`, `closed` (plan 14.7 "BM status -> English"; OQ-DM-05) |
 | | admin_reply | text | N | | |
 
-`audio_kbat_sets.sections/questions` are jsonb because the set is authored and stored as one document in the mock and student play is backlog (G-11 exception; the card BE-24 lists only the admin and listing routes). `audio_kbat_attempts` (mock) is backlog (3.13). Index `(slug)` unique on articles; `(status, created_at)` on tickets; `(user_id, created_at)`.
+`audio_kbat_sets.sections/questions` are jsonb because the set is authored and stored as one document in the mock and student play is BE-24 scope (D53(a)) (G-11 exception; the card BE-24 lists only the admin and listing routes). `audio_kbat_attempts` (mock) is backlog (3.13). Index `(slug)` unique on articles; `(status, created_at)` on tickets; `(user_id, created_at)`.
 
 ---
 
@@ -2789,6 +2742,26 @@ Owner: BE-34, Prisma file `etl.prisma` (`public` schema). The audited BE-28/BE-2
 
 ---
 
+### 3.12a Modules added to B1 by D53(a) (owner cards BE-41 to BE-48, pending)
+
+Owner decision D53(a), 2026-10-19: B1 is every module reachable in the prototype. M06 (the /spm hub, not replaced by M28), M07 PKSK, M13 Cikgu Alesa (AI through the BE-36 adapter), M16 games (replicating the bot simulation), M20 Marketplace, M21 student side only (Penaja out, D48) and M25 (Heatmap Topik Lemah) are B1; M18 Amaran is BE-21 (UD-4); M09 Audio KBAT student play is BE-24. The new cards BE-41 M06, BE-42 M07, BE-43 M13, BE-44 M16 battle, BE-45 M16 papan-bijak + hub, BE-46 M20, BE-47 M21, BE-48 M25 are being written; every table below is **[pending card]** and the card may refine columns. M25 (heatmap) has no table: it is a read model over the answer log (section 5). Rows moved here from the former deferral list of 3.13; "Owner" replaces the "why not B1" column.
+
+| Mock store (module) | Candidate table | Key columns | .cloud | Owner |
+|---|---|---|---|---|
+| `m07.domains`, `m19.pkskPackages`, `m07.access` | `pksk_domains`, `pksk_packages`, `pksk_accesses` | domain `{bahagian A\|B\|C, name, name_en, code, icon, color, order, is_active}`; package `{name, level T1\|T4\|ALL}`; access `{user_id, package_id, granted_by_id, granted_at, expires_at, status active\|revoked, revoked_at}` | `pksk_packages`, `pksk_accesses`, `pksk_questions` (body only) | BE-42 [pending card] |
+| `m07.examAttempts`, `m07.mastery`, `m07.practiceLoads` | `pksk_exam_attempts`, `pksk_mastery`, `pksk_practice_loads` | `{user_id, level T1\|T4, completed_at, score_pct, bahagian_a/b/c_pct, grade A..E}`; `{user_id, level, domain_id, mastery_pct}`; `{user_id, level, domain_id, loaded_at}` | none | BE-42 [pending card] |
+| `m06.trackingSets`, `m06.mockExams` | `tracking_sets`, `spm_mock_exams` | `{subject_id, year, set_no, question_ids[], dskp_tagged}`; `{user_id, subject_id, paper_number 1\|2, status in_progress\|submitted, score, max_score, grade, items[]}` | `spm_sets`/`spm_set_question` (lists, not migrated), `exam_attempts` | BE-41 [pending card] |
+| `cikgu.threads`, `messages`, `rphs`, `essays`, `pbdTags`, `testState` | `chat_threads`, `chat_messages`, `rph_plans`, `essay_markings`, `pbd_tags` | thread `{user_id}`; message `{thread_id, role user\|bot, text, tool, tool_hops, tokens_in, tokens_out}`; rph `{user_id, subject_name, level, tajuk, class_name, lesson_date, duration_minutes, time_slot, tema, status, source, content, thread_id}`; essay `{user_id, rubric_key, essay_text, marks, max_marks, comment}`; pbd `{user_id, classroom_id, student_id, sp, skor, tp, status, approved_at}`; `testState` is a test hook (mock-only) | `chatbot_conversations`, `chatbot_messages` (anonymous `visitor_id`, `rating`) | BE-43 [pending card] (AI via BE-36 adapter) |
+| `m16.battles`, `battleQueues`, `battleInvitations`, `battleAnswers` | `battles`, `battle_participants`, `battle_answers` | battle `{id uuid, mode quick_match\|school_battle\|challenge\|queue_join, question_type biasa\|pksk\|spm, subject_id, pksk_domain_id, level_id, player_a/b, school_a/b_id, score/correct a/b, answered, winner A\|B\|null, status active\|finished\|forfeited\|abandoned, finished_at, question_ids[]}`; queues and invitations are transient | `battles`, `battle_participants` (normalised, bots), `battle_queue`, `battle_invites` | BE-44/BE-45 [pending card; split TBC] |
+| `m16.tournaments`, `leagues`, `leagueSchools`, `leagueStandings`, `sekolahBersaing`, `storedStandings` | `tournaments`, `leagues`, `league_schools`, `league_standings`, `school_battle_rankings` | tournament `{title, format single_match\|knockout\|league\|hybrid, question_mode subject\|exam_paper\|random_mix, total_questions, time_window_minutes, status draft\|registration\|ongoing\|completed, ...}`; league `{name, type friendly\|tournament\|league, scope school\|district\|state\|national, game_mode, class_levels[], scoring_method, start/end_date, max_schools, invite_code, creator_id, status}` | `leagues`, `league_members` (user groups; divergent concept, Q13), `school_battle_rankings` (aggregate, recompute) | BE-44/BE-45 [pending card; split TBC] |
+| `m16.gameSessions`, `gameRooms`, `roomPlayers`, `gameStandings`, `personalBests`, `jutawanStats`, `spins`, `spinStats`, `pbSearches`, `gameSettings` | `game_sessions`, `game_rooms`, `game_room_players`, `personal_bests`, `spins`, ... | session `{id, user_id, game, darjah, score, coins_computed, coins_credited, is_new_record}`; room `{code, game, subject, grade_level, match_mode, max_players, host_id, status waiting\|playing\|finished\|closed, state}` (state may embed question ids, transient) | `games`, `game_sessions`, `game_rooms`, `game_room_players` | BE-45 [pending card] (hub, games, papan-bijak; split TBC) |
+| `m18.amaranInterventions`, `correctionSubjects` | `amaran_interventions` | `{student_id, teacher_id, school_id, classroom_id, type, intervention_date, status done\|planned, notes, follow_up, effectiveness belum_dinilai\|berkesan\|sederhana\|tidak_berkesan}`; `correctionSubjects` is a computed school/subject aggregate | none (`interventions` is M12) | BE-21 (UD-4) |
+| `marketplace.*` (categories, products, images, sellers, documents, reviews) | `marketplace_*` | seller `{user_id, shop_name, phone, whatsapp, status, verified_at, whatsapp_clicks}`; product `{seller_id, name, slug, category_id, price, original_price, condition, stock_status, status, shipping_method, shipping_fee, location, views}` | `marketplace_sellers`, `marketplace_products`, `marketplace_orders` | BE-46 [pending card] |
+| `m21.sponsors`, `anakAngkat`, `fosterApplications` | `sponsors`, `foster_sponsorships`, `foster_applications` | sponsor `{user_id, name, category, ..., contact_person_name, contact_email, contact_phone, status}`; foster `{sponsor_id, student_id, student_category B40\|Asnaf\|Yatim\|OKU, channel, status}`; application `{student_id, applicant_user_id, applicant_role, student_category, family_income_range, reason, status}` (personal and sensitive: Q7) | `sponsors`, `foster_sponsorships`, `foster_applications` | BE-47 [pending card] (only `foster_applications` is B1; `sponsors`, `foster_sponsorships` stay backlog, Penaja out, D48) |
+| `content.audioKbatAttempts` | `audio_kbat_attempts` | `{set_id, user_id, answers[{no, choice A..D}], score, total_marks, submitted_at}` | none | BE-24 (D53(a)) |
+
+---
+
 ### 3.13 Mock stores without a card (backlog and mock-only)
 
 These mock stores exist and have endpoints or seeds but **no B1 card**, or are computed/mock-only. They get no table until a card exists (G-12); their shape is recorded so the owner card does not have to rediscover it. "Source" = the mock store; ".cloud" = migration candidate if the feature is promoted.
@@ -2797,20 +2770,48 @@ These mock stores exist and have endpoints or seeds but **no B1 card**, or are c
 
 | Mock store (module) | Candidate table | Key columns | .cloud | Why not B1 |
 |---|---|---|---|---|
-| `m07.domains`, `m19.pkskPackages`, `m07.access` | `pksk_domains`, `pksk_packages`, `pksk_accesses` | domain `{bahagian A\|B\|C, name, name_en, code, icon, color, order, is_active}`; package `{name, level T1\|T4\|ALL}`; access `{user_id, package_id, granted_by_id, granted_at, expires_at, status active\|revoked, revoked_at}` | `pksk_packages`, `pksk_accesses`, `pksk_questions` (body only) | OD-11; URS OQ-21 (feeds `isSubscribed`) |
-| `m07.examAttempts`, `m07.mastery`, `m07.practiceLoads` | `pksk_exam_attempts`, `pksk_mastery`, `pksk_practice_loads` | `{user_id, level T1\|T4, completed_at, score_pct, bahagian_a/b/c_pct, grade A..E}`; `{user_id, level, domain_id, mastery_pct}`; `{user_id, level, domain_id, loaded_at}` | none | M07 not in B1 (PKSK as tags on one bank) |
-| `m06.trackingSets`, `m06.mockExams` | `tracking_sets`, `spm_mock_exams` | `{subject_id, year, set_no, question_ids[], dskp_tagged}`; `{user_id, subject_id, paper_number 1\|2, status in_progress\|submitted, score, max_score, grade, items[]}` | `spm_sets`/`spm_set_question` (lists, not migrated), `exam_attempts` | Bijak SPM replaces SPM classic (OD-11) |
-| `cikgu.threads`, `messages`, `rphs`, `essays`, `pbdTags`, `testState` | `chat_threads`, `chat_messages`, `rph_plans`, `essay_markings`, `pbd_tags` | thread `{user_id}`; message `{thread_id, role user\|bot, text, tool, tool_hops, tokens_in, tokens_out}`; rph `{user_id, subject_name, level, tajuk, class_name, lesson_date, duration_minutes, time_slot, tema, status, source, content, thread_id}`; essay `{user_id, rubric_key, essay_text, marks, max_marks, comment}`; pbd `{user_id, classroom_id, student_id, sp, skor, tp, status, approved_at}`; `testState` is a test hook (mock-only) | `chatbot_conversations`, `chatbot_messages` (anonymous `visitor_id`, `rating`) | external AI out of B1 (OD-7) |
-| `m16.battles`, `battleQueues`, `battleInvitations`, `battleAnswers` | `battles`, `battle_participants`, `battle_answers` | battle `{id uuid, mode quick_match\|school_battle\|challenge\|queue_join, question_type biasa\|pksk\|spm, subject_id, pksk_domain_id, level_id, player_a/b, school_a/b_id, score/correct a/b, answered, winner A\|B\|null, status active\|finished\|forfeited\|abandoned, finished_at, question_ids[]}`; queues and invitations are transient | `battles`, `battle_participants` (normalised, bots), `battle_queue`, `battle_invites` | M16 not in B1; Sekolah Bersaing for Admin Sekolah needs it (URS OQ-14) |
-| `m16.tournaments`, `leagues`, `leagueSchools`, `leagueStandings`, `sekolahBersaing`, `storedStandings` | `tournaments`, `leagues`, `league_schools`, `league_standings`, `school_battle_rankings` | tournament `{title, format single_match\|knockout\|league\|hybrid, question_mode subject\|exam_paper\|random_mix, total_questions, time_window_minutes, status draft\|registration\|ongoing\|completed, ...}`; league `{name, type friendly\|tournament\|league, scope school\|district\|state\|national, game_mode, class_levels[], scoring_method, start/end_date, max_schools, invite_code, creator_id, status}` | `leagues`, `league_members` (user groups; divergent concept, Q13), `school_battle_rankings` (aggregate, recompute) | same |
-| `m16.gameSessions`, `gameRooms`, `roomPlayers`, `gameStandings`, `personalBests`, `jutawanStats`, `spins`, `spinStats`, `pbSearches`, `gameSettings` | `game_sessions`, `game_rooms`, `game_room_players`, `personal_bests`, `spins`, ... | session `{id, user_id, game, darjah, score, coins_computed, coins_credited, is_new_record}`; room `{code, game, subject, grade_level, match_mode, max_players, host_id, status waiting\|playing\|finished\|closed, state}` (state may embed question ids, transient) | `games`, `game_sessions`, `game_rooms`, `game_room_players` | same; rooms and queues are transient |
-| `m18.amaranInterventions`, `correctionSubjects` | `amaran_interventions` | `{student_id, teacher_id, school_id, classroom_id, type, intervention_date, status done\|planned, notes, follow_up, effectiveness belum_dinilai\|berkesan\|sederhana\|tidak_berkesan}`; `correctionSubjects` is a computed school/subject aggregate | none (`interventions` is M12) | **UD-4 (user decision 2026-10-19): M18 Amaran is folded into BE-21**, so `amaran_interventions` (read side of the 4 `/api/amaran/*` routes) belongs to BE-21; no mock write route exists (URS OQ-12 superseded) |
-| `marketplace.*` (categories, products, images, sellers, documents, reviews) | `marketplace_*` | seller `{user_id, shop_name, phone, whatsapp, status, verified_at, whatsapp_clicks}`; product `{seller_id, name, slug, category_id, price, original_price, condition, stock_status, status, shipping_method, shipping_fee, location, views}` | `marketplace_sellers`, `marketplace_products`, `marketplace_orders` | plan non-goal (M20) |
-| `m21.sponsors`, `anakAngkat`, `fosterApplications` | `sponsors`, `foster_sponsorships`, `foster_applications` | sponsor `{user_id, name, category, ..., contact_person_name, contact_email, contact_phone, status}`; foster `{sponsor_id, student_id, student_category B40\|Asnaf\|Yatim\|OKU, channel, status}`; application `{student_id, applicant_user_id, applicant_role, student_category, family_income_range, reason, status}` (personal and sensitive: Q7) | `sponsors`, `foster_sponsorships`, `foster_applications` | plan non-goal (M21) |
 | `m26.tuitionCentres` | `tuition_centres` | `{name, city, state, active_pupils}` | none | M26 deferred |
 | `m26.moodCheckins` **[rev2]** | `mood_checkins` | `{user_id, mood happy\|okay\|sad\|stressed, reason, checkin_date (Malaysia day)}`; free text is sensitive | `mood_checkins` (`checked_in_on`) | no card creates it (plan 14.7 names BE-22/BE-29; URS OQ-24: not migrated) |
-| `content.audioKbatAttempts` | `audio_kbat_attempts` | `{set_id, user_id, answers[{no, choice A..D}], score, total_marks, submitted_at}` | none | student play is backlog |
 | (none) | `settings`, `feature_flags` | `settings {key, value, group}`; `feature_flags {slug, enabled, audience}` | `settings`, `feature_flags` | Sistem stores (V2-T27), OWN-5 |
+
+#### Teacher economy (backlog, not B1: D53 OWN-10, owner decision 2026-10-19)
+
+Moved here from 3.7. Not built in B1; kept so the owner card does not have to rediscover the shape. Tables: `teacher_wallets`, `teacher_ledger`, `teacher_rewards`, `teacher_redemptions`, `cash_withdrawals`, `teacher_badges`, `teacher_badge_awards`.
+
+| Table | Column | Type | Null | Notes |
+|---|---|---|---|---|
+| `teacher_wallets` (PK, TS) | user_id | bigint | Y | FK -> users.id, unique |
+| | balance, total_earned, questions_count | int | Y | default 0 |
+| `teacher_ledger` (PK, created_at, append-only) | user_id | bigint | Y | FK -> users.id |
+| | amount | int | Y | |
+| | description | text | Y | |
+| `teacher_rewards` (PK, TS) | name, description | text | Y | |
+| | category | enum(E-teacher_reward_category) | Y | `general`, `digital`, `physical`, `voucher` |
+| | cost_coins | int | Y | |
+| | stock, max_per_user, max_per_month | int | N | |
+| | image_file_id | bigint | N | FK -> files.id **[P]** |
+| | is_active | boolean | Y | default true |
+| `teacher_redemptions` (PK, TS) | user_id | bigint | Y | FK -> users.id |
+| | reward_id | bigint | Y | FK -> teacher_rewards.id |
+| | cost_coins | int | Y | snapshot |
+| | status | enum(E-teacher_redemption_status) | Y | `pending`, `processing`, `delivered`, `cancelled` (mock uppercase) |
+| | debited | boolean | Y | default false |
+| `cash_withdrawals` (PK, TS) | user_id | bigint | Y | FK -> users.id |
+| | coins | int | Y | |
+| | cash_sen | int | Y | integer sen |
+| | bank_name, bank_account, account_holder | text | Y | **personal and financial data**: encrypt at rest or do not build; never logged (BE-NFR-11) |
+| | status | enum(E-cash_status) | Y | `pending`, `approved`, `processing`, `paid`, `rejected` (mock uppercase) |
+| | admin_note | text | N | |
+| | paid_debited | boolean | Y | default false |
+
+| Table | Column | Type | Null | Notes |
+|---|---|---|---|---|
+| `teacher_badges` (PK, TS, LEG) | name, icon | text | Y | |
+| | threshold | int | Y | |
+| | bonus_coins | int | Y | 0 |
+| | is_active | boolean | Y | true |
+| `teacher_badge_awards` (PK, TS, LEG) | user_id | bigint | Y | FK -> users.id |
+| | badge_id | bigint | Y | FK -> teacher_badges.id; `unique (user_id, badge_id)` |
 
 #### Mock-only or computed stores (never a table)
 
@@ -2879,7 +2880,7 @@ Every enum used in a persisted column. Storage is `text` + `CHECK` (G-05). "Mock
 | `E-report_reason` | `question_reports.reasons[]` | `wrong_answer`, `confusing_question`, `wrong_options`, `missing_options`, `duplicate`, `typo`, `other` | already English in the mock; two label sets (MCQ and structured) share the codes | `src/modules/m04-question-bank/lib/report-reasons.ts` |
 | `E-report_source` | `question_reports.source` | `spm`, `structured_attempt`, `latihan`, `revision`, `teacher_databank`, `quiz`, `papan_bijak` | mock `ReportSource` | same file |
 | `E-report_status` | `question_reports.status` | `pending`, `reviewed`, `fixed`, `dismissed` | mock stored values; BM `Menunggu`, `Disemak`, `Diperbaiki`, `Ditolak`; the v2 doc adds a fifth tab `Dikeluarkan` (the mock treats it as `fixed` + inactive question) (OQ-DM-18) | `src/modules/m04-question-bank/lib/report-reasons.ts` (`STATUS_LABELS`) |
-| `E-submission_status` | `question_submissions.status` | `pending`, `processing`, `done`, `rejected` | mock | `src/modules/m04-question-bank` (UI-owned) |
+| `E-submission_status` | (dropped, D53 OWN-1; was `question_submissions.status`) | `pending`, `processing`, `done`, `rejected` | mock | superseded by `E-batch_status` |
 
 ### 4.3 Intake and AI
 
@@ -3072,13 +3073,13 @@ Counts **[rev2]**: 32 findings numbered GAP-1 to GAP-32; GAP-14 is resolved, so 
 | ID | Question | Why it matters | Default until answered |
 |---|---|---|---|
 | OQ-DM-01 | **Closed [rev2].** The intake mock was read from commit `b2e1033` (read-only `git show`) and section 3.5 aligned with it. Its paths exist on `feature/v2-backend` only after the LEAD merges that commit. | n/a | n/a |
-| OQ-DM-02 | One table or two for the teacher paper submission: `question_submissions` (BE-10), `intake_batches` (BE-37) and `source_papers` (BE-10) overlap (OWN-1, OWN-2). | Duplicate declaration/rights data and two queues. | `intake_batches` is the Submission; `source_papers` is the paper identity and rights register; `question_submissions` is built only as a thin read of batches. |
+| OQ-DM-02 | **RESOLVED by D53 OWN-1 (2026-10-19):** one table, `intake_batches` (BE-37) is the Submission; `question_submissions` dropped from BE-10; `source_papers` stays the paper identity and rights register. | | |
 | OQ-DM-03 | Is there a generic `settings` / `feature_flags` store in B1? | **[rev2]** BE-28 skips them (open question 2); no card owns them. | No; `gamification_settings` and `support_config` only. |
 | OQ-DM-04 | **[rev2] superseded by URS OQ-24.** `mood_checkins` is created by no card. | The Kirkpatrick and Command Center reads that need mood. | Not created in B1. |
 | OQ-DM-05 | English enum codes (X2): the mock stores Malay or upper-case values for ticket status, timeline category, trend labels, article categories, grade levels, platforms, note types, reward statuses, and the question lifecycle words. Confirm the proposed codes in section 4 (and the question status codes `draft`, `in_review`, `approved`, `published`, `archived`). | `CHECK` constraints and the contract enums are written once. | Section 4 codes. |
 | OQ-DM-06 | **Closed [rev2].** BE-11 now creates `token_movements` and `tiers`. | n/a | n/a |
 | OQ-DM-07 | Which mock catalogue is .cloud `gifts`? (GAP-9.) | The ETL target. | Hadiah (`rewards`). |
-| OQ-DM-08 | `dskp_bidang/sk/sp` (teacher-created) versus `curriculum_nodes` (admin-managed DSKP tree): one tree or two? `GET /api/guru/dskp/*` feeds question tagging (BE-10). | A question tag could point at two different trees; `sp_records` and the mock `dskpSpId` point at `dskp_sp`. | Questions and `sp_records` tag `curriculum_nodes`; `dskp_*` stays the teacher picking list. |
+| OQ-DM-08 | **RESOLVED by D53(h) (2026-10-19):** questions and `sp_records` tag `curriculum_nodes` only; `dskp_bidang/sk/sp` is the teacher-created picking list. | | |
 | OQ-DM-09 | `is_test` on counters: wallets, streaks, mastery, revision_queue, spm_targets, trial counter of an admin acting in Mod Pelajar are not separable by a row stamp. | Test activity leaks into the admin's own figures (not into aggregates, which exclude the admin's stamped rows). | Stamp rows and ledgers; counters belong to the admin account and are excluded from aggregates by `is_test` on their source rows. |
 | OQ-DM-10 | What is `mission_items` (card BE-18)? This document reads it as the recipient list (`recipientIds[]`). | Completion tracking and notification. | Recipient rows. |
 | OQ-DM-11 | `risk_profiles` and `sp_records` (BE-19 lists them as persisted) look like caches of the answer log; `sp_records` cannot be computed from `practice_answers` unless an SP tag is added to answer rows. Persisted or read model? | Write path and consistency. | Persisted as the card says; refreshed by the owner service. |

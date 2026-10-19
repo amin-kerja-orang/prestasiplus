@@ -83,9 +83,9 @@ Roles: `any signed-in` = `requireAuth()` only. "Card" lists the backend card tha
 | M04-10 | POST | `/api/question-reports` | any signed-in | BE-10 | missing |
 | M04-11 | GET | `/api/question-reports/mine` | any signed-in | BE-10 | missing |
 | M04-12 | PATCH | `/api/question-reports/:id` | admin | BE-10 | missing |
-| M04-13 | GET | `/api/question-submissions` | admin | BE-10 | missing |
-| M04-14 | PATCH | `/api/question-submissions/:id/status` | admin | BE-10 | missing |
-| M04-15 | GET | `/api/question-submissions/:id/files/:index` | admin | BE-10 | missing |
+| M04-13 | GET | `/api/question-submissions` | admin | BE-37/BE-38 [pending card update] | missing |
+| M04-14 | PATCH | `/api/question-submissions/:id/status` | admin | BE-37/BE-38 [pending card update] | missing |
+| M04-15 | GET | `/api/question-submissions/:id/files/:index` | admin | BE-37/BE-38 [pending card update] | missing |
 | M04-16 | POST | `/api/question-imports` | admin | BE-10 | missing |
 | M04-17 | GET | `/api/question-imports/template` | admin | BE-10 | missing |
 | M04-18 | GET | `/api/question-imports` | admin | BE-10 | missing |
@@ -124,52 +124,52 @@ Roles: `any signed-in` = `requireAuth()` only. "Card" lists the backend card tha
 | M05-21 | GET | `/api/remedial-tests/mine` | any signed-in | BE-18 | missing |
 | M05-22 | GET | `/api/missions/today` | any signed-in | BE-18 | missing |
 | M05-23 | GET | `/api/remedial-tests/:id` | any signed-in | BE-18 | missing |
-| M06-01 | GET | `/api/spm/overview` | any signed-in | UNCOVERED | missing |
-| M06-02 | GET | `/api/spm/databank` | any signed-in | UNCOVERED | missing |
-| M06-03 | GET | `/api/spm/latih-tubi` | any signed-in | UNCOVERED | missing |
-| M06-04 | GET | `/api/spm/latih-tubi/:code` | any signed-in | UNCOVERED | missing |
-| M06-05 | GET | `/api/spm/tracking-a` | any signed-in | UNCOVERED | missing |
-| M06-06 | GET | `/api/spm/tracking-a/:code` | any signed-in | UNCOVERED | missing |
-| M06-07 | GET | `/api/spm/subjektif` | any signed-in | UNCOVERED | missing |
-| M06-08 | GET | `/api/spm-mocks` | any signed-in | UNCOVERED | missing |
-| M06-09 | POST | `/api/spm-mocks` | any signed-in | UNCOVERED | missing |
-| M06-10 | GET | `/api/spm-mocks/:id` | any signed-in | UNCOVERED | missing |
-| M06-11 | POST | `/api/spm-mocks/:id/submit` | any signed-in | UNCOVERED | missing |
-| M06-12 | GET | `/api/spm-mocks/:id/result` | any signed-in | UNCOVERED | missing |
-| M06-13 | POST | `/api/spm-walkthrough/solve` | any signed-in | UNCOVERED | missing |
-| M06-14 | GET | `/api/duta/recommendations` | any signed-in | UNCOVERED | missing |
-| M07-01 | GET | `/api/pksk/me/access` | any signed-in | UNCOVERED | missing |
-| M07-02 | GET | `/api/pksk-domains` | any signed-in | UNCOVERED | missing |
-| M07-03 | GET | `/api/pksk/levels/:level/dashboard` | any signed-in + level gate | UNCOVERED | missing |
-| M07-04 | GET | `/api/pksk/levels/:level/domains` | any signed-in + level gate | UNCOVERED | missing |
-| M07-05 | GET | `/api/pksk/levels/:level/domains/:code` | any signed-in + level gate | UNCOVERED | missing |
-| M07-06 | GET | `/api/pksk/levels/:level/exam-attempts` | any signed-in + level gate | UNCOVERED | missing |
-| M07-07 | POST | `/api/pksk/levels/:level/domains/:code/practice-sessions` | any signed-in + level gate | UNCOVERED | missing |
-| M07-08 | GET | `/api/pksk/levels/:level/exam` | any signed-in + level gate | UNCOVERED | missing |
-| M07-09 | POST | `/api/pksk/levels/:level/exam-attempts` | any signed-in + level gate | UNCOVERED | missing |
-| M07-10 | GET | `/api/admin/pksk-questions` | admin | UNCOVERED | missing |
-| M07-11 | GET | `/api/admin/pksk-questions/stats` | admin | UNCOVERED | missing |
-| M07-12 | POST | `/api/admin/pksk-questions/bulk` | admin | UNCOVERED | missing |
-| M07-13 | GET | `/api/admin/pksk-questions/:id` | admin | UNCOVERED | missing |
-| M07-14 | POST | `/api/admin/pksk-questions` | admin | UNCOVERED | missing |
-| M07-15 | PUT | `/api/admin/pksk-questions/:id` | admin | UNCOVERED | missing |
-| M07-16 | DELETE | `/api/admin/pksk-questions/:id` | admin | UNCOVERED | missing |
-| M07-17 | GET | `/api/admin/pksk-access` | admin | UNCOVERED | missing |
-| M07-18 | GET | `/api/admin/pksk-access/stats` | admin | UNCOVERED | missing |
-| M07-19 | POST | `/api/admin/pksk-access` | admin | UNCOVERED | missing |
-| M07-20 | POST | `/api/admin/pksk-access/:id/revoke` | admin | UNCOVERED | missing |
-| M07-21 | GET | `/api/pksk-packages` | admin | UNCOVERED | missing |
-| M13-01 | POST | `/api/cikgu/send` | any signed-in (guest: raw 401 {}) | UNCOVERED | missing |
-| M13-02 | GET | `/api/cikgu/rph` | teacher, admin | UNCOVERED | missing |
-| M13-03 | POST | `/api/cikgu/rph` | teacher, admin | UNCOVERED | missing |
-| M13-04 | GET | `/api/cikgu/rph/:id` | teacher, admin | UNCOVERED | missing |
-| M13-05 | GET | `/api/cikgu/essays` | teacher, admin | UNCOVERED | missing |
-| M13-06 | GET | `/api/cikgu/essays/:id` | teacher, admin | UNCOVERED | missing |
-| M13-07 | GET | `/api/cikgu/pbd` | teacher, admin | UNCOVERED | missing |
-| M13-08 | POST | `/api/cikgu/pbd/rollup` | teacher, admin | UNCOVERED | missing |
-| M13-09 | POST | `/api/cikgu/pbd/bulk-approve` | teacher, admin | UNCOVERED | missing |
-| M13-10 | GET | `/api/cikgu/pbd/export.csv` | teacher, admin | UNCOVERED | missing |
-| M25-01 | GET | `/api/buku-nota/heatmap` | student, admin | UNCOVERED | missing |
+| M06-01 | GET | `/api/spm/overview` | any signed-in | BE-41 [pending card] | missing |
+| M06-02 | GET | `/api/spm/databank` | any signed-in | BE-41 [pending card] | missing |
+| M06-03 | GET | `/api/spm/latih-tubi` | any signed-in | BE-41 [pending card] | missing |
+| M06-04 | GET | `/api/spm/latih-tubi/:code` | any signed-in | BE-41 [pending card] | missing |
+| M06-05 | GET | `/api/spm/tracking-a` | any signed-in | BE-41 [pending card] | missing |
+| M06-06 | GET | `/api/spm/tracking-a/:code` | any signed-in | BE-41 [pending card] | missing |
+| M06-07 | GET | `/api/spm/subjektif` | any signed-in | BE-41 [pending card] | missing |
+| M06-08 | GET | `/api/spm-mocks` | any signed-in | BE-41 [pending card] | missing |
+| M06-09 | POST | `/api/spm-mocks` | any signed-in | BE-41 [pending card] | missing |
+| M06-10 | GET | `/api/spm-mocks/:id` | any signed-in | BE-41 [pending card] | missing |
+| M06-11 | POST | `/api/spm-mocks/:id/submit` | any signed-in | BE-41 [pending card] | missing |
+| M06-12 | GET | `/api/spm-mocks/:id/result` | any signed-in | BE-41 [pending card] | missing |
+| M06-13 | POST | `/api/spm-walkthrough/solve` | any signed-in | BE-41 [pending card] | missing |
+| M06-14 | GET | `/api/duta/recommendations` | any signed-in | BE-41 [pending card] | missing |
+| M07-01 | GET | `/api/pksk/me/access` | any signed-in | BE-42 [pending card] | missing |
+| M07-02 | GET | `/api/pksk-domains` | any signed-in | BE-42 [pending card] | missing |
+| M07-03 | GET | `/api/pksk/levels/:level/dashboard` | any signed-in + level gate | BE-42 [pending card] | missing |
+| M07-04 | GET | `/api/pksk/levels/:level/domains` | any signed-in + level gate | BE-42 [pending card] | missing |
+| M07-05 | GET | `/api/pksk/levels/:level/domains/:code` | any signed-in + level gate | BE-42 [pending card] | missing |
+| M07-06 | GET | `/api/pksk/levels/:level/exam-attempts` | any signed-in + level gate | BE-42 [pending card] | missing |
+| M07-07 | POST | `/api/pksk/levels/:level/domains/:code/practice-sessions` | any signed-in + level gate | BE-42 [pending card] | missing |
+| M07-08 | GET | `/api/pksk/levels/:level/exam` | any signed-in + level gate | BE-42 [pending card] | missing |
+| M07-09 | POST | `/api/pksk/levels/:level/exam-attempts` | any signed-in + level gate | BE-42 [pending card] | missing |
+| M07-10 | GET | `/api/admin/pksk-questions` | admin | BE-42 [pending card] | missing |
+| M07-11 | GET | `/api/admin/pksk-questions/stats` | admin | BE-42 [pending card] | missing |
+| M07-12 | POST | `/api/admin/pksk-questions/bulk` | admin | BE-42 [pending card] | missing |
+| M07-13 | GET | `/api/admin/pksk-questions/:id` | admin | BE-42 [pending card] | missing |
+| M07-14 | POST | `/api/admin/pksk-questions` | admin | BE-42 [pending card] | missing |
+| M07-15 | PUT | `/api/admin/pksk-questions/:id` | admin | BE-42 [pending card] | missing |
+| M07-16 | DELETE | `/api/admin/pksk-questions/:id` | admin | BE-42 [pending card] | missing |
+| M07-17 | GET | `/api/admin/pksk-access` | admin | BE-42 [pending card] | missing |
+| M07-18 | GET | `/api/admin/pksk-access/stats` | admin | BE-42 [pending card] | missing |
+| M07-19 | POST | `/api/admin/pksk-access` | admin | BE-42 [pending card] | missing |
+| M07-20 | POST | `/api/admin/pksk-access/:id/revoke` | admin | BE-42 [pending card] | missing |
+| M07-21 | GET | `/api/pksk-packages` | admin | BE-42 [pending card] | missing |
+| M13-01 | POST | `/api/cikgu/send` | any signed-in (guest: raw 401 {}) | BE-43 [pending card] | missing |
+| M13-02 | GET | `/api/cikgu/rph` | teacher, admin | BE-43 [pending card] | missing |
+| M13-03 | POST | `/api/cikgu/rph` | teacher, admin | BE-43 [pending card] | missing |
+| M13-04 | GET | `/api/cikgu/rph/:id` | teacher, admin | BE-43 [pending card] | missing |
+| M13-05 | GET | `/api/cikgu/essays` | teacher, admin | BE-43 [pending card] | missing |
+| M13-06 | GET | `/api/cikgu/essays/:id` | teacher, admin | BE-43 [pending card] | missing |
+| M13-07 | GET | `/api/cikgu/pbd` | teacher, admin | BE-43 [pending card] | missing |
+| M13-08 | POST | `/api/cikgu/pbd/rollup` | teacher, admin | BE-43 [pending card] | missing |
+| M13-09 | POST | `/api/cikgu/pbd/bulk-approve` | teacher, admin | BE-43 [pending card] | missing |
+| M13-10 | GET | `/api/cikgu/pbd/export.csv` | teacher, admin | BE-43 [pending card] | missing |
+| M25-01 | GET | `/api/buku-nota/heatmap` | student, admin | BE-48 [pending card] | missing |
 
 ### 3.2 Bijak SPM operations (16 methods, 0 routes) and their target endpoints
 
@@ -344,6 +344,7 @@ Module-wide facts (apply to every M04 endpoint unless a block says otherwise):
 - **Card:** BE-10 (card note: "resolving as wrong calls deactivate"; the mock does it only via the flags). **Contract:** missing.
 
 ### M04-13 `GET /api/question-submissions`
+> **D53 OWN-1: `question_submissions` is dropped; the teacher Submission is `intake_batches`, so this endpoint is served by BE-37/BE-38 or a BE-10 read over intake (pending card update).**
 
 - **Purpose:** teacher-uploaded question papers queue (S10). Admin only because it exposes teacher name, e-mail, school (SEC-M04-07).
 - **Auth:** `G-ADMIN`. Matrix BS-03 (Sumber Kertas) is the nearest entry.
@@ -353,9 +354,10 @@ Module-wide facts (apply to every M04 endpoint unless a block says otherwise):
 - **Errors:** `E-ADMIN`.
 - **Side effects:** none. (Creation of a submission is on the M10 side, not in M04.)
 - **Owner / code / client:** M04 / `submissions.ts:57` / `fetchQuestionSubmissions` (`api/submissions.ts:62`).
-- **Card:** BE-10. **Contract:** missing.
+- **Card:** BE-37/BE-38 [pending card update]. **Contract:** missing.
 
 ### M04-14 `PATCH /api/question-submissions/:id/status`
+> **D53 OWN-1: served by BE-37/BE-38 or a BE-10 read over intake (pending card update).**
 
 - **Purpose:** admin updates the status/note of a submitted paper.
 - **Auth:** `G-ADMIN`. **Params:** `id`.
@@ -364,9 +366,10 @@ Module-wide facts (apply to every M04 endpoint unless a block says otherwise):
 - **Errors:** `E-ADMIN`; 404 unknown id (checked first); 422 `fields.status` "Status tidak sah."; `fields.adminNotes` "Nota admin tidak boleh melebihi 1000 aksara.".
 - **Side effects:** update row.
 - **Owner / code / client:** M04 / `submissions.ts:64` / `updateSubmissionStatus` (`api/submissions.ts:72`).
-- **Card:** BE-10. **Contract:** missing.
+- **Card:** BE-37/BE-38 [pending card update]. **Contract:** missing.
 
 ### M04-15 `GET /api/question-submissions/:id/files/:index`
+> **D53 OWN-1: served by BE-37/BE-38 or a BE-10 read over intake (pending card update).**
 
 - **Purpose:** download one uploaded file of a submission.
 - **Auth:** `G-ADMIN`. **Params:** `id` digits, `index` digits (0-based position in `files`).
@@ -374,7 +377,7 @@ Module-wide facts (apply to every M04 endpoint unless a block says otherwise):
 - **Errors:** `E-ADMIN`; 404 unknown submission or index.
 - **Side effects:** none.
 - **Owner / code / client:** M04 / `submissions.ts:96` / `downloadSubmissionFile` (`api/submissions.ts:83`).
-- **Card:** BE-10. **Contract:** missing.
+- **Card:** BE-37/BE-38 [pending card update]. **Contract:** missing.
 
 ### M04-16 `POST /api/question-imports`
 
@@ -777,12 +780,14 @@ Module-wide facts:
 
 ## 6. M06 SPM classic (14 routes)
 
+> **D53(a) (owner decision 2026-10-19): M06 is in B1. Owner card BE-41 [pending card]. The /spm hub is not replaced by M28.**
+
 Mock source: `src/modules/m06-spm/mock/handlers/{spm,mocks,duta}.ts`; rules in `mock/repository/{spm,rules}.ts`, config in `mock/data/config.ts`. Client: `src/modules/m06-spm/api/spm.ts`, types `api/types.ts`. SRS: `docs/requirements/srs/M06-spm.md` (`#n` = SRS §7 numbers).
 
 Module-wide facts:
 
 - All routes use `requireAuth()` only ("Any session (A)"); the only role-dependent behaviour is `readiness` in M06-05 (admin only). Matrix: student menu "SPM" (Murid row 13); Admin Pusat items KS-01..KS-12 (Kertas & SPM group) are F for `admin` only.
-- None of these 14 routes has a backend card. `docs/plan/backend-tasks/README.md` "Wave 4+ backlog" lists "M06 SPM classic (databank, latih tubi, tracking, mocks) | 11 | Bijak SPM replaces most of it; confirm with the lead (OD-11)". The route count in the mock is 14, not 11 (OQ-API-B2-9). The practice start for the SPM modes (`past_year`, `latih_tubi`, `ramalan`) is covered by BE-12 (M05-01).
+- D53(a) (2026-10-19): these 14 routes are in B1 under BE-41 [pending card]. (Before D53 none had a backend card.) `docs/plan/backend-tasks/README.md` "Wave 4+ backlog" lists "M06 SPM classic (databank, latih tubi, tracking, mocks) | 11 | Bijak SPM replaces most of it; confirm with the lead (OD-11)". The route count in the mock is 14, not 11 (OQ-API-B2-9). The practice start for the SPM modes (`past_year`, `latih_tubi`, `ramalan`) is covered by BE-12 (M05-01).
 - Many hub figures are documented **display constants** (DV-M06-01): `HUB_TOTAL_QUESTIONS`, `HUB_POOL_CHIP` (`mock/constants/display.ts`). The backend must either compute them or keep them as configuration.
 - Ids: mock exam ids are numbers; subject `code`s are the M03 codes.
 
@@ -793,7 +798,7 @@ Module-wide facts:
 - **Response:** 200 `{ data: SpmOverview }` = `{ stats:{ totalQuestions (display constant), subjectCount (distinct active subjects at levels 10 and 11), yearsAvailable (always 0: questions carry no year), trackingAQuestions (sum of ready counts over all Tracking A sets) }, modules:{ databank (pool chip constant), latihTubi (same constant), trackingA, subjektifSets (visible structured sets across the Subjektif subjects) }, me:{ sessions, avgAccuracy, coins, answered } }`. `me` = M05 `historyPage` stats over the SPM modes `past_year, latih_tubi, ramalan` (see M05-04).
 - **Errors:** `E-AUTH`. **Side effects:** none.
 - **Owner / code / client:** M06 (reads M03, M04, M05) / `spm.ts:314` / `fetchSpmOverview` (`api/spm.ts:34`).
-- **Card:** **UNCOVERED** (backlog, OD-11). **Contract:** missing.
+- **Card:** BE-41 [pending card]. **Contract:** missing.
 
 ### M06-02 `GET /api/spm/databank`
 
@@ -802,7 +807,7 @@ Module-wide facts:
 - **Response:** 200 `{ data: DatabankSubject[] }` bare array in `data`: `{ code, name, nameEn, icon:string|null, color, databankCount }`; `databankCount` = size of the SPM pool of the subject (approved + active T4/T5 MCQs flagged `spmPool`).
 - **Errors:** `E-AUTH`. **Side effects:** none.
 - **Owner / code / client:** M06 / `spm.ts:315` / `fetchDatabank` (`api/spm.ts:38`).
-- **Card:** **UNCOVERED**. **Contract:** missing.
+- **Card:** BE-41 [pending card]. **Contract:** missing.
 
 ### M06-03 `GET /api/spm/latih-tubi`
 
@@ -811,7 +816,7 @@ Module-wide facts:
 - **Response:** 200 `{ data:{ teras: LatihTubiCard[], elektif: LatihTubiCard[] } }`; card `{ code, name, nameEn, icon, color, total (pool size), targetType:'spm'|'custom'|'latihan'|null, targetSize:number|null, locked:boolean (targetSize set and total < targetSize) }`; each group by `displayOrder`.
 - **Errors:** `E-AUTH`. **Side effects:** none.
 - **Owner / code / client:** M06 / `spm.ts:316` / `fetchLatihTubiList` (`api/spm.ts:42`).
-- **Card:** **UNCOVERED**. **Contract:** missing.
+- **Card:** BE-41 [pending card]. **Contract:** missing.
 
 ### M06-04 `GET /api/spm/latih-tubi/:code`
 
@@ -820,7 +825,7 @@ Module-wide facts:
 - **Response:** 200 `{ data: LatihTubiConfig }` = `{ code, name, icon, color, total, targetType, targetSize, levelCounts:{'10':n,'11':n}, difficultyStats:{'1'..'5':n}, difficultyByLevel:{'10':{...},'11':{...}}, countOptions:{value,label,isTarget}[], defaultCount }`. With a target: one option `{ value: target, label: '<target> (Target <label>)', isTarget:true }` and `defaultCount = target`; without: `[5,10,20,30,40,50,60]`-style options (`COUNT_OPTIONS`, `data/config.ts`) and `defaultCount 10`. `<label>` from `TARGET_TYPE_LABEL`.
 - **Errors:** `E-AUTH`; 404 `NOT_FOUND` "Not Found." (unknown code). **Side effects:** none.
 - **Owner / code / client:** M06 / `spm.ts:317` / `fetchLatihTubiConfig` (`api/spm.ts:46`).
-- **Card:** **UNCOVERED**. **Contract:** missing.
+- **Card:** BE-41 [pending card]. **Contract:** missing.
 
 ### M06-05 `GET /api/spm/tracking-a`
 
@@ -830,7 +835,7 @@ Module-wide facts:
   Set status rule (BR-M06-08, `repository/rules.ts:8`): `readyCount < size` -> `belum_cukup`; else `bankSource != null && bankSource > size` -> `bank_besar`; else `bersih`. Startable = not `belum_cukup`.
 - **Errors:** `E-AUTH`. **Side effects:** none.
 - **Owner / code / client:** M06 / `spm.ts:321` / `fetchTrackingAHub` (`api/spm.ts:50`).
-- **Card:** **UNCOVERED**. **Contract:** missing.
+- **Card:** BE-41 [pending card]. **Contract:** missing.
 
 ### M06-06 `GET /api/spm/tracking-a/:code`
 
@@ -839,7 +844,7 @@ Module-wide facts:
 - **Response:** 200 `{ data: TrackingASubject | { redirect:string } }`. Redirect (subject id 1 or 2): `{ redirect: '/latihan-berstruktur?subject_id=<1|2>&scope=spm&track=bahasa' }`. Otherwise `{ code, name, icon, color, targetType, targetSize, summary:{ bersih, bankBesar, readyQuestions (sum over ALL sets, unlike the S5 card), belumCukup }, sets:{ setNo, status:'bersih'|'bank_besar'|'belum_cukup', readyCount, bankSource:number|null, dskpTagged, dskpTotal }[] }` (startable sets first, then locked, each by set number).
 - **Errors:** `E-AUTH`; 404 unknown code. **Side effects:** none.
 - **Owner / code / client:** M06 / `spm.ts:322` / `fetchTrackingASubject` (`api/spm.ts:54`).
-- **Card:** **UNCOVERED**. **Contract:** missing.
+- **Card:** BE-41 [pending card]. **Contract:** missing.
 
 ### M06-07 `GET /api/spm/subjektif`
 
@@ -848,7 +853,7 @@ Module-wide facts:
 - **Response:** 200 `{ data: SubjektifOverview }` = `{ stats:{ setsAnswered (count of the caller's structured attempts with scope 'spm'), subjectsTried, bestScore:number|null (best attempt %, rounded), bestSetsSaved (distinct questions attempted) }, subjects:{ subjectId, name, nameEn, group:'teras'|'elektif', icon, color, sets (visible structured questions of the subject) }[] }` for the 15 Subjektif subject ids (same list as M05-16), teras first then by name (`ms` locale).
 - **Errors:** `E-AUTH`. **Side effects:** none.
 - **Owner / code / client:** M06 (reads M05 structured attempts, M04 structured) / `spm.ts:326` / `fetchSubjektif` (`api/spm.ts:61`).
-- **Card:** **UNCOVERED**. **Contract:** missing.
+- **Card:** BE-41 [pending card]. **Contract:** missing.
 
 ### M06-08 `GET /api/spm-mocks`
 
@@ -857,7 +862,7 @@ Module-wide facts:
 - **Response:** 200 `{ data: MockListItem[] }` (not enveloped with meta): `{ id, subject:string, paperNumber:1|2, status:'in_progress'|'submitted', createdAt, score:number|null, maxScore, percent:number|null, grade:'A+'|'A'|'B+'|'B'|'C'|'D'|'E'|'G'|null }`.
 - **Errors:** `E-AUTH`. **Side effects:** none.
 - **Owner / code / client:** M06 / `mocks.ts:99` / `fetchMocks` (`api/spm.ts:65`).
-- **Card:** **UNCOVERED**. **Contract:** missing.
+- **Card:** BE-41 [pending card]. **Contract:** missing.
 
 ### M06-09 `POST /api/spm-mocks`
 
@@ -868,7 +873,7 @@ Module-wide facts:
 - **Errors:** `E-AUTH`; 422 `fields.subject` "Sila pilih subjek."; 422 `fields.paperNumber` "Paper mesti 1 atau 2.".
 - **Side effects:** insert mock row. Paper 1: 30 objective items sampled (seeded stream `m06.mock`) from the SPM pool of the subject (1 mark each); Paper 2: 6 structured items of 10 marks drawn from visible structured questions of the subject (shuffled). `maxScore` = sum of item marks. Answers/keys are stored on the items only; **no M05 session, answer, queue, mastery or wallet write** (§6.5).
 - **Owner / code / client:** M06 / `mocks.ts:101` / `createMock` (`api/spm.ts:69`).
-- **Card:** **UNCOVERED**. **Contract:** missing.
+- **Card:** BE-41 [pending card]. **Contract:** missing.
 
 ### M06-10 `GET /api/spm-mocks/:id`
 
@@ -877,7 +882,7 @@ Module-wide facts:
 - **Response:** 200 `{ data: MockExamView }` = `{ id, subject, paperNumber, status, createdAt, items:{ no, text, options?:string[], maxMarks }[] }`.
 - **Errors:** `E-AUTH`; 404 `NOT_FOUND` "Not Found." (unknown id or someone else's mock, BR-M06-26). **Side effects:** none.
 - **Owner / code / client:** M06 / `mocks.ts:119` / `fetchMock` (`api/spm.ts:73`).
-- **Card:** **UNCOVERED**. **Contract:** missing.
+- **Card:** BE-41 [pending card]. **Contract:** missing.
 
 ### M06-11 `POST /api/spm-mocks/:id/submit`
 
@@ -888,7 +893,7 @@ Module-wide facts:
 - **Errors:** `E-AUTH`; 404 not owner/unknown; 409 `CONFLICT` "Mock ini sudah dihantar."; 422 `fields.answers` "Jawapan tidak sah.".
 - **Side effects:** mock row -> `submitted` with items graded, `score`, `percent`, `grade`, `submittedAt`. No other store written.
 - **Owner / code / client:** M06 / `mocks.ts:131` / `submitMock` (`api/spm.ts:77`).
-- **Card:** **UNCOVERED**. **Contract:** missing.
+- **Card:** BE-41 [pending card]. **Contract:** missing.
 
 ### M06-12 `GET /api/spm-mocks/:id/result`
 
@@ -897,7 +902,7 @@ Module-wide facts:
 - **Response:** 200 `{ data: MockResult }` (as M06-11).
 - **Errors:** `E-AUTH`; 404 not owner/unknown; 409 code `NOT_SUBMITTED` message "Mock belum dihantar.". **Side effects:** none.
 - **Owner / code / client:** M06 / `mocks.ts:146` / `fetchMockResult` (`api/spm.ts:81`).
-- **Card:** **UNCOVERED**. **Contract:** missing.
+- **Card:** BE-41 [pending card]. **Contract:** missing.
 
 ### M06-13 `POST /api/spm-walkthrough/solve`
 
@@ -908,7 +913,7 @@ Module-wide facts:
 - **Errors:** `E-AUTH`; 422 `fields.subject` "Sila pilih subjek." when the subject is not in the list.
 - **Side effects:** none.
 - **Owner / code / client:** M06 / `mocks.ts:160` / `solveWalkthrough` (`api/spm.ts:85`).
-- **Card:** **UNCOVERED** (external AI out of B1: OD-7). **Contract:** missing.
+- **Card:** BE-41 [pending card]. **Contract:** missing.
 
 ### M06-14 `GET /api/duta/recommendations`
 
@@ -918,9 +923,11 @@ Module-wide facts:
 - **Response:** 200 `{ data: DutaCard | null }`; `DutaCard` = `{ slug, name, initials, tier:'bintang'|'inspirasi'|'tetamu', tagline, subject, state, rating:number, active:boolean }`. Only active `bintang` ambassadors are picked; `null` when none. The seed ambassadors are fictitious (`mock/data/config.ts` `DUTA_SEED`; do not copy them into docs or seeds).
 - **Errors:** `E-AUTH`. **Side effects:** none.
 - **Owner / code / client:** M24 (not built) hosted by M06 / `duta.ts:20` / `fetchDutaRecommendation` (`api/spm.ts:89`).
-- **Card:** **UNCOVERED**. **Contract:** missing.
+- **Card:** BE-41 [pending card]. **Contract:** missing.
 
 ## 7. M07 PKSK (21 routes)
+
+> **D53(a): M07 PKSK is in B1. Owner card BE-42 [pending card].**
 
 Mock source: `src/modules/m07-pksk/mock/handlers/{student,admin-questions,admin-access}.ts` (helpers `common.ts`; rules `mock/repository/rules.ts`; data `mock/data/domains.ts`). Client: `src/modules/m07-pksk/api/{pksk,admin,types}.ts`. SRS: `docs/requirements/srs/M07-pksk.md` (`#n` = SRS §7).
 
@@ -939,7 +946,7 @@ Module-wide facts:
 - **Response:** 200 `{ data:{ T1:boolean, T4:boolean } }`.
 - **Errors:** `E-AUTH`. **Side effects:** none.
 - **Owner / code / client:** M07 / `student.ts:83` / `fetchPkskAccess` (`api/pksk.ts:31`).
-- **Card:** **UNCOVERED**. **Contract:** missing.
+- **Card:** BE-42 [pending card]. **Contract:** missing.
 
 ### M07-02 `GET /api/pksk-domains`
 
@@ -948,7 +955,7 @@ Module-wide facts:
 - **Response:** 200 `{ data: PkskDomain[] }` = `{ id, bahagian:'A'|'B'|'C', name, nameEn, code, icon, color, order, isActive, createdAt, updatedAt }[]` (no `meta`).
 - **Errors:** `E-AUTH`. **Side effects:** none.
 - **Owner / code / client:** M07 / `student.ts:87` / `fetchPkskDomains` (`api/pksk.ts:36`).
-- **Card:** **UNCOVERED**. **Contract:** missing.
+- **Card:** BE-42 [pending card]. **Contract:** missing.
 
 ### M07-03 `GET /api/pksk/levels/:level/dashboard`
 
@@ -957,7 +964,7 @@ Module-wide facts:
 - **Response:** 200 `{ data:{ level, readiness:{ scorePct: round(mean of the caller's exam attempt scorePct), grade }, examCount, bahagianBAvgPct (1 dp, mean of attempts' B%), domains: { id, code, name, icon, color, masteryPct }[] (Bahagian B domains only) } }`. Mean of no attempts is 0.
 - **Errors:** `E-AUTH`; 404 `NOT_FOUND` "Not Found." (bad level); 403 `FORBIDDEN` "This action is unauthorized." (no access). **Side effects:** none.
 - **Owner / code / client:** M07 / `student.ts:89` / `fetchPkskDashboard` (`api/pksk.ts:41`).
-- **Card:** **UNCOVERED**. **Contract:** missing.
+- **Card:** BE-42 [pending card]. **Contract:** missing.
 
 ### M07-04 `GET /api/pksk/levels/:level/domains`
 
@@ -966,7 +973,7 @@ Module-wide facts:
 - **Response:** 200 `{ data: PkskDomainSection[] }` for `A`, `B`, `C` in that order: `{ bahagian, name, subtitle, domains:{ id, code, name, icon, color, questionCount (approved questions of the domain at this level), masteryPct }[] }`. Section names above; subtitles "Nilai, akhlak & sahsiah", "Kognitif & penaakulan", "Penulisan kreatif".
 - **Errors:** as M07-03. **Side effects:** none.
 - **Owner / code / client:** M07 / `student.ts:107` / `fetchPkskDomainSections` (`api/pksk.ts:46`).
-- **Card:** **UNCOVERED**. **Contract:** missing.
+- **Card:** BE-42 [pending card]. **Contract:** missing.
 
 ### M07-05 `GET /api/pksk/levels/:level/domains/:code`
 
@@ -976,7 +983,7 @@ Module-wide facts:
 - **Errors:** as M07-03; 404 unknown domain. 
 - **Side effects:** records a "practice loaded" timestamp per user+level+domain (`markLoaded`) used as the session `startedAt` on submit.
 - **Owner / code / client:** M07 / `student.ts:128` / `fetchPkskPractice` (`api/pksk.ts:54`).
-- **Card:** **UNCOVERED**. **Contract:** missing.
+- **Card:** BE-42 [pending card]. **Contract:** missing.
 
 ### M07-06 `GET /api/pksk/levels/:level/exam-attempts`
 
@@ -985,7 +992,7 @@ Module-wide facts:
 - **Response:** 200 `{ data: { id, completedAt, scorePct, grade }[] }`.
 - **Errors:** as M07-03. **Side effects:** none.
 - **Owner / code / client:** M07 / `student.ts:143` / `fetchPkskExamAttempts` (`api/pksk.ts:66`).
-- **Card:** **UNCOVERED**. **Contract:** missing.
+- **Card:** BE-42 [pending card]. **Contract:** missing.
 
 ### M07-07 `POST /api/pksk/levels/:level/domains/:code/practice-sessions`
 
@@ -996,7 +1003,7 @@ Module-wide facts:
 - **Errors:** as M07-03; 404 unknown domain; 422 `VALIDATION_ERROR` message "Jawapan tidak sah." with `fields.answers` (empty/duplicate/mistyped list, or any question that is not an approved PKSK question of this domain and level).
 - **Side effects:** (1) `practice.completeSession` direct form (BR-34): completed session `mode='pksk'` with `pkskDomainId`, `pkskTargetLevel`, one answer row per answer (no subject/level/chapter dimensions), `coinsEarned = correct`, `pointsEarned = 10*correct`, `timeSpent` from the loaded timestamp; (2) M14 `onSessionCompleted` credit (wallet, streak, challenges, achievements); (3) per-user domain mastery stored (`setMastery`). Scoring (`handlers/common.ts:100`): A/B question correct iff the chosen option is flagged `isCorrect`; a Bahagian C / essay question is correct iff the trimmed text has >= 50 characters (simulated marker).
 - **Owner / code / client:** M07 (writes M05, M14) / `student.ts:156` / `submitPkskPractice` (`api/pksk.ts:74`).
-- **Card:** **UNCOVERED**. **Contract:** missing.
+- **Card:** BE-42 [pending card]. **Contract:** missing.
 
 ### M07-08 `GET /api/pksk/levels/:level/exam`
 
@@ -1005,7 +1012,7 @@ Module-wide facts:
 - **Response:** 200 `{ data:{ sections:{ bahagian:'A'|'B'|'C', weightPct:20|70|10, questions:{ id, questionText, options:{text}[] }[] }[] } }`, shuffled with `m07:exam:<userId>`.
 - **Errors:** as M07-03. **Side effects:** none (the exam composition is not stored; the submit step revalidates).
 - **Owner / code / client:** M07 / `student.ts:204` / `fetchPkskExam` (`api/pksk.ts:86`).
-- **Card:** **UNCOVERED**. **Contract:** missing.
+- **Card:** BE-42 [pending card]. **Contract:** missing.
 
 ### M07-09 `POST /api/pksk/levels/:level/exam-attempts`
 
@@ -1016,7 +1023,7 @@ Module-wide facts:
 - **Errors:** as M07-03; 422 "Jawapan tidak sah." (`fields.answers`) for an invalid list, an unknown/unapproved/other-level question, or more answers in a Bahagian than the composition allows.
 - **Side effects:** insert exam attempt (`scorePct`, `bahagianAPct`, `bahagianBPct`, `bahagianCPct`, `completedAt`). No M05 session, wallet or streak change.
 - **Owner / code / client:** M07 / `student.ts:222` / `submitPkskExam` (`api/pksk.ts:91`).
-- **Card:** **UNCOVERED**. **Contract:** missing.
+- **Card:** BE-42 [pending card]. **Contract:** missing.
 
 ### M07-10 `GET /api/admin/pksk-questions`
 
@@ -1026,7 +1033,7 @@ Module-wide facts:
 - **Response:** 200 `{ data: PkskQuestionListItem[], meta: ListMeta }`; item `{ id, questionText, bahagian, domain:{id,code,name,icon,color}, targetLevel:'T1'|'T4', status }`.
 - **Errors:** `E-ADMIN`. **Side effects:** none.
 - **Owner / code / client:** M07 over M04 store / `admin-questions.ts:230` / `fetchPkskQuestions` (`api/admin.ts:133`).
-- **Card:** **UNCOVERED**. **Contract:** missing.
+- **Card:** BE-42 [pending card]. **Contract:** missing.
 
 ### M07-11 `GET /api/admin/pksk-questions/stats`
 
@@ -1035,7 +1042,7 @@ Module-wide facts:
 - **Response:** 200 `{ data:{ total, approved, pending, t1, t4 } }` over all PKSK questions.
 - **Errors:** `E-ADMIN`. **Side effects:** none.
 - **Owner / code / client:** M07 / `admin-questions.ts:258` / `fetchPkskQuestionStats` (`api/admin.ts:150`).
-- **Card:** **UNCOVERED**. **Contract:** missing.
+- **Card:** BE-42 [pending card]. **Contract:** missing.
 
 ### M07-12 `POST /api/admin/pksk-questions/bulk`
 
@@ -1046,7 +1053,7 @@ Module-wide facts:
 - **Errors:** `E-ADMIN`; 422 `fields.action` "Tindakan tidak sah."; `fields.ids` "Sila pilih sekurang-kurangnya satu soalan PKSK." (also for any non-PKSK/unknown id).
 - **Side effects:** status updates (`approved`/`rejected`) or hard deletes.
 - **Owner / code / client:** M07 / `admin-questions.ts:270` / `bulkPkskQuestions` (`api/admin.ts:183`).
-- **Card:** **UNCOVERED**. **Contract:** missing.
+- **Card:** BE-42 [pending card]. **Contract:** missing.
 
 ### M07-13 `GET /api/admin/pksk-questions/:id`
 
@@ -1055,7 +1062,7 @@ Module-wide facts:
 - **Response:** 200 `{ data: PkskQuestionDetail }` = `{ id, bahagian, pkskDomainId, pkskTargetLevel, status, questionText, difficultyLevel:number|null, explanation:string|null, options:{text,isCorrect}[] }`.
 - **Errors:** `E-ADMIN`; 404 `NOT_FOUND` "Soalan PKSK tidak dijumpai.". **Side effects:** none.
 - **Owner / code / client:** M07 / `admin-questions.ts:298` / `fetchPkskQuestion` (`api/admin.ts:155`).
-- **Card:** **UNCOVERED**. **Contract:** missing.
+- **Card:** BE-42 [pending card]. **Contract:** missing.
 
 ### M07-14 `POST /api/admin/pksk-questions`
 
@@ -1066,7 +1073,7 @@ Module-wide facts:
 - **Errors:** `E-ADMIN`; 422 `fields`: `bahagian` "Sila pilih bahagian.", `pkskDomainId` "Sila pilih domain.", `pkskTargetLevel` "Sila pilih tingkatan.", `questionText` "Sila masukkan teks soalan.", `difficultyLevel` "Tahap kesukaran tidak sah.", `options` "Sila masukkan 2 hingga 6 pilihan jawapan." / "Sila masukkan teks pilihan jawapan.".
 - **Side effects:** insert an M04 question row with the PKSK facets.
 - **Owner / code / client:** M07 / `admin-questions.ts:310` / `createPkskQuestion` (`api/admin.ts:160`).
-- **Card:** **UNCOVERED**. **Contract:** missing.
+- **Card:** BE-42 [pending card]. **Contract:** missing.
 
 ### M07-15 `PUT /api/admin/pksk-questions/:id`
 
@@ -1077,7 +1084,7 @@ Module-wide facts:
 - **Errors:** `E-ADMIN`; 404 "Soalan PKSK tidak dijumpai."; 422 as M07-14 plus `fields.status` "Sila pilih status.".
 - **Side effects:** update row.
 - **Owner / code / client:** M07 / `admin-questions.ts:318` / `updatePkskQuestion` (`api/admin.ts:167`).
-- **Card:** **UNCOVERED**. **Contract:** missing.
+- **Card:** BE-42 [pending card]. **Contract:** missing.
 
 ### M07-16 `DELETE /api/admin/pksk-questions/:id`
 
@@ -1086,7 +1093,7 @@ Module-wide facts:
 - **Response:** 204 no body (client `api.delete`).
 - **Errors:** `E-ADMIN`; 404 "Soalan PKSK tidak dijumpai.". **Side effects:** hard delete.
 - **Owner / code / client:** M07 / `admin-questions.ts:336` / `deletePkskQuestion` (`api/admin.ts:178`).
-- **Card:** **UNCOVERED**. **Contract:** missing.
+- **Card:** BE-42 [pending card]. **Contract:** missing.
 
 ### M07-17 `GET /api/admin/pksk-access`
 
@@ -1096,7 +1103,7 @@ Module-wide facts:
 - **Response:** 200 `{ data: PkskAccessItem[], meta: ListMeta }`; item `{ id, user:{id,name,email}, package:{id,name,level:'T1'|'T4'|'ALL'}, grantedBy:{id,name}|null, grantedAt, expiresAt:'YYYY-MM-DD'|null, status:'active'|'revoked', displayStatus:'active'|'expired'|'revoked' }`. Display status: revoked, else expired when `expiresAt` is before today (MYT date), else active.
 - **Errors:** `E-ADMIN`. **Side effects:** none.
 - **Owner / code / client:** M07 / `admin-access.ts:60` / `fetchPkskAccessList` (`api/admin.ts:194`).
-- **Card:** **UNCOVERED**. **Contract:** missing.
+- **Card:** BE-42 [pending card]. **Contract:** missing.
 
 ### M07-18 `GET /api/admin/pksk-access/stats`
 
@@ -1105,7 +1112,7 @@ Module-wide facts:
 - **Response:** 200 `{ data:{ activeTotal, t1, t4 } }`; only active (not revoked, not expired) rows; a package `ALL` counts in both `t1` and `t4`.
 - **Errors:** `E-ADMIN`. **Side effects:** none.
 - **Owner / code / client:** M07 / `admin-access.ts:70` / `fetchPkskAccessStats` (`api/admin.ts:208`).
-- **Card:** **UNCOVERED**. **Contract:** missing.
+- **Card:** BE-42 [pending card]. **Contract:** missing.
 
 ### M07-19 `POST /api/admin/pksk-access`
 
@@ -1116,7 +1123,7 @@ Module-wide facts:
 - **Errors:** `E-ADMIN`; 422 `fields.userId` "Pengguna tidak dijumpai."; `fields.packageId` "Sila pilih pakej."; `fields.expiresAt` "Tarikh tamat tidak sah.".
 - **Side effects:** insert grant `status='active'`, `grantedBy` = admin, `grantedAt` = now. Student endpoints see it immediately (BR-M07-07).
 - **Owner / code / client:** M07 / `admin-access.ts:75` / `grantPkskAccess` (`api/admin.ts:213`).
-- **Card:** **UNCOVERED**. **Contract:** missing.
+- **Card:** BE-42 [pending card]. **Contract:** missing.
 
 ### M07-20 `POST /api/admin/pksk-access/:id/revoke`
 
@@ -1126,7 +1133,7 @@ Module-wide facts:
 - **Errors:** `E-ADMIN`; 404 `NOT_FOUND` "Rekod akses tidak dijumpai."; 409 `CONFLICT` "Akses ini tidak aktif dan tidak boleh ditarik balik." (already revoked or expired).
 - **Side effects:** `status='revoked'`, `revokedAt` = now.
 - **Owner / code / client:** M07 / `admin-access.ts:111` / `revokePkskAccess` (`api/admin.ts:220`).
-- **Card:** **UNCOVERED**. **Contract:** missing.
+- **Card:** BE-42 [pending card]. **Contract:** missing.
 
 ### M07-21 `GET /api/pksk-packages`
 
@@ -1135,9 +1142,11 @@ Module-wide facts:
 - **Response:** 200 `{ data: { id, name, level:'T1'|'T4'|'ALL' }[] }`.
 - **Errors:** `E-ADMIN`. **Side effects:** none.
 - **Owner / code / client:** M19 (hosted by M07) / `admin-access.ts:127` / `fetchPkskPackages` (`api/admin.ts:227`).
-- **Card:** **UNCOVERED** (BE-25 covers school packages, not these). **Contract:** missing.
+- **Card:** BE-42 [pending card]. **Contract:** missing.
 
 ## 8. M13 Cikgu Alesa (10 routes)
+
+> **D53(a): M13 Cikgu Alesa is in B1. Owner card BE-43 [pending card]; the backend calls the AI through the BE-36 adapter.**
 
 Mock source: `src/modules/m13-cikgu-alesa/mock/handlers/index.ts`; repository `mock/repository/{cikgu,canned}.ts`. Client: `src/modules/m13-cikgu-alesa/api/{cikgu,types,settings}.ts`. SRS: `docs/requirements/srs/M13-cikgu-alesa.md` (`#n` = SRS §7).
 
@@ -1159,7 +1168,7 @@ Module-wide facts:
 - **Errors (raw bodies):** 422 `{}` for a missing/blank message; 429 `{ quota_exhausted:true }` when the day's turns are used up; 401 `{}`.
 - **Side effects:** upserts `chat_threads` (`updatedAt`), inserts a `chat_messages` row for the user message and one for the bot reply (`tool`, `toolHops`, tokens); for `mark_essay` inserts an `essay_markings` row (rubric, subject, level, student, title, essay text, canned marks, comment); for a parsed RPH request inserts an `rphs` row. Mock waits `m13.aiLatencyMs` (default 1500 ms). A real provider call is out of B1.
 - **Owner / code / client:** M13 / `handlers/index.ts:59` / `sendChat` (`api/cikgu.ts:41`).
-- **Card:** **UNCOVERED** (OD-7). **Contract:** missing.
+- **Card:** BE-43 [pending card]. **Contract:** missing.
 
 ### M13-02 `GET /api/cikgu/rph`
 
@@ -1169,7 +1178,7 @@ Module-wide facts:
 - **Response:** 200 `{ data: RphListItem[], meta: ListMeta }`; item `{ id, lessonDate:'YYYY-MM-DD', subjectName, level:'D1'..'D6'|'T1'..'T5', tajuk, status:'generated' }`. Sort `lessonDate desc, id desc`; own rows only.
 - **Errors:** 401, 403 `FORBIDDEN` "This action is unauthorized.". **Side effects:** none.
 - **Owner / code / client:** M13 / `handlers/index.ts:73` / `fetchRphList` (`api/cikgu.ts:55`).
-- **Card:** **UNCOVERED**. **Contract:** missing.
+- **Card:** BE-43 [pending card]. **Contract:** missing.
 
 ### M13-03 `POST /api/cikgu/rph`
 
@@ -1180,7 +1189,7 @@ Module-wide facts:
 - **Errors:** 422 `VALIDATION_ERROR` with `fields`: "Medan ini diperlukan." (required), "Medan ini tidak sah." (level not in list), "Medan ini tidak boleh melebihi <n> aksara." (max length), `durationMinutes` "Tempoh mesti antara 15 dan 240 minit.", `lessonDate` "Tarikh tidak sah." (`repository/cikgu.ts` `VALIDATION_MSG`). Plus 401/403.
 - **Side effects:** insert `rphs` (`source='form'`, `threadId=null`). Waits the AI latency. Content is canned in the mock; a real generator is out of B1.
 - **Owner / code / client:** M13 / `handlers/index.ts:88` / `createRph` (`api/cikgu.ts:60`).
-- **Card:** **UNCOVERED**. **Contract:** missing.
+- **Card:** BE-43 [pending card]. **Contract:** missing.
 
 ### M13-04 `GET /api/cikgu/rph/:id`
 
@@ -1189,7 +1198,7 @@ Module-wide facts:
 - **Response:** 200 `{ data: Rph }` (as M13-03).
 - **Errors:** 401/403; 404 `NOT_FOUND` "Not Found." (unknown or someone else's). **Side effects:** none.
 - **Owner / code / client:** M13 / `handlers/index.ts:97` / `fetchRph` (`api/cikgu.ts:65`).
-- **Card:** **UNCOVERED**. **Contract:** missing.
+- **Card:** BE-43 [pending card]. **Contract:** missing.
 
 ### M13-05 `GET /api/cikgu/essays`
 
@@ -1198,7 +1207,7 @@ Module-wide facts:
 - **Response:** 200 `{ data: EssayListItem[], meta: ListMeta }`; item `{ id, studentName:string|null, subjectName:string|null, rubricKey, essayTitle:string|null, marks, maxMarks, createdAt }`; newest first; own rows. `rubricKey` in `spm_bm_karangan` (50), `spm_bi_continuous_writing` (50), `pt3_bm_karangan` (30), `pt3_bi_essay` (30), `sejarah_essay` (20), `general` (100).
 - **Errors:** 401/403. **Side effects:** none.
 - **Owner / code / client:** M13 / `handlers/index.ts:109` / `fetchEssayList` (`api/cikgu.ts:70`).
-- **Card:** **UNCOVERED**. **Contract:** missing.
+- **Card:** BE-43 [pending card]. **Contract:** missing.
 
 ### M13-06 `GET /api/cikgu/essays/:id`
 
@@ -1207,7 +1216,7 @@ Module-wide facts:
 - **Response:** 200 `{ data: EssayMarking }` = `{ id, userId, rubricKey, subjectName, level, studentName, essayTitle, essayText, marks, maxMarks, comment, threadId:string, createdAt }`.
 - **Errors:** 401/403; 404. **Side effects:** none.
 - **Owner / code / client:** M13 / `handlers/index.ts:126` / `fetchEssay` (`api/cikgu.ts:75`).
-- **Card:** **UNCOVERED**. **Contract:** missing.
+- **Card:** BE-43 [pending card]. **Contract:** missing.
 
 ### M13-07 `GET /api/cikgu/pbd`
 
@@ -1216,7 +1225,7 @@ Module-wide facts:
 - **Response:** 200 `{ data: PbdQueueItem[], meta: ListMeta }`; item `{ id, studentId, studentName, classroomId, sp:string, skor:number, tp:1..6 }`. Only `pending` tags of the caller; sort `createdAt desc`, then student name (`ms` collation), then id.
 - **Errors:** 401/403. **Side effects:** none.
 - **Owner / code / client:** M13 / `handlers/index.ts:138` / `fetchPbdQueue` (`api/cikgu.ts:80`).
-- **Card:** **UNCOVERED**. **Contract:** missing.
+- **Card:** BE-43 [pending card]. **Contract:** missing.
 
 ### M13-08 `POST /api/cikgu/pbd/rollup`
 
@@ -1227,7 +1236,7 @@ Module-wide facts:
 - **Side effects:** for each class member with answers in the class subject: `skor = round(correct/answered*1000)/10`, `tp` = `<20:1, <40:2, <60:3, <75:4, <90:5, else 6`, SP label from the subject (`Kimia` 5.1.1, `Sejarah` 1.1.1, default 1.1.1). An existing **pending** tag for (teacher, class, student, sp) is updated (`updated`); if only approved/other tags exist it is `skipped`; else a new `pending` tag is inserted (`created`).
 - **Errors:** 401/403. 
 - **Owner / code / client:** M13 (reads M05 answers, M10 classes) / `handlers/index.ts:154` / `rollupPbd` (`api/cikgu.ts:85`).
-- **Card:** **UNCOVERED**. **Contract:** missing.
+- **Card:** BE-43 [pending card]. **Contract:** missing.
 
 ### M13-09 `POST /api/cikgu/pbd/bulk-approve`
 
@@ -1238,7 +1247,7 @@ Module-wide facts:
 - **Side effects:** tag `status='approved'`, `approvedAt` = now.
 - **Errors:** 401/403.
 - **Owner / code / client:** M13 / `handlers/index.ts:167` / `bulkApprovePbd` (`api/cikgu.ts:93`).
-- **Card:** **UNCOVERED**. **Contract:** missing.
+- **Card:** BE-43 [pending card]. **Contract:** missing.
 
 ### M13-10 `GET /api/cikgu/pbd/export.csv`
 
@@ -1247,9 +1256,11 @@ Module-wide facts:
 - **Response:** 200 `text/csv; charset=utf-8`, `Content-Disposition: attachment; filename="pbd-approved.csv"`. Header line `pelajar,kelas,sp,skor,tp,tarikh_lulus`; one row per approved tag ordered by approval time, then student name, then id; `skor` with 1 decimal, `tarikh_lulus` = `YYYY-MM-DD`; cells starting with `=`, `+`, `@`, `-` are prefixed with `'` (CSV injection guard) and quoted when they contain `"`, comma or newline. File ends with a newline.
 - **Errors:** 401/403. **Side effects:** none.
 - **Owner / code / client:** M13 / `handlers/index.ts:179` / `downloadPbdCsv` (`api/cikgu.ts:104`).
-- **Card:** **UNCOVERED**. **Contract:** missing.
+- **Card:** BE-43 [pending card]. **Contract:** missing.
 
 ## 9. M25 AI Centre (1 route)
+
+> **D53(a): M25 (= Heatmap Topik Lemah) is in B1. Owner card BE-48 [pending card].**
 
 Mock source: `src/modules/m25-ai-centre/mock/handlers/index.ts`; repository `mock/repository/heatmap.ts`; client `src/modules/m25-ai-centre/api/{heatmap,settings,types}.ts`. SRS: `docs/requirements/srs/M25-ai-centre.md`.
 
@@ -1264,7 +1275,7 @@ Mock source: `src/modules/m25-ai-centre/mock/handlers/index.ts`; repository `moc
 - **Errors:** `E-AUTH`; 403 `FORBIDDEN` "This action is unauthorized." for other roles.
 - **Side effects:** none.
 - **Owner / code / client:** M25 (reads M05, M03) / `handlers/index.ts:15` / `getHeatmap` (`api/heatmap.ts`, first export).
-- **Card:** **UNCOVERED** (README backlog; BE-13 covers other M05 reads but not this path). **Contract:** missing.
+- **Card:** BE-48 [pending card]. **Contract:** missing.
 
 ## 10. M28 Bijak SPM (0 HTTP routes; 16 public methods of class `BijakServer`)
 
@@ -1523,14 +1534,7 @@ Builds batch `ek-demo-1` (subject MAT, kertas 2, year 2025, paper type "Percubaa
 
 ## 12. Uncovered endpoints
 
-No backend card defines these routes (re-checked against the audited cards, commit 63d363c, and the catalogue additions to them). 46 of the 99 HTTP routes are uncovered, all of them whole-module backlog items; the 6 gaps inside covered areas that this part listed before the audit (M04-14, M04-15, M04-23, M04-25, M04-27, M05-23) are now in the card tables: M04-14, M04-15, M04-23 and M04-25 in BE-10, M04-27 in BE-09. M05-23 `GET /api/remedial-tests/:id` moved with M05-21 and M05-22 from BE-13 to BE-18 (BE-13 now says these three are not in its card).
-
-**Uncovered because the whole module is a Wave 4+ backlog item (README "Wave 4+ backlog"):**
-
-- M06 SPM classic, 14 routes: M06-01 to M06-14 (`/api/spm/*`, `/api/spm-mocks*`, `/api/spm-walkthrough/solve`, `/api/duta/recommendations`). Decision OD-11 (Bijak SPM replaces most of it) is open.
-- M07 PKSK, 21 routes: M07-01 to M07-21 (`/api/pksk/*`, `/api/pksk-domains`, `/api/pksk-packages`, `/api/admin/pksk-*`). Direction in v2: PKSK becomes tags on the one bank (`v2-question-bank` A6).
-- M13 Cikgu Alesa, 10 routes: M13-01 to M13-10 (`/api/cikgu/*`). External AI is out of B1 (OD-7).
-- M25 AI Centre, 1 route: M25-01 `GET /api/buku-nota/heatmap`.
+None of the 99 HTTP routes is uncovered after D53(a) (owner decision 2026-10-19): M06 (14, BE-41), M07 (21, BE-42), M13 (10, BE-43, AI through the BE-36 adapter) and M25 (1, BE-48) are in B1 with new cards marked [pending card]; the earlier 6 gaps inside covered areas are in the card tables (BE-09/BE-10; M05-21..23 in BE-18). D53 OWN-1 drops `question_submissions`: M04-13/14/15 are served by BE-37/BE-38 or a BE-10 read over intake ([pending card update]).
 
 **Bijak SPM and intake (not HTTP routes in the mock):**
 
@@ -1553,9 +1557,9 @@ Each question names the owner who should answer. IDs are stable.
 | OQ-API-B2-6 | M05 routes are `requireAuth()` only (any role, including parent/sponsor/teacher); the matrix gives practice to Murid, and teachers use only S4 chapter lists and previews. Should the backend add role guards (student for session endpoints, teacher/admin for remedial preview) or keep "any session"? Also the 402 trial rule: `TrialStatus.limit` is the constant 50 (provisional M19 rule); confirm for BE-12 + BE-25 (`isSubscribed`). | section 5 | BE-12 and BE-25 owners |
 | OQ-API-B2-7 | Card BE-12/BE-13 and the mock differ: check-answer body `{questionId, optionId}` (card) vs `{questionId, selectedOptionId}` (mock/client); `clientUuid` idempotency and the `409` on a second submit (card; the mock has the 409 `ALREADY_SUBMITTED` but no `clientUuid`); structured attempt path `/api/practice/structured/:id/attempt` (card) vs `/attempts` (mock/client); submit response `{ results:{ score, total, gamification } }` (mock). The card says "keep the mock's path strings"; confirm these four. | M05-01 to M05-03, M05-18 | BE-12 and BE-13 owner |
 | OQ-API-B2-8 | `GET /api/spm-targets` returns progress (`answered`, `accuracyPct`, `band`, `predictedGrade`) only when a **test fixture** (`mock.setSpmProgress`) set it; the live source is UNVERIFIED (BR-27). In the real backend what feeds it: the answer log by subject (M05), and with which accuracy window? Grade floors are INFERRED. | M05-19 | Lead (product) |
-| OQ-API-B2-9 | Route counts differ from the plan: M04 30 vs 25, M05 23 vs 20, M06 14 vs 11, M07 21 vs 16, M13 10 vs 8. Update plan section 6.3 and the README backlog. For M06: confirm OD-11 (is M06 retired in favour of Bijak SPM?) and how the hub constants `HUB_TOTAL_QUESTIONS`, `HUB_POOL_CHIP` and `TRACKING_YEAR = 2026` are produced. | section 1, 6 | Lead |
-| OQ-API-B2-10 | PKSK in v2 becomes tags on the single bank (A6), yet the 21 M07 routes use their own admin question CRUD and an M05 session of mode `pksk`. Keep these routes (served by BE-09 data with PKSK tags) or redesign? Also the PKSK access model (`pksk_access` grants, packages `T1|T4|ALL`) overlaps BE-25 subscriptions; `GET /api/pksk-packages` is "M19-owned". | section 7 | Lead + BE-25 owner |
-| OQ-API-B2-11 | M13 Cikgu Alesa (chat, RPH, essay marking, PBD tags) and M25 heatmap are backlog (external AI out of B1, OD-7). Should B1 ship them as stubs with canned replies, or keep the frontend on the mock for these prefixes (hybrid mode)? The chat endpoint also returns a **non-enveloped** snake_case body (`thread_id`, `turns_remaining`, `quota_exhausted`) and `401 {}` / `422 {}`; the contract needs an explicit exception. | sections 8, 9 | Lead |
+| OQ-API-B2-9 | **D53(a): M06 (the /spm hub) is NOT replaced by M28 and is in B1 (BE-41 pending card).** Route counts differ from the plan: M04 30 vs 25, M05 23 vs 20, M06 14 vs 11, M07 21 vs 16, M13 10 vs 8. Update plan section 6.3 and the README backlog. For M06: confirm OD-11 (is M06 retired in favour of Bijak SPM?) and how the hub constants `HUB_TOTAL_QUESTIONS`, `HUB_POOL_CHIP` and `TRACKING_YEAR = 2026` are produced. | section 1, 6 | Lead |
+| OQ-API-B2-10 | **D53(a): M07 PKSK is in B1 (BE-42 pending card).** PKSK in v2 becomes tags on the single bank (A6), yet the 21 M07 routes use their own admin question CRUD and an M05 session of mode `pksk`. Keep these routes (served by BE-09 data with PKSK tags) or redesign? Also the PKSK access model (`pksk_access` grants, packages `T1|T4|ALL`) overlaps BE-25 subscriptions; `GET /api/pksk-packages` is "M19-owned". | section 7 | Lead + BE-25 owner |
+| OQ-API-B2-11 | **D53(a): M13 is in B1 with the AI behind the BE-36 adapter (BE-43 pending card); M25 is BE-48.** M13 Cikgu Alesa (chat, RPH, essay marking, PBD tags) and M25 heatmap are backlog (external AI out of B1, OD-7). Should B1 ship them as stubs with canned replies, or keep the frontend on the mock for these prefixes (hybrid mode)? The chat endpoint also returns a **non-enveloped** snake_case body (`thread_id`, `turns_remaining`, `quota_exhausted`) and `401 {}` / `422 {}`; the contract needs an explicit exception. | sections 8, 9 | Lead |
 | OQ-API-B2-12 | Bijak endpoints: which roles may call `/api/bijak/*`? Cards say student; matrix KS-06 "Bijak SPM (Simulasi)" is Admin Pusat F (preview). The `BijakServer` has no role concept (only `userId`). Writes made by an admin in "Mod Pelajar" are stamped `is_test` (BE-16 AC-9). | section 10 | BE-15 and BE-16 owner |
 | OQ-API-B2-13 | Bijak times are epoch milliseconds (`startedAt`, `deadline`, `savedAt`, `submittedAt`, history `startedAt`) and `PartAnswer`/`StoredAnswer` carry `savedAt` numbers; the contract serialises instants as `+08:00` strings (X3). Which side changes? Also `serverNow` (BE-16) is not in the mock `AttemptPaperView`; add it to the view or keep `serverNow()` as a separate call? The mock `submit` also returns `late` in seconds. | section 10 | Lead + BE-16 owner |
 | OQ-API-B2-14 | The Bijak result carries `coins = score*2` and `points = score*10` but the mock writes no wallet. BE-16 says credit the wallet "only if the mock credits". Confirm no wallet credit in B1 (display values only) or define the rule (idempotent per attempt). | BJ-10, BJ-14 | Lead + BE-11 owner |

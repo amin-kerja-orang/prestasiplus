@@ -4,12 +4,13 @@ The catalogue documents every endpoint the frontend mock registers today (plus t
 
 Snapshot: worktree `D:\Dev Projects\pp-docs`, branch `docs/v2-reference`, 2026-10-19. Line numbers in the parts drift; use function names.
 
-## User decisions of 2026-10-19 applied to this catalogue
+## Owner decisions of 2026-10-19 applied to this catalogue (UD-1..UD-4 and TRACKER D53)
 
 - **UD-1 Ids and session follow the contract.** Ids are decimal strings; the real API uses the cookie session plus `X-CSRF-Token`, the `Session` shape and `/api/session*`; bad credentials answer 401 `INVALID_CREDENTIALS`; no Bearer. The LEAD realigns the mock and `HttpTransport` (V2-T31). Resolves CC-1 and CC-2. The endpoint blocks for login, logout and `GET /api/me` carry the note "real API follows contract (UD-1)".
 - **UD-2 Impersonation is dropped.** Mod Pelajar works only through `POST /api/session/mode` (D31c). M02-09, M27-21 and M27-22 are "Not ported (UD-2)". Resolves CC-3.
 - **UD-3 Parent hadiah approvals are not built in B1.** M15-08..10: the backend does not register them, the frontend hides the entry point; card none.
 - **UD-4 M18 Amaran is folded into BE-21.** M18-01..04 now carry card BE-21.
+- **D53 (owner decisions recorded in the TRACKER, 2026-10-19).** (OWN-1) `intake_batches` (BE-37) is the one teacher Submission; `question_submissions` is dropped from BE-10, so M04-13/14/15 show "BE-37/BE-38 [pending card update]". (OWN-10) The teacher economy is backlog: 13 M14 routes "Not in B1 (D53)". (h) Questions tag `curriculum_node` only; `dskp_*` is the teacher picking list. (a) B1 = every module reachable in the prototype: M06 BE-41, M07 BE-42, M13 BE-43 (AI via the BE-36 adapter), M16 BE-44/BE-45 (split TBC; replicate the bot simulation), M20 BE-46, M21 student side BE-47 (Penaja out, D48), M25 BE-48 (= Heatmap Topik Lemah), M09 Audio KBAT play BE-24; all marked [pending card]. D52 intake (b2e1033) and paper builder (1b5193f) are merged locally and pending push; final admin routes are in part 2 section 11.
 
 ## 1. Parts
 
@@ -41,12 +42,12 @@ Counts verified for this index with a multi-line-aware script (`scratchpad/docs-
 | M01 authentication, account, notifications | 1 | 19 | BE-03, BE-06 | 0 | 0 / 2 / 17 |
 | M02 users, schools, subscriptions, parent invites | 1 | 49 | BE-05, BE-25 | 1 (M02-09 impersonate, UD-2) | 0 / 0 / 49 |
 | M03 curriculum | 1 | 29 | BE-08 | 0 | 0 / 0 / 29 |
-| M04 question bank | 2 | 30 | BE-09, BE-10 | 0 | 0 / 0 / 30 |
+| M04 question bank | 2 | 30 | BE-09, BE-10; M04-13/14/15 BE-37/BE-38 [pending card update] (D53 OWN-1) | 0 | 0 / 0 / 30 |
 | M05 practice | 2 | 23 | BE-12, BE-13, BE-18 | 0 | 0 / 0 / 23 |
-| M06 SPM classic | 2 | 14 | none (wave-4 backlog) | 14 | 0 / 0 / 14 |
-| M07 PKSK | 2 | 21 | none (wave-4 backlog) | 21 | 0 / 0 / 21 |
-| M13 Cikgu Alesa | 2 | 10 | none (backlog) | 10 | 0 / 0 / 10 |
-| M25 AI Centre | 2 | 1 | none (backlog) | 1 | 0 / 0 / 1 |
+| M06 SPM classic | 2 | 14 | BE-41 [pending card] (D53(a)) | 0 | 0 / 0 / 14 |
+| M07 PKSK | 2 | 21 | BE-42 [pending card] (D53(a)) | 0 | 0 / 0 / 21 |
+| M13 Cikgu Alesa | 2 | 10 | BE-43 [pending card] (D53(a)) | 0 | 0 / 0 / 10 |
+| M25 AI Centre (Heatmap Topik Lemah) | 2 | 1 | BE-48 [pending card] (D53(a)) | 0 | 0 / 0 / 1 |
 | M28 Bijak SPM (16 class methods, 0 routes) | 2 | 0 | BE-14, BE-15, BE-16 | 1 (BJ-04) | 0 / 0 / 15, 1 n/a (BJ-12 sweeper) |
 | SPM intake D52 (operations IN-01..IN-10, source commit b2e1033; no HTTP routes) | 2 | 0 | BE-36..BE-40 (+BE-26 seed) | 2 with no card endpoint (IN-05, IN-09), IN-04 partial | all missing |
 | M08 student performance | 3 | 30 | BE-19 | 0 | 0 / 0 / 30 |
@@ -56,14 +57,14 @@ Counts verified for this index with a multi-line-aware script (`scratchpad/docs-
 | M17 admin dashboard (Command Center) | 3 | 11 | BE-22 | 0 | 0 / 0 / 11 |
 | M18 PPD / JPN (Amaran Awal) | 3 | 4 | BE-21 (UD-4) | 0 | 0 / 0 / 4 |
 | M27 school admin | 3 | 22 | BE-21 | 2 (impersonate, UD-2) | 0 / 0 / 22 |
-| M14 gamification | 4 | 42 | BE-11, BE-23 | 0 | 0 / 0 / 42 |
+| M14 gamification | 4 | 42 | BE-11, BE-23 | 13 (teacher economy, Not in B1, D53 OWN-10) | 0 / 0 / 42 |
 | M15 rewards shop | 4 | 18 | BE-23 | 3 (parent approvals, UD-3) | 0 / 0 / 18 |
-| M16 battle, games, competitions | 4 | 52 | none (wave-4 backlog) | 52 | 0 / 0 / 52 |
-| M09 content | 4 | 43 | BE-24 | 2 | 0 / 0 / 43 |
-| M20 marketplace (buyer) | 4 | 5 | none (B1 non-goal) | 5 | 0 / 0 / 5 |
-| M21 sponsorship (foster application) | 4 | 1 | none (B1 non-goal) | 1 | 0 / 0 / 1 |
+| M16 battle, games, competitions | 4 | 52 | BE-44/BE-45 [pending card; split TBC] (D53(a)) | 0 | 0 / 0 / 52 |
+| M09 content | 4 | 43 | BE-24 (incl. Audio KBAT play, D53(a)) | 0 | 0 / 0 / 43 |
+| M20 marketplace (buyer) | 4 | 5 | BE-46 [pending card] (D53(a)) | 0 | 0 / 0 / 5 |
+| M21 foster application (student side) | 4 | 1 | BE-47 [pending card] (D53(a)) | 0 | 0 / 0 / 1 |
 | M22 support tickets | 4 | 4 | BE-24 | 0 | 0 / 0 / 4 |
-| **HTTP total** | | **491 mock + 4 contract-only = 495** | | **112** | **4 / 2 / 489** |
+| **HTTP total** | | **491 mock + 4 contract-only = 495** | | **19** | **4 / 2 / 489** |
 
 Note: `GET /api/me/gamification-summary` (M14 SRS #1) is listed once, in part 1 (C-02); part 4's M14 count (42) excludes it, so M14 SRS-wise has 43.
 
@@ -111,34 +112,26 @@ Source of truth: `packages/contract/src/common/{envelope,error,ids,time,enums}.t
 - **BM messages.** Domain messages in the blocks are verbatim BM and must be reproduced exactly. The mock's generic messages (`Unauthenticated.`, `This action is unauthorized.`, `Not Found.`, `Server Error`, Laravel validation templates `The :attribute field is required.`) are English, while the contract says `message` is BM for direct display and the contract auth copy is BM (CC-5).
 - **Where the mock deviates from the contract today:** login/logout shape, Bearer vs cookie, numeric vs string ids, the `status` envelope sibling, bare/non-enveloped bodies, fixed page size vs `pageSize`, epoch-ms times, English generic messages, 8 roles vs 7 (`jpn_officer`). All are listed in section 6.
 
-## 5. Uncovered endpoints (112 of 495 HTTP endpoints; 143 before the card audit)
+## 5. Uncovered endpoints (19 of 495 HTTP endpoints; 143 before the card audit, 112 before D53)
 
-"Uncovered" = no BE card endpoint table lists it, re-checked against the audited cards (LEAD audit, commit 63d363c, plus the catalogue additions marked "added from catalogue 2026-10-19"). Totals by reason after the user decisions of 2026-10-19: out of v2 B1 scope or wave-4 backlog 106 (unchanged); dropped by user decision (UD-2) 3; not in B1 by user decision (UD-3) 3; in a card's scope but not listed 0 (was 33); no card but needed by a carded module 0 (was 4, M18 folded into BE-21 by UD-4). Total 143 -> 110 (card audit) -> 112 (UD-2/UD-3 add 6, UD-4 removes 4). The `BE-nn*` implied markers (part 3: 24) and the "not itemised" notes (part 4: 31) are gone because those endpoints are now listed explicitly.
+"Uncovered" = no BE card endpoint table lists it, re-checked against the audited cards (LEAD audit, commit 63d363c, plus the catalogue additions marked "added from catalogue 2026-10-19"). Totals by reason after the owner decisions of 2026-10-19 (UD-1..UD-4, D53): dropped by user decision UD-2 3 (impersonation); not in B1 by user decision UD-3 3 (parent hadiah approvals); not in B1 by D53 OWN-10 13 (teacher economy); out of B1 / backlog 0 (was 106: D53(a) moved M06, M07, M13, M16, M20, M21 student side, M25 and Audio KBAT play into B1 with cards BE-41..BE-48 [pending card] and BE-24); in a card's scope but not listed 0; no card but needed 0. Total 143 -> 110 (card audit) -> 112 (UD) -> 19 (D53).
 
 ### 5.1 In a card's scope but not listed (0)
 
 None. The 33 endpoints that were here (M01 2, M02 6, M03 16, M04 5, M05 1, M10 3) are now in the card tables: BE-06, BE-05, BE-08, BE-09/BE-10 and BE-09. The audit moved some ownership, which the parts now show in their Card column: `GET /api/admin/schools/:id/quota` (M02-15), `POST /api/admin/students/import` (M02-14) and the user-package routes (M02-11/12) are BE-25, not BE-05; `GET /api/remedial-tests/mine`, `GET /api/missions/today` and `GET /api/remedial-tests/:id` (M05-21..23) are BE-18, no longer BE-13.
 
-### 5.2 No card, out of v2 B1 scope (106): backlog, no action before wave 4
+### 5.2 Out of B1 / backlog (0)
 
-| Endpoint group | Module | Count | Reason |
-|---|---|---:|---|
-| `/api/spm/*`, `/api/spm-mocks*`, `/api/spm-walkthrough/solve`, `/api/duta/recommendations` | M06 | 14 | wave-4 backlog; OD-11 (Bijak SPM replaces most of it) open |
-| `/api/pksk/*`, `/api/pksk-domains`, `/api/pksk-packages`, `/api/admin/pksk-*` | M07 | 21 | wave-4 backlog; PKSK becomes tags on the one bank |
-| `/api/cikgu/*` | M13 | 10 | external AI out of B1 (OD-7) |
-| `GET /api/buku-nota/heatmap` | M25 | 1 | backlog |
-| battle, games, tournaments, leagues, Sekolah Bersaing (M16-01..52) | M16 | 52 | wave-4 backlog (feature in v2 scope, no card) |
-| marketplace buyer routes (M20-13..17) | M20 | 5 | B1 non-goal |
-| `POST /api/mohon-keluarga-angkat` | M21 | 1 | B1 non-goal |
-| `GET /api/audio-kbat-sets/:id` (M09-25), `POST .../attempts` (M09-26) | M09 | 2 | BE-24: audio KBAT student play is backlog |
+None. D53(a) (owner decision 2026-10-19) puts every module reachable in the prototype into B1: M06 -> BE-41, M07 -> BE-42, M13 -> BE-43 (AI through the BE-36 adapter), M16 -> BE-44/BE-45 (split TBC; replicate the bot simulation), M20 -> BE-46, M21 student side -> BE-47 (Penaja out, D48), M25 -> BE-48, M09 Audio KBAT student play -> BE-24. The new cards are being written; Card fields show [pending card]. The 106 endpoints formerly listed here (M06 14, M07 21, M13 10, M25 1, M16 52, M20 5, M21 1, M09 2) are no longer uncovered.
 
-### 5.3 Dropped or not built by user decision 2026-10-19 (6)
+### 5.3 Dropped or not built by owner decision 2026-10-19 (19)
 
 | Endpoint | Module | Reason |
 |---|---|---|
 | `POST /api/admin/users/:id/impersonate` (M02-09) | M02 | Not ported, dropped by user decision (UD-2); Mod Pelajar is `POST /api/session/mode` only |
 | `POST /api/admin-sekolah/users/:id/impersonate` (M27-21), `POST /api/admin-sekolah/impersonate/leave` (M27-22) | M27 | Not ported, dropped by user decision (UD-2) |
 | `GET /api/parent/hadiah-approvals` (M15-08), `POST .../:id/approve` (M15-09), `POST .../:id/reject` (M15-10) | M15 | Not in B1, user decision (UD-3): the backend does not register them and the frontend hides the entry point; card none |
+| Teacher economy: `/api/guru/gamification*` (M14-11..16) and `/api/admin/gamification/guru*` (M14-30..36) | M14 | Not in B1 (D53 OWN-10): teacher wallets, cash-out, teacher shop and badges are backlog |
 
 M18 Amaran (`GET /api/amaran/schools/:id`, `/summary`, `/effectiveness`, `/export/school/:id`; M18-01..04) is no longer uncovered: UD-4 folds it into BE-21.
 
@@ -167,7 +160,7 @@ Deduplicated from the 4 parts. Part-local ids: `B1-n` = `OQ-API-B1-n` (part 1), 
 | CC-15 | **Files, uploads, exports.** Mock stores only metadata or data URLs; real endpoints need BE-04 storage, limits, magic-byte checks, CSV formula-injection guard, PDF export (`PdfPort`), multipart vs two-step upload. | B1-9, B2-22, B3-18, B3-6, B4 (section 3 Files) |
 | CC-16 | **Mock constants vs computed values.** Display constants and stored aggregates (M12 correlation, M17 engagement buckets, M08 GPS rows, SPM targets progress, Sekolah Bersaing snapshots, hub constants) have no computation rule; also performance of full-log scans. | B3-8, B3-17, B2-8, B2-9, B4-14 |
 | CC-17 | **Deletes, audit and side effects.** Cascade vs restrict on deletes, no `audit_events` for admin writes, GET endpoints that write (view counters, referral code). | B1-22, B4-6, B4-7, B4-28 |
-| CC-18 | **Scope boundaries.** External AI stubs (M13/M25), PKSK as tags, M06 retirement, teacher economy, parent routes, M16 simulation (parent routes: UD-3 not in B1; M18: UD-4 folded into BE-21), SPM intake (D52) documented as operations only, with no HTTP mock. | B2-10, B2-11, B2-17, B2-23..B2-30, B3-12, B4-11, B4-23, B4-25 |
+| CC-18 | **RESOLVED by D53 (2026-10-19): B1 = every module reachable in the prototype; teacher economy backlog.** **Scope boundaries.** External AI stubs (M13/M25), PKSK as tags, M06 retirement, teacher economy, parent routes, M16 simulation (parent routes: UD-3 not in B1; M18: UD-4 folded into BE-21), SPM intake (D52) documented as operations only, with no HTTP mock. | B2-10, B2-11, B2-17, B2-23..B2-30, B3-12, B4-11, B4-23, B4-25 |
 | CC-19 | **Hard-coded hosts and fixtures.** Share/referral links use `https://prestasiplus.my`; fixture ids/tokens must not be reproduced. | B4-5, B1-21 |
 
 Part-local questions that do not repeat elsewhere stay in the part (for example B3-3 weekly report 403, B3-4 headcount entry, B3-10 two Command Center families, B3-16 ranking order, B4-8 lucky draw, B4-13 league status).
