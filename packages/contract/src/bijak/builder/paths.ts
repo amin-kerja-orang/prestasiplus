@@ -8,79 +8,62 @@ import { registerRoute } from './rate-limit'
 import {
   BIJAK_BUILDER_MESSAGES,
   BijakBlueprintAdminCreateSchema,
-  BijakBlueprintAdminListQuerySchema,
-  BijakBlueprintAdminSchema,
   BijakBlueprintAdminSectionInputSchema,
-  BijakBlueprintAdminSectionSchema,
-  BijakBlueprintAdminStatusSchema,
-  BijakBlueprintAdminSummarySchema,
   BijakBlueprintAdminVersionInputSchema,
-  BijakBlueprintAdminVersionSchema,
+  BijakBlueprintListQuerySchema,
+  BijakBlueprintViewSchema,
   BijakBuilderAnswerModeSchema,
-  BijakBuilderBlueprintRefSchema,
-  BijakBuilderConformanceRuleSchema,
-  BijakBuilderConformanceSchema,
   BijakBuilderCsrfErrorSchema,
-  BijakBuilderDeleteResultSchema,
-  BijakBuilderGroupSplitErrorSchema,
-  BijakBuilderIssueSchema,
-  BijakBuilderPaperInputSchema,
+  BijakBuilderEditorSchema,
+  BijakBuilderGroupSchema,
+  BijakBuilderOkSchema,
+  BijakBuilderPaperCreateResultSchema,
+  BijakBuilderPaperCreateSchema,
   BijakBuilderPaperListQuerySchema,
+  BijakBuilderPaperPatchSchema,
   BijakBuilderPaperSchema,
+  BijakBuilderPaperSectionSchema,
   BijakBuilderPaperStatusSchema,
   BijakBuilderPaperSummarySchema,
-  BijakBuilderPlacementInputSchema,
-  BijakBuilderPlacementSchema,
-  BijakBuilderPlacementsRequestSchema,
-  BijakBuilderPublishRefusedErrorSchema,
-  BijakBuilderQuestionRefSchema,
-  BijakBuilderQuestionStatusSchema,
+  BijakBuilderPreviewSchema,
+  BijakBuilderPublishResultSchema,
+  BijakBuilderQuestionSchema,
   BijakBuilderSectionCheckSchema,
-  BijakBuilderSectionInputSchema,
+  BijakBuilderSectionPatchSchema,
   BijakBuilderSectionRuleSchema,
-  BijakBuilderSectionSchema,
-  BijakBuilderSectionsRequestSchema,
 } from './schema'
 
 /**
  * Components contributed by BE-39 (appended to COMPONENT_SCHEMAS in openapi.ts). Paper builder
- * ids are prefixed `BijakBuilder`, blueprint admin ids `BijakBlueprintAdmin`; none equals an id of
- * `bijak/papers` (`BijakPaper*`, `BijakBlueprintContract`, `BijakBlueprintSection`, ...).
+ * ids are prefixed `BijakBuilder`, blueprint ids `BijakBlueprint`; none equals an id of
+ * `bijak/papers` (`BijakPaper*`, `BijakBlueprintContract`, `BijakBlueprintSection`, ...) or of
+ * `bijak/attempts` (`BijakAttempt*`).
  */
 export const BIJAK_BUILDER_COMPONENT_SCHEMAS = {
-  BijakBuilderQuestionStatus: BijakBuilderQuestionStatusSchema,
   BijakBuilderAnswerMode: BijakBuilderAnswerModeSchema,
   BijakBuilderSectionRule: BijakBuilderSectionRuleSchema,
   BijakBuilderPaperStatus: BijakBuilderPaperStatusSchema,
-  BijakBuilderBlueprintRef: BijakBuilderBlueprintRefSchema,
-  BijakBuilderQuestionRef: BijakBuilderQuestionRefSchema,
-  BijakBuilderPlacement: BijakBuilderPlacementSchema,
-  BijakBuilderSection: BijakBuilderSectionSchema,
+  BijakBuilderSectionCheck: BijakBuilderSectionCheckSchema,
+  BijakBuilderPaperSection: BijakBuilderPaperSectionSchema,
   BijakBuilderPaperSummary: BijakBuilderPaperSummarySchema,
   BijakBuilderPaper: BijakBuilderPaperSchema,
-  BijakBuilderPaperInput: BijakBuilderPaperInputSchema,
-  BijakBuilderSectionInput: BijakBuilderSectionInputSchema,
-  BijakBuilderSectionsRequest: BijakBuilderSectionsRequestSchema,
-  BijakBuilderPlacementInput: BijakBuilderPlacementInputSchema,
-  BijakBuilderPlacementsRequest: BijakBuilderPlacementsRequestSchema,
-  BijakBuilderDeleteResult: BijakBuilderDeleteResultSchema,
+  BijakBuilderQuestion: BijakBuilderQuestionSchema,
+  BijakBuilderGroup: BijakBuilderGroupSchema,
+  BijakBuilderEditor: BijakBuilderEditorSchema,
+  BijakBuilderPaperCreate: BijakBuilderPaperCreateSchema,
+  BijakBuilderPaperCreateResult: BijakBuilderPaperCreateResultSchema,
+  BijakBuilderSectionPatch: BijakBuilderSectionPatchSchema,
+  BijakBuilderPaperPatch: BijakBuilderPaperPatchSchema,
+  BijakBuilderOk: BijakBuilderOkSchema,
+  BijakBuilderPublishResult: BijakBuilderPublishResultSchema,
+  BijakBuilderPreview: BijakBuilderPreviewSchema,
   BijakBuilderPaperListQuery: BijakBuilderPaperListQuerySchema,
-  BijakBuilderConformanceRule: BijakBuilderConformanceRuleSchema,
-  BijakBuilderIssue: BijakBuilderIssueSchema,
-  BijakBuilderSectionCheck: BijakBuilderSectionCheckSchema,
-  BijakBuilderConformance: BijakBuilderConformanceSchema,
   BijakBuilderCsrfError: BijakBuilderCsrfErrorSchema,
-  BijakBuilderPublishRefusedError: BijakBuilderPublishRefusedErrorSchema,
-  BijakBuilderGroupSplitError: BijakBuilderGroupSplitErrorSchema,
+  BijakBlueprintView: BijakBlueprintViewSchema,
   BijakBlueprintAdminSectionInput: BijakBlueprintAdminSectionInputSchema,
-  BijakBlueprintAdminSection: BijakBlueprintAdminSectionSchema,
-  BijakBlueprintAdminStatus: BijakBlueprintAdminStatusSchema,
   BijakBlueprintAdminVersionInput: BijakBlueprintAdminVersionInputSchema,
   BijakBlueprintAdminCreate: BijakBlueprintAdminCreateSchema,
-  BijakBlueprintAdminVersion: BijakBlueprintAdminVersionSchema,
-  BijakBlueprintAdminSummary: BijakBlueprintAdminSummarySchema,
-  BijakBlueprintAdmin: BijakBlueprintAdminSchema,
-  BijakBlueprintAdminListQuery: BijakBlueprintAdminListQuerySchema,
+  BijakBlueprintListQuery: BijakBlueprintListQuerySchema,
 } as const
 
 /** Tags of the two route groups (tests count operations by tag). */
@@ -109,6 +92,8 @@ const BlueprintIdParams = z.object({
 })
 
 const ROLE_NOTE = 'Admin Pusat only (D40a); Guru, Admin Sekolah and Murid get 403.'
+const COPY_NOTE =
+  'The BM copy of this route is [PROPOSED] per D58b (strings quoted by the LEAD review are kept verbatim; the LEAD aligns them when the prototype code is pushed).'
 const UNAUTHORIZED = err('UNAUTHORIZED (no valid session).')
 const FORBIDDEN_READ = err('FORBIDDEN (the active role is not Admin Pusat).')
 const FORBIDDEN_WRITE = json(
@@ -116,15 +101,23 @@ const FORBIDDEN_WRITE = json(
   'FORBIDDEN (the active role is not Admin Pusat) or CSRF_INVALID "Sesi tidak sah. Sila muat semula halaman dan cuba lagi." (missing or wrong X-CSRF-Token).',
 )
 const PAPER_NOT_FOUND = err(`NOT_FOUND "${BIJAK_BUILDER_MESSAGES.paperNotFound}".`)
-const BLUEPRINT_NOT_FOUND = err(`NOT_FOUND "${BIJAK_BUILDER_MESSAGES.blueprintNotFound}".`)
+const BLUEPRINT_NOT_FOUND = err(
+  `NOT_FOUND "${BIJAK_BUILDER_MESSAGES.blueprintNotFound}" [PROPOSED].`,
+)
 const PAPER_LOCKED = err(
-  `CONFLICT "${BIJAK_BUILDER_MESSAGES.paperLocked}" (the paper is published).`,
+  `CONFLICT "${BIJAK_BUILDER_MESSAGES.paperLocked}" [PROPOSED] (the paper is terbit; HTTP status 409 is [PROPOSED], the mock throws the message).`,
 )
 
 /**
- * Registers the 15 admin operations of BE-39. There is no mock route or mock method behind them: the
- * paths are fixed by this contract (card BE-39 Endpoints). Every response is `{ data }`,
- * `{ data, meta }` or `{ error }`; every mutation needs `X-CSRF-Token`.
+ * Registers the 13 admin operations of BE-39 (8 paper, 5 blueprint). The paper routes follow the
+ * paper builder mock as quoted by the LEAD review (the mock is not pushed yet); the blueprint write
+ * routes (create, version, retire) have NO mock and exist only because the card requires them.
+ * Every response is `{ data }`, `{ data, meta }` or `{ error }`; every mutation needs
+ * `X-CSRF-Token`.
+ *
+ * Removed from the first draft, because the mock has no counterpart: `PUT /admin/papers/{id}/sections`,
+ * `PUT /admin/papers/{id}/placements` and `GET /admin/papers/{id}/conformance` (the conformance
+ * lines are `paper.checks`; publish returns them as `errors`).
  *
  * D57: every write route (POST, PUT, DELETE) also answers 429 RATE_LIMITED with retryAfter and a
  * Retry-After header (added by `registerRoute`). D57(b): no response carries a credential or token,
@@ -138,8 +131,8 @@ export function registerBijakBuilderPaths(registry: OpenAPIRegistry): void {
     method: 'get',
     path: '/admin/papers',
     tags: [BIJAK_BUILDER_TAG],
-    summary: 'Paper builder: list paper drafts and published papers',
-    description: `Newest update first. Filters: status, subject, kertas, q (title contains). \`meta.counts\` carries one count per status over the whole set. ${ROLE_NOTE}`,
+    summary: 'Paper builder: list papers (draf and terbit)',
+    description: `Newest update first. Optional filter: status. Each row carries budget and ok. ${COPY_NOTE} ${ROLE_NOTE}`,
     request: { query: BijakBuilderPaperListQuerySchema },
     responses: {
       200: json(listEnvelopeOf(BijakBuilderPaperSummarySchema), 'Papers (paged).'),
@@ -152,16 +145,15 @@ export function registerBijakBuilderPaths(registry: OpenAPIRegistry): void {
     method: 'post',
     path: '/admin/papers',
     tags: [BIJAK_BUILDER_TAG],
-    summary: 'Paper builder: create a paper draft',
-    description: `Creates a paper with status draft, version 1 and no sections. Sections and placements are set with the two PUT routes. A retired blueprint is refused (422 fields.blueprint "${BIJAK_BUILDER_MESSAGES.blueprintRetired}"). ${ROLE_NOTE}`,
-    request: { headers: [csrf], body: body(BijakBuilderPaperInputSchema) },
+    summary: 'Paper builder: create a paper (createPaper)',
+    description: `Body { subject, kertas, title? }. The sections come from the blueprint of that subject and kertas and start empty; the status is draf. Answers the new id. No blueprint for the pair: 422 fields.subject "${BIJAK_BUILDER_MESSAGES.noBlueprint}". ${COPY_NOTE} ${ROLE_NOTE}`,
+    request: { headers: [csrf], body: body(BijakBuilderPaperCreateSchema) },
     responses: {
-      201: json(envelopeOf(BijakBuilderPaperSchema), 'The created draft.'),
+      201: json(envelopeOf(BijakBuilderPaperCreateResultSchema), 'The new paper id.'),
       401: UNAUTHORIZED,
       403: FORBIDDEN_WRITE,
-      404: BLUEPRINT_NOT_FOUND,
       422: err(
-        'VALIDATION_ERROR with fields (title, subject, kertas, year, code, durationMin, blueprint).',
+        `VALIDATION_ERROR with fields (subject "${BIJAK_BUILDER_MESSAGES.noBlueprint}", kertas, title "${BIJAK_BUILDER_MESSAGES.titleRequired}").`,
       ),
     },
   })
@@ -170,11 +162,11 @@ export function registerBijakBuilderPaths(registry: OpenAPIRegistry): void {
     method: 'get',
     path: '/admin/papers/{id}',
     tags: [BIJAK_BUILDER_TAG],
-    summary: 'Paper builder: one paper with sections and ordered placements',
-    description: `Includes the placed question ids, pinned versions and a read-only question summary for each placement. ${ROLE_NOTE}`,
+    summary: 'Paper builder: the editor read (getPaperEditor)',
+    description: `The paper with its sections, question ids and section checks, plus the picker candidates (questions) and the stimulus groups. ${COPY_NOTE} ${ROLE_NOTE}`,
     request: { params: PaperIdParams },
     responses: {
-      200: json(envelopeOf(BijakBuilderPaperSchema), 'The paper.'),
+      200: json(envelopeOf(BijakBuilderEditorSchema), 'The paper, picker questions and groups.'),
       401: UNAUTHORIZED,
       403: FORBIDDEN_READ,
       404: PAPER_NOT_FOUND,
@@ -185,18 +177,16 @@ export function registerBijakBuilderPaths(registry: OpenAPIRegistry): void {
     method: 'put',
     path: '/admin/papers/{id}',
     tags: [BIJAK_BUILDER_TAG],
-    summary: 'Paper builder: replace the paper header',
-    description: `Replaces title, subject, kertas, year, code, durationMin, instructions, reference and the selected blueprint version (same body as create). Refused with 409 while the paper is published (withdraw it first). The status is re-evaluated after the change (a ready paper that no longer conforms goes back to draft). ${ROLE_NOTE}`,
-    request: { params: PaperIdParams, headers: [csrf], body: body(BijakBuilderPaperInputSchema) },
+    summary: 'Paper builder: edit a paper (single PUT, PaperPatch)',
+    description: `Body { title?, year?, durationMin?, sections?: [{ id, questionIds }] }; only the keys sent change. This one route carries every edit (the first draft's separate sections and placements routes are gone). Refused with 409 "${BIJAK_BUILDER_MESSAGES.paperLocked}" while the paper is terbit. 422 fields: title "${BIJAK_BUILDER_MESSAGES.titleRequired}", sections "${BIJAK_BUILDER_MESSAGES.invalidSection}" (unknown section id) or "${BIJAK_BUILDER_MESSAGES.invalidQuestion}" (a question that cannot go on this paper). Duplicates and split groups are not refused here; they show up in checks and block publish. Answers the updated paper. ${COPY_NOTE} ${ROLE_NOTE}`,
+    request: { params: PaperIdParams, headers: [csrf], body: body(BijakBuilderPaperPatchSchema) },
     responses: {
       200: json(envelopeOf(BijakBuilderPaperSchema), 'The updated paper.'),
       401: UNAUTHORIZED,
       403: FORBIDDEN_WRITE,
-      404: err(
-        `NOT_FOUND "${BIJAK_BUILDER_MESSAGES.paperNotFound}" or "${BIJAK_BUILDER_MESSAGES.blueprintNotFound}" (unknown blueprint reference).`,
-      ),
+      404: PAPER_NOT_FOUND,
       409: PAPER_LOCKED,
-      422: err('VALIDATION_ERROR with fields; a retired blueprint is refused (fields.blueprint).'),
+      422: err('VALIDATION_ERROR with fields (title, year, durationMin, sections).'),
     },
   })
 
@@ -204,79 +194,26 @@ export function registerBijakBuilderPaths(registry: OpenAPIRegistry): void {
     method: 'delete',
     path: '/admin/papers/{id}',
     tags: [BIJAK_BUILDER_TAG],
-    summary: 'Paper builder: delete a draft',
-    description: `Only while the status is draft; any other status answers 409 CONFLICT "${BIJAK_BUILDER_MESSAGES.deleteNotDraft}". Answers 200 with { data: { deleted: 1 } }, not 204. ${ROLE_NOTE}`,
+    summary: 'Paper builder: delete a paper (idempotent)',
+    description: `Idempotent, as the mock deletePaper: an unknown id also answers 200 { data: { ok: true } } (so there is no 404). A terbit paper answers 409 CONFLICT "${BIJAK_BUILDER_MESSAGES.deleteTerbit}" [PROPOSED]; unpublish it first. ${COPY_NOTE} ${ROLE_NOTE}`,
     request: { params: PaperIdParams, headers: [csrf] },
     responses: {
-      200: json(envelopeOf(BijakBuilderDeleteResultSchema), 'Deleted.'),
+      200: json(envelopeOf(BijakBuilderOkSchema), 'Deleted, or there was nothing to delete.'),
       401: UNAUTHORIZED,
       403: FORBIDDEN_WRITE,
-      404: PAPER_NOT_FOUND,
-      409: err(`CONFLICT "${BIJAK_BUILDER_MESSAGES.deleteNotDraft}".`),
-    },
-  })
-
-  registerRoute(registry, {
-    method: 'put',
-    path: '/admin/papers/{id}/sections',
-    tags: [BIJAK_BUILDER_TAG],
-    summary: 'Paper builder: replace the ordered section list',
-    description: `The array order is the section order; an item with an existing id keeps its placements, an item without id is created. A section that is left out is removed and must hold no placement (422 fields.sections "${BIJAK_BUILDER_MESSAGES.sectionHasPlacements}"). Answers the whole paper. Refused with 409 while the paper is published. ${ROLE_NOTE}`,
-    request: {
-      params: PaperIdParams,
-      headers: [csrf],
-      body: body(BijakBuilderSectionsRequestSchema),
-    },
-    responses: {
-      200: json(envelopeOf(BijakBuilderPaperSchema), 'The paper with the new sections.'),
-      401: UNAUTHORIZED,
-      403: FORBIDDEN_WRITE,
-      404: PAPER_NOT_FOUND,
-      409: PAPER_LOCKED,
-      422: err(
-        'VALIDATION_ERROR with fields (sections, sections.N.label, sections.N.rule, sections.N.markBudget).',
-      ),
-    },
-  })
-
-  registerRoute(registry, {
-    method: 'put',
-    path: '/admin/papers/{id}/placements',
-    tags: [BIJAK_BUILDER_TAG],
-    summary: 'Paper builder: replace the ordered placements',
-    description: `Every placement of the paper, in order; the array order is the order inside each section. Questions of one stimulus group (D6) must stay in one section and stay consecutive, otherwise 422 VALIDATION_ERROR "${BIJAK_BUILDER_MESSAGES.groupSplit}" with details.groups. A question may appear once (422 "${BIJAK_BUILDER_MESSAGES.duplicateQuestion}"). Unknown section or question id: 422 with fields. Questions of any lifecycle status may be placed in a draft; only published ones pass the publish gate. An explicit pinnedVersion must exist. Refused with 409 while the paper is published. Answers the whole paper; the status is re-evaluated. ${ROLE_NOTE}`,
-    request: {
-      params: PaperIdParams,
-      headers: [csrf],
-      body: body(BijakBuilderPlacementsRequestSchema),
-    },
-    responses: {
-      200: json(envelopeOf(BijakBuilderPaperSchema), 'The paper with the new placements.'),
-      401: UNAUTHORIZED,
-      403: FORBIDDEN_WRITE,
-      404: PAPER_NOT_FOUND,
-      409: PAPER_LOCKED,
-      422: {
-        description:
-          'VALIDATION_ERROR: a stimulus group split (details.groups), a duplicate question, an unknown sectionId or questionId, or an invalid body (fields).',
-        content: {
-          'application/json': {
-            schema: z.union([BijakBuilderGroupSplitErrorSchema, ErrorBodySchema]),
-          },
-        },
-      },
+      409: err(`CONFLICT "${BIJAK_BUILDER_MESSAGES.deleteTerbit}" [PROPOSED].`),
     },
   })
 
   registerRoute(registry, {
     method: 'get',
-    path: '/admin/papers/{id}/conformance',
+    path: '/admin/papers/{id}/preview',
     tags: [BIJAK_BUILDER_TAG],
-    summary: 'Paper builder: conformance report and shortages against the blueprint version',
-    description: `Computed with the shared exam-core engine: marks budget per section, allowed modes, question counts and choose-N rules, plus group integrity and the published status of every placed question. Lists every gap with its section and rule; \`shortages\` has { section, need, have } per blueprint section the paper cannot fill. A paper without a blueprint reports a blueprint gap. Always 200. ${ROLE_NOTE}`,
+    summary: 'Paper builder: student-view preview of the paper questions (previewQuestions)',
+    description: `The saved questions of the paper as a student sees them, with each question's option bank and each group's stimulus (the BE-16 student views, so no answer key and no scheme). Result shape [PROPOSED]. ${COPY_NOTE} ${ROLE_NOTE}`,
     request: { params: PaperIdParams },
     responses: {
-      200: json(envelopeOf(BijakBuilderConformanceSchema), 'The conformance report.'),
+      200: json(envelopeOf(BijakBuilderPreviewSchema), 'Questions and groups in the student view.'),
       401: UNAUTHORIZED,
       403: FORBIDDEN_READ,
       404: PAPER_NOT_FOUND,
@@ -287,19 +224,14 @@ export function registerBijakBuilderPaths(registry: OpenAPIRegistry): void {
     method: 'post',
     path: '/admin/papers/{id}/publish',
     tags: [BIJAK_BUILDER_TAG],
-    summary: 'Paper builder: publish to student Bijak SPM (Kertas Pilihan)',
-    description: `No request body. Gate (v2-question-bank 4.8): every placed question is published and the paper conforms to its blueprint version. On success the placements are pinned to the question versions in force, the status becomes published and the paper appears in GET /bijak/papers; a later edit of a question (version n+1) does not change it. On failure nothing changes: 422 VALIDATION_ERROR "${BIJAK_BUILDER_MESSAGES.publishRefused}" with details.issues and details.shortages. Allowed from draft, ready or withdrawn (working assumption, open question); an already published paper answers 409 CONFLICT "${BIJAK_BUILDER_MESSAGES.alreadyPublished}". Writes an audit event. ${ROLE_NOTE}`,
+    summary: 'Paper builder: publish (draf to terbit)',
+    description: `No request body. A normal 200 result (not an error): { ok: true }, or { ok: false, errors: string[] } with the BM lines built from checkPaper, for example "Soalan berulang dalam kertas: ..." and "Kumpulan rangsangan X dipecahkan antara dua bahagian" (plus the section lines, for example "Bahagian A: perlu 3 soalan, hanya 2 tersedia"). Nothing changes on ok: false. On ok: true the status becomes terbit and the paper appears in GET /bijak/papers; implementations pin the question versions in force (a later edit, version n+1, does not change the paper). Publishing a paper that is already terbit is a no-op { ok: true } [PROPOSED]. ${COPY_NOTE} ${ROLE_NOTE}`,
     request: { params: PaperIdParams, headers: [csrf] },
     responses: {
-      200: json(envelopeOf(BijakBuilderPaperSchema), 'The published paper with pinned versions.'),
+      200: json(envelopeOf(BijakBuilderPublishResultSchema), 'Publish result (ok true or false).'),
       401: UNAUTHORIZED,
       403: FORBIDDEN_WRITE,
       404: PAPER_NOT_FOUND,
-      409: err(`CONFLICT "${BIJAK_BUILDER_MESSAGES.alreadyPublished}".`),
-      422: json(
-        z.union([BijakBuilderPublishRefusedErrorSchema, ErrorBodySchema]),
-        'VALIDATION_ERROR: the publish gate failed (details.issues, details.shortages).',
-      ),
     },
   })
 
@@ -307,15 +239,14 @@ export function registerBijakBuilderPaths(registry: OpenAPIRegistry): void {
     method: 'post',
     path: '/admin/papers/{id}/withdraw',
     tags: [BIJAK_BUILDER_TAG],
-    summary: 'Paper builder: withdraw a published paper from Kertas Pilihan',
-    description: `No request body. The paper disappears from GET /bijak/papers; attempts already started on it are unaffected. Only a published paper can be withdrawn: any other status answers 409 CONFLICT "${BIJAK_BUILDER_MESSAGES.notPublished}". Writes an audit event. ${ROLE_NOTE}`,
+    summary: 'Paper builder: unpublish, tarik balik (terbit back to draf)',
+    description: `No request body. The status goes back to draf (the mock's unpublish; there is no withdrawn state). The paper leaves GET /bijak/papers; attempts already started are unaffected. A paper that is already draf is a no-op. Path name /withdraw follows the card ("tarik balik"); the mock's method name is not known [PROPOSED]. Answers the paper. ${COPY_NOTE} ${ROLE_NOTE}`,
     request: { params: PaperIdParams, headers: [csrf] },
     responses: {
-      200: json(envelopeOf(BijakBuilderPaperSchema), 'The withdrawn paper.'),
+      200: json(envelopeOf(BijakBuilderPaperSchema), 'The paper, now draf.'),
       401: UNAUTHORIZED,
       403: FORBIDDEN_WRITE,
       404: PAPER_NOT_FOUND,
-      409: err(`CONFLICT "${BIJAK_BUILDER_MESSAGES.notPublished}".`),
     },
   })
 
@@ -325,31 +256,13 @@ export function registerBijakBuilderPaths(registry: OpenAPIRegistry): void {
     method: 'get',
     path: '/admin/blueprints',
     tags: [BIJAK_BLUEPRINT_ADMIN_TAG],
-    summary: 'Blueprint admin: list blueprints (Kontrak) with their latest version',
-    description: `One row per blueprint (subject and kertas), newest update first. Filters: subject, kertas, status. Includes blueprints whose source is Draf and retired ones when status is not filtered. ${ROLE_NOTE}`,
-    request: { query: BijakBlueprintAdminListQuerySchema },
+    summary: 'Blueprint: list blueprints (slim BlueprintView, latest version)',
+    description: `One row per blueprint (subject and kertas). Filters: subject, kertas. The view is slim ([PROPOSED] field list): no pool tags, no version history. ${COPY_NOTE} ${ROLE_NOTE}`,
+    request: { query: BijakBlueprintListQuerySchema },
     responses: {
-      200: json(listEnvelopeOf(BijakBlueprintAdminSummarySchema), 'Blueprints (paged).'),
+      200: json(listEnvelopeOf(BijakBlueprintViewSchema), 'Blueprints (paged).'),
       401: UNAUTHORIZED,
       403: FORBIDDEN_READ,
-    },
-  })
-
-  registerRoute(registry, {
-    method: 'post',
-    path: '/admin/blueprints',
-    tags: [BIJAK_BLUEPRINT_ADMIN_TAG],
-    summary: 'Blueprint admin: create a blueprint (version 1)',
-    description: `Subject and kertas identify the blueprint (generation finds a blueprint by that pair). A second blueprint for the same pair answers 409 CONFLICT "${BIJAK_BUILDER_MESSAGES.blueprintExists}" (working assumption): create a new version instead. The version starts active with its provenance tag (source Disahkan, Spec or Draf). ${ROLE_NOTE}`,
-    request: { headers: [csrf], body: body(BijakBlueprintAdminCreateSchema) },
-    responses: {
-      201: json(envelopeOf(BijakBlueprintAdminSchema), 'The created blueprint with version 1.'),
-      401: UNAUTHORIZED,
-      403: FORBIDDEN_WRITE,
-      409: err(`CONFLICT "${BIJAK_BUILDER_MESSAGES.blueprintExists}".`),
-      422: err(
-        'VALIDATION_ERROR with fields (subject, kertas, code, durationMin, sections, sections.N.*).',
-      ),
     },
   })
 
@@ -357,11 +270,11 @@ export function registerBijakBuilderPaths(registry: OpenAPIRegistry): void {
     method: 'get',
     path: '/admin/blueprints/{id}',
     tags: [BIJAK_BLUEPRINT_ADMIN_TAG],
-    summary: 'Blueprint admin: one blueprint with every version',
-    description: `Versions are newest first; each carries \`locked\` (true once a published paper uses it). ${ROLE_NOTE}`,
+    summary: 'Blueprint: one blueprint (slim BlueprintView, latest version)',
+    description: `${COPY_NOTE} ${ROLE_NOTE}`,
     request: { params: BlueprintIdParams },
     responses: {
-      200: json(envelopeOf(BijakBlueprintAdminSchema), 'The blueprint with its versions.'),
+      200: json(envelopeOf(BijakBlueprintViewSchema), 'The blueprint.'),
       401: UNAUTHORIZED,
       403: FORBIDDEN_READ,
       404: BLUEPRINT_NOT_FOUND,
@@ -370,21 +283,39 @@ export function registerBijakBuilderPaths(registry: OpenAPIRegistry): void {
 
   registerRoute(registry, {
     method: 'post',
+    path: '/admin/blueprints',
+    tags: [BIJAK_BLUEPRINT_ADMIN_TAG],
+    summary: 'Blueprint admin: create a blueprint, version 1 (NO MOCK)',
+    description: `No mock exists for blueprint writes; kept because the card requires them. A second blueprint for the same subject and kertas answers 409 CONFLICT "${BIJAK_BUILDER_MESSAGES.blueprintExists}" [PROPOSED]: add a version instead. ${COPY_NOTE} ${ROLE_NOTE}`,
+    request: { headers: [csrf], body: body(BijakBlueprintAdminCreateSchema) },
+    responses: {
+      201: json(envelopeOf(BijakBlueprintViewSchema), 'The created blueprint (version 1).'),
+      401: UNAUTHORIZED,
+      403: FORBIDDEN_WRITE,
+      409: err(`CONFLICT "${BIJAK_BUILDER_MESSAGES.blueprintExists}" [PROPOSED].`),
+      422: err(
+        'VALIDATION_ERROR with fields (subject, kertas, code, durationMin, sections, sections.N.*).',
+      ),
+    },
+  })
+
+  registerRoute(registry, {
+    method: 'post',
     path: '/admin/blueprints/{id}/versions',
     tags: [BIJAK_BLUEPRINT_ADMIN_TAG],
-    summary: 'Blueprint admin: add a new version (the only way to edit)',
-    description: `Creates version n+1 from the full body; earlier versions stay exactly as they were (a version used by a published paper is immutable). A retired blueprint answers 409 CONFLICT "${BIJAK_BUILDER_MESSAGES.blueprintAlreadyRetired}". ${ROLE_NOTE}`,
+    summary: 'Blueprint admin: add a new version, the only way to edit (NO MOCK)',
+    description: `No mock exists; kept because the card requires it. Creates version n+1 from the full body; earlier versions stay as they were (a version used by a terbit paper is immutable). A retired blueprint answers 409 CONFLICT "${BIJAK_BUILDER_MESSAGES.blueprintAlreadyRetired}" [PROPOSED]. Answers the slim view of the new latest version. ${COPY_NOTE} ${ROLE_NOTE}`,
     request: {
       params: BlueprintIdParams,
       headers: [csrf],
       body: body(BijakBlueprintAdminVersionInputSchema),
     },
     responses: {
-      201: json(envelopeOf(BijakBlueprintAdminSchema), 'The blueprint including the new version.'),
+      201: json(envelopeOf(BijakBlueprintViewSchema), 'The blueprint at its new version.'),
       401: UNAUTHORIZED,
       403: FORBIDDEN_WRITE,
       404: BLUEPRINT_NOT_FOUND,
-      409: err(`CONFLICT "${BIJAK_BUILDER_MESSAGES.blueprintAlreadyRetired}".`),
+      409: err(`CONFLICT "${BIJAK_BUILDER_MESSAGES.blueprintAlreadyRetired}" [PROPOSED].`),
       422: err('VALIDATION_ERROR with fields (code, durationMin, sections, sections.N.*).'),
     },
   })
@@ -393,15 +324,15 @@ export function registerBijakBuilderPaths(registry: OpenAPIRegistry): void {
     method: 'post',
     path: '/admin/blueprints/{id}/retire',
     tags: [BIJAK_BLUEPRINT_ADMIN_TAG],
-    summary: 'Blueprint admin: retire a blueprint',
-    description: `No request body. Every version becomes retired: it cannot be chosen by a new paper. Papers already published keep their pinned version. Retiring a retired blueprint answers 409 CONFLICT "${BIJAK_BUILDER_MESSAGES.blueprintAlreadyRetired}". Writes an audit event. ${ROLE_NOTE}`,
+    summary: 'Blueprint admin: retire a blueprint (NO MOCK)',
+    description: `No mock exists; kept because the card requires it. No request body. Every version becomes retired: new papers cannot be created from it. Terbit papers keep their version. Retiring a retired blueprint answers 409 CONFLICT "${BIJAK_BUILDER_MESSAGES.blueprintAlreadyRetired}" [PROPOSED]. ${COPY_NOTE} ${ROLE_NOTE}`,
     request: { params: BlueprintIdParams, headers: [csrf] },
     responses: {
-      200: json(envelopeOf(BijakBlueprintAdminSchema), 'The retired blueprint.'),
+      200: json(envelopeOf(BijakBlueprintViewSchema), 'The retired blueprint.'),
       401: UNAUTHORIZED,
       403: FORBIDDEN_WRITE,
       404: BLUEPRINT_NOT_FOUND,
-      409: err(`CONFLICT "${BIJAK_BUILDER_MESSAGES.blueprintAlreadyRetired}".`),
+      409: err(`CONFLICT "${BIJAK_BUILDER_MESSAGES.blueprintAlreadyRetired}" [PROPOSED].`),
     },
   })
 }
