@@ -236,15 +236,15 @@ export function registerPerformancePaths(registry: OpenAPIRegistry): void {
     },
   })
 
-  get(
-    '/public/students/{id}',
-    'Public student profile (S18), no session required',
-    PerformancePublicProfileSchema,
-    { 404: E404('unknown user id') },
-    { params: idParam('id') },
-    'Anonymous allowed (live parity). The mock does not check role or active state: see open question.',
-  )
-  // 401 is documented on every GET above; the public route has none in the mock.
+  registry.registerPath({
+    method: 'get',
+    path: '/public/students/{id}',
+    tags: ['performance'],
+    summary: 'Public student profile (S18), no session required',
+    description: 'Anonymous allowed (live parity). The mock does not check role or active state: see open question.',
+    request: { params: idParam('id') },
+    responses: { 200: json(envelopeOf(PerformancePublicProfileSchema), 'Public profile.'), 404: E404('unknown user id') },
+  })
   registry.registerPath({
     method: 'get',
     path: '/weekly-report',
@@ -260,7 +260,10 @@ export function registerPerformancePaths(registry: OpenAPIRegistry): void {
       path,
       summary,
       schema,
-      { 403: E403(`${STAFF}, or a config outside the viewer scope`), 404: E404('unknown id (checked before 403)') },
+      {
+        403: E403(`${STAFF}${request.params ? ', or a config/student outside the viewer scope' : ''}`),
+        ...(request.params ? { 404: E404('unknown id (checked before 403)') } : {}),
+      },
       request,
       undefined,
       'headcount',

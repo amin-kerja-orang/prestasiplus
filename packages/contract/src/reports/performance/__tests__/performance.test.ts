@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest'
 import { buildOpenApiDocument } from '../../../openapi'
 import {
   PERFORMANCE_HEADCOUNT_MESSAGES,
+  PERFORMANCE_TIMELINE_MESSAGES,
   PerformanceClassAnalyticsSchema,
   PerformanceClassDashboardSchema,
   PerformanceHeadcountAutoSetupRequestSchema,
@@ -31,7 +32,69 @@ const post = {
   createdAt: '2026-10-16T09:30:00+08:00',
 }
 
+/** Field to message map of a failed parse (first issue per top-level field). */
+const fieldMessages = (r: { success: boolean; error?: { issues: { path: PropertyKey[]; message: string }[] } }) => {
+  const out: Record<string, string> = {}
+  for (const i of r.error?.issues ?? []) out[String(i.path[0])] ??= i.message
+  return out
+}
+
 describe('performance contract (BE-19)', () => {
+  it('wires the exact BM message for every headcount create field', () => {
+    const M = PERFORMANCE_HEADCOUNT_MESSAGES
+    expect(fieldMessages(PerformanceHeadcountCreateRequestSchema.safeParse({}))).toEqual({
+      classroomId: M.classRequired,
+      subjectId: M.subjectInvalid,
+      educationLevelId: M.levelInvalid,
+      academicYear: M.yearInvalid,
+      activeOtrs: M.otrInvalid,
+      mode: M.modeInvalid,
+    })
+    const bad = { classroomId: '', subjectId: '1', educationLevelId: '10', academicYear: 2019, activeOtrs: 6, mode: 'x' }
+    expect(fieldMessages(PerformanceHeadcountCreateRequestSchema.safeParse(bad))).toEqual({
+      classroomId: M.classInvalid,
+      academicYear: M.yearInvalid,
+      activeOtrs: M.otrInvalid,
+      mode: M.modeInvalid,
+    })
+    // The mock coerces digit strings (form posts).
+    const form = { classroomId: '4', subjectId: '2', educationLevelId: '10', academicYear: '2026', activeOtrs: '3', mode: 'manual' }
+    expect(PerformanceHeadcountCreateRequestSchema.safeParse(form).success).toBe(true)
+  })
+
+  it('wires the BM messages of auto-setup and drop-students', () => {
+    const M = PERFORMANCE_HEADCOUNT_MESSAGES
+    expect(fieldMessages(PerformanceHeadcountAutoSetupRequestSchema.safeParse({ levels: [] }))).toEqual({ levels: M.levelsRequired })
+    expect(fieldMessages(PerformanceHeadcountAutoSetupRequestSchema.safeParse({}))).toEqual({ levels: M.levelsRequired })
+    expect(fieldMessages(PerformanceHeadcountAutoSetupRequestSchema.safeParse({ levels: [true] }))).toEqual({ levels: M.levelInvalid })
+    expect(PerformanceHeadcountAutoSetupRequestSchema.safeParse({ levels: [10, 'T5'] }).success).toBe(true)
+    expect(fieldMessages(PerformanceHeadcountDropRequestSchema.safeParse({ action: 'x', studentIds: [] }))).toEqual({
+      action: M.actionInvalid,
+      studentIds: M.studentsRequired,
+    })
+    expect(fieldMessages(PerformanceHeadcountDropRequestSchema.safeParse({ action: 'drop', studentIds: [5] }))).toEqual({ studentIds: M.studentsInvalid })
+  })
+
+  it('wires the BM messages of the timeline create fields', () => {
+    const M = PERFORMANCE_TIMELINE_MESSAGES
+    expect(fieldMessages(PerformanceTimelineCreateRequestSchema.safeParse({}))).toEqual({
+      title: M.titleRequired,
+      category: M.categoryInvalid,
+      photos: M.photosRequired,
+    })
+    const bad = { title: 'x'.repeat(151), category: 'cerita', eventDate: 'bukan', story: 's'.repeat(2001), photos: ['f'] }
+    expect(fieldMessages(PerformanceTimelineCreateRequestSchema.safeParse(bad))).toEqual({
+      title: M.titleTooLong,
+      eventDate: M.dateInvalid,
+      story: M.storyTooLong,
+    })
+    expect(fieldMessages(PerformanceTimelineCreateRequestSchema.safeParse({ title: '  ', category: 'lain', photos: Array(6).fill('f') }))).toEqual({
+      title: M.titleRequired,
+      photos: M.photosRequired,
+    })
+    expect(PerformanceTimelineCreateRequestSchema.safeParse({ title: 'T', category: 'lain', eventDate: '', photos: ['f'] }).success).toBe(true)
+  })
+
   it('parses a timeline post and rejects a non-MYT timestamp', () => {
     expect(PerformanceTimelinePostSchema.safeParse(post).success).toBe(true)
     expect(PerformanceTimelinePostSchema.safeParse({ ...post, createdAt: '2026-10-16T01:30:00Z' }).success).toBe(false)
@@ -100,7 +163,9 @@ describe('performance contract (BE-19)', () => {
       activity: { sessions: 1, practiceDays: 1, correct: 7, bestStreak: 2 }, posts: [post],
     }
     expect(PerformancePublicProfileSchema.safeParse(profile).success).toBe(true)
-    expect(PerformancePublicProfileSchema.safeParse({ ...profile, accuracy: 120 }).success).toBe(false)
+    // The mock does not bound percentages: unusual data must still parse.
+    expect(PerformancePublicProfileSchema.safeParse({ ...profile, accuracy: 120 }).success).toBe(true)
+    expect(PerformancePublicProfileSchema.safeParse({ ...profile, accuracy: '70' }).success).toBe(false)
   })
 
   it('parses class dashboard, class analytics, level detail and school item analysis', () => {

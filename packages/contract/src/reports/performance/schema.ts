@@ -10,9 +10,46 @@ import { DateOnlySchema, TimestampSchema } from '../../common/time'
  * the users/classes domains and are reconciled when those contracts merge.
  */
 
-const count = z.number().int().min(0)
-const pct = z.number().min(0).max(100)
+const count = z.number().int()
+const pct = z.number()
 const num = z.number()
+
+// --- Exact BM copy (mock handlers) ------------------------------------------------------------
+
+export const PERFORMANCE_HEADCOUNT_MESSAGES = {
+  duplicate: {
+    auto: 'Headcount Auto untuk kelas, subjek dan tahun ini sudah wujud.',
+    manual: 'Headcount Manual untuk kelas, subjek dan tahun ini sudah wujud.',
+  },
+  classRequired: 'Kelas diperlukan.',
+  classInvalid: 'Kelas tidak sah.',
+  subjectInvalid: 'Subjek tidak sah.',
+  levelInvalid: 'Tingkatan tidak sah.',
+  yearInvalid: 'Tahun akademik mesti antara 2020 dan 2100.',
+  otrInvalid: 'Bilangan OTR mesti 2, 3, 4 atau 5.',
+  modeInvalid: 'Mod pengiraan tidak sah.',
+  levelsRequired: 'Pilih sekurang-kurangnya satu tingkatan.',
+  studentsRequired: 'Pilih sekurang-kurangnya seorang murid.',
+  studentsInvalid: 'Murid tidak sah.',
+  actionInvalid: 'Tindakan tidak sah.',
+} as const
+
+export const PERFORMANCE_TIMELINE_MESSAGES = {
+  titleRequired: 'Tajuk diperlukan.',
+  titleTooLong: 'Tajuk terlalu panjang (maks 150 aksara).',
+  categoryInvalid: 'Kategori tidak sah.',
+  dateInvalid: 'Tarikh tidak sah.',
+  storyTooLong: 'Cerita terlalu panjang (maks 2000 aksara).',
+  photosRequired: 'Sila muat naik sekurang-kurangnya 1 gambar.',
+  photoInvalid: 'Gambar tidak sah (JPEG, PNG atau WebP, maks 2MB).',
+} as const
+
+/** Generic mock copy: 401 "Unauthenticated.", 403 "This action is unauthorized.", 404 "Not Found.". */
+export const PERFORMANCE_ERROR_MESSAGES = {
+  unauthorized: 'Unauthenticated.',
+  forbidden: 'This action is unauthorized.',
+  notFound: 'Not Found.',
+} as const
 
 // --- Enums -----------------------------------------------------------------------------------
 
@@ -190,7 +227,7 @@ export const PerformanceClassDashboardSchema = z
     trend: z.array(z.object({ date: DateOnlySchema, sessions: count, avgAccuracy: pct, activeStudents: count })),
     ranking: z.array(
       z.object({
-        rank: z.number().int().min(1),
+        rank: z.number().int(),
         userId: IdSchema,
         name: z.string(),
         sessions: count,
@@ -285,7 +322,7 @@ export const PerformanceClassAnalyticsQuerySchema = z
   .object({
     classroomId: IdSchema.optional(),
     subjectId: IdSchema.optional(),
-    riskLevel: z.union([PerformanceRiskLevelSchema, z.literal('')]).optional(),
+    riskLevel: z.string().optional().meta({ description: 'critical | high | medium | low; anything else = all.' }),
   })
   .meta({ id: 'PerformanceClassAnalyticsQuery' })
 
@@ -349,7 +386,7 @@ export const PerformanceSchoolItemAnalysisSchema = z
     ),
     questions: z.array(
       z.object({
-        rank: z.number().int().min(1),
+        rank: z.number().int(),
         questionId: IdSchema,
         stem: z.string(),
         subjectName: z.string(),
@@ -393,7 +430,7 @@ export const PerformanceClassItemAnalysisSchema = z
           attempts: count,
           students: count,
           accuracy: pct,
-          index: z.number().min(0).max(1),
+          index: z.number(),
           level: PerformanceDifficultySchema,
           wrongStudents: z.array(z.object({ userId: IdSchema, name: z.string(), times: count })),
           correctOption: optionRef,
@@ -408,7 +445,7 @@ export const PerformanceClassItemAnalysisSchema = z
             text: z.string(),
             upperPct: pct,
             lowerPct: pct,
-            index: z.number().min(-1).max(1),
+            index: z.number(),
             status: z.enum(['Sangat Baik', 'Baik', 'Sederhana', 'Lemah']),
           }),
         ),
@@ -457,11 +494,25 @@ export const PERFORMANCE_TIMELINE_LIMITS = {
  */
 export const PerformanceTimelineCreateRequestSchema = z
   .object({
-    title: z.string().trim().min(1).max(PERFORMANCE_TIMELINE_LIMITS.titleMax),
-    category: PerformanceTimelineCategorySchema,
-    eventDate: DateOnlySchema.optional(),
-    story: z.string().max(PERFORMANCE_TIMELINE_LIMITS.storyMax).optional(),
-    photos: z.array(z.string().meta({ format: 'binary' })).min(1).max(5),
+    title: z
+      .string({ error: PERFORMANCE_TIMELINE_MESSAGES.titleRequired })
+      .trim()
+      .min(1, { error: PERFORMANCE_TIMELINE_MESSAGES.titleRequired })
+      .max(PERFORMANCE_TIMELINE_LIMITS.titleMax, { error: PERFORMANCE_TIMELINE_MESSAGES.titleTooLong }),
+    category: z.enum(PERFORMANCE_TIMELINE_CATEGORIES, { error: PERFORMANCE_TIMELINE_MESSAGES.categoryInvalid }),
+    eventDate: z
+      .union([z.literal(""), z.string().regex(/^\d{4}-\d{2}-\d{2}$/, { error: PERFORMANCE_TIMELINE_MESSAGES.dateInvalid })], { error: PERFORMANCE_TIMELINE_MESSAGES.dateInvalid })
+      .optional()
+      .meta({ description: "YYYY-MM-DD; empty string = no date (the mock does not check the calendar)." }),
+    story: z
+      .string()
+      .max(PERFORMANCE_TIMELINE_LIMITS.storyMax, { error: PERFORMANCE_TIMELINE_MESSAGES.storyTooLong })
+      .optional(),
+    photos: z
+      .array(z.string().meta({ format: "binary" }), { error: PERFORMANCE_TIMELINE_MESSAGES.photosRequired })
+      .min(1, { error: PERFORMANCE_TIMELINE_MESSAGES.photosRequired })
+      .max(5, { error: PERFORMANCE_TIMELINE_MESSAGES.photosRequired })
+      .meta({ description: "JPEG/PNG/WebP, max 2 MB each; a bad file gives photos: " + PERFORMANCE_TIMELINE_MESSAGES.photoInvalid + " (not expressible in zod)." }),
     captions: z.array(z.string()).optional(),
   })
   .meta({ id: 'PerformanceTimelineCreateRequest' })
@@ -480,7 +531,7 @@ export const PerformancePublicProfileSchema = z
       name: z.string(),
       emoji: z.string(),
       level: count,
-      ordinal: z.number().int().min(1),
+      ordinal: z.number().int(),
       progressPct: pct,
       toNext: count.nullable(),
       nextName: z.string().nullable(),
@@ -511,7 +562,7 @@ export const PerformanceRankingSchema = z
     states: z.array(z.string()),
     rows: z.array(
       z.object({
-        rank: z.number().int().min(1),
+        rank: z.number().int(),
         userId: IdSchema.nullable(),
         name: z.string(),
         schoolName: z.string(),
@@ -531,10 +582,10 @@ export const PerformanceLeaderboardQuerySchema = z
 export const PerformanceLeaderboardSchema = z
   .object({
     period: z.enum(['all', 'week', 'month']),
-    me: z.object({ rank: z.number().int().min(1).nullable(), coins: count, sessions: count, accuracy: pct }),
+    me: z.object({ rank: z.number().int().nullable(), coins: count, sessions: count, accuracy: pct }),
     rows: z.array(
       z.object({
-        rank: z.number().int().min(1),
+        rank: z.number().int(),
         userId: IdSchema.nullable(),
         name: z.string(),
         avatarUrl: z.string().nullable(),
@@ -560,7 +611,7 @@ export const PerformanceHeadcountListItemSchema = z
     levelName: z.string(),
     year: z.number().int(),
     mode: PerformanceHeadcountModeSchema,
-    activeOtrs: z.number().int().min(2).max(5),
+    activeOtrs: z.number().int(),
     students: count,
   })
   .meta({ id: 'PerformanceHeadcountListItem' })
@@ -594,29 +645,42 @@ export const PerformanceHeadcountFormOptionsSchema = z
   })
   .meta({ id: 'PerformanceHeadcountFormOptions' })
 
+/** Form integer: the mock accepts a number or a digit string (the S14 form posts strings). */
+const intLike = (message: string) =>
+  z.union([z.number().int(), z.string().regex(/^-?\d+$/)], { error: message })
+const inRange = (lo: number, hi: number, message: string) =>
+  intLike(message).refine((v) => Number(v) >= lo && Number(v) <= hi, { error: message })
+const idField = (required: string | null, invalid: string) =>
+  z.string({ error: (iss) => (iss.input === undefined && required ? required : invalid) }).min(1, { error: invalid })
+
 export const PerformanceHeadcountCreateRequestSchema = z
   .object({
-    classroomId: IdSchema,
-    subjectId: IdSchema,
-    educationLevelId: IdSchema,
-    academicYear: z.number().int().min(2020).max(2100),
-    activeOtrs: z.union([z.literal(2), z.literal(3), z.literal(4), z.literal(5)]),
-    mode: PerformanceHeadcountModeSchema,
+    classroomId: idField(PERFORMANCE_HEADCOUNT_MESSAGES.classRequired, PERFORMANCE_HEADCOUNT_MESSAGES.classInvalid),
+    subjectId: idField(null, PERFORMANCE_HEADCOUNT_MESSAGES.subjectInvalid),
+    educationLevelId: idField(null, PERFORMANCE_HEADCOUNT_MESSAGES.levelInvalid),
+    academicYear: inRange(2020, 2100, PERFORMANCE_HEADCOUNT_MESSAGES.yearInvalid),
+    activeOtrs: inRange(2, 5, PERFORMANCE_HEADCOUNT_MESSAGES.otrInvalid),
+    mode: z.enum(["auto", "manual"], { error: PERFORMANCE_HEADCOUNT_MESSAGES.modeInvalid }),
   })
-  .meta({ id: 'PerformanceHeadcountCreateRequest' })
+  .meta({ id: "PerformanceHeadcountCreateRequest" })
 
 export const PerformanceHeadcountAutoSetupRequestSchema = z
   .object({
     levels: z
-      .array(z.string().min(1))
-      .min(1)
-      .meta({ description: 'Level ids, or the codes D1..D6 / T1..T5 (T1..T5 = Tingkatan 1..5).' }),
+      .array(z.union([z.string().min(1), z.number().int()], { error: PERFORMANCE_HEADCOUNT_MESSAGES.levelInvalid }), { error: PERFORMANCE_HEADCOUNT_MESSAGES.levelsRequired })
+      .min(1, { error: PERFORMANCE_HEADCOUNT_MESSAGES.levelsRequired })
+      .meta({ description: "Level ids, or the codes D1..D6 / T1..T5 (T1..T5 = Tingkatan 1..5); the mock also takes numbers." }),
   })
-  .meta({ id: 'PerformanceHeadcountAutoSetupRequest' })
+  .meta({ id: "PerformanceHeadcountAutoSetupRequest" })
 
 export const PerformanceHeadcountDropRequestSchema = z
-  .object({ action: z.enum(['drop', 'restore']), studentIds: z.array(IdSchema).min(1) })
-  .meta({ id: 'PerformanceHeadcountDropRequest' })
+  .object({
+    action: z.enum(["drop", "restore"], { error: PERFORMANCE_HEADCOUNT_MESSAGES.actionInvalid }),
+    studentIds: z
+      .array(z.string({ error: PERFORMANCE_HEADCOUNT_MESSAGES.studentsInvalid }).min(1, { error: PERFORMANCE_HEADCOUNT_MESSAGES.studentsInvalid }), { error: PERFORMANCE_HEADCOUNT_MESSAGES.studentsRequired })
+      .min(1, { error: PERFORMANCE_HEADCOUNT_MESSAGES.studentsRequired }),
+  })
+  .meta({ id: "PerformanceHeadcountDropRequest" })
 
 export const PerformanceHeadcountSortQuerySchema = z
   .object({ sort: z.string().optional().meta({ description: 'ranking (default) | name; unknown = ranking.' }) })
@@ -681,7 +745,7 @@ export const PerformanceHeadcountSummarySchema = z
     students: count,
     avgTov: num.nullable(),
     avgEtr: num.nullable(),
-    otrs: z.array(z.object({ n: z.number().int().min(1), above: count, onTrack: count, below: count, na: count })),
+    otrs: z.array(z.object({ n: z.number().int(), above: count, onTrack: count, below: count, na: count })),
   })
   .meta({ id: 'PerformanceHeadcountSummary' })
 
@@ -718,40 +782,3 @@ export const PerformanceHeadcountDetailSchema = z
     }),
   })
   .meta({ id: 'PerformanceHeadcountDetail' })
-
-// --- Exact BM copy (mock handlers) ------------------------------------------------------------
-
-export const PERFORMANCE_HEADCOUNT_MESSAGES = {
-  duplicate: {
-    auto: 'Headcount Auto untuk kelas, subjek dan tahun ini sudah wujud.',
-    manual: 'Headcount Manual untuk kelas, subjek dan tahun ini sudah wujud.',
-  },
-  classRequired: 'Kelas diperlukan.',
-  classInvalid: 'Kelas tidak sah.',
-  subjectInvalid: 'Subjek tidak sah.',
-  levelInvalid: 'Tingkatan tidak sah.',
-  yearInvalid: 'Tahun akademik mesti antara 2020 dan 2100.',
-  otrInvalid: 'Bilangan OTR mesti 2, 3, 4 atau 5.',
-  modeInvalid: 'Mod pengiraan tidak sah.',
-  levelsRequired: 'Pilih sekurang-kurangnya satu tingkatan.',
-  studentsRequired: 'Pilih sekurang-kurangnya seorang murid.',
-  studentsInvalid: 'Murid tidak sah.',
-  actionInvalid: 'Tindakan tidak sah.',
-} as const
-
-export const PERFORMANCE_TIMELINE_MESSAGES = {
-  titleRequired: 'Tajuk diperlukan.',
-  titleTooLong: 'Tajuk terlalu panjang (maks 150 aksara).',
-  categoryInvalid: 'Kategori tidak sah.',
-  dateInvalid: 'Tarikh tidak sah.',
-  storyTooLong: 'Cerita terlalu panjang (maks 2000 aksara).',
-  photosRequired: 'Sila muat naik sekurang-kurangnya 1 gambar.',
-  photoInvalid: 'Gambar tidak sah (JPEG, PNG atau WebP, maks 2MB).',
-} as const
-
-/** Generic mock copy: 401 "Unauthenticated.", 403 "This action is unauthorized.", 404 "Not Found.". */
-export const PERFORMANCE_ERROR_MESSAGES = {
-  unauthorized: 'Unauthenticated.',
-  forbidden: 'This action is unauthorized.',
-  notFound: 'Not Found.',
-} as const
