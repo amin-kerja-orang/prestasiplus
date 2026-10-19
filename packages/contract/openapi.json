@@ -52057,6 +52057,1069 @@
           "error"
         ]
       },
+      "BijakBuilderSectionRule": {
+        "oneOf": [
+          {
+            "type": "object",
+            "properties": {
+              "type": {
+                "type": "string",
+                "enum": [
+                  "all"
+                ]
+              }
+            },
+            "required": [
+              "type"
+            ],
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "properties": {
+              "type": {
+                "type": "string",
+                "enum": [
+                  "choose"
+                ]
+              },
+              "n": {
+                "type": "integer",
+                "minimum": 1
+              }
+            },
+            "required": [
+              "type",
+              "n"
+            ],
+            "additionalProperties": false
+          }
+        ],
+        "description": "{ type: all } = answer every question; { type: choose, n } = answer n of the questions (choose-N counts only the N largest questions in the section marks)."
+      },
+      "BijakBuilderPaperStatus": {
+        "type": "string",
+        "enum": [
+          "draf",
+          "terbit"
+        ],
+        "description": "draf = being assembled (editable, can be deleted); terbit = published, visible in Kertas Pilihan and locked. Unpublish (tarik balik) sets the status back to draf; there is no ready or withdrawn state. Mapping to BE-15 `papers.status` (draft, ready, published, withdrawn) is internal: draf = draft or withdrawn, terbit = published; ready is not exposed."
+      },
+      "BijakBuilderQuestionStatus": {
+        "type": "string",
+        "enum": [
+          "draft",
+          "review",
+          "approved",
+          "published",
+          "archived"
+        ],
+        "description": "Question lifecycle code (D54a): draft, review, approved, published, archived. The mock status values are realigned to these codes at the http switch."
+      },
+      "BijakBuilderPaperSection": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "label": {
+            "type": "string",
+            "minLength": 1,
+            "example": "Bahagian A"
+          },
+          "title": {
+            "type": "string"
+          },
+          "markBudget": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Marks after choose-N (printed budget)."
+          },
+          "questionCount": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Questions the section holds on the paper (not the number to answer)."
+          },
+          "compulsory": {
+            "type": "boolean",
+            "description": "\"Soalan ini mesti dijawab\"."
+          },
+          "instruction": {
+            "type": "string",
+            "description": "Authored instruction; absent means derived from the rule."
+          },
+          "rule": {
+            "$ref": "#/components/schemas/BijakBuilderSectionRule"
+          },
+          "questionIds": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Id"
+            },
+            "description": "Placed question ids, in order."
+          }
+        },
+        "required": [
+          "id",
+          "label",
+          "markBudget",
+          "questionCount",
+          "rule",
+          "questionIds"
+        ],
+        "additionalProperties": false
+      },
+      "BijakBuilderPaperSummary": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "title": {
+            "type": "string",
+            "minLength": 1
+          },
+          "subject": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Subject code.",
+            "example": "MAT"
+          },
+          "subjectName": {
+            "type": "string",
+            "minLength": 1,
+            "example": "Matematik"
+          },
+          "kertas": {
+            "type": "integer",
+            "minimum": 1,
+            "description": "Kertas number.",
+            "example": 2
+          },
+          "year": {
+            "type": "integer"
+          },
+          "code": {
+            "type": "string",
+            "minLength": 1,
+            "example": "1449/2"
+          },
+          "durationMin": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "status": {
+            "$ref": "#/components/schemas/BijakBuilderPaperStatus"
+          },
+          "questionCount": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Questions placed, all sections."
+          },
+          "marks": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Total effective marks (derived)."
+          },
+          "budget": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Total printed mark budget of the blueprint sections."
+          },
+          "ok": {
+            "type": "boolean",
+            "description": "True when the paper passes the publish check (no `errors` would be returned)."
+          },
+          "updatedAt": {
+            "$ref": "#/components/schemas/Timestamp"
+          }
+        },
+        "required": [
+          "id",
+          "title",
+          "subject",
+          "subjectName",
+          "kertas",
+          "year",
+          "code",
+          "durationMin",
+          "status",
+          "questionCount",
+          "marks",
+          "budget",
+          "ok",
+          "updatedAt"
+        ],
+        "additionalProperties": false
+      },
+      "BijakBuilderPaper": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "title": {
+            "type": "string",
+            "minLength": 1
+          },
+          "subject": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Subject code.",
+            "example": "MAT"
+          },
+          "kertas": {
+            "type": "integer",
+            "minimum": 1,
+            "description": "Kertas number.",
+            "example": 2
+          },
+          "year": {
+            "type": "integer"
+          },
+          "code": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Printed paper code.",
+            "example": "1449/2"
+          },
+          "durationMin": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "instructions": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Cover instruction lines, verbatim."
+          },
+          "reference": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/BijakPaperReferencePanel"
+            },
+            "description": "Reference-sheet panels; absent when the paper has none."
+          },
+          "sections": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/BijakBuilderPaperSection"
+            }
+          },
+          "status": {
+            "$ref": "#/components/schemas/BijakBuilderPaperStatus"
+          },
+          "createdAt": {
+            "$ref": "#/components/schemas/Timestamp"
+          },
+          "updatedAt": {
+            "$ref": "#/components/schemas/Timestamp"
+          },
+          "publishedAt": {
+            "type": "string",
+            "format": "date-time",
+            "pattern": "\\+08:00$",
+            "description": "Time of the latest publish; absent while the paper has never been published.",
+            "example": "2026-10-16T09:30:00+08:00"
+          }
+        },
+        "required": [
+          "id",
+          "title",
+          "subject",
+          "kertas",
+          "year",
+          "code",
+          "durationMin",
+          "instructions",
+          "sections",
+          "status",
+          "createdAt",
+          "updatedAt"
+        ],
+        "additionalProperties": false
+      },
+      "BijakBuilderQuestion": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "groupId": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 64,
+            "description": "Stimulus group (D6), when it has one.",
+            "example": "1042"
+          },
+          "stimulusLabel": {
+            "type": "string",
+            "description": "Label of the group stimulus, e.g. \"Rajah 2\"."
+          },
+          "preview": {
+            "type": "string",
+            "description": "Start of the stem for the picker; may hold $latex$ spans."
+          },
+          "marks": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Total marks of the question."
+          },
+          "kind": {
+            "type": "string",
+            "minLength": 1,
+            "description": "QuestionKind of the mock (for example mcq or a structured kind). The value set is not quoted by the review [PROPOSED]."
+          },
+          "topic": {
+            "type": "string",
+            "description": "Display name of the curriculum unit."
+          },
+          "status": {
+            "$ref": "#/components/schemas/BijakBuilderQuestionStatus"
+          },
+          "kertas": {
+            "type": "integer",
+            "minimum": 1,
+            "description": "Kertas number.",
+            "example": 2
+          },
+          "subject": {
+            "type": "string",
+            "minLength": 1,
+            "example": "MAT"
+          }
+        },
+        "required": [
+          "id",
+          "preview",
+          "marks",
+          "kind",
+          "topic",
+          "status",
+          "kertas",
+          "subject"
+        ],
+        "additionalProperties": false
+      },
+      "BijakBuilderGroup": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "stimulus": {
+            "$ref": "#/components/schemas/BijakAttemptStimulus"
+          },
+          "questionIds": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Id"
+            },
+            "description": "Question ids in published order."
+          }
+        },
+        "required": [
+          "id",
+          "stimulus",
+          "questionIds"
+        ],
+        "additionalProperties": false
+      },
+      "BijakBuilderEditor": {
+        "type": "object",
+        "properties": {
+          "paper": {
+            "$ref": "#/components/schemas/BijakBuilderPaper"
+          },
+          "blueprint": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "properties": {
+              "subject": {
+                "type": "string",
+                "minLength": 1,
+                "example": "MAT"
+              },
+              "subjectName": {
+                "type": "string",
+                "minLength": 1
+              },
+              "kertas": {
+                "type": "integer",
+                "minimum": 1,
+                "description": "Kertas number (the mock types it 1 | 2).",
+                "example": 2
+              },
+              "source": {
+                "type": "string",
+                "enum": [
+                  "Disahkan",
+                  "Spec",
+                  "Draf"
+                ],
+                "description": "Provenance tag (Disahkan, Spec, Draf)."
+              },
+              "code": {
+                "type": "string",
+                "minLength": 1,
+                "example": "1449/2"
+              },
+              "durationMin": {
+                "type": "integer",
+                "minimum": 1
+              },
+              "instructions": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "totalMarks": {
+                "type": "integer",
+                "minimum": 0,
+                "description": "Sum of the section mark budgets (derived)."
+              },
+              "sections": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/BijakBlueprintViewSection"
+                },
+                "minItems": 1
+              }
+            },
+            "required": [
+              "subject",
+              "subjectName",
+              "kertas",
+              "source",
+              "code",
+              "durationMin",
+              "instructions",
+              "totalMarks",
+              "sections"
+            ],
+            "additionalProperties": false,
+            "description": "The blueprint of the paper subject and kertas; null when there is none."
+          },
+          "questions": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/BijakBuilderQuestion"
+            }
+          },
+          "groups": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/BijakBuilderGroup"
+            }
+          }
+        },
+        "required": [
+          "paper",
+          "blueprint",
+          "questions",
+          "groups"
+        ],
+        "additionalProperties": false
+      },
+      "BijakBlueprintViewSection": {
+        "type": "object",
+        "properties": {
+          "label": {
+            "type": "string",
+            "minLength": 1,
+            "example": "Bahagian A"
+          },
+          "markBudget": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "questionCount": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Questions the section holds."
+          },
+          "compulsory": {
+            "type": "boolean"
+          },
+          "instruction": {
+            "type": "string",
+            "description": "Authored instruction; empty string when none."
+          },
+          "rule": {
+            "$ref": "#/components/schemas/BijakBuilderSectionRule"
+          },
+          "pool": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Pool tag the section draws from; the builder uses it to suggest questions (internal, never sent to students)."
+          }
+        },
+        "required": [
+          "label",
+          "markBudget",
+          "questionCount",
+          "compulsory",
+          "instruction",
+          "rule",
+          "pool"
+        ],
+        "additionalProperties": false
+      },
+      "BijakBuilderPaperCreate": {
+        "type": "object",
+        "properties": {
+          "subject": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 32,
+            "example": "MAT"
+          },
+          "kertas": {
+            "type": "integer",
+            "minimum": 1,
+            "description": "Kertas number.",
+            "example": 2
+          },
+          "title": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200,
+            "description": "Default title is chosen by the server when omitted [PROPOSED]."
+          }
+        },
+        "required": [
+          "subject",
+          "kertas"
+        ],
+        "additionalProperties": false
+      },
+      "BijakBuilderPaperCreateResult": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "$ref": "#/components/schemas/Id"
+          }
+        },
+        "required": [
+          "id"
+        ],
+        "additionalProperties": false
+      },
+      "BijakBuilderSectionPatch": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 64,
+            "description": "Id of a section of this paper (fixed by the blueprint).",
+            "example": "1042"
+          },
+          "questionIds": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Id"
+            },
+            "maxItems": 500
+          }
+        },
+        "required": [
+          "id",
+          "questionIds"
+        ],
+        "additionalProperties": false
+      },
+      "BijakBuilderPaperPatch": {
+        "type": "object",
+        "properties": {
+          "title": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200,
+            "example": "Percubaan SPM Matematik Kertas 2 Set B"
+          },
+          "year": {
+            "type": "integer",
+            "minimum": 1900,
+            "maximum": 2100
+          },
+          "durationMin": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 600
+          },
+          "sections": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/BijakBuilderSectionPatch"
+            },
+            "maxItems": 20
+          }
+        },
+        "additionalProperties": false
+      },
+      "BijakBuilderOk": {
+        "type": "object",
+        "properties": {
+          "ok": {
+            "type": "boolean",
+            "enum": [
+              true
+            ]
+          }
+        },
+        "required": [
+          "ok"
+        ],
+        "additionalProperties": false
+      },
+      "BijakBuilderPublishResult": {
+        "type": "object",
+        "properties": {
+          "ok": {
+            "type": "boolean"
+          },
+          "errors": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Empty when ok is true."
+          }
+        },
+        "required": [
+          "ok",
+          "errors"
+        ],
+        "additionalProperties": false
+      },
+      "BijakBuilderPreviewRequest": {
+        "type": "object",
+        "properties": {
+          "ids": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Id"
+            },
+            "maxItems": 500,
+            "description": "Question ids to preview (may be unsaved edits)."
+          }
+        },
+        "required": [
+          "ids"
+        ],
+        "additionalProperties": false
+      },
+      "BijakBuilderReviewQuestion": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "topic": {
+            "type": "string",
+            "description": "Display name of the curriculum unit."
+          },
+          "formOrigin": {
+            "type": "string",
+            "enum": [
+              "T1-T3",
+              "T4",
+              "T5"
+            ]
+          },
+          "groupId": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "stem": {
+            "type": "string"
+          },
+          "marks": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "mcq": {
+            "type": "object",
+            "properties": {
+              "options": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/BijakAttemptOption"
+                },
+                "minItems": 2
+              }
+            },
+            "required": [
+              "options"
+            ],
+            "additionalProperties": false
+          },
+          "parts": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/BijakAttemptPartView"
+            }
+          }
+        },
+        "required": [
+          "id",
+          "topic",
+          "formOrigin",
+          "stem",
+          "marks"
+        ],
+        "additionalProperties": false
+      },
+      "BijakBuilderPreview": {
+        "type": "object",
+        "properties": {
+          "questions": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/BijakBuilderReviewQuestion"
+            }
+          },
+          "stimuli": {
+            "type": "object",
+            "additionalProperties": {
+              "$ref": "#/components/schemas/BijakAttemptStimulus"
+            }
+          },
+          "optionBanks": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "array",
+              "items": {
+                "$ref": "#/components/schemas/BijakAttemptOption"
+              }
+            }
+          }
+        },
+        "required": [
+          "questions",
+          "stimuli",
+          "optionBanks"
+        ],
+        "additionalProperties": false
+      },
+      "BijakBuilderPaperListQuery": {
+        "type": "object",
+        "properties": {
+          "page": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "pageSize": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 100
+          },
+          "status": {
+            "$ref": "#/components/schemas/BijakBuilderPaperStatus"
+          }
+        }
+      },
+      "BijakBuilderCsrfError": {
+        "type": "object",
+        "properties": {
+          "error": {
+            "type": "object",
+            "properties": {
+              "code": {
+                "type": "string",
+                "enum": [
+                  "CSRF_INVALID"
+                ]
+              },
+              "message": {
+                "type": "string",
+                "enum": [
+                  "Sesi tidak sah. Sila muat semula halaman dan cuba lagi."
+                ]
+              },
+              "requestId": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "code",
+              "message"
+            ]
+          }
+        },
+        "required": [
+          "error"
+        ]
+      },
+      "BijakBlueprintView": {
+        "type": "object",
+        "properties": {
+          "subject": {
+            "type": "string",
+            "minLength": 1,
+            "example": "MAT"
+          },
+          "subjectName": {
+            "type": "string",
+            "minLength": 1
+          },
+          "kertas": {
+            "type": "integer",
+            "minimum": 1,
+            "description": "Kertas number (the mock types it 1 | 2).",
+            "example": 2
+          },
+          "source": {
+            "type": "string",
+            "enum": [
+              "Disahkan",
+              "Spec",
+              "Draf"
+            ],
+            "description": "Provenance tag (Disahkan, Spec, Draf)."
+          },
+          "code": {
+            "type": "string",
+            "minLength": 1,
+            "example": "1449/2"
+          },
+          "durationMin": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "instructions": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "totalMarks": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Sum of the section mark budgets (derived)."
+          },
+          "sections": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/BijakBlueprintViewSection"
+            },
+            "minItems": 1
+          }
+        },
+        "required": [
+          "subject",
+          "subjectName",
+          "kertas",
+          "source",
+          "code",
+          "durationMin",
+          "instructions",
+          "totalMarks",
+          "sections"
+        ],
+        "additionalProperties": false
+      },
+      "BijakBlueprintAdminSectionInput": {
+        "type": "object",
+        "properties": {
+          "label": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 100,
+            "example": "Bahagian A"
+          },
+          "markBudget": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 1000
+          },
+          "questionCount": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 500
+          },
+          "compulsory": {
+            "type": "boolean",
+            "description": "Default: false."
+          },
+          "instruction": {
+            "type": "string",
+            "maxLength": 500,
+            "description": "Default: empty."
+          },
+          "rule": {
+            "$ref": "#/components/schemas/BijakBuilderSectionRule"
+          },
+          "pool": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 64
+          }
+        },
+        "required": [
+          "label",
+          "markBudget",
+          "questionCount",
+          "rule",
+          "pool"
+        ],
+        "additionalProperties": false
+      },
+      "BijakBlueprintAdminVersionInput": {
+        "type": "object",
+        "properties": {
+          "source": {
+            "type": "string",
+            "enum": [
+              "Disahkan",
+              "Spec",
+              "Draf"
+            ],
+            "description": "Provenance tag of the blueprint. A blueprint with source Draf cannot generate a paper (NO_BLUEPRINT)."
+          },
+          "code": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 32,
+            "example": "1449/2"
+          },
+          "durationMin": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 600
+          },
+          "instructions": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "maxLength": 500
+            },
+            "maxItems": 30,
+            "description": "Cover instruction lines. Default: empty."
+          },
+          "reference": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/BijakPaperReferencePanel"
+            },
+            "maxItems": 10,
+            "description": "Reference-sheet panels for papers made from this blueprint. Write-only here: `BlueprintView` does not carry it."
+          },
+          "sections": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/BijakBlueprintAdminSectionInput"
+            },
+            "minItems": 1,
+            "maxItems": 20
+          }
+        },
+        "required": [
+          "source",
+          "code",
+          "durationMin",
+          "sections"
+        ],
+        "additionalProperties": false
+      },
+      "BijakBlueprintAdminCreate": {
+        "type": "object",
+        "properties": {
+          "subject": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 32,
+            "example": "MAT"
+          },
+          "kertas": {
+            "type": "integer",
+            "minimum": 1,
+            "description": "Kertas number.",
+            "example": 2
+          },
+          "source": {
+            "type": "string",
+            "enum": [
+              "Disahkan",
+              "Spec",
+              "Draf"
+            ],
+            "description": "Provenance tag of the blueprint. A blueprint with source Draf cannot generate a paper (NO_BLUEPRINT)."
+          },
+          "code": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 32,
+            "example": "1449/2"
+          },
+          "durationMin": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 600
+          },
+          "instructions": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "maxLength": 500
+            },
+            "maxItems": 30,
+            "description": "Cover instruction lines. Default: empty."
+          },
+          "reference": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/BijakPaperReferencePanel"
+            },
+            "maxItems": 10,
+            "description": "Reference-sheet panels for papers made from this blueprint. Write-only here: `BlueprintView` does not carry it."
+          },
+          "sections": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/BijakBlueprintAdminSectionInput"
+            },
+            "minItems": 1,
+            "maxItems": 20
+          }
+        },
+        "required": [
+          "subject",
+          "kertas",
+          "source",
+          "code",
+          "durationMin",
+          "sections"
+        ],
+        "additionalProperties": false
+      },
+      "BijakBlueprintListQuery": {
+        "type": "object",
+        "properties": {
+          "page": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "pageSize": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 100
+          },
+          "subject": {
+            "type": "string",
+            "maxLength": 32,
+            "description": "Subject code."
+          },
+          "kertas": {
+            "type": "integer",
+            "minimum": 1
+          }
+        }
+      },
       "QuestionBulkResult": {
         "type": "object",
         "properties": {
@@ -84335,6 +85398,1425 @@
                 "description": "Seconds until a retry is allowed.",
                 "schema": {
                   "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/papers": {
+      "get": {
+        "tags": [
+          "bijak-builder"
+        ],
+        "summary": "Paper builder: list papers (draf and terbit)",
+        "description": "Newest update first. Optional filter: status. Each row (AdminPaperSummary) carries subjectName, code, budget and ok. The mock listAdminPapers returns a plain array; this route is paged (deviations log). BM strings quoted from the mock server/admin.ts are confirmed by the LEAD round-3 review; any string or field the mock does not have is marked [PROPOSED]. Admin Pusat only (D40a); Guru, Admin Sekolah and Murid get 403.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "required": false,
+            "name": "page",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100
+            },
+            "required": false,
+            "name": "pageSize",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "$ref": "#/components/schemas/BijakBuilderPaperStatus"
+            },
+            "required": false,
+            "description": "draf = being assembled (editable, can be deleted); terbit = published, visible in Kertas Pilihan and locked. Unpublish (tarik balik) sets the status back to draf; there is no ready or withdrawn state. Mapping to BE-15 `papers.status` (draft, ready, published, withdrawn) is internal: draf = draft or withdrawn, terbit = published; ready is not exposed.",
+            "name": "status",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Papers (paged).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/BijakBuilderPaperSummary"
+                      }
+                    },
+                    "meta": {
+                      "$ref": "#/components/schemas/ListMeta"
+                    }
+                  },
+                  "required": [
+                    "data",
+                    "meta"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED (no valid session).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN (the active role is not Admin Pusat).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "bijak-builder"
+        ],
+        "summary": "Paper builder: create a paper (createPaper)",
+        "description": "Body { subject, kertas, title? }. The sections come from the blueprint of that subject and kertas and start empty; the status is draf. Answers the new id. No blueprint for the pair: a plain 422 VALIDATION_ERROR \"Tiada blueprint untuk subjek dan kertas ini\" with no field (the mock throws it without a field). The mock throws bad_request for every refusal; ErrorCode has no BAD_REQUEST, so the refusal is 422 VALIDATION_ERROR (mapping awaits the LEAD decision, deviations log). BM strings quoted from the mock server/admin.ts are confirmed by the LEAD round-3 review; any string or field the mock does not have is marked [PROPOSED]. Admin Pusat only (D40a); Guru, Admin Sekolah and Murid get 403.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Value of Session.csrf; required on mutating requests."
+            },
+            "required": true,
+            "description": "Value of Session.csrf; required on mutating requests.",
+            "name": "X-CSRF-Token",
+            "in": "header"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BijakBuilderPaperCreate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "The new paper id.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/BijakBuilderPaperCreateResult"
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED (no valid session).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN (the active role is not Admin Pusat) or CSRF_INVALID \"Sesi tidak sah. Sila muat semula halaman dan cuba lagi.\" (missing or wrong X-CSRF-Token).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "anyOf": [
+                    {
+                      "$ref": "#/components/schemas/ErrorBody"
+                    },
+                    {
+                      "$ref": "#/components/schemas/BijakBuilderCsrfError"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "VALIDATION_ERROR: no blueprint \"Tiada blueprint untuk subjek dan kertas ini\" (no field), or fields (subject, kertas, title \"Tajuk kertas diperlukan\").",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "RATE_LIMITED \"Terlalu banyak percubaan. Sila cuba sebentar lagi.\" The body carries retryAfter (seconds) and the Retry-After header carries the same value.",
+            "headers": {
+              "Retry-After": {
+                "description": "Seconds until a retry is allowed (same value as error.retryAfter).",
+                "schema": {
+                  "type": "integer",
+                  "minimum": 0
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/papers/preview": {
+      "post": {
+        "tags": [
+          "bijak-builder"
+        ],
+        "summary": "Paper builder: student-view preview of questions, saved or not (previewQuestions)",
+        "description": "Body { ids }: the question ids currently in the editor, so unsaved edits can be previewed (the mock previewQuestions(ids)). Answers { questions, stimuli, optionBanks }: the questions as a student sees them, the stimulus of each group by group id and the shared option bank of each group by group id. It never carries an answer key or scheme. It reads only; it is a POST because it takes a body, so it needs the CSRF header and is rate limited. Ids that do not exist are left out [PROPOSED]. The ReviewQuestion field list is derived from the BE-16 student view [PROPOSED]. BM strings quoted from the mock server/admin.ts are confirmed by the LEAD round-3 review; any string or field the mock does not have is marked [PROPOSED]. Admin Pusat only (D40a); Guru, Admin Sekolah and Murid get 403.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Value of Session.csrf; required on mutating requests."
+            },
+            "required": true,
+            "description": "Value of Session.csrf; required on mutating requests.",
+            "name": "X-CSRF-Token",
+            "in": "header"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BijakBuilderPreviewRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Questions, stimuli and option banks.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/BijakBuilderPreview"
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED (no valid session).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN (the active role is not Admin Pusat) or CSRF_INVALID \"Sesi tidak sah. Sila muat semula halaman dan cuba lagi.\" (missing or wrong X-CSRF-Token).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "anyOf": [
+                    {
+                      "$ref": "#/components/schemas/ErrorBody"
+                    },
+                    {
+                      "$ref": "#/components/schemas/BijakBuilderCsrfError"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "VALIDATION_ERROR with fields (ids).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "RATE_LIMITED \"Terlalu banyak percubaan. Sila cuba sebentar lagi.\" The body carries retryAfter (seconds) and the Retry-After header carries the same value.",
+            "headers": {
+              "Retry-After": {
+                "description": "Seconds until a retry is allowed (same value as error.retryAfter).",
+                "schema": {
+                  "type": "integer",
+                  "minimum": 0
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/papers/{id}": {
+      "get": {
+        "tags": [
+          "bijak-builder"
+        ],
+        "summary": "Paper builder: the editor read (getPaperEditor)",
+        "description": "PaperEditorData: the paper (AdminPaper, with sections and question ids), the blueprint of its subject and kertas (BlueprintView, or null), the picker candidates (BuilderQuestion) and the stimulus groups (BuilderGroup). BM strings quoted from the mock server/admin.ts are confirmed by the LEAD round-3 review; any string or field the mock does not have is marked [PROPOSED]. Admin Pusat only (D40a); Guru, Admin Sekolah and Murid get 403.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 64,
+              "description": "Paper id.",
+              "example": "1042"
+            },
+            "required": true,
+            "description": "Paper id.",
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The paper, its blueprint, picker questions and groups.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/BijakBuilderEditor"
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED (no valid session).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN (the active role is not Admin Pusat).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "NOT_FOUND \"Kertas tidak ditemui\".",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "bijak-builder"
+        ],
+        "summary": "Paper builder: edit a paper (single PUT, PaperPatch)",
+        "description": "Body { title?, year?, durationMin?, sections?: [{ id, questionIds }] }; only the keys sent change. This one route carries every edit. A terbit paper is refused: 422 VALIDATION_ERROR \"Kertas Terbit tidak boleh disunting. Tarik balik dahulu.\" (no field). Other refusals: title \"Tajuk kertas diperlukan\"; a section id that is not a section of the paper \"Bahagian tidak sah\"; a question whose curriculum subject differs from the paper subject \"Soalan tidak sah untuk kertas ini\" (a subject check only, not a kertas or status check). Duplicates and split groups are not refused here; they come back as publish errors. Answers the updated paper. The mock throws bad_request for every refusal; ErrorCode has no BAD_REQUEST, so the refusal is 422 VALIDATION_ERROR (mapping awaits the LEAD decision, deviations log). BM strings quoted from the mock server/admin.ts are confirmed by the LEAD round-3 review; any string or field the mock does not have is marked [PROPOSED]. Admin Pusat only (D40a); Guru, Admin Sekolah and Murid get 403.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 64,
+              "description": "Paper id.",
+              "example": "1042"
+            },
+            "required": true,
+            "description": "Paper id.",
+            "name": "id",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Value of Session.csrf; required on mutating requests."
+            },
+            "required": true,
+            "description": "Value of Session.csrf; required on mutating requests.",
+            "name": "X-CSRF-Token",
+            "in": "header"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BijakBuilderPaperPatch"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The updated paper.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/BijakBuilderPaper"
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED (no valid session).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN (the active role is not Admin Pusat) or CSRF_INVALID \"Sesi tidak sah. Sila muat semula halaman dan cuba lagi.\" (missing or wrong X-CSRF-Token).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "anyOf": [
+                    {
+                      "$ref": "#/components/schemas/ErrorBody"
+                    },
+                    {
+                      "$ref": "#/components/schemas/BijakBuilderCsrfError"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "NOT_FOUND \"Kertas tidak ditemui\".",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "VALIDATION_ERROR: the paper is terbit \"Kertas Terbit tidak boleh disunting. Tarik balik dahulu.\", or a field is invalid (title, year, durationMin, sections).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "RATE_LIMITED \"Terlalu banyak percubaan. Sila cuba sebentar lagi.\" The body carries retryAfter (seconds) and the Retry-After header carries the same value.",
+            "headers": {
+              "Retry-After": {
+                "description": "Seconds until a retry is allowed (same value as error.retryAfter).",
+                "schema": {
+                  "type": "integer",
+                  "minimum": 0
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "bijak-builder"
+        ],
+        "summary": "Paper builder: delete a paper (idempotent)",
+        "description": "Idempotent, as the mock deletePaper: an unknown id also answers 200 { data: { ok: true } } (so there is no 404). A terbit paper answers 422 VALIDATION_ERROR \"Tarik balik kertas Terbit sebelum memadam\" (no field); unpublish it first. The mock throws bad_request for every refusal; ErrorCode has no BAD_REQUEST, so the refusal is 422 VALIDATION_ERROR (mapping awaits the LEAD decision, deviations log). BM strings quoted from the mock server/admin.ts are confirmed by the LEAD round-3 review; any string or field the mock does not have is marked [PROPOSED]. Admin Pusat only (D40a); Guru, Admin Sekolah and Murid get 403.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 64,
+              "description": "Paper id.",
+              "example": "1042"
+            },
+            "required": true,
+            "description": "Paper id.",
+            "name": "id",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Value of Session.csrf; required on mutating requests."
+            },
+            "required": true,
+            "description": "Value of Session.csrf; required on mutating requests.",
+            "name": "X-CSRF-Token",
+            "in": "header"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Deleted, or there was nothing to delete.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/BijakBuilderOk"
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED (no valid session).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN (the active role is not Admin Pusat) or CSRF_INVALID \"Sesi tidak sah. Sila muat semula halaman dan cuba lagi.\" (missing or wrong X-CSRF-Token).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "anyOf": [
+                    {
+                      "$ref": "#/components/schemas/ErrorBody"
+                    },
+                    {
+                      "$ref": "#/components/schemas/BijakBuilderCsrfError"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "VALIDATION_ERROR \"Tarik balik kertas Terbit sebelum memadam\" (no field).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "RATE_LIMITED \"Terlalu banyak percubaan. Sila cuba sebentar lagi.\" The body carries retryAfter (seconds) and the Retry-After header carries the same value.",
+            "headers": {
+              "Retry-After": {
+                "description": "Seconds until a retry is allowed (same value as error.retryAfter).",
+                "schema": {
+                  "type": "integer",
+                  "minimum": 0
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/papers/{id}/publish": {
+      "post": {
+        "tags": [
+          "bijak-builder"
+        ],
+        "summary": "Paper builder: publish (draf to terbit)",
+        "description": "No request body. A normal 200 result (not an error): { ok: true, errors: [] }, or { ok: false, errors: string[] } with the BM lines built by checkPaper, each prefixed with the section label (\"{label}: \"): \"Kurang N soalan (perlu X, ada Y)\", \"Markah M tidak sama dengan bajet B\", \"{N} soalan belum Terbit\", \"Kumpulan rangsangan G tidak berturutan\", \"tidak lengkap\", and the paper-wide \"Soalan berulang dalam kertas: ...\" and \"Kumpulan rangsangan X dipecahkan antara dua bahagian\". Nothing changes on ok: false. On ok: true the status becomes terbit and the paper appears in GET /bijak/papers; implementations pin the question versions in force (a later edit, version n+1, does not change the paper). Publishing a paper that is already terbit is a no-op { ok: true, errors: [] } [PROPOSED]. BM strings quoted from the mock server/admin.ts are confirmed by the LEAD round-3 review; any string or field the mock does not have is marked [PROPOSED]. Admin Pusat only (D40a); Guru, Admin Sekolah and Murid get 403.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 64,
+              "description": "Paper id.",
+              "example": "1042"
+            },
+            "required": true,
+            "description": "Paper id.",
+            "name": "id",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Value of Session.csrf; required on mutating requests."
+            },
+            "required": true,
+            "description": "Value of Session.csrf; required on mutating requests.",
+            "name": "X-CSRF-Token",
+            "in": "header"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Publish result (ok true or false).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/BijakBuilderPublishResult"
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED (no valid session).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN (the active role is not Admin Pusat) or CSRF_INVALID \"Sesi tidak sah. Sila muat semula halaman dan cuba lagi.\" (missing or wrong X-CSRF-Token).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "anyOf": [
+                    {
+                      "$ref": "#/components/schemas/ErrorBody"
+                    },
+                    {
+                      "$ref": "#/components/schemas/BijakBuilderCsrfError"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "NOT_FOUND \"Kertas tidak ditemui\".",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "RATE_LIMITED \"Terlalu banyak percubaan. Sila cuba sebentar lagi.\" The body carries retryAfter (seconds) and the Retry-After header carries the same value.",
+            "headers": {
+              "Retry-After": {
+                "description": "Seconds until a retry is allowed (same value as error.retryAfter).",
+                "schema": {
+                  "type": "integer",
+                  "minimum": 0
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/papers/{id}/withdraw": {
+      "post": {
+        "tags": [
+          "bijak-builder"
+        ],
+        "summary": "Paper builder: unpublish, tarik balik (terbit back to draf)",
+        "description": "No request body. The status goes back to draf (the mock unpublishPaper; there is no withdrawn state). The paper leaves GET /bijak/papers; attempts already started are unaffected. A paper that is already draf is a no-op [PROPOSED]. The path name follows the card (\"tarik balik\"). The mock method returns void; this route answers the updated paper (deviations log). BM strings quoted from the mock server/admin.ts are confirmed by the LEAD round-3 review; any string or field the mock does not have is marked [PROPOSED]. Admin Pusat only (D40a); Guru, Admin Sekolah and Murid get 403.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 64,
+              "description": "Paper id.",
+              "example": "1042"
+            },
+            "required": true,
+            "description": "Paper id.",
+            "name": "id",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Value of Session.csrf; required on mutating requests."
+            },
+            "required": true,
+            "description": "Value of Session.csrf; required on mutating requests.",
+            "name": "X-CSRF-Token",
+            "in": "header"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The paper, now draf.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/BijakBuilderPaper"
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED (no valid session).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN (the active role is not Admin Pusat) or CSRF_INVALID \"Sesi tidak sah. Sila muat semula halaman dan cuba lagi.\" (missing or wrong X-CSRF-Token).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "anyOf": [
+                    {
+                      "$ref": "#/components/schemas/ErrorBody"
+                    },
+                    {
+                      "$ref": "#/components/schemas/BijakBuilderCsrfError"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "NOT_FOUND \"Kertas tidak ditemui\".",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "RATE_LIMITED \"Terlalu banyak percubaan. Sila cuba sebentar lagi.\" The body carries retryAfter (seconds) and the Retry-After header carries the same value.",
+            "headers": {
+              "Retry-After": {
+                "description": "Seconds until a retry is allowed (same value as error.retryAfter).",
+                "schema": {
+                  "type": "integer",
+                  "minimum": 0
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/blueprints": {
+      "get": {
+        "tags": [
+          "bijak-blueprint-admin"
+        ],
+        "summary": "Blueprint: list blueprints (BlueprintView, latest active version)",
+        "description": "One row per blueprint (subject and kertas), as the mock listBlueprints (BlueprintView). Filters: subject, kertas. Retired blueprints are not listed [PROPOSED]. The mock returns a plain array; this route is paged (deviations log). BM strings quoted from the mock server/admin.ts are confirmed by the LEAD round-3 review; any string or field the mock does not have is marked [PROPOSED]. Admin Pusat only (D40a); Guru, Admin Sekolah and Murid get 403.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "required": false,
+            "name": "page",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100
+            },
+            "required": false,
+            "name": "pageSize",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "maxLength": 32,
+              "description": "Subject code."
+            },
+            "required": false,
+            "description": "Subject code.",
+            "name": "subject",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "required": false,
+            "name": "kertas",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Blueprints (paged).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/BijakBlueprintView"
+                      }
+                    },
+                    "meta": {
+                      "$ref": "#/components/schemas/ListMeta"
+                    }
+                  },
+                  "required": [
+                    "data",
+                    "meta"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED (no valid session).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN (the active role is not Admin Pusat).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "bijak-blueprint-admin"
+        ],
+        "summary": "Blueprint admin: create a blueprint, version 1 (NO MOCK)",
+        "description": "No mock exists for blueprint writes; kept because the card requires them. A second blueprint for the same subject and kertas answers 409 CONFLICT \"Kontrak untuk subjek dan kertas ini sudah wujud. Cipta versi baharu.\" [PROPOSED]: add a version instead. BM strings quoted from the mock server/admin.ts are confirmed by the LEAD round-3 review; any string or field the mock does not have is marked [PROPOSED]. Admin Pusat only (D40a); Guru, Admin Sekolah and Murid get 403.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Value of Session.csrf; required on mutating requests."
+            },
+            "required": true,
+            "description": "Value of Session.csrf; required on mutating requests.",
+            "name": "X-CSRF-Token",
+            "in": "header"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BijakBlueprintAdminCreate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "The created blueprint (version 1).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/BijakBlueprintView"
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED (no valid session).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN (the active role is not Admin Pusat) or CSRF_INVALID \"Sesi tidak sah. Sila muat semula halaman dan cuba lagi.\" (missing or wrong X-CSRF-Token).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "anyOf": [
+                    {
+                      "$ref": "#/components/schemas/ErrorBody"
+                    },
+                    {
+                      "$ref": "#/components/schemas/BijakBuilderCsrfError"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "CONFLICT \"Kontrak untuk subjek dan kertas ini sudah wujud. Cipta versi baharu.\" [PROPOSED].",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "VALIDATION_ERROR with fields (subject, kertas, code, durationMin, sections, sections.N.*).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "RATE_LIMITED \"Terlalu banyak percubaan. Sila cuba sebentar lagi.\" The body carries retryAfter (seconds) and the Retry-After header carries the same value.",
+            "headers": {
+              "Retry-After": {
+                "description": "Seconds until a retry is allowed (same value as error.retryAfter).",
+                "schema": {
+                  "type": "integer",
+                  "minimum": 0
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/blueprints/{subject}/{kertas}": {
+      "get": {
+        "tags": [
+          "bijak-blueprint-admin"
+        ],
+        "summary": "Blueprint: one blueprint by subject and kertas (BlueprintView)",
+        "description": "BlueprintView has no id, so a blueprint is addressed by subject and kertas, as the mock does. Route path is [PROPOSED]. BM strings quoted from the mock server/admin.ts are confirmed by the LEAD round-3 review; any string or field the mock does not have is marked [PROPOSED]. Admin Pusat only (D40a); Guru, Admin Sekolah and Murid get 403.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 32,
+              "description": "Subject code.",
+              "example": "MAT"
+            },
+            "required": true,
+            "description": "Subject code.",
+            "name": "subject",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "description": "Kertas number.",
+              "example": 2
+            },
+            "required": true,
+            "description": "Kertas number.",
+            "name": "kertas",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The blueprint.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/BijakBlueprintView"
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED (no valid session).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN (the active role is not Admin Pusat).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "NOT_FOUND \"Kontrak tidak ditemui\" [PROPOSED].",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/blueprints/{subject}/{kertas}/versions": {
+      "post": {
+        "tags": [
+          "bijak-blueprint-admin"
+        ],
+        "summary": "Blueprint admin: add a new version, the only way to edit (NO MOCK)",
+        "description": "No mock exists; kept because the card requires it. Creates version n+1 from the full body; earlier versions stay as they were (a version used by a terbit paper is immutable). The version number is internal and not part of BlueprintView. A retired blueprint answers 409 CONFLICT \"Kontrak ini sudah dipersara.\" [PROPOSED]. Answers the view of the new latest version. BM strings quoted from the mock server/admin.ts are confirmed by the LEAD round-3 review; any string or field the mock does not have is marked [PROPOSED]. Admin Pusat only (D40a); Guru, Admin Sekolah and Murid get 403.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 32,
+              "description": "Subject code.",
+              "example": "MAT"
+            },
+            "required": true,
+            "description": "Subject code.",
+            "name": "subject",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "description": "Kertas number.",
+              "example": 2
+            },
+            "required": true,
+            "description": "Kertas number.",
+            "name": "kertas",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Value of Session.csrf; required on mutating requests."
+            },
+            "required": true,
+            "description": "Value of Session.csrf; required on mutating requests.",
+            "name": "X-CSRF-Token",
+            "in": "header"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BijakBlueprintAdminVersionInput"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "The blueprint at its new version.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/BijakBlueprintView"
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED (no valid session).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN (the active role is not Admin Pusat) or CSRF_INVALID \"Sesi tidak sah. Sila muat semula halaman dan cuba lagi.\" (missing or wrong X-CSRF-Token).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "anyOf": [
+                    {
+                      "$ref": "#/components/schemas/ErrorBody"
+                    },
+                    {
+                      "$ref": "#/components/schemas/BijakBuilderCsrfError"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "NOT_FOUND \"Kontrak tidak ditemui\" [PROPOSED].",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "CONFLICT \"Kontrak ini sudah dipersara.\" [PROPOSED].",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "VALIDATION_ERROR with fields (code, durationMin, sections, sections.N.*).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "RATE_LIMITED \"Terlalu banyak percubaan. Sila cuba sebentar lagi.\" The body carries retryAfter (seconds) and the Retry-After header carries the same value.",
+            "headers": {
+              "Retry-After": {
+                "description": "Seconds until a retry is allowed (same value as error.retryAfter).",
+                "schema": {
+                  "type": "integer",
+                  "minimum": 0
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/blueprints/{subject}/{kertas}/retire": {
+      "post": {
+        "tags": [
+          "bijak-blueprint-admin"
+        ],
+        "summary": "Blueprint admin: retire a blueprint (NO MOCK)",
+        "description": "No mock exists; kept because the card requires it. No request body. Every version becomes retired: it is no longer listed and new papers cannot be created from it. Terbit papers keep their version. Retiring a retired blueprint answers 409 CONFLICT \"Kontrak ini sudah dipersara.\" [PROPOSED]. BM strings quoted from the mock server/admin.ts are confirmed by the LEAD round-3 review; any string or field the mock does not have is marked [PROPOSED]. Admin Pusat only (D40a); Guru, Admin Sekolah and Murid get 403.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 32,
+              "description": "Subject code.",
+              "example": "MAT"
+            },
+            "required": true,
+            "description": "Subject code.",
+            "name": "subject",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "description": "Kertas number.",
+              "example": 2
+            },
+            "required": true,
+            "description": "Kertas number.",
+            "name": "kertas",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Value of Session.csrf; required on mutating requests."
+            },
+            "required": true,
+            "description": "Value of Session.csrf; required on mutating requests.",
+            "name": "X-CSRF-Token",
+            "in": "header"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Retired.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/BijakBuilderOk"
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED (no valid session).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN (the active role is not Admin Pusat) or CSRF_INVALID \"Sesi tidak sah. Sila muat semula halaman dan cuba lagi.\" (missing or wrong X-CSRF-Token).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "anyOf": [
+                    {
+                      "$ref": "#/components/schemas/ErrorBody"
+                    },
+                    {
+                      "$ref": "#/components/schemas/BijakBuilderCsrfError"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "NOT_FOUND \"Kontrak tidak ditemui\" [PROPOSED].",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "CONFLICT \"Kontrak ini sudah dipersara.\" [PROPOSED].",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "RATE_LIMITED \"Terlalu banyak percubaan. Sila cuba sebentar lagi.\" The body carries retryAfter (seconds) and the Retry-After header carries the same value.",
+            "headers": {
+              "Retry-After": {
+                "description": "Seconds until a retry is allowed (same value as error.retryAfter).",
+                "schema": {
+                  "type": "integer",
+                  "minimum": 0
                 }
               }
             },

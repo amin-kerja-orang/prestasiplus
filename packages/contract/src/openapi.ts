@@ -45,6 +45,7 @@ import { QUESTION_SETS_COMPONENT_SCHEMAS, registerQuestionSetsPaths } from './cl
 import { PKSK_COMPONENT_SCHEMAS, registerPkskPaths } from './pksk/paths'
 import { ANALYTICS_COMPONENT_SCHEMAS, registerAnalyticsPaths } from './reports/analytics/paths'
 import { KIRKPATRICK_COMPONENT_SCHEMAS, registerKirkpatrickPaths } from './reports/kirkpatrick/paths'
+import { BIJAK_BUILDER_COMPONENT_SCHEMAS, registerBijakBuilderPaths } from './bijak/builder/paths'
 import { PARENT_INVITE_COMPONENT_SCHEMAS, registerParentInvitePaths } from './schools/parents/paths'
 import { SUBSCRIPTION_COMPONENT_SCHEMAS, registerSubscriptionPaths } from './schools/subscriptions/paths'
 import { CIKGU_COMPONENT_SCHEMAS, registerCikguPaths } from './cikgu/paths'
@@ -110,6 +111,7 @@ export const COMPONENT_SCHEMAS = {
   ...PRACTICE_READS_COMPONENT_SCHEMAS, // BE-13
   ...ANALYTICS_COMPONENT_SCHEMAS, // BE-20 (M11)
   ...KIRKPATRICK_COMPONENT_SCHEMAS, // BE-20 (M12)
+  ...BIJAK_BUILDER_COMPONENT_SCHEMAS, // BE-39
 } as const
 
 export const CONTRACT_VERSION = '0.1.0'
@@ -117,7 +119,9 @@ export const CONTRACT_VERSION = '0.1.0'
 /** Builds the OpenAPI 3.1 document. Pure and deterministic (no dates, no environment). */
 export function buildOpenApiDocument(): Record<string, unknown> {
   const registry = new OpenAPIRegistry()
-  for (const [name, schema] of Object.entries(COMPONENT_SCHEMAS)) registry.register(name, schema)
+  // Widened on purpose: with 1000+ component schemas the literal union is too complex for tsc (TS2859).
+  const components = COMPONENT_SCHEMAS as Record<string, Parameters<OpenAPIRegistry["register"]>[1]>
+  for (const [name, schema] of Object.entries(components)) registry.register(name, schema)
   registerSessionPaths(registry) // V2-T07
   registerWalletPaths(registry) // BE-11
   registerContentPaths(registry) // BE-24 (M09)
@@ -147,6 +151,7 @@ export function buildOpenApiDocument(): Record<string, unknown> {
   registerPkskPaths(registry) // BE-42
   registerAnalyticsPaths(registry) // BE-20 (M11)
   registerKirkpatrickPaths(registry) // BE-20 (M12)
+  registerBijakBuilderPaths(registry) // BE-39
   registerParentInvitePaths(registry) // BE-25
   registerSubscriptionPaths(registry) // BE-25
   registerCikguPaths(registry) // BE-43 (M13)
