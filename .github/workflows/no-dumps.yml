@@ -1,0 +1,66 @@
+# Repository-wide guard (BE-34, BE-NFR-13): no database dumps or archives, no .migration-out/, no large files.
+# Deliberately has no `paths:` filter, so it runs on every push and pull request whatever the change touches.
+name: no-dumps
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  no-dumps:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4.2.2
+        with:
+          persist-credentials: false
+      - name: Guard - no dumps, archives, .migration-out, pg_dump files or files over 1 MB
+        shell: bash
+        run: |
+          set -euo pipefail
+          # Tracked files over 1 MB that are legitimate (checked in before this guard existed).
+          # A new large file fails the job; add it here only with the reviewer's agreement.
+          allow_large=(
+            docs/design/v2-visual-choices.html
+            docs/discovery/inventory/M08/SHU-user-shell.json
+            docs/discovery/inventory/M10/SHU-user-shell.json
+            docs/discovery/inventory/M11/_snapshot-2026-09-25.json
+            docs/discovery/inventory/M16/SHU-user-shell.json
+            docs/discovery/inventory/M18/SHU-user-shell.json
+            docs/discovery/inventory/M18/_snapshot-2026-09-26.json
+            packages/contract/openapi.json
+            src/modules/m03-curriculum/mock/data/curriculum.json
+          )
+          limit=1048576
+          fail=0
+          while IFS= read -r -d '' f; do
+            lower="${f,,}"
+            case "$lower" in
+              *.dump|*.sql.gz|*.bak|*.backup|*.pgdump|*.tar|*.tar.gz|*.tgz)
+                echo "::error file=$f::forbidden file type (dump or archive)"; fail=1 ;;
+            esac
+            case "$f" in
+              .migration-out/*|*/.migration-out/*)
+                echo "::error file=$f::files under .migration-out/ must never be tracked"; fail=1 ;;
+            esac
+            [ -f "$f" ] && [ ! -L "$f" ] || continue
+            if [ "$(head -c 5 -- "$f" | tr -d '\0')" = "PGDMP" ]; then
+              echo "::error file=$f::starts with PGDMP (a pg_dump custom-format file)"; fail=1
+            fi
+            size="$(wc -c < "$f")"
+            if [ "$size" -gt "$limit" ]; then
+              ok=0
+              for a in "${allow_large[@]}"; do [ "$f" = "$a" ] && ok=1; done
+              if [ "$ok" -eq 0 ]; then
+                echo "::error file=$f::$size bytes is over 1 MB and not in the allowlist"; fail=1
+              fi
+            fi
+          done < <(git ls-files -z)
+          if [ "$fail" -ne 0 ]; then
+            echo "Forbidden files are tracked (see the errors above)."
+            exit 1
+          fi
+          echo "No forbidden files tracked."
