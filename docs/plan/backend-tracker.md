@@ -32,12 +32,12 @@ Single source of truth for the **state of every backend card**. The lead's proje
 | BE-07 | Seed: core population (schools, users, roles) for the PoC profile | PC-1 | P0 | BE-05 | S | todo | - | `be/BE-07-seed-core-accounts` | - | Demo accounts only (Demo1234). |
 | BE-08 | Curriculum (M03): levels, subjects, chapters, topics, DSKP tree | PC-2 | P0 | BE-03 | M | todo | - | `be/BE-08-curriculum` | - | Sync S5. Unblocks BE-09. |
 | BE-09 | Question bank core (M04): schema, repository, question CRUD and eligibility | PC-2 | P0 | BE-08 | L | todo | - | `be/BE-09-question-bank-core` | - | Sync S6 (question schema). Unblocks BE-10, BE-12, BE-15. |
-| BE-10 | Question workflow: reports, submissions, imports, quality, DSKP source | PC-5 | P1 | BE-09 | M | todo | - | `be/BE-10-question-workflow` | - | Lane PC-5. PDF/AI import is BE-38. Code in modules/questions/workflow/. |
+| BE-10 | Question workflow: reports, submissions, imports, quality, DSKP source | PC-5 | P1 | BE-09 | M | todo | - | `be/BE-10-question-workflow` | - | Contract merged 2026-10-19 (PR #7, be/BE-10-contract). Lane PC-5. PDF/AI import is BE-38. Code in modules/questions/workflow/. |
 | BE-11 | Wallet, ledger and streak core (M14 core) | PC-2 | P0 | BE-03 | M | todo | - | `be/BE-11-wallet-streak-core` | - | Contract merged 2026-10-19 (PR #1, be/BE-11-contract). Contract only (wallet): 3 routes, 13 Wallet* components; PR ready. Needed by BE-12, BE-16, BE-23. Includes `tiers` (read) and `token_movements`. |
 | BE-12 | Practice sessions and answer log (M05 write path) | PC-2 | P0 | BE-09, BE-11, BE-25 | L | todo | - | `be/BE-12-practice-sessions` | - | Sync S7. Needs BE-25 (PC-1) and BE-11. |
 | BE-13 | Practice read models: dashboard, subjects, mastery, revision, targets | PC-2 | P1 | BE-12 | M | todo | - | `be/BE-13-practice-reads` | - | Missions/remedial reads moved to BE-18 (their tables are M10). |
 | BE-14 | Shared exam engine package `@pp/exam-core` (marking, math expressions, blueprint) | PC-3 | P1 | BE-01 | M | todo | - | `be/BE-14-exam-core-package` | - | Needs OD-5 and one coordinated PR touching src/modules/m28-bijak-spm/domain (lead approves). |
-| BE-15 | Bijak SPM: papers, sections, blueprints, paper generation (read side) | PC-3 | P1 | BE-09, BE-14 | M | todo | - | `be/BE-15-bijak-papers` | - | Read side. Creates `papers.status/version` and blueprint version columns so BE-39 needs no schema change. |
+| BE-15 | Bijak SPM: papers, sections, blueprints, paper generation (read side) | PC-3 | P1 | BE-09, BE-14 | M | todo | - | `be/BE-15-bijak-papers` | - | Contract merged 2026-10-19 (PR #8, be/BE-15-contract). Read side. Creates `papers.status/version` and blueprint version columns so BE-39 needs no schema change. |
 | BE-16 | Bijak SPM: attempts, autosave, timer, marking, results, history | PC-3 | P1 | BE-15, BE-14, BE-04, BE-11 | L | todo | - | `be/BE-16-bijak-attempts` | - | Security review (photos). Server timer. |
 | BE-17 | Classes and teacher basics (M10 part A) | PC-6 | P1 | BE-05, BE-08 | M | todo | - | `be/BE-17-classes-teacher` | - |  |
 | BE-18 | Teacher missions, remedial tests, question sets and DSKP picks (M10 part B) | PC-6 | P1 | BE-17, BE-09, BE-12 | M | todo | - | `be/BE-18-missions-remedial-sets` | - | Also owns GET /api/missions/today and /api/remedial-tests/*. Mission create routes are provisional (card Open question 1). |
@@ -63,14 +63,14 @@ Single source of truth for the **state of every backend card**. The lead's proje
 | BE-38 | Intake batches, extraction orchestration, review workflow, accept-to-Draf, duplicates | PC-5 | P1 | BE-09, BE-10, BE-36, BE-37 | L | todo | - | `be/BE-38-intake-workflow` | - | D52. Security review. Needs OD-20 paths. |
 | BE-39 | Paper builder and blueprint admin (write side of M28 papers) | PC-3 | P1 | BE-15, BE-10 | L | todo | - | `be/BE-39-paper-builder-blueprints` | - | D52. No Prisma change (BE-15 creates the columns). Needs BE-10 (PC-5) and BE-15. |
 | BE-40 | Intake dashboard, AI usage and budget endpoints | PC-5 | P2 | BE-36, BE-38 | S | todo | - | `be/BE-40-intake-dashboard-ai-usage` | - | D52. Admin only. |
-| BE-41 | SPM hub: Tahun Lepas, Latih Tubi, Tracking A, Subjektif, mock exams (M06) | PC-3 | P1 | BE-03, BE-08, BE-09, BE-12, BE-13 | M | todo | - | `be/BE-41-spm-hub` | - | Added 2026-10-19 (D53); lane approved by LEAD 2026-10-19 |
+| BE-41 | SPM hub: Tahun Lepas, Latih Tubi, Tracking A, Subjektif, mock exams (M06) | PC-3 | P1 | BE-03, BE-08, BE-09, BE-12, BE-13 | M | todo | - | `be/BE-41-spm-hub` | - | Contract merged 2026-10-19 (PR #9, be/BE-41-contract). Added 2026-10-19 (D53); lane approved by LEAD 2026-10-19 |
 | BE-42 | PKSK: domains, practice, exam, access grants, admin questions (M07) | PC-1 | P2 | BE-03, BE-05, BE-09, BE-10, BE-12, BE-25 | L | todo | - | `be/BE-42-pksk` | - | Added 2026-10-19 (D53); lane approved by LEAD 2026-10-19 |
 | BE-43 | Cikgu Alesa: chat, RPH, essay markings, PBD tags (M13) | PC-5 | P2 | BE-36, BE-03, BE-05, BE-08, BE-12, BE-17 | L | todo | - | `be/BE-43-cikgu-alesa` | - | Added 2026-10-19 (D53); lane approved by LEAD 2026-10-19 |
 | BE-44 | Battle arena, standings and tournaments (M16 part 1) | PC-7 | P2 | BE-03, BE-05, BE-08, BE-09, BE-12, BE-23 | L | todo | - | `be/BE-44-battle` | - | Added 2026-10-19 (D53); lane approved by LEAD 2026-10-19 |
 | BE-45 | Permainan hub, Papan Bijak, room and solo games, leagues, Sekolah Bersaing (M16 part 2) | PC-7 | P2 | BE-03, BE-05, BE-08, BE-09, BE-11, BE-13, BE-23 | L | todo | - | `be/BE-45-papan-bijak-games-hub` | - | Added 2026-10-19 (D53); lane approved by LEAD 2026-10-19 |
 | BE-46 | Marketplace: buyer slice (M20) | PC-1 | P2 | BE-03, BE-05 | M | todo | - | `be/BE-46-marketplace` | - | Added 2026-10-19 (D53); lane approved by LEAD 2026-10-19 |
 | BE-47 | Mohon Keluarga Angkat: student-side application (M21) | PC-1 | P2 | BE-03, BE-05 | S | todo | - | `be/BE-47-keluarga-angkat` | - | Added 2026-10-19 (D53); lane approved by LEAD 2026-10-19 |
-| BE-48 | Heatmap Topik Lemah read model (M25) | PC-2 | P1 | BE-12, BE-13, BE-08 | S | todo | - | `be/BE-48-heatmap-topik-lemah` | - | Added 2026-10-19 (D53); lane approved by LEAD 2026-10-19 |
+| BE-48 | Heatmap Topik Lemah read model (M25) | PC-2 | P1 | BE-12, BE-13, BE-08 | S | todo | - | `be/BE-48-heatmap-topik-lemah` | - | Contract merged 2026-10-19 (PR #5, be/BE-48-contract). Added 2026-10-19 (D53); lane approved by LEAD 2026-10-19 |
 
 ## Lead tasks (not BE cards)
 
@@ -99,6 +99,7 @@ Newest first. The lead appends a line when a card merges, a decision is made or 
 
 | Date | Entry |
 |---|---|
+| 2026-10-19 | LEAD merged contract-only PRs: BE-10(#7) BE-15(#8) BE-41(#9) BE-48(#5) after code review (Approve). Append-only conflicts resolved; openapi.json regenerated; contract:check, contract tests and tsc green. Cards back to `todo` for their full implementation. |
 | 2026-10-19 | LEAD merged contract-only PRs #1 BE-11 (wallet), #2 BE-24 (content, support), #3 BE-23 (gamification, rewards) after code review (Approve, no Blocker/Major). openapi.ts/index.ts conflicts resolved append-only; openapi.json regenerated; contract:check ok, packages/contract 182 tests pass. Cards back to `todo` for their full implementation. |
 | 2026-10-19 | LEAD approved the lanes and priorities of BE-41 to BE-48: BE-41 PC-3 P1; BE-42, BE-46, BE-47 PC-1 P2; BE-43 PC-5 P2; BE-48 PC-2 P1; BE-44 and BE-45 in the new lane PC-7 "Games and competitions" P2. Summary counts unchanged (P0 13, P1 22, P2 13). |
 | 2026-10-19 | Cards BE-41 to BE-48 added (D53(a): every module reachable in the prototype is B1): M06 SPM hub, M07 PKSK, M13 Cikgu Alesa, M16 battle and games (two cards), M20 buyer slice, M21 student side, M25 heatmap. Lanes and priorities are proposals (new lane PC-7 for M16); the LEAD confirms. |

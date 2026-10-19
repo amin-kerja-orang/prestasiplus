@@ -2,6 +2,19 @@
 
 Every backend agent on every PC follows this page. Re-read it from `origin/feature/v2-backend` at the start and end of each session. Details: [sessions.md](sessions.md) section 6.
 
+## Groups: who takes which lanes (user decision D56, 2026-10-19)
+
+Two groups of people work in parallel. Each session belongs to exactly one group, which is named in its first prompt ("Group A" or "Group B"). A session takes cards **only from its own group's lanes** (the tracker `Lane` column), so the two groups never edit the same folders.
+
+| Group | Who | Lanes |
+|---|---|---|
+| **A** | The project owner's PC (the LEAD's machine) | PC-1 Identity, PC-4 Migration, PC-6 Teacher/Reports/Seed |
+| **B** | The external collaborator's PCs | PC-2 Learning/Question bank, PC-3 Bijak/Paper builder, PC-5 AI intake, PC-7 Games |
+
+- No group named in your prompt? Ask the user which group before taking a card.
+- Cards claimed before D56 stay with their current holder until merged, even if they are in the other group's lane. Do not take over another group's claimed card.
+- Nothing left in your group? Report `idle`. Never take the other group's cards unless a Lead notice says so.
+
 ## Quick start: many sessions in parallel (read this first)
 
 Many sessions work at the same time, on one PC or on many. Each session is an independent worker.
@@ -17,7 +30,7 @@ Many sessions work at the same time, on one PC or on many. Each session is an in
    ```
    - A branch exists for a card: that card is **taken**, whatever `backend-tracker.md` on `feature/v2-backend` says. Tracker rows change on the claim branch and only reach `feature/v2-backend` when the LEAD merges.
    - Do not ask other sessions what they are doing. GitHub is the only source.
-3. **Take the first free card** from the Open list (section 0), using the rules in section 1. Several cards are open at once (contract-only cards do not wait for dependencies), so a second session normally has work.
+3. **Take the first free card of your group's lanes** (see Groups above) from the Open list (section 0), using the rules in section 1. Several cards are open at once (contract-only cards do not wait for dependencies), so a second session normally has work.
 4. **Work in your own folder.** Several sessions must never share one checkout:
    ```
    git worktree add ../pp-<card-id> -b <branch> origin/feature/v2-backend
