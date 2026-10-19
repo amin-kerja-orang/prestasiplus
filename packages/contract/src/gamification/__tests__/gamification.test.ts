@@ -456,9 +456,13 @@ describe('openapi registration', () => {
   })
 
   it('does not register the BE-11 wallet routes, the teacher economy or the parent approvals', () => {
-    expect(doc.paths['/gamification/wallet']).toBeUndefined()
-    expect(doc.paths['/gamification/transactions']).toBeUndefined()
-    expect(doc.paths['/me/gamification-summary']).toBeUndefined()
+    // BE-11 owns these routes (tag 'wallet'); once BE-11 merges they exist in the document, but never under a BE-23 tag.
+    const be23Tags = ['gamification', 'gamification-admin', 'rewards', 'rewards-admin', 'shop']
+    for (const p of ['/gamification/wallet', '/gamification/transactions', '/me/gamification-summary']) {
+      for (const op of Object.values((doc.paths[p] ?? {}) as Record<string, { tags?: string[] }>)) {
+        expect(op.tags?.some((t) => be23Tags.includes(t)), p).toBeFalsy()
+      }
+    }
     const out = Object.keys(doc.paths).filter(
       (p) => p.startsWith('/guru/gamification') || p.startsWith('/admin/gamification/guru') || p.startsWith('/parent/hadiah-approvals'),
     )

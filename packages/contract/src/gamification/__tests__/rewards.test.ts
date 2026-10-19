@@ -314,11 +314,11 @@ describe('openapi registration', () => {
   })
 
   it('registers exactly 42 BE-23 operations', () => {
-    const own = (p: string) =>
-      /^\/(gamification|admin\/gamification|admin\/reward-control|admin\/hadiah|hadiah|hadiah-digital|cabutan)(\/|$)/.test(p)
-    const count = Object.entries(doc.paths)
-      .filter(([p]) => own(p))
-      .reduce((n, [, ops]) => n + Object.keys(ops).length, 0)
+    // Count by BE-23 tags, not by path prefix: BE-11 adds /gamification/wallet and /gamification/transactions (tag 'wallet').
+    const be23Tags = ['gamification', 'gamification-admin', 'rewards', 'rewards-admin', 'shop']
+    const count = Object.values(doc.paths)
+      .flatMap((ops) => Object.values(ops as Record<string, { tags?: string[] }>))
+      .filter((op) => op.tags?.some((t) => be23Tags.includes(t))).length
     expect(count).toBe(42)
   })
 })
