@@ -60171,10 +60171,21 @@
           "games"
         ],
         "summary": "Permainan hub: open rooms and chips (M16-22)",
-        "description": "Up to 6 newest waiting rooms with a free seat, newest first. chips.battled comes from the battle read service (BE-44).",
+        "description": "Up to 6 newest waiting rooms with a free seat, newest first. chips.battled comes from the battle read service (BE-44). Lists open room codes: Cache-Control: no-store.",
         "responses": {
           "200": {
-            "description": "Open rooms and chips.",
+            "description": "Open rooms and chips; Cache-Control: no-store.",
+            "headers": {
+              "Cache-Control": {
+                "description": "no-store: the body carries a join code or answer keys and must not be cached by browsers or proxies.",
+                "schema": {
+                  "type": "string",
+                  "enum": [
+                    "no-store"
+                  ]
+                }
+              }
+            },
             "content": {
               "application/json": {
                 "schema": {
@@ -60323,7 +60334,18 @@
         },
         "responses": {
           "201": {
-            "description": "Room created.",
+            "description": "Room created; the code is a join code, Cache-Control: no-store.",
+            "headers": {
+              "Cache-Control": {
+                "description": "no-store: the body carries a join code or answer keys and must not be cached by browsers or proxies.",
+                "schema": {
+                  "type": "string",
+                  "enum": [
+                    "no-store"
+                  ]
+                }
+              }
+            },
             "content": {
               "application/json": {
                 "schema": {
@@ -60372,6 +60394,25 @@
           },
           "422": {
             "description": "VALIDATION_ERROR with fields[x] = message and the same top-level message: \"Subjek tidak sah.\" (subject), \"Tahap soalan tidak sah.\" (grade_level), \"Julat tahap tidak sah.\" (match_mode or grade_min), \"Bilangan pemain tidak sah.\" (max_players).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "RATE_LIMITED (BM \"Terlalu banyak percubaan. Sila cuba sebentar lagi.\"): body error.retryAfter and the Retry-After header carry the seconds to wait.",
+            "headers": {
+              "Retry-After": {
+                "description": "Seconds until a retry is allowed (same value as error.retryAfter).",
+                "schema": {
+                  "type": "integer",
+                  "minimum": 0
+                }
+              }
+            },
             "content": {
               "application/json": {
                 "schema": {
@@ -60433,7 +60474,18 @@
         },
         "responses": {
           "200": {
-            "description": "Joined (or already a player).",
+            "description": "Joined (or already a player); Cache-Control: no-store.",
+            "headers": {
+              "Cache-Control": {
+                "description": "no-store: the body carries a join code or answer keys and must not be cached by browsers or proxies.",
+                "schema": {
+                  "type": "string",
+                  "enum": [
+                    "no-store"
+                  ]
+                }
+              }
+            },
             "content": {
               "application/json": {
                 "schema": {
@@ -60472,6 +60524,25 @@
           },
           "404": {
             "description": "NOT_FOUND \"Bilik tidak dijumpai.\" for every refusal, or \"Permainan tidak dijumpai.\" (unknown game).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "RATE_LIMITED (BM \"Terlalu banyak percubaan. Sila cuba sebentar lagi.\"): body error.retryAfter and the Retry-After header carry the seconds to wait.",
+            "headers": {
+              "Retry-After": {
+                "description": "Seconds until a retry is allowed (same value as error.retryAfter).",
+                "schema": {
+                  "type": "integer",
+                  "minimum": 0
+                }
+              }
+            },
             "content": {
               "application/json": {
                 "schema": {
@@ -60523,7 +60594,18 @@
         ],
         "responses": {
           "200": {
-            "description": "The room.",
+            "description": "The room; Cache-Control: no-store.",
+            "headers": {
+              "Cache-Control": {
+                "description": "no-store: the body carries a join code or answer keys and must not be cached by browsers or proxies.",
+                "schema": {
+                  "type": "string",
+                  "enum": [
+                    "no-store"
+                  ]
+                }
+              }
+            },
             "content": {
               "application/json": {
                 "schema": {
@@ -60670,6 +60752,25 @@
                 }
               }
             }
+          },
+          "429": {
+            "description": "RATE_LIMITED (BM \"Terlalu banyak percubaan. Sila cuba sebentar lagi.\"): body error.retryAfter and the Retry-After header carry the seconds to wait.",
+            "headers": {
+              "Retry-After": {
+                "description": "Seconds until a retry is allowed (same value as error.retryAfter).",
+                "schema": {
+                  "type": "integer",
+                  "minimum": 0
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
           }
         }
       }
@@ -60801,6 +60902,25 @@
                 }
               }
             }
+          },
+          "429": {
+            "description": "RATE_LIMITED (BM \"Terlalu banyak percubaan. Sila cuba sebentar lagi.\"): body error.retryAfter and the Retry-After header carry the seconds to wait.",
+            "headers": {
+              "Retry-After": {
+                "description": "Seconds until a retry is allowed (same value as error.retryAfter).",
+                "schema": {
+                  "type": "integer",
+                  "minimum": 0
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
           }
         }
       }
@@ -60872,6 +60992,25 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/GamesRawError"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "RATE_LIMITED (BM \"Terlalu banyak percubaan. Sila cuba sebentar lagi.\"): body error.retryAfter and the Retry-After header carry the seconds to wait.",
+            "headers": {
+              "Retry-After": {
+                "description": "Seconds until a retry is allowed (same value as error.retryAfter).",
+                "schema": {
+                  "type": "integer",
+                  "minimum": 0
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
                 }
               }
             }
@@ -60960,6 +61099,25 @@
                 }
               }
             }
+          },
+          "429": {
+            "description": "RATE_LIMITED (BM \"Terlalu banyak percubaan. Sila cuba sebentar lagi.\"): body error.retryAfter and the Retry-After header carry the seconds to wait.",
+            "headers": {
+              "Retry-After": {
+                "description": "Seconds until a retry is allowed (same value as error.retryAfter).",
+                "schema": {
+                  "type": "integer",
+                  "minimum": 0
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
           }
         }
       }
@@ -61004,7 +61162,18 @@
         ],
         "responses": {
           "200": {
-            "description": "The session id and the items of the game.",
+            "description": "The session id and the items of the game (with answer keys); Cache-Control: no-store.",
+            "headers": {
+              "Cache-Control": {
+                "description": "no-store: the body carries a join code or answer keys and must not be cached by browsers or proxies.",
+                "schema": {
+                  "type": "string",
+                  "enum": [
+                    "no-store"
+                  ]
+                }
+              }
+            },
             "content": {
               "application/json": {
                 "schema": {
@@ -61043,6 +61212,25 @@
           },
           "422": {
             "description": "VALIDATION_ERROR \"Tahap tidak sah.\" (fields.darjah): darjah outside 1..11.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "RATE_LIMITED (BM \"Terlalu banyak percubaan. Sila cuba sebentar lagi.\"): body error.retryAfter and the Retry-After header carry the seconds to wait.",
+            "headers": {
+              "Retry-After": {
+                "description": "Seconds until a retry is allowed (same value as error.retryAfter).",
+                "schema": {
+                  "type": "integer",
+                  "minimum": 0
+                }
+              }
+            },
             "content": {
               "application/json": {
                 "schema": {
@@ -61161,6 +61349,25 @@
                 }
               }
             }
+          },
+          "429": {
+            "description": "RATE_LIMITED (BM \"Terlalu banyak percubaan. Sila cuba sebentar lagi.\"): body error.retryAfter and the Retry-After header carry the seconds to wait.",
+            "headers": {
+              "Retry-After": {
+                "description": "Seconds until a retry is allowed (same value as error.retryAfter).",
+                "schema": {
+                  "type": "integer",
+                  "minimum": 0
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
           }
         }
       }
@@ -61260,6 +61467,25 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/GamesSpinRefused"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "RATE_LIMITED (BM \"Terlalu banyak percubaan. Sila cuba sebentar lagi.\"): body error.retryAfter and the Retry-After header carry the seconds to wait.",
+            "headers": {
+              "Retry-After": {
+                "description": "Seconds until a retry is allowed (same value as error.retryAfter).",
+                "schema": {
+                  "type": "integer",
+                  "minimum": 0
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
                 }
               }
             }
@@ -61408,6 +61634,25 @@
                 }
               }
             }
+          },
+          "429": {
+            "description": "RATE_LIMITED (BM \"Terlalu banyak percubaan. Sila cuba sebentar lagi.\"): body error.retryAfter and the Retry-After header carry the seconds to wait.",
+            "headers": {
+              "Retry-After": {
+                "description": "Seconds until a retry is allowed (same value as error.retryAfter).",
+                "schema": {
+                  "type": "integer",
+                  "minimum": 0
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
           }
         }
       }
@@ -61521,6 +61766,25 @@
                 }
               }
             }
+          },
+          "429": {
+            "description": "RATE_LIMITED (BM \"Terlalu banyak percubaan. Sila cuba sebentar lagi.\"): body error.retryAfter and the Retry-After header carry the seconds to wait.",
+            "headers": {
+              "Retry-After": {
+                "description": "Seconds until a retry is allowed (same value as error.retryAfter).",
+                "schema": {
+                  "type": "integer",
+                  "minimum": 0
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
           }
         }
       }
@@ -61627,6 +61891,25 @@
           },
           "422": {
             "description": "VALIDATION_ERROR \"Bantuan tidak sah.\" (type).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "RATE_LIMITED (BM \"Terlalu banyak percubaan. Sila cuba sebentar lagi.\"): body error.retryAfter and the Retry-After header carry the seconds to wait.",
+            "headers": {
+              "Retry-After": {
+                "description": "Seconds until a retry is allowed (same value as error.retryAfter).",
+                "schema": {
+                  "type": "integer",
+                  "minimum": 0
+                }
+              }
+            },
             "content": {
               "application/json": {
                 "schema": {
@@ -61831,6 +62114,25 @@
                 }
               }
             }
+          },
+          "429": {
+            "description": "RATE_LIMITED (BM \"Terlalu banyak percubaan. Sila cuba sebentar lagi.\"): body error.retryAfter and the Retry-After header carry the seconds to wait.",
+            "headers": {
+              "Retry-After": {
+                "description": "Seconds until a retry is allowed (same value as error.retryAfter).",
+                "schema": {
+                  "type": "integer",
+                  "minimum": 0
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
           }
         }
       }
@@ -61913,6 +62215,25 @@
                 }
               }
             }
+          },
+          "429": {
+            "description": "RATE_LIMITED (BM \"Terlalu banyak percubaan. Sila cuba sebentar lagi.\"): body error.retryAfter and the Retry-After header carry the seconds to wait.",
+            "headers": {
+              "Retry-After": {
+                "description": "Seconds until a retry is allowed (same value as error.retryAfter).",
+                "schema": {
+                  "type": "integer",
+                  "minimum": 0
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
           }
         }
       }
@@ -61939,7 +62260,18 @@
         ],
         "responses": {
           "200": {
-            "description": "League detail.",
+            "description": "League detail with the invite code; Cache-Control: no-store.",
+            "headers": {
+              "Cache-Control": {
+                "description": "no-store: the body carries a join code or answer keys and must not be cached by browsers or proxies.",
+                "schema": {
+                  "type": "string",
+                  "enum": [
+                    "no-store"
+                  ]
+                }
+              }
+            },
             "content": {
               "application/json": {
                 "schema": {
@@ -62150,6 +62482,25 @@
           },
           "422": {
             "description": "VALIDATION_ERROR \"Nilai mesti antara 0 dan 38.\" (fields.boardgame_quiz_tiles).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "RATE_LIMITED (BM \"Terlalu banyak percubaan. Sila cuba sebentar lagi.\"): body error.retryAfter and the Retry-After header carry the seconds to wait.",
+            "headers": {
+              "Retry-After": {
+                "description": "Seconds until a retry is allowed (same value as error.retryAfter).",
+                "schema": {
+                  "type": "integer",
+                  "minimum": 0
+                }
+              }
+            },
             "content": {
               "application/json": {
                 "schema": {

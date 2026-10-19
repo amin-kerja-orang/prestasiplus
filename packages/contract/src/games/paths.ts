@@ -225,6 +225,31 @@ const FORBIDDEN_ADMIN = err('FORBIDDEN "This action is unauthorized." (role is n
 const FORBIDDEN_ADMIN_WRITE = err(
   'FORBIDDEN "This action is unauthorized." (role is not admin), or CSRF_INVALID (missing or wrong X-CSRF-Token).',
 )
+/**
+ * D57(a): every write route (and the solo GET that creates a session row) can answer 429. Always the standard
+ * `{ error }` body, even on the raw-body routes (M16-29, M16-31, M16-33, M16-35), because the mock has no limiter
+ * and the live raw shape has no rate-limit case.
+ */
+const RATE_LIMITED = {
+  description:
+    'RATE_LIMITED (BM "Terlalu banyak percubaan. Sila cuba sebentar lagi."): body error.retryAfter and the Retry-After header carry the seconds to wait.',
+  headers: {
+    'Retry-After': {
+      description: 'Seconds until a retry is allowed (same value as error.retryAfter).',
+      schema: { type: 'integer' as const, minimum: 0 },
+    },
+  },
+  content: { 'application/json': { schema: ErrorBodySchema } },
+}
+/** D57(b): responses that carry join codes (room code, league invite code) or answer keys are never cached. */
+const NO_STORE_HEADERS = {
+  'Cache-Control': {
+    description: 'no-store: the body carries a join code or answer keys and must not be cached by browsers or proxies.',
+    schema: { type: 'string' as const, enum: ['no-store'] },
+  },
+}
+const noStore = (schema: z.ZodType, description: string) => ({ ...json(schema, description), headers: NO_STORE_HEADERS })
+
 const GAME_404 = 'NOT_FOUND "Permainan tidak dijumpai." (unknown game).'
 
 const TAGS = ['games']
@@ -245,8 +270,8 @@ export function registerGamesPaths(registry: OpenAPIRegistry): void {
     tags: TAGS,
     summary: 'Permainan hub: open rooms and chips (M16-22)',
     description:
-      'Up to 6 newest waiting rooms with a free seat, newest first. chips.battled comes from the battle read service (BE-44).',
-    responses: { 200: json(envelopeOf(GamesHubSchema), 'Open rooms and chips.'), 401: UNAUTHORIZED },
+      'Up to 6 newest waiting rooms with a free seat, newest first. chips.battled comes from the battle read service (BE-44). Lists open room codes: Cache-Control: no-store.',
+    responses: { 200: noStore(envelopeOf(GamesHubSchema), 'Open rooms and chips; Cache-Control: no-store.'), 401: UNAUTHORIZED },
   })
 
   registry.registerPath({
@@ -271,7 +296,8 @@ export function registerGamesPaths(registry: OpenAPIRegistry): void {
       'The caller becomes host and first (human) player; the room is waiting. Success is 201. Validation order: subject, grade_level, match_mode, grade_min, max_players.',
     request: { params: GameParam, headers: [csrf], body: body(GamesRoomCreateRequestSchema) },
     responses: {
-      201: json(envelopeOf(GamesRoomCodeResultSchema), 'Room created.'),
+      429: RATE_LIMITED,
+      201: noStore(envelopeOf(GamesRoomCodeResultSchema), 'Room created; the code is a join code, Cache-Control: no-store.'),
       401: UNAUTHORIZED,
       403: CSRF_INVALID,
       404: err(GAME_404),
@@ -290,7 +316,8 @@ export function registerGamesPaths(registry: OpenAPIRegistry): void {
       'Every refusal is 404 "Bilik tidak dijumpai." (blank code, unknown room, other game, not waiting, full, grade not allowed by the match mode). Already a player: 200 with the same code, no second row.',
     request: { params: GameParam, headers: [csrf], body: body(GamesRoomJoinRequestSchema) },
     responses: {
-      200: json(envelopeOf(GamesRoomCodeResultSchema), 'Joined (or already a player).'),
+      429: RATE_LIMITED,
+      200: noStore(envelopeOf(GamesRoomCodeResultSchema), 'Joined (or already a player); Cache-Control: no-store.'),
       401: UNAUTHORIZED,
       403: CSRF_INVALID,
       404: err('NOT_FOUND "Bilik tidak dijumpai." for every refusal, or "Permainan tidak dijumpai." (unknown game).'),
@@ -306,7 +333,7 @@ export function registerGamesPaths(registry: OpenAPIRegistry): void {
       'Only players of the room; others get 404. SIMULATION on read (D53(a)): a poll by the host of a waiting room below the minimum players (2, Kuiz Relay 4) adds one bot; server clocks advance or finish timed games (Perang Fakta 10 s rounds, Teka Silang Kata 5 minutes) and settle rewards once. The question is keyless.',
     request: { params: RoomParams },
     responses: {
-      200: json(envelopeOf(GamesRoomViewSchema), 'The room.'),
+      200: noStore(envelopeOf(GamesRoomViewSchema), 'The room; Cache-Control: no-store.'),
       401: UNAUTHORIZED,
       404: err('NOT_FOUND "Bilik tidak dijumpai." (unknown, other game, or caller is not a player), or "Permainan tidak dijumpai.".'),
     },
@@ -320,6 +347,7 @@ export function registerGamesPaths(registry: OpenAPIRegistry): void {
     description: 'Host only. Draws the question pool for the room subject and the host level. No body.',
     request: { params: RoomParams, headers: [csrf] },
     responses: {
+      429: RATE_LIMITED,
       200: json(envelopeOf(GamesRoomViewSchema), 'The playing room.'),
       401: UNAUTHORIZED,
       403: FORBIDDEN_CSRF_OR('"Hanya hos boleh memulakan permainan." (caller is not the host)'),
@@ -337,6 +365,7 @@ export function registerGamesPaths(registry: OpenAPIRegistry): void {
       'Only the room human (the host) acts; every other player is a bot. If a server clock ended the game just before the action, the finished room is returned instead of an error. On finish: standings and one reward report for the caller.',
     request: { params: RoomParams, headers: [csrf], body: body(GamesRoomActionRequestSchema) },
     responses: {
+      429: RATE_LIMITED,
       200: json(envelopeOf(GamesRoomViewSchema), 'The room after the action.'),
       401: UNAUTHORIZED,
       403: FORBIDDEN_CSRF_OR('"Bukan giliran anda." (caller is not the room human)'),
@@ -358,6 +387,7 @@ export function registerGamesPaths(registry: OpenAPIRegistry): void {
     description: 'RAW live-shaped body (no `{ data }`). The 422 body is raw `{ error: "<BM>" }`, not the standard error body.',
     request: { headers: [csrf], body: body(GamesQuickMatchStartRequestSchema) },
     responses: {
+      429: RATE_LIMITED,
       200: json(GamesQuickMatchStartResponseSchema, 'Searching.'),
       401: UNAUTHORIZED,
       403: CSRF_INVALID,
@@ -381,7 +411,7 @@ export function registerGamesPaths(registry: OpenAPIRegistry): void {
     summary: 'Cancel the quick match (M16-31)',
     description: 'RAW body. Always answers cancelled and turns a searching row into cancelled.',
     request: { headers: [csrf] },
-    responses: { 200: json(GamesQuickMatchCancelResponseSchema, 'Cancelled.'), 401: UNAUTHORIZED, 403: CSRF_INVALID },
+    responses: { 429: RATE_LIMITED, 200: json(GamesQuickMatchCancelResponseSchema, 'Cancelled.'), 401: UNAUTHORIZED, 403: CSRF_INVALID },
   })
 
   // ---- single-player games --------------------------------------------------------------------------------------
@@ -395,7 +425,8 @@ export function registerGamesPaths(registry: OpenAPIRegistry): void {
       'Creates a session row and returns its items. SECURITY EXCEPTION (SEC-M16-01, BE-45 Open question 8): as in the mock, this payload carries the answer keys (is_true, correct, answer, pair_id).',
     request: { params: SoloGameParam, query: GamesSoloQuerySchema },
     responses: {
-      200: json(envelopeOf(GamesSoloPayloadSchema), 'The session id and the items of the game.'),
+      429: RATE_LIMITED,
+      200: noStore(envelopeOf(GamesSoloPayloadSchema), 'The session id and the items of the game (with answer keys); Cache-Control: no-store.'),
       401: UNAUTHORIZED,
       404: err(GAME_404),
       422: err('VALIDATION_ERROR "Tahap tidak sah." (fields.darjah): darjah outside 1..11.'),
@@ -411,6 +442,7 @@ export function registerGamesPaths(registry: OpenAPIRegistry): void {
       'RAW live-shaped bodies; errors are raw `{ message }` (404, 409, 422), not the standard error body. Own session only, one submit per session. A first result is a record, later ones only if they exceed the stored best.',
     request: { params: SoloGameParam, headers: [csrf], body: body(GamesSoloSubmitRequestSchema) },
     responses: {
+      429: RATE_LIMITED,
       200: json(GamesSoloSubmitResponseSchema, '{ is_new_record, syiling_awarded } or, for Kad Memori, { results }.'),
       401: UNAUTHORIZED,
       403: CSRF_INVALID,
@@ -438,6 +470,7 @@ export function registerGamesPaths(registry: OpenAPIRegistry): void {
     description: 'RAW body. The segment is drawn server-side by the weights. A second spin the same day is 409 raw `{ success: false, message }`.',
     request: { headers: [csrf] },
     responses: {
+      429: RATE_LIMITED,
       200: json(GamesSpinResponseSchema, 'Spin result.'),
       401: UNAUTHORIZED,
       403: CSRF_INVALID,
@@ -469,6 +502,7 @@ export function registerGamesPaths(registry: OpenAPIRegistry): void {
     description: 'Success is 200 (not 201). The first question is keyless.',
     request: { headers: [csrf], body: body(GamesJutawanStartRequestSchema) },
     responses: {
+      429: RATE_LIMITED,
       200: json(envelopeOf(GamesJutawanStartResponseSchema), 'Session, question 1 and 3 lifelines.'),
       401: UNAUTHORIZED,
       403: CSRF_INVALID,
@@ -485,6 +519,7 @@ export function registerGamesPaths(registry: OpenAPIRegistry): void {
       'Own session only. A wrong answer or level 15 ends the game with `result`; otherwise `next` is the keyless next question. On end the best level and games count are updated and one reward report is made.',
     request: { params: SessionParams, headers: [csrf], body: body(GamesJutawanAnswerRequestSchema) },
     responses: {
+      429: RATE_LIMITED,
       200: json(envelopeOf(GamesJutawanAnswerResponseSchema), 'Answer outcome.'),
       401: UNAUTHORIZED,
       403: CSRF_INVALID,
@@ -502,6 +537,7 @@ export function registerGamesPaths(registry: OpenAPIRegistry): void {
     description: 'Removes two wrong options of the current question and remembers the removal for it.',
     request: { params: SessionParams, headers: [csrf], body: body(GamesJutawanLifelineRequestSchema) },
     responses: {
+      429: RATE_LIMITED,
       200: json(envelopeOf(GamesJutawanLifelineResponseSchema), 'Removed options and lifelines left.'),
       401: UNAUTHORIZED,
       403: CSRF_INVALID,
@@ -551,6 +587,7 @@ export function registerGamesPaths(registry: OpenAPIRegistry): void {
       'Any signed-in role. The league is upcoming with an 8-character invite code (A-Z0-9); the creator school (if any) joins. Success is 201.',
     request: { headers: [csrf], body: body(GamesLeagueCreateRequestSchema) },
     responses: {
+      429: RATE_LIMITED,
       201: json(envelopeOf(GamesLeagueIdResultSchema), 'League created.'),
       401: UNAUTHORIZED,
       403: CSRF_INVALID,
@@ -568,6 +605,7 @@ export function registerGamesPaths(registry: OpenAPIRegistry): void {
     description: 'The caller school joins. Static path: wins over `/leagues/{id}`.',
     request: { headers: [csrf], body: body(GamesLeagueJoinRequestSchema) },
     responses: {
+      429: RATE_LIMITED,
       200: json(envelopeOf(GamesLeagueIdResultSchema), 'Joined.'),
       401: UNAUTHORIZED,
       403: CSRF_INVALID,
@@ -585,7 +623,7 @@ export function registerGamesPaths(registry: OpenAPIRegistry): void {
     description: 'The invite code and share link are visible to non-members, as live.',
     request: { params: LeagueParams },
     responses: {
-      200: json(envelopeOf(GamesLeagueDetailSchema), 'League detail.'),
+      200: noStore(envelopeOf(GamesLeagueDetailSchema), 'League detail with the invite code; Cache-Control: no-store.'),
       401: UNAUTHORIZED,
       404: err('NOT_FOUND "Liga tidak dijumpai.".'),
     },
@@ -623,6 +661,7 @@ export function registerGamesPaths(registry: OpenAPIRegistry): void {
     description: 'Role admin only. The mock writes no audit event.',
     request: { headers: [csrf], body: body(GamesAdminSettingsUpdateRequestSchema) },
     responses: {
+      429: RATE_LIMITED,
       200: json(envelopeOf(GamesAdminSettingsResultSchema), 'Saved.'),
       401: UNAUTHORIZED,
       403: FORBIDDEN_ADMIN_WRITE,

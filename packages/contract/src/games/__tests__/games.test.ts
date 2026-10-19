@@ -776,7 +776,7 @@ type Operation = {
   tags?: string[]
   parameters?: { name: string; in: string; required?: boolean }[]
   requestBody?: unknown
-  responses: Record<string, { content?: { 'application/json': { schema: unknown } } }>
+  responses: Record<string, { headers?: Record<string, unknown>; content?: { 'application/json': { schema: unknown } } }>
 }
 const doc = buildOpenApiDocument() as {
   paths: Record<string, Record<string, Operation>>
@@ -850,6 +850,32 @@ describe('openapi registration', () => {
     for (const { key, op } of gamesOps.filter((o) => o.method === 'get')) {
       expect(op.parameters?.some((p) => p.name === 'X-CSRF-Token') ?? false, key).toBe(false)
     }
+  })
+
+  it('D57(a): every write route (and the solo GET that creates a session) documents 429 RATE_LIMITED with retryAfter and Retry-After', () => {
+    const writes = gamesOps.filter((o) => o.method !== 'get' || o.key === 'GET /games/solo/{game}')
+    expect(writes).toHaveLength(15)
+    for (const { key, op } of writes) {
+      const r = op.responses['429']
+      expect(r, key).toBeDefined()
+      expect(JSON.stringify(r), key).toMatch(/RATE_LIMITED/)
+      expect(Object.keys(r?.headers ?? {}), key).toContain('Retry-After')
+      expect(JSON.stringify(r?.content?.['application/json']?.schema), key).toMatch(/ErrorBody/)
+    }
+    for (const { key, op } of gamesOps.filter((o) => !writes.includes(o))) expect(op.responses['429'], key).toBeUndefined()
+  })
+
+  it('D57(b): responses that carry join codes or answer keys send Cache-Control: no-store', () => {
+    const noStore = (key: string, status: string) => {
+      const r = gamesOps.find((o) => o.key === key)?.op.responses[status]
+      expect(Object.keys(r?.headers ?? {}), `${key} ${status}`).toContain('Cache-Control')
+    }
+    noStore('POST /games/{game}/rooms', '201')
+    noStore('POST /games/{game}/rooms/join', '200')
+    noStore('GET /games/{game}/rooms/{code}', '200')
+    noStore('GET /games/hub', '200')
+    noStore('GET /games/solo/{game}', '200')
+    noStore('GET /leagues/{id}', '200')
   })
 
   it('M16-51 and M16-52 are admin only: 403 "This action is unauthorized."', () => {
