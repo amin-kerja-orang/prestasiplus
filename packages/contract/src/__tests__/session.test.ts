@@ -27,6 +27,7 @@ const base = {
   landingPath: '/admin',
   expiresAt: '2026-10-16T17:30:00+08:00',
   csrf: 'tok',
+  mustChangePassword: false,
 }
 const adminSession = (): Session =>
   ({
