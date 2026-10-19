@@ -111,6 +111,11 @@ function roomCreate(
   modes: readonly [string, ...string[]],
   maxPlayersRequired: boolean,
 ) {
+  const rangeGrade = z
+    .number({ error: GAMES_MESSAGES.roomRange })
+    .int({ error: GAMES_MESSAGES.roomRange })
+    .min(1, { error: GAMES_MESSAGES.roomRange })
+    .max(11, { error: GAMES_MESSAGES.roomRange })
   const maxPlayers = z
     .number({ error: GAMES_MESSAGES.roomMaxPlayers })
     .int({ error: GAMES_MESSAGES.roomMaxPlayers })
@@ -121,8 +126,8 @@ function roomCreate(
       subject: z.enum(subjects, { error: GAMES_MESSAGES.roomSubject }),
       grade_level: z.enum(GAMES_GRADE_LEVELS, { error: GAMES_MESSAGES.roomGradeLevel }),
       match_mode: z.enum(modes, { error: GAMES_MESSAGES.roomRange }),
-      grade_min: gamesGradeNumber.optional(),
-      grade_max: gamesGradeNumber.optional(),
+      grade_min: rangeGrade.optional(),
+      grade_max: rangeGrade.optional(),
       max_players: maxPlayersRequired ? maxPlayers : maxPlayers.optional(),
     })
     .superRefine((v, ctx) => {

@@ -4,7 +4,6 @@ import { IdSchema } from '../common/ids'
 import {
   GAMES_MESSAGES,
   GamesKeylessQuestionSchema,
-  GamesSoloGameSchema,
   gamesCount,
   gamesGradeNumber,
   type GamesSoloGame,
