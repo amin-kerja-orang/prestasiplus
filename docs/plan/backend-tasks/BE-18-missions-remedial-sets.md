@@ -16,27 +16,44 @@ Teacher-assigned work and its student side: class missions, remedial test genera
 
 ## Inputs (read these)
 
-- `docs/requirements/srs/M10-teacher-class.md`, `docs/requirements/srs/M05-practice.md` (assigned modes)
-- Mock: `src/modules/m10-teacher-class/mock/handlers/{command-center-remedial,questions,extras,csv,docx,lookups}.ts` (remedial scan/generate/cancel under the Command Center base), tables `m10.missions`, `m10.remedialTests`, `m10.questionSets`, `m10.dskpBidang`, `m10.dskpSk`, `m10.dskpSp`; M05 `mock/handlers/assigned.ts`; client `src/modules/m10-teacher-class/api/*`
-- BE-17, BE-12 outputs, BE-10 DSKP GET endpoints
+- `docs/plan/AGENT-SYNC.md`, `docs/plan/sessions.md` section 5
+- `docs/requirements/srs/M10-teacher-class.md` (FR-M10-52 to FR-M10-58 missions, FR-M10-98 question papers, BR-M10-17 recipients, BR-M10-18 sets, remedial sections), `docs/requirements/srs/M05-practice.md` (assigned modes)
+- Mock: `src/modules/m10-teacher-class/mock/handlers/{command-center,command-center-remedial,questions,extras,csv,docx,lookups,student-side,dashboard}.ts`, repository `src/modules/m10-teacher-class/mock/repository/{missions,question-sets,remedial,dskp}.ts`, tables `src/modules/m10-teacher-class/mock/tables/tables.ts`: `m10.missions`, `m10.remedialTests`, `m10.questionSets`, `m10.dskpBidang`, `m10.dskpSk`, `m10.dskpSp`; M05 `src/modules/m05-practice/mock/handlers/assigned.ts` (the three assigned-work reads); client `src/modules/m10-teacher-class/api/*`, `src/modules/m10-teacher-class/api/command-center.ts`
+- Mock tests: `src/modules/m10-teacher-class/__tests__/mock/**`, `src/modules/m05-practice/__tests__/mock/structured-targets-assigned.test.ts`
+- BE-17, BE-12 outputs, BE-10 DSKP GET endpoints, BE-09 `QuestionsService`
 
 ## Outputs
 
-- Contract: `packages/contract/src/teacher-work/**`
+- Contract: `packages/contract/src/classes/missions.ts` and `packages/contract/src/classes/question-sets.ts` (new files in the PC-6 `classes/` folder)
 - `apps/api/prisma/schema/classes.prisma` additions + migration: `missions`, `mission_items`, `remedial_tests`, `question_sets`, `question_set_items`, `dskp_bidang`, `dskp_sk`, `dskp_sp`
-- `apps/api/src/modules/teacher-work/**`
-- Tests under `apps/api/test/teacher-work/**`
+- `apps/api/src/modules/missions/**` (missions, remedial tests, question sets, DSKP picks) exporting `MissionsService.forStudent(userId, today)` and `RemedialTestsService.forStudent(userId)` that BE-12 consumes
+- Tests under `apps/api/test/missions/**`
 
-## Endpoints (paths from the mock)
+## Files touched
+
+Everything a PC may write for this card. A path outside this list needs a `cross-lane` issue first (sessions.md section 5).
+
+- Folders written: `apps/api/src/modules/missions/**`.
+- Prisma file(s): `apps/api/prisma/schema/classes.prisma` and one migration folder under `apps/api/prisma/migrations/`.
+- Contract: `packages/contract/src/classes/missions.ts`, `packages/contract/src/classes/question-sets.ts` (new files only), registered in `src/openapi.ts`; `openapi.json` is regenerated with `npm run contract:emit`, never hand-edited.
+- Seeds: none.
+- Tests: `apps/api/test/missions/**`, and (after BE-31) new scenario files in `apps/api/test/conformance/missions/`.
+- Append-only shared files (one line each, never reorder): `apps/api/src/modules/index.ts` (one import and one array entry); `apps/api/prisma/migratable-models.json` (model names, alphabetical); your own rows of the mapping matrix, plan section 14.7; `docs/architecture/v2-backend-deviations.md` (a dated row only if you deviate); your own row in `docs/plan/backend-tracker.md`.
+- No-clash note: classes.prisma was last changed by BE-17 (BE-18 depends on it). It does not touch practice.prisma; it reads practice data through `PracticeRepository`.
+
+## Endpoints (paths from the mock; the Command Center base is `/api/guru/command-center`)
+
+Every route below exists in the mock (verified) except the two marked provisional.
 
 | Method and path | Notes |
 |---|---|
-| `POST /api/guru/question-papers`, `GET /api/set-soalan-saya` | teacher question set creation; student list of sets shared with them |
-| `POST /api/guru/dskp/bidang`, `POST /api/guru/dskp/sk`, `POST /api/guru/dskp/sp` | teacher DSKP picks |
+| `POST /api/guru/question-papers`, `GET /api/set-soalan-saya` | teacher question paper submission (multipart; creates an M04 submission `pending`, SRS FR-M10-98); student list of sets shared with them |
+| `POST /api/guru/dskp/bidang`, `POST /api/guru/dskp/sk`, `POST /api/guru/dskp/sp` | teacher DSKP picks (the GETs are BE-10) |
 | `GET /api/guru/remedial-progress` | remedial progress per class |
-| `GET <command-center base>/remedial/scan`, `POST <command-center base>/remedial/generate`, `POST <command-center base>/remedial/cancel` | confirm the real base path in `command-center-remedial.ts` and `command-center.ts` (the card cannot guess it) |
-| `GET /api/guru/audio-kbat/template`, `GET /api/guru/audio-kbat/template-word` | template downloads (CSV/Word) used by the teacher screens |
-| `GET /api/missions/today`, `GET /api/remedial-tests/mine` | already read in BE-13; this card creates the data they read |
+| `GET /api/guru/command-center/remedial/scan`, `POST /api/guru/command-center/remedial/generate`, `POST /api/guru/command-center/remedial/cancel` | weak-topic scan, generation, cancel |
+| `GET /api/guru/audio-kbat/template`, `GET /api/guru/audio-kbat/template-word` | template downloads (XLSX / DOCX) used by the teacher screens |
+| `GET /api/missions/today`, `GET /api/remedial-tests/mine`, `GET /api/remedial-tests/:id` | student reads moved here from BE-13 (the mock reads M10 records through seams; mock file `m05-practice/mock/handlers/assigned.ts`) |
+| `GET /api/guru/missions`, `POST /api/guru/missions` (**provisional**) | SRS FR-M10-52 and FR-M10-58 define them but the mock registers no route; build only after the lead confirms the contract (Open question 1) |
 
 ## DB tables touched
 
@@ -44,25 +61,46 @@ Teacher-assigned work and its student side: class missions, remedial test genera
 
 ## Acceptance criteria
 
-1. A teacher can assign a mission to own class only; students outside the class cannot start it (`POST /practice/sessions` with `missionId` returns 403/404 as the mock does).
-2. Remedial generation picks weak topics from the answer-row dimensions (BE-12/13), is deterministic with the seeded PRNG, and cancel is idempotent.
-3. Question set items reference questions through the repository; a deactivated question is skipped at serve time, not deleted from the set.
-4. Migrated question sets keep headers only (Q4 default): an empty set shows the mock state "perlu dibina semula" fields (confirm field in the SRS).
-5. Document/CSV templates download with correct headers, `Content-Disposition`, and no formula injection (cells starting with `=`, `+`, `-`, `@` are neutralised).
-6. All routes enforce teacher role and ownership; others get 403/404.
+1. Missions (only if Open question 1 is answered yes): a teacher launches a mission for an own class only; recipients are the class's students at launch time and are stored (`recipientIds`, SRS BR-M10-17); a student outside the class cannot start it (`POST /api/practice/sessions` with `missionId` returns the mock's 404). `GET /api/missions/today` is built regardless and returns the mock shape for seeded missions.
+2. Remedial: scan, generate and cancel keep the mock's status codes and messages (replay the cases of the mock tests); generation picks weak topics from the answer-row dimensions through `PracticeRepository` (BE-12/13), is deterministic with the seeded PRNG, and cancel is idempotent (a second cancel returns the same status). `GET /api/remedial-tests/mine` returns only `active` and `completed` tests, newest first (mock BR-32), with `teacherName` and `totalQuestions`.
+3. Question set items reference questions through `QuestionsService`; a deactivated question is skipped when the set is served, not deleted from the set. `GET /api/set-soalan-saya` returns the sets visible to the user (draft never; scheduled once due) with `attemptsLeft` = `maxAttempts` minus the user's completed `question_set` sessions, floored at 0, and `null` when attempts are unlimited (`maxAttempts` 0) (mock BR-M10-18).
+4. Migrated question sets keep headers only (Q4 default): such a set returns the mock's empty-set state; the exact field is Open question 2.
+5. Template downloads (`audio-kbat`) send the right `Content-Type` (XLSX or DOCX), `Content-Disposition: attachment` and a fixed header row copied from the mock; any generated CSV neutralises cells starting with `=`, `+`, `-`, `@`.
+6. `POST /api/guru/question-papers` accepts only the file types and size the mock accepts (read `extras.ts`), stores through BE-04 and creates a `pending` submission via BE-10's service (until BE-10 merges the PR says so).
+7. Roles: teacher routes need role `teacher`; the student reads need a session; other roles get 403; teachers act only on own classes and own records (404 otherwise); missing CSRF 403 `CSRF_INVALID`.
 
 ## Test commands
 
 ```
-npm run be:test -- apps/api/test/teacher-work
+npm run be:test -- apps/api/test/missions
 npm run be:verify
+npm run contract:check
+npm run be:test -- apps/api/test/conformance   # only after BE-31 is merged
 ```
 
-## Migration-first (plan section 14)
+## Definition of Done
 
-- Every new table that could receive .cloud rows carries `legacy_source`, `legacy_id` and `unique (legacy_source, legacy_id)`, and is added to `apps/api/prisma/migratable-models.json`. Not in the contract.
-- Enums are `text` + `check` (English codes); anything the source may lack is nullable or has a documented default.
-- Add or update this entity's row in the mapping matrix (plan section 14.7) in the same PR; seeds must not set `legacy_*` and must be idempotent.
+1. Plan section 10 (all ten items) is met.
+2. `npm run contract:check && npm run be:verify` is green; if anything under `packages/**` changed, root `npm run typecheck && npm test` is green too. Paste the real tail of the output in the PR.
+3. Conformance (BE-31): once BE-31 is merged, add this card's scenarios as new files in `apps/api/test/conformance/missions/` and run `npm run be:test -- apps/api/test/conformance`; a failure is a blocker. Before BE-31 merges, `be:verify` is the gate; write "conformance scenarios pending BE-31" in the PR.
+4. Migration-first checklist of plan section 14.9 (items 1 to 6) is complete for every table this card creates. Item 6 (insert a `legacy_source = 'cloud'` row twice through the BE-34 upsert helper and assert one row) applies once BE-34 is merged; state in the PR whether it was available.
+5. No security review is required; list any security-relevant decision in the PR anyway.
+6. The card's tracker row is updated (status, PR number, one-line note) and the PR description follows the template in `docs/plan/backend-tasks/README.md`. Nothing stays only on your PC (AGENT-SYNC.md section 4).
+
+## Migration-first (plan sections 14 and 14.9)
+
+- Follow the checklist of plan section 14.9 (items 1 to 6) for every table listed under "DB tables touched".
+- Each table that could receive .cloud rows has `legacy_source text null`, `legacy_id text null` and `unique (legacy_source, legacy_id)`, and is listed in `apps/api/prisma/migratable-models.json`. These columns never appear in the contract or in an API response.
+- Enums are `text` + `check` with English codes (no Postgres enum types); anything the source may lack is nullable or has a documented default; seeds never set `legacy_*` and are idempotent.
+- Add or update this entity's row in the mapping matrix (plan section 14.7) in the same PR.
+
+## Open questions
+
+Do not guess these; write your working assumption in the PR and ask the lead (issue labelled `question`) if it blocks you.
+
+1. `POST /api/guru/missions` and `GET /api/guru/missions` are in the SRS (provisional) but not in the mock. Build them or not? Working assumption: not until confirmed; missions come from the seed.
+2. Which field shows the empty "perlu dibina semula" state of a migrated set? Confirm in `srs/M10-teacher-class.md` before coding.
+3. The M10 inline-create error shape (`200 { error }`) question of BE-17 applies to the DSKP POSTs here too.
 
 ## Prompt for Claude Code
 
@@ -71,5 +109,5 @@ You are the backend developer for PrestasiPlus v2 working on task BE-18 (mission
 Read first, in order: docs/plan/AGENT-SYNC.md (how to claim, commit and push); AGENTS.md; docs/architecture/v2-backend-plan.md (sections 3, 6, 9, 10, 14; section 15 for intake and builder cards); docs/plan/sessions.md section 5 (folder ownership); docs/plan/backend-tasks/BE-18-missions-remedial-sets.md (this card, all of it).
 Rules: contract first (zod schemas in packages/contract/src/<domain>/, import z from ../zod, register in src/openapi.ts, run npm run contract:emit and commit openapi.json before the implementation). The frontend mock handlers, the typed client and the SRS listed in the card are the behavioural spec: do not invent business rules; write every unknown under "Open questions" in the PR description. Never commit secrets or real personal names. Do not edit src/**, e2e/**, docs/TRACKER.md or the contract common/session/auth/access folders (BE-14 and BE-32 have the explicit exceptions stated in their cards). Keep the diff inside the card Outputs and its "Files touched" list; commit after every green step and push at least hourly and before the session ends (AGENT-SYNC.md).
 When finished run npm run be:verify (and the card test commands) and report: files changed, endpoints done, tables, real test output, deviations from the mock/contract, open questions.
-Task: implement BE-18. Find the exact Command Center base path used by remedial scan/generate/cancel in src/modules/m10-teacher-class/mock/handlers before writing the contract. Reuse the BE-17 ClassesRepository, the BE-09 QuestionsRepository and the BE-12 PracticeRepository; never read their tables directly. Teachers act only on own classes.
+Task: implement BE-18. The Command Center base path is /api/guru/command-center (mock command-center.ts). Move GET /api/missions/today, GET /api/remedial-tests/mine and GET /api/remedial-tests/:id here from BE-13. Missions create/list routes are provisional: ask before building them. Reuse the BE-17 ClassesRepository, the BE-09 QuestionsRepository and the BE-12 PracticeRepository; never read their tables directly. Teachers act only on own classes.
 ```

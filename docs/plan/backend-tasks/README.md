@@ -11,8 +11,8 @@ Waves: 0 foundation, 1 identity and reference data, 2 learning loop, 3 Bijak att
 | ID | Title | Size | Wave | Depends on | Can run in parallel with |
 |---|---|---|---|---|---|
 | [BE-01](BE-01-scaffold-ci.md) | Scaffold NestJS app + backend CI | M | 0 | none | none (first) |
-| [BE-02](BE-02-db-orm.md) | PostgreSQL service, Prisma, test harness | M | 0 | BE-01 | BE-14 |
-| [BE-03](BE-03-auth-session.md) | Auth, session, roles, scope, Mod Pelajar | L | 0 | BE-02 | BE-14, BE-27 |
+| [BE-02](BE-02-db-orm.md) | PostgreSQL service, Prisma, test harness | M | 0 | BE-01 | BE-14, BE-34 (after BE-02 merges) |
+| [BE-03](BE-03-auth-session.md) | Auth, session, roles, scope, Mod Pelajar | L | 0 | BE-02 | BE-14, BE-34 |
 | [BE-14](BE-14-exam-core-package.md) | Shared `@pp/exam-core` package (needs OD-5) | M | 0/1 | BE-01 | BE-02, BE-03 and all wave 1 |
 | [BE-04](BE-04-file-storage.md) | File storage + uploads | S | 1 | BE-03 | BE-05, BE-08, BE-11 |
 | [BE-05](BE-05-users-schools.md) | Users and schools (M02 core) | L | 1 | BE-03 | BE-04, BE-08, BE-11 |
@@ -20,7 +20,7 @@ Waves: 0 foundation, 1 identity and reference data, 2 learning loop, 3 Bijak att
 | [BE-11](BE-11-wallet-streak-core.md) | Wallet, ledger, streak core (M14 core) | M | 1 | BE-03 | BE-04, BE-05, BE-08 |
 | [BE-06](BE-06-account-notifications.md) | Account basics, notifications (M01) | M | 1 | BE-03, BE-04, BE-05 | BE-08, BE-11, BE-25 |
 | [BE-07](BE-07-seed-core-accounts.md) | Seed: core population | S | 1 | BE-05 | BE-08, BE-11 |
-| [BE-24](BE-24-content-support.md) | Content + support tickets (M09, M22) | M | 1 | BE-03, BE-04 | BE-08, BE-11, BE-25 |
+| [BE-24](BE-24-content-support.md) | Content + support tickets (M09, M22) | M | 1 | BE-03, BE-04, BE-05, BE-06 | BE-08, BE-11, BE-25 |
 | [BE-25](BE-25-subscriptions-parents.md) | Subscriptions, packages, parent invites (M02 rest) | M | 1 | BE-05 | BE-06, BE-08, BE-11 |
 | [BE-09](BE-09-question-bank-core.md) | Question bank core (M04) | L | 2 | BE-08 | BE-11, BE-14, BE-17 |
 | [BE-10](BE-10-question-workflow.md) | Question workflow, reports, imports (M04) | M | 2 | BE-09 | BE-12, BE-15, BE-17 |
@@ -34,8 +34,8 @@ Waves: 0 foundation, 1 identity and reference data, 2 learning loop, 3 Bijak att
 | [BE-23](BE-23-gamification-shop.md) | Gamification economy + rewards shop (M14, M15) | L | 3 | BE-11, BE-12 | BE-16, BE-18, BE-19 |
 | [BE-20](BE-20-teacher-analytics-kirkpatrick.md) | Teacher analytics + Kirkpatrick (M11, M12) | L | 4 | BE-19 | BE-21, BE-22, BE-26 |
 | [BE-21](BE-21-school-admin.md) | School admin (M27) | L | 4 | BE-05, BE-17, BE-19 | BE-20, BE-22, BE-26 |
-| [BE-22](BE-22-command-center-admin.md) | Command Center + admin aggregates (M17, M10) | L | 4 | BE-17, BE-19 | BE-20, BE-21, BE-26 |
-| [BE-26](BE-26-seed-poc-profile.md) | Seed: PoC profile across domains | M | 4 | BE-07, BE-12, BE-16, BE-17, BE-19, BE-23 | BE-20, BE-21, BE-22 |
+| [BE-22](BE-22-command-center-admin.md) | Command Center + admin aggregates (M17, M10) | L | 4 | BE-17, BE-19, BE-23 | BE-20, BE-21, BE-26 |
+| [BE-26](BE-26-seed-poc-profile.md) | Seed: PoC profile across domains | M | 4 | BE-07, BE-12, BE-16, BE-17, BE-19, BE-23, BE-24 | BE-20, BE-21, BE-22 |
 | [BE-31](BE-31-conformance-suite.md) | Conformance suite + OpenAPI breaking-change gate | M | starts after BE-03, grows | BE-03 | all domain cards |
 | [BE-32](BE-32-http-switch-e2e.md) | Compose stack, nginx proxy, e2e against real API (joint with lead) | M | 4 | BE-03, BE-07, BE-31 (+ lead V2-T31) | domain cards |
 | [BE-33](BE-33-hardening-release.md) | Security hardening, ops runbook | M | 4 | BE-32 | BE-30 |
@@ -45,7 +45,7 @@ Waves: 0 foundation, 1 identity and reference data, 2 learning loop, 3 Bijak att
 | [BE-30](BE-30-migration-reconcile-rehearsal.md) | Reconciliation, rehearsal, cutover scripts | M | M | BE-29, BE-35 | BE-33 |
 | [BE-34](BE-34-migration-kit.md) | Migration kit: legacy-column lint, ETL control tables, upsert helper, dry-run runner | M | 0/1 | BE-02 | BE-03, BE-04, BE-05 |
 | [BE-35](BE-35-anonymiser-fixtures.md) | Anonymiser tool + synthetic .cloud fixture generator | M | M | BE-27 | API cards, BE-28 |
-| [BE-36](BE-36-ai-extraction-service.md) | AI extraction service (provider adapters, redaction, cost log, budget) | M | 1/2 | BE-03 | BE-04, BE-05, BE-08, BE-37 |
+| [BE-36](BE-36-ai-extraction-service.md) | AI extraction service (provider adapters, redaction, cost log, budget) | M | 1/2 | BE-03, BE-06 | BE-04, BE-05, BE-08, BE-37 |
 | [BE-37](BE-37-intake-files-ocr.md) | Intake files, page images, figure crops, server OCR, job runner | L | 2 | BE-04 | BE-36, BE-08, BE-09 |
 | [BE-38](BE-38-intake-workflow.md) | Intake batches, review workflow, accept-to-Draf, duplicates | L | 3 | BE-09, BE-10, BE-36, BE-37 | BE-39, BE-12, BE-16 |
 | [BE-39](BE-39-paper-builder-blueprints.md) | Paper builder + blueprint admin (write side of M28 papers) | L | 3 | BE-15, BE-10 | BE-38, BE-16 |
@@ -65,13 +65,15 @@ Never run two sessions that edit the same `apps/api/prisma/schema/<module>.prism
 
 ## Wave 4+ backlog (no cards yet; the lead promotes items when the frontend needs them)
 
+These are the only mock routes that no card builds. Counts were re-verified against the mock handlers on 2026-10-19: 488 routes in total; 381 are built by cards BE-03 to BE-25 (their endpoint tables list every one of them by full path); 107 are backlog, namely the 105 below plus the 2 student audio-play routes that BE-24 lists as not built. The session routes (`/api/session*`) and the new D52 routes are not in the 488 (they have no mock route).
+
 | Backlog item | Mock routes (count) | Notes |
 |---|---|---|
-| M06 SPM classic (databank, latih tubi, tracking, mocks) | 11 | Bijak SPM replaces most of it; confirm with the lead (OD-11) |
-| M07 PKSK | 16 | tags on the one bank in v2 (v2-question-bank A6) |
-| M16 battle, games, tournaments, leagues, Sekolah Bersaing | 28 | needed for Admin Sekolah "Sekolah Bersaing" and Murid Permainan/Tournament/Kedudukan |
-| M13 Cikgu Alesa, M25 AI centre | 8 + 1 | external AI: out of B1 (OD-7) |
-| M09 student Audio KBAT play, M20 marketplace, M21 sponsorship, M18 PPD/JPN | 5, 1, 2 | roles/features outside the prototype scope |
+| M06 SPM classic (databank, latih tubi, tracking-a, subjektif, mocks, Duta, walkthrough) | 14 | Bijak SPM replaces most of it; confirm with the lead (OD-11) |
+| M07 PKSK (student, admin access, admin questions) | 21 | tags on the one bank in v2 (v2-question-bank A6) |
+| M16 battle, games, tournaments, leagues, Sekolah Bersaing, standings | 50 | needed for Admin Sekolah "Sekolah Bersaing" and Murid Permainan/Tournament/Kedudukan |
+| M13 Cikgu Alesa (M25 AI centre has no mock route) | 10 | external AI: out of B1 (OD-7) |
+| M09 student Audio KBAT play (`GET /api/audio-kbat-sets/:id`, `POST /api/audio-kbat-sets/:id/attempts`), M20 marketplace, M21 sponsorship, M18 PPD/JPN (amaran) | 2, 5, 1, 4 | roles/features outside the prototype scope |
 | Sistem stores (`audit_logs` UI, `settings`, `feature_flags`, `ai_usage_logs`), Kewangan (`payments`, `invoices`, `dunning_logs`, `packages`) | new | V2-T27/V2-T28 in `docs/architecture/v2-frontend.md` |
 
 ## PR description template (copy into every PR)

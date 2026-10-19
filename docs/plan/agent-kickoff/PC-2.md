@@ -29,7 +29,7 @@ FOLDERS YOU MAY EDIT (and only these)
 - apps/api/src/modules/{curriculum,questions,practice,wallet,gamification,shop}/** EXCEPT apps/api/src/modules/questions/workflow/** (lane PC-5)
 - apps/api/prisma/schema/{curriculum,questions,practice,wallet,gamification}.prisma and migrations (never questions-workflow.prisma)
 - packages/contract/src/{curriculum,questions,practice,wallet,gamification}/**
-- apps/api/prisma/seed/{curriculum,questions,practice,wallet}.ts
+- apps/api/prisma/seed/{curriculum,questions,practice,wallet,gamification}.ts and apps/api/prisma/seed/curriculum-data/**
 - apps/api/test/{curriculum,questions,practice,wallet,gamification}/**
 Append-only shared files (add your own single lines only, never reorder or reformat): apps/api/src/modules/index.ts, apps/api/prisma/seed/index.ts, apps/api/prisma/migratable-models.json, the registrations in packages/contract/src/openapi.ts, docs/architecture/v2-backend-deviations.md, your own rows in docs/plan/backend-tracker.md, your own entity rows in the mapping matrix (plan section 14.7).
 

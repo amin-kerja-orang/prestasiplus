@@ -24,7 +24,7 @@ Single source of truth for the **state of every backend card**. The lead's proje
 | ID | Title | Lane | Priority | Depends on | Size | Status | Owner (PC/session) | Branch | PR | Notes |
 |---|---|---|---|---|---|---|---|---|---|---|
 | BE-01 | Scaffold the NestJS app and backend CI | PC-1 | P0 | none | M | todo | - | `be/BE-01-scaffold-ci` | - | Sync S1 (workspace + CI). Writes ADR-0020. Needs OD-1, OD-3. |
-| BE-02 | PostgreSQL service, Prisma setup and test harness | PC-1 | P0 | BE-01 | M | todo | - | `be/BE-02-db-orm` | - | Sync S2. Conventions: plan 14.2. |
+| BE-02 | PostgreSQL service, Prisma setup and test harness | PC-1 | P0 | BE-01 | M | todo | - | `be/BE-02-db-orm` | - | Sync S2. Conventions: plan 14.2. Also creates the empty migratable-models.json and the seed runner `--profile`. |
 | BE-03 | Authentication, session, roles, scope and Mod Pelajar | PC-1 | P0 | BE-02 | L | todo | - | `be/BE-03-auth-session` | - | Sync S3 (auth, scope). Security review. Users table already has legacy columns. |
 | BE-04 | File storage service and upload handling | PC-1 | P0 | BE-03 | S | todo | - | `be/BE-04-file-storage` | - | Sync S4. Security review (uploads). Also derived files for BE-37. |
 | BE-05 | Users and schools (M02): admin CRUD, search, import | PC-1 | P0 | BE-03 | L | todo | - | `be/BE-05-users-schools` | - | Sync S5. Security review (IC, passwords). Unblocks BE-17, BE-25. |
@@ -33,22 +33,22 @@ Single source of truth for the **state of every backend card**. The lead's proje
 | BE-08 | Curriculum (M03): levels, subjects, chapters, topics, DSKP tree | PC-2 | P0 | BE-03 | M | todo | - | `be/BE-08-curriculum` | - | Sync S5. Unblocks BE-09. |
 | BE-09 | Question bank core (M04): schema, repository, question CRUD and eligibility | PC-2 | P0 | BE-08 | L | todo | - | `be/BE-09-question-bank-core` | - | Sync S6 (question schema). Unblocks BE-10, BE-12, BE-15. |
 | BE-10 | Question workflow: reports, submissions, imports, quality, DSKP source | PC-5 | P1 | BE-09 | M | todo | - | `be/BE-10-question-workflow` | - | Lane PC-5. PDF/AI import is BE-38. Code in modules/questions/workflow/. |
-| BE-11 | Wallet, ledger and streak core (M14 core) | PC-2 | P0 | BE-03 | M | todo | - | `be/BE-11-wallet-streak-core` | - | Needed by BE-12, BE-16, BE-23. |
+| BE-11 | Wallet, ledger and streak core (M14 core) | PC-2 | P0 | BE-03 | M | todo | - | `be/BE-11-wallet-streak-core` | - | Needed by BE-12, BE-16, BE-23. Includes `tiers` (read) and `token_movements`. |
 | BE-12 | Practice sessions and answer log (M05 write path) | PC-2 | P0 | BE-09, BE-11, BE-25 | L | todo | - | `be/BE-12-practice-sessions` | - | Sync S7. Needs BE-25 (PC-1) and BE-11. |
-| BE-13 | Practice read models: dashboard, subjects, mastery, revision, targets | PC-2 | P1 | BE-12 | M | todo | - | `be/BE-13-practice-reads` | - |  |
+| BE-13 | Practice read models: dashboard, subjects, mastery, revision, targets | PC-2 | P1 | BE-12 | M | todo | - | `be/BE-13-practice-reads` | - | Missions/remedial reads moved to BE-18 (their tables are M10). |
 | BE-14 | Shared exam engine package `@pp/exam-core` (marking, math expressions, blueprint) | PC-3 | P1 | BE-01 | M | todo | - | `be/BE-14-exam-core-package` | - | Needs OD-5 and one coordinated PR touching src/modules/m28-bijak-spm/domain (lead approves). |
-| BE-15 | Bijak SPM: papers, sections, blueprints, paper generation (read side) | PC-3 | P1 | BE-09, BE-14 | M | todo | - | `be/BE-15-bijak-papers` | - | Read side. Tables must serve BE-39. |
+| BE-15 | Bijak SPM: papers, sections, blueprints, paper generation (read side) | PC-3 | P1 | BE-09, BE-14 | M | todo | - | `be/BE-15-bijak-papers` | - | Read side. Creates `papers.status/version` and blueprint version columns so BE-39 needs no schema change. |
 | BE-16 | Bijak SPM: attempts, autosave, timer, marking, results, history | PC-3 | P1 | BE-15, BE-14, BE-04, BE-11 | L | todo | - | `be/BE-16-bijak-attempts` | - | Security review (photos). Server timer. |
 | BE-17 | Classes and teacher basics (M10 part A) | PC-6 | P1 | BE-05, BE-08 | M | todo | - | `be/BE-17-classes-teacher` | - |  |
-| BE-18 | Teacher missions, remedial tests, question sets and DSKP picks (M10 part B) | PC-6 | P1 | BE-17, BE-09, BE-12 | M | todo | - | `be/BE-18-missions-remedial-sets` | - |  |
+| BE-18 | Teacher missions, remedial tests, question sets and DSKP picks (M10 part B) | PC-6 | P1 | BE-17, BE-09, BE-12 | M | todo | - | `be/BE-18-missions-remedial-sets` | - | Also owns GET /api/missions/today and /api/remedial-tests/*. Mission create routes are provisional (card Open question 1). |
 | BE-19 | Student performance read models (M08) | PC-6 | P1 | BE-12, BE-17 | L | todo | - | `be/BE-19-student-performance` | - |  |
 | BE-20 | Teacher analytics, monitoring and Kirkpatrick (M11, M12) | PC-6 | P2 | BE-19 | L | todo | - | `be/BE-20-teacher-analytics-kirkpatrick` | - |  |
 | BE-21 | School admin (M27): dashboards, reports, staff and student management | PC-6 | P1 | BE-05, BE-17, BE-19 | L | todo | - | `be/BE-21-school-admin` | - | Security review (school scope). |
-| BE-22 | Command Center and admin dashboard aggregates (M17, M10 Command Center) | PC-6 | P1 | BE-17, BE-19 | L | todo | - | `be/BE-22-command-center-admin` | - | Admin aggregates; Command Center. |
-| BE-23 | Gamification economy and rewards shop (M14 rest, M15) | PC-2 | P2 | BE-11, BE-12 | L | todo | - | `be/BE-23-gamification-shop` | - |  |
-| BE-24 | Content and support tickets (M09, M22) | PC-1 | P1 | BE-03, BE-04 | M | todo | - | `be/BE-24-content-support` | - |  |
+| BE-22 | Command Center and admin dashboard aggregates (M17, M10 Command Center) | PC-6 | P1 | BE-17, BE-19, BE-23 | L | todo | - | `be/BE-22-command-center-admin` | - | Admin aggregates; Command Center. Needs BE-23 (badges and achievements). |
+| BE-23 | Gamification economy and rewards shop (M14 rest, M15) | PC-2 | P2 | BE-11, BE-12 | L | todo | - | `be/BE-23-gamification-shop` | - | 58 routes (M14 rest + M15). Prisma `gamification.prisma`; modules gamification and shop. |
+| BE-24 | Content and support tickets (M09, M22) | PC-1 | P1 | BE-03, BE-04, BE-05, BE-06 | M | todo | - | `be/BE-24-content-support` | - | Needs BE-06 `NotificationsService` and BE-05 for school scoping. |
 | BE-25 | School subscriptions, packages, parent invites, complimentary students (M02 rest) | PC-1 | P0 | BE-05 | M | todo | - | `be/BE-25-subscriptions-parents` | - | Needed by BE-12; do before BE-07/06. |
-| BE-26 | Seed: PoC data profile across all carded domains | PC-6 | P2 | BE-07, BE-12, BE-16, BE-17, BE-19, BE-23 | M | todo | - | `be/BE-26-seed-poc-profile` | - | May include intake/builder seed once BE-38/39 exist. |
+| BE-26 | Seed: PoC data profile across all carded domains | PC-6 | P2 | BE-07, BE-12, BE-16, BE-17, BE-19, BE-23, BE-24 | M | todo | - | `be/BE-26-seed-poc-profile` | - | May include intake/builder seed once BE-38/39 exist. Reads BE-24 content seed. |
 | BE-27 | .cloud migration: staging schema, loader and profiling report (read-only source) | PC-4 | P1 | BE-02, BE-34 | M | todo | - | `be/BE-27-migration-staging-profiling` | - | Needs OD-2 for real data; fixtures meanwhile. Security review. |
 | BE-28 | .cloud migration: ETL for reference data, identity and classes | PC-4 | P1 | BE-27, BE-05, BE-08, BE-17, BE-25 | L | todo | - | `be/BE-28-migration-etl-core` | - | Needs OD-10. Security review. |
 | BE-29 | .cloud migration: ETL for activity, wallet, content and operations | PC-4 | P2 | BE-28, BE-11, BE-12, BE-16, BE-23, BE-24 | L | todo | - | `be/BE-29-migration-etl-activity` | - | Needs OD-10. |
@@ -58,10 +58,10 @@ Single source of truth for the **state of every backend card**. The lead's proje
 | BE-33 | Security hardening, observability and release readiness | PC-1 | P2 | BE-32, BE-16, BE-38, BE-39 | M | todo | - | `be/BE-33-hardening-release` | - | Final security pass: uploads, AI keys, SSRF, migration data handling. Release gate. |
 | BE-34 | Migration kit: legacy-column convention, ETL control tables, upsert helper, dry-run runner | PC-4 | P0 | BE-02 | M | todo | - | `be/BE-34-migration-kit` | - | Parallel with BE-03. Blocks BE-27/28. |
 | BE-35 | Anonymiser tool and synthetic .cloud fixture generator | PC-4 | P1 | BE-27 | M | todo | - | `be/BE-35-anonymiser-fixtures` | - | Lead runs the anonymiser (OD-18). Security review. |
-| BE-36 | AI extraction service: provider adapters, redaction, rate limit, cost log, budget cap | PC-5 | P1 | BE-03 | M | todo | - | `be/BE-36-ai-extraction-service` | - | D52. Security review. Mock provider default. |
+| BE-36 | AI extraction service: provider adapters, redaction, rate limit, cost log, budget cap | PC-5 | P1 | BE-03, BE-06 | M | todo | - | `be/BE-36-ai-extraction-service` | - | D52. Security review. Mock provider default. Needs BE-06 (budget notification). |
 | BE-37 | Intake files, page images, figure crops, server OCR and job runner | PC-5 | P1 | BE-04 | L | todo | - | `be/BE-37-intake-files-ocr` | - | D52. Security review (untrusted PDFs). |
 | BE-38 | Intake batches, extraction orchestration, review workflow, accept-to-Draf, duplicates | PC-5 | P1 | BE-09, BE-10, BE-36, BE-37 | L | todo | - | `be/BE-38-intake-workflow` | - | D52. Security review. Needs OD-20 paths. |
-| BE-39 | Paper builder and blueprint admin (write side of M28 papers) | PC-3 | P1 | BE-15, BE-10 | L | todo | - | `be/BE-39-paper-builder-blueprints` | - | D52. Needs BE-10 (PC-5) and BE-15. |
+| BE-39 | Paper builder and blueprint admin (write side of M28 papers) | PC-3 | P1 | BE-15, BE-10 | L | todo | - | `be/BE-39-paper-builder-blueprints` | - | D52. No Prisma change (BE-15 creates the columns). Needs BE-10 (PC-5) and BE-15. |
 | BE-40 | Intake dashboard, AI usage and budget endpoints | PC-5 | P2 | BE-36, BE-38 | S | todo | - | `be/BE-40-intake-dashboard-ai-usage` | - | D52. Admin only. |
 
 ## Lead tasks (not BE cards)

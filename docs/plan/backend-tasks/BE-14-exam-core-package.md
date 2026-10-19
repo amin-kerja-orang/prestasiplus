@@ -16,17 +16,33 @@ Extract the pure TypeScript domain logic of Bijak SPM into a workspace package s
 
 ## Inputs (read these)
 
+- `docs/plan/AGENT-SYNC.md`, `docs/plan/sessions.md` section 5 (the BE-14 exception for `src/`)
 - `docs/architecture/v2-backend-plan.md` section 13 (OD-5), section 9 (folder ownership)
 - `docs/requirements/v2-exam-schema.md` D3, D4, D5, D7; `docs/requirements/v2-bijak-spm.md` (grading ACs, equivalence marking, false-positive rules)
 - `src/modules/m28-bijak-spm/domain/{grading,math-expr,blueprint,paper-model,types}.ts` and their tests `src/modules/m28-bijak-spm/__tests__/{grading,equivalence,falsepositives,friendly,blueprint,schema}.test.ts`
-- `src/modules/m28-bijak-spm/server/store.ts` (how the domain functions are called)
+- `src/modules/m28-bijak-spm/server/store.ts` (how the domain functions are called) and every other importer of `m28-bijak-spm/domain/*` (find them with a search before the move)
+- Prerequisite: OD-5 answered by the lead and the lead told when the PR is opened (it touches frontend-owned folders).
 
 ## Outputs
 
 - `packages/exam-core/` (`package.json` name `@pp/exam-core`, `src/index.ts`, `tsconfig.json`, no runtime dependencies beyond zod if already used): the five domain files moved **with git history** (`git mv`) plus their tests
-- In `src/modules/m28-bijak-spm/**`: the minimal import changes (`../domain/...` becomes `@pp/exam-core`) and re-export shims so existing frontend imports keep working. **This is the only card allowed to touch `src/`**, and only these files; the lead must have approved OD-5 and be told when the PR is opened because it touches frontend-owned folders.
-- Root `package.json`: `@pp/exam-core` in `dependencies` of the frontend and `@pp/api`
-- `docs/adr/0020-exam-core-shared-package.md`
+- In `src/modules/m28-bijak-spm/**`: the minimal import changes (`../domain/...` becomes `@pp/exam-core`) and re-export shims so existing frontend imports keep working. **This is the only card allowed to touch `src/`** (pre-approved in sessions.md section 5), and only these files.
+- Root `package.json`: `@pp/exam-core` in the dependencies of the frontend, and in `apps/api/package.json` for `@pp/api`
+- `docs/adr/0021-exam-core-shared-package.md` (0019 and 0020 are taken; the lead renumbers on merge if two ADRs collide)
+- `apps/api/test/exam-core/import.spec.ts` (proof that the server can import the package)
+
+## Files touched
+
+Everything a PC may write for this card. A path outside this list needs a `cross-lane` issue first (sessions.md section 5).
+
+- Folders written: `packages/exam-core/**`, `src/modules/m28-bijak-spm/**`, `apps/api/test/exam-core/**`, `docs/adr/0021-exam-core-shared-package.md`.
+- Prisma file(s): none (no schema change).
+- Contract: none.
+- Seeds: none.
+- Tests: `packages/exam-core/**/*.test.ts`, `apps/api/test/exam-core/**`.
+- Other files: inside `src/modules/m28-bijak-spm/**` only import paths and re-export shims change; root `package.json`, `package-lock.json`, `apps/api/package.json` (dependency lines).
+- Append-only shared files (one line each, never reorder): `docs/architecture/v2-backend-deviations.md` (a dated row only if you deviate); your own row in `docs/plan/backend-tracker.md`.
+- No-clash note: No Prisma file. It touches `src/modules/m28-bijak-spm/**`, which no other backend card edits; BE-15/16/39 depend on this package.
 
 ## Endpoints
 
@@ -38,12 +54,12 @@ None.
 
 ## Acceptance criteria
 
-1. All existing M28 tests that cover the moved code pass unchanged from the new package location (`npm test` at the root and the package's own test run).
-2. `npm run typecheck` and `npm run build` at the root still pass (frontend consumes the package through the workspace).
-3. The package has zero imports from `src/**`, Vue, DOM or Node-only APIs (verified by an ESLint boundary rule or a test that bundles it for both node and browser).
-4. The package exports a stable public API (`gradePart`, `isBlank`, `numericValue`, `effectiveMarks`, `leavesOf`, `composeFromBlueprint`, `poolUnits`, types); anything else stays private.
-5. The server can import it in Vitest (proof test in `apps/api/test/exam-core-import.spec.ts`).
-6. No behaviour changes: no edits to logic, only moves and import paths.
+1. All existing M28 tests that cover the moved code pass unchanged from the new package location: `npm test` at the root (frontend project) and `npm -w @pp/exam-core run test` both pass, and the list of moved test files equals the list in Inputs.
+2. `npm run typecheck` and `npm run build` at the root still pass (the frontend consumes the package through the workspace).
+3. The package has zero imports from `src/**`, Vue, the DOM or Node-only APIs: an ESLint `no-restricted-imports` boundary rule fails on any such import (demonstrated by a deliberate violation in the PR), and a test bundles the package for both `node` and `browser` platforms.
+4. The package exports exactly the public API `gradePart`, `isBlank`, `numericValue`, `effectiveMarks`, `leavesOf`, `composeFromBlueprint`, `poolUnits` and the types they need (a test snapshots `Object.keys(require('@pp/exam-core'))`); anything else stays private.
+5. `apps/api/test/exam-core/import.spec.ts` imports the package in Vitest and calls `gradePart` on one fixture part.
+6. No behaviour change: `git diff -M` shows the moved files as renames with import-path changes only; no edit to logic (reviewer check, listed in the PR).
 
 ## Test commands
 
@@ -53,6 +69,19 @@ npm -w @pp/exam-core run test
 npm run typecheck && npm run build
 npm run be:verify
 ```
+
+## Definition of Done
+
+1. Plan section 10 (all ten items) is met.
+2. `npm run contract:check && npm run be:verify` is green. Paste the real tail of the output in the PR.
+3. This card has no HTTP endpoints, so it adds no conformance scenarios; after BE-31 merges, `npm run be:test -- apps/api/test/conformance` must still pass.
+4. This card creates no tables; the migration-first checklist (plan section 14.9) does not apply, but no change may break `npm run be:lint:migration` (once BE-34 is merged).
+5. No security review is required; list any security-relevant decision in the PR anyway.
+6. The card's tracker row is updated (status, PR number, one-line note) and the PR description follows the template in `docs/plan/backend-tasks/README.md`. Nothing stays only on your PC (AGENT-SYNC.md section 4).
+
+## Open questions
+
+None known. If you meet a rule that neither the mock, the SRS nor this card states, do not invent it: write it under "Open questions" in the PR, and open a GitHub issue labelled `question` if it blocks you.
 
 ## Prompt for Claude Code
 
