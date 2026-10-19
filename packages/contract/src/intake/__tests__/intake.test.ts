@@ -218,7 +218,12 @@ describe('question content (prototype types.ts, field for field)', () => {
   })
 
   it('keeps a draft with gaps savable (the gate runs on accept, not on parse)', () => {
-    expect(ok(IntakeQuestionSchema, { ...mcq, stem: '', marks: 0, options: [], scheme: undefined, tag: { ...tag, sp: [], tp: 0 } })).toBe(true)
+    expect(ok(IntakeQuestionSchema, { ...mcq, stem: '', marks: 0, options: [], scheme: undefined, tag: { ...tag, sp: [], tp: 3 } })).toBe(true)
+    // tp is 1..6 as the prototype gate and BE-36; the prototype empty tag uses 3, so 0 is never needed
+    expect(ok(IntakeQuestionSchema, { ...mcq, tag: { ...tag, tp: 0 } })).toBe(false)
+    expect(ok(IntakeQuestionSchema, { ...mcq, tag: { ...tag, tp: 7 } })).toBe(false)
+    expect(ok(IntakeQuestionSchema, { ...essay, wordRange: { min: 200, max: 120 } })).toBe(false)
+    expect(ok(IntakeQuestionSchema, { ...mcq, scheme: { kind: 'option', marks: 1, correct: '', reason: '' } })).toBe(true)
   })
 
   it('knows the five scheme kinds and every point match type', () => {

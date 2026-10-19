@@ -71,6 +71,7 @@ import {
   IntakeSchemeSchema,
   IntakeStimulusKindSchema,
   IntakeStimulusSchema,
+  IntakeWordRangeSchema,
 } from './question'
 import { registerIntakeRoute } from './rate-limit'
 
@@ -92,6 +93,7 @@ export const INTAKE_COMPONENT_SCHEMAS = {
   IntakePart: IntakePartSchema,
   IntakeQuestion: IntakeQuestionSchema,
   IntakeRegion: IntakeRegionSchema,
+  IntakeWordRange: IntakeWordRangeSchema,
   IntakeStimulusKind: IntakeStimulusKindSchema,
   IntakeStimulus: IntakeStimulusSchema,
   IntakeIssue: IntakeIssueSchema,

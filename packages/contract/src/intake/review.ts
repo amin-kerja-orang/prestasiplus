@@ -18,6 +18,7 @@ import {
   IntakeSchemeSchema,
   IntakeStimulusKindSchema,
   IntakeStimulusSchema,
+  IntakeWordRangeSchema,
   INTAKE_MAX_OPTIONS,
   INTAKE_MAX_PARTS,
 } from './question'
@@ -116,9 +117,8 @@ export type IntakeExtractRequest = z.infer<typeof IntakeExtractRequestSchema>
 
 const StimulusTable = z.strictObject({
   head: z.array(z.string().max(500)).max(50),
-  rows: z.array(z.array(z.string().max(2000)).max(50)).max(500),
+  rows: z.array(z.array(z.string().max(500)).max(50)).max(500),
 })
-const WordRange = z.strictObject({ min: z.number().int().min(0).max(100_000), max: z.number().int().min(0).max(100_000) })
 
 /**
  * Edit of the extracted fields (prototype `saveExtracted` per item; card: marks the field "Disunting
@@ -138,7 +138,7 @@ export const IntakeItemPatchSchema = z
     marks: z.number().int().min(0).max(1000).optional(),
     mode: IntakeLeafKindSchema.optional(),
     unit: z.string().max(32).nullable().optional(),
-    wordRange: WordRange.nullable().optional(),
+    wordRange: IntakeWordRangeSchema.nullable().optional(),
     parts: z.array(IntakePartSchema).max(INTAKE_MAX_PARTS).optional(),
     scheme: IntakeSchemeSchema.nullable().optional(),
     tag: IntakeCurriculumTagSchema.optional(),
@@ -312,7 +312,7 @@ export const IntakeStimulusCreateRequestSchema = z
     kind: IntakeStimulusKindSchema,
     label: z.string().trim().min(1).max(100).optional(),
     page: z.number().int().min(1).max(10_000).optional(),
-    caption: z.string().max(500).optional(),
+    caption: z.string().max(300).optional(),
     alt: z.string().max(1000).optional(),
     text: z.string().max(INTAKE_MAX_STEM_CHARS).optional(),
     table: StimulusTable.optional(),
@@ -324,7 +324,7 @@ export type IntakeStimulusCreateRequest = z.infer<typeof IntakeStimulusCreateReq
 export const IntakeStimulusUpdateRequestSchema = z
   .strictObject({
     label: z.string().trim().min(1).max(100).optional(),
-    caption: z.string().max(500).nullable().optional(),
+    caption: z.string().max(300).nullable().optional(),
     alt: z.string().max(1000).optional(),
     text: z.string().max(INTAKE_MAX_STEM_CHARS).nullable().optional(),
     table: StimulusTable.nullable().optional(),

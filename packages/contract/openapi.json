@@ -55183,12 +55183,12 @@
           "id": {
             "type": "string",
             "minLength": 1,
-            "maxLength": 64,
+            "maxLength": 16,
             "description": "Option key, e.g. \"A\"."
           },
           "text": {
             "type": "string",
-            "maxLength": 2000,
+            "maxLength": 5000,
             "description": "May contain `$latex$` spans."
           }
         },
@@ -55233,16 +55233,17 @@
             "type": "array",
             "items": {
               "type": "string",
+              "minLength": 1,
               "maxLength": 64
             },
-            "maxItems": 50,
+            "maxItems": 20,
             "description": "Standard Pembelajaran codes."
           },
           "tp": {
             "type": "integer",
-            "minimum": 0,
-            "maximum": 99,
-            "description": "Tahap Penguasaan. The gate wants 1..6 (\"Tahap Penguasaan (TP) mesti antara 1 dan 6.\"); the wider range here only keeps a draft savable [PROPOSED bound]."
+            "minimum": 1,
+            "maximum": 6,
+            "description": "Tahap Penguasaan 1..6, as the prototype gate (\"Tahap Penguasaan (TP) mesti antara 1 dan 6.\") and BE-36 AiCurriculumTag. The prototype empty tag (lib/dskp.ts emptyTag) uses 3, so 0 is never needed."
           },
           "formOrigin": {
             "type": "string",
@@ -55293,7 +55294,7 @@
                 "type": "array",
                 "items": {
                   "type": "string",
-                  "maxLength": 500
+                  "maxLength": 2000
                 },
                 "maxItems": 50
               }
@@ -55317,7 +55318,7 @@
                 "type": "array",
                 "items": {
                   "type": "string",
-                  "maxLength": 500
+                  "maxLength": 2000
                 },
                 "maxItems": 50
               }
@@ -55371,7 +55372,7 @@
                 "type": "array",
                 "items": {
                   "type": "string",
-                  "maxLength": 200
+                  "maxLength": 2000
                 },
                 "maxItems": 50
               }
@@ -55427,7 +55428,9 @@
                 ]
               },
               "k": {
-                "type": "number"
+                "type": "number",
+                "minimum": -1000000,
+                "maximum": 1000000
               }
             },
             "required": [
@@ -55446,7 +55449,9 @@
                 ]
               },
               "k": {
-                "type": "number"
+                "type": "number",
+                "minimum": -1000000,
+                "maximum": 1000000
               }
             },
             "required": [
@@ -55465,7 +55470,9 @@
                 ]
               },
               "k": {
-                "type": "number"
+                "type": "number",
+                "minimum": -1000000,
+                "maximum": 1000000
               }
             },
             "required": [
@@ -55491,7 +55498,7 @@
           "marks": {
             "type": "integer",
             "minimum": 0,
-            "maximum": 1000,
+            "maximum": 100,
             "description": "Explicit marks: the digit of a tag (K1, K2) is a sequence number, never the marks."
           },
           "label": {
@@ -55524,7 +55531,7 @@
               },
               "note": {
                 "type": "string",
-                "maxLength": 500
+                "maxLength": 200
               }
             },
             "required": [
@@ -55566,7 +55573,6 @@
               "minLength": 1,
               "maxLength": 64
             },
-            "minItems": 1,
             "maxItems": 50
           }
         },
@@ -55585,7 +55591,7 @@
             "type": "array",
             "items": {
               "type": "string",
-              "maxLength": 500
+              "maxLength": 2000
             },
             "maxItems": 50,
             "description": "Accepted equivalent forms (plain or LaTeX); any one matches."
@@ -55609,7 +55615,7 @@
           },
           "display": {
             "type": "string",
-            "maxLength": 1000,
+            "maxLength": 2000,
             "description": "LaTeX shown in the revealed scheme."
           }
         },
@@ -55631,12 +55637,12 @@
             "type": "array",
             "prefixItems": [
               {
-                "type": "integer",
+                "type": "number",
                 "minimum": 0,
                 "maximum": 1000
               },
               {
-                "type": "integer",
+                "type": "number",
                 "minimum": 0,
                 "maximum": 1000
               }
@@ -55673,9 +55679,8 @@
               },
               "correct": {
                 "type": "string",
-                "minLength": 1,
-                "maxLength": 64,
-                "description": "Key of the correct option (McqOption.id)."
+                "maxLength": 16,
+                "description": "Key of the correct option (McqOption.id); empty while not chosen (\"Kunci jawapan belum dipilih.\")."
               },
               "reason": {
                 "type": "string",
@@ -55708,7 +55713,7 @@
                 "type": "object",
                 "additionalProperties": {
                   "type": "string",
-                  "maxLength": 64
+                  "maxLength": 500
                 }
               }
             },
@@ -55795,14 +55800,14 @@
                 "items": {
                   "$ref": "#/components/schemas/IntakePointGroup"
                 },
-                "maxItems": 50
+                "maxItems": 20
               },
               "final": {
                 "$ref": "#/components/schemas/IntakeFinal"
               },
               "model": {
                 "type": "string",
-                "maxLength": 10000
+                "maxLength": 5000
               }
             },
             "required": [
@@ -55847,22 +55852,22 @@
                   ],
                   "additionalProperties": false
                 },
-                "maxItems": 50
+                "maxItems": 20
               },
               "bands": {
                 "type": "array",
                 "items": {
                   "$ref": "#/components/schemas/IntakeRubricBand"
                 },
-                "maxItems": 50
+                "maxItems": 20
               },
               "notes": {
                 "type": "array",
                 "items": {
                   "type": "string",
-                  "maxLength": 1000
+                  "maxLength": 2000
                 },
-                "maxItems": 50
+                "maxItems": 20
               }
             },
             "required": [
@@ -55886,7 +55891,8 @@
           },
           "label": {
             "type": "string",
-            "maxLength": 32,
+            "minLength": 1,
+            "maxLength": 16,
             "description": "Printed label, e.g. \"(a)\" or \"(a)(i)\"."
           },
           "prompt": {
@@ -55896,7 +55902,7 @@
           "marks": {
             "type": "integer",
             "minimum": 0,
-            "maximum": 1000
+            "maximum": 100
           },
           "mode": {
             "$ref": "#/components/schemas/IntakeLeafKind"
@@ -55910,24 +55916,7 @@
             "description": "Unit shown after a numeric answer."
           },
           "wordRange": {
-            "type": "object",
-            "properties": {
-              "min": {
-                "type": "integer",
-                "minimum": 0,
-                "maximum": 100000
-              },
-              "max": {
-                "type": "integer",
-                "minimum": 0,
-                "maximum": 100000
-              }
-            },
-            "required": [
-              "min",
-              "max"
-            ],
-            "additionalProperties": false
+            "$ref": "#/components/schemas/IntakeWordRange"
           },
           "lead": {
             "type": "array",
@@ -55941,7 +55930,7 @@
                 },
                 "label": {
                   "type": "string",
-                  "maxLength": 32
+                  "maxLength": 16
                 },
                 "prompt": {
                   "type": "string",
@@ -55969,6 +55958,27 @@
         "additionalProperties": false,
         "description": "Prototype IntakePart, field for field."
       },
+      "IntakeWordRange": {
+        "type": "object",
+        "properties": {
+          "min": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 5000
+          },
+          "max": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 5000
+          }
+        },
+        "required": [
+          "min",
+          "max"
+        ],
+        "additionalProperties": false,
+        "description": "Word range of an essay leaf (prototype wordRange)."
+      },
       "IntakeQuestion": {
         "type": "object",
         "properties": {
@@ -55985,7 +55995,7 @@
           },
           "stem": {
             "type": "string",
-            "maxLength": 20000
+            "maxLength": 100000
           },
           "options": {
             "type": "array",
@@ -56019,24 +56029,7 @@
             "description": "Unit of a question without parts."
           },
           "wordRange": {
-            "type": "object",
-            "properties": {
-              "min": {
-                "type": "integer",
-                "minimum": 0,
-                "maximum": 100000
-              },
-              "max": {
-                "type": "integer",
-                "minimum": 0,
-                "maximum": 100000
-              }
-            },
-            "required": [
-              "min",
-              "max"
-            ],
-            "additionalProperties": false
+            "$ref": "#/components/schemas/IntakeWordRange"
           },
           "parts": {
             "type": "array",
@@ -56063,9 +56056,8 @@
                   },
                   "correct": {
                     "type": "string",
-                    "minLength": 1,
-                    "maxLength": 64,
-                    "description": "Key of the correct option (McqOption.id)."
+                    "maxLength": 16,
+                    "description": "Key of the correct option (McqOption.id); empty while not chosen (\"Kunci jawapan belum dipilih.\")."
                   },
                   "reason": {
                     "type": "string",
@@ -56098,7 +56090,7 @@
                     "type": "object",
                     "additionalProperties": {
                       "type": "string",
-                      "maxLength": 64
+                      "maxLength": 500
                     }
                   }
                 },
@@ -56185,14 +56177,14 @@
                     "items": {
                       "$ref": "#/components/schemas/IntakePointGroup"
                     },
-                    "maxItems": 50
+                    "maxItems": 20
                   },
                   "final": {
                     "$ref": "#/components/schemas/IntakeFinal"
                   },
                   "model": {
                     "type": "string",
-                    "maxLength": 10000
+                    "maxLength": 5000
                   }
                 },
                 "required": [
@@ -56237,22 +56229,22 @@
                       ],
                       "additionalProperties": false
                     },
-                    "maxItems": 50
+                    "maxItems": 20
                   },
                   "bands": {
                     "type": "array",
                     "items": {
                       "$ref": "#/components/schemas/IntakeRubricBand"
                     },
-                    "maxItems": 50
+                    "maxItems": 20
                   },
                   "notes": {
                     "type": "array",
                     "items": {
                       "type": "string",
-                      "maxLength": 1000
+                      "maxLength": 2000
                     },
-                    "maxItems": 50
+                    "maxItems": 20
                   }
                 },
                 "required": [
@@ -56329,8 +56321,7 @@
         "properties": {
           "page": {
             "type": "integer",
-            "minimum": 1,
-            "maximum": 10000
+            "minimum": 1
           },
           "x": {
             "type": "number",
@@ -56388,7 +56379,7 @@
           },
           "caption": {
             "type": "string",
-            "maxLength": 500
+            "maxLength": 300
           },
           "alt": {
             "type": "string",
@@ -56397,12 +56388,12 @@
           },
           "svg": {
             "type": "string",
-            "maxLength": 200000,
+            "maxLength": 100000,
             "description": "Response only, bundled trusted markup (demo seed). Never accepted on a write."
           },
           "text": {
             "type": "string",
-            "maxLength": 20000
+            "maxLength": 100000
           },
           "table": {
             "type": "object",
@@ -56421,7 +56412,7 @@
                   "type": "array",
                   "items": {
                     "type": "string",
-                    "maxLength": 2000
+                    "maxLength": 500
                   },
                   "maxItems": 50
                 },
@@ -56458,8 +56449,7 @@
             "properties": {
               "page": {
                 "type": "integer",
-                "minimum": 1,
-                "maximum": 10000
+                "minimum": 1
               },
               "x": {
                 "type": "number",
@@ -57051,7 +57041,7 @@
           },
           "stem": {
             "type": "string",
-            "maxLength": 20000
+            "maxLength": 100000
           },
           "options": {
             "type": "array",
@@ -57085,24 +57075,7 @@
             "description": "Unit of a question without parts."
           },
           "wordRange": {
-            "type": "object",
-            "properties": {
-              "min": {
-                "type": "integer",
-                "minimum": 0,
-                "maximum": 100000
-              },
-              "max": {
-                "type": "integer",
-                "minimum": 0,
-                "maximum": 100000
-              }
-            },
-            "required": [
-              "min",
-              "max"
-            ],
-            "additionalProperties": false
+            "$ref": "#/components/schemas/IntakeWordRange"
           },
           "parts": {
             "type": "array",
@@ -57129,9 +57102,8 @@
                   },
                   "correct": {
                     "type": "string",
-                    "minLength": 1,
-                    "maxLength": 64,
-                    "description": "Key of the correct option (McqOption.id)."
+                    "maxLength": 16,
+                    "description": "Key of the correct option (McqOption.id); empty while not chosen (\"Kunci jawapan belum dipilih.\")."
                   },
                   "reason": {
                     "type": "string",
@@ -57164,7 +57136,7 @@
                     "type": "object",
                     "additionalProperties": {
                       "type": "string",
-                      "maxLength": 64
+                      "maxLength": 500
                     }
                   }
                 },
@@ -57251,14 +57223,14 @@
                     "items": {
                       "$ref": "#/components/schemas/IntakePointGroup"
                     },
-                    "maxItems": 50
+                    "maxItems": 20
                   },
                   "final": {
                     "$ref": "#/components/schemas/IntakeFinal"
                   },
                   "model": {
                     "type": "string",
-                    "maxLength": 10000
+                    "maxLength": 5000
                   }
                 },
                 "required": [
@@ -57303,22 +57275,22 @@
                       ],
                       "additionalProperties": false
                     },
-                    "maxItems": 50
+                    "maxItems": 20
                   },
                   "bands": {
                     "type": "array",
                     "items": {
                       "$ref": "#/components/schemas/IntakeRubricBand"
                     },
-                    "maxItems": 50
+                    "maxItems": 20
                   },
                   "notes": {
                     "type": "array",
                     "items": {
                       "type": "string",
-                      "maxLength": 1000
+                      "maxLength": 2000
                     },
-                    "maxItems": 50
+                    "maxItems": 20
                   }
                 },
                 "required": [
@@ -57465,8 +57437,7 @@
             "properties": {
               "page": {
                 "type": "integer",
-                "minimum": 1,
-                "maximum": 10000
+                "minimum": 1
               },
               "x": {
                 "type": "number",
@@ -57535,7 +57506,7 @@
               },
               "caption": {
                 "type": "string",
-                "maxLength": 500
+                "maxLength": 300
               },
               "alt": {
                 "type": "string",
@@ -57544,12 +57515,12 @@
               },
               "svg": {
                 "type": "string",
-                "maxLength": 200000,
+                "maxLength": 100000,
                 "description": "Response only, bundled trusted markup (demo seed). Never accepted on a write."
               },
               "text": {
                 "type": "string",
-                "maxLength": 20000
+                "maxLength": 100000
               },
               "table": {
                 "type": "object",
@@ -57568,7 +57539,7 @@
                       "type": "array",
                       "items": {
                         "type": "string",
-                        "maxLength": 2000
+                        "maxLength": 500
                       },
                       "maxItems": 50
                     },
@@ -57605,8 +57576,7 @@
                 "properties": {
                   "page": {
                     "type": "integer",
-                    "minimum": 1,
-                    "maximum": 10000
+                    "minimum": 1
                   },
                   "x": {
                     "type": "number",
@@ -58035,7 +58005,7 @@
           },
           "stem": {
             "type": "string",
-            "maxLength": 20000
+            "maxLength": 100000
           },
           "options": {
             "type": "array",
@@ -58060,27 +58030,17 @@
             "maxLength": 32
           },
           "wordRange": {
-            "type": [
-              "object",
-              "null"
-            ],
-            "properties": {
-              "min": {
-                "type": "integer",
-                "minimum": 0,
-                "maximum": 100000
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/IntakeWordRange"
               },
-              "max": {
-                "type": "integer",
-                "minimum": 0,
-                "maximum": 100000
+              {
+                "type": [
+                  "object",
+                  "null"
+                ]
               }
-            },
-            "required": [
-              "min",
-              "max"
-            ],
-            "additionalProperties": false
+            ]
           },
           "parts": {
             "type": "array",
@@ -58568,7 +58528,7 @@
           },
           "caption": {
             "type": "string",
-            "maxLength": 500
+            "maxLength": 300
           },
           "alt": {
             "type": "string",
@@ -58576,7 +58536,7 @@
           },
           "text": {
             "type": "string",
-            "maxLength": 20000
+            "maxLength": 100000
           },
           "table": {
             "type": "object",
@@ -58595,7 +58555,7 @@
                   "type": "array",
                   "items": {
                     "type": "string",
-                    "maxLength": 2000
+                    "maxLength": 500
                   },
                   "maxItems": 50
                 },
@@ -58628,7 +58588,7 @@
               "string",
               "null"
             ],
-            "maxLength": 500
+            "maxLength": 300
           },
           "alt": {
             "type": "string",
@@ -58639,7 +58599,7 @@
               "string",
               "null"
             ],
-            "maxLength": 20000
+            "maxLength": 100000
           },
           "table": {
             "type": [
@@ -58661,7 +58621,7 @@
                   "type": "array",
                   "items": {
                     "type": "string",
-                    "maxLength": 2000
+                    "maxLength": 500
                   },
                   "maxItems": 50
                 },
