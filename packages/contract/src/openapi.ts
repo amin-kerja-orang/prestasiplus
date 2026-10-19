@@ -15,6 +15,7 @@ import { envelopeOf, listEnvelopeOf, ListMetaSchema, PageQuerySchema } from './c
 import { AccessModeSchema, PortalIdSchema, RoleCodeSchema, ScopeLevelSchema } from './common/enums'
 import { ErrorBodySchema, ErrorCodeSchema, ErrorPayloadSchema } from './common/error'
 import { ClientUuidSchema, IdSchema } from './common/ids'
+import { PRACTICE_COMPONENT_SCHEMAS, registerPracticePaths } from './practice/paths'
 import { SESSION_COMPONENT_SCHEMAS, registerSessionPaths } from './session/paths'
 import { CONTENT_COMPONENT_SCHEMAS, registerContentPaths } from './content/paths'
 import { SUPPORT_COMPONENT_SCHEMAS, registerSupportPaths } from './support/paths'
@@ -56,6 +57,7 @@ export const COMPONENT_SCHEMAS = {
   LearningRole: LearningRoleSchema,
   LearningMenuGroup: LearningMenuGroupSchema,
   PrototypeItem: PrototypeItemSchema,
+  ...PRACTICE_COMPONENT_SCHEMAS, // BE-12
 } as const
 
 export const CONTRACT_VERSION = '0.1.0'
@@ -69,6 +71,7 @@ export function buildOpenApiDocument(): Record<string, unknown> {
   registerContentPaths(registry) // BE-24 (M09)
   registerSupportPaths(registry) // BE-24 (M22)
   registerGamificationPaths(registry) // BE-23
+  registerPracticePaths(registry) // BE-12
   const generator = new OpenApiGeneratorV31(registry.definitions)
   return generator.generateDocument({
     openapi: '3.1.0',
