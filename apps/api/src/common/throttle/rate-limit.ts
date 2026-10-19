@@ -35,7 +35,10 @@ export const RATE_LIMIT_KEY = 'pp:rate-limit'
 export const RateLimit = (spec: RateLimitSpec): MethodDecorator & ClassDecorator => SetMetadata(RATE_LIMIT_KEY, spec)
 
 const DEFAULT_WINDOW_S = 60
-const PURGE_AT = 10_000
+/** Expired windows are swept at most this often (not on every request). */
+export const PURGE_INTERVAL_MS = 30_000
+/** Hard cap on live keys; past it the oldest-inserted keys are evicted first. */
+export const MAX_KEYS = 50_000
 
 /**
  * Fixed-window counter, one per process: it is NOT shared between API instances and resets on a
@@ -45,6 +48,12 @@ const PURGE_AT = 10_000
 @Injectable()
 export class RateLimiter {
   private readonly windows = new Map<string, { count: number; resetAt: number }>()
+  private lastPurge = 0
+
+  /** Number of live keys (tests and diagnostics). */
+  get size(): number {
+    return this.windows.size
+  }
 
   constructor(
     @Inject(ConfigService) private readonly config: ConfigService,
@@ -59,13 +68,21 @@ export class RateLimiter {
   /** Counts one request; throws 429 `RATE_LIMITED` (with `retryAfter` seconds) when the window is full. */
   consume(spec: RateLimitSpec, subject: string): void {
     const now = this.clock.now().getTime()
-    if (this.windows.size > PURGE_AT) {
+    if (now - this.lastPurge >= PURGE_INTERVAL_MS) {
+      this.lastPurge = now
       for (const [k, w] of this.windows) if (w.resetAt <= now) this.windows.delete(k)
     }
     const key = `${spec.bucket}:${subject}`
     let w = this.windows.get(key)
     if (!w || w.resetAt <= now) {
       w = { count: 0, resetAt: now + (spec.windowSeconds ?? DEFAULT_WINDOW_S) * 1000 }
+      // Delete first so a renewed key moves to the end of the insertion order; the Map's first key is the oldest.
+      this.windows.delete(key)
+      while (this.windows.size >= MAX_KEYS) {
+        const oldest = this.windows.keys().next().value
+        if (oldest === undefined) break
+        this.windows.delete(oldest)
+      }
       this.windows.set(key, w)
     }
     if (w.count >= this.ceiling(spec)) {
