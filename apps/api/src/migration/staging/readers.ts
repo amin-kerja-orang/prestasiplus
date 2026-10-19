@@ -16,6 +16,8 @@ export interface TableReader {
   /** False when the input has no such table (loaded empty, and reported as absent). */
   has(table: string): Promise<boolean>
   read(table: string, size: number): AsyncGenerator<SourceRow[], void, undefined>
+  /** BE-35: true when the dump says it is anonymised or synthetic (manifest flags). Absent for a live source. */
+  syntheticMarker?(): boolean
   /** Stable hash of what was read from (manifest content), for the report. Null for a live source. */
   inputHash(): string | null
   close(): Promise<void>
@@ -26,6 +28,8 @@ export const DUMP_FORMAT = 'pp-staging-dump/1'
 interface Manifest {
   format: string
   source: string
+  anonymised?: unknown
+  synthetic?: unknown
   tables: Record<string, { rows: number; file?: string }>
 }
 
@@ -74,6 +78,12 @@ export class DirReader implements TableReader {
 
   async has(table: string): Promise<boolean> {
     return this.manifest.tables[table] !== undefined
+  }
+
+  syntheticMarker(): boolean {
+    // Fail closed: only an absent key or a strict `false` is unmarked ("true", 1, "yes", an object all count).
+    const marked = (v: unknown): boolean => v !== undefined && v !== false
+    return marked(this.manifest.anonymised) || marked(this.manifest.synthetic)
   }
 
   inputHash(): string {

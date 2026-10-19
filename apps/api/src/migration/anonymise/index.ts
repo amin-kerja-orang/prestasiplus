@@ -1,0 +1,6 @@
+export { ANON_EXIT, runAnonymiseCli } from './cli'
+export { loadHmacKey } from './key'
+export { LeakScanner, OriginalsIndex, patternKinds, scanDumpDirectory } from './leak-scan'
+export { Pseudonymiser } from './pseudonyms'
+export { checkCoverage, parseConfig } from './rules'
+export { assertOutputUsable, runAnonymise } from './run'
