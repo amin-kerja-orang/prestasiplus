@@ -574,8 +574,8 @@ describe('openapi registration', () => {
   })
 
   it('does not register the BE-45 routes (games hub, rooms, papan-bijak, leagues, sekolah-bersaing, admin games)', () => {
-    const paths = Object.keys(doc.paths)
-    const forbidden = paths.filter((p) => /^\/(games|papan-bijak|leagues|sekolah-bersaing|admin\/games)/.test(p))
+    // BE-45 registers these paths itself; once it merges they exist in the document, but never as BE-44's own operations.
+    const forbidden = own.map(({ path }) => path).filter((p) => /^\/(games|papan-bijak|leagues|sekolah-bersaing|admin\/games)/.test(p))
     expect(forbidden).toEqual([])
   })
 
