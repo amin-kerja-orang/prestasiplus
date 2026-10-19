@@ -40,7 +40,7 @@ export const REDACTED = '[redacted]'
 // `sessionCookie`, `csrf_token`, `icNumber` and `kata_laluan` match while `passed`, `bypass`,
 // `topic_no` and `logic_hash` do not.
 const SECRET_WORDS =
-  /(^|_)(pass|password|passwd|pwd|secret|tokens?|cookies?|csrf|authorization|otp|jwt|sid|api_?key|kata_laluan|ic|nric|mykad)(_|$)/
+  /(^|_)(pass|password|passwd|pwd|secret|tokens?|cookies?|csrf|authorization|otp|jwt|sid|api_?key|kata_laluan|ic|icnumber|nric|kp|mykad|my_kad)(_|$)/
 // IC (MyKad) number inside free text: 6 + 2 + 4 digits, optional "-" or " " separators.
 // Decision: a bare 12-digit string that is the WHOLE value is treated as a numeric id (not redacted
 // unless its key is secret-looking); a 12-digit run embedded in longer text, or any separated form,
@@ -52,6 +52,7 @@ const DECIMAL = /^\d+$/
 
 function isSecretKey(key: string): boolean {
   const words = key
+    .replace(/([A-Z]+)([A-Z][a-z])/g, '$1_$2')
     .replace(/([a-z0-9])([A-Z])/g, '$1_$2')
     .toLowerCase()
     .split(/[^a-z0-9]+/)
@@ -100,6 +101,15 @@ function toBigInt(value: string | null | undefined, field: string): bigint | nul
   return BigInt(value)
 }
 
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+
+/** `targetId` is a pure id field: a decimal id or a uuid, validated and never redacted. */
+function toTargetId(value: string | null | undefined): string | null {
+  if (value == null) return null
+  if (!DECIMAL.test(value) && !UUID.test(value)) throw badInput('targetId')
+  return value
+}
+
 const text = (v: string | null | undefined): string | null => (v == null ? null : redactText(v))
 
 /** Append-only writer of `audit_events` (no update or delete path exists, G-17). */
@@ -131,7 +141,7 @@ export class AuditService {
         scopeLevel: event.scopeLevel ?? null,
         scopeSchoolId: toBigInt(event.schoolId, 'schoolId'),
         targetType: event.targetType ?? null,
-        targetId: text(event.targetId),
+        targetId: toTargetId(event.targetId),
         requestId: text(event.requestId),
         detail: Object.keys(detail).length > 0 ? (detail as object) : undefined,
         ipHash: event.ip ? hashIp(event.ip, secret) : null,

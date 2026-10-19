@@ -20,6 +20,17 @@ export const EnvSchema = z.object({
   COOKIE_DOMAIN: z.string().optional(),
   COOKIE_SECURE: z.enum(['true', 'false']).optional(),
   THROTTLE_LOGIN_PER_MINUTE: z.coerce.number().int().min(1).optional(),
+  /** Reverse-proxy hops to trust for the client address (0 = none). */
+  TRUST_PROXY_HOPS: z.coerce.number().int().min(0).default(0),
+  /** Lifetime of a "remember me" session in days (LEAD decision: 30). */
+  SESSION_REMEMBER_DAYS: z.coerce.number().int().min(1).default(30),
+  /** Remember lifetime in days for admin and school_admin; 0 turns remember off for them. */
+  SESSION_REMEMBER_DAYS_STAFF: z.coerce.number().int().min(0).default(1),
+  /** Allow seeding the demo accounts (never in production). */
+  ALLOW_DEMO_SEED: z
+    .enum(['true', 'false'])
+    .default('false')
+    .transform((v) => v === 'true'),
 })
 export type Env = z.infer<typeof EnvSchema>
 

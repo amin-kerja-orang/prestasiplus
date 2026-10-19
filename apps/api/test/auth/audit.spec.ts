@@ -197,10 +197,28 @@ describe('AuditService', () => {
   it('sanitises targetId, requestId and actorRole', async () => {
     await audit.record({
       action: 'x.y', actorUserId: null, actorRole: 'role 900101-01-5555',
-      targetId: '900101-01-5555', requestId: 'r 900101 01 5555',
+      targetId: '990101015555', requestId: 'r 900101 01 5555',
     })
     const [row] = await db.query<AuditRow>(SELECT)
+    expect(row!.target_id).toBe('990101015555') // pure id field: kept, not redacted
     expect(JSON.stringify(row)).not.toContain('900101')
+  })
+
+  it('targetId must be a decimal id or a uuid', async () => {
+    await expect(audit.record({ action: 'x', actorUserId: null, targetId: '900101-01-5555' })).rejects.toBeInstanceOf(ApiError)
+    await expect(audit.record({ action: 'x', actorUserId: null, targetId: 'not an id' })).rejects.toBeInstanceOf(ApiError)
+  })
+
+  it('redacts a bare 12-digit value under IC-like keys, whatever the casing', () => {
+    const ic = '990101015555'
+    const out = sanitizeDetails({
+      ICNumber: ic, NRIC: ic, icNo: ic, noKP: ic, no_kp: ic, ic_number: ic, MyKad: ic, icnumber: ic,
+      schoolId: ic, targetId: ic, topic: ic,
+    }) as Record<string, unknown>
+    for (const k of ['ICNumber', 'NRIC', 'icNo', 'noKP', 'no_kp', 'ic_number', 'MyKad', 'icnumber']) {
+      expect(out[k], k).toBe(REDACTED)
+    }
+    expect(out).toMatchObject({ schoolId: ic, targetId: ic, topic: ic })
   })
 
   it('sanitizeDetails leaves plain facts untouched', () => {

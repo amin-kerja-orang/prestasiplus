@@ -18,7 +18,34 @@ describe('env validation', () => {
       LOG_LEVEL: 'info',
       DATABASE_URL: DB_URL,
       SESSION_SECRET: 'x'.repeat(32),
+      TRUST_PROXY_HOPS: 0,
+      SESSION_REMEMBER_DAYS: 30,
+      SESSION_REMEMBER_DAYS_STAFF: 1,
+      ALLOW_DEMO_SEED: false,
     })
+  })
+
+  it('parses and bounds the proxy, remember and demo-seed keys', () => {
+    expect(
+      loadEnv({
+        ...VALID,
+        TRUST_PROXY_HOPS: '2',
+        SESSION_REMEMBER_DAYS: '7',
+        SESSION_REMEMBER_DAYS_STAFF: '0',
+        ALLOW_DEMO_SEED: 'true',
+      }),
+    ).toMatchObject({
+      TRUST_PROXY_HOPS: 2,
+      SESSION_REMEMBER_DAYS: 7,
+      SESSION_REMEMBER_DAYS_STAFF: 0,
+      ALLOW_DEMO_SEED: true,
+    })
+    expect(() => loadEnv({ ...VALID, TRUST_PROXY_HOPS: '-1' })).toThrow(/TRUST_PROXY_HOPS/)
+    expect(() => loadEnv({ ...VALID, SESSION_REMEMBER_DAYS: '0' })).toThrow(/SESSION_REMEMBER_DAYS/)
+    expect(() => loadEnv({ ...VALID, SESSION_REMEMBER_DAYS_STAFF: '-1' })).toThrow(
+      /SESSION_REMEMBER_DAYS_STAFF/,
+    )
+    expect(() => loadEnv({ ...VALID, ALLOW_DEMO_SEED: 'yes' })).toThrow(/ALLOW_DEMO_SEED/)
   })
 
   it('requires a strong SESSION_SECRET in production and defaults it elsewhere', () => {
