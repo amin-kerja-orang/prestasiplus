@@ -41,24 +41,37 @@ export async function sessionLogin(base: HttpClient, creds: SessionLogin): Promi
   })
   if (res.status !== 200) throw new Error(`login failed: HTTP ${String(res.status)}`)
   const jar = parseSetCookie(res.headers['set-cookie'])
-  const csrf = (res.body as { data?: { csrf?: unknown } } | null)?.data?.csrf
-  if (typeof csrf !== 'string') throw new Error('login response carries no data.csrf')
-  const cookie = Object.entries(jar)
-    .map(([k, v]) => `${k}=${v}`)
-    .join('; ')
+  const first = (res.body as { data?: { csrf?: unknown } } | null)?.data?.csrf
+  if (typeof first !== 'string') throw new Error('login response carries no data.csrf')
+  let csrf: string = first
+  // The server rotates the session id (and so the CSRF token) on a role switch and on a mode
+  // change, and clears the cookie on logout: follow what it sends, like a browser does.
+  const absorb = (r: HttpResponse): HttpResponse => {
+    const next = parseSetCookie(r.headers['set-cookie'])
+    for (const [k, v] of Object.entries(next)) jar[k] = v
+    const token = (r.body as { data?: { csrf?: unknown } } | null)?.data?.csrf
+    if (r.status === 200 && typeof token === 'string') csrf = token
+    return r
+  }
   const send =
     (useCsrf: boolean) =>
-    (method: HttpMethod, path: string, init: HttpRequestInit = {}) =>
-      base.request(method, path, {
-        ...init,
-        headers: {
-          ...init.headers,
-          cookie,
-          ...(useCsrf && !SAFE_METHODS.has(method) ? { [CSRF_HEADER]: csrf } : {}),
-        },
-      })
+    async (method: HttpMethod, path: string, init: HttpRequestInit = {}) =>
+      absorb(
+        await base.request(method, path, {
+          ...init,
+          headers: {
+            ...init.headers,
+            cookie: Object.entries(jar)
+              .map(([k, v]) => `${k}=${v}`)
+              .join('; '),
+            ...(useCsrf && !SAFE_METHODS.has(method) ? { [CSRF_HEADER]: csrf } : {}),
+          },
+        }),
+      )
   return {
-    csrf,
+    get csrf() {
+      return csrf
+    },
     request: send(true),
     withoutCsrf: () => ({ request: send(false) }),
   }

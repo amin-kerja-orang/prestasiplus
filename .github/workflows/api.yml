@@ -73,6 +73,7 @@ jobs:
           fi
       - run: npm ci --no-audit --no-fund
       - run: npm run contract:check
+      - run: npm test -w @pp/contract-tests
       - run: npm run be:lint
       - run: npm run be:lint:migration
       - run: npm run be:typecheck
