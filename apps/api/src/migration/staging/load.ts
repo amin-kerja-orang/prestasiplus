@@ -20,12 +20,14 @@ import { renderDdl } from '../ddl/render'
 import { columnNames, schemaOf, TABLES, type TableSpec } from '../ddl/spec'
 import { hashRow, quoteIdent, toJson } from '../kit/sql'
 import type { LegacySource } from '../kit/types'
-import { assertStagingResetAllowed } from './guard'
+import { assertStagingResetAllowed, StagingResetRefusedError } from './guard'
 import { silentLogger, type Logger } from './log'
 import type { TableReader } from './readers'
 
 export class LoaderError extends Error {}
 export class SourceNotImplementedError extends LoaderError {}
+/** BE-35: an anonymised or synthetic dump (known dummy passwords) must never be loaded in production. */
+export class SyntheticDumpRefusedError extends StagingResetRefusedError {}
 
 export type SourceName = LegacySource
 
@@ -168,6 +170,11 @@ export async function loadStaging(pool: pg.Pool, reader: TableReader, options: L
   }
   const log = options.log ?? silentLogger
   const opts = { allowExtraColumns: options.allowExtraColumns ?? false, batchSize: options.batchSize ?? 2000, log }
+
+  // BE-35: a dump marked anonymised or synthetic holds a known dummy password; never in production (prod, any case).
+  if (['production', 'prod'].includes(((options.env ?? process.env).NODE_ENV ?? '').trim().toLowerCase()) && reader.syntheticMarker?.()) {
+    throw new SyntheticDumpRefusedError('Refusing to load a dump marked anonymised or synthetic: NODE_ENV is production. Nothing was changed.')
+  }
 
   // M1: nothing is dropped unless the target is a staging database and the operator opted in.
   await assertStagingResetAllowed(pool, options.env ?? process.env)

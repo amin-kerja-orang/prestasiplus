@@ -35,7 +35,10 @@ COPY --chown=node:node packages/contract ./packages/contract
 COPY --from=build --chown=node:node /app/apps/api/package.json ./apps/api/package.json
 COPY --from=build --chown=node:node /app/apps/api/dist ./apps/api/dist
 WORKDIR /app/apps/api
-# Non-root (uid 1000 from the base image). Nothing writes outside /tmp (mount a tmpfs there).
+# Non-root (uid 1000 from the base image). Nothing writes outside /tmp (tmpfs) and the uploads folder.
+# The uploads folder is owned by node in the image, so a new named volume (apifiles) inherits that owner.
+ENV FILE_STORAGE_DIR=/var/lib/pretasiplus/files
+RUN mkdir -p /var/lib/pretasiplus/files && chown -R node:node /var/lib/pretasiplus
 USER node
 EXPOSE 3000
 HEALTHCHECK --interval=30s --timeout=3s --start-period=10s --retries=3 \

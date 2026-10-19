@@ -52,6 +52,8 @@ services:
     expose:
       - '3000'
     read_only: true
+    volumes:
+      - apifiles:/var/lib/pretasiplus/files   # uploads (BE-04); survives down, removed only by down -v
     tmpfs:
       - /tmp
     security_opt:
@@ -127,3 +129,4 @@ services:
 
 volumes:
   pgdata:
+  apifiles:

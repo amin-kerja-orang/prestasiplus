@@ -43,6 +43,8 @@ export const MODEL_FIXTURES: Record<string, Fixture> = {
     starts_on: '2026-01-01',
     ends_on: '2026-12-31',
   }),
+  // files (BE-04): mime, sha256 and purpose have check constraints.
+  files: { public_id: 'AAAAAAAAAAAAAAAAAAAAAA', purpose: 'avatar', mime: 'image/png', size_bytes: 1, sha256: '0'.repeat(64), storage_key: 'avatar/migration-fixture.png' },
   // schools: name (text) is generated; nothing else is required.
   user_roles: async (query) => ({ user_id: await parentUser(query), role: 'student' }),
   user_scopes: async (query) => ({ user_id: await parentUser(query), role: 'student', level: 'self' }),

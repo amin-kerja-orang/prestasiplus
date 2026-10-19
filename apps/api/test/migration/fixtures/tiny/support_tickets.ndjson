@@ -1,0 +1,6 @@
+{"id":1,"user_id":10,"subject":"Tiket contoh 1","status":"dibuka","admin_reply":null,"created_at":"2026-01-01T00:00:00Z","updated_at":"2026-01-01T00:00:00Z"}
+{"id":2,"user_id":24,"subject":"Tiket contoh 2","status":"ditutup","admin_reply":"Balasan contoh.","created_at":"2026-01-01T00:07:00Z","updated_at":"2026-01-01T00:07:00Z"}
+{"id":3,"user_id":37,"subject":"Tiket contoh 3","status":"dibuka","admin_reply":null,"created_at":"2026-01-01T00:14:00Z","updated_at":"2026-01-01T00:14:00Z"}
+{"id":4,"user_id":51,"subject":"Tiket contoh 4","status":"ditutup","admin_reply":"Balasan contoh.","created_at":"2026-01-01T00:21:00Z","updated_at":"2026-01-01T00:21:00Z"}
+{"id":5,"user_id":68,"subject":"Tiket contoh 5","status":"dibuka","admin_reply":null,"created_at":"2026-01-01T00:28:00Z","updated_at":"2026-01-01T00:28:00Z"}
+{"id":6,"user_id":83,"subject":"Tiket contoh 6","status":"ditutup","admin_reply":"Balasan contoh.","created_at":"2026-01-01T00:35:00Z","updated_at":"2026-01-01T00:35:00Z"}

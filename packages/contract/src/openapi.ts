@@ -51,6 +51,7 @@ import { BIJAK_BUILDER_COMPONENT_SCHEMAS, registerBijakBuilderPaths } from './bi
 import { PARENT_INVITE_COMPONENT_SCHEMAS, registerParentInvitePaths } from './schools/parents/paths'
 import { SUBSCRIPTION_COMPONENT_SCHEMAS, registerSubscriptionPaths } from './schools/subscriptions/paths'
 import { CIKGU_COMPONENT_SCHEMAS, registerCikguPaths } from './cikgu/paths'
+import { FILES_COMPONENT_SCHEMAS, registerFilesPaths } from './files/paths'
 
 /** Every shared schema that becomes a component. Domain tasks (T07, T08, T24...) append here. */
 export const COMPONENT_SCHEMAS = {
@@ -99,6 +100,7 @@ export const COMPONENT_SCHEMAS = {
   ...PARENT_INVITE_COMPONENT_SCHEMAS, // BE-25
   ...SUBSCRIPTION_COMPONENT_SCHEMAS, // BE-25
   ...CIKGU_COMPONENT_SCHEMAS, // BE-43 (M13)
+  ...FILES_COMPONENT_SCHEMAS, // BE-04
   // V2-T08 access matrix
   AccessGroupId: AccessGroupIdSchema,
   AccessGroup: AccessGroupSchema,
@@ -161,6 +163,7 @@ export function buildOpenApiDocument(): Record<string, unknown> {
   registerParentInvitePaths(registry) // BE-25
   registerSubscriptionPaths(registry) // BE-25
   registerCikguPaths(registry) // BE-43 (M13)
+  registerFilesPaths(registry) // BE-04
   const generator = new OpenApiGeneratorV31(registry.definitions)
   return generator.generateDocument({
     openapi: '3.1.0',

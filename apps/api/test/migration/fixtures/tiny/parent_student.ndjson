@@ -1,0 +1,12 @@
+{"parent_id":3,"student_id":1,"relationship":"bapa"}
+{"parent_id":11,"student_id":9,"relationship":"ibu"}
+{"parent_id":18,"student_id":12,"relationship":"bapa"}
+{"parent_id":42,"student_id":15,"relationship":"ibu"}
+{"parent_id":45,"student_id":19,"relationship":"bapa"}
+{"parent_id":58,"student_id":21,"relationship":"ibu"}
+{"parent_id":67,"student_id":23,"relationship":"bapa"}
+{"parent_id":69,"student_id":25,"relationship":"ibu"}
+{"parent_id":92,"student_id":27,"relationship":"bapa"}
+{"parent_id":99,"student_id":30,"relationship":"ibu"}
+{"parent_id":100,"student_id":32,"relationship":"bapa"}
+{"parent_id":3,"student_id":910000,"relationship":"bapa"}
