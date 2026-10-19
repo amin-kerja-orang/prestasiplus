@@ -1,0 +1,17 @@
+{
+  "studentId": 4664,
+  "alertType": "inactive",
+  "actionDate": "2026-09-24",
+  "alertDescription": "Tidak aktif seminggu",
+  "actionTaken": "Panggilan kepada penjaga",
+  "beforeAccuracy": 40,
+  "afterAccuracy": 55.6,
+  "beforeMood": "sad",
+  "afterMood": "okay",
+  "createdBy": 5,
+  "createdAt": "2026-09-25T15:40:00+08:00",
+  "updatedAt": "2026-09-25T15:40:00+08:00",
+  "id": 1,
+  "status": "Meningkat",
+  "studentName": "Pelajar Demo 004664"
+}
