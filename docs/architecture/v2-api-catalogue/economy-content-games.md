@@ -105,9 +105,9 @@ Contract status counts: `exists` 0, `partial` 0, `missing` 165. Card column: BE 
 | M15-05 | POST | `/api/gamification/mystery-boxes/:id/open` | any session | BE-23 | missing |
 | M15-06 | GET | `/api/cabutan` | any session | BE-23 | missing |
 | M15-07 | POST | `/api/cabutan/:drawId/tickets` | any session | BE-23 | missing |
-| M15-08 | GET | `/api/parent/hadiah-approvals` | any session (scoped to linked children; effectively parent) | BE-23 | missing |
-| M15-09 | POST | `/api/parent/hadiah-approvals/:id/approve` | parent | BE-23 | missing |
-| M15-10 | POST | `/api/parent/hadiah-approvals/:id/reject` | parent | BE-23 | missing |
+| M15-08 | GET | `/api/parent/hadiah-approvals` | any session (scoped to linked children; effectively parent) | UNCOVERED (not in B1, UD-3) | missing |
+| M15-09 | POST | `/api/parent/hadiah-approvals/:id/approve` | parent | UNCOVERED (not in B1, UD-3) | missing |
+| M15-10 | POST | `/api/parent/hadiah-approvals/:id/reject` | parent | UNCOVERED (not in B1, UD-3) | missing |
 | M15-11 | GET | `/api/admin/hadiah` | admin | BE-23 | missing |
 | M15-12 | POST | `/api/admin/hadiah/bulk` | admin | BE-23 | missing |
 | M15-13 | GET | `/api/admin/hadiah/redemptions` | admin | BE-23 | missing |
@@ -841,6 +841,7 @@ Module conventions:
 - **Contract:** missing
 
 ### M15-08 `GET /api/parent/hadiah-approvals`
+> **Not in B1 (UD-3): user decision 2026-10-19. The backend does not register the parent hadiah-approval routes (M15-08..10) and the frontend hides the entry point (no "coming soon" page). Card: none. Kept here as the record of the mock behaviour.**
 - **Roles:** any session (scoped to linked children; effectively parent)
 - **Auth detail:** `signedIn` only (no role guard). Scope = students linked to the caller via M02 parent links (`parentLinks.studentIdsOf`); a non-parent has no children, so gets empty lists. Parent is out of prototype scope (D43).
 - **Purpose:** parent consent queue.
@@ -849,10 +850,11 @@ Module conventions:
 - **Errors:** 401.
 - **Side effects:** none.
 - **Owner / handler / client:** M15 (reads M02 links), `handlers/user.ts:264`, `fetchParentApprovals`.
-- **Card:** BE-23
+- **Card:** UNCOVERED (not in B1, UD-3)
 - **Contract:** missing
 
 ### M15-09 `POST /api/parent/hadiah-approvals/:id/approve`
+> **Not in B1 (UD-3): user decision 2026-10-19. The backend does not register the parent hadiah-approval routes (M15-08..10) and the frontend hides the entry point (no "coming soon" page). Card: none. Kept here as the record of the mock behaviour.**
 - **Roles:** parent
 - **Auth detail:** `parentOnly` (403 for other roles); the redemption must belong to a linked child, else 404 (no probing).
 - **Purpose:** parent approves; moves to admin queue.
@@ -861,10 +863,11 @@ Module conventions:
 - **Errors:** 404 `NOT_FOUND` "Tebusan tidak dijumpai." (unknown or not a child's); 409 `CONFLICT` "Tebusan ini tidak lagi menunggu kelulusan." (not `pending_parent_consent`); 401, 403.
 - **Side effects:** status -> `pending_admin`, `parentDecisionBy` = parent id, `parentDecidedAt` = now.
 - **Owner / handler / client:** M15, `handlers/user.ts:265`, `approveParentRequest`.
-- **Card:** BE-23
+- **Card:** UNCOVERED (not in B1, UD-3)
 - **Contract:** missing
 
 ### M15-10 `POST /api/parent/hadiah-approvals/:id/reject`
+> **Not in B1 (UD-3): user decision 2026-10-19. The backend does not register the parent hadiah-approval routes (M15-08..10) and the frontend hides the entry point (no "coming soon" page). Card: none. Kept here as the record of the mock behaviour.**
 - **Roles:** parent
 - **Auth detail:** `parentOnly`; child ownership as M15-09.
 - **Purpose:** parent rejects: cancel and refund (BR-M15-09).
@@ -873,7 +876,7 @@ Module conventions:
 - **Errors:** as M15-09 (404 "Tebusan tidak dijumpai.", 409 `CONFLICT` "Tebusan ini tidak lagi menunggu kelulusan.").
 - **Side effects:** M14 token credit of `tokenCost` (source `hadiah_refund`, ref `redemption:{id}`), reward stock + 1 if it was reserved, status `cancelled`, `cancelledBy=parent`, `cancelledAt`, parent decision fields set.
 - **Owner / handler / client:** M15, `handlers/user.ts:268`, `rejectParentRequest`.
-- **Card:** BE-23
+- **Card:** UNCOVERED (not in B1, UD-3)
 - **Contract:** missing
 
 ### M15-11 `GET /api/admin/hadiah`
@@ -2290,7 +2293,7 @@ Module conventions: ids are integers (OQ-API-B4-1); statuses `dibuka|dalam_prose
 
 ## Uncovered endpoints
 
-60 of 165 endpoints have no BE card.
+63 of 165 endpoints have no BE card (60 before UD-3).
 
 | Module | Count | Endpoint ids | Reason |
 |---|---|---|---|
@@ -2298,8 +2301,9 @@ Module conventions: ids are integers (OQ-API-B4-1); statuses `dibuka|dalam_prose
 | M20 | 5 | M20-13, M20-14, M20-15, M20-16, M20-17 | Marketplace is a B1 non-goal (plan section 2, URS section 1); buyer screens stay on the mock (matrix row 32). |
 | M21 | 1 | M21-15 | Sponsorship is a B1 non-goal; the single route backs matrix row 15 (Mohon Keluarga Angkat) and has no card. |
 | M09 | 2 | M09-25, M09-26 | BE-24: "Audio KBAT student play is backlog"; only the admin and set-listing routes are carded. |
+| M15 | 3 | M15-08, M15-09, M15-10 | Not in B1, user decision UD-3 (2026-10-19): parent hadiah approvals are not registered by the backend and the frontend hides the entry point. |
 
-M14, M15 and M22 have no uncovered endpoint (BE-11/BE-23/BE-24 cover them).
+M14 and M22 have no uncovered endpoint (BE-11/BE-23/BE-24 cover them); M15 has the 3 parent routes above.
 
 ### Covered by card scope but not itemised
 
@@ -2311,7 +2315,7 @@ Each question needs a lead or user answer before (or while) the owning card is b
 
 | ID | Question | Affects | Suggested default |
 |---|---|---|---|
-| OQ-API-B4-1 | Id wire format: the mock uses integer ids everywhere in this part (users, schools, rewards, tiers, challenges, tickets, videos, articles, ...) and numeric path params (`int()`); the contract says opaque string `Id` (OD-9). Nested user/school ids (`userId`, `child.id`, `uploaderId`) and numeric route params must follow. M16 battle uuids, room codes, session ids and tournament uuids are already strings. | all 165 | Strings per contract; the lead realigns the frontend per domain switch (V2-T24/T25). |
+| OQ-API-B4-1 | **Resolved by UD-1 (user decision 2026-10-19): the real API follows the contract (string ids, cookie + CSRF, `Session`, 401 `INVALID_CREDENTIALS`, no Bearer); the LEAD realigns mock and HttpTransport (V2-T31).** Id wire format: the mock uses integer ids everywhere in this part (users, schools, rewards, tiers, challenges, tickets, videos, articles, ...) and numeric path params (`int()`); the contract says opaque string `Id` (OD-9). Nested user/school ids (`userId`, `child.id`, `uploaderId`) and numeric route params must follow. M16 battle uuids, room codes, session ids and tournament uuids are already strings. | all 165 | Strings per contract; the lead realigns the frontend per domain switch (V2-T24/T25). |
 | OQ-API-B4-2 | `GET /api/gamification/transactions` (M14-03): BE-11 describes a "paginated ledger"; the mock returns every row, newest first, with a non-standard `meta {currentSyiling, type}`. Same for `GET /api/gamification/challenges` (`meta {completed, active}`). Keep as coded (client switch must be a no-op) or paginate and extend `ListMeta`? | M14-03, M14-06 | Keep as coded; add pagination only with a UI change. |
 | OQ-API-B4-3 | Conversion (M14-05): BE-23 AC 3 says "enforces the mock's rate, minimum and daily cap". The mock has a rate (tier `conversionRate`) and a minimum (= rate) but **no daily cap**. | M14-05 | No daily cap (replicate the mock); correct the card. |
 | OQ-API-B4-4 | Real students' names are returned to other students by `GET /api/gamification/leaderboard` (top 50), `GET /api/battle/search-opponent`, `GET /api/battle/standings/students`, battle history, room players and the weekly competition. Are full names acceptable for a minors' platform, or should the API return initials/display names? | M14-07, M16-07/18/21/26/40 | Replicate the mock (full name as stored); confirm with the user before production (privacy). |
@@ -2335,7 +2339,7 @@ Each question needs a lead or user answer before (or while) the owning card is b
 | OQ-API-B4-22 | Plan section 6.3 route counts are stale (M14 32 vs 42, M16 28 vs 52, M09 25 vs 43); the BE-24 and BE-23 endpoint tables omit many routes (now itemised, see section "Covered by card scope but not itemised"). | plan, cards | Update plan 6.3 and the two cards from this catalogue. |
 | OQ-API-B4-23 | Teacher economy (M14-11 to M14-16, M14-30 to M14-36): teacher wallets, cash-out and teacher reward shop are "out of v2 per D28c" in BE-23 and gated on Q10/OD-8; `v2-cloud-gap` F-94 marks teacher gamification Hidden-OOS. Build now (disabled cash-out) or defer? | M14-11..16, 30..36 | Build read routes; keep cash-out disabled until Q10 (card AC 7). |
 | OQ-API-B4-24 | M16 solo games (M16-32) send the **answer keys to the client** (`correct`, `is_true`, `answer`, SEC-M16-01 as live) and M16-33 trusts client-reported `score`/`syiling_earned` within server-computed maxima. Replicate or grade server-side? | M16-32/33 | Replicate for the unchanged client; cap coin credit server-side as the mock does. |
-| OQ-API-B4-25 | M15 parent routes (M15-08..10) need role `parent` and M02 parent links; parent is out of B1 (plan section 2). `GET /api/parent/hadiah-approvals` is `requireAuth` only (empty for non-parents). Build behind BE-25 or defer? | M15-08..10 | Defer with the parent role; admin queue `pending_parent_consent` rows simply stay pending. |
+| OQ-API-B4-25 | **Resolved by UD-3 (user decision 2026-10-19): parent hadiah approvals (M15-08..10) are not built in B1; the frontend hides the entry point.** M15 parent routes (M15-08..10) need role `parent` and M02 parent links; parent is out of B1 (plan section 2). `GET /api/parent/hadiah-approvals` is `requireAuth` only (empty for non-parents). Build behind BE-25 or defer? | M15-08..10 | Defer with the parent role; admin queue `pending_parent_consent` rows simply stay pending. |
 | OQ-API-B4-26 | Role scope not enforced by the mock: M16 routes accept any role (a teacher or admin can create rooms, play battles, create leagues); `POST /api/leagues` has no role check; `GET /api/guru/gamification/leaderboard` for an admin lists all teachers. Confirm the intended role limits. | M16, M14-16 | Restrict M16 student play to `student` (+ `admin` preview) when carded. |
 | OQ-API-B4-27 | M14 core route `GET /api/me/gamification-summary` (SRS #1) lives in `src/mock/core-data/routes.ts` and is not part of this catalogue part; ensure the identity/session part lists it, with BE-11. | cross-part | Lead to confirm ownership. |
 | OQ-API-B4-28 | Several GETs write: article/video/perutusan/product view counters (+1 per call, no de-duplication) and the referral-code creation. Under HTTP caching, bots and prefetch, counters inflate. Keep as coded? | M09-08/28/35, M20-15, M14-10 | Replicate; exclude `for=edit` and author/admin as the mock does; consider a de-dup window later. |

@@ -25,6 +25,8 @@ Reference prefixes used in "Source" lines (all under `src/`): `core/` = `mock/co
 
 Defined in `src/mock/server/respond.ts`, `paginate.ts`, `validate.ts`, `auth/middleware.ts`, `src/api/client.ts`. Endpoint blocks refer to these by name.
 
+> **UD-1 (user decision 2026-10-19):** where this part describes the mock auth/session wire (Bearer token, `{token, expiresAt, user}` login body, 422 for bad credentials, integer ids), the real API follows the contract instead; the LEAD realigns the mock and `HttpTransport` (V2-T31).
+
 ### 2.1 Envelopes
 
 | Name | Body | Produced by |
@@ -132,7 +134,7 @@ Roles: `any` = any logged-in role; `public` = no session needed; `admin` = Admin
 | M02-06 | DELETE | `/api/admin/users/:id` | admin | BE-05 | missing |
 | M02-07 | POST | `/api/admin/users/bulk-delete` | admin | BE-05 | missing |
 | M02-08 | POST | `/api/admin/users/:id/toggle-active` | admin | BE-05 | missing |
-| M02-09 | POST | `/api/admin/users/:id/impersonate` | admin | BE-05 | missing |
+| M02-09 | POST | `/api/admin/users/:id/impersonate` | admin | UNCOVERED (dropped by user decision, UD-2) | missing |
 | M02-10 | GET | `/api/students/search` | any | BE-05 | missing |
 | M02-11 | GET | `/api/admin/users/:id/packages` | admin | BE-25 | missing |
 | M02-12 | POST | `/api/admin/users/:id/packages` | admin | BE-25 | missing |
@@ -223,6 +225,7 @@ Matrix note: section A of the role-access matrix (Profil Saya, Tetapan Peribadi,
 | `landingPath` | string | server-computed per role (`mock/auth/landing.ts`): admin `/admin`, ppd_officer `/ppd/dashboard`, jpn_officer `/jpn/dashboard`, all others `/dashboard` (contract v2 uses a different table, OQ-API-B1-5) |
 
 ### C-01 `GET /api/me`
+> **User decision 2026-10-19 (UD-1): the real API follows the contract: ids are decimal strings, cookie session plus `X-CSRF-Token`, `Session` shape and `/api/session*`, no Bearer. The mock shape described below is realigned by the LEAD (V2-T31); build to the contract, not to this mock shape.**
 - Purpose: the logged-in user (M01 SRS #7; implemented in the core, not M01). Also re-fetched in the background (FR-M01-52).
 - Auth: `requireAuth()`; matrix section A (all roles).
 - Request: none.
@@ -304,6 +307,7 @@ Shared mock details: password/IC are stored as salted SHA-256 hashes in the mock
 `SessionPayload` = `{ token: string, expiresAt: ISO +08:00, user: UserMe }` (mock only; the real API returns the cookie + `Session`, OQ-API-B1-1).
 
 ### M01-01 `POST /api/auth/login`
+> **User decision 2026-10-19 (UD-1): the real API follows the contract: ids are decimal strings, cookie session plus `X-CSRF-Token`, `Session` shape and `/api/session*`, no Bearer. The mock shape described below is realigned by the LEAD (V2-T31); build to the contract, not to this mock shape. Bad credentials answer 401 `INVALID_CREDENTIALS` (not 422 with `fields.email`); the success body is `{data: Session}` with the session cookie.**
 - Purpose: password login (M01 SRS #1).
 - Auth: public. Throttled per e-mail.
 - Request body: `{ email: string (required), password: string (required), remember?: boolean | 'true' }`. (Contract `LoginRequest` is `{ identifier, password, schoolId?, remember }`, OQ-API-B1-1.)
@@ -355,6 +359,7 @@ Shared mock details: password/IC are stored as salted SHA-256 hashes in the mock
 - Owner: M01. Source: `m01/auth.ts` R:315, H:281. Client: `resetByIc`. Card: BE-06. Contract: missing.
 
 ### M01-06 `POST /api/auth/logout`
+> **User decision 2026-10-19 (UD-1): the real API follows the contract: ids are decimal strings, cookie session plus `X-CSRF-Token`, `Session` shape and `/api/session*`, no Bearer. The mock shape described below is realigned by the LEAD (V2-T31); build to the contract, not to this mock shape. Logout requires the CSRF header when a session exists.**
 - Purpose: end the session (M01 SRS #6).
 - Auth: public; ignores a dead or absent session (never 401).
 - Request: none (Bearer header if any).
@@ -509,11 +514,12 @@ Shapes (client types in `modules/m02-users-schools/api/*.ts`):
 - Source: R:525, H:488. Client: `toggleUserActive` (raw). Card: BE-05. Contract: missing.
 
 ### M02-09 `POST /api/admin/users/:id/impersonate` ("Login As", Mod Pelajar emulation) (SRS #9)
+> **Not ported (UD-2): user decision 2026-10-19 drops impersonation ("Login As" / act as another user). Mod Pelajar is `POST /api/session/mode` only (D31c). The backend does not register this route; the frontend removes its caller. Kept here as the record of the mock behaviour.**
 - Purpose: opens a fresh session of the target user. The frontend replaces its stored session with it (Login As) or parks the admin session and uses it as Mod Pelajar (`shells/shared/mod-pelajar.ts`, student id 2 hard-coded).
 - Response: 200 `Env-D` `{ token, expiresAt, user: UserMe }` (not remembered; `lastLoginAt` not touched; no M14 hook; the admin's own session stays valid).
 - Errors: 401, 403, 404 `E404`; 422 `Anda tidak boleh Login As akaun sendiri.` (`fields.id`, `:107`); 422 `Pengguna ini tiada peranan yang sah untuk log masuk.` (`fields.id`, `:108`) for a user whose role has no session (`unmapped`).
 - Side effects: a session row. No audit row in the mock (BE-05: align with BE-03 session mode, OQ-API-B1-6).
-- Source: R:528, H:498. Client: `impersonateUser`. Card: BE-05. Contract: missing (superseded by S-03 in the contract, OQ-API-B1-6).
+- Source: R:528, H:498. Client: `impersonateUser`. Card: UNCOVERED (dropped by user decision, UD-2). Contract: missing (superseded by S-03 in the contract, OQ-API-B1-6).
 
 ### M02-10 `GET /api/students/search` (SRS #39)
 - Purpose: pick students (S2 parent links, S7, other modules).
@@ -880,18 +886,18 @@ Shapes (client `modules/m03-curriculum/api/*.ts`):
 
 ## 10. Uncovered endpoints
 
-None. Before the card audit (commit 63d363c) 24 mock routes were not in any BE card endpoint table (M01 2, M02 6, M03 16); BE-06, BE-05 and BE-08 now list them. The audit assigns four M02 routes to BE-25, not BE-05: `GET /api/admin/schools/:id/quota` (M02-15), `POST /api/admin/students/import` (M02-14) and the user-package routes (M02-11, M02-12). One card/mock difference remains: BE-05 lists `GET /api/schools` as a public picker while the mock route is admin-only (M02-31, OQ-API-B1-14).
+One endpoint, by user decision: `POST /api/admin/users/:id/impersonate` (M02-09) is **not ported** (UD-2, dropped by user decision 2026-10-19). Otherwise none. Before the card audit (commit 63d363c) 24 mock routes were not in any BE card endpoint table (M01 2, M02 6, M03 16); BE-06, BE-05 and BE-08 now list them. The audit assigns four M02 routes to BE-25, not BE-05: `GET /api/admin/schools/:id/quota` (M02-15), `POST /api/admin/students/import` (M02-14) and the user-package routes (M02-11, M02-12). One card/mock difference remains: BE-05 lists `GET /api/schools` as a public picker while the mock route is admin-only (M02-31, OQ-API-B1-14).
 
 Contract-only endpoints (S-01..S-04) have a card (BE-03) but no mock handler and no frontend client.
 
 ## 11. Open questions
 
-- **OQ-API-B1-1 (login/logout shape).** The mock `POST /api/auth/login` takes `{email,password,remember}` and returns `{data:{token,expiresAt,user:UserMe}}`; errors are 422 `Email atau kata laluan tidak sah.` (with `fields.email`), 403 `ACCOUNT_INACTIVE` `Akaun anda tidak aktif. Sila hubungi pentadbir.`, 429 `Too many login attempts...`. The contract (`openapi.ts`, BE-03) takes `{identifier,password,schoolId?,remember}`, returns `{data:Session}` with a cookie, and uses 401 `INVALID_CREDENTIALS` `E-mel/Nama pengguna atau kata laluan tidak sah.`, 403 `ACCOUNT_INACTIVE` `Akaun anda tidak aktif atau telah digantung. Sila hubungi pentadbir.`, 429 `Terlalu banyak percubaan...`. They differ in field name, status, code, BM copy and body. The frontend login page and `stores/session.ts` cannot switch to http until the lead realigns one side (V2-T31). `POST /api/auth/register` and the reset endpoints also return the mock `SessionPayload`, which has no contract schema.
-- **OQ-API-B1-2 (auth transport).** Mock = Bearer token in `localStorage['pp.auth']`; real = HTTP-only cookie + `X-CSRF-Token` (BE-03; plan section 7 says do not add Bearer). Logout in the mock is a public 204 with no CSRF; the contract requires CSRF when a session exists.
+- **OQ-API-B1-1 (login/logout shape).** **Resolved by UD-1 (user decision 2026-10-19): the real API follows the contract (string ids, cookie + CSRF, `Session`, 401 `INVALID_CREDENTIALS`, no Bearer); the LEAD realigns mock and HttpTransport (V2-T31).** The mock `POST /api/auth/login` takes `{email,password,remember}` and returns `{data:{token,expiresAt,user:UserMe}}`; errors are 422 `Email atau kata laluan tidak sah.` (with `fields.email`), 403 `ACCOUNT_INACTIVE` `Akaun anda tidak aktif. Sila hubungi pentadbir.`, 429 `Too many login attempts...`. The contract (`openapi.ts`, BE-03) takes `{identifier,password,schoolId?,remember}`, returns `{data:Session}` with a cookie, and uses 401 `INVALID_CREDENTIALS` `E-mel/Nama pengguna atau kata laluan tidak sah.`, 403 `ACCOUNT_INACTIVE` `Akaun anda tidak aktif atau telah digantung. Sila hubungi pentadbir.`, 429 `Terlalu banyak percubaan...`. They differ in field name, status, code, BM copy and body. The frontend login page and `stores/session.ts` cannot switch to http until the lead realigns one side (V2-T31). `POST /api/auth/register` and the reset endpoints also return the mock `SessionPayload`, which has no contract schema.
+- **OQ-API-B1-2 (auth transport).** **Resolved by UD-1 (user decision 2026-10-19): the real API follows the contract (string ids, cookie + CSRF, `Session`, 401 `INVALID_CREDENTIALS`, no Bearer); the LEAD realigns mock and HttpTransport (V2-T31).** Mock = Bearer token in `localStorage['pp.auth']`; real = HTTP-only cookie + `X-CSRF-Token` (BE-03; plan section 7 says do not add Bearer). Logout in the mock is a public 204 with no CSRF; the contract requires CSRF when a session exists.
 - **OQ-API-B1-3 (generic error copy).** Mock generic messages (`Unauthenticated.`, `This action is unauthorized.`, `Not Found.`, `Server Error`, Laravel validation templates) are English; the contract copy for auth codes is BM. The M01 SRS marks the English text UNVERIFIED. Which language should the real API return for generic 401/403/404/422 and for field validation messages the UI shows directly?
-- **OQ-API-B1-4 (ids).** Contract and plan: opaque string ids; mock and all clients: integers (`id: number`, `Number(req.params.id)`, `int()` route params, `ids: number[]` bodies, `userId` in notifications). Every response/request type in this part needs the string realignment (listed in `v2-frontend.md` section 6) and the frontend types change with it. Not decided per endpoint.
+- **OQ-API-B1-4 (ids).** **Resolved by UD-1 (user decision 2026-10-19): the real API follows the contract (string ids, cookie + CSRF, `Session`, 401 `INVALID_CREDENTIALS`, no Bearer); the LEAD realigns mock and HttpTransport (V2-T31).** Contract and plan: opaque string ids; mock and all clients: integers (`id: number`, `Number(req.params.id)`, `int()` route params, `ids: number[]` bodies, `userId` in notifications). Every response/request type in this part needs the string realignment (listed in `v2-frontend.md` section 6) and the frontend types change with it. Not decided per endpoint.
 - **OQ-API-B1-5 (roles and landing).** The mock has 8 roles incl. `jpn_officer` and `landingPath` `/admin`, `/ppd/dashboard`, `/jpn/dashboard`, `/dashboard`; the contract has 7 (`RoleCode` without `jpn_officer`; D31a single PPD/JPN role) and v2 landing paths (`v2-frontend.md` 4.4). `meta.roleCounts` (M02-01) has no `jpnOfficer`. M02-04/05 accept `jpn_officer`, M02-13 accepts `ppd_officer`.
-- **OQ-API-B1-6 (Mod Pelajar / impersonate).** The mock emulates Mod Pelajar with `POST /api/admin/users/2/impersonate` (a second full session; the admin token stays valid; no audit; student id 2 hard-coded). The contract has `POST/DELETE /session/mode` (same session, `mode.isTest`, `X-CSRF`). BE-05 says "align with the session mode of BE-03 and flag conflicts". M02-09 is also used for plain "Login As" (no return control, FR-M02-12), which the contract does not model (and M27 has its own impersonation switch with return path, outside this part).
+- **OQ-API-B1-6 (Mod Pelajar / impersonate).** **Resolved by UD-2 (user decision 2026-10-19): impersonation is dropped; Mod Pelajar is `POST /api/session/mode` only (D31c).** The mock emulates Mod Pelajar with `POST /api/admin/users/2/impersonate` (a second full session; the admin token stays valid; no audit; student id 2 hard-coded). The contract has `POST/DELETE /session/mode` (same session, `mode.isTest`, `X-CSRF`). BE-05 says "align with the session mode of BE-03 and flag conflicts". M02-09 is also used for plain "Login As" (no return control, FR-M02-12), which the contract does not model (and M27 has its own impersonation switch with return path, outside this part).
 - **OQ-API-B1-7 (prototype scope).** `POST /api/auth/login` answers 403 `ROLE_OUT_OF_SCOPE` `Peranan ini tidak termasuk dalam prototaip.` when `isPrototypeScopeOn()` and the role is not student/teacher/school_admin/admin (D43). Not in the contract error list. Keep, drop, or make it a deployment flag?
 - **OQ-API-B1-8 (registration).** BE-06: "school join code, role limited to student/teacher/parent". Mock: `schoolId` (must exist), optional `referralCode` (M14), `grade` required for students, `icNumber`, no join code, no username. Which is authoritative?
 - **OQ-API-B1-9 (avatar).** Mock stores a base64 data URL in `users.avatarUrl` and returns it; BE-06/BE-04 will store a file. Response field name stays `avatarUrl`; confirm it becomes a served URL and whether the JPEG/PNG/WebP and 2 MB limits stay.

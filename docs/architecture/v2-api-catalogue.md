@@ -4,6 +4,13 @@ The catalogue documents every endpoint the frontend mock registers today (plus t
 
 Snapshot: worktree `D:\Dev Projects\pp-docs`, branch `docs/v2-reference`, 2026-10-19. Line numbers in the parts drift; use function names.
 
+## User decisions of 2026-10-19 applied to this catalogue
+
+- **UD-1 Ids and session follow the contract.** Ids are decimal strings; the real API uses the cookie session plus `X-CSRF-Token`, the `Session` shape and `/api/session*`; bad credentials answer 401 `INVALID_CREDENTIALS`; no Bearer. The LEAD realigns the mock and `HttpTransport` (V2-T31). Resolves CC-1 and CC-2. The endpoint blocks for login, logout and `GET /api/me` carry the note "real API follows contract (UD-1)".
+- **UD-2 Impersonation is dropped.** Mod Pelajar works only through `POST /api/session/mode` (D31c). M02-09, M27-21 and M27-22 are "Not ported (UD-2)". Resolves CC-3.
+- **UD-3 Parent hadiah approvals are not built in B1.** M15-08..10: the backend does not register them, the frontend hides the entry point; card none.
+- **UD-4 M18 Amaran is folded into BE-21.** M18-01..04 now carry card BE-21.
+
 ## 1. Parts
 
 | Part | File | Modules | Endpoint blocks |
@@ -32,7 +39,7 @@ Counts verified for this index with a multi-line-aware script (`scratchpad/docs-
 | core (`GET /api/me`, gamification summary, server status) | 1 | 3 | BE-06, BE-11, BE-22 | 0 | 0 / 0 / 3 |
 | session contract (S-01..S-04, no mock handler) | 1 | 4 | BE-03 | 0 | 4 / 0 / 0 |
 | M01 authentication, account, notifications | 1 | 19 | BE-03, BE-06 | 0 | 0 / 2 / 17 |
-| M02 users, schools, subscriptions, parent invites | 1 | 49 | BE-05, BE-25 | 0 | 0 / 0 / 49 |
+| M02 users, schools, subscriptions, parent invites | 1 | 49 | BE-05, BE-25 | 1 (M02-09 impersonate, UD-2) | 0 / 0 / 49 |
 | M03 curriculum | 1 | 29 | BE-08 | 0 | 0 / 0 / 29 |
 | M04 question bank | 2 | 30 | BE-09, BE-10 | 0 | 0 / 0 / 30 |
 | M05 practice | 2 | 23 | BE-12, BE-13, BE-18 | 0 | 0 / 0 / 23 |
@@ -47,16 +54,16 @@ Counts verified for this index with a multi-line-aware script (`scratchpad/docs-
 | M11 teacher analytics | 3 | 7 | BE-20 | 0 | 0 / 0 / 7 |
 | M12 Kirkpatrick | 3 | 14 | BE-20 | 0 | 0 / 0 / 14 |
 | M17 admin dashboard (Command Center) | 3 | 11 | BE-22 | 0 | 0 / 0 / 11 |
-| M18 PPD / JPN (Amaran Awal) | 3 | 4 | none | 4 | 0 / 0 / 4 |
-| M27 school admin | 3 | 22 | BE-21 | 0 | 0 / 0 / 22 |
+| M18 PPD / JPN (Amaran Awal) | 3 | 4 | BE-21 (UD-4) | 0 | 0 / 0 / 4 |
+| M27 school admin | 3 | 22 | BE-21 | 2 (impersonate, UD-2) | 0 / 0 / 22 |
 | M14 gamification | 4 | 42 | BE-11, BE-23 | 0 | 0 / 0 / 42 |
-| M15 rewards shop | 4 | 18 | BE-23 | 0 | 0 / 0 / 18 |
+| M15 rewards shop | 4 | 18 | BE-23 | 3 (parent approvals, UD-3) | 0 / 0 / 18 |
 | M16 battle, games, competitions | 4 | 52 | none (wave-4 backlog) | 52 | 0 / 0 / 52 |
 | M09 content | 4 | 43 | BE-24 | 2 | 0 / 0 / 43 |
 | M20 marketplace (buyer) | 4 | 5 | none (B1 non-goal) | 5 | 0 / 0 / 5 |
 | M21 sponsorship (foster application) | 4 | 1 | none (B1 non-goal) | 1 | 0 / 0 / 1 |
 | M22 support tickets | 4 | 4 | BE-24 | 0 | 0 / 0 / 4 |
-| **HTTP total** | | **491 mock + 4 contract-only = 495** | | **110** | **4 / 2 / 489** |
+| **HTTP total** | | **491 mock + 4 contract-only = 495** | | **112** | **4 / 2 / 489** |
 
 Note: `GET /api/me/gamification-summary` (M14 SRS #1) is listed once, in part 1 (C-02); part 4's M14 count (42) excludes it, so M14 SRS-wise has 43.
 
@@ -104,9 +111,9 @@ Source of truth: `packages/contract/src/common/{envelope,error,ids,time,enums}.t
 - **BM messages.** Domain messages in the blocks are verbatim BM and must be reproduced exactly. The mock's generic messages (`Unauthenticated.`, `This action is unauthorized.`, `Not Found.`, `Server Error`, Laravel validation templates `The :attribute field is required.`) are English, while the contract says `message` is BM for direct display and the contract auth copy is BM (CC-5).
 - **Where the mock deviates from the contract today:** login/logout shape, Bearer vs cookie, numeric vs string ids, the `status` envelope sibling, bare/non-enveloped bodies, fixed page size vs `pageSize`, epoch-ms times, English generic messages, 8 roles vs 7 (`jpn_officer`). All are listed in section 6.
 
-## 5. Uncovered endpoints (110 of 495 HTTP endpoints; was 143 before the card audit)
+## 5. Uncovered endpoints (112 of 495 HTTP endpoints; 143 before the card audit)
 
-"Uncovered" = no BE card endpoint table lists it, re-checked against the audited cards (LEAD audit, commit 63d363c, plus the catalogue additions marked "added from catalogue 2026-10-19"). Before/after by reason: in a card's scope but not listed 33 -> 0; out of v2 B1 scope or backlog 106 -> 106; no card but needed by a carded module 4 -> 4; total 143 -> 110. The `BE-nn*` implied markers (part 3: 24) and the "not itemised" notes (part 4: 31) are gone because those endpoints are now listed explicitly.
+"Uncovered" = no BE card endpoint table lists it, re-checked against the audited cards (LEAD audit, commit 63d363c, plus the catalogue additions marked "added from catalogue 2026-10-19"). Totals by reason after the user decisions of 2026-10-19: out of v2 B1 scope or wave-4 backlog 106 (unchanged); dropped by user decision (UD-2) 3; not in B1 by user decision (UD-3) 3; in a card's scope but not listed 0 (was 33); no card but needed by a carded module 0 (was 4, M18 folded into BE-21 by UD-4). Total 143 -> 110 (card audit) -> 112 (UD-2/UD-3 add 6, UD-4 removes 4). The `BE-nn*` implied markers (part 3: 24) and the "not itemised" notes (part 4: 31) are gone because those endpoints are now listed explicitly.
 
 ### 5.1 In a card's scope but not listed (0)
 
@@ -125,11 +132,15 @@ None. The 33 endpoints that were here (M01 2, M02 6, M03 16, M04 5, M05 1, M10 3
 | `POST /api/mohon-keluarga-angkat` | M21 | 1 | B1 non-goal |
 | `GET /api/audio-kbat-sets/:id` (M09-25), `POST .../attempts` (M09-26) | M09 | 2 | BE-24: audio KBAT student play is backlog |
 
-### 5.3 No card, but required by a carded module (4)
+### 5.3 Dropped or not built by user decision 2026-10-19 (6)
 
-| Endpoint | Module | Issue |
+| Endpoint | Module | Reason |
 |---|---|---|
-| `GET /api/amaran/schools/:id`, `GET /api/amaran/summary`, `GET /api/amaran/effectiveness`, `GET /api/amaran/export/school/:id` | M18 | M18 PPD/JPN is wave-4 backlog, but M27 (BE-21 scope) calls the school page and CSV and its dashboard reads the same risk tally; BE-21 cannot reach parity without them. Decide: new M18 card, or fold the school family into BE-21. |
+| `POST /api/admin/users/:id/impersonate` (M02-09) | M02 | Not ported, dropped by user decision (UD-2); Mod Pelajar is `POST /api/session/mode` only |
+| `POST /api/admin-sekolah/users/:id/impersonate` (M27-21), `POST /api/admin-sekolah/impersonate/leave` (M27-22) | M27 | Not ported, dropped by user decision (UD-2) |
+| `GET /api/parent/hadiah-approvals` (M15-08), `POST .../:id/approve` (M15-09), `POST .../:id/reject` (M15-10) | M15 | Not in B1, user decision (UD-3): the backend does not register them and the frontend hides the entry point; card none |
+
+M18 Amaran (`GET /api/amaran/schools/:id`, `/summary`, `/effectiveness`, `/export/school/:id`; M18-01..04) is no longer uncovered: UD-4 folds it into BE-21.
 
 Not HTTP, no card endpoint: `BJ-04 subjects()` (Bijak subject dictionary), intake `IN-05 submitForReview` (batch Draf to Semakan; BE-10 owns submit, OQ B2-26) and `IN-09` DSKP units for the intake tag selector (OQ B2-30); `IN-04 saveExtracted` is only partly covered (BE-38 has item-level PATCH, no batch replace, OQ B2-25). IN-06 and IN-08 have no public endpoint of their own. Card-only endpoints without a mock (photo upload, admin papers and blueprints BE-39, AI status/usage BE-36, intake dashboard BE-40) are in part 2 sections 11 and 12. These do not change the 110 HTTP total.
 
@@ -139,9 +150,9 @@ Deduplicated from the 4 parts. Part-local ids: `B1-n` = `OQ-API-B1-n` (part 1), 
 
 | # | Question | Part ids |
 |---|---|---|
-| CC-1 | **Numeric vs string ids.** Mock and clients use integers (also in query params, `ids: number[]`, `link`/`href` strings); the contract and plan say opaque decimal strings. Realign frontend types per domain, or keep numbers? | B1-4, B2-1, B3-15, B4-1 |
-| CC-2 | **Login/session shape and transport.** Mock login takes `{email,password,remember}` and returns `{data:{token,expiresAt,user}}` (Bearer, 422 `Email atau kata laluan tidak sah.`); the contract takes `{identifier,password,schoolId?,remember}`, returns `{data:Session}` with a cookie and CSRF (401 `INVALID_CREDENTIALS`). Register and reset also return the mock `SessionPayload`. Which side moves? Also `ROLE_OUT_OF_SCOPE` prototype guard, registration fields (join code vs `schoolId`). | B1-1, B1-2, B1-7, B1-8 |
-| CC-3 | **Impersonation vs Mod Pelajar.** M02-09 ("Login As") opens a second full session with no return path and student id 2 hard-coded; M27 has its own impersonate/leave with a parent token; the contract has `POST/DELETE /session/mode` (same session, `is_test` stamping). Keep, replace or define semantics (audit, `is_test`)? Bijak role question belongs here too. | B1-6, B3-13, B2-12 |
+| CC-1 | **RESOLVED by UD-1 (strings, per the contract).** **Numeric vs string ids.** Mock and clients use integers (also in query params, `ids: number[]`, `link`/`href` strings); the contract and plan say opaque decimal strings. Realign frontend types per domain, or keep numbers? | B1-4, B2-1, B3-15, B4-1 |
+| CC-2 | **RESOLVED by UD-1 (contract: cookie + CSRF, `Session`, 401 `INVALID_CREDENTIALS`, no Bearer).** **Login/session shape and transport.** Mock login takes `{email,password,remember}` and returns `{data:{token,expiresAt,user}}` (Bearer, 422 `Email atau kata laluan tidak sah.`); the contract takes `{identifier,password,schoolId?,remember}`, returns `{data:Session}` with a cookie and CSRF (401 `INVALID_CREDENTIALS`). Register and reset also return the mock `SessionPayload`. Which side moves? Also `ROLE_OUT_OF_SCOPE` prototype guard, registration fields (join code vs `schoolId`). | B1-1, B1-2, B1-7, B1-8 |
+| CC-3 | **RESOLVED by UD-2 (impersonation dropped; Mod Pelajar only).** **Impersonation vs Mod Pelajar.** M02-09 ("Login As") opens a second full session with no return path and student id 2 hard-coded; M27 has its own impersonate/leave with a parent token; the contract has `POST/DELETE /session/mode` (same session, `is_test` stamping). Keep, replace or define semantics (audit, `is_test`)? Bijak role question belongs here too. | B1-6, B3-13, B2-12 |
 | CC-4 | **Epoch ms vs `+08:00`.** Bijak times (`startedAt`, `deadline`, `savedAt`, `submittedAt`), `serverNow` and the M18 `generatedAt` are epoch ms in the mock; the contract serialises `+08:00` strings. | B2-13, B3 (section 2 Time) |
 | CC-5 | **Generic message language.** Mock generic 401/403/404/422/500 and validation messages are English Laravel text; the contract says BM. Does the real API return BM, and does the UI show its own copy? | B1-3, B2-18 |
 | CC-6 | **Non-standard bodies.** `{data,status}` flash siblings (envelope has no `status`), bare arrays/objects, `{ok,message}`, `{success,message}`, `200 {"error":"..."}`, un-enveloped chat body, module-specific `meta` (`currentSyiling`, `completed/active`, `count/schoolSet`, `tiles/levels`), file/CSV bodies. Reproduce exactly (switch is a no-op) or realign client and contract together? | B1 (Env-DS), B2-11, B2-19, B2-20, B3-14, B4-2 |
@@ -156,7 +167,7 @@ Deduplicated from the 4 parts. Part-local ids: `B1-n` = `OQ-API-B1-n` (part 1), 
 | CC-15 | **Files, uploads, exports.** Mock stores only metadata or data URLs; real endpoints need BE-04 storage, limits, magic-byte checks, CSV formula-injection guard, PDF export (`PdfPort`), multipart vs two-step upload. | B1-9, B2-22, B3-18, B3-6, B4 (section 3 Files) |
 | CC-16 | **Mock constants vs computed values.** Display constants and stored aggregates (M12 correlation, M17 engagement buckets, M08 GPS rows, SPM targets progress, Sekolah Bersaing snapshots, hub constants) have no computation rule; also performance of full-log scans. | B3-8, B3-17, B2-8, B2-9, B4-14 |
 | CC-17 | **Deletes, audit and side effects.** Cascade vs restrict on deletes, no `audit_events` for admin writes, GET endpoints that write (view counters, referral code). | B1-22, B4-6, B4-7, B4-28 |
-| CC-18 | **Scope boundaries.** External AI stubs (M13/M25), PKSK as tags, M06 retirement, teacher economy, parent routes, M18 card, M16 simulation, SPM intake (D52) documented as operations only, with no HTTP mock. | B2-10, B2-11, B2-17, B2-23..B2-30, B3-12, B4-11, B4-23, B4-25 |
+| CC-18 | **Scope boundaries.** External AI stubs (M13/M25), PKSK as tags, M06 retirement, teacher economy, parent routes, M16 simulation (parent routes: UD-3 not in B1; M18: UD-4 folded into BE-21), SPM intake (D52) documented as operations only, with no HTTP mock. | B2-10, B2-11, B2-17, B2-23..B2-30, B3-12, B4-11, B4-23, B4-25 |
 | CC-19 | **Hard-coded hosts and fixtures.** Share/referral links use `https://prestasiplus.my`; fixture ids/tokens must not be reproduced. | B4-5, B1-21 |
 
 Part-local questions that do not repeat elsewhere stay in the part (for example B3-3 weekly report 403, B3-4 headcount entry, B3-10 two Command Center families, B3-16 ranking order, B4-8 lucky draw, B4-13 league status).
@@ -170,7 +181,7 @@ Substantive conflicts and overlaps found while comparing the parts (formatting i
    - `GET /api/remedial-tests/mine` (M05-21) and `GET /api/missions/today` (M05-22) (and `GET /api/remedial-tests/:id`, M05-23) are in part 2 (M05), and after the card audit are listed in BE-18 (BE-13 now says they are not in its card; the mock reads M10 records through seams). Build them with BE-18's data model.
    - `GET /api/guru/dskp/{bidang,sk,sp}` are registered by M04 (M04-28..30, BE-10, part 2) but the data and the POST creates are M10 (part 3, BE-18). One implementation please (B2-21).
    - `GET/POST /api/guru/questions*` (M10, part 3) write the M04 question store; BE-09 now lists all five `/api/guru/questions*` routes (part 3 no longer marks `:id` uncovered); part 2's OQ B2-21 says the same routes belong to the M10 part.
-   - `GET /api/amaran/*` (M18, part 3) is called by the M27 school-admin client (part 3) and read by the M27 dashboard (BE-21). It is the only cross-card gap with no card (section 5.3).
+   - `GET /api/amaran/*` (M18, part 3) is called by the M27 school-admin client (part 3) and read by the M27 dashboard (BE-21); now BE-21 scope (UD-4). UD-4 folds the family into BE-21, so there is no longer a cross-card gap.
    - `GET /api/duta/recommendations` is registered by M06 (M06-14) but declared in the M25 client; counted once, under M06.
    - `GET /api/me/gamification-summary` (C-02, part 1, BE-11) is the M14 SRS route #1; part 4 excludes it (resolves B4-27).
    - M02 `GET /api/schools` (M02-31) is consumed by M04 (SRS #31); `GET /api/admin/schools/options` is an XL-13 alias of `GET /api/schools?all=1`.

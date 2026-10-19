@@ -139,10 +139,10 @@ Scope at a glance (as coded): **teacher** = own classes and their pupils (M08, M
 | M17-09 | M17 | GET | `/api/command-center/student/:id/subject` | A, T, SA (same scope) | BE-22 | missing |
 | M17-10 | M17 | GET | `/api/command-center/session/:sessionId` | A, T, SA (same scope) | BE-22 | missing |
 | M17-11 | M17 | GET | `/api/command-center/headcount/:configId` | A, T, SA (same scope) | BE-22 | missing |
-| M18-01 | M18 | GET | `/api/amaran/schools/:id` | A, SA own, T own, PPD district, JPN state | UNCOVERED | missing |
-| M18-02 | M18 | GET | `/api/amaran/summary` | A, PPD, JPN, SA and T (own school only) | UNCOVERED | missing |
-| M18-03 | M18 | GET | `/api/amaran/effectiveness` | A (school 127), SA, T (own school) | UNCOVERED | missing |
-| M18-04 | M18 | GET | `/api/amaran/export/school/:id` | A, SA own, PPD district, JPN state (not T) | UNCOVERED | missing |
+| M18-01 | M18 | GET | `/api/amaran/schools/:id` | A, SA own, T own, PPD district, JPN state | BE-21 | missing |
+| M18-02 | M18 | GET | `/api/amaran/summary` | A, PPD, JPN, SA and T (own school only) | BE-21 | missing |
+| M18-03 | M18 | GET | `/api/amaran/effectiveness` | A (school 127), SA, T (own school) | BE-21 | missing |
+| M18-04 | M18 | GET | `/api/amaran/export/school/:id` | A, SA own, PPD district, JPN state (not T) | BE-21 | missing |
 | M27-01 | M27 | GET | `/api/admin-sekolah/dashboard` | SA | BE-21 | missing |
 | M27-02 | M27 | GET | `/api/admin-sekolah/usage` | SA | BE-21 | missing |
 | M27-03 | M27 | GET | `/api/admin-sekolah/laporan-aktiviti` | SA | BE-21 | missing |
@@ -163,8 +163,8 @@ Scope at a glance (as coded): **teacher** = own classes and their pupils (M08, M
 | M27-18 | M27 | POST | `/api/admin-sekolah/pelajar/:id/reset-password` | SA | BE-21 | missing |
 | M27-19 | M27 | POST | `/api/admin-sekolah/guru/:id/reset-password` | SA | BE-21 | missing |
 | M27-20 | M27 | POST | `/api/admin-sekolah/guru/:id/toggle-active` | SA | BE-21 | missing |
-| M27-21 | M27 | POST | `/api/admin-sekolah/users/:id/impersonate` | SA (checked in M01 contract) | BE-21 | missing |
-| M27-22 | M27 | POST | `/api/admin-sekolah/impersonate/leave` | impersonated session | BE-21 | missing |
+| M27-21 | M27 | POST | `/api/admin-sekolah/users/:id/impersonate` | SA (checked in M01 contract) | UNCOVERED (dropped by user decision, UD-2) | missing |
+| M27-22 | M27 | POST | `/api/admin-sekolah/impersonate/leave` | impersonated session | UNCOVERED (dropped by user decision, UD-2) | missing |
 
 Legend: (the earlier `*` implied marker is gone after the card audit.) Roles use the abbreviations of section 2.
 
@@ -878,35 +878,39 @@ Module-wide facts:
 - Contract: `RoleCode` in `packages/contract` has no `jpn_officer` (only `ppd_officer`); the mock session role set includes both: OQ-API-B3-11.
 
 ### M18-01 `GET /api/amaran/schools/:id`
+> **UD-4: M18 Amaran is folded into BE-21 (user decision 2026-10-19).**
 Purpose: school risk page (S22/S28; also M27 S4 "Amaran Awal" of a school admin).
 - **Roles/auth:** any session, then `AMARAN_ROLES` and `mayOpenSchool` as above.
 - **Request:** path `id` int (school); query `tingkatan` `T4|T5|4|5` (case-insensitive; anything else = no filter). The filter is class based (pupils in classes of that level).
 - **Response:** `200 {data: SchoolRiskData}` (AR:148): `school{id,name,code,district,state}`, `levelFilter` `"T4"|"T5"|null`, `levelSuffix` `""` or `" — Tingkatan {n}"`, `tally{green,yellow,red,total,pct{green,yellow,red}}` (integer percentages = round(part/total*100)), `weakness[{subjectId,subjectName,weak,total,pct}]` (one row per stored correction-subject row of the school with `pupils` > 0, order as stored; `weak` = `pupilsWeak`, `total` = `pupils`), `pupils[PupilRiskView]` (RT:123): score descending with 1-based `rank`, fields `rank,userId,studentId (alias),name,levelLabel ("Tingkatan n"/"Darjah n"/null),tingkatan,className,classLabel,score,status,accuracy,engagement (lastActiveAt yyyy-mm-dd),mastery,accuracyText,engagementText,masteryText`. Cell texts (BM): `Purata ketepatan: {n}%`, `Tiada data latihan` (never active) / `Tiada data`; `Terakhir aktif: {yyyy-mm-dd}` / `Tiada aktiviti`; `Purata tahap: L{n}` / `Tiada data penguasaan` / `Tiada data`.
 - **Errors:** `404` unknown school (checked before access); `403` outside scope or role not allowed.
-- **Handler:** `amaran.ts:75` (`schoolRisk`); client `fetchSchoolRisk` (`m27-school-admin/api/amaran.ts`). **Card:** **UNCOVERED** (M18 not carded). **Contract:** missing.
+- **Handler:** `amaran.ts:75` (`schoolRisk`); client `fetchSchoolRisk` (`m27-school-admin/api/amaran.ts`). **Card:** BE-21. **Contract:** missing.
 
 ### M18-02 `GET /api/amaran/summary`
+> **UD-4: folded into BE-21.**
 Purpose: printable executive summary of a school, district or state.
 - **Roles/auth:** `AMARAN_ROLES` and `mayOpenScope`: school scope as `mayOpenSchool`; district/state scopes: admin any; ppd_officer only its own district (state also matching when set); jpn_officer any district or state in its own state (state scope: `state` equal to own); school_admin and teacher are refused for district/state scopes.
 - **Request (query):** `scope` `school|district|state` (absent = viewer's default scope: ppd_officer own district, jpn_officer own state, admin the preview scope district `PPD BATANG PADANG` / state `Perak`, school_admin and teacher own school; none -> 403); `schoolId` (or `school_id`) int for `school`; `district`, `state` for `district` (default to the officer's own); `state` for `state` (admin default `Perak`).
 - **Response:** `200 {data: SummaryData}` (AR:243): `scope`, `title` (school name / district / `Negeri {state}`), `subtitle` (`{district}, {state}` / `{state} — Ringkasan Eksekutif` / `Ringkasan Eksekutif Seluruh Negeri`), `pupilsLine` (`{n} pelajar` or null for state), `generatedAt` (epoch ms number, not ISO), `tally`, `kombo{active,pupils,avg,max,today}`, and `schools[SchoolRow]` (district/state: `schoolId,school,pupils,avgScore,green,yellow,red`, ordered by average score descending then id, schools with pupils only) or `weakness[]` (school scope). `kombo` = over scope pupils: `active` = those with a current streak > 0, `avg` = mean current streak of those (1 dp), `max` = highest, `today` = distinct pupils with an answer today (M14 streak and M05 answers).
 - **Errors:** `422 VALIDATION_ERROR` English copy as coded: `scope=school` without integer id `{schoolId: "The school id is required."}`; district missing `{district: "The district and state are required."}`; state missing `{state: "The state is required."}`; unknown scope value `{scope: "The scope must be school, district or state."}` (the message is the field text). `404` unknown school, or a district/state with no schools; `403` out of scope or no default scope.
-- **Handler:** `amaran.ts:96`; no client yet. **Card:** **UNCOVERED**. **Contract:** missing.
+- **Handler:** `amaran.ts:96`; no client yet. **Card:** BE-21. **Contract:** missing.
 
 ### M18-03 `GET /api/amaran/effectiveness`
+> **UD-4: folded into BE-21.**
 Purpose: intervention effectiveness report of the viewer's own school (S24).
 - **Roles/auth:** `AMARAN_ROLES`; school = admin 127 (preview school), school_admin and teacher own `schoolId`; officers have none (403).
 - **Response:** `200 {data: {school{id,name}, report: EffectivenessReport}}` (AR:304): `cards{total,berkesan,evaluated,rate,needsAction,sederhana,tidakBerkesan,notEvaluated}`, `doughnut[4]` (Berkesan, Sederhana, Tidak Berkesan, Belum Dinilai), `trend{labels (BM month abbreviations Jan Feb Mac Apr Mei Jun Jul Ogo Sep Okt Nov Dis),data[]}`, `byType[{type,label,count}]` (types kaunseling "Sesi Kaunseling", kelas_tambahan "Kelas Tambahan", tugasan_khas "Tugasan Khas", hubungi_ibubapa "Hubungi Ibu Bapa", mentor_rakan "Mentor Rakan Sebaya", bimbingan "Bimbingan", lain "Lain-lain"), `byTeacher[{teacherId,name,total,berkesan,notEvaluated,rate|null}]`, `followUps[{id,studentId,studentName,type,label,interventionDate,effectiveness}]`, `bySchool[{schoolId,school,total,berkesan,sederhana,tidakBerkesan,notEvaluated,rate}]`. Computed from stored `AmaranIntervention` rows (RT:21: studentId, teacherId, schoolId, classroomId, type, interventionDate, status `done|planned`, notes, followUp, effectiveness `belum_dinilai|berkesan|sederhana|tidak_berkesan`) of the school (BR-M18-17 at `now`); the mock has no write route for interventions (read-only seed): OQ-API-B3-12.
 - **Errors:** `403` role not allowed or no school (also when no data).
-- **Handler:** `amaran.ts:137`; no client yet. **Card:** **UNCOVERED**. **Contract:** missing.
+- **Handler:** `amaran.ts:137`; no client yet. **Card:** BE-21. **Contract:** missing.
 
 ### M18-04 `GET /api/amaran/export/school/:id`
+> **UD-4: folded into BE-21.**
 Purpose: school risk list as CSV ("Muat Turun CSV").
 - **Roles/auth:** `AMARAN_ROLES` and `mayExportSchool` = `mayOpenSchool` but **teachers are refused** (403); admin, in-scope officers, school_admin own school.
 - **Response:** `200` file `text/csv; charset=utf-8`, `Content-Disposition: attachment; filename="amaran-sekolah-{id}-{yyyymmdd}.csv"` (date in MYT), `Cache-Control: no-store`. Content: UTF-8 BOM, CRLF, header `Bil,Pelajar,Tingkatan / Kelas,Skor Risiko,Status,Ketepatan,Penglibatan,Penguasaan`, one line per pupil of the school (no `tingkatan` filter), score `toFixed(1)`, status label, the three cell texts; cells starting with `=`, `+`, `-`, `@`, tab or CR are prefixed with `'` (CSV-injection guard) and quoted per RFC 4180. No IC, e-mail or phone.
 - **Side effects:** the mock records an export audit entry (viewer id, school id, filename, time) per accepted download (SEC-M18-03); the real API must write an audit event.
 - **Errors:** `404` unknown school; `403` out of scope or teacher.
-- **Handler:** `amaran.ts:147`; client `downloadSchoolRiskCsv` (`m27-school-admin/api/amaran.ts`). **Card:** **UNCOVERED**. **Contract:** missing.
+- **Handler:** `amaran.ts:147`; client `downloadSchoolRiskCsv` (`m27-school-admin/api/amaran.ts`). **Card:** BE-21. **Contract:** missing.
 
 ## 10. M27 School admin (`src/modules/m27-school-admin/mock/handlers`)
 
@@ -1026,31 +1030,33 @@ Purpose: switch a teacher active/inactive (either direction, including an inacti
 - **Handler:** `users-write.ts:235` (route :171); `toggleSchoolTeacherActive`. **Card:** BE-21. **Contract:** missing.
 
 ### M27-21 `POST /api/admin-sekolah/users/:id/impersonate`
+> **Not ported (UD-2): user decision 2026-10-19 drops impersonation ("Login As" / act as another user). Mod Pelajar is `POST /api/session/mode` only (D31c). The backend does not register this route; the frontend removes its caller. Kept here as the record of the mock behaviour.**
 Purpose: "Menyamar" (school admin opens a pupil's or teacher's account with a way back).
 - **Roles/auth:** any session at the route (401 `UNAUTHORIZED` if none); every other check is in the M01 contract `impersonation.start`, in this order: calling session already impersonating -> `409 CONFLICT`; caller not a school_admin with a school -> `403`; target unknown or of another school -> `404`; target has no session role -> `403`; target not a student/teacher -> `403`; target inactive -> `403`. Messages are the default texts of each status (`This action is unauthorized.`, `Not Found.`, `Conflict.`).
 - **Request:** path `id` (positive integer; anything else = unknown target 404). **Response:** `200 {data: {token, expiresAt, user (UserMe), impersonator{id,name}}, status: "Anda kini menyamar sebagai {name}."}`. Side effects: opens a NEW session for the target (not "remember"), whose server-side record holds the actor's session token as `parentToken`; the actor's session stays valid; an audit row (actor, target, `impersonate.start`, time) is written.
 - **Conflict with the contract:** the platform contract defines a different mechanism, `POST/DELETE /session/mode` (Mod Pelajar: the admin/school_admin acts as self (student) with data stamped `is_test`, `packages/contract/src/session/session.ts`). The BE-21 card says to align with it and, if the mock conflicts, stop and ask: OQ-API-B3-13.
-- **Handler:** `impersonate.ts:44`; `impersonateSchoolUser`. **Card:** BE-21. **Contract:** missing (related `/session/mode` exists, different semantics).
+- **Handler:** `impersonate.ts:44`; `impersonateSchoolUser`. **Card:** UNCOVERED (dropped by user decision, UD-2). **Contract:** missing (related `/session/mode` exists, different semantics).
 
 ### M27-22 `POST /api/admin-sekolah/impersonate/leave`
+> **Not ported (UD-2): user decision 2026-10-19 drops impersonation ("Login As" / act as another user). Mod Pelajar is `POST /api/session/mode` only (D31c). The backend does not register this route; the frontend removes its caller. Kept here as the record of the mock behaviour.**
 - **Roles/auth:** any session at the route (401 without); the **impersonated** session calls it. M01 `impersonation.leave`: a session with no `parentToken` -> `403`; the actor's session expired or ended -> `403` (the impersonated session is revoked anyway; the client must log in again).
 - **Response:** `200 {data: {token, expiresAt, user, remember, returnTo ("/admin-sekolah/pelajar" or "/admin-sekolah/guru")}, status: "Anda telah kembali ke akaun pentadbir."}`. The way back is taken only from the server-held `parentToken`, never from the request; side effects: revokes the impersonated session, writes audit `impersonate.leave`. Not wrapped in a transaction (the revoke must survive a PARENT_EXPIRED refusal).
-- **Handler:** `impersonate.ts:65`; `leaveImpersonation`. **Card:** BE-21. **Contract:** missing.
+- **Handler:** `impersonate.ts:65`; `leaveImpersonation`. **Card:** UNCOVERED (dropped by user decision, UD-2). **Contract:** missing.
 
 ## 11. Uncovered endpoints
 
-After the card audit (commit 63d363c) 4 endpoints are uncovered (before: 7). `GET/PUT/DELETE /api/guru/questions/:id` (M10-21..23, data owner M04) are now listed in BE-09 and no longer uncovered; the 24 endpoints that carried an implied `BE-nn*` marker (BE-17 3, BE-19 13, BE-21 8) are now listed explicitly.
+After the card audit (63d363c) and the user decisions of 2026-10-19: 2 endpoints, both dropped by user decision.
 
-| Endpoint | Module | Why uncovered | Suggested owner |
-|---|---|---|---|
-| `GET /api/amaran/schools/:id` | M18 | M18 PPD/JPN is wave-4 backlog, no card; but M27 S0 and S4 (BE-21 scope) call it | new M18 card, or fold the school family into BE-21 |
-| `GET /api/amaran/summary` | M18 | same | same |
-| `GET /api/amaran/effectiveness` | M18 | same | same |
-| `GET /api/amaran/export/school/:id` | M18 | same (M27 S4 "Muat Turun CSV") | same |
+| Endpoint | Module | Reason |
+|---|---|---|
+| `POST /api/admin-sekolah/users/:id/impersonate` (M27-21) | M27 | Not ported, dropped by user decision (UD-2) |
+| `POST /api/admin-sekolah/impersonate/leave` (M27-22) | M27 | Not ported, dropped by user decision (UD-2) |
+
+M18 Amaran (M18-01..04) was uncovered; UD-4 folds it into BE-21, so it now has a card. `GET/PUT/DELETE /api/guru/questions/:id` are in BE-09 and the earlier `BE-nn*` markers are gone (card audit).
 
 Also relevant to cards (not endpoints of this part):
 
-- The M27 dashboard (`GET /api/admin-sekolah/dashboard`, BE-21) reads the M18 Amaran tally (`risk.forSchool`) and the M18 school page; without the four M18 endpoints (or an equivalent service) BE-21 cannot reach parity. The mock has **no write route** for `AmaranIntervention` (the effectiveness report reads seeded rows only).
+- (UD-4: the Amaran family is now BE-21 scope.) The M27 dashboard (`GET /api/admin-sekolah/dashboard`, BE-21) reads the M18 Amaran tally (`risk.forSchool`) and the M18 school page; without the four M18 endpoints (or an equivalent service) BE-21 cannot reach parity. The mock has **no write route** for `AmaranIntervention` (the effectiveness report reads seeded rows only).
 - `GET /api/guru/dskp/{bidang,sk,sp}` (teacher DSKP reads) are registered by M04 (`m04-question-bank/mock/handlers/dskp.ts`), BE-10 lists them; they belong to another catalogue part. `GET /api/admin/server-status` (BE-22) is in `src/mock/core-data/server-status.ts`, outside the folders of this part, and was not verified here.
 - The mock registers no route to **enter or edit headcount marks** (TOV, OTR target/actual, ETR, RS): `headcount_entries` exist only from seeds; the only mutations are create/auto-setup config, reset, delete, drop/restore (OQ-API-B3-4).
 
@@ -1069,10 +1075,10 @@ IDs `OQ-API-B3-n` are local to this part (the lead will renumber when assembling
 - **OQ-API-B3-9 (interventions scope and wellbeing data).** `GET /api/kirkpatrick/interventions` returns every intervention (free text, mood, accuracy) to any admin or teacher with no school/class scope; `POST` accepts any student id. v2-data-migration Q7/Q9 flag wellbeing data as sensitive. Add scope (own school / own students) and decide retention.
 - **OQ-API-B3-10 (two Command Center families).** Teacher `/api/guru/command-center/*` returns bare bodies, rules BR-M10-08..16 (engagement bands by answer days: champion >= 5 days etc.), no `{data}`. Admin/school-admin `/api/admin/command-center/live-data` and `/api/command-center/*` return `{data}` and a different shape (`CcLiveData` in `m17/api/command-center-board-types.ts`), with different engagement rules (constants). BE-22 says "the same endpoints answer for teacher, school admin and admin"; as coded they are two families and the school admin cannot use the teacher base (403). Unify (new shape, frontend change) or keep both (one service, two controllers)?
 - **OQ-API-B3-11 (JPN role).** The mock has `jpn_officer` (used in M08 `officerCovers`, M18 scope, `users.ppdState`), but `RoleCode` in `packages/contract/src/common/enums.ts` lists only `ppd_officer` (D31a: one PPD/JPN role). Which role code do the M08/M18 JPN branches map to in v2, and is a state scope needed in B1?
-- **OQ-API-B3-12 (M18 scope).** M18 is not carded. Needed for BE-21 parity: school risk page, executive summary, effectiveness report, school CSV, plus the risk model (score 0.4A+0.3E+0.3M, thresholds 40/60, BR-M18-13/14). Add a card or fold into BE-21/BE-19? No route exists to write interventions (`AmaranIntervention`), and the PPD/JPN pages in `v2-portals.md` have no mock at all.
-- **OQ-API-B3-13 (impersonation vs Mod Pelajar).** M27 `POST /api/admin-sekolah/users/:id/impersonate` opens a session as a real pupil/teacher of the school with a server-held parent token and `.../impersonate/leave`. The contract defines `POST/DELETE /session/mode` (Mod Pelajar: acts as self (student), data stamped `is_test`). BE-21 says to use one mechanism and ask if they conflict: they do. Keep both endpoints, replace with the mode, or define the semantics (is data written while impersonating a real pupil stamped `is_test`? is it audited?).
+- **OQ-API-B3-12 (M18 scope).** **Resolved by UD-4 (user decision 2026-10-19): M18 Amaran is folded into BE-21.** M18 is not carded. Needed for BE-21 parity: school risk page, executive summary, effectiveness report, school CSV, plus the risk model (score 0.4A+0.3E+0.3M, thresholds 40/60, BR-M18-13/14). Add a card or fold into BE-21/BE-19? No route exists to write interventions (`AmaranIntervention`), and the PPD/JPN pages in `v2-portals.md` have no mock at all.
+- **OQ-API-B3-13 (impersonation vs Mod Pelajar).** **Resolved by UD-2 (user decision 2026-10-19): impersonation is dropped; Mod Pelajar is `POST /api/session/mode` only (D31c).** M27 `POST /api/admin-sekolah/users/:id/impersonate` opens a session as a real pupil/teacher of the school with a server-held parent token and `.../impersonate/leave`. The contract defines `POST/DELETE /session/mode` (Mod Pelajar: acts as self (student), data stamped `is_test`). BE-21 says to use one mechanism and ask if they conflict: they do. Keep both endpoints, replace with the mode, or define the semantics (is data written while impersonating a real pupil stamped `is_test`? is it audited?).
 - **OQ-API-B3-14 (non-standard bodies).** The frontend clients depend on bare (un-enveloped) bodies and on odd metas: all M10 `GET/POST /api/guru/{chapters,topics,dskp/*}` (bare arrays/objects, refusals as `200 {"error": "<string>"}`), `/api/guru/classes/:id/qr-data`, `/api/guru/contributions`, `/api/guru/remedial-progress`, `/api/guru/galeri-rajah`, all Command Center teacher GETs, `GET /api/guru/students` (`meta {count, schoolSet}`), `GET /api/admin-sekolah/kelas` (extras `tiles`, `levels` beside `data`/`meta`), M27 writes `{data, status}`, `POST /api/kelas-saya/join` `{data, message}`. Reproduce exactly (switch is a no-op) or realign client and contract together? The `200 {"error": string}` inline-create refusals contradict the standard error body.
-- **OQ-API-B3-15 (ids and paging).** Numeric ids in the mock vs decimal-string ids in v2 (plan 6.1): the mock path regex is digits only, headcount and many bodies embed numeric ids in `href`/`link` strings (e.g. `/prestasi/kelas/{id}`, `profileUrl /pelajar/{id}`). Confirm string ids everywhere and that `link`/`href` strings are built from them. Also confirm paging: M27 clamps an out-of-range page to the last page whereas the platform convention returns an empty page.
+- **OQ-API-B3-15 (ids and paging).** **Ids resolved by UD-1 (user decision 2026-10-19): the real API follows the contract (string ids, cookie + CSRF, `Session`, 401 `INVALID_CREDENTIALS`, no Bearer); the LEAD realigns mock and HttpTransport (V2-T31).** Numeric ids in the mock vs decimal-string ids in v2 (plan 6.1): the mock path regex is digits only, headcount and many bodies embed numeric ids in `href`/`link` strings (e.g. `/prestasi/kelas/{id}`, `profileUrl /pelajar/{id}`). Confirm string ids everywhere and that `link`/`href` strings are built from them. Also confirm paging: M27 clamps an out-of-range page to the last page whereas the platform convention returns an empty page.
 - **OQ-API-B3-16 (rankings order).** `GET /api/rankings` orders rows by `correct` ASCENDING (observed live quirk, DV-26), then accuracy desc. Reproduce or fix (D9: broken behaviour may be fixed)?
 - **OQ-API-B3-17 (performance).** Several aggregates scan the whole answer log per request in the mock (class item analysis memo "40 s cold", M11 segments, M17 board tallies, M08 S1). The real backend needs SQL aggregates/indexes (BE-19 mentions views); is a materialised or cached read model acceptable (staleness window) for the board endpoints polled every 10 s (`/api/guru/command-center/live-data`)?
 - **OQ-API-B3-18 (file outputs).** Real files are required for `GET /api/kirkpatrick/export-pdf` (PDF, `PdfPort`), `GET /api/headcounts/:id/export`, `GET /api/admin-sekolah/{pelajar,guru}/export.csv`, `GET /api/amaran/export/school/:id`, `GET /api/guru/audio-kbat/template(-word)`, `GET /api/guru/questions/template`; and uploads for `POST /api/timeline` (photos, 2 MB each, JPEG/PNG/WebP, stored as `data:` URLs in the mock), `POST /api/guru/question-papers` (pdf/doc/xls up to 20 MB, only metadata stored in the mock), image uploads on `/api/guru/questions`. Confirm storage (BE-04) and that CSV formula-injection guards (leading `'` on cells starting `= + - @ tab CR`) are required on every CSV.
