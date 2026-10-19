@@ -415,10 +415,10 @@ export function registerSchoolAdminPaths(registry: OpenAPIRegistry): void {
     path: '/admin-sekolah/pelajar',
     tags: ['school-admin'],
     summary: 'Create a pupil (S12)',
-    description: 'Creates an active pupil of the caller school (createdBy = the caller); with classId the pupil is enrolled with source school_admin. The response carries the one-time credential.',
+    description: 'Creates an active pupil of the caller school (createdBy = the caller); with classId the pupil is enrolled with source school_admin. D55c: the response shows the password once, to the creating admin only (never logged, never stored in plain text, not retrievable again) and returns mustChangePassword true: the account is flagged so the first login forces a password change (BE-03).',
     request: { headers: [csrf], body: body(SchoolAdminPupilCreateRequestSchema) },
     responses: {
-      201: json(SchoolAdminPupilCreatedResultSchema, 'Created, with the one-time credential.'),
+      201: json(SchoolAdminPupilCreatedResultSchema, 'Created, with the one-time credential and mustChangePassword true.'),
       401: UNAUTHORIZED,
       403: FORBIDDEN_SA_WRITE,
       422: err(FIELD_RULES),

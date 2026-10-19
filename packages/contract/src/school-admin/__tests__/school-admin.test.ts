@@ -353,11 +353,25 @@ describe('school-admin contract: teachers and pupils', () => {
     const result = {
       data: detail,
       credential: { name: 'Aisyah Demo', school: 'SMK DEMO', email: 'aisyah.demo@example.test', password: 'DemoPass-01' },
+      mustChangePassword: true,
       status: SCHOOL_ADMIN_FLASH.pupilCreated('Aisyah Demo'),
     }
     expect(ok(SchoolAdminPupilCreatedResultSchema, result)).toBe(true)
     expect(result.status).toBe('Pelajar "Aisyah Demo" berjaya dicipta.')
     expect(ok(SchoolAdminPupilCreatedResultSchema, { ...result, credential: undefined })).toBe(false)
+  })
+
+  it('create pupil result requires the must-change-password flag (D55c)', () => {
+    const result = {
+      data: detail,
+      credential: { name: 'Aisyah Demo', school: 'SMK DEMO', email: 'aisyah.demo@example.test', password: 'DemoPass-01' },
+      mustChangePassword: true,
+      status: SCHOOL_ADMIN_FLASH.pupilCreated('Aisyah Demo'),
+    }
+    expect(ok(SchoolAdminPupilCreatedResultSchema, result)).toBe(true)
+    expect(ok(SchoolAdminPupilCreatedResultSchema, { ...result, mustChangePassword: undefined })).toBe(false)
+    expect(ok(SchoolAdminPupilCreatedResultSchema, { ...result, mustChangePassword: false })).toBe(false)
+    expect(ok(SchoolAdminPupilCreatedResultSchema, { ...result, mustChangePassword: 'true' })).toBe(false)
   })
 
   it('form options: 8 bullets, fixed hint and minimum', () => {
@@ -481,6 +495,14 @@ describe('school-admin contract: OpenAPI document', () => {
     components: { schemas: Record<string, Record<string, unknown>> }
   }
 
+  type CreatedResultDoc = {
+    required: string[]
+    properties: {
+      mustChangePassword: { description: string }
+      credential: { properties: { password: { description: string } } }
+    }
+  }
+
   const ROUTES: readonly [string, string][] = [
     ['get', '/admin-sekolah/dashboard'], ['get', '/admin-sekolah/usage'], ['get', '/admin-sekolah/laporan-aktiviti'],
     ['get', '/admin-sekolah/laporan-bulanan'], ['get', '/admin-sekolah/dskp-heatmap'], ['get', '/admin-sekolah/kelas'],
@@ -578,6 +600,19 @@ describe('school-admin contract: OpenAPI document', () => {
       if (name === 'SchoolAdminPupilCreatedResult') continue
       expect(/password/i.test(text.replace(/passwordPlaceholder|passwordHint|passwordMinLength/g, '')), name).toBe(false)
     }
+  })
+
+  it('documents the one-time password and the must-change flag in the OpenAPI schema (D55c)', () => {
+    const schema = doc.components.schemas.SchoolAdminPupilCreatedResult as unknown as CreatedResultDoc
+    expect(schema.required).toContain('mustChangePassword')
+    expect(schema.properties.mustChangePassword.description).toMatch(/first login/i)
+    expect(schema.properties.mustChangePassword.description).toMatch(/BE-03/)
+    const pw = schema.properties.credential.properties.password.description as string
+    expect(pw).toMatch(/once/i)
+    expect(pw).toMatch(/only to the creating school admin/i)
+    expect(pw).toMatch(/never logged/i)
+    expect(pw).toMatch(/never stored in plain text/i)
+    expect(pw).toMatch(/not retrievable again/i)
   })
 
   it('no school id can be sent: no M27 request schema or query has schoolId', () => {

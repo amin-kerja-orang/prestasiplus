@@ -72,17 +72,32 @@ export const SchoolAdminPupilCreateRequestSchema = z
 export type SchoolAdminPupilCreateRequest = z.infer<typeof SchoolAdminPupilCreateRequestSchema>
 
 /**
- * `201` result. `credential.password` (the typed or the default password) is returned ONLY here,
- * once, for the school admin to hand over; it is stored nowhere and must never be logged.
+ * `201` result (user decision D55c). `credential.password` (the typed or the default password) is
+ * shown ONCE, in this response, to the creating school admin only, for hand-over to the pupil. It
+ * is never logged, never stored in plain text (only the hash is kept) and cannot be retrieved
+ * again: no other route returns it. The account is created flagged `mustChangePassword`: the
+ * pupil's first login is forced to set a new password (enforced by BE-03, the session/login flow).
  */
 export const SchoolAdminPupilCreatedResultSchema = z
   .object({
     data: SchoolAdminUserDetailSchema,
-    credential: z.object({
-      name: z.string(),
-      school: z.string(),
-      email: z.string(),
-      password: z.string().min(1),
+    credential: z
+      .object({
+        name: z.string(),
+        school: z.string(),
+        email: z.string(),
+        password: z.string().min(1).meta({
+          description:
+            'Shown once, only to the creating school admin in this 201 response. Never logged, never stored in plain text, not retrievable again (no other route returns it).',
+        }),
+      })
+      .meta({
+        description:
+          'One-time hand-over credential (D55c). Present only in this create response; later reads and the reset-password routes never echo a password.',
+      }),
+    mustChangePassword: z.literal(true).meta({
+      description:
+        'Always true on create (D55c): the new pupil account is flagged must-change-password, so the first login forces a password change (enforced by BE-03).',
     }),
     status: z.string().min(1).meta({ description: 'Pelajar "{name}" berjaya dicipta.' }),
   })
