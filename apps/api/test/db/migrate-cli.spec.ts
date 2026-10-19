@@ -27,7 +27,9 @@ const run = (command: string, env: Record<string, string> = {}) =>
       cwd: API_DIR,
       env: {
         ...process.env,
-        DATABASE_URL: url,
+        // Prisma's default connect timeout is 5 s; through the Docker port forward on a loaded host the
+        // CLI sometimes needs longer (P1001 in full be:verify runs, BE-03 and BE-05).
+        DATABASE_URL: `${url}?connect_timeout=30`,
         NODE_ENV: 'development',
         // No network calls from the CLI (update check, telemetry): tests must not depend on them.
         CHECKPOINT_DISABLE: '1',
