@@ -99,6 +99,7 @@ Newest first. The lead appends a line when a card merges, a decision is made or 
 
 | Date | Entry |
 |---|---|
+| 2026-10-19 | LEAD merged contract-only PRs #1 BE-11 (wallet), #2 BE-24 (content, support), #3 BE-23 (gamification, rewards) after code review (Approve, no Blocker/Major). openapi.ts/index.ts conflicts resolved append-only; openapi.json regenerated; contract:check ok, packages/contract 182 tests pass. Cards back to `todo` for their full implementation. |
 | 2026-10-19 | LEAD approved the lanes and priorities of BE-41 to BE-48: BE-41 PC-3 P1; BE-42, BE-46, BE-47 PC-1 P2; BE-43 PC-5 P2; BE-48 PC-2 P1; BE-44 and BE-45 in the new lane PC-7 "Games and competitions" P2. Summary counts unchanged (P0 13, P1 22, P2 13). |
 | 2026-10-19 | Cards BE-41 to BE-48 added (D53(a): every module reachable in the prototype is B1): M06 SPM hub, M07 PKSK, M13 Cikgu Alesa, M16 battle and games (two cards), M20 buyer slice, M21 student side, M25 heatmap. Lanes and priorities are proposals (new lane PC-7 for M16); the LEAD confirms. |
 | 2026-10-19 | Programme created: 40 cards (BE-34 to BE-40 added: migration kit, anonymiser + fixtures, AI extraction service, intake files + OCR, intake workflow, paper builder, intake dashboard), tracker, sessions plan and agent kickoff prompts written. All cards `todo`. Waiting for sync point S0. |
