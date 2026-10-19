@@ -115,22 +115,27 @@ property, a request enum value removed, or a request property that became requir
 optional request properties and new paths passes. A PR that must break the contract carries the
 label `contract-breaking`.
 
-## Against the NestJS API (after BE-03; not wired yet)
+## Against the NestJS API (wired, BE-31)
 
-TODO(BE-03): `apps/api/test/conformance/run.spec.ts` builds the Nest app on the seeded database,
-wraps supertest in an `HttpClient` (same interface, `set-cookie` surfaced), builds a `Target` whose
-`actor(role)` is `sessionLogin(...)` for the seeded account of that role, then calls
-`runScenarios(allScenarios(contract), { target, contract })`, prints `formatRun` and
-`formatCoverage`, and fails on `report.ok === false` or `coverageFailure(coverage)`. The command
-every later card runs will be:
+`apps/api/test/conformance/run.spec.ts` runs the same scenarios against the Nest app (supertest,
+real PostgreSQL from Testcontainers, seeded). Details, the adapter and how to add a domain:
+`apps/api/test/conformance/README.md`. The command every later card runs:
 
 ```
-npm run be:test -- apps/api/test/conformance
+npm run conformance:api      # = npm run be:test -- test/conformance
 ```
 
-BE-03 also adds its scenarios (login success, wrong password, unknown user with an identical
-response, throttle on the 6th attempt with `retryAfter`, role switch, Mod Pelajar enter and exit,
-logout, missing CSRF 403 `CSRF_INVALID`) as `src/scenarios/auth-*.ts`.
+A `Target` may also implement `implements(op)` (an operation the target does not serve yet is reported
+as "not yet implemented", the scenario stops there and the request is not sent), `beginScenario(id)`
+(the API gives each scenario its own client address so throttles cannot cross) and
+`actor(role, { csrf: false })`. A scenario may set `targets: ['api']` when it needs a cookie session
+with CSRF or a multipart file (`HttpRequestInit.file`); the report counts the others as "not for this
+target". The session helper follows the cookie and the CSRF token the server rotates on a role switch.
+
+The BE-03 scenarios (login success, wrong password, unknown user with an identical response, throttle on
+the 6th attempt with `retryAfter`, role switch, Mod Pelajar enter and exit, logout, missing CSRF 403
+`CSRF_INVALID`) are in `apps/api/test/conformance/auth/session.ts` (API only: the mock has no cookie
+session). Each domain also has smoke scenarios in `apps/api/test/conformance/<domain>/`.
 
 ## Layout
 
