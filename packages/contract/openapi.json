@@ -21067,41 +21067,56 @@
               "type": "object",
               "properties": {
                 "id": {
-                  "type": "integer",
-                  "minimum": 1,
-                  "maximum": 12
-                },
-                "type": {
                   "type": "string",
-                  "enum": [
-                    "question",
-                    "answer"
-                  ]
-                },
-                "content": {
-                  "type": "string"
-                },
-                "difficulty": {
-                  "type": "integer",
-                  "minimum": 1
+                  "minLength": 1,
+                  "maxLength": 64,
+                  "description": "Opaque card id of this session (not a pair index).",
+                  "example": "1042"
                 }
               },
               "required": [
-                "id",
-                "type",
-                "content",
-                "difficulty"
+                "id"
               ],
               "additionalProperties": false
             },
             "maxItems": 12
+          },
+          "count": {
+            "type": "number",
+            "enum": [
+              12
+            ],
+            "description": "[PROPOSED] Number of cards (6 pairs)."
+          },
+          "layout": {
+            "type": "object",
+            "properties": {
+              "columns": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 12
+              },
+              "rows": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 12
+              }
+            },
+            "required": [
+              "columns",
+              "rows"
+            ],
+            "additionalProperties": false,
+            "description": "[PROPOSED] Default board grid (4 x 3); the client may reflow it responsively."
           }
         },
         "required": [
           "sessionId",
           "personalBest",
           "canEarnSyiling",
-          "cards"
+          "cards",
+          "count",
+          "layout"
         ],
         "additionalProperties": false
       },
@@ -21232,20 +21247,175 @@
             "$ref": "#/components/schemas/GamesSessionId"
           },
           "card_id": {
-            "type": "integer",
-            "minimum": 1,
-            "maximum": 12
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 64,
+            "description": "Opaque card id from the payload.",
+            "example": "1042"
           },
           "other_card_id": {
-            "type": "integer",
-            "minimum": 1,
-            "maximum": 12
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 64,
+            "description": "The second flipped card (must differ).",
+            "example": "1042"
           }
         },
         "required": [
           "session_id",
           "card_id",
           "other_card_id"
+        ]
+      },
+      "GamesBetulSalahCheckResult": {
+        "type": "object",
+        "properties": {
+          "correct": {
+            "type": "boolean"
+          },
+          "is_true": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "correct",
+          "is_true"
+        ],
+        "additionalProperties": false
+      },
+      "GamesCabaranKilatCheckResult": {
+        "type": "object",
+        "properties": {
+          "correct": {
+            "type": "boolean"
+          },
+          "correct_option_id": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 3
+          }
+        },
+        "required": [
+          "correct",
+          "correct_option_id"
+        ],
+        "additionalProperties": false
+      },
+      "GamesTembakJawapanCheckResult": {
+        "type": "object",
+        "properties": {
+          "correct": {
+            "type": "boolean"
+          },
+          "correct_option_index": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 3
+          }
+        },
+        "required": [
+          "correct",
+          "correct_option_index"
+        ],
+        "additionalProperties": false
+      },
+      "GamesSusunJawapanCheckResult": {
+        "type": "object",
+        "properties": {
+          "correct": {
+            "type": "boolean"
+          },
+          "answer": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "correct",
+          "answer"
+        ],
+        "additionalProperties": false
+      },
+      "GamesKadMemoriCheckResult": {
+        "type": "object",
+        "properties": {
+          "correct": {
+            "type": "boolean",
+            "description": "true when the two cards are a pair."
+          },
+          "pair_id": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "minimum": 0,
+            "maximum": 5,
+            "description": "The pair id, only when the cards match; null on a mismatch."
+          },
+          "cards": {
+            "type": "array",
+            "prefixItems": [
+              {
+                "$ref": "#/components/schemas/GamesKadMemoriFace"
+              },
+              {
+                "$ref": "#/components/schemas/GamesKadMemoriFace"
+              }
+            ],
+            "description": "The faces of card_id and other_card_id, in that order."
+          }
+        },
+        "required": [
+          "correct",
+          "pair_id",
+          "cards"
+        ],
+        "additionalProperties": false
+      },
+      "GamesKadMemoriFace": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 64,
+            "description": "The opaque card id.",
+            "example": "1042"
+          },
+          "type": {
+            "type": "string",
+            "enum": [
+              "question",
+              "answer"
+            ]
+          },
+          "content": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "type",
+          "content"
+        ],
+        "additionalProperties": false
+      },
+      "GamesKadMemoriRevealRequest": {
+        "type": "object",
+        "properties": {
+          "session_id": {
+            "$ref": "#/components/schemas/GamesSessionId"
+          },
+          "card_id": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 64,
+            "description": "Opaque card id from the payload.",
+            "example": "1042"
+          }
+        },
+        "required": [
+          "session_id",
+          "card_id"
         ]
       },
       "GamesSoloCheckRequest": {
@@ -21265,103 +21435,28 @@
           {
             "$ref": "#/components/schemas/GamesKadMemoriCheck"
           }
-        ]
+        ],
+        "description": "One of the per-game bodies; the path parameter `game` decides which: betul-salah = GamesBetulSalahCheck, cabaran-kilat = GamesCabaranKilatCheck, tembak-jawapan = GamesTembakJawapanCheck, susun-jawapan = GamesSusunJawapanCheck, kad-memori = GamesKadMemoriCheck. A body of another game is 422 \"Jawapan tidak sah.\" [PROPOSED]."
       },
       "GamesSoloCheckResponse": {
         "anyOf": [
           {
-            "type": "object",
-            "properties": {
-              "correct": {
-                "type": "boolean"
-              },
-              "is_true": {
-                "type": "boolean"
-              }
-            },
-            "required": [
-              "correct",
-              "is_true"
-            ],
-            "additionalProperties": false
+            "$ref": "#/components/schemas/GamesBetulSalahCheckResult"
           },
           {
-            "type": "object",
-            "properties": {
-              "correct": {
-                "type": "boolean"
-              },
-              "correct_option_id": {
-                "type": "integer",
-                "minimum": 0,
-                "maximum": 3
-              }
-            },
-            "required": [
-              "correct",
-              "correct_option_id"
-            ],
-            "additionalProperties": false
+            "$ref": "#/components/schemas/GamesCabaranKilatCheckResult"
           },
           {
-            "type": "object",
-            "properties": {
-              "correct": {
-                "type": "boolean"
-              },
-              "correct_option_index": {
-                "type": "integer",
-                "minimum": 0,
-                "maximum": 3
-              }
-            },
-            "required": [
-              "correct",
-              "correct_option_index"
-            ],
-            "additionalProperties": false
+            "$ref": "#/components/schemas/GamesTembakJawapanCheckResult"
           },
           {
-            "type": "object",
-            "properties": {
-              "correct": {
-                "type": "boolean"
-              },
-              "answer": {
-                "type": "string"
-              }
-            },
-            "required": [
-              "correct",
-              "answer"
-            ],
-            "additionalProperties": false
+            "$ref": "#/components/schemas/GamesSusunJawapanCheckResult"
           },
           {
-            "type": "object",
-            "properties": {
-              "correct": {
-                "type": "boolean",
-                "description": "true when the two cards are a pair."
-              },
-              "pair_id": {
-                "type": [
-                  "integer",
-                  "null"
-                ],
-                "minimum": 0,
-                "maximum": 5,
-                "description": "The pair id, only when the cards match; null on a mismatch (nothing else is revealed)."
-              }
-            },
-            "required": [
-              "correct",
-              "pair_id"
-            ],
-            "additionalProperties": false
+            "$ref": "#/components/schemas/GamesKadMemoriCheckResult"
           }
         ],
-        "description": "betul-salah: { correct, is_true }; cabaran-kilat: { correct, correct_option_id }; tembak-jawapan: { correct, correct_option_index }; susun-jawapan: { correct, answer }; kad-memori: { correct, pair_id | null }."
+        "description": "The result of the requested game: betul-salah = GamesBetulSalahCheckResult { correct, is_true }; cabaran-kilat = GamesCabaranKilatCheckResult { correct, correct_option_id }; tembak-jawapan = GamesTembakJawapanCheckResult { correct, correct_option_index }; susun-jawapan = GamesSusunJawapanCheckResult { correct, answer }; kad-memori = GamesKadMemoriCheckResult { correct, pair_id | null, cards: [face, face] }."
       },
       "GamesSoloSubmitRequest": {
         "type": "object",
@@ -63811,7 +63906,7 @@
           "games"
         ],
         "summary": "Start a single-player game session (M16-32)",
-        "description": "Creates a session row and returns its items. D58a: the payload is keyless; no answer key (is_true, correct, answer, pair_id) is sent before the answer. Each answer is checked by POST /games/solo/{game}/check. Kad Memori caveat: the card faces (question and answer text) are sent so the client can show a card when it is flipped; the pairing is not sent (see the open question of this card).",
+        "description": "Creates a session row and returns its items. D58a: the payload is keyless; no answer key (is_true, correct, answer, pair_id) is sent before the answer. Each answer is checked by POST /games/solo/{game}/check. Kad Memori: the board has only opaque card ids, the count and the layout, face-down; a face comes only from the reveal route (first card of a move) and the check response.",
         "parameters": [
           {
             "schema": {
@@ -63920,7 +64015,7 @@
           "games"
         ],
         "summary": "Check one single-player answer (D58a) [PROPOSED route, not in the mock]",
-        "description": "Modelled on the Bijak \"Semak\" check (/bijak/attempts/{id}/questions/{questionId}/check). Own session only. The server checks the answer against the stored key, stores the check, and returns correct/wrong plus the key of that item, revealed only now ({ data }). One check per item: a second check of the same item is 409 (so the key cannot be probed by retrying). Kad Memori: the body names two flipped cards; the answer is correct when they are a pair, then pair_id is returned (null on a mismatch); a mismatch may be repeated, a card of an already matched pair is 409. Every stored check feeds the final submit. Standard `{ error }` bodies. The response carries answer keys, so Cache-Control: no-store.",
+        "description": "Modelled on the Bijak \"Semak\" check (/bijak/attempts/{id}/questions/{questionId}/check). Own session only. The path parameter `game` selects the body and the result: betul-salah = GamesBetulSalahCheck / GamesBetulSalahCheckResult, cabaran-kilat = GamesCabaranKilatCheck / GamesCabaranKilatCheckResult, tembak-jawapan = GamesTembakJawapanCheck / GamesTembakJawapanCheckResult, susun-jawapan = GamesSusunJawapanCheck / GamesSusunJawapanCheckResult, kad-memori = GamesKadMemoriCheck / GamesKadMemoriCheckResult (one named component each; request and response `examples` are keyed by game). A body of another game is 422. The server checks the answer against the stored key, stores the check, and returns correct/wrong plus the key of that item, revealed only now ({ data }). One check per item: a second check of the same item is 409 (so the key cannot be probed by retrying). Kad Memori: the body names two cards by opaque id; the response carries BOTH faces (the board never does), correct when they are a pair, and pair_id only on a match (null on a mismatch); a mismatch may be repeated, a card of an already matched pair is 409, and if another card is open (revealed, not checked) 409 \"Sila padankan kad yang dibuka dahulu.\" [PROPOSED]. Every stored check feeds the final submit (moves = number of Kad Memori checks). Standard `{ error }` bodies. All BM texts of this route are [PROPOSED] (the mock has no check route): 404 \"Sesi tidak dijumpai.\" and \"Soalan tidak dijumpai.\" (copy reused from Jutawan), 409 \"Soalan sudah dijawab.\", \"Kad sudah dipadankan.\", 422 \"Jawapan tidak sah.\" (reused). The response carries answer keys, so Cache-Control: no-store.",
         "parameters": [
           {
             "schema": {
@@ -63955,6 +64050,48 @@
           "required": true,
           "content": {
             "application/json": {
+              "examples": {
+                "betul-salah": {
+                  "summary": "betul-salah (GamesXxxCheck)",
+                  "value": {
+                    "session_id": "3f2b8a6e-5c1d-4e7a-9b0f-1a2b3c4d5e6f",
+                    "item_id": "9001",
+                    "answer": true
+                  }
+                },
+                "cabaran-kilat": {
+                  "summary": "cabaran-kilat (GamesXxxCheck)",
+                  "value": {
+                    "session_id": "3f2b8a6e-5c1d-4e7a-9b0f-1a2b3c4d5e6f",
+                    "item_id": "9001",
+                    "option_id": 1
+                  }
+                },
+                "tembak-jawapan": {
+                  "summary": "tembak-jawapan (GamesXxxCheck)",
+                  "value": {
+                    "session_id": "3f2b8a6e-5c1d-4e7a-9b0f-1a2b3c4d5e6f",
+                    "item_id": "9001",
+                    "option_index": 0
+                  }
+                },
+                "susun-jawapan": {
+                  "summary": "susun-jawapan (GamesXxxCheck)",
+                  "value": {
+                    "session_id": "3f2b8a6e-5c1d-4e7a-9b0f-1a2b3c4d5e6f",
+                    "item_id": "9001",
+                    "answer": "KUALA LUMPUR"
+                  }
+                },
+                "kad-memori": {
+                  "summary": "kad-memori (GamesXxxCheck)",
+                  "value": {
+                    "session_id": "3f2b8a6e-5c1d-4e7a-9b0f-1a2b3c4d5e6f",
+                    "card_id": "c7",
+                    "other_card_id": "c2"
+                  }
+                }
+              },
               "schema": {
                 "$ref": "#/components/schemas/GamesSoloCheckRequest"
               }
@@ -63963,7 +64100,7 @@
         },
         "responses": {
           "200": {
-            "description": "Correct or wrong plus the key of the item; Cache-Control: no-store.",
+            "description": "Correct or wrong plus the key of the item (per-game GamesXxxCheckResult); Cache-Control: no-store.",
             "headers": {
               "Cache-Control": {
                 "description": "no-store: the body carries a join code or answer keys and must not be cached by browsers or proxies.",
@@ -63977,6 +64114,65 @@
             },
             "content": {
               "application/json": {
+                "examples": {
+                  "betul-salah": {
+                    "summary": "betul-salah (GamesXxxCheckResult)",
+                    "value": {
+                      "data": {
+                        "correct": true,
+                        "is_true": true
+                      }
+                    }
+                  },
+                  "cabaran-kilat": {
+                    "summary": "cabaran-kilat (GamesXxxCheckResult)",
+                    "value": {
+                      "data": {
+                        "correct": true,
+                        "correct_option_id": 1
+                      }
+                    }
+                  },
+                  "tembak-jawapan": {
+                    "summary": "tembak-jawapan (GamesXxxCheckResult)",
+                    "value": {
+                      "data": {
+                        "correct": false,
+                        "correct_option_index": 1
+                      }
+                    }
+                  },
+                  "susun-jawapan": {
+                    "summary": "susun-jawapan (GamesXxxCheckResult)",
+                    "value": {
+                      "data": {
+                        "correct": true,
+                        "answer": "KUALA LUMPUR"
+                      }
+                    }
+                  },
+                  "kad-memori": {
+                    "summary": "kad-memori (GamesXxxCheckResult)",
+                    "value": {
+                      "data": {
+                        "correct": true,
+                        "pair_id": 3,
+                        "cards": [
+                          {
+                            "id": "c7",
+                            "type": "question",
+                            "content": "7 + 5"
+                          },
+                          {
+                            "id": "c2",
+                            "type": "answer",
+                            "content": "12"
+                          }
+                        ]
+                      }
+                    }
+                  }
+                },
                 "schema": {
                   "type": "object",
                   "properties": {
@@ -64012,7 +64208,7 @@
             }
           },
           "404": {
-            "description": "NOT_FOUND \"Permainan tidak dijumpai.\" (unknown game), \"Sesi tidak dijumpai.\" (unknown or foreign session) or \"Soalan tidak dijumpai.\" (item or card not in the session).",
+            "description": "NOT_FOUND \"Permainan tidak dijumpai.\" (unknown game), \"Sesi tidak dijumpai.\" [PROPOSED] (unknown or foreign session) or \"Soalan tidak dijumpai.\" [PROPOSED] (item or card not in the session).",
             "content": {
               "application/json": {
                 "schema": {
@@ -64022,7 +64218,7 @@
             }
           },
           "409": {
-            "description": "CONFLICT \"Keputusan sudah dihantar.\" (session already submitted), \"Soalan sudah dijawab.\" [PROPOSED] (item already checked) or \"Kad sudah dipadankan.\" [PROPOSED] (Kad Memori: card already matched).",
+            "description": "CONFLICT \"Keputusan sudah dihantar.\" (session already submitted), \"Soalan sudah dijawab.\" [PROPOSED] (item already checked), \"Kad sudah dipadankan.\" [PROPOSED] (Kad Memori: card already matched) or \"Sila padankan kad yang dibuka dahulu.\" [PROPOSED] (Kad Memori: another card is open).",
             "content": {
               "application/json": {
                 "schema": {
@@ -64032,7 +64228,139 @@
             }
           },
           "422": {
-            "description": "VALIDATION_ERROR \"Jawapan tidak sah.\" (answer, option or card value, or the same card twice).",
+            "description": "VALIDATION_ERROR \"Jawapan tidak sah.\" [PROPOSED] (answer, option or card value, a body of another game, or the same card twice).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "RATE_LIMITED (BM \"Terlalu banyak percubaan. Sila cuba sebentar lagi.\"): body error.retryAfter and the Retry-After header carry the seconds to wait.",
+            "headers": {
+              "Retry-After": {
+                "description": "Seconds until a retry is allowed (same value as error.retryAfter).",
+                "schema": {
+                  "type": "integer",
+                  "minimum": 0
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/games/solo/kad-memori/reveal": {
+      "post": {
+        "tags": [
+          "games"
+        ],
+        "summary": "Reveal one Kad Memori face (D58a) [PROPOSED route, LEAD decision pending]",
+        "description": "The mock page shows the face of the first flipped card at once, so the first card of a move needs a reveal; the second card comes with the check response. Static path: wins over `/games/solo/{game}/...`. At most one card may be open (revealed and not yet checked): a second reveal is 409 \"Sila padankan kad yang dibuka dahulu.\" [PROPOSED], and the open card is closed by the next check naming it, so reveals never outnumber moves by more than one and the faces cannot be read without playing. A matched card is 409 \"Kad sudah dipadankan.\" [PROPOSED]. If the LEAD prefers faces via the check response only, drop this route and the page shows the first card face-down until the second tap. Standard `{ error }` bodies; the face is not a key but is sent no-store.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Value of Session.csrf; required on mutating requests."
+            },
+            "required": true,
+            "description": "Value of Session.csrf; required on mutating requests.",
+            "name": "X-CSRF-Token",
+            "in": "header"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GamesKadMemoriRevealRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The face of the card; Cache-Control: no-store.",
+            "headers": {
+              "Cache-Control": {
+                "description": "no-store: the body carries a join code or answer keys and must not be cached by browsers or proxies.",
+                "schema": {
+                  "type": "string",
+                  "enum": [
+                    "no-store"
+                  ]
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/GamesKadMemoriFace"
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED \"Unauthenticated.\" (no valid session).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "CSRF_INVALID (missing or wrong X-CSRF-Token).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "NOT_FOUND \"Sesi tidak dijumpai.\" [PROPOSED] (unknown or foreign session) or \"Soalan tidak dijumpai.\" [PROPOSED] (card not in the session).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "CONFLICT \"Keputusan sudah dihantar.\", \"Kad sudah dipadankan.\" [PROPOSED] or \"Sila padankan kad yang dibuka dahulu.\" [PROPOSED].",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "VALIDATION_ERROR \"Jawapan tidak sah.\" [PROPOSED] (card id).",
             "content": {
               "application/json": {
                 "schema": {

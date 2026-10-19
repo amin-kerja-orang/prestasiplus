@@ -12,6 +12,8 @@ import {
   GAMES_ROOM_LIMITS,
   GAMES_SOLO_GAMES,
   GAMES_SOLO_PAYLOAD_SCHEMAS,
+  GAMES_SOLO_CHECK_EXAMPLES,
+  GAMES_SOLO_CHECK_RESULT_SCHEMAS,
   GAMES_SOLO_CHECK_SCHEMAS,
   GamesAdminOverviewSchema,
   GamesAdminSettingsResultSchema,
@@ -24,6 +26,7 @@ import {
   GamesJutawanPageSchema,
   GamesJutawanStartRequestSchema,
   GamesJutawanStartResponseSchema,
+  GamesKadMemoriRevealRequestSchema,
   GamesKeylessQuestionSchema,
   GamesLeagueCreateRequestSchema,
   GamesLeagueDetailSchema,
@@ -449,10 +452,9 @@ describe('single-player games (M16-32, M16-33)', () => {
     },
     'kad-memori': {
       ...base,
-      cards: [
-        { id: 1, type: 'question', content: '7 + 5', difficulty: 1 },
-        { id: 2, type: 'answer', content: '12', difficulty: 1 },
-      ],
+      cards: [{ id: 'c7' }, { id: 'c2' }],
+      count: 12,
+      layout: { columns: 4, rows: 3 },
     },
   } as const
 
@@ -478,7 +480,11 @@ describe('single-player games (M16-32, M16-33)', () => {
     // a payload that still carries a key is refused (strict)
     rejected(GAMES_SOLO_PAYLOAD_SCHEMAS['betul-salah'], { ...base, statements: [{ id: '1', statement: 's', is_true: true, difficulty: 1 }] })
     rejected(GAMES_SOLO_PAYLOAD_SCHEMAS['susun-jawapan'], { ...base, puzzles: [{ id: '1', question: 'q', answer: 'A', scrambled: [], type: 'words', difficulty: 1, points: 3 }] })
-    rejected(GAMES_SOLO_PAYLOAD_SCHEMAS['kad-memori'], { ...base, cards: [{ id: 1, pair_id: 0, type: 'question', content: 'c', difficulty: 1 }] })
+    rejected(GAMES_SOLO_PAYLOAD_SCHEMAS['kad-memori'], { ...payloads['kad-memori'], cards: [{ id: 'c7', pair_id: 0 }] })
+    // review: the faces must not be on the board either (type / content would let a client pair offline)
+    rejected(GAMES_SOLO_PAYLOAD_SCHEMAS['kad-memori'], { ...payloads['kad-memori'], cards: [{ id: 'c7', type: 'question', content: '7 + 5' }] })
+    const kad = JSON.stringify(doc.components.schemas.GamesKadMemoriPayload)
+    expect(kad).not.toMatch(/"(type|content|pair_id)":\{/)
     rejected(GAMES_SOLO_PAYLOAD_SCHEMAS['cabaran-kilat'], { ...base, questions: [{ id: '1', question_text: 'q', difficulty: 1, options: [{ id: 0, text: 't', correct: true }] }] })
     rejected(GAMES_SOLO_PAYLOAD_SCHEMAS['tembak-jawapan'], { ...base, questions: [{ id: '1', question: 'q', difficulty: 1, options: [{ text: 't', correct: true }] }] })
     rejected(GAMES_SOLO_PAYLOAD_SCHEMAS['betul-salah'], { ...payloads['betul-salah'], explanation: 'x' })
@@ -488,7 +494,7 @@ describe('single-player games (M16-32, M16-33)', () => {
     const s = payloads['betul-salah'].statements[0]
     rejected(GAMES_SOLO_PAYLOAD_SCHEMAS['betul-salah'], { ...base, statements: Array(41).fill(s) })
     ok(GAMES_SOLO_PAYLOAD_SCHEMAS['betul-salah'], { ...base, statements: Array(40).fill(s) })
-    rejected(GAMES_SOLO_PAYLOAD_SCHEMAS['kad-memori'], { ...base, cards: Array(13).fill(payloads['kad-memori'].cards[0]) })
+    rejected(GAMES_SOLO_PAYLOAD_SCHEMAS['kad-memori'], { ...payloads['kad-memori'], cards: Array(13).fill(payloads['kad-memori'].cards[0]) })
     rejected(GamesSoloPayloadSchema, { ...payloads['betul-salah'], sessionId: 'tf_abc' }) // uuid in v2
   })
 
@@ -506,7 +512,7 @@ describe('single-player games (M16-32, M16-33)', () => {
       'cabaran-kilat': { session_id: SESSION, item_id: '9001', option_id: 1 },
       'tembak-jawapan': { session_id: SESSION, item_id: '9001', option_index: 0 },
       'susun-jawapan': { session_id: SESSION, item_id: '9001', answer: 'KUALA LUMPUR' },
-      'kad-memori': { session_id: SESSION, card_id: 1, other_card_id: 2 },
+      'kad-memori': { session_id: SESSION, card_id: 'c7', other_card_id: 'c2' },
     } as const
     for (const game of GAMES_SOLO_GAMES) {
       ok(GAMES_SOLO_CHECK_SCHEMAS[game], bodies[game])
@@ -515,22 +521,38 @@ describe('single-player games (M16-32, M16-33)', () => {
     }
     rejected(GAMES_SOLO_CHECK_SCHEMAS['cabaran-kilat'], { ...bodies['cabaran-kilat'], option_id: 4 })
     rejected(GAMES_SOLO_CHECK_SCHEMAS['susun-jawapan'], { ...bodies['susun-jawapan'], answer: '' })
-    rejected(GAMES_SOLO_CHECK_SCHEMAS['kad-memori'], { ...bodies['kad-memori'], other_card_id: 13 })
-    expect(firstIssue(GAMES_SOLO_CHECK_SCHEMAS['kad-memori'], { ...bodies['kad-memori'], other_card_id: 1 }).message).toBe('Jawapan tidak sah.')
+    rejected(GAMES_SOLO_CHECK_SCHEMAS['kad-memori'], { ...bodies['kad-memori'], other_card_id: 12 })
+    expect(firstIssue(GAMES_SOLO_CHECK_SCHEMAS['kad-memori'], { ...bodies['kad-memori'], other_card_id: 'c7' }).message).toBe('Jawapan tidak sah.')
     rejected(GAMES_SOLO_CHECK_SCHEMAS['betul-salah'], { ...bodies['betul-salah'], session_id: 'tf_abc' })
   })
 
-  it('check responses: correct/wrong plus the key of that item only; Kad Memori reveals pair_id only on a match', () => {
+  it('check responses: correct/wrong plus the key of that item only; Kad Memori returns both faces and pair_id only on a match', () => {
     ok(GamesSoloCheckResponseSchema, { correct: true, is_true: true })
     ok(GamesSoloCheckResponseSchema, { correct: false, correct_option_id: 1 })
     ok(GamesSoloCheckResponseSchema, { correct: false, correct_option_index: 2 })
     ok(GamesSoloCheckResponseSchema, { correct: true, answer: 'KUALA LUMPUR' })
-    ok(GamesSoloCheckResponseSchema, { correct: true, pair_id: 3 })
-    ok(GamesSoloCheckResponseSchema, { correct: false, pair_id: null })
+    const faces = [
+      { id: 'c7', type: 'question', content: '7 + 5' },
+      { id: 'c2', type: 'answer', content: '12' },
+    ]
+    ok(GamesSoloCheckResponseSchema, { correct: true, pair_id: 3, cards: faces })
+    ok(GamesSoloCheckResponseSchema, { correct: false, pair_id: null, cards: faces })
+    ok(GAMES_SOLO_CHECK_RESULT_SCHEMAS['kad-memori'], { correct: true, pair_id: 3, cards: faces })
+    rejected(GAMES_SOLO_CHECK_RESULT_SCHEMAS['kad-memori'], { correct: true, pair_id: 3, cards: [faces[0]] }) // both faces
     rejected(GamesSoloCheckResponseSchema, { correct: true })
     rejected(GamesSoloCheckResponseSchema, { correct: true, is_true: true, answer: 'x' })
+    ok(GamesKadMemoriRevealRequestSchema, { session_id: SESSION, card_id: 'c7' })
+    rejected(GamesKadMemoriRevealRequestSchema, { session_id: SESSION })
     expect(GAMES_MESSAGES.soloAlreadyChecked).toBe('Soalan sudah dijawab.')
     expect(GAMES_MESSAGES.soloCardMatched).toBe('Kad sudah dipadankan.')
+    expect(GAMES_MESSAGES.soloCardOpen).toBe('Sila padankan kad yang dibuka dahulu.')
+  })
+
+  it('every per-game check example parses with its own schema', () => {
+    for (const game of GAMES_SOLO_GAMES) {
+      ok(GAMES_SOLO_CHECK_SCHEMAS[game], GAMES_SOLO_CHECK_EXAMPLES[game].request)
+      ok(GAMES_SOLO_CHECK_RESULT_SCHEMAS[game], GAMES_SOLO_CHECK_EXAMPLES[game].response)
+    }
   })
 
   it('D58a: the submit body is only the session id; score and counts sent by a client are not part of the contract', () => {
@@ -838,6 +860,7 @@ describe('openapi registration', () => {
     'POST /papan-bijak/quick-match/cancel',
     'GET /games/solo/{game}',
     'POST /games/solo/{game}/check',
+    'POST /games/solo/kad-memori/reveal',
     'POST /games/solo/{game}/submit',
     'GET /games/roda-nasib',
     'POST /games/roda-nasib/spin',
@@ -856,8 +879,8 @@ describe('openapi registration', () => {
     'PUT /admin/games/settings',
   ]
 
-  it('registers exactly the 28 routes of the card under the games tag', () => {
-    expect(gamesOps).toHaveLength(28)
+  it('registers exactly the 29 routes of the card under the games tag', () => {
+    expect(gamesOps).toHaveLength(29)
     expect(gamesOps.map((o) => o.key).sort()).toEqual([...EXPECTED].sort())
   })
 
@@ -877,7 +900,7 @@ describe('openapi registration', () => {
 
   it('every mutation takes the X-CSRF-Token header and declares 403', () => {
     const mutations = gamesOps.filter((o) => o.method !== 'get')
-    expect(mutations).toHaveLength(15)
+    expect(mutations).toHaveLength(16)
     for (const { key, op } of mutations) {
       expect(op.parameters?.some((p) => p.in === 'header' && p.name === 'X-CSRF-Token'), key).toBe(true)
       expect(op.responses['403'], key).toBeDefined()
@@ -891,7 +914,7 @@ describe('openapi registration', () => {
 
   it('D57(a): every write route (and the solo GET that creates a session) documents 429 RATE_LIMITED with retryAfter and Retry-After', () => {
     const writes = gamesOps.filter((o) => o.method !== 'get' || o.key === 'GET /games/solo/{game}')
-    expect(writes).toHaveLength(16)
+    expect(writes).toHaveLength(17)
     for (const { key, op } of writes) {
       const r = op.responses['429']
       expect(r, key).toBeDefined()
@@ -912,9 +935,28 @@ describe('openapi registration', () => {
     noStore('GET /games/{game}/rooms/{code}', '200')
     noStore('GET /games/hub', '200')
     noStore('POST /games/solo/{game}/check', '200')
+    noStore('POST /games/solo/kad-memori/reveal', '200')
     noStore('GET /leagues/{id}', '200')
     const solo = gamesOps.find((o) => o.key === 'GET /games/solo/{game}')?.op.responses['200']
     expect(Object.keys(solo?.headers ?? {})).not.toContain('Cache-Control')
+  })
+
+  it('review: the check route documents per-game bodies and results (named components, examples per game, [PROPOSED] copy)', () => {
+    const op = gamesOps.find((o) => o.key === 'POST /games/solo/{game}/check')?.op as unknown as {
+      description: string
+      requestBody: { content: { 'application/json': { examples: Record<string, unknown> } } }
+      responses: Record<string, { content: { 'application/json': { examples: Record<string, unknown> } } }>
+    }
+    for (const game of GAMES_SOLO_GAMES) {
+      expect(Object.keys(op.requestBody.content['application/json']?.examples ?? {})).toContain(game)
+      expect(Object.keys(op.responses['200']?.content['application/json']?.examples ?? {})).toContain(game)
+    }
+    for (const name of ['GamesBetulSalahCheck', 'GamesCabaranKilatCheck', 'GamesTembakJawapanCheck', 'GamesSusunJawapanCheck', 'GamesKadMemoriCheck', 'GamesBetulSalahCheckResult', 'GamesKadMemoriCheckResult', 'GamesKadMemoriFace']) {
+      expect(doc.components.schemas[name], name).toBeDefined()
+      expect(op.description, name).toContain(name.startsWith('GamesKadMemoriFace') ? 'GamesKadMemoriCheckResult' : name)
+    }
+    const checkOp = gamesOps.find((o) => o.key === 'POST /games/solo/{game}/check')?.op
+    for (const code of ['404', '409', '422']) expect(JSON.stringify(checkOp?.responses[code]), code).toContain('[PROPOSED]')
   })
 
   it('M16-51 and M16-52 are admin only: 403 "This action is unauthorized."', () => {

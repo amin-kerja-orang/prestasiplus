@@ -135,10 +135,11 @@ export const GAMES_MESSAGES = {
   level: 'Tahap tidak sah.',
   soloInvalidResult: 'Keputusan tidak sah.',
   soloAlreadySubmitted: 'Keputusan sudah dihantar.',
-  soloSessionNotFound: 'Sesi tidak dijumpai.',
-  soloItemNotFound: 'Soalan tidak dijumpai.',
+  soloSessionNotFound: 'Sesi tidak dijumpai.', // [PROPOSED] on the check/reveal routes (copy reused from Jutawan)
+  soloItemNotFound: 'Soalan tidak dijumpai.', // [PROPOSED] on the check/reveal routes (copy reused from Jutawan)
   soloAlreadyChecked: 'Soalan sudah dijawab.', // [PROPOSED]
   soloCardMatched: 'Kad sudah dipadankan.', // [PROPOSED]
+  soloCardOpen: 'Sila padankan kad yang dibuka dahulu.', // [PROPOSED]
   spinAlreadySpun: 'Anda sudah spin hari ini.',
   jutawanSubject: 'Subjek tidak sah.',
   jutawanNotEnoughQuestions: 'Soalan tidak mencukupi.',

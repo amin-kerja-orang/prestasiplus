@@ -125,20 +125,22 @@ export const GamesSusunJawapanPayloadSchema = z
   })
   .meta({ id: 'GamesSusunJawapanPayload' })
 
-/** Kad Memori: 12 cards (6 pairs), keyless (no `pair_id`; the check route says whether two cards match). `id` is the position 1..12. */
+/**
+ * Kad Memori: 12 face-down cards (6 pairs). D58a (LEAD review): the board carries NO face (no question or answer
+ * text, no `type`, no `pair_id`), because the faces would let a client pair the cards offline. `cards[].id` is an
+ * opaque per-session id (never a pair index) and the array order is the board order. A face is revealed only by
+ * `POST /games/solo/kad-memori/reveal` (the first card of a move) and by the check response (both faces of a move).
+ */
 export const GamesKadMemoriPayloadSchema = z
   .strictObject({
     ...soloBase,
     cards: z
-      .array(
-        z.strictObject({
-          id: z.number().int().min(1).max(12),
-          type: z.enum(['question', 'answer']),
-          content: z.string(),
-          difficulty,
-        }),
-      )
+      .array(z.strictObject({ id: IdSchema.meta({ description: 'Opaque card id of this session (not a pair index).' }) }))
       .max(12),
+    count: z.literal(12).meta({ description: '[PROPOSED] Number of cards (6 pairs).' }),
+    layout: z
+      .strictObject({ columns: z.number().int().min(1).max(12), rows: z.number().int().min(1).max(12) })
+      .meta({ description: '[PROPOSED] Default board grid (4 x 3); the client may reflow it responsively.' }),
   })
   .meta({ id: 'GamesKadMemoriPayload' })
 
@@ -187,16 +189,18 @@ export const GamesSusunJawapanCheckSchema = z
 export const GamesKadMemoriCheckSchema = z
   .object({
     session_id: GamesSessionIdSchema,
-    card_id: z.number().int().min(1).max(12),
-    other_card_id: z.number().int().min(1).max(12),
+    card_id: IdSchema.meta({ description: 'Opaque card id from the payload.' }),
+    other_card_id: IdSchema.meta({ description: 'The second flipped card (must differ).' }),
   })
   .refine((v) => v.card_id !== v.other_card_id, { error: GAMES_MESSAGES.actionValue, path: ['other_card_id'] })
   .meta({ id: 'GamesKadMemoriCheck' })
 
 /**
- * Body of `POST /games/solo/{game}/check` per game ([PROPOSED]; the mock has no such route). One check per item
- * (a second check of the same item is 409, so the key cannot be probed); Kad Memori: one check per flipped pair,
- * a mismatch may be repeated, a card of an already matched pair is 409.
+ * Body of `POST /games/solo/{game}/check` per game ([PROPOSED]; the mock has no such route). The path parameter
+ * `game` selects the body: it is `GAMES_SOLO_CHECK_SCHEMAS[game]` (component `Games<Game>Check`), and the 200 is
+ * `GAMES_SOLO_CHECK_RESULT_SCHEMAS[game]` (component `Games<Game>CheckResult`). One check per item (a second check
+ * of the same item is 409, so the key cannot be probed); Kad Memori: one check per flipped pair, a mismatch may be
+ * repeated, a card of an already matched pair is 409.
  */
 export const GamesSoloCheckRequestSchema = z
   .union([
@@ -206,7 +210,11 @@ export const GamesSoloCheckRequestSchema = z
     GamesSusunJawapanCheckSchema,
     GamesKadMemoriCheckSchema,
   ])
-  .meta({ id: 'GamesSoloCheckRequest' })
+  .meta({
+    id: 'GamesSoloCheckRequest',
+    description:
+      'One of the per-game bodies; the path parameter `game` decides which: betul-salah = GamesBetulSalahCheck, cabaran-kilat = GamesCabaranKilatCheck, tembak-jawapan = GamesTembakJawapanCheck, susun-jawapan = GamesSusunJawapanCheck, kad-memori = GamesKadMemoriCheck. A body of another game is 422 "Jawapan tidak sah." [PROPOSED].',
+  })
 export type GamesSoloCheckRequest = z.infer<typeof GamesSoloCheckRequestSchema>
 
 export const GAMES_SOLO_CHECK_SCHEMAS = {
@@ -217,24 +225,102 @@ export const GAMES_SOLO_CHECK_SCHEMAS = {
   'kad-memori': GamesKadMemoriCheckSchema,
 } as const satisfies Record<GamesSoloGame, z.ZodType>
 
+/** One revealed Kad Memori face. */
+export const GamesKadMemoriFaceSchema = z
+  .strictObject({
+    id: IdSchema.meta({ description: 'The opaque card id.' }),
+    type: z.enum(['question', 'answer']),
+    content: z.string(),
+  })
+  .meta({ id: 'GamesKadMemoriFace' })
+export type GamesKadMemoriFace = z.infer<typeof GamesKadMemoriFaceSchema>
+
+export const GamesBetulSalahCheckResultSchema = z
+  .strictObject({ correct: z.boolean(), is_true: z.boolean() })
+  .meta({ id: 'GamesBetulSalahCheckResult' })
+export const GamesCabaranKilatCheckResultSchema = z
+  .strictObject({ correct: z.boolean(), correct_option_id: optionIndex })
+  .meta({ id: 'GamesCabaranKilatCheckResult' })
+export const GamesTembakJawapanCheckResultSchema = z
+  .strictObject({ correct: z.boolean(), correct_option_index: optionIndex })
+  .meta({ id: 'GamesTembakJawapanCheckResult' })
+export const GamesSusunJawapanCheckResultSchema = z
+  .strictObject({ correct: z.boolean(), answer: z.string() })
+  .meta({ id: 'GamesSusunJawapanCheckResult' })
+/** Kad Memori: both faces of the move plus the verdict; `pair_id` only on a match (null otherwise). */
+export const GamesKadMemoriCheckResultSchema = z
+  .strictObject({
+    correct: z.boolean().meta({ description: 'true when the two cards are a pair.' }),
+    pair_id: z.number().int().min(0).max(5).nullable().meta({ description: 'The pair id, only when the cards match; null on a mismatch.' }),
+    cards: z.tuple([GamesKadMemoriFaceSchema, GamesKadMemoriFaceSchema]).meta({ description: 'The faces of card_id and other_card_id, in that order.' }),
+  })
+  .meta({ id: 'GamesKadMemoriCheckResult' })
+
+export const GAMES_SOLO_CHECK_RESULT_SCHEMAS = {
+  'betul-salah': GamesBetulSalahCheckResultSchema,
+  'cabaran-kilat': GamesCabaranKilatCheckResultSchema,
+  'tembak-jawapan': GamesTembakJawapanCheckResultSchema,
+  'susun-jawapan': GamesSusunJawapanCheckResultSchema,
+  'kad-memori': GamesKadMemoriCheckResultSchema,
+} as const satisfies Record<GamesSoloGame, z.ZodType>
+
 /** `{ data }` of the check: correct/wrong plus the key of that item, revealed only now (as Bijak "Semak"). */
 export const GamesSoloCheckResponseSchema = z
   .union([
-    z.strictObject({ correct: z.boolean(), is_true: z.boolean() }),
-    z.strictObject({ correct: z.boolean(), correct_option_id: optionIndex }),
-    z.strictObject({ correct: z.boolean(), correct_option_index: optionIndex }),
-    z.strictObject({ correct: z.boolean(), answer: z.string() }),
-    z.strictObject({
-      correct: z.boolean().meta({ description: 'true when the two cards are a pair.' }),
-      pair_id: z.number().int().min(0).max(5).nullable().meta({ description: 'The pair id, only when the cards match; null on a mismatch (nothing else is revealed).' }),
-    }),
+    GamesBetulSalahCheckResultSchema,
+    GamesCabaranKilatCheckResultSchema,
+    GamesTembakJawapanCheckResultSchema,
+    GamesSusunJawapanCheckResultSchema,
+    GamesKadMemoriCheckResultSchema,
   ])
   .meta({
     id: 'GamesSoloCheckResponse',
     description:
-      'betul-salah: { correct, is_true }; cabaran-kilat: { correct, correct_option_id }; tembak-jawapan: { correct, correct_option_index }; susun-jawapan: { correct, answer }; kad-memori: { correct, pair_id | null }.',
+      'The result of the requested game: betul-salah = GamesBetulSalahCheckResult { correct, is_true }; cabaran-kilat = GamesCabaranKilatCheckResult { correct, correct_option_id }; tembak-jawapan = GamesTembakJawapanCheckResult { correct, correct_option_index }; susun-jawapan = GamesSusunJawapanCheckResult { correct, answer }; kad-memori = GamesKadMemoriCheckResult { correct, pair_id | null, cards: [face, face] }.',
   })
 export type GamesSoloCheckResponse = z.infer<typeof GamesSoloCheckResponseSchema>
+
+/** Per-game examples of the check body and result (OpenAPI request/response `examples`). */
+export const GAMES_SOLO_CHECK_EXAMPLES = {
+  'betul-salah': {
+    request: { session_id: '3f2b8a6e-5c1d-4e7a-9b0f-1a2b3c4d5e6f', item_id: '9001', answer: true },
+    response: { correct: true, is_true: true },
+  },
+  'cabaran-kilat': {
+    request: { session_id: '3f2b8a6e-5c1d-4e7a-9b0f-1a2b3c4d5e6f', item_id: '9001', option_id: 1 },
+    response: { correct: true, correct_option_id: 1 },
+  },
+  'tembak-jawapan': {
+    request: { session_id: '3f2b8a6e-5c1d-4e7a-9b0f-1a2b3c4d5e6f', item_id: '9001', option_index: 0 },
+    response: { correct: false, correct_option_index: 1 },
+  },
+  'susun-jawapan': {
+    request: { session_id: '3f2b8a6e-5c1d-4e7a-9b0f-1a2b3c4d5e6f', item_id: '9001', answer: 'KUALA LUMPUR' },
+    response: { correct: true, answer: 'KUALA LUMPUR' },
+  },
+  'kad-memori': {
+    request: { session_id: '3f2b8a6e-5c1d-4e7a-9b0f-1a2b3c4d5e6f', card_id: 'c7', other_card_id: 'c2' },
+    response: {
+      correct: true,
+      pair_id: 3,
+      cards: [
+        { id: 'c7', type: 'question', content: '7 + 5' },
+        { id: 'c2', type: 'answer', content: '12' },
+      ],
+    },
+  },
+} as const
+
+/**
+ * Kad Memori only ([PROPOSED] route, D58a; LEAD decision pending: per-flip reveal vs. faces via check only).
+ * Reveals the face of ONE face-down card, so the first card of a move can show its face as the mock page does.
+ * At most one card may be open (revealed, not yet checked); a second reveal while one is open is 409, and the open
+ * card is closed by the next check that names it. So a client cannot read the faces without making moves.
+ */
+export const GamesKadMemoriRevealRequestSchema = z
+  .object({ session_id: GamesSessionIdSchema, card_id: IdSchema.meta({ description: 'Opaque card id from the payload.' }) })
+  .meta({ id: 'GamesKadMemoriRevealRequest' })
+export type GamesKadMemoriRevealRequest = z.infer<typeof GamesKadMemoriRevealRequestSchema>
 
 // --- solo submit (M16-33), raw bodies --------------------------------------------------------------------------
 

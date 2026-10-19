@@ -81,13 +81,21 @@ import {
   GamesSessionIdSchema,
   GamesSoloPayloadSchema,
   GamesSoloQuerySchema,
+  GAMES_SOLO_CHECK_EXAMPLES,
+  GamesBetulSalahCheckResultSchema,
   GamesBetulSalahCheckSchema,
+  GamesCabaranKilatCheckResultSchema,
   GamesCabaranKilatCheckSchema,
+  GamesKadMemoriCheckResultSchema,
   GamesKadMemoriCheckSchema,
+  GamesKadMemoriFaceSchema,
+  GamesKadMemoriRevealRequestSchema,
   GamesSoloCheckRequestSchema,
   GamesSoloCheckResponseSchema,
   GamesSoloSubmitRequestSchema,
+  GamesSusunJawapanCheckResultSchema,
   GamesSusunJawapanCheckSchema,
+  GamesTembakJawapanCheckResultSchema,
   GamesTembakJawapanCheckSchema,
   GamesSoloSubmitResponseSchema,
   GamesSpinPageSchema,
@@ -154,6 +162,13 @@ export const GAMES_COMPONENT_SCHEMAS = {
   GamesTembakJawapanCheck: GamesTembakJawapanCheckSchema,
   GamesSusunJawapanCheck: GamesSusunJawapanCheckSchema,
   GamesKadMemoriCheck: GamesKadMemoriCheckSchema,
+  GamesBetulSalahCheckResult: GamesBetulSalahCheckResultSchema,
+  GamesCabaranKilatCheckResult: GamesCabaranKilatCheckResultSchema,
+  GamesTembakJawapanCheckResult: GamesTembakJawapanCheckResultSchema,
+  GamesSusunJawapanCheckResult: GamesSusunJawapanCheckResultSchema,
+  GamesKadMemoriCheckResult: GamesKadMemoriCheckResultSchema,
+  GamesKadMemoriFace: GamesKadMemoriFaceSchema,
+  GamesKadMemoriRevealRequest: GamesKadMemoriRevealRequestSchema,
   GamesSoloCheckRequest: GamesSoloCheckRequestSchema,
   GamesSoloCheckResponse: GamesSoloCheckResponseSchema,
   GamesSoloSubmitRequest: GamesSoloSubmitRequestSchema,
@@ -259,7 +274,7 @@ const GAME_404 = 'NOT_FOUND "Permainan tidak dijumpai." (unknown game).'
 const TAGS = ['games']
 
 /**
- * Registers the 28 BE-45 routes: games hub and lobbies, rooms and the Papan Bijak quick match, solo
+ * Registers the 29 BE-45 routes: games hub and lobbies, rooms and the Papan Bijak quick match, solo
  * games, Roda Nasib, Jutawan Ilmu, the weekly board, Uji Minda, leagues, Sekolah Bersaing and the admin
  * game settings. Bodies are `{ data }` / `{ error }` except the raw routes M16-29 to M16-31, M16-33 and
  * M16-35 whose live-shaped bodies and raw error bodies are declared per route. The battle routes (BE-44)
@@ -426,7 +441,7 @@ export function registerGamesPaths(registry: OpenAPIRegistry): void {
     tags: TAGS,
     summary: 'Start a single-player game session (M16-32)',
     description:
-      'Creates a session row and returns its items. D58a: the payload is keyless; no answer key (is_true, correct, answer, pair_id) is sent before the answer. Each answer is checked by POST /games/solo/{game}/check. Kad Memori caveat: the card faces (question and answer text) are sent so the client can show a card when it is flipped; the pairing is not sent (see the open question of this card).',
+      'Creates a session row and returns its items. D58a: the payload is keyless; no answer key (is_true, correct, answer, pair_id) is sent before the answer. Each answer is checked by POST /games/solo/{game}/check. Kad Memori: the board has only opaque card ids, the count and the layout, face-down; a face comes only from the reveal route (first card of a move) and the check response.',
     request: { params: SoloGameParam, query: GamesSoloQuerySchema },
     responses: {
       429: RATE_LIMITED,
@@ -437,23 +452,59 @@ export function registerGamesPaths(registry: OpenAPIRegistry): void {
     },
   })
 
+  const checkExamples = <K extends 'request' | 'response'>(kind: K) =>
+    Object.fromEntries(
+      Object.entries(GAMES_SOLO_CHECK_EXAMPLES).map(([game, ex]) => [game, { summary: `${game} (${kind === 'request' ? 'GamesXxxCheck' : 'GamesXxxCheckResult'})`, value: kind === 'request' ? ex.request : { data: ex.response } }]),
+    )
+
   registry.registerPath({
     method: 'post',
     path: '/games/solo/{game}/check',
     tags: TAGS,
     summary: 'Check one single-player answer (D58a) [PROPOSED route, not in the mock]',
     description:
-      'Modelled on the Bijak "Semak" check (/bijak/attempts/{id}/questions/{questionId}/check). Own session only. The server checks the answer against the stored key, stores the check, and returns correct/wrong plus the key of that item, revealed only now ({ data }). One check per item: a second check of the same item is 409 (so the key cannot be probed by retrying). ' +
-      'Kad Memori: the body names two flipped cards; the answer is correct when they are a pair, then pair_id is returned (null on a mismatch); a mismatch may be repeated, a card of an already matched pair is 409. Every stored check feeds the final submit. Standard `{ error }` bodies. The response carries answer keys, so Cache-Control: no-store.',
-    request: { params: SoloGameParam, headers: [csrf], body: body(GamesSoloCheckRequestSchema) },
+      'Modelled on the Bijak "Semak" check (/bijak/attempts/{id}/questions/{questionId}/check). Own session only. The path parameter `game` selects the body and the result: betul-salah = GamesBetulSalahCheck / GamesBetulSalahCheckResult, cabaran-kilat = GamesCabaranKilatCheck / GamesCabaranKilatCheckResult, tembak-jawapan = GamesTembakJawapanCheck / GamesTembakJawapanCheckResult, susun-jawapan = GamesSusunJawapanCheck / GamesSusunJawapanCheckResult, kad-memori = GamesKadMemoriCheck / GamesKadMemoriCheckResult (one named component each; request and response `examples` are keyed by game). A body of another game is 422. ' +
+      'The server checks the answer against the stored key, stores the check, and returns correct/wrong plus the key of that item, revealed only now ({ data }). One check per item: a second check of the same item is 409 (so the key cannot be probed by retrying). ' +
+      'Kad Memori: the body names two cards by opaque id; the response carries BOTH faces (the board never does), correct when they are a pair, and pair_id only on a match (null on a mismatch); a mismatch may be repeated, a card of an already matched pair is 409, and if another card is open (revealed, not checked) 409 "Sila padankan kad yang dibuka dahulu." [PROPOSED]. Every stored check feeds the final submit (moves = number of Kad Memori checks). ' +
+      'Standard `{ error }` bodies. All BM texts of this route are [PROPOSED] (the mock has no check route): 404 "Sesi tidak dijumpai." and "Soalan tidak dijumpai." (copy reused from Jutawan), 409 "Soalan sudah dijawab.", "Kad sudah dipadankan.", 422 "Jawapan tidak sah." (reused). The response carries answer keys, so Cache-Control: no-store.',
+    request: {
+      params: SoloGameParam,
+      headers: [csrf],
+      body: {
+        required: true,
+        content: { 'application/json': { schema: GamesSoloCheckRequestSchema, examples: checkExamples('request') } },
+      },
+    },
     responses: {
       429: RATE_LIMITED,
-      200: noStore(envelopeOf(GamesSoloCheckResponseSchema), 'Correct or wrong plus the key of the item; Cache-Control: no-store.'),
+      200: {
+        ...noStore(envelopeOf(GamesSoloCheckResponseSchema), 'Correct or wrong plus the key of the item (per-game GamesXxxCheckResult); Cache-Control: no-store.'),
+        content: { 'application/json': { schema: envelopeOf(GamesSoloCheckResponseSchema), examples: checkExamples('response') } },
+      },
       401: UNAUTHORIZED,
       403: CSRF_INVALID,
-      404: err('NOT_FOUND "Permainan tidak dijumpai." (unknown game), "Sesi tidak dijumpai." (unknown or foreign session) or "Soalan tidak dijumpai." (item or card not in the session).'),
-      409: err('CONFLICT "Keputusan sudah dihantar." (session already submitted), "Soalan sudah dijawab." [PROPOSED] (item already checked) or "Kad sudah dipadankan." [PROPOSED] (Kad Memori: card already matched).'),
-      422: err('VALIDATION_ERROR "Jawapan tidak sah." (answer, option or card value, or the same card twice).'),
+      404: err('NOT_FOUND "Permainan tidak dijumpai." (unknown game), "Sesi tidak dijumpai." [PROPOSED] (unknown or foreign session) or "Soalan tidak dijumpai." [PROPOSED] (item or card not in the session).'),
+      409: err('CONFLICT "Keputusan sudah dihantar." (session already submitted), "Soalan sudah dijawab." [PROPOSED] (item already checked), "Kad sudah dipadankan." [PROPOSED] (Kad Memori: card already matched) or "Sila padankan kad yang dibuka dahulu." [PROPOSED] (Kad Memori: another card is open).'),
+      422: err('VALIDATION_ERROR "Jawapan tidak sah." [PROPOSED] (answer, option or card value, a body of another game, or the same card twice).'),
+    },
+  })
+
+  registry.registerPath({
+    method: 'post',
+    path: '/games/solo/kad-memori/reveal',
+    tags: TAGS,
+    summary: 'Reveal one Kad Memori face (D58a) [PROPOSED route, LEAD decision pending]',
+    description:
+      'The mock page shows the face of the first flipped card at once, so the first card of a move needs a reveal; the second card comes with the check response. Static path: wins over `/games/solo/{game}/...`. At most one card may be open (revealed and not yet checked): a second reveal is 409 "Sila padankan kad yang dibuka dahulu." [PROPOSED], and the open card is closed by the next check naming it, so reveals never outnumber moves by more than one and the faces cannot be read without playing. A matched card is 409 "Kad sudah dipadankan." [PROPOSED]. If the LEAD prefers faces via the check response only, drop this route and the page shows the first card face-down until the second tap. Standard `{ error }` bodies; the face is not a key but is sent no-store.',
+    request: { headers: [csrf], body: body(GamesKadMemoriRevealRequestSchema) },
+    responses: {
+      429: RATE_LIMITED,
+      200: noStore(envelopeOf(GamesKadMemoriFaceSchema), 'The face of the card; Cache-Control: no-store.'),
+      401: UNAUTHORIZED,
+      403: CSRF_INVALID,
+      404: err('NOT_FOUND "Sesi tidak dijumpai." [PROPOSED] (unknown or foreign session) or "Soalan tidak dijumpai." [PROPOSED] (card not in the session).'),
+      409: err('CONFLICT "Keputusan sudah dihantar.", "Kad sudah dipadankan." [PROPOSED] or "Sila padankan kad yang dibuka dahulu." [PROPOSED].'),
+      422: err('VALIDATION_ERROR "Jawapan tidak sah." [PROPOSED] (card id).'),
     },
   })
 
