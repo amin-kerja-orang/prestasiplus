@@ -1,0 +1,38 @@
+{
+  "school": {
+    "id": 940,
+    "name": "SEKOLAH KEBANGSAAN KUALA SELANGOR",
+    "code": "BBF00940",
+    "state": "Selangor"
+  },
+  "subscription": null,
+  "warning": null,
+  "tahap": "Cemerlang",
+  "pct": 100,
+  "cards": {
+    "students": 1,
+    "engaged": 1,
+    "answers": 10,
+    "teachers": 0,
+    "teachersLoggedIn": 0
+  },
+  "flags": {
+    "review": 0,
+    "excluded": 0
+  },
+  "students": [
+    {
+      "id": 2134,
+      "name": "Pelajar Demo 002134",
+      "email": "pelajar002134@demo.test",
+      "level": "T5",
+      "answers": 10,
+      "status": "aktif",
+      "engaged": true,
+      "flag": null,
+      "lastLoginAt": null,
+      "lastActivityAt": "2026-02-21T12:01:26+08:00"
+    }
+  ],
+  "teachers": []
+}

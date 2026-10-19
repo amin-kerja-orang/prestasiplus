@@ -778,6 +778,27 @@ describe('OpenAPI document', () => {
     }
   })
 
+  it('documents 429 RATE_LIMITED with retryAfter and a Retry-After header on every write route (D57a)', () => {
+    expect(MUTATIONS).toHaveLength(6)
+    for (const { method, path, op } of MUTATIONS) {
+      const r = op.responses['429']
+      expect(r, `${method} ${path}`).toBeDefined()
+      expect(r.description, `${method} ${path}`).toContain('RATE_LIMITED')
+      expect(r.description, `${method} ${path}`).toContain('retryAfter')
+      expect(r.headers['Retry-After'], `${method} ${path}`).toBeDefined()
+      expect(r.headers['Retry-After'].schema.type).toBe('integer')
+      expect(r.content['application/json'].schema.$ref).toBe('#/components/schemas/ErrorBody')
+    }
+    // the generic error payload carries retryAfter
+    expect(schemas.ErrorPayload!.properties.retryAfter).toBeDefined()
+  })
+
+  it('sends no credential or token on any route of the card, so none needs Cache-Control: no-store (D57b)', () => {
+    for (const { method, path, op } of ops)
+      for (const [status, r] of Object.entries(op.responses as Record<string, Json>))
+        expect(Object.keys(r.headers ?? {}), `${method} ${path} ${status}`).not.toContain('Cache-Control')
+  })
+
   it('answers 403 "Akses ditolak" for another student attempt (D54b) and 404 for an unknown one', () => {
     const owned = ops.filter((o) => o.path.includes('{id}'))
     expect(owned).toHaveLength(7)

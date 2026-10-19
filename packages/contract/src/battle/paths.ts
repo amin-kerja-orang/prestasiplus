@@ -4,6 +4,7 @@ import { z } from '../zod'
 import { envelopeOf } from '../common/envelope'
 import { ErrorBodySchema } from '../common/error'
 import { IdSchema } from '../common/ids'
+import { registerRoute } from './rate-limit'
 import {
   BattleAcceptChallengerResponseSchema,
   BattleAnswerRequestSchema,
@@ -136,12 +137,17 @@ const FORBIDDEN_EMPTY = json(
 const ADMIN_ONLY = err('FORBIDDEN "This action is unauthorized." (role is not admin).')
 
 const SEARCH_NOTE =
-  'D54(d): classmates and opponents are shown by display name (and school) only; no IC, e-mail, phone or birth date is ever returned.'
+  'D54(d): classmates and opponents are shown by display name (and school) only; no IC, e-mail, phone or birth date is ever returned. D57: this is a student-facing lookup, not the staff-only GET /students/search; it is rate-limited (429 RATE_LIMITED with retryAfter and Retry-After) because it can be used to enumerate students, and it never exposes more than the display fields above.'
 
 /**
  * Registers the 25 M16 battle, standings and tournament routes of BE-44. Raw routes (M16-01 to
  * M16-14) answer un-enveloped bodies; the others `{ data }`. Games hub, rooms, Papan Bijak, leagues
  * and Sekolah Bersaing belong to BE-45 and are not registered here.
+ *
+ * D57: every write route (11 POSTs) and the student name lookup (GET /battle/search-opponent) also answer
+ * 429 RATE_LIMITED with retryAfter and a Retry-After header (added by `registerRoute`). D57(b): no
+ * response carries a credential or token, so none sends Cache-Control: no-store. D57(e): no route
+ * assigns roles; POST /tournaments is admin only.
  */
 export function registerBattlePaths(registry: OpenAPIRegistry): void {
   // -------------------------------------------------------------------------------------------
@@ -156,7 +162,7 @@ export function registerBattlePaths(registry: OpenAPIRegistry): void {
       'Opponents are deterministic bots chosen by the server (D53(a)); real-time multiplayer is not part of this contract.',
     ].join('\n')
 
-  registry.registerPath({
+  registerRoute(registry, {
     method: 'post',
     path: '/battle/quick-match',
     tags: [BATTLE_TAGS.battle],
@@ -171,7 +177,7 @@ export function registerBattlePaths(registry: OpenAPIRegistry): void {
     },
   })
 
-  registry.registerPath({
+  registerRoute(registry, {
     method: 'post',
     path: '/battle/school-battle',
     tags: [BATTLE_TAGS.battle],
@@ -186,7 +192,7 @@ export function registerBattlePaths(registry: OpenAPIRegistry): void {
     },
   })
 
-  registry.registerPath({
+  registerRoute(registry, {
     method: 'get',
     path: '/battle/poll-match/{queueId}',
     tags: [BATTLE_TAGS.battle],
@@ -206,7 +212,7 @@ export function registerBattlePaths(registry: OpenAPIRegistry): void {
     },
   })
 
-  registry.registerPath({
+  registerRoute(registry, {
     method: 'post',
     path: '/battle/accept-challenger/{queueId}',
     tags: [BATTLE_TAGS.battle],
@@ -223,7 +229,7 @@ export function registerBattlePaths(registry: OpenAPIRegistry): void {
     },
   })
 
-  registry.registerPath({
+  registerRoute(registry, {
     method: 'post',
     path: '/battle/reject-challenger/{queueId}',
     tags: [BATTLE_TAGS.battle],
@@ -239,7 +245,7 @@ export function registerBattlePaths(registry: OpenAPIRegistry): void {
     },
   })
 
-  registry.registerPath({
+  registerRoute(registry, {
     method: 'post',
     path: '/battle/join-queue/{queueId}',
     tags: [BATTLE_TAGS.battle],
@@ -255,7 +261,7 @@ export function registerBattlePaths(registry: OpenAPIRegistry): void {
     },
   })
 
-  registry.registerPath({
+  registerRoute(registry, {
     method: 'get',
     path: '/battle/poll-challenger/{queueId}',
     tags: [BATTLE_TAGS.battle],
@@ -273,20 +279,24 @@ export function registerBattlePaths(registry: OpenAPIRegistry): void {
   // Invitations (5, raw)
   // -------------------------------------------------------------------------------------------
 
-  registry.registerPath({
-    method: 'get',
-    path: '/battle/search-opponent',
-    tags: [BATTLE_TAGS.battle],
-    summary: 'Search students by name to invite (M16-07)',
-    description: [
-      'Query `q` shorter than 2 trimmed characters answers `{users: []}`. Otherwise students whose name contains `q` (case-insensitive), the caller excluded, sorted by name then id, at most 10.',
-      SEARCH_NOTE,
-    ].join('\n'),
-    request: { query: BattleSearchQuerySchema },
-    responses: { 200: json(BattleSearchResponseSchema, 'Matching students.'), 401: UNAUTHORIZED },
-  })
+  registerRoute(
+    registry,
+    {
+      method: 'get',
+      path: '/battle/search-opponent',
+      tags: [BATTLE_TAGS.battle],
+      summary: 'Search students by name to invite (M16-07)',
+      description: [
+        'Query `q` shorter than 2 trimmed characters answers `{users: []}`. Otherwise students whose name contains `q` (case-insensitive), the caller excluded, sorted by name then id, at most 10.',
+        SEARCH_NOTE,
+      ].join('\n'),
+      request: { query: BattleSearchQuerySchema },
+      responses: { 200: json(BattleSearchResponseSchema, 'Matching students.'), 401: UNAUTHORIZED },
+    },
+    true, // D57(a): a people lookup, so it is rate-limited like a write
+  )
 
-  registry.registerPath({
+  registerRoute(registry, {
     method: 'post',
     path: '/battle/invite',
     tags: [BATTLE_TAGS.battle],
@@ -308,7 +318,7 @@ export function registerBattlePaths(registry: OpenAPIRegistry): void {
     },
   })
 
-  registry.registerPath({
+  registerRoute(registry, {
     method: 'get',
     path: '/battle/invitations',
     tags: [BATTLE_TAGS.battle],
@@ -317,7 +327,7 @@ export function registerBattlePaths(registry: OpenAPIRegistry): void {
     responses: { 200: json(BattleInvitationsResponseSchema, 'Pending invitations.'), 401: UNAUTHORIZED },
   })
 
-  registry.registerPath({
+  registerRoute(registry, {
     method: 'post',
     path: '/battle/invite/{uuid}/accept',
     tags: [BATTLE_TAGS.battle],
@@ -334,7 +344,7 @@ export function registerBattlePaths(registry: OpenAPIRegistry): void {
     },
   })
 
-  registry.registerPath({
+  registerRoute(registry, {
     method: 'post',
     path: '/battle/invite/{uuid}/decline',
     tags: [BATTLE_TAGS.battle],
@@ -353,7 +363,7 @@ export function registerBattlePaths(registry: OpenAPIRegistry): void {
   // Battle (4)
   // -------------------------------------------------------------------------------------------
 
-  registry.registerPath({
+  registerRoute(registry, {
     method: 'post',
     path: '/battle/forfeit/{uuid}',
     tags: [BATTLE_TAGS.battle],
@@ -370,7 +380,7 @@ export function registerBattlePaths(registry: OpenAPIRegistry): void {
     },
   })
 
-  registry.registerPath({
+  registerRoute(registry, {
     method: 'get',
     path: '/battle/lobby',
     tags: [BATTLE_TAGS.battle],
@@ -380,7 +390,7 @@ export function registerBattlePaths(registry: OpenAPIRegistry): void {
     responses: { 200: json(envelopeOf(BattleLobbySchema), 'Lobby data.'), 401: UNAUTHORIZED },
   })
 
-  registry.registerPath({
+  registerRoute(registry, {
     method: 'get',
     path: '/battle/arena/{uuid}',
     tags: [BATTLE_TAGS.battle],
@@ -395,7 +405,7 @@ export function registerBattlePaths(registry: OpenAPIRegistry): void {
     },
   })
 
-  registry.registerPath({
+  registerRoute(registry, {
     method: 'post',
     path: '/battle/arena/{uuid}/answer',
     tags: [BATTLE_TAGS.battle],
@@ -420,7 +430,7 @@ export function registerBattlePaths(registry: OpenAPIRegistry): void {
   // Standings and history (4)
   // -------------------------------------------------------------------------------------------
 
-  registry.registerPath({
+  registerRoute(registry, {
     method: 'get',
     path: '/battle/standings/students',
     tags: [BATTLE_TAGS.standings],
@@ -433,7 +443,7 @@ export function registerBattlePaths(registry: OpenAPIRegistry): void {
     responses: { 200: json(envelopeOf(z.array(BattleStudentStandingSchema)), 'Ranked students.'), 401: UNAUTHORIZED },
   })
 
-  registry.registerPath({
+  registerRoute(registry, {
     method: 'get',
     path: '/battle/standings/schools',
     tags: [BATTLE_TAGS.standings],
@@ -444,7 +454,7 @@ export function registerBattlePaths(registry: OpenAPIRegistry): void {
     responses: { 200: json(envelopeOf(BattleSchoolStandingsResultSchema), 'Ranked schools and podium.'), 401: UNAUTHORIZED },
   })
 
-  registry.registerPath({
+  registerRoute(registry, {
     method: 'get',
     path: '/battle/schools/{id}',
     tags: [BATTLE_TAGS.standings],
@@ -458,7 +468,7 @@ export function registerBattlePaths(registry: OpenAPIRegistry): void {
     },
   })
 
-  registry.registerPath({
+  registerRoute(registry, {
     method: 'get',
     path: '/battle/history',
     tags: [BATTLE_TAGS.standings],
@@ -471,7 +481,7 @@ export function registerBattlePaths(registry: OpenAPIRegistry): void {
   // Tournaments (5)
   // -------------------------------------------------------------------------------------------
 
-  registry.registerPath({
+  registerRoute(registry, {
     method: 'get',
     path: '/tournament/active',
     tags: [BATTLE_TAGS.tournaments],
@@ -481,7 +491,7 @@ export function registerBattlePaths(registry: OpenAPIRegistry): void {
     responses: { 200: json(z.array(BattleTournamentActiveSchema), 'Active tournaments.'), 401: UNAUTHORIZED },
   })
 
-  registry.registerPath({
+  registerRoute(registry, {
     method: 'get',
     path: '/tournaments',
     tags: [BATTLE_TAGS.tournaments],
@@ -490,7 +500,7 @@ export function registerBattlePaths(registry: OpenAPIRegistry): void {
     responses: { 200: json(envelopeOf(z.array(BattleTournamentListItemSchema)), 'Active tournaments.'), 401: UNAUTHORIZED },
   })
 
-  registry.registerPath({
+  registerRoute(registry, {
     method: 'get',
     path: '/tournaments/form-options',
     tags: [BATTLE_TAGS.tournaments],
@@ -500,7 +510,7 @@ export function registerBattlePaths(registry: OpenAPIRegistry): void {
     responses: { 200: json(envelopeOf(BattleTournamentFormOptionsSchema), 'Form options.'), 401: UNAUTHORIZED, 403: ADMIN_ONLY },
   })
 
-  registry.registerPath({
+  registerRoute(registry, {
     method: 'post',
     path: '/tournaments',
     tags: [BATTLE_TAGS.tournaments],
@@ -518,7 +528,7 @@ export function registerBattlePaths(registry: OpenAPIRegistry): void {
     },
   })
 
-  registry.registerPath({
+  registerRoute(registry, {
     method: 'get',
     path: '/tournaments/{uuid}',
     tags: [BATTLE_TAGS.tournaments],

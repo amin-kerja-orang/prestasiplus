@@ -16,12 +16,16 @@ import { AccessModeSchema, PortalIdSchema, RoleCodeSchema, ScopeLevelSchema } fr
 import { ErrorBodySchema, ErrorCodeSchema, ErrorPayloadSchema } from './common/error'
 import { ClientUuidSchema, IdSchema } from './common/ids'
 import { PRACTICE_COMPONENT_SCHEMAS, registerPracticePaths } from './practice/paths'
+import { PRACTICE_READS_COMPONENT_SCHEMAS, registerPracticeReadsPaths } from './practice/reads/paths'
 import { SESSION_COMPONENT_SCHEMAS, registerSessionPaths } from './session/paths'
 import { CONTENT_COMPONENT_SCHEMAS, registerContentPaths } from './content/paths'
 import { SUPPORT_COMPONENT_SCHEMAS, registerSupportPaths } from './support/paths'
 import { GAMIFICATION_COMPONENT_SCHEMAS, registerGamificationPaths } from './gamification/paths'
 import { QUESTION_WORKFLOW_COMPONENT_SCHEMAS, registerQuestionWorkflowPaths } from './question-workflow/paths'
 import { CLASSES_COMPONENT_SCHEMAS, registerClassesPaths } from './classes/paths'
+import { SCHOOL_ADMIN_COMPONENT_SCHEMAS, registerSchoolAdminPaths } from './school-admin/paths'
+import { QUESTIONS_COMPONENT_SCHEMAS, registerQuestionsPaths } from './questions/paths'
+import { PERFORMANCE_COMPONENT_SCHEMAS, registerPerformancePaths } from './reports/performance/paths'
 import { DateOnlySchema, TimestampInputSchema, TimestampSchema } from './common/time'
 import { WALLET_COMPONENT_SCHEMAS, registerWalletPaths } from './wallet/paths'
 import { BIJAK_PAPERS_COMPONENT_SCHEMAS, registerBijakPapersPaths } from './bijak/papers/paths'
@@ -34,6 +38,16 @@ import { BATTLE_COMPONENT_SCHEMAS, registerBattlePaths } from './battle/paths'
 import { GAMES_COMPONENT_SCHEMAS, registerGamesPaths } from './games/paths'
 import { MARKETPLACE_COMPONENT_SCHEMAS, registerMarketplacePaths } from './marketplace/paths'
 import { SPONSORSHIP_COMPONENT_SCHEMAS, registerSponsorshipPaths } from './sponsorship/paths'
+import { ACCOUNT_COMPONENT_SCHEMAS, registerAccountPaths } from './account/paths'
+import { NOTIFICATIONS_COMPONENT_SCHEMAS, registerNotificationsPaths } from './notifications/paths'
+import { MISSIONS_COMPONENT_SCHEMAS, registerMissionsPaths } from './classes/missions/paths'
+import { QUESTION_SETS_COMPONENT_SCHEMAS, registerQuestionSetsPaths } from './classes/question-sets/paths'
+import { PKSK_COMPONENT_SCHEMAS, registerPkskPaths } from './pksk/paths'
+import { ANALYTICS_COMPONENT_SCHEMAS, registerAnalyticsPaths } from './reports/analytics/paths'
+import { KIRKPATRICK_COMPONENT_SCHEMAS, registerKirkpatrickPaths } from './reports/kirkpatrick/paths'
+import { PARENT_INVITE_COMPONENT_SCHEMAS, registerParentInvitePaths } from './schools/parents/paths'
+import { SUBSCRIPTION_COMPONENT_SCHEMAS, registerSubscriptionPaths } from './schools/subscriptions/paths'
+import { CIKGU_COMPONENT_SCHEMAS, registerCikguPaths } from './cikgu/paths'
 
 /** Every shared schema that becomes a component. Domain tasks (T07, T08, T24...) append here. */
 export const COMPONENT_SCHEMAS = {
@@ -70,6 +84,16 @@ export const COMPONENT_SCHEMAS = {
   ...GAMES_COMPONENT_SCHEMAS, // BE-45 (M16 games, leagues)
   ...MARKETPLACE_COMPONENT_SCHEMAS, // BE-46 (M20)
   ...SPONSORSHIP_COMPONENT_SCHEMAS, // BE-47 (M21 student side)
+  ...ACCOUNT_COMPONENT_SCHEMAS, // BE-06 (M01 account)
+  ...NOTIFICATIONS_COMPONENT_SCHEMAS, // BE-06 (M01 notifications)
+  ...SCHOOL_ADMIN_COMPONENT_SCHEMAS, // BE-21 (M27 + M18 Amaran)
+  ...QUESTIONS_COMPONENT_SCHEMAS, // BE-09
+  ...MISSIONS_COMPONENT_SCHEMAS, // BE-18 (M10 missions, remedial)
+  ...QUESTION_SETS_COMPONENT_SCHEMAS, // BE-18 (M10 question sets, DSKP)
+  ...PERFORMANCE_COMPONENT_SCHEMAS, // BE-19
+  ...PARENT_INVITE_COMPONENT_SCHEMAS, // BE-25
+  ...SUBSCRIPTION_COMPONENT_SCHEMAS, // BE-25
+  ...CIKGU_COMPONENT_SCHEMAS, // BE-43 (M13)
   // V2-T08 access matrix
   AccessGroupId: AccessGroupIdSchema,
   AccessGroup: AccessGroupSchema,
@@ -82,6 +106,10 @@ export const COMPONENT_SCHEMAS = {
   PrototypeItem: PrototypeItemSchema,
   ...CURRICULUM_COMPONENT_SCHEMAS, // BE-08
   ...PRACTICE_COMPONENT_SCHEMAS, // BE-12
+  ...PKSK_COMPONENT_SCHEMAS, // BE-42
+  ...PRACTICE_READS_COMPONENT_SCHEMAS, // BE-13
+  ...ANALYTICS_COMPONENT_SCHEMAS, // BE-20 (M11)
+  ...KIRKPATRICK_COMPONENT_SCHEMAS, // BE-20 (M12)
 } as const
 
 export const CONTRACT_VERSION = '0.1.0'
@@ -103,11 +131,25 @@ export function buildOpenApiDocument(): Record<string, unknown> {
   registerCommandCenterPaths(registry) // BE-22
   registerCurriculumPaths(registry) // BE-08
   registerPracticePaths(registry) // BE-12
+  registerPracticeReadsPaths(registry) // BE-13
   registerClassesPaths(registry) // BE-17
   registerBattlePaths(registry) // BE-44 (M16)
   registerGamesPaths(registry) // BE-45 (M16 games, leagues)
   registerMarketplacePaths(registry) // BE-46 (M20)
   registerSponsorshipPaths(registry) // BE-47 (M21 student side)
+  registerAccountPaths(registry) // BE-06 (M01 account)
+  registerNotificationsPaths(registry) // BE-06 (M01 notifications)
+  registerSchoolAdminPaths(registry) // BE-21 (M27 + M18 Amaran)
+  registerQuestionsPaths(registry) // BE-09
+  registerMissionsPaths(registry) // BE-18 (M10 missions, remedial)
+  registerQuestionSetsPaths(registry) // BE-18 (M10 question sets, DSKP)
+  registerPerformancePaths(registry) // BE-19
+  registerPkskPaths(registry) // BE-42
+  registerAnalyticsPaths(registry) // BE-20 (M11)
+  registerKirkpatrickPaths(registry) // BE-20 (M12)
+  registerParentInvitePaths(registry) // BE-25
+  registerSubscriptionPaths(registry) // BE-25
+  registerCikguPaths(registry) // BE-43 (M13)
   const generator = new OpenApiGeneratorV31(registry.definitions)
   return generator.generateDocument({
     openapi: '3.1.0',

@@ -1,0 +1,68 @@
+{
+  "scope": {
+    "schoolId": 940,
+    "state": null
+  },
+  "t4": {
+    "gps": null,
+    "gpsYear": null,
+    "recordsLabel": 4378
+  },
+  "t3": {
+    "active": 0,
+    "t4t5": 1,
+    "sessions": 1,
+    "accuracy": 0
+  },
+  "t2": {
+    "accuracy": 0,
+    "answers": 0
+  },
+  "t1": {
+    "satisfaction": 4.6,
+    "responses": 336
+  },
+  "comparison": {
+    "subtitle": "Tiada Data vs Tiada Data",
+    "before": null,
+    "after": null,
+    "delta": null,
+    "sentences": [
+      "Data tidak mencukupi untuk perbandingan."
+    ]
+  },
+  "kpi": {
+    "t4t5": 1,
+    "answers": 0,
+    "teachersLoggedIn": 0,
+    "teachers": 0,
+    "accuracy": 0
+  },
+  "bands": [
+    {
+      "key": "champion",
+      "count": 0,
+      "pct": 0
+    },
+    {
+      "key": "konsisten",
+      "count": 0,
+      "pct": 0
+    },
+    {
+      "key": "berkembang",
+      "count": 0,
+      "pct": 0
+    },
+    {
+      "key": "minimum",
+      "count": 0,
+      "pct": 0
+    },
+    {
+      "key": "tidakTerlibat",
+      "count": 1,
+      "pct": 100
+    }
+  ]
+}

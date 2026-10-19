@@ -1,0 +1,393 @@
+{
+  "user": {
+    "id": 2,
+    "name": "Pelajar Demo",
+    "initial": "P"
+  },
+  "heroAccuracy": 0,
+  "streak": 2,
+  "stats": {
+    "sessions": 0,
+    "accuracy": 0,
+    "answered": 0,
+    "seconds": 0
+  },
+  "headcount": [],
+  "mastery": [],
+  "activity": {
+    "streakCurrent": 2,
+    "streakBest": 2,
+    "koinTotal": 370,
+    "practiceDays": 0
+  },
+  "badges": [],
+  "heatmap": [
+    {
+      "date": "2026-06-28",
+      "sessions": 0
+    },
+    {
+      "date": "2026-06-29",
+      "sessions": 0
+    },
+    {
+      "date": "2026-06-30",
+      "sessions": 0
+    },
+    {
+      "date": "2026-07-01",
+      "sessions": 0
+    },
+    {
+      "date": "2026-07-02",
+      "sessions": 0
+    },
+    {
+      "date": "2026-07-03",
+      "sessions": 0
+    },
+    {
+      "date": "2026-07-04",
+      "sessions": 0
+    },
+    {
+      "date": "2026-07-05",
+      "sessions": 0
+    },
+    {
+      "date": "2026-07-06",
+      "sessions": 0
+    },
+    {
+      "date": "2026-07-07",
+      "sessions": 0
+    },
+    {
+      "date": "2026-07-08",
+      "sessions": 0
+    },
+    {
+      "date": "2026-07-09",
+      "sessions": 0
+    },
+    {
+      "date": "2026-07-10",
+      "sessions": 0
+    },
+    {
+      "date": "2026-07-11",
+      "sessions": 0
+    },
+    {
+      "date": "2026-07-12",
+      "sessions": 0
+    },
+    {
+      "date": "2026-07-13",
+      "sessions": 0
+    },
+    {
+      "date": "2026-07-14",
+      "sessions": 0
+    },
+    {
+      "date": "2026-07-15",
+      "sessions": 0
+    },
+    {
+      "date": "2026-07-16",
+      "sessions": 0
+    },
+    {
+      "date": "2026-07-17",
+      "sessions": 0
+    },
+    {
+      "date": "2026-07-18",
+      "sessions": 0
+    },
+    {
+      "date": "2026-07-19",
+      "sessions": 0
+    },
+    {
+      "date": "2026-07-20",
+      "sessions": 0
+    },
+    {
+      "date": "2026-07-21",
+      "sessions": 0
+    },
+    {
+      "date": "2026-07-22",
+      "sessions": 0
+    },
+    {
+      "date": "2026-07-23",
+      "sessions": 0
+    },
+    {
+      "date": "2026-07-24",
+      "sessions": 0
+    },
+    {
+      "date": "2026-07-25",
+      "sessions": 0
+    },
+    {
+      "date": "2026-07-26",
+      "sessions": 0
+    },
+    {
+      "date": "2026-07-27",
+      "sessions": 0
+    },
+    {
+      "date": "2026-07-28",
+      "sessions": 0
+    },
+    {
+      "date": "2026-07-29",
+      "sessions": 0
+    },
+    {
+      "date": "2026-07-30",
+      "sessions": 0
+    },
+    {
+      "date": "2026-07-31",
+      "sessions": 0
+    },
+    {
+      "date": "2026-08-01",
+      "sessions": 0
+    },
+    {
+      "date": "2026-08-02",
+      "sessions": 0
+    },
+    {
+      "date": "2026-08-03",
+      "sessions": 0
+    },
+    {
+      "date": "2026-08-04",
+      "sessions": 0
+    },
+    {
+      "date": "2026-08-05",
+      "sessions": 0
+    },
+    {
+      "date": "2026-08-06",
+      "sessions": 0
+    },
+    {
+      "date": "2026-08-07",
+      "sessions": 0
+    },
+    {
+      "date": "2026-08-08",
+      "sessions": 0
+    },
+    {
+      "date": "2026-08-09",
+      "sessions": 0
+    },
+    {
+      "date": "2026-08-10",
+      "sessions": 0
+    },
+    {
+      "date": "2026-08-11",
+      "sessions": 0
+    },
+    {
+      "date": "2026-08-12",
+      "sessions": 0
+    },
+    {
+      "date": "2026-08-13",
+      "sessions": 0
+    },
+    {
+      "date": "2026-08-14",
+      "sessions": 0
+    },
+    {
+      "date": "2026-08-15",
+      "sessions": 0
+    },
+    {
+      "date": "2026-08-16",
+      "sessions": 0
+    },
+    {
+      "date": "2026-08-17",
+      "sessions": 0
+    },
+    {
+      "date": "2026-08-18",
+      "sessions": 0
+    },
+    {
+      "date": "2026-08-19",
+      "sessions": 0
+    },
+    {
+      "date": "2026-08-20",
+      "sessions": 0
+    },
+    {
+      "date": "2026-08-21",
+      "sessions": 0
+    },
+    {
+      "date": "2026-08-22",
+      "sessions": 0
+    },
+    {
+      "date": "2026-08-23",
+      "sessions": 0
+    },
+    {
+      "date": "2026-08-24",
+      "sessions": 0
+    },
+    {
+      "date": "2026-08-25",
+      "sessions": 0
+    },
+    {
+      "date": "2026-08-26",
+      "sessions": 0
+    },
+    {
+      "date": "2026-08-27",
+      "sessions": 0
+    },
+    {
+      "date": "2026-08-28",
+      "sessions": 0
+    },
+    {
+      "date": "2026-08-29",
+      "sessions": 0
+    },
+    {
+      "date": "2026-08-30",
+      "sessions": 0
+    },
+    {
+      "date": "2026-08-31",
+      "sessions": 0
+    },
+    {
+      "date": "2026-09-01",
+      "sessions": 0
+    },
+    {
+      "date": "2026-09-02",
+      "sessions": 0
+    },
+    {
+      "date": "2026-09-03",
+      "sessions": 0
+    },
+    {
+      "date": "2026-09-04",
+      "sessions": 0
+    },
+    {
+      "date": "2026-09-05",
+      "sessions": 0
+    },
+    {
+      "date": "2026-09-06",
+      "sessions": 0
+    },
+    {
+      "date": "2026-09-07",
+      "sessions": 0
+    },
+    {
+      "date": "2026-09-08",
+      "sessions": 0
+    },
+    {
+      "date": "2026-09-09",
+      "sessions": 0
+    },
+    {
+      "date": "2026-09-10",
+      "sessions": 0
+    },
+    {
+      "date": "2026-09-11",
+      "sessions": 0
+    },
+    {
+      "date": "2026-09-12",
+      "sessions": 0
+    },
+    {
+      "date": "2026-09-13",
+      "sessions": 0
+    },
+    {
+      "date": "2026-09-14",
+      "sessions": 0
+    },
+    {
+      "date": "2026-09-15",
+      "sessions": 0
+    },
+    {
+      "date": "2026-09-16",
+      "sessions": 0
+    },
+    {
+      "date": "2026-09-17",
+      "sessions": 0
+    },
+    {
+      "date": "2026-09-18",
+      "sessions": 0
+    },
+    {
+      "date": "2026-09-19",
+      "sessions": 0
+    },
+    {
+      "date": "2026-09-20",
+      "sessions": 0
+    },
+    {
+      "date": "2026-09-21",
+      "sessions": 0
+    },
+    {
+      "date": "2026-09-22",
+      "sessions": 0
+    },
+    {
+      "date": "2026-09-23",
+      "sessions": 0
+    },
+    {
+      "date": "2026-09-24",
+      "sessions": 0
+    },
+    {
+      "date": "2026-09-25",
+      "sessions": 0
+    }
+  ],
+  "weakTopics": [],
+  "suggestions": [
+    {
+      "kind": "start",
+      "text": "Mulakan perjalanan belajar kamu — setiap sesi latihan membina asas yang kukuh!"
+    }
+  ]
+}
