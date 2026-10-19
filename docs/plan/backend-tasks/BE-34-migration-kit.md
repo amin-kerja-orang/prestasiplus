@@ -3,6 +3,8 @@
 | Field | Value |
 |---|---|
 | Size | M |
+| Lane | PC-4 (folders: sessions.md section 5) |
+| Priority | P0 |
 | Wave | 0/1 (starts right after BE-02, parallel with BE-03) |
 | Depends on | BE-02 |
 | Parallel with | BE-03, BE-14, BE-04, BE-05 |
@@ -61,7 +63,7 @@ npm run be:verify
 ```text
 You are the backend developer for PrestasiPlus v2 working on task BE-34 (migration-kit). Work in this repo clone on branch be/BE-34-migration-kit, created from the latest origin/feature/v2-backend.
 Read first, in order: AGENTS.md; docs/architecture/v2-backend-plan.md (sections 3, 5, 9, 10 and the whole of 14); docs/plan/backend-tasks/BE-34-migration-kit.md (this card, all of it).
-Rules: contract first does not apply (no endpoints). Never commit secrets or real personal names. Do not edit src/**, e2e/**, docs/TRACKER.md or contract folders. Keep the diff inside the card Outputs. Do not edit other lanes' prisma schema files; report non-compliant models in the PR instead.
+Rules: contract first does not apply (no endpoints). Never commit secrets or real personal names. Do not edit src/**, e2e/**, docs/TRACKER.md or contract folders. Keep the diff inside the card Outputs and its "Files touched" list; commit after every green step and push at least hourly and before the session ends (AGENT-SYNC.md). Do not edit other lanes' prisma schema files; report non-compliant models in the PR instead.
 Task: build the migration kit exactly as plan section 14 describes: etl_* tables, migratable-models lint, upsertByLegacy, IdMap, Rejects, RunLedger, checkpoints, dry-run/apply runner, .gitignore and CI guard. Tests use Testcontainers against real Postgres. No .cloud schema knowledge is needed; use a tiny demo entity in tests only.
 When finished run npm run be:verify and report: files changed, tables, real test output, deviations, open questions. Update docs/plan/backend-tracker.md (your card row: status, branch, PR) in the same PR.
 ```

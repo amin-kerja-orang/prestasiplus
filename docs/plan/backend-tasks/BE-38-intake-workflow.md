@@ -3,6 +3,8 @@
 | Field | Value |
 |---|---|
 | Size | L |
+| Lane | PC-5 (folders: sessions.md section 5) |
+| Priority | P1 |
 | Wave | 3 |
 | Depends on | BE-09, BE-10, BE-36, BE-37 |
 | Parallel with | BE-39, BE-12, BE-16, BE-17 |

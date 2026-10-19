@@ -3,6 +3,8 @@
 | Field | Value |
 |---|---|
 | Size | L |
+| Lane | PC-3 (folders: sessions.md section 5) |
+| Priority | P1 |
 | Wave | 3 |
 | Depends on | BE-15, BE-10 |
 | Parallel with | BE-38, BE-16, BE-12, BE-17 |
@@ -71,7 +73,7 @@ npm run be:verify
 ```text
 You are the backend developer for PrestasiPlus v2 working on task BE-39 (paper-builder-blueprints). Work in this repo clone on branch be/BE-39-paper-builder-blueprints, created from the latest origin/feature/v2-backend.
 Read first, in order: AGENTS.md; docs/architecture/v2-backend-plan.md (sections 3, 6, 9, 10, 14, 15); docs/plan/backend-tasks/BE-39-paper-builder-blueprints.md (this card, all of it).
-Rules: contract first (zod schemas in packages/contract/src/bijak/, import z from ../zod, register in src/openapi.ts, run npm run contract:emit and commit openapi.json before the implementation). The frontend paper builder and mock (paths from the lead) are the behavioural spec: do not invent business rules; unknowns go under "Open questions" in the PR. Questions are owned by M04: read them only through QuestionsService. Marking and blueprint rules come from @pp/exam-core. Never commit secrets or real personal names. Do not edit src/**, e2e/**, docs/TRACKER.md or the contract common/session/auth/access folders. Keep the diff inside the card Outputs.
+Rules: contract first (zod schemas in packages/contract/src/bijak/, import z from ../zod, register in src/openapi.ts, run npm run contract:emit and commit openapi.json before the implementation). The frontend paper builder and mock (paths from the lead) are the behavioural spec: do not invent business rules; unknowns go under "Open questions" in the PR. Questions are owned by M04: read them only through QuestionsService. Marking and blueprint rules come from @pp/exam-core. Never commit secrets or real personal names. Do not edit src/**, e2e/**, docs/TRACKER.md or the contract common/session/auth/access folders. Keep the diff inside the card Outputs and its "Files touched" list; commit after every green step and push at least hourly and before the session ends (AGENT-SYNC.md).
 Task: implement BE-39: paper drafts, placements, blueprint conformance and shortages, publish/withdraw, blueprint admin with versions. Needs a security review.
 When finished run npm run be:verify and report: files changed, endpoints, tables, real test output, deviations, open questions. Update docs/plan/backend-tracker.md (your card row) in the same PR.
 ```
