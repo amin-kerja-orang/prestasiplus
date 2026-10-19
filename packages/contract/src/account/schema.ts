@@ -126,6 +126,14 @@ export const ACCOUNT_SECURITY_NOTIFICATIONS = {
   },
 } as const
 
+/**
+ * [PROPOSED] BM copy of the register answer for a self-registered TEACHER (LEAD 2026-10-20, privacy over fidelity):
+ * the account is created inactive with no school scope and no session until a school_admin verifies it.
+ */
+export const ACCOUNT_REGISTER_PENDING_STATUS = 'pending_verification' as const
+export const ACCOUNT_REGISTER_PENDING_MESSAGE =
+  'Pendaftaran diterima. Akaun guru anda akan diaktifkan selepas disahkan oleh pentadbir sekolah.'
+
 /** Laravel validation templates with the attribute words filled in (mock `validate.ts`). */
 const msg = {
   required: (attr: string) => `The ${attr} field is required.`,
@@ -341,6 +349,28 @@ export const AccountRegisterRequestSchema = z
   .meta({ id: 'AccountRegisterRequest' })
 export type AccountRegisterRequest = z.infer<typeof AccountRegisterRequestSchema>
 
+/**
+ * `data` of `POST /auth/register` 201 for a teacher: no session, no cookie. Student and parent registrations
+ * answer with the Session instead (see `AccountRegisterResponseSchema`).
+ */
+export const AccountRegisterPendingSchema = z
+  .strictObject({
+    status: z.literal(ACCOUNT_REGISTER_PENDING_STATUS),
+    message: z.literal(ACCOUNT_REGISTER_PENDING_MESSAGE),
+  })
+  .meta({ id: 'AccountRegisterPending' })
+export type AccountRegisterPending = z.infer<typeof AccountRegisterPendingSchema>
+
+/**
+ * 201 body of `POST /auth/register`: the Session (student, parent) or the pending-verification notice (teacher).
+ * The status is 201 in BOTH cases. Narrow with `'status' in data`: present means the pending variant, absent means a Session
+ * (a Session has no `status` key).
+ */
+export const AccountRegisterResponseSchema = z
+  .object({ data: z.union([SessionSchema, AccountRegisterPendingSchema]) })
+  .meta({ id: 'AccountRegisterResponse' })
+export type AccountRegisterResponse = z.infer<typeof AccountRegisterResponseSchema>
+
 // --- Password reset ---------------------------------------------------------------------------
 
 /** Body of `POST /auth/password/email`. */
@@ -419,7 +449,7 @@ export const AccountProfileUpdateRequestSchema = z
   .meta({ id: 'AccountProfileUpdateRequest' })
 export type AccountProfileUpdateRequest = z.infer<typeof AccountProfileUpdateRequestSchema>
 
-/** Body of `PUT /me/password`. The session is kept (BR-16). */
+/** Body of `PUT /me/password`. The caller's session is ALWAYS rotated, the CSRF token changes, other sessions end; the client re-reads `GET /session`. */
 export const AccountPasswordChangeRequestSchema = z
   .object({
     currentPassword: z.string({ error: msg.required('current password') }).min(1, { error: msg.required('current password') }),

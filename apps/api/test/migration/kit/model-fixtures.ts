@@ -62,6 +62,7 @@ export const MODEL_FIXTURES: Record<string, Fixture> = {
   education_levels: async () => ({ code: next('FXL'), stage: 'primary' }),
   // files (BE-04): mime, sha256 and purpose have check constraints.
   files: { public_id: 'AAAAAAAAAAAAAAAAAAAAAA', purpose: 'avatar', mime: 'image/png', size_bytes: 1, sha256: '0'.repeat(64), storage_key: 'avatar/migration-fixture.png' },
+  notifications: async (query) => ({ user_id: await parentUser(query), type: 'spaced_review', title: 'Tajuk Contoh', body: 'Kandungan contoh' }),
   parent_invites: async (query) => ({
     student_id: await parentUser(query),
     token_hash: 'a'.repeat(64),

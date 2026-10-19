@@ -29,6 +29,7 @@ function auth(role: AuthContext['active']['role'], scope: Scope, userId = '1'): 
     active: { role, portal, scope, via: 'direct' },
     mode: null,
     capabilities: capabilitiesFor(role, scope).map((c) => c.key),
+    mustChangePassword: false,
   }
 }
 
