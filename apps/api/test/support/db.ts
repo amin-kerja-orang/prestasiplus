@@ -40,8 +40,8 @@ export async function createTestDatabase(): Promise<TestDatabase> {
 
   const url = withDatabase(adminUrl, name)
   // Small pools: every test file has its own database and the files run in parallel.
-  const prisma = new PrismaClient({ adapter: new PrismaPg({ connectionString: url, max: 3, connectionTimeoutMillis: 5_000 }) })
-  const pool = new pg.Pool({ connectionString: url, max: 1 })
+  const prisma = new PrismaClient({ adapter: new PrismaPg({ connectionString: url, max: 3, connectionTimeoutMillis: 30_000 }) })
+  const pool = new pg.Pool({ connectionString: url, max: 1, connectionTimeoutMillis: 30_000 }) // same 30 s as src/db/client.ts
 
   return {
     name,
