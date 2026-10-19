@@ -1,7 +1,12 @@
 [
+  "comp_students",
   "files",
   "jpns",
+  "parent_invites",
+  "parent_links",
   "ppds",
+  "school_packages",
+  "school_subscriptions",
   "schools",
   "user_roles",
   "user_scopes",

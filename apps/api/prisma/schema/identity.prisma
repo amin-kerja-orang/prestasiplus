@@ -43,6 +43,13 @@ model User {
   sessions     Session[]
   auditEvents  AuditEvent[]
   importJobs   ImportJob[]
+  // BE-25 back-relations (schools.prisma owns the models).
+  userPackages          UserPackage[]
+  parentLinksAsParent   ParentLink[]   @relation("ParentLinkParent")
+  parentLinksAsStudent  ParentLink[]   @relation("ParentLinkStudent")
+  parentInvite          ParentInvite?  @relation("ParentInviteStudent")
+  acceptedParentInvites ParentInvite[] @relation("ParentInviteAcceptedBy")
+  compStudent           CompStudent?
   files        File[]
 
   @@unique([legacySource, legacyId], map: "uq_users_legacy")

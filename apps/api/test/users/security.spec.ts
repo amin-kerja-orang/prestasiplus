@@ -258,7 +258,7 @@ describe('body limit (configureApp, IMPORT_JSON_LIMIT)', () => {
   })
 
   it('a body over the limit is 413 PAYLOAD_TOO_LARGE, never 500', async () => {
-    const res = await who.post('/admin/users/bulk-import', { role: 'teacher', schoolId: s1, importMode: 'paste', pasteContent: 'x'.repeat(1_200_000) })
+    const res = await who.post('/admin/users/bulk-import', { role: 'teacher', schoolId: s1, importMode: 'paste', pasteContent: 'x'.repeat(2_400_000) })
     expect(res.status).toBe(413)
     expect(res.body.error).toMatchObject({ code: 'PAYLOAD_TOO_LARGE' })
     expect(res.body.error.requestId).toBeTruthy()

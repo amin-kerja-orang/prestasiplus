@@ -12,10 +12,10 @@ Single source of truth for the **state of every backend card**. The lead's proje
 
 | Priority | Cards | Of which done |
 |---|---|---|
-| P0 | 13 | 6 |
+| P0 | 13 | 7 |
 | P1 | 23 | 2 |
 | P2 | 12 | 0 |
-| **Total** | **48** | **8** |
+| **Total** | **48** | **9** |
 
 (Done = implementation squash-merged into feature/v2-backend: BE-01, BE-02, BE-03. "Contract merged" rows are contract-only, not yet done.)
 
@@ -49,7 +49,7 @@ Single source of truth for the **state of every backend card**. The lead's proje
 | BE-22 | Command Center and admin dashboard aggregates (M17, M10 Command Center) | PC-6 | P1 | BE-17, BE-19, BE-23 | L | todo | - | `be/BE-22-command-center-admin` | - | Contract merged 2026-10-19 (PR -, be/BE-22-contract). Deviations: string ids (mock numeric); server-status follows mock host readings, not the card's build/DB/queue flags; ETag/no-store only in descriptions. Admin aggregates; Command Center. Needs BE-23 (badges and achievements). |
 | BE-23 | Gamification economy and rewards shop (M14 rest, M15) | PC-2 | P1 | BE-11, BE-12 | L | todo | - | `be/BE-23-gamification-shop` | - | Contract merged 2026-10-19 (PR #3, be/BE-23-contract). Contract only (gamification, rewards): 42 in-B1 routes, 94 components; PR ready. 58 routes (M14 rest + M15). Prisma `gamification.prisma`; modules gamification and shop. |
 | BE-24 | Content and support tickets (M09, M22) | PC-1 | P1 | BE-03, BE-04, BE-05, BE-06 | M | todo | - | `be/BE-24-content-support` | - | Contract merged 2026-10-19 (PR #2, be/BE-24-contract). Contract only (content, support): 47 routes, 103 components; PR ready. Needs BE-06 `NotificationsService` and BE-05 for school scoping. |
-| BE-25 | School subscriptions, packages, parent invites, complimentary students (M02 rest) | PC-1 | P0 | BE-05 | M | todo | - | `be/BE-25-subscriptions-parents` | - | Contract merged 2026-10-19 (PR -, be/BE-25-contract). Needed by BE-12; do before BE-07/06. |
+| BE-25 | School subscriptions, packages, parent invites, complimentary students (M02 rest) | PC-1 | P0 | BE-05 | M | done | pc-aminfaudzi/S2 | `be/BE-25-subscriptions-parents` | - (LEAD merges by git) | **Merged 2026-10-20 (squash), base 5cd6e906.** LEAD independent 2-layer verify: be:verify PASS (79 files/1109 passed + 1191 contract tests, no auth/seed regression) + focused security review PASS (no Crit/High/Medium): H1 invite-token-in-logs fix confirmed (pino redaction + log-capture test), AC#7 some+every fail-closed, parent-link student-school scope masked, 256-bit single-use tokens, admin-only subscriptions/comp, prod seed loads only reference. Migration 0006_subscriptions_parents. reference/demo seed split. LEAD follow-ups: devops (nginx/LB invite-path+Referer redaction, TRUST_PROXY_HOPS, NODE_ENV=production) → BE-32; optional path-redact any segment after parent-invites/; user_packages non-migratable (BE-28/29 to add legacy_* if .cloud assignments migrate). Unblocks BE-12. |
 | BE-26 | Seed: PoC data profile across all carded domains | PC-6 | P2 | BE-07, BE-12, BE-16, BE-17, BE-19, BE-23, BE-24 | M | todo | - | `be/BE-26-seed-poc-profile` | - | May include intake/builder seed once BE-38/39 exist. Reads BE-24 content seed. |
 | BE-27 | .cloud migration: staging schema, loader and profiling report (read-only source) | PC-4 | P1 | BE-02, BE-34 | M | done | s-aminfaudzi-e3m2 | `be/BE-27-migration-staging-profiling` | - (LEAD merges by git) | **Merged 2026-10-20 (squash), base 79e6679a.** LEAD independent verify: contract:check + be:lint:migration + be:verify PASS (35 files/335 passed, real Testcontainers); Runner-level apply guard verified (runner.spec 15 tests). Fixtures only (OD-2 deferred, no .cloud connection). Security review PASS, code review Approve. Deviations: archive_cloud 35 tables; remember_token + parent_invite_token NULLed at load (M4). Unblocks BE-28/29. |
 | BE-28 | .cloud migration: ETL for reference data, identity and classes | PC-4 | P1 | BE-27, BE-05, BE-08, BE-17, BE-25 | L | todo | - | `be/BE-28-migration-etl-core` | - | Needs OD-10. Security review. |
