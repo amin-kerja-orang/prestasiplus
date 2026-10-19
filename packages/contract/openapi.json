@@ -41389,7 +41389,7 @@
         "properties": {
           "message": {
             "type": "string",
-            "description": "The turn text. Blank after trim = 422 `{}`. No length cap in the mock (open question)."
+            "description": "The turn text. Blank after trim = 422 `{}`. At most 2000 characters (code points): longer = 422 \"Mesej terlalu panjang (maksimum 2000 aksara).\" (cap added by the security review; the mock has none)."
           },
           "thread_id": {
             "type": [
@@ -41500,7 +41500,8 @@
             "type": "string",
             "enum": [
               "RATE_LIMITED",
-              "AI_UNAVAILABLE"
+              "AI_UNAVAILABLE",
+              "VALIDATION_ERROR"
             ],
             "description": "Machine code."
           },
@@ -41941,7 +41942,8 @@
                 }
               ]
             },
-            "description": "Tag ids (decimal strings; integers also accepted). No size cap in the mock (open question)."
+            "maxItems": 100,
+            "description": "Tag ids (decimal strings; integers also accepted). At most 100 items: more = 422 \"Terlalu banyak item dipilih (maksimum 100).\" on fields.ids (cap added by the security review; the mock has none)."
           }
         }
       },
@@ -86239,7 +86241,7 @@
             "description": "The reply. Raw snake_case body, no envelope.",
             "headers": {
               "Cache-Control": {
-                "description": "no-store: the body carries personal data of minors (chat text, essays, student names).",
+                "description": "no-store: the body carries personal data of minors (chat text, essays, student names, class and lesson plans).",
                 "schema": {
                   "type": "string",
                   "enum": [
@@ -86277,17 +86279,24 @@
             }
           },
           "422": {
-            "description": "Blank or non-string message: body exactly `{}`. Nothing stored.",
+            "description": "Blank or non-string message: body exactly `{}`. Message longer than 2000 characters: raw body `{error: \"Mesej terlalu panjang (maksimum 2000 aksara).\", code: \"VALIDATION_ERROR\"}`. Nothing stored.",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/CikguChatEmptyBody"
+                  "anyOf": [
+                    {
+                      "$ref": "#/components/schemas/CikguChatEmptyBody"
+                    },
+                    {
+                      "$ref": "#/components/schemas/CikguChatErrorBody"
+                    }
+                  ]
                 }
               }
             }
           },
           "429": {
-            "description": "Either the daily quota is used up (body exactly `{\"quota_exhausted\": true}`, nothing stored), or [PROPOSED] RATE_LIMITED (D57a; raw body with a BM string `error`, `code` RATE_LIMITED and `retryAfter`, plus the Retry-After header). Tell them apart by the `quota_exhausted` key.",
+            "description": "Two different bodies share this status. (1) Daily turn quota used up: body exactly `{\"quota_exhausted\": true}`, nothing stored, no Retry-After; the client shows its quota text. (2) Per-minute throttle (D57a): raw body `{error: <BM string>, code: \"RATE_LIMITED\", retryAfter}` plus the Retry-After header. A client tells them apart by the key: `quota_exhausted === true` is the daily quota; `code === \"RATE_LIMITED\"` is the throttle (retry after `retryAfter` seconds).",
             "headers": {
               "Retry-After": {
                 "description": "Seconds until a retry is allowed (same value as error.retryAfter).",
@@ -86313,7 +86322,7 @@
             }
           },
           "503": {
-            "description": "[PROPOSED] AI_UNAVAILABLE: raw body `{error: \"Cikgu Alesa tak boleh respon. Cuba lagi.\", code: \"AI_UNAVAILABLE\"}`. Nothing is stored and no quota turn is consumed.",
+            "description": "AI_UNAVAILABLE: raw body `{error: \"Cikgu Alesa tidak dapat menjawab sekarang. Sila cuba sebentar lagi.\", code: \"AI_UNAVAILABLE\"}`. Nothing is stored and no quota turn is consumed.",
             "content": {
               "application/json": {
                 "schema": {
@@ -86331,7 +86340,7 @@
           "cikgu"
         ],
         "summary": "My RPH list",
-        "description": "Teacher or admin. Only the caller's own RPHs, `lessonDate` descending then id descending, 20 per page. An admin sees only their own (normally empty) rows.",
+        "description": "Teacher or admin. Only the caller's own RPHs, `lessonDate` descending then id descending, 20 per page. An admin sees only their own (normally empty) rows. Rows name subjects and topics taught to a class: `Cache-Control: no-store`.",
         "parameters": [
           {
             "schema": {
@@ -86348,6 +86357,17 @@
         "responses": {
           "200": {
             "description": "One page of the caller's RPHs.",
+            "headers": {
+              "Cache-Control": {
+                "description": "no-store: the body carries personal data of minors (chat text, essays, student names, class and lesson plans).",
+                "schema": {
+                  "type": "string",
+                  "enum": [
+                    "no-store"
+                  ]
+                }
+              }
+            },
             "content": {
               "application/json": {
                 "schema": {
@@ -86491,7 +86511,7 @@
             }
           },
           "503": {
-            "description": "[PROPOSED] AI_UNAVAILABLE \"Cikgu Alesa tak boleh respon. Cuba lagi.\" (provider error, BE-36 rate limit or AI_BUDGET_EXHAUSTED). Nothing is stored.",
+            "description": "AI_UNAVAILABLE \"Cikgu Alesa tidak dapat menjawab sekarang. Sila cuba sebentar lagi.\" (provider error, BE-36 rate limit or AI_BUDGET_EXHAUSTED). Nothing is stored.",
             "content": {
               "application/json": {
                 "schema": {
@@ -86509,7 +86529,7 @@
           "cikgu"
         ],
         "summary": "RPH detail",
-        "description": "Teacher or admin. Own rows only; unknown, foreign or non-numeric id = 404 NOT_FOUND \"Not Found.\" (no existence leak).",
+        "description": "Teacher or admin. Own rows only; unknown, foreign or non-numeric id = 404 NOT_FOUND \"Not Found.\" (no existence leak). Carries class names and plan content: `Cache-Control: no-store`.",
         "parameters": [
           {
             "schema": {
@@ -86528,6 +86548,17 @@
         "responses": {
           "200": {
             "description": "The RPH.",
+            "headers": {
+              "Cache-Control": {
+                "description": "no-store: the body carries personal data of minors (chat text, essays, student names, class and lesson plans).",
+                "schema": {
+                  "type": "string",
+                  "enum": [
+                    "no-store"
+                  ]
+                }
+              }
+            },
             "content": {
               "application/json": {
                 "schema": {
@@ -86602,7 +86633,7 @@
             "description": "One page of the caller's markings.",
             "headers": {
               "Cache-Control": {
-                "description": "no-store: the body carries personal data of minors (chat text, essays, student names).",
+                "description": "no-store: the body carries personal data of minors (chat text, essays, student names, class and lesson plans).",
                 "schema": {
                   "type": "string",
                   "enum": [
@@ -86684,7 +86715,7 @@
             "description": "The marking.",
             "headers": {
               "Cache-Control": {
-                "description": "no-store: the body carries personal data of minors (chat text, essays, student names).",
+                "description": "no-store: the body carries personal data of minors (chat text, essays, student names, class and lesson plans).",
                 "schema": {
                   "type": "string",
                   "enum": [
@@ -86767,7 +86798,7 @@
             "description": "One page of the pending tags.",
             "headers": {
               "Cache-Control": {
-                "description": "no-store: the body carries personal data of minors (chat text, essays, student names).",
+                "description": "no-store: the body carries personal data of minors (chat text, essays, student names, class and lesson plans).",
                 "schema": {
                   "type": "string",
                   "enum": [
@@ -86919,7 +86950,7 @@
           "cikgu"
         ],
         "summary": "Approve PBD tags in bulk",
-        "description": "Teacher or admin. Only the caller's `pending` tags among `ids` become `approved` with `approvedAt` = now; foreign, unknown or non-pending ids are ignored silently; duplicates count once; non-array or empty `ids` = `{approved: 0}` (never 422). `approved` = how many changed.",
+        "description": "Teacher or admin. Only the caller's `pending` tags among `ids` become `approved` with `approvedAt` = now; foreign, unknown or non-pending ids are ignored silently; duplicates count once; non-array or empty `ids` = `{approved: 0}`; more than 100 items = 422. `approved` = how many changed.",
         "parameters": [
           {
             "schema": {
@@ -86982,6 +87013,16 @@
               }
             }
           },
+          "422": {
+            "description": "VALIDATION_ERROR, `fields.ids` = \"Terlalu banyak item dipilih (maksimum 100).\" when `ids` has more than 100 items.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
           "429": {
             "description": "RATE_LIMITED \"Terlalu banyak percubaan. Sila cuba sebentar lagi.\" The body carries retryAfter (seconds) and the Retry-After header carries the same value.",
             "headers": {
@@ -87010,7 +87051,7 @@
           "cikgu"
         ],
         "summary": "Export approved PBD tags as CSV (raw file)",
-        "description": "Teacher or admin. A file, not JSON: UTF-8 `text/csv; charset=utf-8`, attachment `pbd-approved.csv`, `Cache-Control: no-store`. First line `pelajar,kelas,sp,skor,tp,tarikh_lulus`; one line per approved tag of the caller ordered by approval time (else roll-up time), student name, id; `skor` with one decimal, `tarikh_lulus` = YYYY-MM-DD (Malaysia date of approval). A cell starting with `=`, `+`, `@` or `-` gets a leading `'`; a cell containing `\"`, `,`, CR or LF is double-quoted with inner quotes doubled; lines end with `\\n`, including the last; no approved tag = the header line only. Bulk child data: rate limited (D57, [PROPOSED] on a read).",
+        "description": "Teacher or admin. A file, not JSON: UTF-8 `text/csv; charset=utf-8`, attachment `pbd-approved.csv`, `Cache-Control: no-store`. First line `pelajar,kelas,sp,skor,tp,tarikh_lulus`; one line per approved tag of the caller ordered by approval time (else roll-up time), student name, id; `skor` with one decimal, `tarikh_lulus` = YYYY-MM-DD (Malaysia date of approval). A cell starting with `=`, `+`, `@` or `-` gets a leading `'`; a cell containing `\"`, `,`, CR or LF is double-quoted with inner quotes doubled; lines end with `\\n`, including the last; no approved tag = the header line only. Bulk child data: rate limited (D57, a read of bulk child data).",
         "x-envelope": "none",
         "responses": {
           "200": {
@@ -87023,7 +87064,7 @@
                 }
               },
               "Cache-Control": {
-                "description": "no-store: the body carries personal data of minors (chat text, essays, student names).",
+                "description": "no-store: the body carries personal data of minors (chat text, essays, student names, class and lesson plans).",
                 "schema": {
                   "type": "string",
                   "enum": [

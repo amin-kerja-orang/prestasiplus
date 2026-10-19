@@ -24,7 +24,7 @@ import { IdSchema } from '../common/ids'
  *
  * AI provider: the reply, the marks and the RPH text come from the `mock` provider of the card (the
  * canned logic below) or, later, from the BE-36 adapter. BE-36's contract (`packages/contract/src/ai`)
- * is not on the base yet, so nothing is imported from it; the AI failure copy is [PROPOSED].
+ * is not on the base yet, so nothing is imported from it; the AI failure copy is approved by the LEAD.
  */
 
 // --- constants (exact copy of the mock, api/settings.ts) -------------------------------------------
@@ -147,14 +147,14 @@ export const cikguMarkingReply = (rubric: CikguRubric, marks: number): string =>
 export const CIKGU_CHAT_FAILED_TEXT = 'Cikgu Alesa tak boleh respon. Cuba lagi.'
 
 /**
- * [PROPOSED] Copy of the AI failure on `POST /cikgu/send` and `POST /cikgu/rph` (provider error, BE-36
- * rate limit or `AI_BUDGET_EXHAUSTED`). The mock has no failure path (card open question 3). It reuses
- * the live client fallback text, so the screen shows a sentence and not a machine code.
+ * Copy of the AI failure on `POST /cikgu/send` and `POST /cikgu/rph` (provider error, BE-36 rate limit
+ * or `AI_BUDGET_EXHAUSTED`). The mock has no failure path; the LEAD approved this copy on 2026-10-19
+ * (review BE-43). The screen shows a sentence and not a machine code.
  */
-export const CIKGU_AI_UNAVAILABLE_MESSAGE = CIKGU_CHAT_FAILED_TEXT
+export const CIKGU_AI_UNAVAILABLE_MESSAGE = 'Cikgu Alesa tidak dapat menjawab sekarang. Sila cuba sebentar lagi.'
 export const CIKGU_AI_UNAVAILABLE_CODE = 'AI_UNAVAILABLE'
 
-/** [PROPOSED] Copy of the 429 RATE_LIMITED on the raw chat route (same wording as the other contracts). */
+/** Copy of the 429 RATE_LIMITED on the raw chat route (D57a, approved by the LEAD; same wording as the other contracts). */
 export const CIKGU_RATE_LIMITED_MESSAGE = 'Terlalu banyak percubaan. Sila cuba sebentar lagi.'
 
 // --- pure rules shared with the server (no I/O) ------------------------------------------------------
@@ -191,9 +191,17 @@ export const CIKGU_PBD_CSV_FILENAME = 'pbd-approved.csv'
 
 // --- chat turn (raw, un-enveloped, snake_case) ------------------------------------------------------
 
+/** Longest `message` of a chat turn, in Unicode code points (security review BE-43). */
+export const CIKGU_MESSAGE_MAX = 2000
+export const CIKGU_MESSAGE_TOO_LONG = `Mesej terlalu panjang (maksimum ${String(CIKGU_MESSAGE_MAX)} aksara).`
+/** Most tag ids one `bulk-approve` call accepts (security review BE-43). */
+export const CIKGU_BULK_IDS_MAX = 100
+export const CIKGU_BULK_IDS_TOO_MANY = `Terlalu banyak item dipilih (maksimum ${String(CIKGU_BULK_IDS_MAX)}).`
+
 /**
  * Body of `POST /cikgu/send`. A non-string or blank (after trim) `message` is 422 `{}` (checked before
- * the thread and the AI call; nothing is stored). A `thread_id` that is not a string, unknown, or
+ * the thread and the AI call; nothing is stored). A `message` longer than 2000 code points is 422 with
+ * the raw body `{error: "Mesej terlalu panjang (maksimum 2000 aksara).", code: "VALIDATION_ERROR"}`. A `thread_id` that is not a string, unknown, or
  * another user's starts a new thread (no error, no leak); the server never rejects it.
  */
 export const CikguSendRequestSchema = z
@@ -201,7 +209,10 @@ export const CikguSendRequestSchema = z
     message: z
       .string()
       .refine((v) => v.trim() !== '', { error: 'message must not be blank' })
-      .meta({ description: 'The turn text. Blank after trim = 422 `{}`. No length cap in the mock (open question).' }),
+      .refine((v) => cikguCodePoints(v) <= CIKGU_MESSAGE_MAX, { error: CIKGU_MESSAGE_TOO_LONG })
+      .meta({
+        description: `The turn text. Blank after trim = 422 \`{}\`. At most ${String(CIKGU_MESSAGE_MAX)} characters (code points): longer = 422 "${CIKGU_MESSAGE_TOO_LONG}" (cap added by the security review; the mock has none).`,
+      }),
     thread_id: z
       .string()
       .nullish()
@@ -240,14 +251,15 @@ export const CikguChatQuotaBodySchema = z
   .meta({ id: 'CikguChatQuotaBody' })
 
 /**
- * [PROPOSED] Raw error body of `POST /cikgu/send` for 429 RATE_LIMITED (D57a) and 503 AI_UNAVAILABLE.
+ * Raw error body of `POST /cikgu/send` for 429 RATE_LIMITED (D57a), 503 AI_UNAVAILABLE and the 422 of an
+ * over-long message (code VALIDATION_ERROR).
  * `error` is a BM STRING (not the `ErrorBody` object) because the live client shows `body.error` as text
  * when it is a non-empty string and falls back to its own copy otherwise.
  */
 export const CikguChatErrorBodySchema = z
   .object({
     error: z.string().min(1).meta({ description: 'BM message for direct display.' }),
-    code: z.enum(['RATE_LIMITED', CIKGU_AI_UNAVAILABLE_CODE]).meta({ description: 'Machine code.' }),
+    code: z.enum(['RATE_LIMITED', CIKGU_AI_UNAVAILABLE_CODE, 'VALIDATION_ERROR']).meta({ description: 'Machine code.' }),
     retryAfter: z.number().int().nonnegative().optional().meta({ description: 'Seconds, on RATE_LIMITED only.' }),
   })
   .meta({ id: 'CikguChatErrorBody' })
@@ -489,14 +501,17 @@ export type CikguRollupResult = z.infer<typeof CikguRollupResultSchema>
 /**
  * Body of `POST /cikgu/pbd/bulk-approve`. Items that are digit strings (trimmed) or integers are kept,
  * others dropped; duplicates count once; a foreign or non-pending id is ignored silently; not an array
- * or empty = `{approved: 0}` (never 422).
+ * or empty = `{approved: 0}`. More than 100 items is 422 VALIDATION_ERROR.
  */
 export const CikguBulkApproveRequestSchema = z
   .object({
     ids: z
       .array(z.union([IdSchema, z.number().int().nonnegative()]))
+      .max(CIKGU_BULK_IDS_MAX, { error: CIKGU_BULK_IDS_TOO_MANY })
       .nullish()
-      .meta({ description: 'Tag ids (decimal strings; integers also accepted). No size cap in the mock (open question).' }),
+      .meta({
+        description: `Tag ids (decimal strings; integers also accepted). At most ${String(CIKGU_BULK_IDS_MAX)} items: more = 422 "${CIKGU_BULK_IDS_TOO_MANY}" on fields.ids (cap added by the security review; the mock has none).`,
+      }),
   })
   .meta({ id: 'CikguBulkApproveRequest' })
 export type CikguBulkApproveRequest = z.input<typeof CikguBulkApproveRequestSchema>

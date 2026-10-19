@@ -62,7 +62,7 @@ const err = (description: string) => json(ErrorBodySchema, description)
 /** Personal data of minors: never cached by the browser or a proxy (PDPA, data minimisation). */
 const NO_STORE_HEADERS = {
   'Cache-Control': {
-    description: 'no-store: the body carries personal data of minors (chat text, essays, student names).',
+    description: 'no-store: the body carries personal data of minors (chat text, essays, student names, class and lesson plans).',
     schema: { type: 'string' as const, enum: ['no-store'] },
   },
 }
@@ -77,7 +77,7 @@ const FORBIDDEN_TEACHER = err('FORBIDDEN "This action is unauthorized." (any rol
 const CSRF_INVALID = err('CSRF_INVALID (missing or wrong X-CSRF-Token).')
 const NOT_FOUND = err('NOT_FOUND "Not Found." (unknown, foreign or non-numeric id; indistinguishable on purpose).')
 const AI_UNAVAILABLE_ENVELOPE = err(
-  '[PROPOSED] AI_UNAVAILABLE "Cikgu Alesa tak boleh respon. Cuba lagi." (provider error, BE-36 rate limit or AI_BUDGET_EXHAUSTED). Nothing is stored.',
+  'AI_UNAVAILABLE "Cikgu Alesa tidak dapat menjawab sekarang. Sila cuba sebentar lagi." (provider error, BE-36 rate limit or AI_BUDGET_EXHAUSTED). Nothing is stored.',
 )
 
 const csrf = z.object({
@@ -121,10 +121,14 @@ export function registerCikguPaths(registry: OpenAPIRegistry): void {
       200: noStore(CikguSendResponseSchema, 'The reply. Raw snake_case body, no envelope.'),
       401: json(CikguChatEmptyBodySchema, 'Guest: body exactly `{}`.'),
       403: CSRF_INVALID,
-      422: json(CikguChatEmptyBodySchema, 'Blank or non-string message: body exactly `{}`. Nothing stored.'),
+      422: {
+        description:
+          'Blank or non-string message: body exactly `{}`. Message longer than 2000 characters: raw body `{error: "Mesej terlalu panjang (maksimum 2000 aksara).", code: "VALIDATION_ERROR"}`. Nothing stored.',
+        content: { 'application/json': { schema: z.union([CikguChatEmptyBodySchema, CikguChatErrorBodySchema]) } },
+      },
       429: {
         description:
-          'Either the daily quota is used up (body exactly `{"quota_exhausted": true}`, nothing stored), or [PROPOSED] RATE_LIMITED (D57a; raw body with a BM string `error`, `code` RATE_LIMITED and `retryAfter`, plus the Retry-After header). Tell them apart by the `quota_exhausted` key.',
+          'Two different bodies share this status. (1) Daily turn quota used up: body exactly `{"quota_exhausted": true}`, nothing stored, no Retry-After; the client shows its quota text. (2) Per-minute throttle (D57a): raw body `{error: <BM string>, code: "RATE_LIMITED", retryAfter}` plus the Retry-After header. A client tells them apart by the key: `quota_exhausted === true` is the daily quota; `code === "RATE_LIMITED"` is the throttle (retry after `retryAfter` seconds).',
         headers: RATE_LIMITED_RESPONSE.headers,
         content: {
           'application/json': { schema: z.union([CikguChatQuotaBodySchema, CikguChatErrorBodySchema]) },
@@ -132,7 +136,7 @@ export function registerCikguPaths(registry: OpenAPIRegistry): void {
       },
       503: json(
         CikguChatErrorBodySchema,
-        '[PROPOSED] AI_UNAVAILABLE: raw body `{error: "Cikgu Alesa tak boleh respon. Cuba lagi.", code: "AI_UNAVAILABLE"}`. Nothing is stored and no quota turn is consumed.',
+        'AI_UNAVAILABLE: raw body `{error: "Cikgu Alesa tidak dapat menjawab sekarang. Sila cuba sebentar lagi.", code: "AI_UNAVAILABLE"}`. Nothing is stored and no quota turn is consumed.',
       ),
     },
     'x-envelope': 'none',
@@ -145,10 +149,10 @@ export function registerCikguPaths(registry: OpenAPIRegistry): void {
     tags: TAGS,
     summary: 'My RPH list',
     description:
-      'Teacher or admin. Only the caller\'s own RPHs, `lessonDate` descending then id descending, 20 per page. An admin sees only their own (normally empty) rows.',
+      'Teacher or admin. Only the caller\'s own RPHs, `lessonDate` descending then id descending, 20 per page. An admin sees only their own (normally empty) rows. Rows name subjects and topics taught to a class: `Cache-Control: no-store`.',
     request: { query: pageQuery },
     responses: {
-      200: json(listEnvelopeOf(CikguRphListItemSchema), 'One page of the caller\'s RPHs.'),
+      200: noStore(listEnvelopeOf(CikguRphListItemSchema), 'One page of the caller\'s RPHs.'),
       401: UNAUTHORIZED,
       403: FORBIDDEN_TEACHER,
     },
@@ -185,10 +189,10 @@ export function registerCikguPaths(registry: OpenAPIRegistry): void {
     path: '/cikgu/rph/{id}',
     tags: TAGS,
     summary: 'RPH detail',
-    description: 'Teacher or admin. Own rows only; unknown, foreign or non-numeric id = 404 NOT_FOUND "Not Found." (no existence leak).',
+    description: 'Teacher or admin. Own rows only; unknown, foreign or non-numeric id = 404 NOT_FOUND "Not Found." (no existence leak). Carries class names and plan content: `Cache-Control: no-store`.',
     request: { params: idParam },
     responses: {
-      200: json(envelopeOf(CikguRphSchema), 'The RPH.'),
+      200: noStore(envelopeOf(CikguRphSchema), 'The RPH.'),
       401: UNAUTHORIZED,
       403: FORBIDDEN_TEACHER,
       404: NOT_FOUND,
@@ -269,12 +273,13 @@ export function registerCikguPaths(registry: OpenAPIRegistry): void {
     tags: TAGS,
     summary: 'Approve PBD tags in bulk',
     description:
-      'Teacher or admin. Only the caller\'s `pending` tags among `ids` become `approved` with `approvedAt` = now; foreign, unknown or non-pending ids are ignored silently; duplicates count once; non-array or empty `ids` = `{approved: 0}` (never 422). `approved` = how many changed.',
+      'Teacher or admin. Only the caller\'s `pending` tags among `ids` become `approved` with `approvedAt` = now; foreign, unknown or non-pending ids are ignored silently; duplicates count once; non-array or empty `ids` = `{approved: 0}`; more than 100 items = 422. `approved` = how many changed.',
     request: { headers: [csrf], body: body(CikguBulkApproveRequestSchema) },
     responses: {
       200: json(envelopeOf(CikguBulkApproveResultSchema), 'Number of tags approved.'),
       401: UNAUTHORIZED,
       403: err('FORBIDDEN "This action is unauthorized." (any role other than teacher or admin), or CSRF_INVALID.'),
+      422: err('VALIDATION_ERROR, `fields.ids` = "Terlalu banyak item dipilih (maksimum 100)." when `ids` has more than 100 items.'),
     },
   })
 
@@ -290,7 +295,7 @@ export function registerCikguPaths(registry: OpenAPIRegistry): void {
         `Teacher or admin. A file, not JSON: UTF-8 \`text/csv; charset=utf-8\`, attachment \`${CIKGU_PBD_CSV_FILENAME}\`, \`Cache-Control: no-store\`. ` +
         `First line \`${CIKGU_PBD_CSV_HEADER}\`; one line per approved tag of the caller ordered by approval time (else roll-up time), student name, id; \`skor\` with one decimal, \`tarikh_lulus\` = YYYY-MM-DD (Malaysia date of approval). ` +
         'A cell starting with `=`, `+`, `@` or `-` gets a leading `\'`; a cell containing `"`, `,`, CR or LF is double-quoted with inner quotes doubled; lines end with `\\n`, including the last; no approved tag = the header line only. ' +
-        'Bulk child data: rate limited (D57, [PROPOSED] on a read).',
+        'Bulk child data: rate limited (D57, a read of bulk child data).',
       responses: {
         200: {
           description: 'The CSV file.',
