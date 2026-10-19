@@ -29,22 +29,28 @@ import {
   BijakBuilderPreviewSchema,
   BijakBuilderPublishResultSchema,
   BijakBuilderQuestionSchema,
+  BijakBuilderQuestionKindSchema,
   BijakBuilderQuestionStatusSchema,
+  BijakBuilderCurriculumTagSchema,
+  BijakBuilderSchemeLineSchema,
   BijakBuilderReviewQuestionSchema,
   BijakBuilderSectionPatchSchema,
   BijakBuilderSectionRuleSchema,
 } from './schema'
 
 /**
- * Components contributed by BE-39 (appended to COMPONENT_SCHEMAS in openapi.ts). Paper builder
+ * Components contributed by BE-39 (appended to COMPONENT_SCHEMAS in openapi.ts). Typed as a plain record, not `as const`: the many literal types of this map pushed the shared COMPONENT_SCHEMAS union over the TypeScript comparison limit (TS2859). Paper builder
  * ids are prefixed `BijakBuilder`, blueprint ids `BijakBlueprint`; none equals an id of
  * `bijak/papers` (`BijakPaper*`, `BijakBlueprintContract`, `BijakBlueprintSection`, ...) or of
  * `bijak/attempts` (`BijakAttempt*`).
  */
-export const BIJAK_BUILDER_COMPONENT_SCHEMAS = {
+export const BIJAK_BUILDER_COMPONENT_SCHEMAS: Record<string, z.ZodType> = {
   BijakBuilderSectionRule: BijakBuilderSectionRuleSchema,
   BijakBuilderPaperStatus: BijakBuilderPaperStatusSchema,
   BijakBuilderQuestionStatus: BijakBuilderQuestionStatusSchema,
+  BijakBuilderQuestionKind: BijakBuilderQuestionKindSchema,
+  BijakBuilderCurriculumTag: BijakBuilderCurriculumTagSchema,
+  BijakBuilderSchemeLine: BijakBuilderSchemeLineSchema,
   BijakBuilderPaperSection: BijakBuilderPaperSectionSchema,
   BijakBuilderPaperSummary: BijakBuilderPaperSummarySchema,
   BijakBuilderPaper: BijakBuilderPaperSchema,
@@ -68,7 +74,7 @@ export const BIJAK_BUILDER_COMPONENT_SCHEMAS = {
   BijakBlueprintAdminVersionInput: BijakBlueprintAdminVersionInputSchema,
   BijakBlueprintAdminCreate: BijakBlueprintAdminCreateSchema,
   BijakBlueprintListQuery: BijakBlueprintListQuerySchema,
-} as const
+}
 
 /** Tags of the two route groups (tests count operations by tag). */
 export const BIJAK_BUILDER_TAG = 'bijak-builder'
@@ -98,9 +104,9 @@ const BlueprintParams = z.object({
 
 const ROLE_NOTE = 'Admin Pusat only (D40a); Guru, Admin Sekolah and Murid get 403.'
 const COPY_NOTE =
-  'BM strings quoted from the mock server/admin.ts are confirmed by the LEAD round-3 review; any string or field the mock does not have is marked [PROPOSED].'
+  'Shapes and BM strings are copied from the mock snapshot docs/reference/bijak-paper-builder-mock; anything the snapshot does not cover is marked [PROPOSED].'
 const ERROR_NOTE =
-  'The mock throws bad_request for every refusal; ErrorCode has no BAD_REQUEST, so the refusal is 422 VALIDATION_ERROR (mapping awaits the LEAD decision, deviations log).'
+  'The mock throws error kind bad_request for these refusals (not_found for a missing paper); ErrorCode has no BAD_REQUEST, so the refusal is 422 VALIDATION_ERROR (mapping awaits the LEAD decision, deviations log).'
 const UNAUTHORIZED = err('UNAUTHORIZED (no valid session).')
 const FORBIDDEN_READ = err('FORBIDDEN (the active role is not Admin Pusat).')
 const FORBIDDEN_WRITE = json(
@@ -149,14 +155,14 @@ export function registerBijakBuilderPaths(registry: OpenAPIRegistry): void {
     path: '/admin/papers',
     tags: [BIJAK_BUILDER_TAG],
     summary: 'Paper builder: create a paper (createPaper)',
-    description: `Body { subject, kertas, title? }. The sections come from the blueprint of that subject and kertas and start empty; the status is draf. Answers the new id. No blueprint for the pair: a plain 422 VALIDATION_ERROR "${BIJAK_BUILDER_MESSAGES.noBlueprint}" with no field (the mock throws it without a field). ${ERROR_NOTE} ${COPY_NOTE} ${ROLE_NOTE}`,
+    description: `Body { subject, kertas, title? }. The paper copies code, duration, instructions, reference and sections (label, rule, budget, count) from the blueprint of that subject and kertas, with empty question lists; the status is draf, the year is the current year, the default title is "Percubaan SPM {subjectName} Kertas {kertas} (draf)" and the section ids are generated. Answers the new id. No blueprint for the pair, or one whose source is Draf: a plain 422 VALIDATION_ERROR "${BIJAK_BUILDER_MESSAGES.noBlueprint}" with no field (the mock throws it without a field). ${ERROR_NOTE} ${COPY_NOTE} ${ROLE_NOTE}`,
     request: { headers: [csrf], body: body(BijakBuilderPaperCreateSchema) },
     responses: {
       201: json(envelopeOf(BijakBuilderPaperCreateResultSchema), 'The new paper id.'),
       401: UNAUTHORIZED,
       403: FORBIDDEN_WRITE,
       422: err(
-        `VALIDATION_ERROR: no blueprint "${BIJAK_BUILDER_MESSAGES.noBlueprint}" (no field), or fields (subject, kertas, title "${BIJAK_BUILDER_MESSAGES.titleRequired}").`,
+        `VALIDATION_ERROR: no blueprint "${BIJAK_BUILDER_MESSAGES.noBlueprint}" (no field), or fields (subject, kertas).`,
       ),
     },
   })
@@ -166,7 +172,7 @@ export function registerBijakBuilderPaths(registry: OpenAPIRegistry): void {
     path: '/admin/papers/preview',
     tags: [BIJAK_BUILDER_TAG],
     summary: 'Paper builder: student-view preview of questions, saved or not (previewQuestions)',
-    description: `Body { ids }: the question ids currently in the editor, so unsaved edits can be previewed (the mock previewQuestions(ids)). Answers { questions, stimuli, optionBanks }: the questions as a student sees them, the stimulus of each group by group id and the shared option bank of each group by group id. It never carries an answer key or scheme. It reads only; it is a POST because it takes a body, so it needs the CSRF header and is rate limited. Ids that do not exist are left out [PROPOSED]. The ReviewQuestion field list is derived from the BE-16 student view [PROPOSED]. ${COPY_NOTE} ${ROLE_NOTE}`,
+    description: `Body { ids }: the question ids currently in the editor, so unsaved edits can be previewed (the mock previewQuestions(ids)). Answers { questions, stimuli, optionBanks }: the question content as ReviewQuestion, the stimulus of each group by group id and the shared option bank of each group by group id. Ids that do not exist are left out. ReviewQuestion is the admin review shape: it carries the mark scheme and the MCQ correct option, so this route is Admin Pusat only and nothing of it reaches students. It reads only; it is a POST because it takes a body, so it needs the CSRF header and is rate limited. ${COPY_NOTE} ${ROLE_NOTE}`,
     request: { headers: [csrf], body: body(BijakBuilderPreviewRequestSchema) },
     responses: {
       200: json(envelopeOf(BijakBuilderPreviewSchema), 'Questions, stimuli and option banks.'),
@@ -199,10 +205,10 @@ export function registerBijakBuilderPaths(registry: OpenAPIRegistry): void {
     path: '/admin/papers/{id}',
     tags: [BIJAK_BUILDER_TAG],
     summary: 'Paper builder: edit a paper (single PUT, PaperPatch)',
-    description: `Body { title?, year?, durationMin?, sections?: [{ id, questionIds }] }; only the keys sent change. This one route carries every edit. A terbit paper is refused: 422 VALIDATION_ERROR "${BIJAK_BUILDER_MESSAGES.paperLocked}" (no field). Other refusals: title "${BIJAK_BUILDER_MESSAGES.titleRequired}"; a section id that is not a section of the paper "${BIJAK_BUILDER_MESSAGES.invalidSection}"; a question whose curriculum subject differs from the paper subject "${BIJAK_BUILDER_MESSAGES.invalidQuestion}" (a subject check only, not a kertas or status check). Duplicates and split groups are not refused here; they come back as publish errors. Answers the updated paper. ${ERROR_NOTE} ${COPY_NOTE} ${ROLE_NOTE}`,
+    description: `Body { title?, year?, durationMin?, sections?: [{ id, questionIds }] }; only the keys sent change. This one route carries every edit (the mock savePaper). A terbit paper is refused: 422 VALIDATION_ERROR "${BIJAK_BUILDER_MESSAGES.paperLocked}" (no field). Other refusals: title "${BIJAK_BUILDER_MESSAGES.titleRequired}"; a section id that is not a section of the paper "${BIJAK_BUILDER_MESSAGES.invalidSection}"; a question whose curriculum subject differs from the paper subject "${BIJAK_BUILDER_MESSAGES.invalidQuestion}" (a subject check only, not a kertas or status check). Duplicates and split groups are not refused here; they come back as publish errors. Answers the editor data (PaperEditorData), as the mock does. ${ERROR_NOTE} ${COPY_NOTE} ${ROLE_NOTE}`,
     request: { params: PaperIdParams, headers: [csrf], body: body(BijakBuilderPaperPatchSchema) },
     responses: {
-      200: json(envelopeOf(BijakBuilderPaperSchema), 'The updated paper.'),
+      200: json(envelopeOf(BijakBuilderEditorSchema), 'The editor data after the edit.'),
       401: UNAUTHORIZED,
       403: FORBIDDEN_WRITE,
       404: PAPER_NOT_FOUND,
@@ -233,7 +239,7 @@ export function registerBijakBuilderPaths(registry: OpenAPIRegistry): void {
     path: '/admin/papers/{id}/publish',
     tags: [BIJAK_BUILDER_TAG],
     summary: 'Paper builder: publish (draf to terbit)',
-    description: `No request body. A normal 200 result (not an error): { ok: true, errors: [] }, or { ok: false, errors: string[] } with the BM lines built by checkPaper, each prefixed with the section label ("{label}: "): "Kurang N soalan (perlu X, ada Y)", "Markah M tidak sama dengan bajet B", "{N} soalan belum Terbit", "Kumpulan rangsangan G tidak berturutan", "tidak lengkap", and the paper-wide "Soalan berulang dalam kertas: ..." and "Kumpulan rangsangan X dipecahkan antara dua bahagian". Nothing changes on ok: false. On ok: true the status becomes terbit and the paper appears in GET /bijak/papers; implementations pin the question versions in force (a later edit, version n+1, does not change the paper). Publishing a paper that is already terbit is a no-op { ok: true, errors: [] } [PROPOSED]. ${COPY_NOTE} ${ROLE_NOTE}`,
+    description: `No request body. A normal 200 result (not an error): { ok: true, errors: [] }, or { ok: false, errors: string[] } with the BM lines of checkPaper. Paper-wide lines come first: "Soalan berulang dalam kertas: {ids}" and "Kumpulan rangsangan {group} dipecahkan antara dua bahagian". Each section line follows, prefixed with the section label ("{label}: "): "Kurang N soalan (perlu X, ada Y)" or "Lebih N soalan (perlu X, ada Y)", "Markah M tidak sama dengan bajet B", "Kumpulan rangsangan G tidak berturutan", "Kumpulan rangsangan G tidak lengkap (N soalan tiada)" and "{N} soalan belum Terbit". Nothing changes on ok: false. On ok: true the status becomes terbit, publishedAt is set and the paper appears in GET /bijak/papers; implementations pin the question versions in force (a later edit, version n+1, does not change the paper). A paper that is already terbit is checked again and stays terbit. ${COPY_NOTE} ${ROLE_NOTE}`,
     request: { params: PaperIdParams, headers: [csrf] },
     responses: {
       200: json(envelopeOf(BijakBuilderPublishResultSchema), 'Publish result (ok true or false).'),
@@ -248,10 +254,10 @@ export function registerBijakBuilderPaths(registry: OpenAPIRegistry): void {
     path: '/admin/papers/{id}/withdraw',
     tags: [BIJAK_BUILDER_TAG],
     summary: 'Paper builder: unpublish, tarik balik (terbit back to draf)',
-    description: `No request body. The status goes back to draf (the mock unpublishPaper; there is no withdrawn state). The paper leaves GET /bijak/papers; attempts already started are unaffected. A paper that is already draf is a no-op [PROPOSED]. The path name follows the card ("tarik balik"). The mock method returns void; this route answers the updated paper (deviations log). ${COPY_NOTE} ${ROLE_NOTE}`,
+    description: `No request body. The status goes back to draf, publishedAt is cleared and updatedAt is touched (the mock unpublishPaper; there is no withdrawn state). The paper leaves GET /bijak/papers; attempts already started are unaffected. A paper that is already draf stays draf. The path name follows the card ("tarik balik"). The mock returns void; this route answers { ok: true } (deviations log). ${COPY_NOTE} ${ROLE_NOTE}`,
     request: { params: PaperIdParams, headers: [csrf] },
     responses: {
-      200: json(envelopeOf(BijakBuilderPaperSchema), 'The paper, now draf.'),
+      200: json(envelopeOf(BijakBuilderOkSchema), 'Done; the paper is now draf.'),
       401: UNAUTHORIZED,
       403: FORBIDDEN_WRITE,
       404: PAPER_NOT_FOUND,
@@ -265,7 +271,7 @@ export function registerBijakBuilderPaths(registry: OpenAPIRegistry): void {
     path: '/admin/blueprints',
     tags: [BIJAK_BLUEPRINT_ADMIN_TAG],
     summary: 'Blueprint: list blueprints (BlueprintView, latest active version)',
-    description: `One row per blueprint (subject and kertas), as the mock listBlueprints (BlueprintView). Filters: subject, kertas. Retired blueprints are not listed [PROPOSED]. The mock returns a plain array; this route is paged (deviations log). ${COPY_NOTE} ${ROLE_NOTE}`,
+    description: `One row per blueprint (subject and kertas), as the mock listBlueprints (BlueprintView); blueprints whose source is Draf are not listed (the mock filter). Retired blueprints are not listed either [PROPOSED]. Filters subject and kertas are [PROPOSED]. The mock returns a plain array; this route is paged (deviations log). ${COPY_NOTE} ${ROLE_NOTE}`,
     request: { query: BijakBlueprintListQuerySchema },
     responses: {
       200: json(listEnvelopeOf(BijakBlueprintViewSchema), 'Blueprints (paged).'),
@@ -278,8 +284,8 @@ export function registerBijakBuilderPaths(registry: OpenAPIRegistry): void {
     method: 'get',
     path: '/admin/blueprints/{subject}/{kertas}',
     tags: [BIJAK_BLUEPRINT_ADMIN_TAG],
-    summary: 'Blueprint: one blueprint by subject and kertas (BlueprintView)',
-    description: `BlueprintView has no id, so a blueprint is addressed by subject and kertas, as the mock does. Route path is [PROPOSED]. ${COPY_NOTE} ${ROLE_NOTE}`,
+    summary: 'Blueprint: one blueprint by subject and kertas (BlueprintView, NO MOCK)',
+    description: `No mock route (the mock has listBlueprints and the blueprint inside getPaperEditor); kept because the card requires a blueprint get. BlueprintView has no id, so a blueprint is addressed by subject and kertas. Route path is [PROPOSED]. ${COPY_NOTE} ${ROLE_NOTE}`,
     request: { params: BlueprintParams },
     responses: {
       200: json(envelopeOf(BijakBlueprintViewSchema), 'The blueprint.'),
