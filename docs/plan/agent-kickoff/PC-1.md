@@ -1,6 +1,6 @@
 # PC-1 kickoff: Foundation to Identity
 
-Paste-ready prompt for Claude Code. How to start a PC: [README.md](README.md). Lane overview and sync points: [../sessions.md](../sessions.md). Cards: BE-01, BE-02, BE-03, BE-04, BE-05, BE-25, BE-07, BE-06, BE-24, BE-32, BE-33.
+Paste-ready prompt for Claude Code. How to start a PC: [README.md](README.md). Lane overview and sync points: [../sessions.md](../sessions.md). Cards: BE-01, BE-02, BE-03, BE-04, BE-05, BE-25, BE-07, BE-06, BE-24, BE-32, BE-33, BE-42, BE-46, BE-47.
 
 How to use: open Claude Code in the repo root on this PC (branch feature/v2-backend, `npm ci` done), then paste everything inside the block below as the first message. Start one fresh Claude Code session per session row of your lane in `../sessions.md` section 7; the prompt tells the agent which card to take next from the tracker.
 
@@ -29,6 +29,9 @@ YOUR LANE: PC-1, ordered card list (work strictly in this order; each card is it
 9. BE-24 Content and support tickets (M09, M22) | branch be/BE-24-content-support | depends on: BE-03, BE-04 | card file: docs/plan/backend-tasks/BE-24-content-support.md
 10. BE-32 Compose stack, nginx proxy, Vite dev proxy and Playwright e2e against the real API | branch be/BE-32-http-switch-e2e | depends on: BE-03, BE-07, BE-31 | card file: docs/plan/backend-tasks/BE-32-http-switch-e2e.md
 11. BE-33 Security hardening, observability and release readiness | branch be/BE-33-hardening-release | depends on: BE-32, BE-16, BE-38, BE-39 | card file: docs/plan/backend-tasks/BE-33-hardening-release.md
+12. BE-42 PKSK: domains, practice, exam, access grants, admin questions (M07) | branch be/BE-42-pksk | depends on: BE-03, BE-05, BE-09, BE-10, BE-12, BE-25 | card file: docs/plan/backend-tasks/BE-42-pksk.md
+13. BE-46 Marketplace: buyer slice (M20) | branch be/BE-46-marketplace | depends on: BE-03, BE-05 | card file: docs/plan/backend-tasks/BE-46-marketplace.md
+14. BE-47 Mohon Keluarga Angkat: student-side application (M21) | branch be/BE-47-keluarga-angkat | depends on: BE-03, BE-05 | card file: docs/plan/backend-tasks/BE-47-keluarga-angkat.md
 
 FOLDERS YOU MAY EDIT (and only these)
 - apps/api/src/main.ts, app.module.ts, common/**, db/**
@@ -36,7 +39,7 @@ FOLDERS YOU MAY EDIT (and only these)
 - apps/api/prisma/schema/{base,identity,schools,files,content}.prisma and their migrations
 - packages/contract/src/{users,schools,account,notifications,files,content,support}/**
 - apps/api/prisma/seed/core/** and apps/api/prisma/seed/content.ts
-- apps/api/test/<your domains>/**
+- apps/api/test/<your domains>/** (including pksk, marketplace, sponsorship) and new scenario files in apps/api/test/conformance/{pksk,marketplace,sponsorship}/ (after BE-31)
 - docker/api/**, .github/workflows/api.yml, .env.api.example (structure), small reviewed edits to compose.yaml and docker/frontend/** (only in BE-01, BE-02, BE-32)
 - docs/adr/0020-backend-stack.md
 Append-only shared files (add your own single lines only, never reorder or reformat): apps/api/src/modules/index.ts, apps/api/prisma/seed/index.ts, apps/api/prisma/migratable-models.json, the registrations in packages/contract/src/openapi.ts, docs/architecture/v2-backend-deviations.md, your own rows in docs/plan/backend-tracker.md, your own entity rows in the mapping matrix (plan section 14.7).
@@ -65,6 +68,7 @@ LANE-SPECIFIC NOTES
 - BE-25 before BE-07 and BE-06: BE-12 (lane PC-2) waits for BE-25.
 - BE-32 is joint with the lead: do it only when the tracker Lead-tasks row L1 (V2-T31 hybrid transport) is done and the lead tells you to start.
 - users table: include legacy_source, legacy_id, legacy_hash and the unique pair from the first migration (plan section 14.2); email nullable; username column; status flags per v2-data-migration.md section 4.1.
+- BE-42 (PKSK), BE-46 (Marketplace) and BE-47 (Keluarga Angkat, student side only) are P2 leaf cards added by D53; take them only after the P0/P1 cards and only when the Open list lists them. BE-47 needs the security-engineer review (sensitive family data of minors); BE-46 adds MARKETPLACE_PLATFORM_WHATSAPP (name only) to the PC-1 block of .env.api.example. Questions for PKSK are read and tagged through QuestionsService (BE-09); there is no PKSK question table.
 
 HOW TO PICK THE NEXT CARD
 1. git fetch origin; git switch feature/v2-backend; git pull --ff-only. Read docs/plan/backend-tracker.md.
