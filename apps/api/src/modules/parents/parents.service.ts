@@ -5,16 +5,19 @@ import { ConfigService } from '@nestjs/config'
 import {
   PARENT_INVITE_MESSAGES,
   PARENT_INVITE_TTL_DAYS,
+  PARENT_LINKS_PAGE_SIZE,
   ParentInviteAcceptResultSchema,
   ParentInviteGeneratedSchema,
   ParentInvitePreviewSchema,
   ParentInviteStatusSchema,
+  ParentLinkSchema,
 } from '@pp/contract'
 import type { z } from 'zod'
 
 import { AuditService } from '../../common/audit/audit.service'
 import type { Env } from '../../common/config/env.schema'
 import { ApiError } from '../../common/errors/api-error'
+import { listMeta } from '../../common/http/respond'
 import { toMytTimestamp } from '../../common/time/myt'
 import { CLOCK, type Clock } from '../../db/clock'
 import type { TxClient } from '../../db/client'
@@ -24,12 +27,13 @@ import { hmacHex } from '../auth/tokens'
 import { SchoolsRepository } from '../schools'
 import { UsersRepository, type UserRecord } from '../users'
 import { NO_EMAIL_MASK, PARENT_AUDIT, PARENT_INVITE_HASH_LABEL, PARENT_INVITE_TOKEN_BYTES, WRITE_TX } from './parents.constants'
-import { ParentsRepository, type InviteRow } from './parents.repository'
+import { ParentsRepository, type InviteRow, type LinkDetail, type LinkScope } from './parents.repository'
 
 type ParentInviteAcceptResult = z.infer<typeof ParentInviteAcceptResultSchema>
 type ParentInviteGenerated = z.infer<typeof ParentInviteGeneratedSchema>
 type ParentInvitePreview = z.infer<typeof ParentInvitePreviewSchema>
 type ParentInviteStatus = z.infer<typeof ParentInviteStatusSchema>
+type LinkView = z.infer<typeof ParentLinkSchema>
 
 const DAY_MS = 24 * 60 * 60 * 1000
 const SORT_LOCALE = 'ms'
@@ -42,6 +46,21 @@ export interface Actor {
   scopeLevel: string
   requestId: string | null
   ip: string | null
+}
+
+/** An admin-side caller: the acting user plus the school of a school_admin (null for admin). */
+export interface AdminActor extends Actor {
+  schoolId: string | null
+  isAdmin: boolean
+}
+
+/** Cap of the own-links list (a student has a handful of parents; a parent a handful of children). */
+const LINK_LIST_CAP = 200
+
+/** Page number: missing, non-numeric or below 1 is page 1 (never rejected). */
+function pageOf(raw: string | undefined): number {
+  const t = raw?.trim() ?? ''
+  return /^\d+$/.test(t) && Number(t) >= 1 ? Math.min(Number(t), 10_000_000) : 1
 }
 
 /** `a***@domain`: first character, three stars, the domain (contract `ParentEmailMasked`). */
@@ -155,6 +174,76 @@ export class ParentsService {
       relationship: out.link.relationship,
       acceptedAt: toMytTimestamp(now),
     }
+  }
+
+  // --- parent-child links -------------------------------------------------------------------------
+
+  /** GET /me/parent-links: a student sees its parents, a parent its children. Parent e-mails are masked. */
+  async myLinks(me: Actor): Promise<LinkView[]> {
+    const { rows } = await this.repo.listLinks(this.mineScope(me), 0, LINK_LIST_CAP)
+    return this.viewOf(rows)
+  }
+
+  /** DELETE /me/parent-links/:linkId: the student or the parent removes its own link; anyone else's is 404. */
+  async removeMine(me: Actor, linkId: string): Promise<void> {
+    await this.remove(me, linkId, this.mineScope(me), 'self')
+  }
+
+  /** GET /admin/parent-links: admin all; school_admin the links of students of its own school (AC 7). */
+  async adminLinks(who: AdminActor, q: { studentId?: string | undefined; parentId?: string | undefined; page?: string | undefined }) {
+    const page = pageOf(q.page)
+    const { rows, total } = await this.repo.listLinks(
+      { ...this.adminScope(who), ...(q.studentId ? { studentId: q.studentId } : {}), ...(q.parentId ? { parentId: q.parentId } : {}) },
+      (page - 1) * PARENT_LINKS_PAGE_SIZE,
+      PARENT_LINKS_PAGE_SIZE,
+    )
+    return { data: await this.viewOf(rows), meta: listMeta(page, PARENT_LINKS_PAGE_SIZE, total) }
+  }
+
+  /** DELETE /admin/parent-links/:linkId: a school_admin only for students of its own school, else 404. */
+  async removeAdmin(who: AdminActor, linkId: string): Promise<void> {
+    await this.remove(who, linkId, this.adminScope(who), who.isAdmin ? 'admin' : 'school_admin')
+  }
+
+  private mineScope(me: Actor): LinkScope {
+    return me.role === 'parent' ? { parentId: me.userId } : { studentId: me.userId }
+  }
+
+  /**
+   * Admin sees all. A school_admin sees only links of students of its own school: that covers every
+   * link of a visible parent (AC 7: all its children are in the school). No school is fail closed.
+   */
+  private adminScope(who: AdminActor): LinkScope {
+    if (who.isAdmin) return {}
+    if (who.schoolId === null) throw notFound()
+    return { schoolId: who.schoolId }
+  }
+
+  private async remove(who: Actor, linkId: string, scope: LinkScope, by: string): Promise<void> {
+    await this.write(async (tx) => {
+      const link = await this.repo.findLink(linkId, scope)
+      if (!link || !(await this.repo.removeLink(link.id))) throw notFound()
+      await this.audit.record({
+        tx,
+        ...this.auditBase(who, PARENT_AUDIT.LINK_REMOVED),
+        targetType: 'parent_link',
+        targetId: link.id,
+        schoolId: link.studentSchoolId,
+        details: { parentId: link.parentId, studentId: link.studentId, by },
+      })
+    })
+  }
+
+  private async viewOf(rows: LinkDetail[]): Promise<LinkView[]> {
+    const schools = await this.schools.getMany([...new Set(rows.flatMap((r) => (r.studentSchoolId === null ? [] : [r.studentSchoolId])))])
+    const names = new Map(schools.map((s) => [s.id, s.name]))
+    return rows.map((r) => ({
+      linkId: r.id,
+      parent: { id: r.parentId, name: r.parentName, emailMasked: maskEmail(r.parentEmail) },
+      student: { id: r.studentId, name: r.studentName, schoolName: r.studentSchoolId === null ? null : (names.get(r.studentSchoolId) ?? null) },
+      relationship: r.relationship,
+      linkedAt: toMytTimestamp(r.createdAt),
+    }))
   }
 
   // --- helpers ------------------------------------------------------------------------------------

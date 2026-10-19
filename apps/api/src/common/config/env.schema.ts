@@ -27,6 +27,12 @@ export const EnvSchema = z.object({
   THROTTLE_ADMIN_WRITE_PER_MINUTE: z.coerce.number().int().min(1).default(30),
   // BE-05 (users): bulk imports per hour per user.
   THROTTLE_IMPORT_PER_HOUR: z.coerce.number().int().min(1).default(10),
+  // BE-25 (parents): invite throttles, counted per process. Preview per client address; the others per user.
+  THROTTLE_PARENT_INVITE_PREVIEW_PER_MINUTE: z.coerce.number().int().min(1).default(30),
+  THROTTLE_PARENT_INVITE_READ_PER_MINUTE: z.coerce.number().int().min(1).default(120),
+  THROTTLE_PARENT_INVITE_ISSUE_PER_HOUR: z.coerce.number().int().min(1).default(10),
+  THROTTLE_PARENT_INVITE_ACCEPT_PER_HOUR: z.coerce.number().int().min(1).default(30),
+  THROTTLE_PARENT_LINK_WRITE_PER_MINUTE: z.coerce.number().int().min(1).default(30),
   // BE-05 (users): HMAC key of the IC number hash. Unset: SESSION_SECRET is used (required in production). Rotating it breaks IC lookups until every ic_hash is recomputed.
   IC_HASH_KEY: z.preprocess((v) => (v === '' ? undefined : v), z.string().min(16).optional()),
   /** Reverse-proxy hops to trust for the client address (0 = none). */

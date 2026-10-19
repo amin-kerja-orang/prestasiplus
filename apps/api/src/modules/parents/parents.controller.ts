@@ -1,6 +1,7 @@
-import { Body, Controller, Get, HttpCode, Inject, Param, Post, Req, UseGuards, UseInterceptors } from '@nestjs/common'
-import { ParentInviteAcceptRequestSchema, ParentInviteTokenParamSchema } from '@pp/contract'
+import { Body, Controller, Delete, Get, HttpCode, Inject, Param, Post, Query, Req, UseGuards, UseInterceptors } from '@nestjs/common'
+import { ParentInviteAcceptRequestSchema, ParentInviteTokenParamSchema, ParentLinkIdParamSchema, ParentLinkListQuerySchema } from '@pp/contract'
 import type { Request } from 'express'
+import type { z } from 'zod'
 
 import { ApiError } from '../../common/errors/api-error'
 import { Public, Roles } from '../../common/guards/decorators'
@@ -11,7 +12,7 @@ import { AUTH_CONTEXT_KEY, type RequestWithAuth } from '../../common/scope/auth-
 import { RateLimit, RateLimitGuard } from '../../common/throttle'
 import { ZodValidationPipe } from '../../common/validation/zod-validation.pipe'
 import { PARENT_LIMITS } from './parents.constants'
-import { ParentsService, type Actor } from './parents.service'
+import { ParentsService, type Actor, type AdminActor } from './parents.service'
 
 type Req = Request & RequestWithAuth
 
@@ -27,6 +28,16 @@ function actorOf(req: Req): Actor {
     ip: req.ip ?? req.socket.remoteAddress ?? null,
   }
 }
+
+function adminOf(req: Req): AdminActor {
+  const auth = req[AUTH_CONTEXT_KEY]
+  if (!auth) throw ApiError.of('UNAUTHORIZED')
+  const { scope } = auth.active
+  const schoolId = (scope.level === 'school' || scope.level === 'class') && scope.schoolId ? scope.schoolId : null
+  return { ...actorOf(req), schoolId, isAdmin: auth.active.role === 'admin' }
+}
+
+const linkIdOf = (raw: string): string => new ZodValidationPipe(ParentLinkIdParamSchema).transform({ linkId: raw }).linkId
 
 const tokenOf = (raw: string): string => new ZodValidationPipe(ParentInviteTokenParamSchema).transform({ token: raw }).token
 
@@ -74,6 +85,38 @@ export class ParentsController {
   async accept(@Req() req: Req, @Param('token') token: string, @Body() raw: unknown) {
     const body = new ZodValidationPipe(ParentInviteAcceptRequestSchema).transform(raw ?? {})
     return ok(await this.parents.accept(actorOf(req), tokenOf(token), body.relationship))
+  }
+
+  // --- links ---------------------------------------------------------------------------------------
+
+  @Get('me/parent-links')
+  @Roles('student', 'parent')
+  @RateLimit(PARENT_LIMITS.read)
+  async myLinks(@Req() req: Req) {
+    return ok(await this.parents.myLinks(actorOf(req)))
+  }
+
+  @Delete('me/parent-links/:linkId')
+  @HttpCode(204)
+  @Roles('student', 'parent')
+  @RateLimit(PARENT_LIMITS.unlink)
+  async removeMine(@Req() req: Req, @Param('linkId') linkId: string): Promise<void> {
+    await this.parents.removeMine(actorOf(req), linkIdOf(linkId))
+  }
+
+  @Get('admin/parent-links')
+  @Roles('admin', 'school_admin')
+  @RateLimit(PARENT_LIMITS.read)
+  async adminLinks(@Req() req: Req, @Query(new ZodValidationPipe(ParentLinkListQuerySchema)) query: z.infer<typeof ParentLinkListQuerySchema>) {
+    return this.parents.adminLinks(adminOf(req), query)
+  }
+
+  @Delete('admin/parent-links/:linkId')
+  @HttpCode(204)
+  @Roles('admin', 'school_admin')
+  @RateLimit(PARENT_LIMITS.unlink)
+  async removeAdmin(@Req() req: Req, @Param('linkId') linkId: string): Promise<void> {
+    await this.parents.removeAdmin(adminOf(req), linkIdOf(linkId))
   }
 
   /** The active role of the optional session on the public preview; no or a bad session is a guest. */

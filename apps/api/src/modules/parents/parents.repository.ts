@@ -1,5 +1,6 @@
 import { Inject, Injectable } from '@nestjs/common'
 
+import type { Prisma } from '../../db/generated/client'
 import { idFromString, idToString, isIdString } from '../../db/ids'
 import { PrismaService } from '../../db/prisma.service'
 
@@ -18,6 +19,20 @@ export interface LinkRow {
   relationship: string | null
   createdAt: Date
 }
+/** Which links a caller may touch: by the two ends and, for a school_admin, by the student's school. */
+export interface LinkScope {
+  parentId?: string
+  studentId?: string
+  schoolId?: string
+}
+
+export interface LinkDetail extends LinkRow {
+  parentName: string
+  parentEmail: string | null
+  studentName: string
+  studentSchoolId: string | null
+}
+
 
 /**
  * The only doorway to `parent_invites` and `parent_links`. Methods use `prisma.client`, so they join
@@ -69,6 +84,39 @@ export class ParentsRepository {
     return { link: toLink(row), created: made.count === 1 }
   }
 
+  private linkWhere(scope: LinkScope): Prisma.ParentLinkWhereInput | null {
+    const ids = [scope.parentId, scope.studentId, scope.schoolId]
+    if (ids.some((i) => i !== undefined && !isIdString(i))) return null // a malformed id matches nothing
+    return {
+      ...(scope.parentId !== undefined ? { parentId: idFromString(scope.parentId) } : {}),
+      ...(scope.studentId !== undefined ? { studentId: idFromString(scope.studentId) } : {}),
+      ...(scope.schoolId !== undefined ? { student: { schoolId: idFromString(scope.schoolId) } } : {}),
+    }
+  }
+
+  /** Links inside the scope, oldest first, with both ends joined. */
+  async listLinks(scope: LinkScope, skip: number, take: number): Promise<{ rows: LinkDetail[]; total: number }> {
+    const where = this.linkWhere(scope)
+    if (where === null) return { rows: [], total: 0 }
+    const [rows, total] = await Promise.all([
+      this.prisma.client.parentLink.findMany({ where, include: LINK_INCLUDE, orderBy: { id: 'asc' }, skip, take }),
+      this.prisma.client.parentLink.count({ where }),
+    ])
+    return { rows: rows.map(toDetail), total }
+  }
+
+  /** One link when it is inside the scope, else null (an out-of-scope link is "not found"). */
+  async findLink(id: string, scope: LinkScope): Promise<LinkDetail | null> {
+    const where = this.linkWhere(scope)
+    if (where === null || !isIdString(id)) return null
+    const row = await this.prisma.client.parentLink.findFirst({ where: { AND: [{ id: idFromString(id) }, where] }, include: LINK_INCLUDE })
+    return row ? toDetail(row) : null
+  }
+
+  async removeLink(id: string): Promise<boolean> {
+    return (await this.prisma.client.parentLink.deleteMany({ where: { id: idFromString(id) } })).count === 1
+  }
+
   /** Links of a student, oldest first (the service joins and sorts the parents). */
   async linksOfStudent(studentId: string): Promise<LinkRow[]> {
     if (!isIdString(studentId)) return []
@@ -76,6 +124,19 @@ export class ParentsRepository {
     return rows.map(toLink)
   }
 }
+
+const LINK_INCLUDE = {
+  parent: { select: { name: true, email: true } },
+  student: { select: { name: true, schoolId: true } },
+} satisfies Prisma.ParentLinkInclude
+type LinkJoined = Prisma.ParentLinkGetPayload<{ include: typeof LINK_INCLUDE }>
+const toDetail = (r: LinkJoined): LinkDetail => ({
+  ...toLink(r),
+  parentName: r.parent.name,
+  parentEmail: r.parent.email,
+  studentName: r.student.name,
+  studentSchoolId: r.student.schoolId === null ? null : idToString(r.student.schoolId),
+})
 
 type InviteDb = { id: bigint; studentId: bigint; createdAt: Date; expiresAt: Date; usedAt: Date | null }
 const toInvite = (r: InviteDb): InviteRow => ({
