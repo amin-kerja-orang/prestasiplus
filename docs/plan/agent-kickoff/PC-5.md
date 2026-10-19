@@ -28,7 +28,7 @@ FOLDERS YOU MAY EDIT (and only these)
 - apps/api/src/modules/{ai-extraction,ocr,jobs,intake}/**
 - apps/api/src/modules/questions/workflow/** (after BE-09 merged; lane PC-2 agrees)
 - apps/api/prisma/schema/{ai,intake,questions-workflow}.prisma and migrations
-- packages/contract/src/{ai,intake}/**
+- packages/contract/src/{ai,intake,question-workflow}/**
 - apps/api/prisma/seed/intake.ts
 - apps/api/test/{ai,intake-files,intake-workflow,intake-dashboard,questions-workflow}/**
 Append-only shared files (add your own single lines only, never reorder or reformat): apps/api/src/modules/index.ts, apps/api/prisma/seed/index.ts, apps/api/prisma/migratable-models.json, the registrations in packages/contract/src/openapi.ts, docs/architecture/v2-backend-deviations.md, your own rows in docs/plan/backend-tracker.md, your own entity rows in the mapping matrix (plan section 14.7).

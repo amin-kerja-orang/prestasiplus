@@ -35,7 +35,7 @@ FOLDERS YOU MAY EDIT (and only these)
 - apps/api/src/modules/{auth,users,schools,subscriptions,parents,account,notifications,files,content,support}/**
 - apps/api/prisma/schema/{base,identity,schools,files,content}.prisma and their migrations
 - packages/contract/src/{users,schools,account,notifications,files,content,support}/**
-- apps/api/prisma/seed/{core,content}.ts
+- apps/api/prisma/seed/core/** and apps/api/prisma/seed/content.ts
 - apps/api/test/<your domains>/**
 - docker/api/**, .github/workflows/api.yml, .env.api.example (structure), small reviewed edits to compose.yaml and docker/frontend/** (only in BE-01, BE-02, BE-32)
 - docs/adr/0020-backend-stack.md
