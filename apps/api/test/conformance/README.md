@@ -47,6 +47,20 @@ failure, and the request is not sent). The coverage report counts only implement
 percentage and lists the others. When a later card adds its controller, its operations enter the
 percentage automatically and its scenarios start to run; nothing needs unlisting.
 
+## Checks that keep "not yet implemented" honest
+
+- The route lookup throws when the Express router stack (`app.router` or `app._router`) is missing or
+  holds no route; the run also asserts that operations are served and requests were sent.
+- Reverse check: every route the app registers must match a contract operation (`unknownRoutes`), so a
+  controller with a path typo fails instead of being skipped. The only exception is `GET /health`
+  (`NON_CONTRACT_ROUTES`, with its reason).
+- The built domains (auth, session, users, schools, files) must have no scenario that stops at "not yet
+  implemented".
+- `CONFORMANCE_MAX_NOT_IMPLEMENTED=<n>` / `CONFORMANCE_REQUIRE_ALL=1` bound the unserved operations; the
+  percentage covers served operations only.
+- Every scenario is its own test (`it.each`) and the login of a role is reused inside a scenario; the login
+  response is contract-checked.
+
 ## Adding scenarios (every domain card)
 
 1. If the scenario also makes sense on the mock, add it to the package (`packages/contract-tests/src/scenarios`).

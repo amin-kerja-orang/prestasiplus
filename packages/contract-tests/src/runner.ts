@@ -79,6 +79,8 @@ export interface RunReport {
   results: ScenarioResult[]
   /** `METHOD path` of every operation some scenario sent a request to, with the statuses seen. */
   touched: Map<string, Set<number>>
+  /** Number of requests actually sent to the target (not counting those stopped as not yet implemented). */
+  requests: number
   /** `METHOD path` of every operation a scenario needed that the target does not serve yet. */
   notImplemented: Set<string>
   /** Known-mismatch entries that no longer match any violation (the mismatch was fixed). */
@@ -92,11 +94,21 @@ export interface RunOptions {
   knownMismatches?: KnownMismatch[]
 }
 
-/** Thrown to stop a scenario at a request the target cannot serve yet. */
-class NotImplementedSignal extends Error {
+/**
+ * Thrown to stop a scenario at a request the target cannot serve yet. A scenario (or a helper it
+ * calls) must NEVER catch it: swallowing it would let the scenario go on and hide real failures. A
+ * helper that has to catch errors calls `rethrowNotImplemented(err)` first. The runner records the
+ * operation when it throws, so even a swallowed signal is still reported as "not yet implemented".
+ */
+export class NotImplementedSignal extends Error {
   constructor(readonly operation: string) {
     super(`not yet implemented: ${operation}`)
   }
+}
+
+/** Call first in any `catch` of a scenario helper: rethrows the not-yet-implemented signal. */
+export function rethrowNotImplemented(err: unknown): void {
+  if (err instanceof NotImplementedSignal) throw err
 }
 
 /** Runs every scenario against the target and checks every response against the contract. */
@@ -106,6 +118,7 @@ export async function runScenarios(
 ): Promise<RunReport> {
   const touched = new Map<string, Set<number>>()
   const notImplemented = new Set<string>()
+  let requests = 0
   const results: ScenarioResult[] = []
 
   for (const scenario of scenarios) {
@@ -132,13 +145,15 @@ export async function runScenarios(
           notImplemented.add(wanted.key)
           throw new NotImplementedSignal(wanted.key)
         }
+        requests++
         const res = await client.request(method, path, init)
         return checkResponse(contract, violations, touched, method, path, res)
       },
     })
     const ctx: ScenarioContext = {
       anonymous: () => wrap(target.anonymous),
-      as: async (role, opts) => wrap(await target.actor(role, opts)),
+      // The login of the actor goes through the checked client too, so its response is contract-checked.
+      as: async (role, opts) => wrap(await target.actor(role, { ...opts, via: wrap(target.anonymous) })),
       credentials: (role) => target.credentials(role),
       expectStatus(res, status) {
         if (res.status !== status) {
@@ -194,6 +209,7 @@ export async function runScenarios(
     target: target.name,
     results,
     touched,
+    requests,
     notImplemented,
     stale,
     ok: results.every((r) => r.failures.length === 0) && stale.length === 0,

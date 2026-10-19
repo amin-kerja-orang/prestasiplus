@@ -41,7 +41,8 @@ export function computeCoverage(
   return {
     total,
     covered,
-    percent: total === 0 ? 100 : (covered / total) * 100,
+    // No operation at all is never "100%": it means the target's route lookup found nothing.
+    percent: total === 0 ? 0 : (covered / total) * 100,
     byTag,
     uncovered,
     notImplemented,
@@ -63,11 +64,31 @@ export function formatCoverage(c: CoverageReport, { list = false } = {}): string
   return lines.join('\n')
 }
 
+/**
+ * Gate on the operations the target does not serve yet (the percentage ignores them).
+ * `CONFORMANCE_MAX_NOT_IMPLEMENTED=<n>` fails when more than n operations are unserved (default:
+ * unlimited); `CONFORMANCE_REQUIRE_ALL=1` is the same as 0. Returns an error text or null.
+ */
+export function notImplementedFailure(
+  c: CoverageReport,
+  env: Record<string, string | undefined> = process.env,
+): string | null {
+  const all = env.CONFORMANCE_REQUIRE_ALL
+  const raw = all === '1' || all === 'true' ? '0' : env.CONFORMANCE_MAX_NOT_IMPLEMENTED
+  if (raw === undefined || raw === '') return null
+  const max = Number(raw)
+  if (Number.isNaN(max) || max < 0) return `CONFORMANCE_MAX_NOT_IMPLEMENTED is not a count: ${raw}`
+  return c.notImplemented.length > max
+    ? `${String(c.notImplemented.length)} operations are not yet implemented, above CONFORMANCE_MAX_NOT_IMPLEMENTED=${String(max)}`
+    : null
+}
+
 /** Threshold from `CONFORMANCE_MIN_COVERAGE` (percent, default 0). Returns an error text or null. */
 export function coverageFailure(
   c: CoverageReport,
   env: Record<string, string | undefined> = process.env,
 ): string | null {
+  if (c.total === 0) return 'the target serves no contract operation (empty route lookup?)'
   const raw = env.CONFORMANCE_MIN_COVERAGE
   const min = raw === undefined || raw === '' ? 0 : Number(raw)
   if (Number.isNaN(min)) return `CONFORMANCE_MIN_COVERAGE is not a number: ${String(raw)}`

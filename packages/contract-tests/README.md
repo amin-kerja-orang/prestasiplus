@@ -30,6 +30,20 @@ aborts the run; all are collected and reported.
 it, grouped by tag, and prints the covered percentage. `CONFORMANCE_MIN_COVERAGE` (percent, default
 `0`) is the failure threshold. The lead raises it (100 for carded domains) in wave 4.
 
+### Operations the target does not serve yet (two gates)
+
+The percentage above is computed over the operations the target SERVES only (a target that has an
+`implements(op)`, like the API). Operations without a route yet are listed apart and are not in it, so
+100% never means "the whole contract is built". The lead uses two gates:
+
+- `CONFORMANCE_MIN_COVERAGE=<percent>`: how much of the served operations the scenarios must touch.
+- `CONFORMANCE_MAX_NOT_IMPLEMENTED=<n>`: fails when more than n operations are still unserved
+  (default: unlimited). `CONFORMANCE_REQUIRE_ALL=1` is the same as 0 (wave 4: the whole contract is built).
+
+An empty route lookup is never 100%: the API run throws when it finds no router stack or no route, and
+fails when no operation is served. A scenario must never catch the not-yet-implemented signal
+(`NotImplementedSignal`); a helper that catches errors calls `rethrowNotImplemented(err)` first.
+
 ### Known mismatches
 
 A mismatch that is understood is listed in the target's `knownMismatches` (`{ scenario, kind?,

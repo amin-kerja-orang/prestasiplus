@@ -3,8 +3,10 @@ import {
   type ActorRole,
   type HttpClient,
   type HttpMethod,
+  type ContractIndex,
   type HttpRequestInit,
   type HttpResponse,
+  type SessionClient,
   type Target,
   sessionLogin,
 } from '@pp/contract-tests'
@@ -26,21 +28,48 @@ interface ExpressLayer {
   route?: { path: unknown; methods: Record<string, boolean> }
 }
 
-/** `METHOD /path` (parameters as `{}`, no `/api` prefix) of every route the Nest app registered. */
+/**
+ * `METHOD /path` (parameters as `{}`, no `/api` prefix) of every route the Nest app registered.
+ * Express 5 keeps the router in `app.router`, Express 4 in `app._router`; if neither has a stack
+ * (or the stack holds no route) this THROWS, because an empty answer would mark every contract
+ * operation "not yet implemented" and hide every failure.
+ */
 export function registeredRoutes(app: INestApplication): Set<string> {
   const instance = app.getHttpAdapter().getInstance() as {
-    router?: { stack: ExpressLayer[] }
-    _router?: { stack: ExpressLayer[] }
+    router?: { stack?: ExpressLayer[] }
+    _router?: { stack?: ExpressLayer[] }
   }
-  const stack = (instance.router ?? instance._router)?.stack ?? []
+  const stack = instance.router?.stack ?? instance._router?.stack
+  if (!Array.isArray(stack)) throw new Error('conformance: cannot find the Express router stack (app.router / app._router)')
   const out = new Set<string>()
   for (const layer of stack) {
     const route = layer.route
     if (!route || typeof route.path !== 'string') continue
-    const path = route.path.startsWith(API_BASE) ? route.path.slice(API_BASE.length) : route.path
+    // Nest's own wildcard fallback for the global prefix (every method, answers its 404): not a controller route.
+    if (route.path.includes('*')) continue
+    const path = route.path.startsWith(`${API_BASE}/`) ? route.path.slice(API_BASE.length) : route.path
     for (const m of Object.keys(route.methods)) out.add(`${m.toUpperCase()} ${normalisePath(path)}`)
   }
+  if (out.size === 0) throw new Error('conformance: the Express router stack holds no route')
   return out
+}
+
+/** Routes outside the contract on purpose, each with its reason. Nothing else may be unknown. */
+export const NON_CONTRACT_ROUTES: Record<string, string> = {
+  'GET /health': 'liveness / readiness probe (BE-01); infrastructure, not part of the product contract',
+}
+
+/**
+ * Reverse check: every route the app registered must match a contract operation, otherwise a
+ * controller with a typo in its path would be skipped as "not yet implemented" for ever. Returns
+ * the `METHOD /path` of every registered route that matches none (and is not in NON_CONTRACT_ROUTES).
+ */
+export function unknownRoutes(routes: Set<string>, contract: ContractIndex): string[] {
+  return [...routes].filter((key) => {
+    if (key in NON_CONTRACT_ROUTES) return false
+    const [method, path] = key.split(' ') as [HttpMethod, string]
+    return contract.match(method, path.replaceAll('{}', 'x')) === null
+  })
 }
 
 /** The supertest `HttpClient`: same interface as the mock adapter, plus `set-cookie` and a file part. */
@@ -88,22 +117,30 @@ export function supertestClient(app: INestApplication, baseHeaders: () => Record
  * - `actor` signs in through `POST /auth/login` with the seeded account of the role and follows the
  *   cookie and CSRF token the server issues (`sessionLogin`).
  */
-export function apiTarget(app: INestApplication): Target {
-  const routes = registeredRoutes(app)
+export function apiTarget(app: INestApplication, routes = registeredRoutes(app)): Target {
   let counter = 0
   let address = '10.0.0.1'
   const base = supertestClient(app, () => ({ 'x-forwarded-for': address }))
+  // One login per role inside a scenario (argon2 is the slow part); a new scenario starts clean.
+  let sessions = new Map<ActorRole, Promise<SessionClient>>()
   return {
     name: 'api',
     anonymous: base,
     credentials: accountFor,
     beginScenario() {
       counter++
+      sessions = new Map()
       address = `10.${String((counter >> 16) & 255)}.${String((counter >> 8) & 255)}.${String(counter & 255)}`
     },
     implements: (op) => routes.has(`${op.method} ${normalisePath(op.path)}`),
     async actor(role: ActorRole, opts) {
-      const session = await sessionLogin(base, { ...accountFor(role), remember: false })
+      let login = sessions.get(role)
+      // The login goes through the runner's checked client, so its response is contract-checked.
+      if (!login) {
+        login = sessionLogin(opts?.via ?? base, { ...accountFor(role), remember: false })
+        sessions.set(role, login)
+      }
+      const session = await login
       return opts?.csrf === false ? session.withoutCsrf() : session
     },
   }

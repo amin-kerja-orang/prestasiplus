@@ -41,6 +41,8 @@ export type ActorRole =
 export interface ActorOptions {
   /** `false`: the same session but no `X-CSRF-Token` header on writes (for `CSRF_INVALID` scenarios). Ignored by targets with no CSRF (the mock). */
   csrf?: boolean
+  /** Set by the runner: a client the actor's login must go through, so the login response is contract-checked. */
+  via?: HttpClient
 }
 
 /** What a run is pointed at: an anonymous client plus a way to get an authenticated one. */

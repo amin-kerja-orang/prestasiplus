@@ -1,11 +1,11 @@
 import { describe, expect, it } from 'vitest'
 
-import { computeCoverage, coverageFailure, formatCoverage } from '../coverage'
+import { computeCoverage, coverageFailure, formatCoverage, notImplementedFailure } from '../coverage'
 import { ContractIndex, fixNullableRefs } from '../contract-index'
 import { findLegacyKeys } from '../guards'
 import type { HttpClient, HttpResponse, Target } from '../http-client'
 import { formatRun } from '../report'
-import { runScenarios, type Scenario } from '../runner'
+import { NotImplementedSignal, rethrowNotImplemented, runScenarios, type Scenario } from '../runner'
 import { parseSetCookie, sessionLogin } from '../session'
 
 const contract = ContractIndex.load()
@@ -294,5 +294,42 @@ describe('target support for later cards', () => {
     const target = { ...fakeTarget(() => ({})), beginScenario: (id: string) => void ids.push(id) }
     await runScenarios([call('GET', '/session'), call('GET', '/me')], { target, contract })
     expect(ids).toEqual(['GET /session', 'GET /me'])
+  })
+})
+
+describe('unserved-operations gate', () => {
+  const target = { implements: (op: { key: string }) => op.key === 'GET /session' }
+  const mk = async () => {
+    const t = { ...fakeTarget(() => ({ status: 401, body: { error: { code: 'UNAUTHORIZED', message: 'x' } } })), ...target }
+    const report = await runScenarios([call('GET', '/session')], { target: t, contract })
+    return computeCoverage(contract, report, t)
+  }
+
+  it('is off by default, and CONFORMANCE_MAX_NOT_IMPLEMENTED / CONFORMANCE_REQUIRE_ALL fail above the count', async () => {
+    const cov = await mk()
+    const n = cov.notImplemented.length
+    expect(n).toBeGreaterThan(0)
+    expect(notImplementedFailure(cov, {})).toBeNull()
+    expect(notImplementedFailure(cov, { CONFORMANCE_MAX_NOT_IMPLEMENTED: String(n) })).toBeNull()
+    expect(notImplementedFailure(cov, { CONFORMANCE_MAX_NOT_IMPLEMENTED: String(n - 1) })).toMatch(/not yet implemented/)
+    expect(notImplementedFailure(cov, { CONFORMANCE_REQUIRE_ALL: '1' })).toMatch(/not yet implemented/)
+    expect(notImplementedFailure(cov, { CONFORMANCE_MAX_NOT_IMPLEMENTED: 'x' })).toMatch(/not a count/)
+    // The percentage ignores unserved operations: 1 of 1 served is 100%.
+    expect(cov.percent).toBe(100)
+  })
+
+  it('an empty route lookup is a failure, never 100%', async () => {
+    const t = { ...fakeTarget(() => ({})), implements: () => false }
+    const report = await runScenarios([], { target: t, contract })
+    const cov = computeCoverage(contract, report, t)
+    expect(cov.total).toBe(0)
+    expect(cov.percent).toBe(0)
+    expect(coverageFailure(cov, {})).toMatch(/serves no contract operation/)
+  })
+
+  it('a not-yet-implemented signal is not swallowed by helpers that call rethrowNotImplemented', () => {
+    const signal = new NotImplementedSignal('GET /x')
+    expect(() => rethrowNotImplemented(signal)).toThrow(signal)
+    expect(() => rethrowNotImplemented(new Error('other'))).not.toThrow()
   })
 })
