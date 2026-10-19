@@ -557,6 +557,3366 @@
         ],
         "description": "Error codes of the auth and session endpoints, in addition to the generic ones."
       },
+      "GamificationLedgerKind": {
+        "type": "string",
+        "enum": [
+          "earn",
+          "spend",
+          "convert",
+          "bonus",
+          "refund"
+        ],
+        "description": "Type of a syiling ledger row."
+      },
+      "GamificationDifficulty": {
+        "type": "string",
+        "enum": [
+          "easy",
+          "medium",
+          "hard"
+        ]
+      },
+      "GamificationChallengeType": {
+        "type": "string",
+        "enum": [
+          "quiz_count",
+          "accuracy",
+          "topic_variety",
+          "streak",
+          "time_spent"
+        ]
+      },
+      "GamificationRarity": {
+        "type": "string",
+        "enum": [
+          "common",
+          "rare",
+          "epic",
+          "legendary"
+        ]
+      },
+      "GamificationDashboardTier": {
+        "type": "object",
+        "properties": {
+          "key": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Tier key (the tier name, lower-case)."
+          },
+          "labelMs": {
+            "type": "string"
+          },
+          "icon": {
+            "type": "string"
+          },
+          "color": {
+            "type": "string"
+          },
+          "minSyiling": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "conversionRate": {
+            "type": "integer",
+            "minimum": 1,
+            "description": "Syiling per token."
+          }
+        },
+        "required": [
+          "key",
+          "labelMs",
+          "icon",
+          "color",
+          "minSyiling",
+          "conversionRate"
+        ]
+      },
+      "GamificationDashboardStreak": {
+        "type": "object",
+        "properties": {
+          "current": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "best": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "multiplier": {
+            "type": "number",
+            "minimum": 0
+          }
+        },
+        "required": [
+          "current",
+          "best",
+          "multiplier"
+        ]
+      },
+      "GamificationDashboardWallet": {
+        "type": "object",
+        "properties": {
+          "userId": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "currentSyiling": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "totalSyilingEarned": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "tokenBalance": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "xp": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "level": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "xpNeeded": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "levelProgressPct": {
+            "type": "number",
+            "minimum": 0
+          },
+          "tier": {
+            "$ref": "#/components/schemas/GamificationDashboardTier"
+          },
+          "nextTier": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "properties": {
+              "key": {
+                "type": "string",
+                "minLength": 1,
+                "description": "Tier key (the tier name, lower-case)."
+              },
+              "labelMs": {
+                "type": "string"
+              },
+              "icon": {
+                "type": "string"
+              },
+              "color": {
+                "type": "string"
+              },
+              "minSyiling": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "conversionRate": {
+                "type": "integer",
+                "minimum": 1,
+                "description": "Syiling per token."
+              },
+              "pct": {
+                "type": "number",
+                "minimum": 0
+              },
+              "need": {
+                "type": "integer",
+                "minimum": 0
+              }
+            },
+            "required": [
+              "key",
+              "labelMs",
+              "icon",
+              "color",
+              "minSyiling",
+              "conversionRate",
+              "pct",
+              "need"
+            ]
+          },
+          "title": {
+            "type": "object",
+            "properties": {
+              "name": {
+                "type": "string"
+              },
+              "emoji": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "name",
+              "emoji"
+            ]
+          },
+          "nextTitle": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "properties": {
+              "name": {
+                "type": "string"
+              },
+              "emoji": {
+                "type": "string"
+              },
+              "threshold": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "need": {
+                "type": "integer",
+                "minimum": 0
+              }
+            },
+            "required": [
+              "name",
+              "emoji",
+              "threshold",
+              "need"
+            ]
+          },
+          "earnedToday": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "earnedThisWeek": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "streak": {
+            "$ref": "#/components/schemas/GamificationDashboardStreak"
+          }
+        },
+        "required": [
+          "userId",
+          "currentSyiling",
+          "totalSyilingEarned",
+          "tokenBalance",
+          "xp",
+          "level",
+          "xpNeeded",
+          "levelProgressPct",
+          "tier",
+          "nextTier",
+          "title",
+          "nextTitle",
+          "earnedToday",
+          "earnedThisWeek",
+          "streak"
+        ]
+      },
+      "GamificationDashboardEntry": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "type": {
+            "$ref": "#/components/schemas/GamificationLedgerKind"
+          },
+          "amount": {
+            "type": "integer"
+          },
+          "balanceAfter": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "source": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "createdAt": {
+            "$ref": "#/components/schemas/Timestamp"
+          }
+        },
+        "required": [
+          "id",
+          "type",
+          "amount",
+          "balanceAfter",
+          "source",
+          "description",
+          "createdAt"
+        ]
+      },
+      "GamificationChallengeProgress": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "icon": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "difficulty": {
+            "$ref": "#/components/schemas/GamificationDifficulty"
+          },
+          "rewardSyiling": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "rewardXp": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "target": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "progress": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Equals target when already completed today."
+          },
+          "pct": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Rounded integer percentage."
+          },
+          "completed": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "id",
+          "icon",
+          "title",
+          "description",
+          "difficulty",
+          "rewardSyiling",
+          "rewardXp",
+          "target",
+          "progress",
+          "pct",
+          "completed"
+        ]
+      },
+      "GamificationMasteryRow": {
+        "type": "object",
+        "properties": {
+          "subjectId": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "subjectName": {
+            "type": "string"
+          },
+          "level": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "stage": {
+            "type": "string"
+          },
+          "correct": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "nextTarget": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "minimum": 0
+          },
+          "accuracy": {
+            "type": "number",
+            "minimum": 0,
+            "description": "Percentage, up to 2 decimals."
+          },
+          "multiplier": {
+            "type": "number",
+            "minimum": 0
+          }
+        },
+        "required": [
+          "subjectId",
+          "subjectName",
+          "level",
+          "stage",
+          "correct",
+          "nextTarget",
+          "accuracy",
+          "multiplier"
+        ]
+      },
+      "GamificationTierGridItem": {
+        "type": "object",
+        "properties": {
+          "key": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Tier key (the tier name, lower-case)."
+          },
+          "labelMs": {
+            "type": "string"
+          },
+          "icon": {
+            "type": "string"
+          },
+          "color": {
+            "type": "string"
+          },
+          "minSyiling": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "conversionRate": {
+            "type": "integer",
+            "minimum": 1,
+            "description": "Syiling per token."
+          },
+          "isMine": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "key",
+          "labelMs",
+          "icon",
+          "color",
+          "minSyiling",
+          "conversionRate",
+          "isMine"
+        ]
+      },
+      "GamificationDashboard": {
+        "type": "object",
+        "properties": {
+          "wallet": {
+            "$ref": "#/components/schemas/GamificationDashboardWallet"
+          },
+          "challenges": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/GamificationChallengeProgress"
+            },
+            "maxItems": 4
+          },
+          "recent": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/GamificationDashboardEntry"
+            },
+            "maxItems": 6
+          },
+          "mastery": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/GamificationMasteryRow"
+            }
+          },
+          "tiers": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/GamificationTierGridItem"
+            }
+          }
+        },
+        "required": [
+          "wallet",
+          "challenges",
+          "recent",
+          "mastery",
+          "tiers"
+        ]
+      },
+      "GamificationConvertView": {
+        "type": "object",
+        "properties": {
+          "currentSyiling": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "tokenBalance": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "rate": {
+            "type": "integer",
+            "minimum": 1,
+            "description": "Syiling per token of the caller tier."
+          },
+          "tierLabel": {
+            "type": "string"
+          },
+          "quick": {
+            "type": "array",
+            "prefixItems": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "integer"
+              },
+              {
+                "type": "integer"
+              }
+            ],
+            "description": "[rate, 5 x rate, currentSyiling]."
+          },
+          "tiers": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/GamificationTierGridItem"
+            }
+          }
+        },
+        "required": [
+          "currentSyiling",
+          "tokenBalance",
+          "rate",
+          "tierLabel",
+          "quick",
+          "tiers"
+        ]
+      },
+      "GamificationConvertRequest": {
+        "type": "object",
+        "properties": {
+          "syilingAmount": {
+            "type": "integer"
+          }
+        },
+        "required": [
+          "syilingAmount"
+        ]
+      },
+      "GamificationConvertResult": {
+        "type": "object",
+        "properties": {
+          "syilingDebited": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "tokensCredited": {
+            "type": "integer",
+            "minimum": 1,
+            "description": "floor(syilingDebited / rate)."
+          },
+          "currentSyiling": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "tokenBalance": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "transactionId": {
+            "$ref": "#/components/schemas/Id"
+          }
+        },
+        "required": [
+          "syilingDebited",
+          "tokensCredited",
+          "currentSyiling",
+          "tokenBalance",
+          "transactionId"
+        ]
+      },
+      "GamificationChallengesMeta": {
+        "type": "object",
+        "properties": {
+          "completed": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "active": {
+            "type": "integer",
+            "minimum": 0
+          }
+        },
+        "required": [
+          "completed",
+          "active"
+        ]
+      },
+      "GamificationChallengesResponse": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/GamificationChallengeProgress"
+            }
+          },
+          "meta": {
+            "$ref": "#/components/schemas/GamificationChallengesMeta"
+          }
+        },
+        "required": [
+          "data",
+          "meta"
+        ]
+      },
+      "GamificationPodiumEntry": {
+        "type": "object",
+        "properties": {
+          "rank": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 3
+          },
+          "userId": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "name": {
+            "type": "string"
+          },
+          "initials": {
+            "type": "string"
+          },
+          "totalSyilingEarned": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "tier": {
+            "type": "object",
+            "properties": {
+              "key": {
+                "type": "string"
+              },
+              "labelMs": {
+                "type": "string"
+              },
+              "icon": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "key",
+              "labelMs",
+              "icon"
+            ]
+          }
+        },
+        "required": [
+          "rank",
+          "userId",
+          "name",
+          "initials",
+          "totalSyilingEarned",
+          "tier"
+        ]
+      },
+      "GamificationLeaderboardRow": {
+        "type": "object",
+        "properties": {
+          "rank": {
+            "type": "integer",
+            "minimum": 4,
+            "maximum": 50
+          },
+          "userId": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "name": {
+            "type": "string"
+          },
+          "initials": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "level": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "totalSyilingEarned": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "tierIcon": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "rank",
+          "userId",
+          "name",
+          "initials",
+          "title",
+          "level",
+          "totalSyilingEarned",
+          "tierIcon"
+        ]
+      },
+      "GamificationLeaderboard": {
+        "type": "object",
+        "properties": {
+          "podium": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/GamificationPodiumEntry"
+            },
+            "maxItems": 3
+          },
+          "rows": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/GamificationLeaderboardRow"
+            },
+            "maxItems": 47
+          }
+        },
+        "required": [
+          "podium",
+          "rows"
+        ]
+      },
+      "GamificationAchievementsQuery": {
+        "type": "object",
+        "properties": {
+          "rarity": {
+            "type": "string",
+            "description": "common | rare | epic | legendary; any other value gives no items."
+          }
+        }
+      },
+      "GamificationAchievementItem": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "icon": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "rarity": {
+            "$ref": "#/components/schemas/GamificationRarity"
+          },
+          "rarityLabel": {
+            "type": "string"
+          },
+          "rarityColor": {
+            "type": "string"
+          },
+          "rewardSyiling": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "rewardXp": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "progress": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "properties": {
+              "value": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "target": {
+                "type": "integer",
+                "minimum": 1
+              }
+            },
+            "required": [
+              "value",
+              "target"
+            ],
+            "description": "Only the 5 \"kuiz\" badges carry progress; others are null."
+          },
+          "unlocked": {
+            "type": "boolean"
+          },
+          "unlockedAt": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/Timestamp"
+              },
+              {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              }
+            ]
+          }
+        },
+        "required": [
+          "id",
+          "icon",
+          "name",
+          "description",
+          "rarity",
+          "rarityLabel",
+          "rarityColor",
+          "rewardSyiling",
+          "rewardXp",
+          "progress",
+          "unlocked",
+          "unlockedAt"
+        ]
+      },
+      "GamificationAchievements": {
+        "type": "object",
+        "properties": {
+          "unlocked": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "total": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Size of the whole catalogue, regardless of the rarity filter."
+          },
+          "streak": {
+            "$ref": "#/components/schemas/GamificationDashboardStreak"
+          },
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/GamificationAchievementItem"
+            }
+          }
+        },
+        "required": [
+          "unlocked",
+          "total",
+          "streak",
+          "items"
+        ]
+      },
+      "GamificationShareCards": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "initial": {
+            "type": "string"
+          },
+          "profileUrl": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Link to the caller own profile (host is a mock constant)."
+          },
+          "profile": {
+            "type": "object",
+            "properties": {
+              "answered": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "accuracy": {
+                "type": "number",
+                "minimum": 0
+              },
+              "sessions": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "tierKey": {
+                "type": "string"
+              },
+              "tierIcon": {
+                "type": "string"
+              },
+              "level": {
+                "type": "integer",
+                "minimum": 1
+              },
+              "currentSyiling": {
+                "type": "integer",
+                "minimum": 0
+              }
+            },
+            "required": [
+              "answered",
+              "accuracy",
+              "sessions",
+              "tierKey",
+              "tierIcon",
+              "level",
+              "currentSyiling"
+            ]
+          },
+          "kombo": {
+            "$ref": "#/components/schemas/GamificationDashboardStreak"
+          },
+          "mastery": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "subjectName": {
+                  "type": "string"
+                },
+                "level": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "stage": {
+                  "type": "string"
+                },
+                "accuracy": {
+                  "type": "number",
+                  "minimum": 0
+                },
+                "correct": {
+                  "type": "integer",
+                  "minimum": 0
+                }
+              },
+              "required": [
+                "subjectName",
+                "level",
+                "stage",
+                "accuracy",
+                "correct"
+              ]
+            }
+          },
+          "ranking": {
+            "type": "object",
+            "properties": {
+              "accuracy": {
+                "type": "number",
+                "minimum": 0
+              },
+              "correct": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "answered": {
+                "type": "integer",
+                "minimum": 0
+              }
+            },
+            "required": [
+              "accuracy",
+              "correct",
+              "answered"
+            ]
+          }
+        },
+        "required": [
+          "name",
+          "initial",
+          "profileUrl",
+          "profile",
+          "kombo",
+          "mastery",
+          "ranking"
+        ]
+      },
+      "GamificationReferral": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "string",
+            "minLength": 1
+          },
+          "rewardReferrer": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "rewardReferee": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "registerUrl": {
+            "type": "string",
+            "minLength": 1
+          },
+          "whatsappUrl": {
+            "type": "string",
+            "minLength": 1
+          },
+          "telegramUrl": {
+            "type": "string",
+            "minLength": 1
+          },
+          "stats": {
+            "type": "object",
+            "properties": {
+              "referrals": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "rewarded": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "syilingEarned": {
+                "type": "integer",
+                "minimum": 0
+              }
+            },
+            "required": [
+              "referrals",
+              "rewarded",
+              "syilingEarned"
+            ]
+          }
+        },
+        "required": [
+          "code",
+          "rewardReferrer",
+          "rewardReferee",
+          "registerUrl",
+          "whatsappUrl",
+          "telegramUrl",
+          "stats"
+        ]
+      },
+      "GamificationAdminOverview": {
+        "type": "object",
+        "properties": {
+          "cards": {
+            "type": "object",
+            "properties": {
+              "activeStudents": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "syilingGenerated": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "tokensConverted": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "conversions": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "activeChallenges": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "completedToday": {
+                "type": "integer",
+                "minimum": 0
+              }
+            },
+            "required": [
+              "activeStudents",
+              "syilingGenerated",
+              "tokensConverted",
+              "conversions",
+              "activeChallenges",
+              "completedToday"
+            ]
+          },
+          "tierDistribution": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "key": {
+                  "type": "string"
+                },
+                "count": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "pct": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "description": "Rounded integer label."
+                },
+                "widthPct": {
+                  "type": "number",
+                  "minimum": 0,
+                  "description": "Bar width, 2 decimals."
+                },
+                "color": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "key",
+                "count",
+                "pct",
+                "widthPct",
+                "color"
+              ]
+            },
+            "description": "By tier key ascending."
+          },
+          "top10": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "rank": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 10
+                },
+                "name": {
+                  "type": "string"
+                },
+                "tierKey": {
+                  "type": "string"
+                },
+                "level": {
+                  "type": "integer",
+                  "minimum": 1
+                },
+                "totalSyilingEarned": {
+                  "type": "integer",
+                  "minimum": 0
+                }
+              },
+              "required": [
+                "rank",
+                "name",
+                "tierKey",
+                "level",
+                "totalSyilingEarned"
+              ]
+            }
+          },
+          "recent": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "name": {
+                  "type": "string"
+                },
+                "type": {
+                  "$ref": "#/components/schemas/GamificationLedgerKind"
+                },
+                "amount": {
+                  "type": "integer"
+                },
+                "source": {
+                  "type": "string"
+                },
+                "createdAt": {
+                  "$ref": "#/components/schemas/Timestamp"
+                }
+              },
+              "required": [
+                "name",
+                "type",
+                "amount",
+                "source",
+                "createdAt"
+              ]
+            },
+            "maxItems": 10
+          }
+        },
+        "required": [
+          "cards",
+          "tierDistribution",
+          "top10",
+          "recent"
+        ]
+      },
+      "GamificationAdminTier": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "tierName": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Unique key, lower-case; cannot change."
+          },
+          "labelMs": {
+            "type": "string"
+          },
+          "icon": {
+            "type": "string"
+          },
+          "color": {
+            "type": "string"
+          },
+          "minSyiling": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "conversionRate": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "sortOrder": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "perks": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "quizRewardL1": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "quizRewardL2": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "quizRewardL3": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "quizRewardL4": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "quizRewardL5": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "pkskRewardCorrect": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "boardGameRewardCorrect": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "boardGameRewardWin": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "isActive": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "id",
+          "tierName",
+          "labelMs",
+          "icon",
+          "color",
+          "minSyiling",
+          "conversionRate",
+          "sortOrder",
+          "perks",
+          "quizRewardL1",
+          "quizRewardL2",
+          "quizRewardL3",
+          "quizRewardL4",
+          "quizRewardL5",
+          "pkskRewardCorrect",
+          "boardGameRewardCorrect",
+          "boardGameRewardWin",
+          "isActive"
+        ]
+      },
+      "GamificationAdminTierUpdate": {
+        "type": "object",
+        "properties": {
+          "labelMs": {
+            "type": "string",
+            "maxLength": 60,
+            "pattern": "\\S"
+          },
+          "icon": {
+            "type": "string",
+            "maxLength": 16,
+            "pattern": "\\S"
+          },
+          "color": {
+            "type": "string",
+            "pattern": "^#[0-9a-fA-F]{6}$",
+            "description": "#rrggbb; a new tier defaults to #3b82f6."
+          },
+          "minSyiling": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "conversionRate": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "sortOrder": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "quizRewardL1": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "quizRewardL2": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "quizRewardL3": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "quizRewardL4": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "quizRewardL5": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "pkskRewardCorrect": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "boardGameRewardCorrect": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "boardGameRewardWin": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "perks": {
+            "anyOf": [
+              {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              {
+                "type": "string"
+              }
+            ],
+            "description": "A list, a JSON-array text or one text. Absent keeps the stored list (create: empty list)."
+          }
+        },
+        "required": [
+          "labelMs",
+          "icon",
+          "minSyiling",
+          "conversionRate",
+          "sortOrder",
+          "quizRewardL1",
+          "quizRewardL2",
+          "quizRewardL3",
+          "quizRewardL4",
+          "quizRewardL5",
+          "pkskRewardCorrect",
+          "boardGameRewardCorrect",
+          "boardGameRewardWin"
+        ]
+      },
+      "GamificationAdminTierCreate": {
+        "type": "object",
+        "properties": {
+          "tierName": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 40,
+            "pattern": "^[A-Za-z0-9_-]+$"
+          },
+          "labelMs": {
+            "type": "string",
+            "maxLength": 60,
+            "pattern": "\\S"
+          },
+          "icon": {
+            "type": "string",
+            "maxLength": 16,
+            "pattern": "\\S"
+          },
+          "color": {
+            "type": "string",
+            "pattern": "^#[0-9a-fA-F]{6}$",
+            "description": "#rrggbb; a new tier defaults to #3b82f6."
+          },
+          "minSyiling": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "conversionRate": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "sortOrder": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "quizRewardL1": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "quizRewardL2": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "quizRewardL3": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "quizRewardL4": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "quizRewardL5": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "pkskRewardCorrect": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "boardGameRewardCorrect": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "boardGameRewardWin": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "perks": {
+            "anyOf": [
+              {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              {
+                "type": "string"
+              }
+            ],
+            "description": "A list, a JSON-array text or one text. Absent keeps the stored list (create: empty list)."
+          }
+        },
+        "required": [
+          "tierName",
+          "labelMs",
+          "icon",
+          "minSyiling",
+          "conversionRate",
+          "sortOrder",
+          "quizRewardL1",
+          "quizRewardL2",
+          "quizRewardL3",
+          "quizRewardL4",
+          "quizRewardL5",
+          "pkskRewardCorrect",
+          "boardGameRewardCorrect",
+          "boardGameRewardWin"
+        ]
+      },
+      "GamificationToggleResult": {
+        "type": "object",
+        "properties": {
+          "isActive": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "isActive"
+        ]
+      },
+      "GamificationAdminChallenge": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "title": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "icon": {
+            "type": "string"
+          },
+          "challengeType": {
+            "$ref": "#/components/schemas/GamificationChallengeType"
+          },
+          "targetValue": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "rewardSyiling": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "rewardXp": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "difficulty": {
+            "$ref": "#/components/schemas/GamificationDifficulty"
+          },
+          "sortOrder": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "isActive": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "id",
+          "title",
+          "description",
+          "icon",
+          "challengeType",
+          "targetValue",
+          "rewardSyiling",
+          "rewardXp",
+          "difficulty",
+          "sortOrder",
+          "isActive"
+        ]
+      },
+      "GamificationAdminChallengeInput": {
+        "type": "object",
+        "properties": {
+          "title": {
+            "type": "string",
+            "maxLength": 120,
+            "pattern": "\\S"
+          },
+          "description": {
+            "type": "string",
+            "maxLength": 255,
+            "pattern": "\\S"
+          },
+          "icon": {
+            "type": "string",
+            "maxLength": 16,
+            "pattern": "\\S"
+          },
+          "challengeType": {
+            "$ref": "#/components/schemas/GamificationChallengeType"
+          },
+          "targetValue": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "rewardSyiling": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "rewardXp": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "difficulty": {
+            "$ref": "#/components/schemas/GamificationDifficulty"
+          },
+          "sortOrder": {
+            "type": "integer",
+            "minimum": 0
+          }
+        },
+        "required": [
+          "title",
+          "description",
+          "icon",
+          "challengeType",
+          "targetValue",
+          "rewardSyiling",
+          "rewardXp",
+          "difficulty",
+          "sortOrder"
+        ]
+      },
+      "GamificationDeleteResult": {
+        "type": "object",
+        "properties": {
+          "deleted": {
+            "type": "number",
+            "enum": [
+              1
+            ]
+          }
+        },
+        "required": [
+          "deleted"
+        ]
+      },
+      "GamificationAdminStudentsQuery": {
+        "type": "object",
+        "properties": {
+          "search": {
+            "type": "string",
+            "description": "Name or e-mail contains."
+          },
+          "tier": {
+            "type": "string",
+            "description": "Tier key."
+          },
+          "sort": {
+            "type": "string",
+            "description": "One of total_syiling_earned, current_syiling, token_balance, level; any other value is ignored."
+          },
+          "page": {
+            "type": "integer",
+            "minimum": 1,
+            "description": "An invalid page reads as 1; an out-of-range page is an empty list."
+          }
+        }
+      },
+      "GamificationAdminStudentRow": {
+        "type": "object",
+        "properties": {
+          "userId": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "name": {
+            "type": "string"
+          },
+          "email": {
+            "type": "string"
+          },
+          "tierKey": {
+            "type": "string"
+          },
+          "tierColor": {
+            "type": "string"
+          },
+          "level": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "currentSyiling": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "tokenBalance": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "totalSyilingEarned": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "xp": {
+            "type": "integer",
+            "minimum": 0
+          }
+        },
+        "required": [
+          "userId",
+          "name",
+          "email",
+          "tierKey",
+          "tierColor",
+          "level",
+          "currentSyiling",
+          "tokenBalance",
+          "totalSyilingEarned",
+          "xp"
+        ]
+      },
+      "GamificationAdminStudentsResponse": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/GamificationAdminStudentRow"
+            }
+          },
+          "meta": {
+            "$ref": "#/components/schemas/ListMeta"
+          }
+        },
+        "required": [
+          "data",
+          "meta"
+        ]
+      },
+      "GamificationAdminAwardRequest": {
+        "type": "object",
+        "properties": {
+          "userId": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "amount": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 10000
+          },
+          "reason": {
+            "type": "string",
+            "maxLength": 255,
+            "pattern": "\\S",
+            "description": "Stored as the ledger description."
+          }
+        },
+        "required": [
+          "userId",
+          "amount",
+          "reason"
+        ]
+      },
+      "GamificationAdminAwardResult": {
+        "type": "object",
+        "properties": {
+          "userId": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "currentSyiling": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "transactionId": {
+            "$ref": "#/components/schemas/Id"
+          }
+        },
+        "required": [
+          "userId",
+          "currentSyiling",
+          "transactionId"
+        ]
+      },
+      "GamificationAdminTransactionsQuery": {
+        "type": "object",
+        "properties": {
+          "type": {
+            "type": "string",
+            "description": "earn | spend | convert | bonus | refund; any other value gives an empty result."
+          },
+          "dateFrom": {
+            "type": "string",
+            "description": "YYYY-MM-DD, inclusive; a malformed value is ignored."
+          },
+          "dateTo": {
+            "type": "string",
+            "description": "YYYY-MM-DD, inclusive; a malformed value is ignored."
+          },
+          "page": {
+            "type": "integer",
+            "minimum": 1,
+            "description": "An invalid page reads as 1."
+          }
+        }
+      },
+      "GamificationAdminTransactionRow": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "userId": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "name": {
+            "type": "string"
+          },
+          "type": {
+            "$ref": "#/components/schemas/GamificationLedgerKind"
+          },
+          "amount": {
+            "type": "integer"
+          },
+          "balanceAfter": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "source": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "createdAt": {
+            "$ref": "#/components/schemas/Timestamp"
+          }
+        },
+        "required": [
+          "id",
+          "userId",
+          "name",
+          "type",
+          "amount",
+          "balanceAfter",
+          "source",
+          "description",
+          "createdAt"
+        ]
+      },
+      "GamificationAdminTransactionsResponse": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/GamificationAdminTransactionRow"
+            }
+          },
+          "meta": {
+            "$ref": "#/components/schemas/ListMeta"
+          }
+        },
+        "required": [
+          "data",
+          "meta"
+        ]
+      },
+      "GamificationSettingKey": {
+        "type": "string",
+        "enum": [
+          "coins_per_question",
+          "cash_rate_coins",
+          "cash_rate_sen",
+          "min_cash_withdrawal",
+          "cash_withdrawal_enabled",
+          "reward_budget_sen_session",
+          "reward_budget_sen_month",
+          "current_session_year",
+          "flat_quiz_reward",
+          "games_award_syiling"
+        ]
+      },
+      "GamificationSetting": {
+        "type": "object",
+        "properties": {
+          "key": {
+            "$ref": "#/components/schemas/GamificationSettingKey"
+          },
+          "label": {
+            "type": "string"
+          },
+          "value": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "number",
+              "toggle"
+            ]
+          }
+        },
+        "required": [
+          "key",
+          "label",
+          "value",
+          "kind"
+        ]
+      },
+      "GamificationSettingsList": {
+        "type": "array",
+        "items": {
+          "$ref": "#/components/schemas/GamificationSetting"
+        }
+      },
+      "GamificationSettingsUpdateRequest": {
+        "type": "object",
+        "properties": {
+          "settings": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "key": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "value": {
+                  "type": "integer",
+                  "minimum": 0
+                }
+              },
+              "required": [
+                "key",
+                "value"
+              ]
+            },
+            "minItems": 1
+          }
+        },
+        "required": [
+          "settings"
+        ]
+      },
+      "GamificationEconomySettings": {
+        "type": "object",
+        "properties": {
+          "rewardBudgetSenSession": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "rewardBudgetSenMonth": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "flatQuizReward": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "currentSessionYear": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "gamesAwardSyiling": {
+            "type": "integer",
+            "minimum": 0
+          }
+        },
+        "required": [
+          "rewardBudgetSenSession",
+          "rewardBudgetSenMonth",
+          "flatQuizReward",
+          "currentSessionYear",
+          "gamesAwardSyiling"
+        ]
+      },
+      "GamificationEconomySettingsUpdate": {
+        "type": "object",
+        "properties": {
+          "rewardBudgetSenSession": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "rewardBudgetSenMonth": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "flatQuizReward": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "currentSessionYear": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "gamesAwardSyiling": {
+            "type": "integer",
+            "minimum": 0
+          }
+        }
+      },
+      "GamificationSyilingReward": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "name": {
+            "type": "string"
+          },
+          "type": {
+            "type": "string",
+            "enum": [
+              "VOUCHER",
+              "PHYSICAL",
+              "EXPERIENCE",
+              "DIGITAL",
+              "SUBSCRIPTION"
+            ]
+          },
+          "priceSyiling": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "costValueSen": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Integer sen."
+          },
+          "costRm": {
+            "type": "number",
+            "minimum": 0
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "type",
+          "priceSyiling",
+          "costValueSen",
+          "costRm"
+        ]
+      },
+      "GamificationRewardCostRequest": {
+        "type": "object",
+        "properties": {
+          "costValueSen": {
+            "type": "integer",
+            "minimum": 0
+          }
+        },
+        "required": [
+          "costValueSen"
+        ]
+      },
+      "GamificationDrawPrize": {
+        "type": "object",
+        "properties": {
+          "label": {
+            "type": "string"
+          },
+          "valueSen": {
+            "type": "integer"
+          },
+          "qty": {
+            "type": "integer"
+          }
+        },
+        "required": [
+          "label",
+          "valueSen",
+          "qty"
+        ]
+      },
+      "GamificationDrawPrizeInput": {
+        "type": "object",
+        "properties": {
+          "label": {
+            "type": "string"
+          },
+          "valueSen": {
+            "type": "integer"
+          },
+          "value_sen": {
+            "type": "integer",
+            "description": "Alias of valueSen (the live form posts this name)."
+          },
+          "qty": {
+            "type": "integer"
+          }
+        },
+        "required": [
+          "label",
+          "qty"
+        ]
+      },
+      "GamificationDrawStatus": {
+        "type": "string",
+        "enum": [
+          "draft",
+          "open",
+          "closed"
+        ]
+      },
+      "GamificationDraw": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "title": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "ticketCostSyiling": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "maxTicketsPerStudent": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "prizePool": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/GamificationDrawPrize"
+            }
+          },
+          "closesAt": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/DateOnly"
+              },
+              {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              }
+            ]
+          },
+          "status": {
+            "$ref": "#/components/schemas/GamificationDrawStatus"
+          },
+          "createdAt": {
+            "$ref": "#/components/schemas/Timestamp"
+          },
+          "ticketsSold": {
+            "type": "integer",
+            "minimum": 0
+          }
+        },
+        "required": [
+          "id",
+          "title",
+          "description",
+          "ticketCostSyiling",
+          "maxTicketsPerStudent",
+          "prizePool",
+          "closesAt",
+          "status",
+          "createdAt",
+          "ticketsSold"
+        ]
+      },
+      "GamificationDrawCreateRequest": {
+        "type": "object",
+        "properties": {
+          "title": {
+            "type": "string",
+            "maxLength": 150,
+            "pattern": "\\S"
+          },
+          "description": {
+            "type": "string",
+            "maxLength": 1000
+          },
+          "ticketCostSyiling": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "maxTicketsPerStudent": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "closesAt": {
+            "type": "string",
+            "format": "date",
+            "description": "YYYY-MM-DD, a real calendar date.",
+            "example": "2026-10-16"
+          },
+          "openNow": {
+            "type": "boolean",
+            "description": "\"Buka serta-merta\": create as open instead of draft."
+          },
+          "prizePool": {
+            "anyOf": [
+              {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/GamificationDrawPrizeInput"
+                }
+              },
+              {
+                "type": "string"
+              }
+            ]
+          }
+        },
+        "required": [
+          "title",
+          "ticketCostSyiling",
+          "maxTicketsPerStudent"
+        ]
+      },
+      "GamificationRewardControl": {
+        "type": "object",
+        "properties": {
+          "tiles": {
+            "type": "object",
+            "properties": {
+              "sessionYear": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "liabilityRm": {
+                "type": "number",
+                "minimum": 0,
+                "description": "Sum of costValueSen of the claims in the session year / 100."
+              },
+              "students": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "claims": {
+                "type": "integer",
+                "minimum": 0
+              }
+            },
+            "required": [
+              "sessionYear",
+              "liabilityRm",
+              "students",
+              "claims"
+            ]
+          },
+          "settings": {
+            "$ref": "#/components/schemas/GamificationEconomySettings"
+          },
+          "rewards": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/GamificationSyilingReward"
+            }
+          },
+          "draws": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/GamificationDraw"
+            }
+          }
+        },
+        "required": [
+          "tiles",
+          "settings",
+          "rewards",
+          "draws"
+        ]
+      },
+      "RewardCategory": {
+        "type": "string",
+        "enum": [
+          "flagship",
+          "ewallet",
+          "telco",
+          "gaming",
+          "streaming",
+          "food_beverage",
+          "ecommerce",
+          "education",
+          "entertainment"
+        ]
+      },
+      "RewardDeliveryMethod": {
+        "type": "string",
+        "enum": [
+          "manual",
+          "api",
+          "instant"
+        ]
+      },
+      "RewardRedemptionStatus": {
+        "type": "string",
+        "enum": [
+          "pending_parent_consent",
+          "pending_admin",
+          "delivered",
+          "cancelled"
+        ]
+      },
+      "RewardBulkAction": {
+        "type": "string",
+        "enum": [
+          "activate",
+          "deactivate",
+          "delete",
+          "set_stock",
+          "set_max_per_month",
+          "set_token_cost"
+        ]
+      },
+      "RewardErrorCode": {
+        "type": "string",
+        "enum": [
+          "OUT_OF_STOCK",
+          "MONTHLY_CAP",
+          "INSUFFICIENT_TOKENS",
+          "DRAW_CLOSED",
+          "TICKET_LIMIT",
+          "INSUFFICIENT_BALANCE",
+          "CONFLICT"
+        ]
+      },
+      "RewardItem": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "category": {
+            "$ref": "#/components/schemas/RewardCategory"
+          },
+          "vendor": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "description": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "denominationRm": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "tokenCost": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "iconEmoji": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "stockQuantity": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "minimum": 0
+          },
+          "maxPerMonthPerStudent": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "minimum": 0
+          },
+          "voucherValidityDays": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "deliveryMethod": {
+            "$ref": "#/components/schemas/RewardDeliveryMethod"
+          },
+          "vendorSku": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "displayOrder": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "imageUrl": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "termsText": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "isActive": {
+            "type": "boolean"
+          },
+          "requiresParentConsent": {
+            "type": "boolean"
+          },
+          "createdAt": {
+            "$ref": "#/components/schemas/Timestamp"
+          },
+          "updatedAt": {
+            "$ref": "#/components/schemas/Timestamp"
+          }
+        },
+        "required": [
+          "id",
+          "category",
+          "vendor",
+          "title",
+          "description",
+          "denominationRm",
+          "tokenCost",
+          "iconEmoji",
+          "stockQuantity",
+          "maxPerMonthPerStudent",
+          "voucherValidityDays",
+          "deliveryMethod",
+          "vendorSku",
+          "displayOrder",
+          "imageUrl",
+          "termsText",
+          "isActive",
+          "requiresParentConsent",
+          "createdAt",
+          "updatedAt"
+        ]
+      },
+      "RewardInput": {
+        "type": "object",
+        "properties": {
+          "category": {
+            "$ref": "#/components/schemas/RewardCategory"
+          },
+          "vendor": {
+            "type": "string",
+            "maxLength": 100,
+            "pattern": "\\S"
+          },
+          "title": {
+            "type": "string",
+            "maxLength": 200,
+            "pattern": "\\S"
+          },
+          "description": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "maxLength": 1000
+          },
+          "denominationRm": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 10000
+          },
+          "tokenCost": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 10000
+          },
+          "iconEmoji": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "maxLength": 8
+          },
+          "stockQuantity": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "minimum": 0,
+            "maximum": 999999999,
+            "description": "null or absent = unlimited."
+          },
+          "maxPerMonthPerStudent": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "minimum": 1,
+            "maximum": 99,
+            "description": "null or absent = no cap."
+          },
+          "voucherValidityDays": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 1825
+          },
+          "deliveryMethod": {
+            "$ref": "#/components/schemas/RewardDeliveryMethod"
+          },
+          "vendorSku": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "maxLength": 100
+          },
+          "displayOrder": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9999
+          },
+          "imageUrl": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "maxLength": 500,
+            "pattern": "^[Hh][Tt][Tt][Pp][Ss]?:\\/\\/\\S+$"
+          },
+          "termsText": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "maxLength": 2000
+          },
+          "isActive": {
+            "type": "boolean"
+          },
+          "requiresParentConsent": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "category",
+          "vendor",
+          "title",
+          "denominationRm",
+          "tokenCost"
+        ]
+      },
+      "RewardListQuery": {
+        "type": "object",
+        "properties": {
+          "cat": {
+            "type": "string",
+            "description": "A category key or \"all\"; an unknown value gives no rows and activeCat null."
+          },
+          "page": {
+            "type": "integer",
+            "minimum": 1,
+            "description": "An invalid page reads as 1."
+          }
+        }
+      },
+      "RewardListItem": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "category": {
+            "$ref": "#/components/schemas/RewardCategory"
+          },
+          "categoryLabel": {
+            "type": "string",
+            "description": "The long table label of the category (BM, with emoji)."
+          },
+          "vendor": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "iconEmoji": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "denominationRm": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "tokenCost": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "stockQuantity": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "minimum": 0
+          },
+          "redemptionCount": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Non-cancelled redemptions of this reward."
+          },
+          "isActive": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "id",
+          "category",
+          "categoryLabel",
+          "vendor",
+          "title",
+          "iconEmoji",
+          "denominationRm",
+          "tokenCost",
+          "stockQuantity",
+          "redemptionCount",
+          "isActive"
+        ]
+      },
+      "RewardListMeta": {
+        "type": "object",
+        "properties": {
+          "page": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "pageSize": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "totalItems": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "totalPages": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "from": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "minimum": 1
+          },
+          "to": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "minimum": 1
+          },
+          "counts": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "number"
+            }
+          },
+          "activeCat": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/RewardCategory"
+              },
+              {
+                "type": "string",
+                "enum": [
+                  "all"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "cards": {
+            "type": "object",
+            "properties": {
+              "total": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "active": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "redemptionsThisMonth": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "pendingAdmin": {
+                "type": "integer",
+                "minimum": 0
+              }
+            },
+            "required": [
+              "total",
+              "active",
+              "redemptionsThisMonth",
+              "pendingAdmin"
+            ]
+          }
+        },
+        "required": [
+          "page",
+          "pageSize",
+          "totalItems",
+          "totalPages",
+          "activeCat",
+          "cards"
+        ],
+        "additionalProperties": {}
+      },
+      "RewardListResponse": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/RewardListItem"
+            }
+          },
+          "meta": {
+            "$ref": "#/components/schemas/RewardListMeta"
+          }
+        },
+        "required": [
+          "data",
+          "meta"
+        ]
+      },
+      "RewardBulkRequest": {
+        "type": "object",
+        "properties": {
+          "action": {
+            "$ref": "#/components/schemas/RewardBulkAction"
+          },
+          "ids": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Id"
+            },
+            "minItems": 1,
+            "description": "Reward ids; unknown ids are ignored, duplicates collapsed."
+          },
+          "stockValue": {
+            "type": "string"
+          },
+          "maxPerMonthValue": {
+            "type": "string"
+          },
+          "tokenCostDeltaPct": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "action",
+          "ids"
+        ]
+      },
+      "RewardBulkResult": {
+        "type": "object",
+        "properties": {
+          "affected": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "keptIds": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Id"
+            }
+          }
+        },
+        "required": [
+          "affected"
+        ]
+      },
+      "RewardRedemptionListQuery": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string",
+            "description": "A status key or \"all\"; absent = pending_admin; any other value gives an empty list and activeStatus null."
+          },
+          "page": {
+            "type": "integer",
+            "minimum": 1,
+            "description": "An invalid page reads as 1."
+          }
+        }
+      },
+      "RewardRedemptionListItem": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "user": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "$ref": "#/components/schemas/Id"
+              },
+              "name": {
+                "type": "string"
+              },
+              "email": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "id",
+              "name",
+              "email"
+            ]
+          },
+          "rewardId": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "rewardTitle": {
+            "type": "string"
+          },
+          "rewardVendor": {
+            "type": "string"
+          },
+          "denominationRm": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "tokenCost": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "status": {
+            "$ref": "#/components/schemas/RewardRedemptionStatus"
+          },
+          "createdAt": {
+            "$ref": "#/components/schemas/Timestamp"
+          }
+        },
+        "required": [
+          "id",
+          "user",
+          "rewardId",
+          "rewardTitle",
+          "rewardVendor",
+          "denominationRm",
+          "tokenCost",
+          "status",
+          "createdAt"
+        ]
+      },
+      "RewardRedemptionListMeta": {
+        "type": "object",
+        "properties": {
+          "page": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "pageSize": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "totalItems": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "totalPages": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "from": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "minimum": 1
+          },
+          "to": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "minimum": 1
+          },
+          "counts": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "number"
+            }
+          },
+          "activeStatus": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/RewardRedemptionStatus"
+              },
+              {
+                "type": "string",
+                "enum": [
+                  "all"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "page",
+          "pageSize",
+          "totalItems",
+          "totalPages",
+          "activeStatus"
+        ],
+        "additionalProperties": {}
+      },
+      "RewardRedemptionListResponse": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/RewardRedemptionListItem"
+            }
+          },
+          "meta": {
+            "$ref": "#/components/schemas/RewardRedemptionListMeta"
+          }
+        },
+        "required": [
+          "data",
+          "meta"
+        ]
+      },
+      "RewardDeliverRequest": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "string",
+            "maxLength": 100,
+            "pattern": "\\S"
+          }
+        },
+        "required": [
+          "code"
+        ]
+      },
+      "RewardDeliverResult": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "delivered"
+            ]
+          },
+          "deliveredAt": {
+            "$ref": "#/components/schemas/Timestamp"
+          },
+          "expiresAt": {
+            "$ref": "#/components/schemas/Timestamp"
+          }
+        },
+        "required": [
+          "id",
+          "status",
+          "deliveredAt",
+          "expiresAt"
+        ]
+      },
+      "RewardCancelResult": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "cancelled"
+            ]
+          },
+          "refundedTokens": {
+            "type": "integer",
+            "minimum": 0
+          }
+        },
+        "required": [
+          "id",
+          "status",
+          "refundedTokens"
+        ]
+      },
+      "RewardRedeemRequest": {
+        "type": "object",
+        "properties": {
+          "rewardId": {
+            "$ref": "#/components/schemas/Id"
+          }
+        },
+        "required": [
+          "rewardId"
+        ]
+      },
+      "RewardRedeemResult": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "status": {
+            "$ref": "#/components/schemas/RewardRedemptionStatus"
+          },
+          "tokenBalance": {
+            "type": "integer",
+            "minimum": 0
+          }
+        },
+        "required": [
+          "id",
+          "status",
+          "tokenBalance"
+        ]
+      },
+      "RewardMysteryBox": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "name": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "icon": {
+            "type": "string"
+          },
+          "rarity": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "enum": [
+              "rare",
+              "epic",
+              "legendary",
+              null
+            ]
+          },
+          "costTokens": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "coinMin": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "coinMax": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "xpMin": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "xpMax": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "color1": {
+            "type": "string"
+          },
+          "color2": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "description",
+          "icon",
+          "rarity",
+          "costTokens",
+          "coinMin",
+          "coinMax",
+          "xpMin",
+          "xpMax",
+          "color1",
+          "color2"
+        ]
+      },
+      "RewardMysteryBoxHistoryItem": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "boxId": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "boxName": {
+            "type": "string"
+          },
+          "coins": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "xp": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "createdAt": {
+            "$ref": "#/components/schemas/Timestamp"
+          }
+        },
+        "required": [
+          "id",
+          "boxId",
+          "boxName",
+          "coins",
+          "xp",
+          "createdAt"
+        ]
+      },
+      "RewardMysteryBoxesView": {
+        "type": "object",
+        "properties": {
+          "tokenBalance": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "boxes": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/RewardMysteryBox"
+            }
+          },
+          "history": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/RewardMysteryBoxHistoryItem"
+            },
+            "maxItems": 10
+          }
+        },
+        "required": [
+          "tokenBalance",
+          "boxes",
+          "history"
+        ]
+      },
+      "RewardMysteryBoxOpened": {
+        "type": "object",
+        "properties": {
+          "openingId": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "boxId": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "boxName": {
+            "type": "string"
+          },
+          "icon": {
+            "type": "string"
+          },
+          "coins": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "xp": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "tokenBalance": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "syilingBalance": {
+            "type": "integer",
+            "minimum": 0
+          }
+        },
+        "required": [
+          "openingId",
+          "boxId",
+          "boxName",
+          "icon",
+          "coins",
+          "xp",
+          "tokenBalance",
+          "syilingBalance"
+        ]
+      },
+      "RewardCabutanDraw": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "title": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "ticketCostSyiling": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "maxTicketsPerStudent": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "ticketsOwned": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "closesAt": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/DateOnly"
+              },
+              {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              }
+            ]
+          },
+          "prizePool": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/GamificationDrawPrize"
+            }
+          }
+        },
+        "required": [
+          "id",
+          "title",
+          "description",
+          "ticketCostSyiling",
+          "maxTicketsPerStudent",
+          "ticketsOwned",
+          "closesAt",
+          "prizePool"
+        ]
+      },
+      "RewardCabutanView": {
+        "type": "object",
+        "properties": {
+          "syilingBalance": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "draws": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/RewardCabutanDraw"
+            }
+          }
+        },
+        "required": [
+          "syilingBalance",
+          "draws"
+        ]
+      },
+      "RewardTicketBought": {
+        "type": "object",
+        "properties": {
+          "drawId": {
+            "$ref": "#/components/schemas/Id"
+          },
+          "ticketsOwned": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "syilingBalance": {
+            "type": "integer",
+            "minimum": 0
+          }
+        },
+        "required": [
+          "drawId",
+          "ticketsOwned",
+          "syilingBalance"
+        ]
+      },
+      "ShopDigitalItemsQuery": {
+        "type": "object",
+        "properties": {
+          "cat": {
+            "type": "string",
+            "description": "A category key or \"all\"; an unknown or repeated value gives activeCat null."
+          }
+        }
+      },
+      "ShopDigitalItemsMeta": {
+        "type": "object",
+        "properties": {
+          "page": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "pageSize": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "totalItems": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "totalPages": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "from": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "minimum": 1
+          },
+          "to": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "minimum": 1
+          },
+          "counts": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "number"
+            }
+          },
+          "activeCat": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/RewardCategory"
+              },
+              {
+                "type": "string",
+                "enum": [
+                  "all"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "page",
+          "pageSize",
+          "totalItems",
+          "totalPages",
+          "activeCat"
+        ],
+        "additionalProperties": {}
+      },
+      "ShopDigitalItemsResponse": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {},
+            "maxItems": 0
+          },
+          "meta": {
+            "$ref": "#/components/schemas/ShopDigitalItemsMeta"
+          }
+        },
+        "required": [
+          "data",
+          "meta"
+        ]
+      },
+      "ShopDigitalRedemptionsResponse": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {},
+            "maxItems": 0
+          },
+          "meta": {
+            "$ref": "#/components/schemas/ListMeta"
+          }
+        },
+        "required": [
+          "data",
+          "meta"
+        ]
+      },
       "AccessGroupId": {
         "type": "string",
         "enum": [
@@ -1186,6 +4546,2951 @@
           },
           "409": {
             "description": "NO_MODE_ACTIVE.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/gamification/dashboard": {
+      "get": {
+        "tags": [
+          "gamification"
+        ],
+        "summary": "Gamification hub (Syiling & Token)",
+        "description": "Own data: wallet figures, first 4 active challenges, latest 6 ledger rows, subject mastery (read from practice) and the active tier grid.",
+        "responses": {
+          "200": {
+            "description": "The dashboard.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/GamificationDashboard"
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED \"Unauthenticated.\" (no valid session).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/gamification/convert": {
+      "get": {
+        "tags": [
+          "gamification"
+        ],
+        "summary": "Token conversion view (Tukar Token)",
+        "description": "Shows the conversion rate of the caller tier, the quick amounts and the tier grid.",
+        "responses": {
+          "200": {
+            "description": "The conversion view.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/GamificationConvertView"
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED \"Unauthenticated.\" (no valid session).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "gamification"
+        ],
+        "summary": "Convert syiling to tokens at the tier rate",
+        "description": "tokens = floor(syilingAmount / rate). Atomic: debits syiling with a ledger row (type convert, source token_conversion, description \"Tukar {s} syiling → {t} token\"), then credits the tokens. Success is 200, not 201. There is no daily cap.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Value of Session.csrf; required on mutating requests."
+            },
+            "required": true,
+            "description": "Value of Session.csrf; required on mutating requests.",
+            "name": "X-CSRF-Token",
+            "in": "header"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GamificationConvertRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Converted.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/GamificationConvertResult"
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED \"Unauthenticated.\" (no valid session).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "CSRF_INVALID (missing or wrong X-CSRF-Token).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "VALIDATION_ERROR \"Jumlah syiling tidak sah.\" with fields.syilingAmount = the same text (not an integer, below the tier rate, or above the balance).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/gamification/challenges": {
+      "get": {
+        "tags": [
+          "gamification"
+        ],
+        "summary": "Daily challenges with progress",
+        "description": "Active challenges by (sortOrder, id). Progress is computed for the current Malaysia day; progress equals target when already completed today. meta is {completed, active}, NOT the standard list meta. Completion and its reward are written by the session-completed hook (idempotent per user, challenge and Malaysia day), not by this route.",
+        "responses": {
+          "200": {
+            "description": "Challenges with meta.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GamificationChallengesResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED \"Unauthenticated.\" (no valid session).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/gamification/leaderboard": {
+      "get": {
+        "tags": [
+          "gamification"
+        ],
+        "summary": "Papan Pendahulu: top 50 by lifetime syiling",
+        "description": "Global, not scoped. No query parameter is read (period and others are ignored).",
+        "responses": {
+          "200": {
+            "description": "Podium (ranks 1 to 3) and rows (ranks 4 to 50).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/GamificationLeaderboard"
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED \"Unauthenticated.\" (no valid session).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/gamification/achievements": {
+      "get": {
+        "tags": [
+          "gamification"
+        ],
+        "summary": "Achievement catalogue with the caller unlock state",
+        "description": "An unknown rarity is not an error: items is empty.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "description": "common | rare | epic | legendary; any other value gives no items."
+            },
+            "required": false,
+            "description": "common | rare | epic | legendary; any other value gives no items.",
+            "name": "rarity",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Achievements.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/GamificationAchievements"
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED \"Unauthenticated.\" (no valid session).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/gamification/share-cards": {
+      "get": {
+        "tags": [
+          "gamification"
+        ],
+        "summary": "Share cards of the caller profile",
+        "description": "All-time answers and sessions come from practice data.",
+        "responses": {
+          "200": {
+            "description": "Share-card figures.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/GamificationShareCards"
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED \"Unauthenticated.\" (no valid session).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/gamification/referral": {
+      "get": {
+        "tags": [
+          "gamification"
+        ],
+        "summary": "Rujuk Kawan: referral code, share links and stats",
+        "description": "Side effect on a GET: the first read creates the caller referral code. The referral reward is credited at registration, not here.",
+        "responses": {
+          "200": {
+            "description": "Referral data.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/GamificationReferral"
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED \"Unauthenticated.\" (no valid session).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/gamification/overview": {
+      "get": {
+        "tags": [
+          "gamification-admin"
+        ],
+        "summary": "Admin overview of the economy",
+        "description": "National figures computed from the wallet and ledger data.",
+        "responses": {
+          "200": {
+            "description": "Cards, tier distribution, top 10, latest 10 rows.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/GamificationAdminOverview"
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED \"Unauthenticated.\" (no valid session).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN \"This action is unauthorized.\" (role is not admin).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/gamification/tiers": {
+      "get": {
+        "tags": [
+          "gamification-admin"
+        ],
+        "summary": "All tiers (including inactive)",
+        "responses": {
+          "200": {
+            "description": "Tiers.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/GamificationAdminTier"
+                      }
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED \"Unauthenticated.\" (no valid session).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN \"This action is unauthorized.\" (role is not admin).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "gamification-admin"
+        ],
+        "summary": "Create a tier",
+        "description": "tierName is stored lower-case and is unique. The new tier is active.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Value of Session.csrf; required on mutating requests."
+            },
+            "required": true,
+            "description": "Value of Session.csrf; required on mutating requests.",
+            "name": "X-CSRF-Token",
+            "in": "header"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GamificationAdminTierCreate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "The created tier.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/GamificationAdminTier"
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED \"Unauthenticated.\" (no valid session).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN \"This action is unauthorized.\" (role is not admin), or CSRF_INVALID (missing or wrong X-CSRF-Token).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "VALIDATION_ERROR \"Sila lengkapkan semua medan wajib.\" with fields (name -> \"Medan ini diperlukan.\" when missing or blank, \"Medan ini tidak sah.\" when the type, range, enum or pattern is wrong; the first problem of every failing field). Or VALIDATION_ERROR \"Nama tier sudah wujud.\" with fields.tierName (duplicate).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/gamification/tiers/{id}": {
+      "put": {
+        "tags": [
+          "gamification-admin"
+        ],
+        "summary": "Update a tier",
+        "description": "Wallets are not touched; a holder keeps the tier and tier assignment is re-evaluated at the next credit (a wallet tier never goes down). `tierName` cannot change.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 64,
+              "description": "Digits only; a non-numeric segment does not match the route (404 \"Not Found.\").",
+              "example": "1042"
+            },
+            "required": true,
+            "description": "Digits only; a non-numeric segment does not match the route (404 \"Not Found.\").",
+            "name": "id",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Value of Session.csrf; required on mutating requests."
+            },
+            "required": true,
+            "description": "Value of Session.csrf; required on mutating requests.",
+            "name": "X-CSRF-Token",
+            "in": "header"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GamificationAdminTierUpdate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The updated tier.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/GamificationAdminTier"
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED \"Unauthenticated.\" (no valid session).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN \"This action is unauthorized.\" (role is not admin), or CSRF_INVALID (missing or wrong X-CSRF-Token).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "NOT_FOUND \"Tier tidak dijumpai.\"",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "VALIDATION_ERROR \"Sila lengkapkan semua medan wajib.\" with fields (name -> \"Medan ini diperlukan.\" when missing or blank, \"Medan ini tidak sah.\" when the type, range, enum or pattern is wrong; the first problem of every failing field).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/gamification/tiers/{id}/toggle": {
+      "post": {
+        "tags": [
+          "gamification-admin"
+        ],
+        "summary": "Activate or deactivate a tier",
+        "description": "Holders keep a deactivated tier. No body.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 64,
+              "description": "Digits only; a non-numeric segment does not match the route (404 \"Not Found.\").",
+              "example": "1042"
+            },
+            "required": true,
+            "description": "Digits only; a non-numeric segment does not match the route (404 \"Not Found.\").",
+            "name": "id",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Value of Session.csrf; required on mutating requests."
+            },
+            "required": true,
+            "description": "Value of Session.csrf; required on mutating requests.",
+            "name": "X-CSRF-Token",
+            "in": "header"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The new state.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/GamificationToggleResult"
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED \"Unauthenticated.\" (no valid session).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN \"This action is unauthorized.\" (role is not admin), or CSRF_INVALID (missing or wrong X-CSRF-Token).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "NOT_FOUND \"Tier tidak dijumpai.\"",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/gamification/challenges": {
+      "get": {
+        "tags": [
+          "gamification-admin"
+        ],
+        "summary": "All daily challenges (active or not)",
+        "description": "Ordered by (sortOrder, id). The internal metric is hidden.",
+        "responses": {
+          "200": {
+            "description": "Challenges.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/GamificationAdminChallenge"
+                      }
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED \"Unauthenticated.\" (no valid session).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN \"This action is unauthorized.\" (role is not admin).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "gamification-admin"
+        ],
+        "summary": "Create a daily challenge",
+        "description": "The new challenge is active; its metric is the default of challengeType.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Value of Session.csrf; required on mutating requests."
+            },
+            "required": true,
+            "description": "Value of Session.csrf; required on mutating requests.",
+            "name": "X-CSRF-Token",
+            "in": "header"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GamificationAdminChallengeInput"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "The created challenge.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/GamificationAdminChallenge"
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED \"Unauthenticated.\" (no valid session).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN \"This action is unauthorized.\" (role is not admin), or CSRF_INVALID (missing or wrong X-CSRF-Token).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "VALIDATION_ERROR \"Sila lengkapkan semua medan wajib.\" with fields (name -> \"Medan ini diperlukan.\" when missing or blank, \"Medan ini tidak sah.\" when the type, range, enum or pattern is wrong; the first problem of every failing field).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/gamification/challenges/{id}": {
+      "put": {
+        "tags": [
+          "gamification-admin"
+        ],
+        "summary": "Update a daily challenge",
+        "description": "Full replace, every field required. The internal metric is kept unless challengeType changes (then it resets to the type default).",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 64,
+              "description": "Digits only; a non-numeric segment does not match the route (404 \"Not Found.\").",
+              "example": "1042"
+            },
+            "required": true,
+            "description": "Digits only; a non-numeric segment does not match the route (404 \"Not Found.\").",
+            "name": "id",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Value of Session.csrf; required on mutating requests."
+            },
+            "required": true,
+            "description": "Value of Session.csrf; required on mutating requests.",
+            "name": "X-CSRF-Token",
+            "in": "header"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GamificationAdminChallengeInput"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The updated challenge.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/GamificationAdminChallenge"
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED \"Unauthenticated.\" (no valid session).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN \"This action is unauthorized.\" (role is not admin), or CSRF_INVALID (missing or wrong X-CSRF-Token).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "NOT_FOUND \"Cabaran tidak dijumpai.\"",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "VALIDATION_ERROR \"Sila lengkapkan semua medan wajib.\" with fields (name -> \"Medan ini diperlukan.\" when missing or blank, \"Medan ini tidak sah.\" when the type, range, enum or pattern is wrong; the first problem of every failing field).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "gamification-admin"
+        ],
+        "summary": "Delete a daily challenge",
+        "description": "Answers 200 with { data: { deleted: 1 } }, not 204. Completions are not touched (cascade rule is an open question).",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 64,
+              "description": "Digits only; a non-numeric segment does not match the route (404 \"Not Found.\").",
+              "example": "1042"
+            },
+            "required": true,
+            "description": "Digits only; a non-numeric segment does not match the route (404 \"Not Found.\").",
+            "name": "id",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Value of Session.csrf; required on mutating requests."
+            },
+            "required": true,
+            "description": "Value of Session.csrf; required on mutating requests.",
+            "name": "X-CSRF-Token",
+            "in": "header"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Deleted.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/GamificationDeleteResult"
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED \"Unauthenticated.\" (no valid session).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN \"This action is unauthorized.\" (role is not admin), or CSRF_INVALID (missing or wrong X-CSRF-Token).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "NOT_FOUND \"Cabaran tidak dijumpai.\"",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/gamification/challenges/{id}/toggle": {
+      "post": {
+        "tags": [
+          "gamification-admin"
+        ],
+        "summary": "Activate or deactivate a daily challenge",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 64,
+              "description": "Digits only; a non-numeric segment does not match the route (404 \"Not Found.\").",
+              "example": "1042"
+            },
+            "required": true,
+            "description": "Digits only; a non-numeric segment does not match the route (404 \"Not Found.\").",
+            "name": "id",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Value of Session.csrf; required on mutating requests."
+            },
+            "required": true,
+            "description": "Value of Session.csrf; required on mutating requests.",
+            "name": "X-CSRF-Token",
+            "in": "header"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The new state.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/GamificationToggleResult"
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED \"Unauthenticated.\" (no valid session).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN \"This action is unauthorized.\" (role is not admin), or CSRF_INVALID (missing or wrong X-CSRF-Token).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "NOT_FOUND \"Cabaran tidak dijumpai.\"",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/gamification/students": {
+      "get": {
+        "tags": [
+          "gamification-admin"
+        ],
+        "summary": "Student wallets",
+        "description": "All students (national). Page size is fixed at 20; pageSize in the query is ignored. An out-of-range page is an empty list with the requested page echoed.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "description": "Name or e-mail contains."
+            },
+            "required": false,
+            "description": "Name or e-mail contains.",
+            "name": "search",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "description": "Tier key."
+            },
+            "required": false,
+            "description": "Tier key.",
+            "name": "tier",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "description": "One of total_syiling_earned, current_syiling, token_balance, level; any other value is ignored."
+            },
+            "required": false,
+            "description": "One of total_syiling_earned, current_syiling, token_balance, level; any other value is ignored.",
+            "name": "sort",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "description": "An invalid page reads as 1; an out-of-range page is an empty list."
+            },
+            "required": false,
+            "description": "An invalid page reads as 1; an out-of-range page is an empty list.",
+            "name": "page",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "A page of wallets.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GamificationAdminStudentsResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED \"Unauthenticated.\" (no valid session).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN \"This action is unauthorized.\" (role is not admin).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/gamification/award": {
+      "post": {
+        "tags": [
+          "gamification-admin"
+        ],
+        "summary": "Award syiling to a student",
+        "description": "Atomic: creates the wallet if missing, raises syiling and lifetime syiling, re-assigns the tier, writes a ledger row (type bonus, source admin_award, description = reason). Success is 200, not 201. The mock writes no audit event (open question).",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Value of Session.csrf; required on mutating requests."
+            },
+            "required": true,
+            "description": "Value of Session.csrf; required on mutating requests.",
+            "name": "X-CSRF-Token",
+            "in": "header"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GamificationAdminAwardRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Awarded.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/GamificationAdminAwardResult"
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED \"Unauthenticated.\" (no valid session).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN \"This action is unauthorized.\" (role is not admin), or CSRF_INVALID (missing or wrong X-CSRF-Token).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "NOT_FOUND \"Pengguna tidak dijumpai.\"",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "VALIDATION_ERROR \"Sila lengkapkan semua medan wajib.\" with fields (name -> \"Medan ini diperlukan.\" when missing or blank, \"Medan ini tidak sah.\" when the type, range, enum or pattern is wrong; the first problem of every failing field).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/gamification/transactions": {
+      "get": {
+        "tags": [
+          "gamification-admin"
+        ],
+        "summary": "All ledger rows",
+        "description": "Newest first, page size fixed at 25. An unknown type gives an empty result; a malformed date is ignored.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "description": "earn | spend | convert | bonus | refund; any other value gives an empty result."
+            },
+            "required": false,
+            "description": "earn | spend | convert | bonus | refund; any other value gives an empty result.",
+            "name": "type",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "description": "YYYY-MM-DD, inclusive; a malformed value is ignored."
+            },
+            "required": false,
+            "description": "YYYY-MM-DD, inclusive; a malformed value is ignored.",
+            "name": "dateFrom",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "description": "YYYY-MM-DD, inclusive; a malformed value is ignored."
+            },
+            "required": false,
+            "description": "YYYY-MM-DD, inclusive; a malformed value is ignored.",
+            "name": "dateTo",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "description": "An invalid page reads as 1."
+            },
+            "required": false,
+            "description": "An invalid page reads as 1.",
+            "name": "page",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "A page of ledger rows.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GamificationAdminTransactionsResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED \"Unauthenticated.\" (no valid session).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN \"This action is unauthorized.\" (role is not admin).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/gamification/settings": {
+      "get": {
+        "tags": [
+          "gamification-admin"
+        ],
+        "summary": "The ten gamification settings",
+        "description": "Always all ten rows in the S9 order. kind is toggle for cash_withdrawal_enabled and games_award_syiling (value 0 or 1).",
+        "responses": {
+          "200": {
+            "description": "Settings.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/GamificationSettingsList"
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED \"Unauthenticated.\" (no valid session).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN \"This action is unauthorized.\" (role is not admin).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "gamification-admin"
+        ],
+        "summary": "Save gamification settings",
+        "description": "Only the posted keys change. Answers all ten rows. The mock writes no audit event (open question).",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Value of Session.csrf; required on mutating requests."
+            },
+            "required": true,
+            "description": "Value of Session.csrf; required on mutating requests.",
+            "name": "X-CSRF-Token",
+            "in": "header"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GamificationSettingsUpdateRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "All settings after the save.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/GamificationSettingsList"
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED \"Unauthenticated.\" (no valid session).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN \"This action is unauthorized.\" (role is not admin), or CSRF_INVALID (missing or wrong X-CSRF-Token).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "VALIDATION_ERROR \"Sila lengkapkan semua medan wajib.\" with fields.settings = \"Medan ini diperlukan.\" (missing or empty array), fields[\"settings.{i}.key\"] = \"Medan ini diperlukan.\", fields[\"settings.{i}.value\"] = \"Medan ini tidak sah.\"; or fields.settings = \"Sila lengkapkan semua medan wajib.\" (unknown key, negative value, toggle above 1).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/reward-control": {
+      "get": {
+        "tags": [
+          "gamification-admin"
+        ],
+        "summary": "Kawalan Reward",
+        "description": "Tiles of the claims in current_session_year, the five shared economy settings, the syiling-priced rewards and every lucky draw (newest first).",
+        "responses": {
+          "200": {
+            "description": "Reward control.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/GamificationRewardControl"
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED \"Unauthenticated.\" (no valid session).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN \"This action is unauthorized.\" (role is not admin).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/reward-control/settings": {
+      "put": {
+        "tags": [
+          "gamification-admin"
+        ],
+        "summary": "Save the five shared economy settings",
+        "description": "Any subset; blank or absent keys are skipped. Same store as /admin/gamification/settings.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Value of Session.csrf; required on mutating requests."
+            },
+            "required": true,
+            "description": "Value of Session.csrf; required on mutating requests.",
+            "name": "X-CSRF-Token",
+            "in": "header"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GamificationEconomySettingsUpdate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The five settings after the save.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/GamificationEconomySettings"
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED \"Unauthenticated.\" (no valid session).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN \"This action is unauthorized.\" (role is not admin), or CSRF_INVALID (missing or wrong X-CSRF-Token).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "VALIDATION_ERROR \"Sila lengkapkan semua medan wajib.\" with fields[<camelName>] = \"Medan ini tidak sah.\" (not an integer) or fields.settings = \"Medan ini diperlukan.\" (nothing posted); a negative value is also 422 \"Sila lengkapkan semua medan wajib.\" (no fields).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/reward-control/rewards/{id}/cost": {
+      "put": {
+        "tags": [
+          "gamification-admin"
+        ],
+        "summary": "Set the RM cost value of a syiling-priced reward",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 64,
+              "description": "Digits only; a non-numeric segment does not match the route (404 \"Not Found.\").",
+              "example": "1042"
+            },
+            "required": true,
+            "description": "Digits only; a non-numeric segment does not match the route (404 \"Not Found.\").",
+            "name": "id",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Value of Session.csrf; required on mutating requests."
+            },
+            "required": true,
+            "description": "Value of Session.csrf; required on mutating requests.",
+            "name": "X-CSRF-Token",
+            "in": "header"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GamificationRewardCostRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The reward with costRm = costValueSen / 100.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/GamificationSyilingReward"
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED \"Unauthenticated.\" (no valid session).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN \"This action is unauthorized.\" (role is not admin), or CSRF_INVALID (missing or wrong X-CSRF-Token).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "NOT_FOUND \"Hadiah tidak dijumpai.\"",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "VALIDATION_ERROR \"Sila lengkapkan semua medan wajib.\" with fields (name -> \"Medan ini diperlukan.\" when missing or blank, \"Medan ini tidak sah.\" when the type, range, enum or pattern is wrong; the first problem of every failing field).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/reward-control/draws": {
+      "post": {
+        "tags": [
+          "gamification-admin"
+        ],
+        "summary": "Create a lucky draw (Cabutan Bertuah)",
+        "description": "status is open when openNow is true, else draft. The prize pool is stored as ordered prize lines; the draw cannot award more prizes than the sum of qty. Ticket purchase is M15 (POST /cabutan/{drawId}/tickets); there is no route that draws winners (open question).",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Value of Session.csrf; required on mutating requests."
+            },
+            "required": true,
+            "description": "Value of Session.csrf; required on mutating requests.",
+            "name": "X-CSRF-Token",
+            "in": "header"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GamificationDrawCreateRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "The created draw (ticketsSold 0).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/GamificationDraw"
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED \"Unauthenticated.\" (no valid session).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN \"This action is unauthorized.\" (role is not admin), or CSRF_INVALID (missing or wrong X-CSRF-Token).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "VALIDATION_ERROR \"Sila lengkapkan semua medan wajib.\" with fields (name -> \"Medan ini diperlukan.\" when missing or blank, \"Medan ini tidak sah.\" when the type, range, enum or pattern is wrong; the first problem of every failing field). Or VALIDATION_ERROR \"Format JSON kolam hadiah tidak sah.\" with fields.prizePool (also the top-level message), or \"Tarikh tutup tidak sah.\" (closesAt), or fields.closesAt \"Medan ini tidak sah.\" (not a real date).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/hadiah-digital/items": {
+      "get": {
+        "tags": [
+          "shop"
+        ],
+        "summary": "Kedai Hadiah Digital: items",
+        "description": "Always an empty list for every account and every cat. meta is the unpaged list meta plus activeCat.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "description": "A category key or \"all\"; an unknown or repeated value gives activeCat null."
+            },
+            "required": false,
+            "description": "A category key or \"all\"; an unknown or repeated value gives activeCat null.",
+            "name": "cat",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Empty list.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ShopDigitalItemsResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED \"Unauthenticated.\" (no valid session).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/hadiah-digital/redemptions": {
+      "get": {
+        "tags": [
+          "shop"
+        ],
+        "summary": "Kedai Hadiah Digital: own redemptions",
+        "description": "Always an empty list for every account.",
+        "responses": {
+          "200": {
+            "description": "Empty list.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ShopDigitalRedemptionsResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED \"Unauthenticated.\" (no valid session).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/hadiah/redemptions": {
+      "post": {
+        "tags": [
+          "rewards"
+        ],
+        "summary": "Redeem a catalogue reward with tokens",
+        "description": "One transaction: snapshot redemption row, token debit (source hadiah_redeem, ref redemption:{id}), stock - 1 when stock is limited. Checks run in this order: reward exists and is active, stock, monthly cap (non-cancelled redemptions of that reward in the Malaysia calendar month), token balance. Any refusal rolls back everything.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Value of Session.csrf; required on mutating requests."
+            },
+            "required": true,
+            "description": "Value of Session.csrf; required on mutating requests.",
+            "name": "X-CSRF-Token",
+            "in": "header"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RewardRedeemRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Redeemed.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/RewardRedeemResult"
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED \"Unauthenticated.\" (no valid session).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "CSRF_INVALID (missing or wrong X-CSRF-Token).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "NOT_FOUND \"Hadiah tidak dijumpai.\" (missing or inactive reward).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "OUT_OF_STOCK \"Stok hadiah telah habis.\"; MONTHLY_CAP \"Had tebusan bulanan dicapai.\"; INSUFFICIENT_TOKENS \"Token tidak mencukupi.\".",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "VALIDATION_ERROR fields.rewardId \"The reward id field is required.\" (missing, non-numeric or below 1; the top-level message is the same text).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/gamification/mystery-boxes": {
+      "get": {
+        "tags": [
+          "rewards"
+        ],
+        "summary": "Kotak Misteri: boxes, token balance, last 10 openings",
+        "responses": {
+          "200": {
+            "description": "Boxes and own history.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/RewardMysteryBoxesView"
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED \"Unauthenticated.\" (no valid session).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/gamification/mystery-boxes/{id}/open": {
+      "post": {
+        "tags": [
+          "rewards"
+        ],
+        "summary": "Open a mystery box",
+        "description": "One transaction: opening row, token debit (costTokens, source mystery_box), syiling credit of coins (ledger earn, source mystery_box, description \"Kotak Misteri: {box name}\", ref opening:{id}), xp added when above 0. coins and xp are uniform integers inside the box ranges (the RNG is not specified). Success is 200, not 201. No body.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 64,
+              "description": "Digits only; a non-numeric segment does not match the route (404 \"Not Found.\").",
+              "example": "1042"
+            },
+            "required": true,
+            "description": "Digits only; a non-numeric segment does not match the route (404 \"Not Found.\").",
+            "name": "id",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Value of Session.csrf; required on mutating requests."
+            },
+            "required": true,
+            "description": "Value of Session.csrf; required on mutating requests.",
+            "name": "X-CSRF-Token",
+            "in": "header"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Opened.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/RewardMysteryBoxOpened"
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED \"Unauthenticated.\" (no valid session).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "CSRF_INVALID (missing or wrong X-CSRF-Token).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "NOT_FOUND \"Kotak tidak dijumpai.\"",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "INSUFFICIENT_TOKENS \"Token tidak mencukupi.\"",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/cabutan": {
+      "get": {
+        "tags": [
+          "rewards"
+        ],
+        "summary": "Cabutan Bertuah: open draws",
+        "description": "Only status open with closesAt today or later (Malaysia time) or null; ordered by closesAt ascending (null last), then id.",
+        "responses": {
+          "200": {
+            "description": "Open draws with the caller ticket counts.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/RewardCabutanView"
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED \"Unauthenticated.\" (no valid session).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/cabutan/{drawId}/tickets": {
+      "post": {
+        "tags": [
+          "rewards"
+        ],
+        "summary": "Buy one draw ticket with syiling",
+        "description": "Debits ticketCostSyiling (ledger spend, source cabutan_ticket, description \"Tiket Cabutan: {title}\", ref draw:{id}) and inserts one ticket. No body.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 64,
+              "description": "Digits only; a non-numeric segment does not match the route (404 \"Not Found.\").",
+              "example": "1042"
+            },
+            "required": true,
+            "description": "Digits only; a non-numeric segment does not match the route (404 \"Not Found.\").",
+            "name": "drawId",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Value of Session.csrf; required on mutating requests."
+            },
+            "required": true,
+            "description": "Value of Session.csrf; required on mutating requests.",
+            "name": "X-CSRF-Token",
+            "in": "header"
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Ticket bought.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/RewardTicketBought"
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED \"Unauthenticated.\" (no valid session).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "CSRF_INVALID (missing or wrong X-CSRF-Token).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "DRAW_CLOSED \"Cabutan ditutup.\" (missing, not open, or closed by date); TICKET_LIMIT \"Had tiket dicapai.\"; INSUFFICIENT_BALANCE \"Baki syiling tidak mencukupi.\".",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/hadiah": {
+      "get": {
+        "tags": [
+          "rewards-admin"
+        ],
+        "summary": "Rewards catalogue (admin list)",
+        "description": "Page size fixed at 50, in catalogue order. meta carries activeCat and four cards.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "description": "A category key or \"all\"; an unknown value gives no rows and activeCat null."
+            },
+            "required": false,
+            "description": "A category key or \"all\"; an unknown value gives no rows and activeCat null.",
+            "name": "cat",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "description": "An invalid page reads as 1."
+            },
+            "required": false,
+            "description": "An invalid page reads as 1.",
+            "name": "page",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "A page of rewards.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RewardListResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED \"Unauthenticated.\" (no valid session).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN \"This action is unauthorized.\" (role is not admin).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "rewards-admin"
+        ],
+        "summary": "Create a reward",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Value of Session.csrf; required on mutating requests."
+            },
+            "required": true,
+            "description": "Value of Session.csrf; required on mutating requests.",
+            "name": "X-CSRF-Token",
+            "in": "header"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RewardInput"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "The created reward.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/RewardItem"
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED \"Unauthenticated.\" (no valid session).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN \"This action is unauthorized.\" (role is not admin), or CSRF_INVALID (missing or wrong X-CSRF-Token).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "VALIDATION_ERROR with fields (name -> Laravel-style English message, see REWARD_VALIDATION_MESSAGES); the top-level message is the first field message plus \" (and N more error(s))\" when several.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/hadiah/bulk": {
+      "post": {
+        "tags": [
+          "rewards-admin"
+        ],
+        "summary": "Bulk action on rewards",
+        "description": "activate, deactivate, delete (rewards with any redemption row are kept and reported in keptIds), set_stock, set_max_per_month, set_token_cost (new cost = floor(cost * (1 + pct/100) + 0.5), clamped to 1..10000; denominationRm is unchanged).",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Value of Session.csrf; required on mutating requests."
+            },
+            "required": true,
+            "description": "Value of Session.csrf; required on mutating requests.",
+            "name": "X-CSRF-Token",
+            "in": "header"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RewardBulkRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Bulk result.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/RewardBulkResult"
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED \"Unauthenticated.\" (no valid session).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN \"This action is unauthorized.\" (role is not admin), or CSRF_INVALID (missing or wrong X-CSRF-Token).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "VALIDATION_ERROR with fields (name -> Laravel-style English message, see REWARD_VALIDATION_MESSAGES); the top-level message is the first field message plus \" (and N more error(s))\" when several.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/hadiah/redemptions": {
+      "get": {
+        "tags": [
+          "rewards-admin"
+        ],
+        "summary": "Redemption queue",
+        "description": "Page size fixed at 50, newest first. Absent status = pending_admin.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "description": "A status key or \"all\"; absent = pending_admin; any other value gives an empty list and activeStatus null."
+            },
+            "required": false,
+            "description": "A status key or \"all\"; absent = pending_admin; any other value gives an empty list and activeStatus null.",
+            "name": "status",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "description": "An invalid page reads as 1."
+            },
+            "required": false,
+            "description": "An invalid page reads as 1.",
+            "name": "page",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "A page of redemptions.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RewardRedemptionListResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED \"Unauthenticated.\" (no valid session).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN \"This action is unauthorized.\" (role is not admin).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/hadiah/redemptions/{id}/deliver": {
+      "post": {
+        "tags": [
+          "rewards-admin"
+        ],
+        "summary": "Mark a redemption delivered with a voucher code",
+        "description": "The id is checked before the body is validated. No notification is sent to the student.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 64,
+              "description": "Digits only; a non-numeric segment does not match the route (404 \"Not Found.\").",
+              "example": "1042"
+            },
+            "required": true,
+            "description": "Digits only; a non-numeric segment does not match the route (404 \"Not Found.\").",
+            "name": "id",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Value of Session.csrf; required on mutating requests."
+            },
+            "required": true,
+            "description": "Value of Session.csrf; required on mutating requests.",
+            "name": "X-CSRF-Token",
+            "in": "header"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RewardDeliverRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Delivered.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/RewardDeliverResult"
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED \"Unauthenticated.\" (no valid session).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN \"This action is unauthorized.\" (role is not admin), or CSRF_INVALID (missing or wrong X-CSRF-Token).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "NOT_FOUND \"Not Found.\" (unknown id).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "CONFLICT \"Tebusan ini tidak lagi menunggu pemprosesan.\" (status is not pending_admin).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "VALIDATION_ERROR fields.code \"The code field is required.\" / \"The code field must not be greater than 100 characters.\".",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/hadiah/redemptions/{id}/cancel": {
+      "post": {
+        "tags": [
+          "rewards-admin"
+        ],
+        "summary": "Cancel a pending_admin redemption and refund the tokens",
+        "description": "Credits tokenCost back (source hadiah_refund, ref redemption:{id}), restores stock when it was reserved, status cancelled. No body.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 64,
+              "description": "Digits only; a non-numeric segment does not match the route (404 \"Not Found.\").",
+              "example": "1042"
+            },
+            "required": true,
+            "description": "Digits only; a non-numeric segment does not match the route (404 \"Not Found.\").",
+            "name": "id",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Value of Session.csrf; required on mutating requests."
+            },
+            "required": true,
+            "description": "Value of Session.csrf; required on mutating requests.",
+            "name": "X-CSRF-Token",
+            "in": "header"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Cancelled.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/RewardCancelResult"
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED \"Unauthenticated.\" (no valid session).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN \"This action is unauthorized.\" (role is not admin), or CSRF_INVALID (missing or wrong X-CSRF-Token).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "NOT_FOUND \"Tebusan tidak dijumpai.\"",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "CONFLICT \"Tebusan ini tidak lagi menunggu pemprosesan.\" (status is not pending_admin).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/hadiah/{id}": {
+      "get": {
+        "tags": [
+          "rewards-admin"
+        ],
+        "summary": "One reward (edit form)",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 64,
+              "description": "Digits only; a non-numeric segment does not match the route (404 \"Not Found.\").",
+              "example": "1042"
+            },
+            "required": true,
+            "description": "Digits only; a non-numeric segment does not match the route (404 \"Not Found.\").",
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The reward.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/RewardItem"
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED \"Unauthenticated.\" (no valid session).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN \"This action is unauthorized.\" (role is not admin).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "NOT_FOUND \"Not Found.\"",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "rewards-admin"
+        ],
+        "summary": "Replace a reward",
+        "description": "Full body with the rules of create; an omitted optional field falls back to its default (not a patch). The id is checked before validation.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 64,
+              "description": "Digits only; a non-numeric segment does not match the route (404 \"Not Found.\").",
+              "example": "1042"
+            },
+            "required": true,
+            "description": "Digits only; a non-numeric segment does not match the route (404 \"Not Found.\").",
+            "name": "id",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Value of Session.csrf; required on mutating requests."
+            },
+            "required": true,
+            "description": "Value of Session.csrf; required on mutating requests.",
+            "name": "X-CSRF-Token",
+            "in": "header"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RewardInput"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The updated reward.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/RewardItem"
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "UNAUTHORIZED \"Unauthenticated.\" (no valid session).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "FORBIDDEN \"This action is unauthorized.\" (role is not admin), or CSRF_INVALID (missing or wrong X-CSRF-Token).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "NOT_FOUND \"Not Found.\"",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorBody"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "VALIDATION_ERROR with fields (name -> Laravel-style English message, see REWARD_VALIDATION_MESSAGES); the top-level message is the first field message plus \" (and N more error(s))\" when several.",
             "content": {
               "application/json": {
                 "schema": {
