@@ -245,13 +245,15 @@ export class UsersService {
 
       // school: absent keeps the stored value, null clears it.
       let schoolId: string | null = target.schoolId
-      if (body.schoolId !== undefined) {
+      // A school_admin never changes the school of a parent target: body.schoolId is ignored (no
+      // comparison, no error), so the school a parent carries cannot be guessed (AC 7).
+      if (body.schoolId !== undefined && !parentTarget) {
         const sent = blankToNull(body.schoolId)
         if (caller.isAdmin) {
           if (sent !== null && !(await this.schools.exists(sent))) fields.schoolId = FIELD_MESSAGES.schoolInvalid
           else schoolId = sent
-        } else if (sent !== (parentTarget ? target.schoolId : caller.schoolId)) {
-          // A school_admin cannot move a user to another school or out of its own (a parent keeps the school it has).
+        } else if (sent !== caller.schoolId) {
+          // A school_admin cannot move a user to another school or out of its own.
           fields.schoolId = FIELD_MESSAGES.schoolInvalid
         }
       }
@@ -311,7 +313,9 @@ export class UsersService {
         if ((demote || deactivate) && target.isActive && (await this.users.countActiveAdmins([target.id])) === 0) throw lastAdmin()
       }
 
-      await this.users.update(id, {
+      await this.users.update(
+        id,
+        {
         name: body.name,
         ...(body.email !== undefined ? { email } : {}),
         ...(body.username !== undefined ? { username } : {}),
@@ -322,7 +326,9 @@ export class UsersService {
         ...(body.isActive !== undefined ? { isActive: nextActive } : {}),
         ...(newHash !== null ? { passwordHash: newHash, mustChangePassword: true } : {}),
         now,
-      })
+        },
+        caller,
+      )
       const rolesChanged = roles.length !== target.roles.length || roles.some((r) => !target.roles.includes(r))
       if (rolesChanged) {
         await this.users.setRoles(id, roles, now)
@@ -363,7 +369,7 @@ export class UsersService {
       if (!target) throw notFound()
       const next = !target.isActive
       if (!next && target.roles.includes('admin') && (await this.users.countActiveAdmins([target.id])) === 0) throw lastAdmin()
-      await this.users.update(id, { isActive: next, now })
+      await this.users.update(id, { isActive: next, now }, caller)
       if (!next) await this.users.revokeSessions([id])
       await this.audit.record({
         tx,
@@ -391,7 +397,7 @@ export class UsersService {
       if (target.id === caller.userId) throw invalid({ id: USER_MESSAGES.ownDelete })
       if (target.roles.includes('admin') && target.isActive && (await this.users.countActiveAdmins([target.id])) === 0) throw lastAdmin()
       await this.audit.record({ tx, ...this.auditBase(caller, USER_AUDIT.DELETED, target), details: { roles: target.roles } })
-      await this.users.remove([id])
+      if ((await this.users.remove([id], caller)) !== 1) throw notFound()
     })
     return { data: { deleted: 1 }, status: USER_MESSAGES.deleted }
   }
@@ -410,7 +416,7 @@ export class UsersService {
       const removedAdmins = targets.filter((t) => t.roles.includes('admin') && t.isActive).map((t) => t.id)
       if (removedAdmins.length > 0 && (await this.users.countActiveAdmins(removedAdmins)) === 0) throw lastAdmin()
       const targetIds = targets.map((t) => t.id)
-      const count = await this.users.remove(targetIds)
+      const count = await this.users.remove(targetIds, caller)
       await this.audit.record({
         tx,
         action: USER_AUDIT.BULK_DELETED,

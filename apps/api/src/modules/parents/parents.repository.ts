@@ -94,13 +94,17 @@ export class ParentsRepository {
     }
   }
 
-  /** Links inside the scope, oldest first, with both ends joined. */
+  /**
+   * Links inside the scope, oldest first, with both ends joined. Only parents that still hold the parent
+   * role are listed (one rule for every list); `findLink` has no such filter, so a stale link can still be removed.
+   */
   async listLinks(scope: LinkScope, skip: number, take: number): Promise<{ rows: LinkDetail[]; total: number }> {
     const where = this.linkWhere(scope)
     if (where === null) return { rows: [], total: 0 }
+    const listed: Prisma.ParentLinkWhereInput = { AND: [where, { parent: { roles: { some: { role: 'parent' } } } }] }
     const [rows, total] = await Promise.all([
-      this.prisma.client.parentLink.findMany({ where, include: LINK_INCLUDE, orderBy: { id: 'asc' }, skip, take }),
-      this.prisma.client.parentLink.count({ where }),
+      this.prisma.client.parentLink.findMany({ where: listed, include: LINK_INCLUDE, orderBy: { id: 'asc' }, skip, take }),
+      this.prisma.client.parentLink.count({ where: listed }),
     ])
     return { rows: rows.map(toDetail), total }
   }

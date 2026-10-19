@@ -148,7 +148,8 @@ export class ParentsService {
     // A mixed-role account cannot be linked to itself.
     if (student.id === parent.userId) throw notFound()
     const parentUser = await this.users.get(parent.userId)
-    if (!parentUser?.isActive || !parentUser.roles.includes('parent')) throw ApiError.of('FORBIDDEN')
+    // The route guard already requires the active role parent; the account row is read for the name only.
+    if (!parentUser) throw notFound()
 
     const now = this.clock.now()
     const out = await this.write(async (tx) => {
@@ -210,8 +211,11 @@ export class ParentsService {
   }
 
   /**
-   * Admin sees all. A school_admin sees only links of students of its own school: that covers every
-   * link of a visible parent (AC 7: all its children are in the school). No school is fail closed.
+   * Two objects, two scopes. The parent RECORD (`/admin/users/:id`) follows AC 7 (>= 1 child, ALL in the
+   * school). A parent-LINK row is scoped by the STUDENT's school, because the link concerns the admin's own
+   * student; that is a superset of the AC 7 parent-record scope (LEAD approved 2026-10-20). A school_admin
+   * gets only rows whose student is in its school, so no other child, link, count or school of the same
+   * parent is revealed, and the row carries the minimum fields (see `viewOf`). No school is fail closed.
    */
   private adminScope(who: AdminActor): LinkScope {
     if (who.isAdmin) return {}
@@ -268,14 +272,13 @@ export class ParentsService {
   /** The student's parents by name (`ms`), only accounts that still hold the parent role. E-mail masked. */
   private async linkedParents(studentId: string): Promise<ParentInviteStatus['parents']> {
     const out: ParentInviteStatus['parents'] = []
-    for (const link of await this.repo.linksOfStudent(studentId)) {
-      const parent = await this.users.get(link.parentId)
-      if (!parent?.roles.includes('parent')) continue
+    // One joined query; accounts that lost the parent role are dropped (same rule as the link lists).
+    for (const link of (await this.repo.listLinks({ studentId }, 0, LINK_LIST_CAP)).rows) {
       out.push({
         linkId: link.id,
-        id: parent.id,
-        name: parent.name,
-        emailMasked: maskEmail(parent.email),
+        id: link.parentId,
+        name: link.parentName,
+        emailMasked: maskEmail(link.parentEmail),
         relationship: link.relationship,
         linkedAt: toMytTimestamp(link.createdAt),
       })

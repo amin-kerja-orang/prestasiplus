@@ -160,9 +160,45 @@ describe('parent links (BE-25 part B)', () => {
       expect(ids(await sa.get(`/admin/parent-links?parentId=${strangerParent.id}`))).toEqual([])
     })
 
+    it('school_admin rows carry the minimum fields only and never reveal another link, count or school of the same parent', async () => {
+      await t.db.query("update users set phone = '0123456789', school_id = $2 where id = $1", [mixed.id, s2])
+      const extra = await link(mixed.id, own2)
+      const res = await sa.get(`/admin/parent-links?parentId=${mixed.id}`)
+      expect(res.status).toBe(200)
+      expect(ids(res)).toEqual([extra]) // the link to the other school's child is not listed
+      expect(res.body.meta.totalItems).toBe(1)
+      const row = res.body.data[0]
+      expect(Object.keys(row).sort()).toEqual(['linkId', 'linkedAt', 'parent', 'relationship', 'student'])
+      expect(Object.keys(row.parent).sort()).toEqual(['emailMasked', 'id', 'name'])
+      expect(Object.keys(row.student).sort()).toEqual(['id', 'name', 'schoolName'])
+      expect(row.student.schoolName).toBe('SMK Demo Satu')
+      expect(row.parent.emailMasked).toBe('i***@ujian.test')
+      const dump = JSON.stringify(res.body)
+      for (const secret of ['ibu.campur@ujian.test', '0123456789', 'SK Demo Dua', 'Anak Lain', linkMixedForeign]) expect(dump).not.toContain(secret)
+      const all = await sa.get('/admin/parent-links')
+      expect(all.body.meta.totalItems).toBe(all.body.data.length)
+      expect(all.body.data.every((x: { student: { schoolName: string } }) => x.student.schoolName === 'SMK Demo Satu')).toBe(true)
+      await t.db.query('delete from parent_links where id = $1', [extra])
+    })
+
     it('401 without a session; 403 for a student, a teacher and a parent', async () => {
       expectError(await t.http().get('/api/admin/parent-links'), 'UNAUTHORIZED', 'Unauthenticated.')
       for (const who of [student, teacher, mum.api]) expectError(await who.get('/admin/parent-links'), 'FORBIDDEN')
+    })
+  })
+
+  describe('one role rule: an account that lost the parent role is dropped from every list', () => {
+    it('status, my links and admin links agree; the stale link can still be removed by an admin', async () => {
+      const gone = await newParent(t, admin, 'ibu.hilang@ujian.test', 'Ibu Hilang')
+      const stale = await link(gone.id, own)
+      expect(ids(await student.get('/me/parent-links'))).toContain(stale)
+      expect((await student.get('/me/parent-invite')).body.data.parents.map((x: { id: string }) => x.id)).toContain(gone.id)
+      await t.db.query("delete from user_roles where user_id = $1 and role = 'parent'", [gone.id])
+      expect(ids(await student.get('/me/parent-links'))).not.toContain(stale)
+      expect(ids(await admin.get('/admin/parent-links'))).not.toContain(stale)
+      expect(ids(await sa.get('/admin/parent-links'))).not.toContain(stale)
+      expect((await student.get('/me/parent-invite')).body.data.parents.map((x: { id: string }) => x.id)).not.toContain(gone.id)
+      expect((await admin.del(`/admin/parent-links/${stale}`)).status).toBe(204)
     })
   })
 

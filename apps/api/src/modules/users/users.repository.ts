@@ -1,6 +1,7 @@
 import { Inject, Injectable } from '@nestjs/common'
 import { ROLE_CODES, type RoleCode } from '@pp/contract'
 
+import { ApiError } from '../../common/errors/api-error'
 import { ScopeFilter } from '../../common/scope/scope-filter'
 import type { Prisma } from '../../db/generated/client'
 import { idFromString, idToString, isIdString } from '../../db/ids'
@@ -280,7 +281,12 @@ export class UsersRepository {
   async list(caller: Caller, filter: UserListFilter): Promise<{ rows: UserRecord[]; total: number }> {
     const and: Prisma.UserWhereInput[] = [this.visibleWhere(caller)]
     if (filter.role) and.push({ roles: { some: { role: filter.role } } })
-    if (filter.schoolId !== undefined) and.push({ schoolId: idFromString(filter.schoolId) })
+    if (filter.schoolId !== undefined) {
+      // A school_admin may only filter by its own school: another school's filter matches nothing, so a
+      // visible parent carrying a hidden school cannot be found by guessing it (AC 7).
+      if (!caller.isAdmin && filter.schoolId !== caller.schoolId) return { rows: [], total: 0 }
+      and.push({ schoolId: idFromString(filter.schoolId) })
+    }
     if (filter.isActive !== undefined) and.push({ isActive: filter.isActive })
     if (filter.search) and.push(textSearch(filter.search))
     const where: Prisma.UserWhereInput = { AND: and }
@@ -440,10 +446,14 @@ export class UsersRepository {
     return idToString(row.id)
   }
 
-  async update(id: string, patch: UserPatchRow): Promise<void> {
+  /**
+   * Updates one user. With `caller`, the statement itself re-checks `visibleWhere`, so a parent link added
+   * between the service's visibility check and this write cannot be bypassed (0 rows is "not found").
+   */
+  async update(id: string, patch: UserPatchRow, caller?: Caller): Promise<void> {
     const { now, schoolId, ...rest } = patch
-    await this.prisma.client.user.update({
-      where: { id: idFromString(id) },
+    const res = await this.prisma.client.user.updateMany({
+      where: caller ? { AND: [{ id: idFromString(id) }, this.visibleWhere(caller)] } : { id: idFromString(id) },
       data: {
         ...(rest.name !== undefined ? { name: rest.name } : {}),
         ...(rest.email !== undefined ? { email: rest.email } : {}),
@@ -459,6 +469,7 @@ export class UsersRepository {
         updatedAt: now,
       },
     })
+    if (res.count === 0) throw ApiError.of('NOT_FOUND')
   }
 
   /** Makes the role list of a user exactly `roles` (adds the missing, removes the others). */
@@ -521,10 +532,12 @@ export class UsersRepository {
   }
 
   /** Hard delete; roles, scopes and sessions go with the user (FK cascade), audit actors become null. */
-  async remove(ids: readonly string[]): Promise<number> {
+  async remove(ids: readonly string[], caller?: Caller): Promise<number> {
     const userIds = ids.filter(isIdString).map(idFromString)
     if (userIds.length === 0) return 0
-    const res = await this.prisma.client.user.deleteMany({ where: { id: { in: userIds } } })
+    const res = await this.prisma.client.user.deleteMany({
+      where: caller ? { AND: [{ id: { in: userIds } }, this.visibleWhere(caller)] } : { id: { in: userIds } },
+    })
     return res.count
   }
 }

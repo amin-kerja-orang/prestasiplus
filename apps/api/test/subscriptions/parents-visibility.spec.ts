@@ -131,8 +131,11 @@ describe('parent visibility for a school_admin (AC 7)', () => {
     expect(res.body.data.linkedStudents).toHaveLength(2)
     expectError(await sa.put(`/admin/users/${ownOnly}`, { roles: ['teacher'], name: 'X' }), 'FORBIDDEN')
     expectError(await sa.put(`/admin/users/${ownOnly}`, { roles: ['parent', 'teacher'], name: 'X' }), 'FORBIDDEN')
-    const moved = await sa.put(`/admin/users/${ownOnly}`, { roles: ['parent'], name: 'X', schoolId: s1 })
-    expect(moved.status).toBe(422)
+    // body.schoolId is ignored for a parent target: no error, no change, nothing to compare against.
+    for (const schoolId of [s1, s2, null, '999999']) {
+      const kept = await sa.put(`/admin/users/${ownOnly}`, { roles: ['parent'], name: 'X', schoolId })
+      expect(kept.status, JSON.stringify(kept.body)).toBe(200)
+    }
     expect((await t.db.query<{ s: string | null }>('select school_id::text s from users where id = $1', [ownOnly]))[0]?.s).toBeNull()
     // Creating a parent is still admin-only.
     expectError(await sa.post('/admin/users', { roles: ['parent'], name: 'Ibu Baru', email: 'baru@ujian.test', schoolId: s1 }), 'FORBIDDEN')
@@ -159,5 +162,16 @@ describe('parent visibility for a school_admin (AC 7)', () => {
     const list = (await sa.get('/admin/users?role=parent')).body.data as { id: string; school: unknown }[]
     expect(list.find((r) => r.id === p)?.school).toBeNull()
     expect((await sa.get('/admin/users/filters')).body.data.schools.map((s: { id: string }) => s.id)).toEqual([s1])
+    // The school filter cannot be used to find it: another school's filter is empty for a school_admin.
+    expect((await sa.get(`/admin/users?role=parent&schoolId=${s2}`)).body.data).toEqual([])
+    expect((await admin.get(`/admin/users?role=parent&schoolId=${s2}`)).body.data.map((r: { id: string }) => r.id)).toContain(p)
+
+    // Saving the detail back (schoolId null, as shown) is 200 and leaves the stored school alone; so does S2 or an unknown school.
+    for (const schoolId of [null, s2, '999999']) {
+      const put = await sa.put(`/admin/users/${p}`, { roles: ['parent'], name: 'Ibu Sekolah Lain', schoolId })
+      expect(put.status, JSON.stringify(put.body)).toBe(200)
+      expect(put.body.data.schoolId).toBeNull()
+      expect((await t.db.query<{ s: string }>('select school_id::text s from users where id = $1', [p]))[0]?.s).toBe(s2)
+    }
   })
 })
