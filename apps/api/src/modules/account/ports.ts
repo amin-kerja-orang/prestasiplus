@@ -43,8 +43,7 @@ export class LoggingMailPort implements MailPort {
   private readonly logLinks: boolean
 
   constructor(@Inject(ConfigService) config: ConfigService) {
-    const flag = String(config.get('MAIL_LOG_RESET_LINKS') ?? '').toLowerCase()
-    this.logLinks = config.get('NODE_ENV') === 'development' && (flag === 'true' || flag === '1')
+    this.logLinks = config.get('NODE_ENV') === 'development' && String(config.get('MAIL_LOG_RESET_LINKS') ?? '') === 'true'
   }
 
   async sendPasswordReset(mail: PasswordResetMail): Promise<void> {

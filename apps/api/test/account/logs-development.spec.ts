@@ -14,7 +14,8 @@ describe('NODE_ENV=development with MAIL_LOG_RESET_LINKS=true', () => {
   })
   afterAll(async () => {
     await t.close()
-    process.env.NODE_ENV = originalNodeEnv
+    if (originalNodeEnv === undefined) delete process.env.NODE_ENV
+    else process.env.NODE_ENV = originalNodeEnv
   })
 
   it('prints the link on the dev logger only: the one place a developer can read it, and nowhere else', async () => {

@@ -169,10 +169,14 @@ describe('GET/PUT /api/me, password, picture, settings, stats (AC1, AC5, AC8, AC
       expect(AccountUserMeSchema.parse(cleared.body.data).schoolId).toBe(before.schoolId)
     })
 
-    it('a teacher cannot clear the school (the account would have no scope)', async () => {
+    it('a teacher cannot change or clear the school: schoolId is ignored (membership is managed by school_admin/admin)', async () => {
       const who = await login(t, 'guru@demo.test')
-      const res = await put(who, '/me', { name: 'Guru Demo', schoolId: null })
-      expect(fieldsOf(res)).toEqual({ schoolId: 'The school id field is required when role is teacher.' })
+      const before = AccountUserMeSchema.parse((await get(who, '/me')).body.data)
+      const changed = await put(who, '/me', { name: 'Guru Demo', schoolId: school2 })
+      expect(changed.status, JSON.stringify(changed.body)).toBe(200)
+      expect(AccountUserMeSchema.parse(changed.body.data).schoolId).toBe(before.schoolId)
+      const cleared = await put(who, '/me', { name: 'Guru Demo', schoolId: null })
+      expect(AccountUserMeSchema.parse(cleared.body.data).schoolId).toBe(before.schoolId)
     })
   })
 
@@ -215,6 +219,16 @@ describe('GET/PUT /api/me, password, picture, settings, stats (AC1, AC5, AC8, AC
       expect(err.retryAfter).toBeGreaterThan(0)
       t.clock.advance(61_000)
       expect((await put(who, '/me/password', { currentPassword: DEMO_PASSWORD, password: DEMO_PASSWORD, passwordConfirmation: DEMO_PASSWORD })).status).toBe(200)
+    })
+
+    it('reserves the unit before the check: parallel wrong guesses cannot exceed 5 per minute', async () => {
+      const who = await login(t, 'pelajar2@demo.test')
+      const guesses = await Promise.all(
+        Array.from({ length: 12 }, () => put(who, '/me/password', { currentPassword: 'salah', password: 'baharu1', passwordConfirmation: 'baharu1' })),
+      )
+      const statuses = guesses.map((g) => g.status)
+      expect(statuses.filter((s) => s === 422)).toHaveLength(5)
+      expect(statuses.filter((s) => s === 429)).toHaveLength(7)
     })
 
     it('clears must_reset_password (and rotates the session, as every change does)', async () => {

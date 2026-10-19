@@ -16,7 +16,8 @@ describe('NODE_ENV=production: no token, link, password or clear e-mail in the l
   })
   afterAll(async () => {
     await t.close()
-    process.env.NODE_ENV = originalNodeEnv
+    if (originalNodeEnv === undefined) delete process.env.NODE_ENV
+    else process.env.NODE_ENV = originalNodeEnv
   })
 
   it('a full reset flow in production mode logs the masked address and the reset id only', async () => {

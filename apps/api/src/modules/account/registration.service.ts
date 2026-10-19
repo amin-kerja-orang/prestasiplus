@@ -44,7 +44,7 @@ export class RegistrationService {
     @Inject(AuditService) private readonly audit: AuditService,
   ) {}
 
-  async register(raw: unknown, info: RequestInfo): Promise<SessionGrant> {
+  async register(raw: unknown, info: RequestInfo): Promise<SessionGrant | 'pending'> {
     const keys = this.throttle.keys('register', info.ip)
     await this.throttle.begin(keys, this.clock.now())
     try {
@@ -63,7 +63,7 @@ export class RegistrationService {
     }
   }
 
-  private async create(raw: unknown, info: RequestInfo): Promise<SessionGrant> {
+  private async create(raw: unknown, info: RequestInfo): Promise<SessionGrant | 'pending'> {
     const parsed = AccountRegisterRequestSchema.safeParse(raw)
     const fields: Record<string, string> = parsed.success ? {} : fieldsOf(parsed.error)
     const body = asRecord(raw)
@@ -98,6 +98,7 @@ export class RegistrationService {
     }
     const data = parsed.data
     const role = data.role ?? 'student'
+    const pending = role === 'teacher'
 
     const passwordHash = await this.passwords.hash(data.password, 'high')
     const now = this.clock.now()
@@ -108,28 +109,30 @@ export class RegistrationService {
           email: data.email,
           username: null,
           phone: text(data.phone),
-          schoolId: data.schoolId ?? null,
+          // A teacher is created UNVERIFIED: inactive, no school scope, the asked-for school kept as pending (LEAD 2026-10-20).
+          schoolId: pending ? null : (data.schoolId ?? null),
+          pendingSchoolId: pending ? (data.schoolId ?? null) : null,
           grade: isStudent ? (data.grade ?? null) : null,
           passwordHash,
           mustChangePassword: false,
           icHash: icParts?.hash ?? null,
           icMasked: icParts?.masked ?? null,
-          isActive: true,
+          isActive: !pending,
           createdById: null,
           now,
         })
         await this.users.setRoles(id, [role], now)
-        const grant = await this.issuer.issue(id, info)
+        const grant = pending ? ('pending' as const) : await this.issuer.issue(id, info)
         await this.audit.record({
           action: ACCOUNT_AUDIT.REGISTERED,
           actorUserId: id,
           actorRole: role,
           targetType: 'user',
           targetId: id,
-          schoolId: data.schoolId ?? null,
+          schoolId: pending ? null : (data.schoolId ?? null),
           requestId: info.requestId,
           ip: info.ip,
-          details: { role },
+          details: { role, pending },
         })
         return grant
       }, ACCOUNT_TX)

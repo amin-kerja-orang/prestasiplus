@@ -136,14 +136,14 @@ export class AccountThrottle {
 
   // --- PUT /me/password: wrong current password, per user -----------------------------------------------
 
-  async passwordChangeGuard(userId: string): Promise<void> {
+  /**
+   * Reserves one unit BEFORE the password is checked (as LoginThrottle.begin does), so parallel guesses cannot
+   * exceed the budget. A wrong password keeps its unit; passwordChangeSucceeded gives the counter back.
+   */
+  async passwordChangeBegin(userId: string): Promise<void> {
     const now = this.clock.now()
-    const c = await this.peek(this.id(RESET_KEYS.passwordChange, userId), ANY, now)
-    if (c.attempts >= PASSWORD_CHANGE_LIMIT) throw tooMany(this.retryAfter(c, now), AUTH_ERROR_MESSAGES.RATE_LIMITED)
-  }
-
-  async passwordChangeFailed(userId: string): Promise<void> {
-    await this.hit(this.id(RESET_KEYS.passwordChange, userId), ANY, PASSWORD_CHANGE_WINDOW_MS, this.clock.now())
+    const c = await this.hit(this.id(RESET_KEYS.passwordChange, userId), ANY, PASSWORD_CHANGE_WINDOW_MS, now)
+    if (c.attempts > PASSWORD_CHANGE_LIMIT) throw tooMany(this.retryAfter(c, now), AUTH_ERROR_MESSAGES.RATE_LIMITED)
   }
 
   async passwordChangeSucceeded(userId: string): Promise<void> {

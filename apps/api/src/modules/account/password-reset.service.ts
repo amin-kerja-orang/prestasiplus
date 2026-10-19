@@ -200,7 +200,8 @@ export class PasswordResetService {
     const at = this.clock.now()
     const expiresAt = new Date(at.getTime() + RESET_TOKEN_TTL_MS)
     const resetId = await this.prisma.transaction(async () => {
-      await this.data.spendOpenTokens(user.id, at)
+      await this.data.lockUser(user.id)
+      await this.data.spendOpenTokens(user.id, at, channel)
       return this.data.insertToken({ userId: user.id, tokenHash: this.hashToken(token), channel, expiresAt, at })
     }, ACCOUNT_TX)
     return { token, resetId, expiresAt }

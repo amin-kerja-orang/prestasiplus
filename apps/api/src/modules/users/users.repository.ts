@@ -71,6 +71,8 @@ export interface NewUserRow {
   idDelima?: string | null
   /** Complimentary student flag; omitted: false. */
   isComplimentary?: boolean
+  /** School a self-registered teacher asked for (BE-06); school_id stays null until a school_admin verifies. */
+  pendingSchoolId?: string | null
   now: Date
 }
 
@@ -674,6 +676,7 @@ function toCreateData(input: NewUserRow): Prisma.UserUncheckedCreateInput {
     icMasked: input.icMasked,
     isActive: input.isActive,
     createdById: input.createdById === null ? null : idFromString(input.createdById),
+    ...(input.pendingSchoolId ? { pendingSchoolId: idFromString(input.pendingSchoolId) } : {}),
     ...(input.idDelima !== undefined ? { idDelima: input.idDelima } : {}),
     ...(input.isComplimentary !== undefined ? { isComplimentary: input.isComplimentary } : {}),
     createdAt: input.now,

@@ -376,4 +376,35 @@ describe('password reset by e-mail link and by IC (AC2, AC3, D55a, D55b)', () =>
       expect((await resetIc(STUDENT, IC)).status).toBe(200)
     })
   })
+
+  describe('token channels and concurrent issuing', () => {
+    it('a request on one channel does not spend a valid token of the other (no token-spending DoS)', async () => {
+      const icToken = (await resetIc(STUDENT, IC)).body.data.token as string
+      t.clock.advance(61_000)
+      // An attacker who knows only the e-mail asks for a link: the IC-channel token must stay valid.
+      await issue(STUDENT)
+      const live = await t.db.query<{ channel: string; n: string }>(
+        `select channel, count(*)::text as n from password_resets r join users u on u.id = r.user_id
+          where u.email = $1 and r.used_at is null group by channel order by channel`,
+        [STUDENT],
+      )
+      expect(live).toEqual([
+        { channel: 'email', n: '1' },
+        { channel: 'ic', n: '1' },
+      ])
+      t.clock.advance(61_000)
+      expect((await redeem(icToken, STUDENT, DEMO_PASSWORD)).status).toBe(200)
+    })
+
+    it('parallel issuing leaves at most one live token per channel', async () => {
+      await Promise.all([resetIc(STUDENT, IC), resetIc(STUDENT, IC), resetIc(STUDENT, IC)])
+      const live = await t.db.query<{ channel: string; n: string }>(
+        `select channel, count(*)::text as n from password_resets r join users u on u.id = r.user_id
+          where u.email = $1 and r.used_at is null group by channel`,
+        [STUDENT],
+      )
+      for (const row of live) expect(Number(row.n), row.channel).toBe(1)
+      expect(live.map((r) => r.channel)).toEqual(['ic'])
+    })
+  })
 })

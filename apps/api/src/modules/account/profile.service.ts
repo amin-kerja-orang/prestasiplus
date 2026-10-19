@@ -6,7 +6,6 @@ import {
   ACCOUNT_PICTURE_MIME_TYPES,
   AccountPasswordChangeRequestSchema,
   AccountProfileUpdateRequestSchema,
-  V,
   type AccountUserMe,
 } from '@pp/contract'
 
@@ -69,7 +68,7 @@ export class ProfileService {
 
   private async project(auth: AuthContext, user: UserRecord): Promise<AccountUserMe> {
     const school = user.schoolId === null ? null : await this.schools.get(user.schoolId)
-    const avatar = (await this.data.avatarTokens(user.id))[0]
+    const avatar = await this.data.avatarToken(user.id)
     return {
       id: user.id,
       name: user.name,
@@ -109,16 +108,12 @@ export class ProfileService {
       const body = typeof raw === 'object' && raw !== null ? (raw as Record<string, unknown>) : {}
       const user = await this.users.get(auth.userId)
       if (!user) throw ApiError.of('UNAUTHORIZED')
-      // A staff school is an admin-assigned scope (BR-13 note): the body value is ignored for those accounts.
-      const staff = user.roles.some((r) => STAFF_ROLES.includes(r))
+      // School membership is managed by school_admin/admin: the body value is ignored for staff AND for teachers (a self-assigned school would give a teacher scope over children's data).
+      const staff = user.roles.some((r) => STAFF_ROLES.includes(r) || r === 'teacher')
       const schoolId = typeof body.schoolId === 'string' ? body.schoolId : body.schoolId === null ? null : undefined
 
       if (fields.schoolId === undefined && typeof schoolId === 'string' && !(await this.schools.exists(schoolId))) {
         fields.schoolId = ACCOUNT_AUTH_MESSAGES.schoolInvalid
-      }
-      if (fields.schoolId === undefined && schoolId === null && !staff && user.roles.includes('teacher')) {
-        // A teacher's scope is its school: clearing it would leave an account that cannot hold a session.
-        fields.schoolId = V.requiredWhen('school id', 'role is teacher')
       }
       if (Object.keys(fields).length > 0 || !parsed.success) {
         const ordered: Record<string, string> = {}
@@ -175,12 +170,11 @@ export class ProfileService {
       if (!parsed.success) throw invalid(fieldsOf(parsed.error))
       const data = parsed.data
 
-      await this.throttle.passwordChangeGuard(auth.userId)
+      await this.throttle.passwordChangeBegin(auth.userId)
       const credentials = await this.users.getCredentials(auth.userId)
       if (!credentials) throw ApiError.of('UNAUTHORIZED')
       const check = await this.passwords.check(data.currentPassword, credentials.passwordHash)
       if (!check.ok) {
-        await this.throttle.passwordChangeFailed(auth.userId)
         throw invalid({ currentPassword: ACCOUNT_AUTH_MESSAGES.currentPasswordWrong })
       }
 

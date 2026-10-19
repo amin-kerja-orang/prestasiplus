@@ -107,6 +107,18 @@ describe('account schema (migration 0007_account_notifications)', () => {
     }
   })
 
+  it('users.pending_school_id: nullable, indexed, FK to schools that is set null when the school goes', async () => {
+    expect(await columns('users')).toContain('pending_school_id')
+    const idx = await db.query(`select indexname from pg_indexes where tablename = 'users' and indexname = 'ix_users_pending_school_id'`)
+    expect(idx).toHaveLength(1)
+    const [school] = await db.query<{ id: string }>(`insert into schools (name) values ('Sekolah Menunggu') returning id::text`)
+    const [u] = await db.query<{ id: string }>(`insert into users (name, pending_school_id) values ('Guru Menunggu', $1::bigint) returning id::text`, [school?.id])
+    expect(await rejects(`insert into users (name, pending_school_id) values ('x', 999999999)`)).toMatch(/fk_users_pending_school_id/)
+    await db.query(`delete from schools where id = $1::bigint`, [school?.id])
+    const [after] = await db.query<{ pending_school_id: string | null }>(`select pending_school_id::text from users where id = $1::bigint`, [u?.id])
+    expect(after?.pending_school_id).toBeNull()
+  })
+
   it('keeps one settings row per user with the mock defaults and a nullable faith', async () => {
     await db.query(`insert into user_settings (user_id) values ($1)`, [userId])
     const [s] = await db.query<Record<string, unknown>>(

@@ -18,6 +18,8 @@ model User {
   icMasked           String?   @map("ic_masked")
   phone              String?
   schoolId           BigInt?   @map("school_id")
+  /// School a self-registered teacher asked for; becomes school_id when a school_admin verifies the account (BE-21). No scope until then.
+  pendingSchoolId    BigInt?   @map("pending_school_id")
   grade              Int?      @db.SmallInt
   classLabel         String?   @map("class_label")
   bio                String?
@@ -35,29 +37,31 @@ model User {
   legacyId           String?   @map("legacy_id")
   legacyHash         String?   @map("legacy_hash")
 
-  school       School?      @relation(fields: [schoolId], references: [id], onDelete: Restrict, map: "fk_users_school_id")
-  createdBy    User?        @relation("UserCreatedBy", fields: [createdById], references: [id], onDelete: SetNull, map: "fk_users_created_by_id")
-  createdUsers User[]       @relation("UserCreatedBy")
-  roles        UserRole[]
-  scopes       UserScope[]
-  sessions     Session[]
-  auditEvents  AuditEvent[]
-  importJobs   ImportJob[]
+  school                School?         @relation(fields: [schoolId], references: [id], onDelete: Restrict, map: "fk_users_school_id")
+  pendingSchool         School?         @relation("UserPendingSchool", fields: [pendingSchoolId], references: [id], onDelete: SetNull, map: "fk_users_pending_school_id")
+  createdBy             User?           @relation("UserCreatedBy", fields: [createdById], references: [id], onDelete: SetNull, map: "fk_users_created_by_id")
+  createdUsers          User[]          @relation("UserCreatedBy")
+  roles                 UserRole[]
+  scopes                UserScope[]
+  sessions              Session[]
+  auditEvents           AuditEvent[]
+  importJobs            ImportJob[]
   // BE-25 back-relations (schools.prisma owns the models).
   userPackages          UserPackage[]
-  parentLinksAsParent   ParentLink[]   @relation("ParentLinkParent")
-  parentLinksAsStudent  ParentLink[]   @relation("ParentLinkStudent")
-  parentInvite          ParentInvite?  @relation("ParentInviteStudent")
-  acceptedParentInvites ParentInvite[] @relation("ParentInviteAcceptedBy")
+  parentLinksAsParent   ParentLink[]    @relation("ParentLinkParent")
+  parentLinksAsStudent  ParentLink[]    @relation("ParentLinkStudent")
+  parentInvite          ParentInvite?   @relation("ParentInviteStudent")
+  acceptedParentInvites ParentInvite[]  @relation("ParentInviteAcceptedBy")
   compStudent           CompStudent?
-  files        File[]
+  files                 File[]
   // BE-06 back-relations.
-  passwordResets PasswordReset[]
-  settings       UserSettings?
-  notifications  Notification[]
+  passwordResets        PasswordReset[]
+  settings              UserSettings?
+  notifications         Notification[]
 
   @@unique([legacySource, legacyId], map: "uq_users_legacy")
   @@index([schoolId], map: "ix_users_school_id")
+  @@index([pendingSchoolId], map: "ix_users_pending_school_id")
   @@index([icHash], map: "ix_users_ic_hash")
   @@index([isActive, schoolId], map: "ix_users_is_active_school_id")
   @@index([createdById], map: "ix_users_created_by_id")

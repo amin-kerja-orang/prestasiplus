@@ -35,10 +35,18 @@ export class AccountDataRepository {
 
   // --- password_resets -----------------------------------------------------------------------------
 
-  /** One active token per user: every earlier unused token of the user is spent (contract token rules). */
-  async spendOpenTokens(userId: string, at: Date): Promise<void> {
+  /** Serialises token issuing and redemption for one user, so at most one live token per channel exists (released at commit). */
+  async lockUser(userId: string): Promise<void> {
+    await this.prisma.client.$executeRaw`SELECT pg_advisory_xact_lock(hashtext(${'pwreset:' + userId}))`
+  }
+
+  /**
+   * One live token per user AND channel: the open tokens of that channel are spent. Without a channel every
+   * open token is spent (a successful reset). A request on one channel never kills a valid token of the other.
+   */
+  async spendOpenTokens(userId: string, at: Date, channel?: 'email' | 'ic'): Promise<void> {
     await this.prisma.client.passwordReset.updateMany({
-      where: { userId: idFromString(userId), usedAt: null },
+      where: { userId: idFromString(userId), usedAt: null, ...(channel ? { channel } : {}) },
       data: { usedAt: at },
     })
   }
@@ -71,6 +79,16 @@ export class AccountDataRepository {
       data: { usedAt: at },
     })
     return res.count === 1
+  }
+
+  /** Public token of the newest avatar file, or null. */
+  async avatarToken(userId: string): Promise<string | null> {
+    const row = await this.prisma.client.file.findFirst({
+      where: { ownerUserId: idFromString(userId), purpose: 'avatar' },
+      select: { publicId: true },
+      orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
+    })
+    return row?.publicId ?? null
   }
 
   // --- user_settings -------------------------------------------------------------------------------

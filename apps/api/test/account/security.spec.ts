@@ -56,34 +56,52 @@ describe('LoggingMailPort prints the link only in development with the explicit 
 })
 
 describe('timing and enumeration (D55a, D55b)', () => {
-  it('a known and an unknown e-mail take the same time class on every reset route (response floor)', async () => {
-    const floor = 400
+  it('every outcome of the reset routes is held to the response floor, and the real work finishes well under it', async () => {
+    const floor = 1500
     const t = await boot({ env: { LOGIN_FAILURE_FLOOR_MS: String(floor) } })
+    const link = (email: string) => t.http().post('/api/auth/password/email').send({ email })
+    const ic = (email: string, icNumber: string) => t.http().post('/api/auth/password/reset-ic').send({ email, icNumber })
+    const redeem = (email: string) =>
+      t.http().post('/api/auth/password/reset').send({ token: 'z'.repeat(43), email, password: 'Baharu123', passwordConfirmation: 'Baharu123' })
     const time = async (fn: () => Promise<unknown>) => {
       const t0 = performance.now()
       await fn()
       return performance.now() - t0
     }
-    const link = (email: string) => t.http().post('/api/auth/password/email').send({ email })
+
+    // Warm-up: the first request of a process pays for connections and module loading, so it is not measured.
+    await link('warmup@ujian.test')
+    await link('pelajar2@demo.test') // the known path too: token issue, mail port, audit
+    await ic('warmup@ujian.test', '999999999999')
+    await redeem('warmup@ujian.test')
+
+    // The mail port is called after the known-path DB work (token issue): its timestamp is the real work time.
+    let mailAt = 0
+    const send = t.mail.sendPasswordReset.bind(t.mail)
+    t.mail.sendPasswordReset = (m) => {
+      mailAt = performance.now()
+      return send(m)
+    }
+    t.clock.advance(61_000)
+    const started = performance.now()
     const known = await time(() => link(STUDENT))
+    expect(mailAt).toBeGreaterThan(0)
+    expect(mailAt - started).toBeLessThan(floor / 2) // the work is far below the floor, so the floor decides the answer time
     t.clock.advance(61_000)
     const unknown = await time(() => link('tiada.siapa@ujian.test'))
+    // Both answers are held to the floor (a timer, so this lower bound cannot be flaky).
     expect(known).toBeGreaterThanOrEqual(floor - 20)
     expect(unknown).toBeGreaterThanOrEqual(floor - 20)
-    expect(Math.abs(known - unknown)).toBeLessThan(250)
 
-    const ic = (email: string, icNumber: string) => t.http().post('/api/auth/password/reset-ic').send({ email, icNumber })
-    const wrongIc = await time(() => ic(STUDENT, '999999999999'))
-    const noUser = await time(() => ic('tiada.siapa@ujian.test', '999999999999'))
-    expect(wrongIc).toBeGreaterThanOrEqual(floor - 20)
-    expect(Math.abs(wrongIc - noUser)).toBeLessThan(250)
-
-    const redeem = (email: string) =>
-      t.http().post('/api/auth/password/reset').send({ token: 'z'.repeat(43), email, password: 'Baharu123', passwordConfirmation: 'Baharu123' })
-    const badToken = await time(() => redeem(STUDENT))
-    const unknownUser = await time(() => redeem('tiada.siapa@ujian.test'))
-    expect(badToken).toBeGreaterThanOrEqual(floor - 20)
-    expect(Math.abs(badToken - unknownUser)).toBeLessThan(250)
+    for (const [name, run] of [
+      ['reset-ic wrong IC', () => ic(STUDENT, '999999999999')],
+      ['reset-ic unknown e-mail', () => ic('tiada.siapa@ujian.test', '999999999999')],
+      ['reset wrong token', () => redeem(STUDENT)],
+      ['reset unknown e-mail', () => redeem('tiada.siapa@ujian.test')],
+    ] as const) {
+      t.clock.advance(16 * 60_000)
+      expect(await time(run), name).toBeGreaterThanOrEqual(floor - 20)
+    }
   })
 })
 

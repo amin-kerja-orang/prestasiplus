@@ -1,4 +1,4 @@
-import { ErrorBodySchema, SessionSchema } from '@pp/contract'
+import { ACCOUNT_REGISTER_PENDING_MESSAGE, ACCOUNT_REGISTER_PENDING_STATUS, ErrorBodySchema, SessionSchema } from '@pp/contract'
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest'
 
 import { schoolIdOf } from '../auth/helpers'
@@ -49,14 +49,28 @@ describe('POST /api/auth/register (mock cases, AC1 and AC6)', () => {
     expect(lastLogin[0]?.at).not.toBeNull()
   })
 
-  it('registers a teacher: grade and IC are ignored (BR-04); a teacher needs a school', async () => {
+  it('a teacher is created UNVERIFIED: 201 with a pending notice, no session, inactive, no school scope, pending school kept (LEAD 2026-10-20)', async () => {
     const res = await t.http().post('/api/auth/register').send(body({ role: 'teacher', email: 'cikgu.baharu@ujian.test' }))
     expect(res.status, JSON.stringify(res.body)).toBe(201)
-    expect(SessionSchema.parse(res.body.data).active.role).toBe('teacher')
+    expect(res.body).toEqual({ data: { status: ACCOUNT_REGISTER_PENDING_STATUS, message: ACCOUNT_REGISTER_PENDING_MESSAGE } })
+    expect(cookieValue(res)).toBeUndefined()
+    expect(res.headers['cache-control']).toBe('no-store')
     const row = await userRow(t.db, 'cikgu.baharu@ujian.test')
+    expect(row?.school_id).toBeNull()
     expect(row?.grade).toBeNull()
     expect(row?.ic_hash).toBeNull()
     expect(row?.ic_masked).toBeNull()
+    const state = await t.db.query<{ is_active: boolean; pending: string | null }>(
+      'select is_active, pending_school_id::text as pending from users where id = $1::bigint',
+      [row?.id],
+    )
+    expect(state[0]).toEqual({ is_active: false, pending: schoolId })
+    const roles = await t.db.query<{ role: string }>('select role from user_roles where user_id = $1::bigint', [row?.id])
+    expect(roles.map((x) => x.role)).toEqual(['teacher'])
+    // The BE-03 login refuses it (is_active = false): 403 ACCOUNT_INACTIVE, no session.
+    const login = await t.http().post('/api/auth/login').send({ identifier: 'cikgu.baharu@ujian.test', password: 'rahsia1' })
+    errorOf(login, 403, 'ACCOUNT_INACTIVE')
+    expect(cookieValue(login)).toBeUndefined()
 
     const noSchool = await t.http().post('/api/auth/register').send(body({ role: 'teacher', schoolId: undefined }))
     expect(fieldsOf(noSchool)).toEqual({ schoolId: 'The school id field is required when role is teacher.' })

@@ -24,10 +24,13 @@ import {
   ACCOUNT_MESSAGES,
   ACCOUNT_PICTURE_MAX_KB,
   ACCOUNT_PICTURE_MESSAGES,
+  ACCOUNT_REGISTER_PENDING_MESSAGE,
+  ACCOUNT_REGISTER_PENDING_STATUS,
   AccountPasswordEmailRequestSchema,
   AccountPasswordResetIcRequestSchema,
   AccountPasswordResetRequestSchema,
   type AccountPlatformStats,
+  type AccountRegisterPending,
   type AccountSettings,
   type AccountUserMe,
   type Session,
@@ -103,8 +106,14 @@ export class AccountPublicController extends Cookies {
   @Post('register')
   @UseGuards(RateLimitGuard)
   @RateLimit(ACCOUNT_LIMITS.register)
-  async register(@Body() raw: unknown, @Req() req: Request, @Res({ passthrough: true }) res: Response): Promise<{ data: Session }> {
+  async register(
+    @Body() raw: unknown,
+    @Req() req: Request,
+    @Res({ passthrough: true }) res: Response,
+  ): Promise<{ data: Session | AccountRegisterPending }> {
     const grant = await this.registration.register(raw, infoOf(req))
+    // A teacher waits for a school_admin: no session, no cookie.
+    if (grant === 'pending') return ok({ status: ACCOUNT_REGISTER_PENDING_STATUS, message: ACCOUNT_REGISTER_PENDING_MESSAGE })
     this.setCookie(res, grant)
     return ok(grant.session)
   }

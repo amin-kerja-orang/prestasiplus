@@ -92,3 +92,9 @@ ALTER TABLE "password_resets" ADD CONSTRAINT "ck_password_resets_expires" CHECK 
 ALTER TABLE "user_settings" ADD CONSTRAINT "ck_user_settings_faith" CHECK ("faith" IS NULL OR "faith" IN ('muslim', 'hindu', 'buddhist', 'christian', 'none'));
 ALTER TABLE "notifications" ADD CONSTRAINT "ck_notifications_category" CHECK ("category" IS NULL OR "category" IN ('system', 'reminder', 'milestone'));
 ALTER TABLE "notifications" ADD CONSTRAINT "ck_notifications_type" CHECK (char_length("type") BETWEEN 1 AND 100);
+
+-- Self-registered teachers wait for a school_admin to verify them: they are created inactive, with no school scope,
+-- and the school they asked for is kept here until the verification action (BE-21 / BE-05) moves it to school_id.
+ALTER TABLE "users" ADD COLUMN "pending_school_id" BIGINT;
+CREATE INDEX "ix_users_pending_school_id" ON "users"("pending_school_id");
+ALTER TABLE "users" ADD CONSTRAINT "fk_users_pending_school_id" FOREIGN KEY ("pending_school_id") REFERENCES "schools"("id") ON DELETE SET NULL ON UPDATE CASCADE;
