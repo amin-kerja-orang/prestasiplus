@@ -15,8 +15,8 @@ import type { Session as SessionRow } from '../../db/generated/client'
 import { PrismaService } from '../../db/prisma.service'
 import { AccountRepository, type AccountRecord, type LoginCandidate } from './account.repository'
 import { AuthConfig } from './auth.config'
-import { authError, rateLimited } from './auth.errors'
-import { MAX_LEGACY_CHECKS_PER_LOGIN } from './auth.constants'
+import { authError, isOverloadError, rateLimited } from './auth.errors'
+import { LOGIN_TX, MAX_LEGACY_CHECKS_PER_LOGIN } from './auth.constants'
 import { isLegacyBcrypt, LegacyBcryptBusyError } from './legacy-bcrypt'
 import { LoginThrottle } from './login-throttle.service'
 import { PasswordService } from './password.service'
@@ -65,6 +65,11 @@ export class AuthService {
     try {
       return await this.attemptLogin(body, info, oldToken)
     } catch (err) {
+      // An overloaded database or event loop is retryable: 429 with Retry-After, never a 500.
+      if (isOverloadError(err)) {
+        this.logger.warn(`login overloaded (requestId=${info.requestId ?? '-'})`)
+        throw rateLimited(5)
+      }
       // Timing oracle floor: every failed credential answer takes at least the floor, held with a
       // timer (no CPU), so account type (argon2, legacy bcrypt, unknown) cannot be told by speed.
       if (err instanceof ApiError && err.code === 'INVALID_CREDENTIALS') {
@@ -146,7 +151,9 @@ export class AuthService {
     const activeRole = (grants[0] as { role: RoleCode }).role
     const rememberDays = this.config.rememberDaysFor(grants.map((g) => g.role))
     const remember = body.remember && rememberDays > 0
-    const newHash = match.needsRehash ? await this.passwords.hash(body.password) : null
+    const newHash = match.needsRehash ? await this.passwords.hash(body.password, 'high') : null
+    // Four short statements; a slow database must not turn a correct login into a 500, so the
+    // interactive transaction gets more room than Prisma's 5 s default (and an overload answers 429).
     const granted = await this.prisma.transaction(async () => {
       if (oldToken) await this.store.revokeByToken(oldToken)
       const issued = await this.store.create({
@@ -172,7 +179,7 @@ export class AuthService {
         details: { remember, rehashed: newHash !== null },
       })
       return out
-    })
+    }, LOGIN_TX)
     try {
       await this.throttle.clear(keys)
     } catch {

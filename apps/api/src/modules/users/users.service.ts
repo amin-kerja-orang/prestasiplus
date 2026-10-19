@@ -27,6 +27,7 @@ import type { TxClient } from '../../db/client'
 import { isIdString } from '../../db/ids'
 import { PrismaService } from '../../db/prisma.service'
 import { PasswordService } from '../auth/password.service'
+import { isOverloadError } from '../auth/auth.errors'
 import { SchoolsRepository } from '../schools'
 import type { Caller } from './caller'
 import { classLevelOfGrade } from './class-level'
@@ -36,6 +37,7 @@ import { BULK_DELETE_MAX_IDS, PAGE_NUMBER_MAX, USER_AUDIT } from './users.consta
 import { FIELD_MESSAGES, forbidden, invalid, lastAdmin, notFound } from './users.errors'
 import { UsersRepository, uniqueField, type UserRecord } from './users.repository'
 
+const WRITE_TX = { maxWait: 10_000, timeout: 15_000 } as const
 const SORT_LOCALE = 'ms'
 const byNameThenId = (a: { name: string; id: string }, b: { name: string; id: string }): number =>
   a.name.localeCompare(b.name, SORT_LOCALE) || (BigInt(a.id) < BigInt(b.id) ? -1 : 1)
@@ -425,8 +427,11 @@ export class UsersService {
   /** Runs a write in one transaction with its audit row; a unique-index race becomes a field error. */
   private async write<T>(fn: (tx: TxClient) => Promise<T>): Promise<T> {
     try {
-      return await this.prisma.transaction(fn)
+      // The admin lock queues writers inside the transaction, so it gets more room than Prisma's 5 s default.
+      return await this.prisma.transaction(fn, WRITE_TX)
     } catch (err) {
+      // An overloaded database is retryable: 429 with Retry-After, never a 500.
+      if (isOverloadError(err)) throw ApiError.of('RATE_LIMITED', { retryAfter: 5 })
       const field = uniqueField(err)
       if (field === 'email') throw invalid({ email: FIELD_MESSAGES.emailTaken })
       if (field === 'username') throw invalid({ username: FIELD_MESSAGES.usernameTaken })

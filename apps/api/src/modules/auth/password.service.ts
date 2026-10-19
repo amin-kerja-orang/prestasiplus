@@ -57,9 +57,9 @@ export class PasswordService {
     @Inject(AuthConfig) private readonly config: AuthConfig,
   ) {}
 
-  /** argon2id hash for storing a new password. */
-  hash(plain: string): Promise<string> {
-    return argon2Gate.run('low', () => hash(plain, ARGON2_OPTIONS))
+  /** argon2id hash for storing a new password. `high` is for a request that waits for it (login rehash); bulk work stays `low`. */
+  hash(plain: string, priority: 'high' | 'low' = 'low'): Promise<string> {
+    return argon2Gate.run(priority, () => hash(plain, ARGON2_OPTIONS))
   }
 
   /**

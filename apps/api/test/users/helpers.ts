@@ -62,6 +62,7 @@ export async function bootUsersApp(opts: BootOptions = {}): Promise<UsersTestApp
     LEGACY_BCRYPT_DUMMY_COST: '4',
     LOGIN_FAILURE_FLOOR_MS: '0',
     LOGIN_IDENTIFIER_FAIL_LIMIT: undefined,
+    LOG_LEVEL: process.env.PP_TEST_LOG_LEVEL ?? process.env.LOG_LEVEL,
     ...opts.env,
   }
   for (const [k, v] of Object.entries(env)) {
