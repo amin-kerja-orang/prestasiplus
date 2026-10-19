@@ -47,6 +47,7 @@ function ctxFor(
     active: { ...grant(active), via: 'direct' },
     mode: null,
     capabilities: capabilitiesFor(active, scope).map((c) => c.key),
+    mustChangePassword: false,
   }
 }
 

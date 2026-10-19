@@ -58,7 +58,8 @@ export function registerNotificationsPaths(registry: OpenAPIRegistry): void {
     'X-CSRF-Token': z.string().min(1).meta({ description: 'Value of Session.csrf; required on mutating requests.' }),
   })
   const unauthorized = err('UNAUTHORIZED "Unauthenticated." (no valid session).')
-  const csrfInvalid = err('CSRF_INVALID (missing or wrong X-CSRF-Token).')
+  const csrfInvalid = err('CSRF_INVALID (missing or wrong X-CSRF-Token), or PASSWORD_CHANGE_REQUIRED (shared common code, 403) while session.mustChangePassword is set.')
+  const passwordChangeRequired = err('PASSWORD_CHANGE_REQUIRED (shared common code, 403): the account must change its password first (session.mustChangePassword).')
   const notFound = err('NOT_FOUND "Not Found." (unknown id, or the notification belongs to another user).')
   const idParam = z.object({ id: IdSchema })
   const success = json(envelopeOf(NotificationSuccessSchema), '{ data: { success: true } }.')
@@ -73,7 +74,7 @@ export function registerNotificationsPaths(registry: OpenAPIRegistry): void {
     description:
       'Any signed-in role, own items only, 20 per page, newest first (createdAt desc, then id desc). An out-of-range page returns data [] with the requested page. meta = ListMeta plus counts { all, unread } for the user, ignoring the filters.',
     request: { query: NotificationListQuerySchema },
-    responses: { 200: json(NotificationListResponseSchema, 'One page with meta.counts.'), 401: unauthorized },
+    responses: { 200: json(NotificationListResponseSchema, 'One page with meta.counts.'), 401: unauthorized, 403: passwordChangeRequired },
   })
 
   registry.registerPath({
@@ -81,7 +82,7 @@ export function registerNotificationsPaths(registry: OpenAPIRegistry): void {
     path: '/me/notifications/unread-count',
     tags: ['notifications'],
     summary: 'Unread count (bell badge)',
-    responses: { 200: json(envelopeOf(NotificationUnreadCountSchema), 'Unread count.'), 401: unauthorized },
+    responses: { 200: json(envelopeOf(NotificationUnreadCountSchema), 'Unread count.'), 401: unauthorized, 403: passwordChangeRequired },
   })
 
   registry.registerPath({
