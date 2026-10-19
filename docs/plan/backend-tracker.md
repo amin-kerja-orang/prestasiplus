@@ -99,6 +99,7 @@ Newest first. The lead appends a line when a card merges, a decision is made or 
 
 | Date | Entry |
 |---|---|
+| 2026-10-19 | LEAD merged contract-only PRs: BE-06(#4) BE-21(#6) BE-09(-) BE-18(-) BE-19(-) BE-42(-) after code review (Approve). Append-only conflicts resolved; openapi.json regenerated; contract:check, contract tests and tsc green. Cards back to `todo` for their full implementation. |
 | 2026-10-19 | LEAD merged **BE-01** (NestJS 11 scaffold, error envelope, request id, config, logging redaction, health, non-root read-only image, backend CI with verify/docker/secret-scan, .gitleaks.toml). Review: Approve, no Blocker/Major. LEAD follow-ups in the merge: eslint ignores `apps/*/dist/**`; ids.ts comment now says legacy_source + legacy_id. Sync point S1 reached; BE-02 (stacked) continues. |
 | 2026-10-19 | LEAD merged contract-only PRs: BE-22(-) BE-44(#12) BE-45(#13) BE-46(#14) BE-47(#15) BE-16(#10) after code review (Approve). Append-only conflicts resolved; openapi.json regenerated; contract:check, contract tests and tsc green. Cards back to `todo` for their full implementation. |
 | 2026-10-19 | LEAD merged contract-only PRs: BE-08(-) BE-12(-) BE-17(-) after code review (Approve). Append-only conflicts resolved; openapi.json regenerated; contract:check, contract tests and tsc green. Cards back to `todo` for their full implementation. |
